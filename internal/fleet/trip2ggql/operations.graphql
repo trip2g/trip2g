@@ -25,6 +25,58 @@ query ListChangeWebhooks {
       nodes {
         id
         description
+        url
+      }
+    }
+  }
+}
+
+# UpdateChangeWebhook points an existing owned webhook at this fleet's current
+# delivery URL (hash-registry takeover: a restarted/moved fleet with the same
+# fleet_id re-claims the /<h>/ webhook, last-writer-wins).
+#
+# update() (reconcile.go) sets ONLY {Id, Url} — every other field below must
+# omitempty so a Go zero value is NEVER sent to the monolith. trip2g's
+# changeWebhookUpdate resolver uses PATCH semantics (an absent field keeps the
+# existing value); a *present* zero would disable the webhook (enabled:false),
+# wipe the reconcile marker (description:""), stop it firing
+# (onCreate/onUpdate/onRemove:false), and fail validateBounds outright
+# (timeoutSeconds:0 below the required minimum), turning every takeover into a
+# hard reconcile error instead of a narrow url update. NOTE: $input must stay
+# on its own line below — a genqlient quirk attributes a directive comment to
+# the $input variable (not the operation) when it shares the "mutation ...("
+# line, which rejects "for" with "for is only applicable to operations and
+# arguments".
+# @genqlient(for: "ChangeWebhookUpdateInput.includePatterns", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.excludePatterns", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.instruction", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.maxDepth", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.passApiKey", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.includeContent", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.timeoutSeconds", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.maxRetries", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.enabled", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.description", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.onCreate", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.onUpdate", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.onRemove", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.readPatterns", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.writePatterns", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.transformJsonnet", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.attachNotes", omitempty: true)
+# @genqlient(for: "ChangeWebhookUpdateInput.concurrencyMode", omitempty: true)
+mutation UpdateChangeWebhook(
+  $input: ChangeWebhookUpdateInput!
+) {
+  admin {
+    changeWebhookUpdate(input: $input) {
+      ... on ChangeWebhookUpdatePayload {
+        webhook {
+          id
+        }
+      }
+      ... on ErrorPayload {
+        message
       }
     }
   }

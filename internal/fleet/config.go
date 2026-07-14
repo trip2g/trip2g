@@ -11,9 +11,9 @@ import "time"
 // ceiling (TokenCeiling/StepCeiling) is the non-overridable floor: the
 // effective budget is min(frontmatter, ceiling).
 type Config struct {
-	FleetID                string        // reconcile marker prefix "fleet:<FleetID>:"
+	FleetID                string        // required identity: reconcile marker prefix "fleet:<FleetID>:", role fleet_id partition key, and /_fleet/<sha256("fleet:"+id)>/webhook delivery path
 	ListenAddr             string        // ":9090"
-	CallbackURL            string        // trip2g-reachable base; webhook url = CallbackURL + "/deliver/" + urlKey(path)
+	CallbackURL            string        // trip2g-reachable base; webhook url = CallbackURL + "/_fleet/<h>/webhook/" + urlKey(path)
 	Trip2gBaseURL          string        // e.g. "http://localhost:20081"
 	AdminAPIKey            string        // DEPRECATED/unused: legacy full-admin X-Api-Key (admin lane now authenticates via HAT)
 	JWTSecret              string        // shared user-token/JWT secret used to mint admin HATs (= trip2g UserToken.Secret)

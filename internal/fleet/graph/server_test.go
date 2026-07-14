@@ -99,7 +99,7 @@ func newTestServer() *Server {
 		OfferedTools:  []string{"read_note", "write_note"},
 		Trip2gBaseURL: "http://hub.local:20081",
 	}
-	return NewServer(fleet.NewDiscovery(gql, cfg.AgentsFolder, cfg.OfferedTools), gql, cfg)
+	return NewServer(fleet.NewDiscovery(gql, cfg.FleetID, cfg.AgentsFolder, cfg.OfferedTools), gql, cfg)
 }
 
 func TestServerJSON(t *testing.T) {

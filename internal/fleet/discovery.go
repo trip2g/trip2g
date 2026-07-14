@@ -12,21 +12,38 @@ import (
 // Discovery polls trip2g for role notes under AgentsFolder over the admin lane.
 type Discovery struct {
 	gql          graphql.Client
+	fleetID      string
 	agentsFolder string
 	offeredTools []string
 }
 
-// NewDiscovery builds a Discovery over the genqlient admin lane.
-func NewDiscovery(gql graphql.Client, agentsFolder string, offeredTools []string) *Discovery {
-	return &Discovery{gql: gql, agentsFolder: agentsFolder, offeredTools: offeredTools}
+// NewDiscovery builds a Discovery over the genqlient admin lane. fleetID is this
+// fleet's partition key: DiscoverRoles processes only roles whose fleet_id
+// matches it.
+func NewDiscovery(gql graphql.Client, fleetID, agentsFolder string, offeredTools []string) *Discovery {
+	return &Discovery{gql: gql, fleetID: fleetID, agentsFolder: agentsFolder, offeredTools: offeredTools}
 }
 
-// DiscoverRoles returns the valid roles plus a slice of per-note validation
-// errors (invalid roles are excluded, never registered).
+// DiscoverRoles returns this fleet's valid roles plus a slice of per-note
+// errors. Roles are partitioned by fleet_id: only roles whose fleet_id equals
+// this fleet's --fleet-id are processed. A role with an empty fleet_id is
+// skipped with a warning (untagged roles are never claimed — belonging to no
+// fleet keeps two fleets from both processing it). A role tagged for another
+// fleet is skipped silently. Invalid roles that match this fleet are excluded
+// and reported. DiscoverParsed stays unpartitioned for cross-fleet introspection.
 func (d *Discovery) DiscoverRoles(ctx context.Context) ([]Role, []error) {
 	parsed, errs := d.DiscoverParsed(ctx)
 	var roles []Role
 	for _, role := range parsed {
+		if role.FleetID == "" {
+			errs = append(errs, fmt.Errorf(
+				"role %s: fleet_id is empty; skipped (set fleet_id: %s to assign it to this fleet)",
+				role.NotePath, d.fleetID))
+			continue
+		}
+		if role.FleetID != d.fleetID {
+			continue // belongs to another fleet
+		}
 		if verr := role.Validate(d.offeredTools); verr != nil {
 			errs = append(errs, verr)
 			continue

@@ -75,7 +75,7 @@ func newScopedKBServer(t *testing.T, respond func(auth, body string) string) (*h
 
 func post(t *testing.T, f *Fleet, key string, body []byte, sign bool) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+key, bytes.NewReader(body))
 	if sign {
 		role, ok := f.roleByKey(key)
 		require.True(t, ok)
@@ -242,7 +242,7 @@ func TestServeDelivery_RunDetachedFromRequestContext(t *testing.T) {
 	key := urlKey("roles/triage.md")
 	body := deliveryBody(t)
 	reqCtx, cancel := context.WithCancel(context.Background())
-	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(body)).WithContext(reqCtx)
+	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+key, bytes.NewReader(body)).WithContext(reqCtx)
 	r, ok := f.roleByKey(key)
 	require.True(t, ok)
 	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(r)))
@@ -509,7 +509,7 @@ func TestServeDelivery_CodeRole_DispatchesRunCode(t *testing.T) {
 		"instruction": "run code",
 		"api_token":   "scoped-token",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+key, bytes.NewReader(body))
 	role, ok := f.roleByKey(key)
 	require.True(t, ok)
 	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(role)))
@@ -560,7 +560,7 @@ func TestServeDelivery_CodeRole_PassesEnvPassthrough(t *testing.T) {
 	body, _ := json.Marshal(map[string]any{
 		"depth": 0, "api_token": "tok",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+key, bytes.NewReader(body))
 	r, ok := f.roleByKey(key)
 	require.True(t, ok)
 	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(r)))
@@ -624,7 +624,7 @@ func cronDeliveryBody(t *testing.T) []byte {
 // postCron sends a POST to /deliver/cron/<key> with a cron-signed HMAC.
 func postCron(t *testing.T, f *Fleet, key string, body []byte, sign bool) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodPost, "/deliver/cron/"+key, bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+"cron/"+key, bytes.NewReader(body))
 	if sign {
 		role, ok := f.roleByKey(key)
 		require.True(t, ok)
@@ -687,7 +687,7 @@ func TestServeCronDelivery_ChangeHMACRejected(t *testing.T) {
 	// Sign with the change secret (not the cron secret).
 	role, ok := f.roleByKey(key)
 	require.True(t, ok)
-	req := httptest.NewRequest(http.MethodPost, "/deliver/cron/"+key, bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+"cron/"+key, bytes.NewReader(body))
 	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.secretFor(role)))
 	rec := httptest.NewRecorder()
 	f.ServeDelivery(rec, req)
@@ -725,7 +725,7 @@ func TestServeCronDelivery_WithAttachedNotes(t *testing.T) {
 			{"path": "kb/b.md", "content": "content B"},
 		},
 	})
-	req := httptest.NewRequest(http.MethodPost, "/deliver/cron/"+key, bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+"cron/"+key, bytes.NewReader(body))
 	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(body, f.cronSecretFor(role)))
 	rec := httptest.NewRecorder()
 	f.ServeDelivery(rec, req)
@@ -816,7 +816,7 @@ func TestServeDelivery_MaxBytesReader413(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, "/deliver/"+key, bytes.NewReader(oversized))
+	req := httptest.NewRequest(http.MethodPost, f.WebhookPath()+key, bytes.NewReader(oversized))
 	role, ok := f.roleByKey(key)
 	require.True(t, ok)
 	req.Header.Set("X-Webhook-Signature", webhookutil.SignHMAC(oversized, f.secretFor(role)))

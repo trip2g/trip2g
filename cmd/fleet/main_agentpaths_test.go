@@ -159,7 +159,7 @@ func TestRunDryRun_Integration(t *testing.T) {
 		AgentsFolder: "roles/",
 	}
 	gql := graphql.NewClient(gqlSrv.URL, &http.Client{Timeout: 5 * time.Second})
-	discovery := fleet.NewDiscovery(gql, cfg.AgentsFolder, cfg.OfferedTools)
+	discovery := fleet.NewDiscovery(gql, cfg.FleetID, cfg.AgentsFolder, cfg.OfferedTools)
 
 	var out bytes.Buffer
 	runDryRun(context.Background(), &logger.DummyLogger{}, discovery, cfg, &out)

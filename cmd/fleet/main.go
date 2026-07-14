@@ -91,7 +91,7 @@ func run() error {
 	llm := agentruntime.NewOpenAILLM(cli.cfg.LLMAPIKey, cli.cfg.LLMBaseURL)
 
 	f := fleet.NewFleet(cli.cfg, httpClient, llm)
-	discovery := fleet.NewDiscovery(adminGQL, cli.cfg.AgentsFolder, cli.cfg.OfferedTools)
+	discovery := fleet.NewDiscovery(adminGQL, cli.cfg.FleetID, cli.cfg.AgentsFolder, cli.cfg.OfferedTools)
 
 	// --dry-run: connect, print + flag each role's resolved config, then exit
 	// WITHOUT registering/reconciling any webhooks (eyeball roles before go-live).
@@ -116,8 +116,8 @@ func run() error {
 	// mux on this port is gated by the delegated-admin middleware (forwards the
 	// caller's cookie to the monolith's viewer{role}; admin -> serve, else 401,
 	// monolith-unreachable -> fail-closed). This is a separate server from the
-	// webhook delivery listener (cli.cfg.ListenAddr, /deliver/, HMAC-authed), so
-	// the cookie gate never touches the monolith->fleet delivery path.
+	// webhook delivery listener (cli.cfg.ListenAddr, /_fleet/<h>/webhook/,
+	// HMAC-authed), so the cookie gate never touches the monolith->fleet path.
 	graphqlSrv, err := startFleetGraphQLServer(lg, discovery, cli)
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func run() error {
 	syncOnce(ctx, lg, f, discovery, reconciler)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/deliver/", f.ServeDelivery)
+	mux.HandleFunc(f.WebhookPath(), f.ServeDelivery)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
@@ -446,6 +446,9 @@ func normalizeCallbackURL(u string) string {
 // validateConfig returns an error if any required field is missing or invalid.
 func validateConfig(cfg fleet.Config) error {
 	missing := []string{}
+	if cfg.FleetID == "" {
+		missing = append(missing, "FleetID (--fleet-id / TRIP2G_FLEET_FLEET_ID)")
+	}
 	if cfg.CallbackURL == "" {
 		missing = append(missing, "CallbackURL (--callback-url / TRIP2G_FLEET_CALLBACK_URL)")
 	}
@@ -568,8 +571,8 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	// Daemon flags.
 	fs.BoolVar(&cli.dryRun, "dry-run", false,
 		"discover roles, print + flag their resolved config, then exit without registering webhooks")
-	fs.StringVar(&cli.cfg.FleetID, "fleet-id", "fleet1",
-		"reconcile marker id")
+	fs.StringVar(&cli.cfg.FleetID, "fleet-id", "",
+		"REQUIRED fleet identity: partition key for role fleet_id + the /_fleet/<sha256(\"fleet:\"+id)>/webhook delivery path")
 	fs.StringVar(&cli.cfg.AdminAPIKey, "admin-api-key", "",
 		"DEPRECATED/unused: legacy full-admin X-Api-Key")
 	fs.StringVar(&cli.cfg.JWTSecret, "jwt-secret", "",

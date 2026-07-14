@@ -20,6 +20,7 @@ const (
 type Role struct {
 	NotePath       string
 	Body           string
+	FleetID        string // partition key: only the fleet whose --fleet-id matches processes this role
 	Executor       string // "" | "llm" | "code" (default: llm)
 	Model          string
 	Tools          []string
@@ -48,6 +49,7 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 	r := Role{
 		NotePath:       notePath,
 		Body:           body,
+		FleetID:        strings.TrimSpace(m["fleet_id"]),
 		Executor:       strings.TrimSpace(m["executor"]),
 		Model:          strings.TrimSpace(m["model"]),
 		Tools:          parseList(m["tools"]),
