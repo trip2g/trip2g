@@ -12,8 +12,7 @@ import (
 
 //go:generate go tool github.com/99designs/gqlgen generate --config gqlgen.yml
 
-// Resolver is the gqlgen root resolver. parseMarkdown / assembleMarkdown are
-// pure functions over the request input (no state, no dependencies).
+// BlockRunRequest contains a markdown execution request.
 type BlockRunRequest struct {
 	Body       string
 	FleetInput []byte
@@ -34,6 +33,8 @@ type BlockRunner interface {
 	RunBlocks(context.Context, BlockRunRequest) (BlockRunResult, error)
 }
 
+// Resolver is the gqlgen root resolver. parseMarkdown / assembleMarkdown are
+// pure functions over the request input (no state, no dependencies).
 type Resolver struct{ runner BlockRunner }
 
 // NewResolver builds a Resolver.

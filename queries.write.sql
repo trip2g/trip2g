@@ -33,6 +33,40 @@ returning id;
 insert into note_version_delivery_attribution (note_version_id, delivery_kind, delivery_id)
 values (?, ?, ?);
 
+-- name: UpsertNoteVersionFrontmatter :exec
+insert into note_version_frontmatters (version_id, data)
+values (?, ?)
+on conflict(version_id) do update set data = excluded.data;
+
+-- name: DeleteNoteVersionFrontmatterKeys :exec
+delete from note_version_frontmatter_keys where note_version_id = ?;
+
+-- name: UpsertNoteVersionFrontmatterKey :exec
+insert into note_version_frontmatter_key_values (value, created_by_version_id, hidden_at)
+values (?, ?, null)
+on conflict(value) do update set hidden_at = null;
+
+-- name: InsertNoteVersionFrontmatterKey :exec
+insert into note_version_frontmatter_keys (note_version_id, key_id)
+values (?, ?)
+on conflict(note_version_id, key_id) do nothing;
+
+-- name: RefreshNoteVersionFrontmatterKeyVisibility :exec
+update note_version_frontmatter_key_values
+set hidden_at = case when exists (
+  select 1
+    from note_version_frontmatter_keys k
+    join note_paths p on p.version_count > 0
+    join note_versions v on v.id = k.note_version_id and v.path_id = p.id and v.version = p.version_count
+   where k.key_id = note_version_frontmatter_key_values.value
+) or exists (
+  select 1
+    from note_version_frontmatter_keys k
+    join release_note_versions rnv on rnv.note_version_id = k.note_version_id
+    join releases r on r.id = rnv.release_id and r.is_live
+   where k.key_id = note_version_frontmatter_key_values.value
+) then null else coalesce(hidden_at, datetime('now')) end;
+
 -- name: InsertUserWithEmail :one
 insert into users (email, created_via) values (lower(sqlc.arg(email)), sqlc.arg(created_via))
 returning *;

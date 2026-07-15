@@ -50,9 +50,6 @@ type attachedNote = fleetinput.AttachedNote
 // maxBodyBytes caps the delivery payload size to guard against DoS.
 const maxBodyBytes = 10 * 1024 * 1024 // 10 MiB
 
-// inputKeyDepth is the JSON key for the depth field in the $FLEET_INPUT bag.
-const inputKeyDepth = "depth"
-
 // statusError is the AgentResponse status value for hard-failure responses.
 const statusError = "error"
 

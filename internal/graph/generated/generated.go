@@ -984,6 +984,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNoteChangePatchInput,
 		ec.unmarshalInputNoteChangeUpsertInput,
 		ec.unmarshalInputNoteChangesFilter,
+		ec.unmarshalInputNoteFrontmatterPredicate,
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputNotePathsFilter,
 		ec.unmarshalInputNoteVersionDiffFilter,
@@ -2611,6 +2612,7 @@ type SearchConnection @goExtraField(name: "Input", type: "*trip2g/internal/graph
 }
 
 input NotePathsFilter {
+	frontmatter: [NoteFrontmatterPredicate!]
   """
   LIKE pattern with % and _ wildcards supported.
   For example, to find all note paths starting with "myfolder/", use "myfolder/%".
@@ -2626,6 +2628,12 @@ input NotePathsFilter {
   Only return these specific note paths. Search and like will be ignored if paths is set.
   """
   paths: [String!]
+}
+
+input NoteFrontmatterPredicate {
+  key: String!
+  exists: Boolean
+  equals: String
 }
 
 input SimilarNotesInput {
@@ -48332,6 +48340,47 @@ func (ec *executionContext) unmarshalInputNoteChangesFilter(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNoteFrontmatterPredicate(ctx context.Context, obj any) (model.NoteFrontmatterPredicate, error) {
+	var it model.NoteFrontmatterPredicate
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"key", "exists", "equals"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "exists":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("exists"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Exists = data
+		case "equals":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("equals"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Equals = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNoteInput(ctx context.Context, obj any) (model.NoteInput, error) {
 	var it model.NoteInput
 	asMap := map[string]any{}
@@ -48380,13 +48429,20 @@ func (ec *executionContext) unmarshalInputNotePathsFilter(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"like", "search", "paths"}
+	fieldsInOrder := [...]string{"frontmatter", "like", "search", "paths"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "frontmatter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("frontmatter"))
+			data, err := ec.unmarshalONoteFrontmatterPredicate2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteFrontmatterPredicateᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Frontmatter = data
 		case "like":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("like"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -85663,6 +85719,11 @@ func (ec *executionContext) marshalNNoteChangesSubscriptionPayload2ᚖtrip2gᚋi
 	return ec._NoteChangesSubscriptionPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNNoteFrontmatterPredicate2trip2gᚋinternalᚋgraphᚋmodelᚐNoteFrontmatterPredicate(ctx context.Context, v any) (model.NoteFrontmatterPredicate, error) {
+	res, err := ec.unmarshalInputNoteFrontmatterPredicate(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteInput(ctx context.Context, v any) (model.NoteInput, error) {
 	res, err := ec.unmarshalInputNoteInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -88597,6 +88658,24 @@ func (ec *executionContext) unmarshalONoteChangeUpsertInput2ᚖtrip2gᚋinternal
 	}
 	res, err := ec.unmarshalInputNoteChangeUpsertInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalONoteFrontmatterPredicate2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteFrontmatterPredicateᚄ(ctx context.Context, v any) ([]model.NoteFrontmatterPredicate, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.NoteFrontmatterPredicate, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNNoteFrontmatterPredicate2trip2gᚋinternalᚋgraphᚋmodelᚐNoteFrontmatterPredicate(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) unmarshalONotePathsFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNotePathsFilter(ctx context.Context, v any) (*model.NotePathsFilter, error) {

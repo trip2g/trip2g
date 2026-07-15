@@ -79,9 +79,13 @@ func ExecBlocksDebug(ctx context.Context, in CodeInput, steps int) (string, []Bl
 		return "", nil, err
 	}
 	limit := in.MaxStdoutBytes
-	if limit == 0 { limit = 1 << 20 }
+	if limit == 0 {
+		limit = 1 << 20
+	}
 	if len(blocks) == 1 {
-		out, debug, err := runSingleBlock(ctx, blocks[0], programs[0], in, limit, true)
+		var out string
+		var debug []BlockDebug
+		out, debug, err = runSingleBlock(ctx, blocks[0], programs[0], in, limit, true)
 		return out, debug, err
 	}
 	out, debug, err := runMultiBlock(ctx, blocks, programs, in, limit, true)

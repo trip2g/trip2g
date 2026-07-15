@@ -1,0 +1,56 @@
+$trip2g_codellm_debugger $mol_book2_catalog
+	param \codellm_file
+	menu_title \CodeLLM Debugger
+	spreads *
+	Page* $trip2g_codellm_debugger_document
+		file_path <= file_path* \
+		title <= file_label* \
+		close_icon <= Spread_close
+
+$trip2g_codellm_debugger_old $mol_page
+	title @ \CodeLLM Pipeline Debugger
+	body /
+		<= Main $mol_grid
+			rows /
+				<= FilesPane $mol_list
+					rows <= file_rows /$mol_button
+				<= EditorPane $mol_list
+					rows /
+						<= Markdown $mol_textarea
+							value? <=> markdown? \
+						<= Controls $mol_row
+							sub /
+								<= Run $mol_button_major
+									title @ \Run pipeline
+									click? => run? null
+								<= RunStep $mol_button_minor
+									title @ \Run one step
+									click? => run_step? null
+								<= MaxSteps $mol_string
+									hint @ \Max steps
+									value? <=> max_steps? \
+						<= Blocks $mol_list
+							rows <= block_rows /$trip2g_codellm_debugger_block
+						<= Status $mol_status
+				<= ContextPane $mol_list
+					rows /
+						<= FleetLabel $mol_view
+							sub / <= FleetTitle @ \FLEET_INPUT (JSON)
+						<= FleetInput $mol_textarea
+							value? <=> fleet_input? \
+						<= Pipes $mol_list
+							rows <= pipe_rows /$mol_view
+	File* $mol_button
+		title <= file_title* \
+	Block* $trip2g_codellm_debugger_block
+
+$trip2g_codellm_debugger_block $mol_list
+	index 0
+	rows /
+		<= Header $mol_view
+			sub /
+				<= Number $mol_view
+				<= Language $mol_view
+		<= Code $mol_textarea
+		<= Output $mol_view
+			sub <= output_view /$mol_view

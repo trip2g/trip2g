@@ -1,0 +1,7 @@
+$trip2g_codellm_debugger_document $mol_page
+	file_path \
+	close_icon null $mol_view
+	title <= file_path
+	tools / <= close_icon
+	body /
+		\Hello

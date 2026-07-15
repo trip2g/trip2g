@@ -469,6 +469,22 @@ type NoteVersionEmbedding struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type NoteVersionFrontmatter struct {
+	VersionID int64       `json:"version_id"`
+	Data      interface{} `json:"data"`
+}
+
+type NoteVersionFrontmatterKey struct {
+	NoteVersionID int64       `json:"note_version_id"`
+	KeyID         interface{} `json:"key_id"`
+}
+
+type NoteVersionFrontmatterKeyValue struct {
+	Value              interface{} `json:"value"`
+	CreatedByVersionID int64       `json:"created_by_version_id"`
+	HiddenAt           *time.Time  `json:"hidden_at"`
+}
+
 type NotionIntegration struct {
 	ID                int64     `json:"id"`
 	CreatedAt         time.Time `json:"created_at"`

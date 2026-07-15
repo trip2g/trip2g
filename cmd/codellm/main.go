@@ -47,15 +47,15 @@ func main() {
 	// wait air restarts
 	for i := 3; i >= 0; i-- {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
 
 		// check trip2g state, fail fast if it's down
-		role, err := admin.FetchViewerRole(ctx, "")
-		if err != nil {
+		role, fetchErr := admin.FetchViewerRole(ctx, "")
+		cancel()
+		if fetchErr != nil {
 			time.Sleep(time.Second)
 
 			if i == 0 {
-				log.Fatalf("failed to FetchViewerRole: %v", err)
+				log.Fatalf("failed to FetchViewerRole: %v", fetchErr)
 			}
 		}
 

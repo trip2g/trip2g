@@ -23,6 +23,12 @@ var _ Env = &EnvMock{}
 //			AllVisibleNotePathsFunc: func(ctx context.Context) ([]db.NotePath, error) {
 //				panic("mock out the AllVisibleNotePaths method")
 //			},
+//			FilterNotePathIDsByFrontmatterEqualsFunc: func(ctx context.Context, arg db.FilterNotePathIDsByFrontmatterEqualsParams) ([]int64, error) {
+//				panic("mock out the FilterNotePathIDsByFrontmatterEquals method")
+//			},
+//			FilterNotePathIDsByFrontmatterKeyFunc: func(ctx context.Context, key interface{}) ([]int64, error) {
+//				panic("mock out the FilterNotePathIDsByFrontmatterKey method")
+//			},
 //			ListNotePathsByValuesFunc: func(ctx context.Context, paths []string) ([]db.NotePath, error) {
 //				panic("mock out the ListNotePathsByValues method")
 //			},
@@ -45,6 +51,12 @@ type EnvMock struct {
 	// AllVisibleNotePathsFunc mocks the AllVisibleNotePaths method.
 	AllVisibleNotePathsFunc func(ctx context.Context) ([]db.NotePath, error)
 
+	// FilterNotePathIDsByFrontmatterEqualsFunc mocks the FilterNotePathIDsByFrontmatterEquals method.
+	FilterNotePathIDsByFrontmatterEqualsFunc func(ctx context.Context, arg db.FilterNotePathIDsByFrontmatterEqualsParams) ([]int64, error)
+
+	// FilterNotePathIDsByFrontmatterKeyFunc mocks the FilterNotePathIDsByFrontmatterKey method.
+	FilterNotePathIDsByFrontmatterKeyFunc func(ctx context.Context, key interface{}) ([]int64, error)
+
 	// ListNotePathsByValuesFunc mocks the ListNotePathsByValues method.
 	ListNotePathsByValuesFunc func(ctx context.Context, paths []string) ([]db.NotePath, error)
 
@@ -63,6 +75,20 @@ type EnvMock struct {
 		AllVisibleNotePaths []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
+		}
+		// FilterNotePathIDsByFrontmatterEquals holds details about calls to the FilterNotePathIDsByFrontmatterEquals method.
+		FilterNotePathIDsByFrontmatterEquals []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.FilterNotePathIDsByFrontmatterEqualsParams
+		}
+		// FilterNotePathIDsByFrontmatterKey holds details about calls to the FilterNotePathIDsByFrontmatterKey method.
+		FilterNotePathIDsByFrontmatterKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Key is the key argument value.
+			Key interface{}
 		}
 		// ListNotePathsByValues holds details about calls to the ListNotePathsByValues method.
 		ListNotePathsByValues []struct {
@@ -93,11 +119,13 @@ type EnvMock struct {
 			Input model.SearchInput
 		}
 	}
-	lockAllVisibleNotePaths   sync.RWMutex
-	lockListNotePathsByValues sync.RWMutex
-	lockListNotePathsLike     sync.RWMutex
-	lockNotePathByID          sync.RWMutex
-	lockSearchNotes           sync.RWMutex
+	lockAllVisibleNotePaths                  sync.RWMutex
+	lockFilterNotePathIDsByFrontmatterEquals sync.RWMutex
+	lockFilterNotePathIDsByFrontmatterKey    sync.RWMutex
+	lockListNotePathsByValues                sync.RWMutex
+	lockListNotePathsLike                    sync.RWMutex
+	lockNotePathByID                         sync.RWMutex
+	lockSearchNotes                          sync.RWMutex
 }
 
 // AllVisibleNotePaths calls AllVisibleNotePathsFunc.
@@ -129,6 +157,78 @@ func (mock *EnvMock) AllVisibleNotePathsCalls() []struct {
 	mock.lockAllVisibleNotePaths.RLock()
 	calls = mock.calls.AllVisibleNotePaths
 	mock.lockAllVisibleNotePaths.RUnlock()
+	return calls
+}
+
+// FilterNotePathIDsByFrontmatterEquals calls FilterNotePathIDsByFrontmatterEqualsFunc.
+func (mock *EnvMock) FilterNotePathIDsByFrontmatterEquals(ctx context.Context, arg db.FilterNotePathIDsByFrontmatterEqualsParams) ([]int64, error) {
+	if mock.FilterNotePathIDsByFrontmatterEqualsFunc == nil {
+		panic("EnvMock.FilterNotePathIDsByFrontmatterEqualsFunc: method is nil but Env.FilterNotePathIDsByFrontmatterEquals was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.FilterNotePathIDsByFrontmatterEqualsParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockFilterNotePathIDsByFrontmatterEquals.Lock()
+	mock.calls.FilterNotePathIDsByFrontmatterEquals = append(mock.calls.FilterNotePathIDsByFrontmatterEquals, callInfo)
+	mock.lockFilterNotePathIDsByFrontmatterEquals.Unlock()
+	return mock.FilterNotePathIDsByFrontmatterEqualsFunc(ctx, arg)
+}
+
+// FilterNotePathIDsByFrontmatterEqualsCalls gets all the calls that were made to FilterNotePathIDsByFrontmatterEquals.
+// Check the length with:
+//
+//	len(mockedEnv.FilterNotePathIDsByFrontmatterEqualsCalls())
+func (mock *EnvMock) FilterNotePathIDsByFrontmatterEqualsCalls() []struct {
+	Ctx context.Context
+	Arg db.FilterNotePathIDsByFrontmatterEqualsParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.FilterNotePathIDsByFrontmatterEqualsParams
+	}
+	mock.lockFilterNotePathIDsByFrontmatterEquals.RLock()
+	calls = mock.calls.FilterNotePathIDsByFrontmatterEquals
+	mock.lockFilterNotePathIDsByFrontmatterEquals.RUnlock()
+	return calls
+}
+
+// FilterNotePathIDsByFrontmatterKey calls FilterNotePathIDsByFrontmatterKeyFunc.
+func (mock *EnvMock) FilterNotePathIDsByFrontmatterKey(ctx context.Context, key interface{}) ([]int64, error) {
+	if mock.FilterNotePathIDsByFrontmatterKeyFunc == nil {
+		panic("EnvMock.FilterNotePathIDsByFrontmatterKeyFunc: method is nil but Env.FilterNotePathIDsByFrontmatterKey was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Key interface{}
+	}{
+		Ctx: ctx,
+		Key: key,
+	}
+	mock.lockFilterNotePathIDsByFrontmatterKey.Lock()
+	mock.calls.FilterNotePathIDsByFrontmatterKey = append(mock.calls.FilterNotePathIDsByFrontmatterKey, callInfo)
+	mock.lockFilterNotePathIDsByFrontmatterKey.Unlock()
+	return mock.FilterNotePathIDsByFrontmatterKeyFunc(ctx, key)
+}
+
+// FilterNotePathIDsByFrontmatterKeyCalls gets all the calls that were made to FilterNotePathIDsByFrontmatterKey.
+// Check the length with:
+//
+//	len(mockedEnv.FilterNotePathIDsByFrontmatterKeyCalls())
+func (mock *EnvMock) FilterNotePathIDsByFrontmatterKeyCalls() []struct {
+	Ctx context.Context
+	Key interface{}
+} {
+	var calls []struct {
+		Ctx context.Context
+		Key interface{}
+	}
+	mock.lockFilterNotePathIDsByFrontmatterKey.RLock()
+	calls = mock.calls.FilterNotePathIDsByFrontmatterKey
+	mock.lockFilterNotePathIDsByFrontmatterKey.RUnlock()
 	return calls
 }
 

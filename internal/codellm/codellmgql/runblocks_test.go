@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"trip2g/internal/coderun"
 )
 
@@ -64,5 +65,5 @@ func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
 	require.Equal(t, "{}\n", got.Data.Run.Output)
 	require.Len(t, got.Data.Run.Pipes, 1)
 	require.Equal(t, 0, got.Data.Run.Pipes[0].Index)
-	require.Equal(t, "{\"hello\":{}}\n", got.Data.Run.Pipes[0].Content)
+	require.JSONEq(t, `{"hello":{}}`, got.Data.Run.Pipes[0].Content)
 }

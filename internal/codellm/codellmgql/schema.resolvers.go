@@ -22,6 +22,8 @@ func (r *mutationResolver) RunBlocks(ctx context.Context, input model.RunBlocksI
 	body := assembleMarkdownBlocks(input.Blocks)
 	bag, err := json.Marshal(input.Input)
 	if err != nil {
+		// GraphQL errors are represented by a union payload.
+		//nolint:nilerr // GraphQL errors are represented by a union payload.
 		return model.ErrorPayload{Message: err.Error()}, nil
 	}
 	maxSteps := 0
@@ -33,6 +35,8 @@ func (r *mutationResolver) RunBlocks(ctx context.Context, input model.RunBlocksI
 	}
 	result, err := r.runner.RunBlocks(ctx, BlockRunRequest{Body: body, FleetInput: bag, MaxSteps: maxSteps})
 	if err != nil {
+		// GraphQL errors are represented by a union payload.
+		//nolint:nilerr // GraphQL errors are represented by a union payload.
 		return model.ErrorPayload{Message: err.Error()}, nil
 	}
 	pipes := make([]model.RunBlockPipe, len(result.Pipes))

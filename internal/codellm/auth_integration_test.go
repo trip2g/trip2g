@@ -48,7 +48,9 @@ const sessionCookie = "trip2g_token=abc.def.ghi"
 // graphqlReq builds a parseMarkdown GraphQL request, optionally with the session
 // cookie.
 func graphqlReq(cookie string) *http.Request {
-	body, _ := json.Marshal(map[string]string{"query": `{ parseMarkdown(input: { content: "hello" }) { ... on ParseMarkdownPayload { blocks { index kind } } } }`})
+	body, _ := json.Marshal(map[string]string{
+		"query": `{ parseMarkdown(input: { content: "hello" }) { ... on ParseMarkdownPayload { blocks { index kind } } } }`,
+	})
 	req := httptest.NewRequest(http.MethodPost, "/_system/codellm/graphql", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	if cookie != "" {
