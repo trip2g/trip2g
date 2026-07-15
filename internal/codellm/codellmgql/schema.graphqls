@@ -12,12 +12,20 @@ enum BlockKind {
   PROSE # everything between/around fences, preserved verbatim
 }
 
+scalar JSON
 
-type MdBlock {
+union MarkdownBlock = MarkdownCodeBlock | MarkdownProseBlock
+
+type MarkdownCodeBlock {
   index: Int!
-  kind: BlockKind!
-  language: String # fence info string for CODE (may be ""); null for PROSE
-  content: String! # CODE: the code between fences; PROSE: the raw text
+  language: String!
+  content: String!
+}
+
+type MarkdownProseBlock {
+  index: Int!
+  content: String!
+  html: String!
 }
 
 input MdBlockInput {
@@ -35,7 +43,8 @@ input ParseMarkdownInput {
 }
 
 type ParseMarkdownPayload {
-  blocks: [MdBlock!]!
+  frontmatter: JSON!
+  blocks: [MarkdownBlock!]!
 }
 
 union ParseMarkdownOrErrorPayload = ParseMarkdownPayload | ErrorPayload

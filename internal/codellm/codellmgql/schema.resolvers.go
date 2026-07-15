@@ -48,8 +48,8 @@ func (r *mutationResolver) RunBlocks(ctx context.Context, input model.RunBlocksI
 
 // ParseMarkdown is the resolver for the parseMarkdown field.
 func (r *queryResolver) ParseMarkdown(ctx context.Context, input model.ParseMarkdownInput) (model.ParseMarkdownOrErrorPayload, error) {
-	blocks := parseMarkdownBlocks(input.Content)
-	return model.ParseMarkdownPayload{Blocks: blocks}, nil
+	frontmatter, blocks := parseMarkdownDocument(input.Content)
+	return model.ParseMarkdownPayload{Frontmatter: frontmatter, Blocks: blocks}, nil
 }
 
 // Mutation returns codellmgen.MutationResolver implementation.

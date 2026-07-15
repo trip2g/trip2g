@@ -10,10 +10,19 @@ import (
 
 // toInput converts parsed blocks into assemble inputs (drops index, which the
 // assembler does not need — order is positional).
-func toInput(blocks []model.MdBlock) []model.MdBlockInput {
+func toInput(blocks []model.MarkdownBlock) []model.MdBlockInput {
 	out := make([]model.MdBlockInput, len(blocks))
 	for i, b := range blocks {
-		out[i] = model.MdBlockInput{Kind: b.Kind, Language: b.Language, Content: b.Content}
+		switch block := b.(type) {
+		case model.MarkdownCodeBlock:
+			language := block.Language
+			if language == "" {
+				language = ""
+			}
+			out[i] = model.MdBlockInput{Kind: model.BlockKindCode, Language: &language, Content: block.Content}
+		case model.MarkdownProseBlock:
+			out[i] = model.MdBlockInput{Kind: model.BlockKindProse, Content: block.Content}
+		}
 	}
 	return out
 }
@@ -50,18 +59,30 @@ func TestParse_BlockKindsAndOrder(t *testing.T) {
 	blocks := parseMarkdownBlocks(md)
 	require.Len(t, blocks, 3)
 
-	require.Equal(t, 0, blocks[0].Index)
-	require.Equal(t, model.BlockKindProse, blocks[0].Kind)
-	require.Equal(t, "before\n", blocks[0].Content)
-	require.Nil(t, blocks[0].Language)
+	prose, ok := blocks[0].(model.MarkdownProseBlock)
+	require.True(t, ok)
+	require.Equal(t, 0, prose.Index)
+	require.Equal(t, "before\n", prose.Content)
+	require.Contains(t, prose.HTML, "before")
 
-	require.Equal(t, 1, blocks[1].Index)
-	require.Equal(t, model.BlockKindCode, blocks[1].Kind)
-	require.NotNil(t, blocks[1].Language)
-	require.Equal(t, "python", *blocks[1].Language)
-	require.Equal(t, "x=1\n", blocks[1].Content)
+	code, ok := blocks[1].(model.MarkdownCodeBlock)
+	require.True(t, ok)
+	require.Equal(t, 1, code.Index)
+	require.Equal(t, "python", code.Language)
+	require.Equal(t, "x=1\n", code.Content)
 
-	require.Equal(t, 2, blocks[2].Index)
-	require.Equal(t, model.BlockKindProse, blocks[2].Kind)
-	require.Equal(t, "\nafter\n", blocks[2].Content)
+	prose, ok = blocks[2].(model.MarkdownProseBlock)
+	require.True(t, ok)
+	require.Equal(t, 2, prose.Index)
+	require.Equal(t, "\nafter\n", prose.Content)
+}
+
+func TestParseDocumentSeparatesFrontmatterAndRendersProse(t *testing.T) {
+	frontmatter, blocks := parseMarkdownDocument("---\nlang: ru\n---\n\n# Hello\n")
+	require.Equal(t, "ru", frontmatter["lang"])
+	require.Len(t, blocks, 1)
+	prose, ok := blocks[0].(model.MarkdownProseBlock)
+	require.True(t, ok)
+	require.NotContains(t, prose.Content, "lang: ru")
+	require.Contains(t, prose.HTML, "<h1>Hello</h1>")
 }

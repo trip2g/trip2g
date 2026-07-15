@@ -1,10 +1,18 @@
 package codellmgql
 
 import (
+	"bytes"
 	"strings"
 
 	"trip2g/internal/codellm/codellmgql/model"
 	"trip2g/internal/coderun"
+	"trip2g/internal/yamlutil"
+
+	"github.com/yuin/goldmark"
+	meta "github.com/yuin/goldmark-meta"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
 )
 
 // parseMarkdownBlocks splits md into ordered code/prose blocks. It reuses
@@ -17,9 +25,9 @@ import (
 // for normally-formatted fences (```lang\n...\n```). The guarantee holds because
 // prose segments are the exact slices of md between the located fences, and each
 // code block is re-fenced with its own language.
-func parseMarkdownBlocks(md string) []model.MdBlock {
+func parseMarkdownBlocks(md string) []model.MarkdownBlock {
 	fenced := coderun.ExtractFencedBlocks(md)
-	blocks := make([]model.MdBlock, 0, len(fenced)*2+1)
+	blocks := make([]model.MarkdownBlock, 0, len(fenced)*2+1)
 
 	cursor := 0
 	idx := 0
@@ -38,10 +46,9 @@ func parseMarkdownBlocks(md string) []model.MdBlock {
 			idx++
 		}
 		lang := fb.Lang
-		blocks = append(blocks, model.MdBlock{
+		blocks = append(blocks, model.MarkdownCodeBlock{
 			Index:    idx,
-			Kind:     model.BlockKindCode,
-			Language: &lang,
+			Language: lang,
 			Content:  fb.Code,
 		})
 		idx++
@@ -51,6 +58,40 @@ func parseMarkdownBlocks(md string) []model.MdBlock {
 		blocks = append(blocks, proseBlock(idx, md[cursor:]))
 	}
 	return blocks
+}
+
+func parseMarkdownDocument(md string) (map[string]interface{}, []model.MarkdownBlock) {
+	frontmatter := parseFrontmatter(md)
+	body := stripFrontmatter(md)
+	return frontmatter, parseMarkdownBlocks(body)
+}
+
+func parseFrontmatter(md string) map[string]interface{} {
+	context := parser.NewContext()
+	goldmark.New(goldmark.WithExtensions(meta.Meta)).Parser().Parse(
+		text.NewReader([]byte(md)), parser.WithContext(context),
+	)
+	value := meta.Get(context)
+	if value == nil {
+		return map[string]interface{}{}
+	}
+	return yamlutil.Normalize(value).(map[string]interface{})
+}
+
+func stripFrontmatter(md string) string {
+	if !strings.HasPrefix(md, "---\n") {
+		return md
+	}
+	end := strings.Index(md[4:], "\n---")
+	if end < 0 {
+		return md
+	}
+	end += 4
+	lineEnd := strings.IndexByte(md[end+4:], '\n')
+	if lineEnd < 0 {
+		return ""
+	}
+	return md[end+4+lineEnd+1:]
 }
 
 // assembleMarkdownBlocks is the inverse of parseMarkdownBlocks: it concatenates
@@ -78,6 +119,16 @@ func fenceText(lang, code string) string {
 }
 
 // proseBlock builds a PROSE MdBlock (language is null for prose).
-func proseBlock(index int, content string) model.MdBlock {
-	return model.MdBlock{Index: index, Kind: model.BlockKindProse, Content: content}
+func proseBlock(index int, content string) model.MarkdownBlock {
+	return model.MarkdownProseBlock{
+		Index:   index,
+		Content: content,
+		HTML:    renderProse(content),
+	}
+}
+
+func renderProse(content string) string {
+	var output bytes.Buffer
+	_ = goldmark.New(goldmark.WithExtensions(extension.GFM)).Convert([]byte(content), &output)
+	return output.String()
 }

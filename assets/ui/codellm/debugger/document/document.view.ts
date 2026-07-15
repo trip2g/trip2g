@@ -16,10 +16,20 @@ namespace $.$$ {
 				}
 				... on ParseMarkdownPayload {
 					blocks {
-						index
-						kind
-						language
-						content
+						__typename
+
+						... on MarkdownCodeBlock {
+							index
+							language
+							content
+						}
+
+						... on MarkdownProseBlock {
+							index
+							content
+							index
+							html
+						}
 					}
 				}
 			}
@@ -49,9 +59,40 @@ namespace $.$$ {
 			return data.parseMarkdown;
 		}
 
-		override test(): string {
-			console.log(this.parse_result())
-			return ''
+		override blocks(): readonly ( $mol_view )[] {
+			return this.parse_result().blocks.map( ( block: any, idx: number ) => {
+				if (block.__typename === 'MarkdownCodeBlock') {
+					return this.CodeBlock(idx)
+				}
+
+				if (block.__typename === 'MarkdownProseBlock') {
+					return this.ProseBlock(idx)
+				}
+
+				throw new Error(`Unknown block type: ${block.__typename}`)
+			})
+		}
+
+		override block_data( idx: number ) {
+			return this.parse_result().blocks[idx]
+		}
+
+		override raw_content(): string {
+			return this.note_content()
+		}
+	}
+
+	export class $trip2g_codellm_debugger_document_prose_block extends $.$trip2g_codellm_debugger_document_prose_block {
+		override content() {
+			// @ts-ignore
+			return this.data()?.html || ''
+		}
+	}
+
+	export class $trip2g_codellm_debugger_document_code_block extends $.$trip2g_codellm_debugger_document_code_block {
+		override content() {
+			// @ts-ignore
+			return this.data()?.content || ''
 		}
 	}
 }

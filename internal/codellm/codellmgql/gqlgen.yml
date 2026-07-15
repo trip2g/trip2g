@@ -32,6 +32,8 @@ skip_mod_tidy: true
 # Fleet uses to build $FLEET_INPUT. GraphQL intentionally omits AttachedNote
 # metadata: it is an internal allowlist detail, not execution input.
 models:
+  JSON:
+    model: github.com/99designs/gqlgen/graphql.Map
   FleetInput:
     model: trip2g/internal/fleetinput.Input
   FleetChangeInput:

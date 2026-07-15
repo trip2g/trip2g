@@ -14,6 +14,10 @@ type AssembleMarkdownOrErrorPayload interface {
 	IsAssembleMarkdownOrErrorPayload()
 }
 
+type MarkdownBlock interface {
+	IsMarkdownBlock()
+}
+
 type ParseMarkdownOrErrorPayload interface {
 	IsParseMarkdownOrErrorPayload()
 }
@@ -42,12 +46,21 @@ func (ErrorPayload) IsAssembleMarkdownOrErrorPayload() {}
 
 func (ErrorPayload) IsRunBlocksOrErrorPayload() {}
 
-type MdBlock struct {
-	Index    int       `json:"index"`
-	Kind     BlockKind `json:"kind"`
-	Language *string   `json:"language,omitempty"`
-	Content  string    `json:"content"`
+type MarkdownCodeBlock struct {
+	Index    int    `json:"index"`
+	Language string `json:"language"`
+	Content  string `json:"content"`
 }
+
+func (MarkdownCodeBlock) IsMarkdownBlock() {}
+
+type MarkdownProseBlock struct {
+	Index   int    `json:"index"`
+	Content string `json:"content"`
+	HTML    string `json:"html"`
+}
+
+func (MarkdownProseBlock) IsMarkdownBlock() {}
 
 type MdBlockInput struct {
 	Kind     BlockKind `json:"kind"`
@@ -63,7 +76,8 @@ type ParseMarkdownInput struct {
 }
 
 type ParseMarkdownPayload struct {
-	Blocks []MdBlock `json:"blocks"`
+	Frontmatter map[string]any  `json:"frontmatter"`
+	Blocks      []MarkdownBlock `json:"blocks"`
 }
 
 func (ParseMarkdownPayload) IsParseMarkdownOrErrorPayload() {}

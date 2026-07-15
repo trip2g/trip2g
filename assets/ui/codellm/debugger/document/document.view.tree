@@ -3,5 +3,28 @@ $trip2g_codellm_debugger_document $mol_page
 	close_icon null $mol_view
 	title <= file_path
 	tools / <= close_icon
+	ProseBlock* $trip2g_codellm_debugger_document_prose_block
+		data <= block_data* null object
+	CodeBlock* $trip2g_codellm_debugger_document_code_block
+		data <= block_data* null object
 	body /
-		<= test \
+		<= Desk $mol_deck items /
+			<= Blocks $mol_list
+				title \Blocks
+				rows <= blocks /$mol_view
+			<= Raw $mol_view
+				sub /
+					<= Textarea $mol_textarea
+						value <= raw_content \
+
+$trip2g_codellm_debugger_document_prose_block $mol_view
+	data null object
+	sub /
+		<= HTML $mol_html_view
+			html <= content \
+
+$trip2g_codellm_debugger_document_code_block $mol_view
+	data null object
+	sub /
+		<= Textarea $mol_textarea
+			value <= content \
