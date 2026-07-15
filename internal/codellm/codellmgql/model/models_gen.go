@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"trip2g/internal/fleetinput"
 )
 
 type AssembleMarkdownOrErrorPayload interface {
@@ -70,13 +71,20 @@ func (ParseMarkdownPayload) IsParseMarkdownOrErrorPayload() {}
 type Query struct {
 }
 
+type RunBlockPipe struct {
+	Index   int    `json:"index"`
+	Content string `json:"content"`
+}
+
 type RunBlocksInput struct {
-	Input  string         `json:"input"`
-	Blocks []MdBlockInput `json:"blocks"`
+	Input    *fleetinput.Input `json:"input"`
+	MaxSteps *int              `json:"maxSteps,omitempty"`
+	Blocks   []MdBlockInput    `json:"blocks"`
 }
 
 type RunBlocksPayload struct {
-	Output string `json:"output"`
+	Output string         `json:"output"`
+	Pipes  []RunBlockPipe `json:"pipes,omitempty"`
 }
 
 func (RunBlocksPayload) IsRunBlocksOrErrorPayload() {}

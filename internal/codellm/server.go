@@ -12,6 +12,7 @@
 package codellm
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -124,6 +125,32 @@ type Server struct {
 	cfg Config
 }
 
+type blockRunner struct{ cfg Config }
+
+func (r blockRunner) RunBlocks(ctx context.Context, req codellmgql.BlockRunRequest) (codellmgql.BlockRunResult, error) {
+	out, debug, err := coderun.ExecBlocksDebug(ctx, coderun.CodeInput{
+		Body: req.Body, Input: req.FleetInput,
+		AllowedPrograms: r.cfg.AllowedPrograms,
+		Sandbox:         r.cfg.Sandbox, MaxStdoutBytes: r.cfg.MaxStdoutBytes,
+		Timeout: r.cfg.Timeout, EnvPassthrough: r.cfg.ExposeEnv,
+		EnvPrefix: r.cfg.ExposeEnvPrefix,
+	}, req.MaxSteps)
+	if err != nil {
+		return codellmgql.BlockRunResult{}, err
+	}
+	// GraphQL exposes pipe edges, not per-block debug records. The last
+	// BlockDebug entry is the terminal block and has no downstream pipe.
+	pipeCount := len(debug)
+	if pipeCount > 0 {
+		pipeCount--
+	}
+	pipes := make([]codellmgql.BlockPipe, 0, pipeCount)
+	for _, d := range debug[:pipeCount] {
+		pipes = append(pipes, codellmgql.BlockPipe{Index: d.Index, Content: d.PipeBuffer})
+	}
+	return codellmgql.BlockRunResult{Output: out, Pipes: pipes}, nil
+}
+
 // New builds a Server from cfg, filling in nil seams with no-op defaults.
 func New(cfg Config) *Server {
 	if cfg.Auth == nil {
@@ -133,18 +160,20 @@ func New(cfg Config) *Server {
 }
 
 // Handler returns the HTTP handler for the service. The two BROWSER-facing
-// endpoints — execution (/v1/chat/completions, incl. the x_fleet_debug
-// extension) and the markdown-structure GraphQL (/graphql) — are wrapped by the
+// endpoints — execution (/v1/chat/completions) and the markdown-structure
+// GraphQL (/_system/codellm/graphql) — are wrapped by the
 // auth seam (cfg.Auth); everything else (liveness /healthz, /v1/models for
 // client compat) is open. See the two-auth-regime note on Config.Auth.
 func (s *Server) Handler() http.Handler {
 	const graphqlPrefix = "/_system/codellm/graphql"
 
 	mux := http.NewServeMux()
+	graphqlHandler := codellmgql.NewHTTPHandler(nil, blockRunner{cfg: s.cfg})
+	gqlAuthHandler := s.cfg.Auth(graphqlHandler)
 	// Auth-gated (browser cookie / fleet channel token — see cfg.Auth).
 	mux.Handle("POST /v1/chat/completions", s.cfg.Auth(http.HandlerFunc(s.handleChatCompletions)))
-	mux.Handle("POST "+graphqlPrefix, s.cfg.Auth(codellmgql.NewHTTPHandler(nil)))
-	mux.Handle("GET "+graphqlPrefix, playground.Handler("CodeLLM GraphQL Playground", graphqlPrefix))
+	mux.Handle("POST "+graphqlPrefix, gqlAuthHandler)
+	mux.Handle("GET "+graphqlPrefix, s.cfg.Auth(playground.Handler("CodeLLM GraphQL Playground", graphqlPrefix)))
 	// Open: liveness + client compatibility, never gated.
 	mux.HandleFunc("GET /v1/models", s.handleModels)
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
@@ -173,21 +202,11 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// x_fleet_debug is an opt-in EXTENSION field a real LLM ignores. When set, the
-	// response carries a non-standard x_fleet_debug block (per-block stdout + the
-	// inter-block pipe buffer). It is decoded separately because the standard
-	// ChatCompletionRequest struct drops unknown fields.
-	var ext struct {
-		XFleetDebug bool `json:"x_fleet_debug"`
-	}
-	_ = json.Unmarshal(raw, &ext)
-
 	body, bag := extractBodyAndBag(req.Messages)
 
 	// codellm alone decides what env to expose: its operator allowlist
 	// (ExposeEnv/ExposeEnvPrefix). buildChildEnv sources the VALUES from codellm's
 	// OWN environment for those names; the request carries nothing about env.
-	// Shared by the normal and x_fleet_debug paths (both use `in`).
 	s.logExposedEnv()
 	in := coderun.CodeInput{
 		Body:            body,
@@ -198,11 +217,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		Input:           bag,
 		EnvPassthrough:  s.cfg.ExposeEnv,
 		EnvPrefix:       s.cfg.ExposeEnvPrefix,
-	}
-
-	if ext.XFleetDebug {
-		s.respondWithDebug(w, r, req.Model, in)
-		return
 	}
 
 	changes, answer, err := coderun.ExecCode(r.Context(), in)
@@ -217,51 +231,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	resp := buildResponse(req.Model, changes, answer)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
-}
-
-// respondWithDebug runs the code with per-block capture (ExecCodeDebug) and
-// returns the standard completion PLUS the non-standard x_fleet_debug field.
-// A normal OpenAI client ignores the extra field; the debugger reads it to show
-// each block's stdout and the editable inter-block pipe buffer.
-func (s *Server) respondWithDebug(w http.ResponseWriter, r *http.Request, model string, in coderun.CodeInput) {
-	changes, answer, blocks, err := coderun.ExecCodeDebug(r.Context(), in)
-	if err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "code_execution_error", err.Error())
-		return
-	}
-
-	resp := debugResponse{
-		ChatCompletionResponse: buildResponse(model, changes, answer),
-		XFleetDebug:            &fleetDebug{Blocks: toDebugBlocks(blocks)},
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(resp)
-}
-
-// debugResponse is a standard completion plus the x_fleet_debug extension. The
-// embedded ChatCompletionResponse marshals its fields inline, so a normal client
-// sees an ordinary completion and simply ignores the extra x_fleet_debug key.
-type debugResponse struct {
-	goopenai.ChatCompletionResponse
-	XFleetDebug *fleetDebug `json:"x_fleet_debug,omitempty"`
-}
-
-type fleetDebug struct {
-	Blocks []fleetDebugBlock `json:"blocks"`
-}
-
-type fleetDebugBlock struct {
-	Index      int    `json:"index"`
-	Stdout     string `json:"stdout"`
-	PipeBuffer string `json:"pipeBuffer"`
-}
-
-func toDebugBlocks(blocks []coderun.BlockDebug) []fleetDebugBlock {
-	out := make([]fleetDebugBlock, len(blocks))
-	for i, b := range blocks {
-		out[i] = fleetDebugBlock{Index: b.Index, Stdout: b.Stdout, PipeBuffer: b.PipeBuffer}
-	}
-	return out
 }
 
 // extractBodyAndBag concatenates the message contents that may contain fenced

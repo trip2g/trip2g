@@ -61,6 +61,33 @@ func ExecCodeDebug(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange
 	return core.Changes, core.Answer, core.Debug, err
 }
 
+// ExecBlocksDebug executes the fenced code blocks in Body sequentially and
+// returns the final stdout plus every inter-block pipe capture. Unlike
+// ExecCodeDebug it does not require the final stdout to be the Fleet
+// {changes,answer} JSON contract, making it suitable for interactive UIs.
+// steps <= 0 executes all blocks; a positive value executes only that prefix.
+func ExecBlocksDebug(ctx context.Context, in CodeInput, steps int) (string, []BlockDebug, error) {
+	blocks := ExtractFencedBlocks(in.Body)
+	if len(blocks) == 0 {
+		return "", nil, errors.New("coderun: no fenced code block found in rendered body")
+	}
+	if steps > 0 && steps < len(blocks) {
+		blocks = blocks[:steps]
+	}
+	programs, err := resolvePrograms(blocks, in)
+	if err != nil {
+		return "", nil, err
+	}
+	limit := in.MaxStdoutBytes
+	if limit == 0 { limit = 1 << 20 }
+	if len(blocks) == 1 {
+		out, debug, err := runSingleBlock(ctx, blocks[0], programs[0], in, limit, true)
+		return out, debug, err
+	}
+	out, debug, err := runMultiBlock(ctx, blocks, programs, in, limit, true)
+	return out, debug, err
+}
+
 // ExecResult is the execution core's result: the parsed {changes, answer}
 // contract, the block count (Steps), and — when capture was requested — the
 // per-block debug capture.

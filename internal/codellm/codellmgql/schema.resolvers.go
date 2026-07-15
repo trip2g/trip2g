@@ -6,6 +6,7 @@ package codellmgql
 
 import (
 	"context"
+	"encoding/json"
 	"trip2g/internal/codellm/codellmgql/codellmgen"
 	"trip2g/internal/codellm/codellmgql/model"
 )
@@ -18,7 +19,27 @@ func (r *mutationResolver) AssembleMarkdown(ctx context.Context, input model.Ass
 
 // RunBlocks is the resolver for the runBlocks field.
 func (r *mutationResolver) RunBlocks(ctx context.Context, input model.RunBlocksInput) (model.RunBlocksOrErrorPayload, error) {
-	return model.RunBlocksPayload{}, nil
+	body := assembleMarkdownBlocks(input.Blocks)
+	bag, err := json.Marshal(input.Input)
+	if err != nil {
+		return model.ErrorPayload{Message: err.Error()}, nil
+	}
+	maxSteps := 0
+	if input.MaxSteps != nil {
+		maxSteps = *input.MaxSteps
+	}
+	if r.runner == nil {
+		return model.ErrorPayload{Message: "codellm: block runner is not configured"}, nil
+	}
+	result, err := r.runner.RunBlocks(ctx, BlockRunRequest{Body: body, FleetInput: bag, MaxSteps: maxSteps})
+	if err != nil {
+		return model.ErrorPayload{Message: err.Error()}, nil
+	}
+	pipes := make([]model.RunBlockPipe, len(result.Pipes))
+	for i, p := range result.Pipes {
+		pipes[i] = model.RunBlockPipe{Index: p.Index, Content: p.Content}
+	}
+	return model.RunBlocksPayload{Output: result.Output, Pipes: pipes}, nil
 }
 
 // ParseMarkdown is the resolver for the parseMarkdown field.

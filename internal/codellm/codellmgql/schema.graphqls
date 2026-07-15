@@ -1,6 +1,6 @@
 # codellm's own GraphQL surface — markdown STRUCTURE only (editor/debugger
 # support), never execution. Execution stays the OpenAI REST path
-# (/v1/chat/completions + x_fleet_debug). See docs/dev/fleet_graphql.md.
+# (/v1/chat/completions). See docs/dev/fleet_graphql.md.
 #
 # parseMarkdown splits a body into ordered code/prose blocks, reusing codellm's
 # OWN ExtractFencedBlocks so block boundaries match execution exactly (a JS
@@ -11,6 +11,7 @@ enum BlockKind {
   CODE # a fenced code block; language carries the fence info string
   PROSE # everything between/around fences, preserved verbatim
 }
+
 
 type MdBlock {
   index: Int!
@@ -54,12 +55,44 @@ type Query {
 }
 
 input RunBlocksInput {
-  input: String! # todo: fleet input json
+  input: FleetInput!
+  maxSteps: Int # stop after this many code blocks
   blocks: [MdBlockInput!]!
+}
+
+input FleetChangeInput {
+  path: String!
+  event: String!
+  pathId: Int!
+  version: Int!
+  title: String!
+  content: String!
+}
+
+input FleetAttachedNoteInput {
+  path: String!
+  title: String!
+  content: String!
+  updatedAt: String!
+  tags: [String!]!
+}
+
+input FleetInput {
+  changedFiles: [FleetChangeInput!]!
+  changeFile: FleetChangeInput
+  attachedNotes: [FleetAttachedNoteInput!]!
+  depth: Int!
+  now: String
+}
+
+type RunBlockPipe {
+  index: Int!
+  content: String!
 }
 
 type RunBlocksPayload {
   output: String!
+  pipes: [RunBlockPipe!]
 }
 
 union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload

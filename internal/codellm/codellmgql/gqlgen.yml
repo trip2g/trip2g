@@ -27,3 +27,14 @@ resolver:
 omit_slice_element_pointers: true
 omit_complexity: true
 skip_mod_tidy: true
+
+# Keep the public FleetInput graph shape backed by the same Go wire types that
+# Fleet uses to build $FLEET_INPUT. GraphQL intentionally omits AttachedNote
+# metadata: it is an internal allowlist detail, not execution input.
+models:
+  FleetInput:
+    model: trip2g/internal/fleetinput.Input
+  FleetChangeInput:
+    model: trip2g/internal/fleetinput.ChangeInfo
+  FleetAttachedNoteInput:
+    model: trip2g/internal/fleetinput.AttachedNote

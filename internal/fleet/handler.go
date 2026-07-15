@@ -14,6 +14,7 @@ import (
 
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/coderun"
+	"trip2g/internal/fleetinput"
 	"trip2g/internal/webhookutil"
 )
 
@@ -39,26 +40,12 @@ type deliveryPayload struct {
 
 // changeInfo mirrors handlenotewebhooks.ChangeInfo — the per-note trigger data
 // trip2g sends in the delivery payload's changes[] array.
-type changeInfo struct {
-	Path    string `json:"path"`
-	Event   string `json:"event"`
-	PathID  int64  `json:"path_id"`
-	Version int64  `json:"version"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
-}
+type changeInfo = fleetinput.ChangeInfo
 
 // attachedNote mirrors webhookutil.AttachedNote — a context note materialized
 // by trip2g via attach_notes. Meta is the key-allowlist trip2g sends (not the
 // full RawMeta).
-type attachedNote struct {
-	Path      string            `json:"path"`
-	Title     string            `json:"title"`
-	Content   string            `json:"content"`
-	UpdatedAt string            `json:"updated_at"`
-	Tags      []string          `json:"tags"`
-	Meta      map[string]string `json:"meta"`
-}
+type attachedNote = fleetinput.AttachedNote
 
 // maxBodyBytes caps the delivery payload size to guard against DoS.
 const maxBodyBytes = 10 * 1024 * 1024 // 10 MiB
@@ -228,12 +215,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 // (the same fields exposed to Jet templates). The scoped write token is never
 // included.
 func buildInputBag(rc renderCtx) []byte {
-	bag := map[string]any{
-		forEachChangedFiles:  rc.ChangedFiles,
-		"change_file":        rc.ChangeFile,
-		forEachAttachedNotes: rc.AttachedNotes,
-		inputKeyDepth:        rc.Depth,
-	}
+	bag := fleetinput.Input{ChangedFiles: rc.ChangedFiles, ChangeFile: rc.ChangeFile, AttachedNotes: rc.AttachedNotes, Depth: rc.Depth}
 	data, _ := json.Marshal(bag)
 	return data
 }
@@ -352,11 +334,8 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 // buildCronInputBag marshals the cron render context into the JSON bag delivered
 // to code programs via $FLEET_INPUT. Exposes now as an RFC3339 string.
 func buildCronInputBag(rc renderCtx) []byte {
-	bag := map[string]any{
-		forEachAttachedNotes: rc.AttachedNotes,
-		inputKeyDepth:        rc.Depth,
-		"now":                rc.Now.Format(time.RFC3339),
-	}
+	now := rc.Now.Format(time.RFC3339)
+	bag := fleetinput.Input{AttachedNotes: rc.AttachedNotes, Depth: rc.Depth, Now: &now}
 	data, _ := json.Marshal(bag)
 	return data
 }

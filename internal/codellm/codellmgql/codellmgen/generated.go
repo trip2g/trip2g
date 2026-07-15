@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"trip2g/internal/codellm/codellmgql/model"
+	"trip2g/internal/fleetinput"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -82,6 +83,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAssembleMarkdownInput,
+		ec.unmarshalInputFleetAttachedNoteInput,
+		ec.unmarshalInputFleetChangeInput,
+		ec.unmarshalInputFleetInput,
 		ec.unmarshalInputMdBlockInput,
 		ec.unmarshalInputParseMarkdownInput,
 		ec.unmarshalInputRunBlocksInput,
@@ -184,7 +188,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "../schema.graphqls", Input: `# codellm's own GraphQL surface — markdown STRUCTURE only (editor/debugger
 # support), never execution. Execution stays the OpenAI REST path
-# (/v1/chat/completions + x_fleet_debug). See docs/dev/fleet_graphql.md.
+# (/v1/chat/completions). See docs/dev/fleet_graphql.md.
 #
 # parseMarkdown splits a body into ordered code/prose blocks, reusing codellm's
 # OWN ExtractFencedBlocks so block boundaries match execution exactly (a JS
@@ -195,6 +199,7 @@ enum BlockKind {
   CODE # a fenced code block; language carries the fence info string
   PROSE # everything between/around fences, preserved verbatim
 }
+
 
 type MdBlock {
   index: Int!
@@ -238,12 +243,44 @@ type Query {
 }
 
 input RunBlocksInput {
-  input: String! # todo: fleet input json
+  input: FleetInput!
+  maxSteps: Int # stop after this many code blocks
   blocks: [MdBlockInput!]!
+}
+
+input FleetChangeInput {
+  path: String!
+  event: String!
+  pathId: Int!
+  version: Int!
+  title: String!
+  content: String!
+}
+
+input FleetAttachedNoteInput {
+  path: String!
+  title: String!
+  content: String!
+  updatedAt: String!
+  tags: [String!]!
+}
+
+input FleetInput {
+  changedFiles: [FleetChangeInput!]!
+  changeFile: FleetChangeInput
+  attachedNotes: [FleetAttachedNoteInput!]!
+  depth: Int!
+  now: String
+}
+
+type RunBlockPipe {
+  index: Int!
+  content: String!
 }
 
 type RunBlocksPayload {
   output: String!
+  pipes: [RunBlockPipe!]
 }
 
 union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload
@@ -800,6 +837,64 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _RunBlockPipe_index(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockPipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockPipe_index,
+		func(ctx context.Context) (any, error) {
+			return obj.Index, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockPipe_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockPipe",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockPipe_content(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockPipe) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockPipe_content,
+		func(ctx context.Context) (any, error) {
+			return obj.Content, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockPipe_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockPipe",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RunBlocksPayload_output(ctx context.Context, field graphql.CollectedField, obj *model.RunBlocksPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -824,6 +919,41 @@ func (ec *executionContext) fieldContext_RunBlocksPayload_output(_ context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlocksPayload_pipes(ctx context.Context, field graphql.CollectedField, obj *model.RunBlocksPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlocksPayload_pipes,
+		func(ctx context.Context) (any, error) {
+			return obj.Pipes, nil
+		},
+		nil,
+		ec.marshalORunBlockPipe2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockPipeᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlocksPayload_pipes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlocksPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "index":
+				return ec.fieldContext_RunBlockPipe_index(ctx, field)
+			case "content":
+				return ec.fieldContext_RunBlockPipe_content(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RunBlockPipe", field.Name)
 		},
 	}
 	return fc, nil
@@ -2302,6 +2432,178 @@ func (ec *executionContext) unmarshalInputAssembleMarkdownInput(ctx context.Cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputFleetAttachedNoteInput(ctx context.Context, obj any) (fleetinput.AttachedNote, error) {
+	var it fleetinput.AttachedNote
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "title", "content", "updatedAt", "tags"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFleetChangeInput(ctx context.Context, obj any) (fleetinput.ChangeInfo, error) {
+	var it fleetinput.ChangeInfo
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "event", "pathId", "version", "title", "content"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "event":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("event"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Event = data
+		case "pathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathId"))
+			data, err := ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PathID = data
+		case "version":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("version"))
+			data, err := ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Version = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFleetInput(ctx context.Context, obj any) (fleetinput.Input, error) {
+	var it fleetinput.Input
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"changedFiles", "changeFile", "attachedNotes", "depth", "now"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "changedFiles":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changedFiles"))
+			data, err := ec.unmarshalNFleetChangeInput2ᚕtrip2gᚋinternalᚋfleetinputᚐChangeInfoᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangedFiles = data
+		case "changeFile":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changeFile"))
+			data, err := ec.unmarshalOFleetChangeInput2ᚖtrip2gᚋinternalᚋfleetinputᚐChangeInfo(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangeFile = data
+		case "attachedNotes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("attachedNotes"))
+			data, err := ec.unmarshalNFleetAttachedNoteInput2ᚕtrip2gᚋinternalᚋfleetinputᚐAttachedNoteᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AttachedNotes = data
+		case "depth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("depth"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Depth = data
+		case "now":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("now"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Now = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputMdBlockInput(ctx context.Context, obj any) (model.MdBlockInput, error) {
 	var it model.MdBlockInput
 	asMap := map[string]any{}
@@ -2377,7 +2679,7 @@ func (ec *executionContext) unmarshalInputRunBlocksInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"input", "blocks"}
+	fieldsInOrder := [...]string{"input", "maxSteps", "blocks"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2386,11 +2688,18 @@ func (ec *executionContext) unmarshalInputRunBlocksInput(ctx context.Context, ob
 		switch k {
 		case "input":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalNFleetInput2ᚖtrip2gᚋinternalᚋfleetinputᚐInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Input = data
+		case "maxSteps":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxSteps"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxSteps = data
 		case "blocks":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blocks"))
 			data, err := ec.unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx, v)
@@ -2777,6 +3086,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
+var runBlockPipeImplementors = []string{"RunBlockPipe"}
+
+func (ec *executionContext) _RunBlockPipe(ctx context.Context, sel ast.SelectionSet, obj *model.RunBlockPipe) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, runBlockPipeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RunBlockPipe")
+		case "index":
+			out.Values[i] = ec._RunBlockPipe_index(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "content":
+			out.Values[i] = ec._RunBlockPipe_content(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var runBlocksPayloadImplementors = []string{"RunBlocksPayload", "RunBlocksOrErrorPayload"}
 
 func (ec *executionContext) _RunBlocksPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RunBlocksPayload) graphql.Marshaler {
@@ -2793,6 +3146,8 @@ func (ec *executionContext) _RunBlocksPayload(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "pipes":
+			out.Values[i] = ec._RunBlocksPayload_pipes(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3192,6 +3547,51 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNFleetAttachedNoteInput2trip2gᚋinternalᚋfleetinputᚐAttachedNote(ctx context.Context, v any) (fleetinput.AttachedNote, error) {
+	res, err := ec.unmarshalInputFleetAttachedNoteInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFleetAttachedNoteInput2ᚕtrip2gᚋinternalᚋfleetinputᚐAttachedNoteᚄ(ctx context.Context, v any) ([]fleetinput.AttachedNote, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]fleetinput.AttachedNote, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFleetAttachedNoteInput2trip2gᚋinternalᚋfleetinputᚐAttachedNote(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNFleetChangeInput2trip2gᚋinternalᚋfleetinputᚐChangeInfo(ctx context.Context, v any) (fleetinput.ChangeInfo, error) {
+	res, err := ec.unmarshalInputFleetChangeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFleetChangeInput2ᚕtrip2gᚋinternalᚋfleetinputᚐChangeInfoᚄ(ctx context.Context, v any) ([]fleetinput.ChangeInfo, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]fleetinput.ChangeInfo, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFleetChangeInput2trip2gᚋinternalᚋfleetinputᚐChangeInfo(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNFleetInput2ᚖtrip2gᚋinternalᚋfleetinputᚐInput(ctx context.Context, v any) (*fleetinput.Input, error) {
+	res, err := ec.unmarshalInputFleetInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3200,6 +3600,22 @@ func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, 
 func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
 	_ = sel
 	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v any) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalInt64(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3291,6 +3707,10 @@ func (ec *executionContext) marshalNParseMarkdownOrErrorPayload2trip2gᚋinterna
 	return ec._ParseMarkdownOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNRunBlockPipe2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockPipe(ctx context.Context, sel ast.SelectionSet, v model.RunBlockPipe) graphql.Marshaler {
+	return ec._RunBlockPipe(ctx, sel, &v)
+}
+
 func (ec *executionContext) unmarshalNRunBlocksInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksInput(ctx context.Context, v any) (model.RunBlocksInput, error) {
 	res, err := ec.unmarshalInputRunBlocksInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3320,6 +3740,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -3603,6 +4053,79 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOFleetChangeInput2ᚖtrip2gᚋinternalᚋfleetinputᚐChangeInfo(ctx context.Context, v any) (*fleetinput.ChangeInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputFleetChangeInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v any) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalInt(*v)
+	return res
+}
+
+func (ec *executionContext) marshalORunBlockPipe2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockPipeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RunBlockPipe) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRunBlockPipe2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockPipe(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {
