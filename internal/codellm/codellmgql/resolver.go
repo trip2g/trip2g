@@ -20,11 +20,12 @@ type BlockRunRequest struct {
 }
 
 type BlockResult struct {
-	Index    int
-	ExitCode int
-	Stdout   string
-	Stderr   string
-	Pipe     string
+	Index       int
+	ExitCode    int
+	DurationMs  int64
+	MaxRSSBytes int64
+	Stdout      string
+	Stderr      string
 }
 
 type BlockRunResult struct {

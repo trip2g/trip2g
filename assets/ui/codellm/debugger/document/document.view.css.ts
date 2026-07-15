@@ -18,6 +18,28 @@ namespace $.$$ {
 	} )
 
 	$mol_style_define( $trip2g_codellm_debugger_document_code_block, {
+		width: '400px',
+		minWidth: '400px',
+		maxWidth: '400px',
+		flex: '0 0 400px',
+		Rows: {
+			display: 'flex',
+			flexDirection: 'column',
+			gap: $mol_gap.block,
+			minWidth: 0,
+		},
+		Code: {
+			minWidth: 0,
+		},
+		Stdout: {
+			minWidth: 0,
+			whiteSpace: 'pre-wrap',
+		},
+		Stderr: {
+			minWidth: 0,
+			whiteSpace: 'pre-wrap',
+			color: 'red',
+		},
 		Control: {
 			flexDirection: 'row',
 			alignItems: 'flex-start',

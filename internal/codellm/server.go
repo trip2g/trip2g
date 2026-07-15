@@ -142,7 +142,7 @@ func (r blockRunner) RunBlocks(ctx context.Context, req codellmgql.BlockRunReque
 	for _, d := range debug {
 		results = append(results, codellmgql.BlockResult{
 			Index: d.Index, ExitCode: d.ExitCode, Stdout: d.Stdout,
-			Stderr: d.Stderr, Pipe: d.PipeBuffer,
+			Stderr: d.Stderr, DurationMs: d.DurationMs, MaxRSSBytes: d.MaxRSSBytes,
 		})
 	}
 	return codellmgql.BlockRunResult{Output: out, Results: results}, nil

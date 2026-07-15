@@ -33,7 +33,7 @@ func (testBlockRunner) RunBlocks(ctx context.Context, req BlockRunRequest) (Bloc
 	}
 	results := make([]BlockResult, 0, len(debug))
 	for _, d := range debug {
-		results = append(results, BlockResult{Index: d.Index, ExitCode: d.ExitCode, Stdout: d.Stdout, Stderr: d.Stderr, Pipe: d.PipeBuffer})
+		results = append(results, BlockResult{Index: d.Index, ExitCode: d.ExitCode, Stdout: d.Stdout, Stderr: d.Stderr})
 	}
 	return BlockRunResult{Output: out, Results: results}, nil
 }
@@ -47,7 +47,7 @@ func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
         { kind: CODE, language: "bash", content: "echo '{\"hello\":{}}'" },
         { kind: PROSE, content: "\\n\\n" },
         { kind: CODE, language: "bash", content: "jq .hello" }
-      ] }) { ... on RunBlocksPayload { output results { index stdout stderr pipe } } ... on ErrorPayload { message } } }`
+	      ] }) { ... on RunBlocksPayload { output results { index stdout stderr } } ... on ErrorPayload { message } } }`
 	reqBody, err := json.Marshal(map[string]string{"query": query})
 	require.NoError(t, err)
 	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(reqBody))
@@ -74,7 +74,7 @@ func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
 	require.Equal(t, "{}\n", got.Data.Run.Output)
 	require.Len(t, got.Data.Run.Results, 2)
 	require.Equal(t, 0, got.Data.Run.Results[0].Index)
-	require.JSONEq(t, `{"hello":{}}`, got.Data.Run.Results[0].Pipe)
+	require.Equal(t, "{\"hello\":{}}\n", got.Data.Run.Results[0].Stdout)
 }
 
 func TestRunBlocks_MaxStepsUsesMarkdownIndex(t *testing.T) {
@@ -83,7 +83,7 @@ func TestRunBlocks_MaxStepsUsesMarkdownIndex(t *testing.T) {
         { kind: CODE, language: "bash", content: "printf first" },
         { kind: PROSE, content: "\n\n" },
         { kind: CODE, language: "bash", content: "printf second" }
-      ] }) { ... on RunBlocksPayload { output results { index stdout stderr pipe } } ... on ErrorPayload { message } } }`
+	      ] }) { ... on RunBlocksPayload { output results { index stdout stderr } } ... on ErrorPayload { message } } }`
 	reqBody, err := json.Marshal(map[string]string{"query": query})
 	require.NoError(t, err)
 	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(reqBody))

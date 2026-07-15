@@ -93,11 +93,12 @@ type Query struct {
 }
 
 type RunBlockResult struct {
-	Index    int    `json:"index"`
-	ExitCode int    `json:"exitCode"`
-	Stdout   string `json:"stdout"`
-	Stderr   string `json:"stderr"`
-	Pipe     string `json:"pipe"`
+	Index       int    `json:"index"`
+	ExitCode    int    `json:"exitCode"`
+	DurationMs  int    `json:"durationMs"`
+	MaxRssBytes int    `json:"maxRssBytes"`
+	Stdout      string `json:"stdout"`
+	Stderr      string `json:"stderr"`
 }
 
 type RunBlocksInput struct {

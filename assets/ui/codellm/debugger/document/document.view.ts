@@ -40,7 +40,7 @@ namespace $.$$ {
 		mutation RunBlocks($input: RunBlocksInput!) {
 			runBlocks(input: $input) {
 				__typename
-				... on RunBlocksPayload { output results { index exitCode stdout stderr pipe } }
+				... on RunBlocksPayload { output results { index exitCode durationMs maxRssBytes stdout stderr } }
 				... on BlockErrorPayload { index message }
 				... on ErrorPayload { message }
 			}
@@ -70,18 +70,10 @@ namespace $.$$ {
 			return data.parseMarkdown
 		}
 
-		override blocks(): readonly ( $mol_view )[] {
-			return this.parse_result().blocks.map( ( block: any, idx: number ) => {
-				if( block.__typename === 'MarkdownCodeBlock' ) {
-					return this.CodeBlock( idx )
-				}
-
-				if( block.__typename === 'MarkdownProseBlock' ) {
-					return this.ProseBlock( idx )
-				}
-
-				throw new Error( `Unknown block type: ${ block.__typename }` )
-			} )
+		override step_pages(): readonly ( $mol_view )[] {
+			return this.parse_result().blocks
+				.map( ( block: any, idx: number ) => block.__typename === 'MarkdownCodeBlock' ? this.CodeBlock( idx ) : null )
+				.filter( Boolean ) as $mol_view[]
 		}
 
 		@$mol_mem
@@ -124,6 +116,7 @@ namespace $.$$ {
 				.filter( ( item: any ) => item.__typename === 'MarkdownCodeBlock' ).length
 			const runResult = this.run_result()
 			const results = runResult?.results || []
+			const result = results.find( ( item: any ) => item.index === codeIndex )
 			const lastCodeIndex = typeof runResult?.blockIndex === 'number'
 				? parsedBlocks
 					.slice( 0, runResult.blockIndex + 1 )
@@ -131,12 +124,28 @@ namespace $.$$ {
 				: -1
 			return {
 				...block,
-				pipe: results.find( ( result: any ) => result.index === codeIndex )?.pipe || '',
-				stderr: results.find( ( result: any ) => result.index === codeIndex )?.stderr || '',
+				block_title: `${ codeIndex + 1 }. ${ block.language || 'code' }`,
+				prose: parsedBlocks
+					.slice( this.prose_start( parsedBlocks, idx ), idx )
+					.filter( ( item: any ) => item.__typename === 'MarkdownProseBlock' )
+					.map( ( item: any ) => item.html )
+					.join( '' ),
+				stdout: result?.stdout || '',
+				stderr: result?.stderr || '',
+				exitCode: result?.exitCode ?? 0,
+				durationMs: result?.durationMs || 0,
+				maxRssBytes: result?.maxRssBytes || 0,
 				output: codeIndex === lastCodeIndex ? runResult?.output || '' : '',
 				error: idx === runResult?.blockIndex ? runResult?.error || '' : '',
 				run: () => this.run( idx ),
 			}
+		}
+
+		prose_start( blocks: readonly any[], codeIndex: number ) {
+			for( let index = codeIndex - 1; index >= 0; index-- ) {
+				if( blocks[ index ].__typename === 'MarkdownCodeBlock' ) return index + 1
+			}
+			return 0
 		}
 
 		override raw_content(): string {
@@ -152,6 +161,14 @@ namespace $.$$ {
 	}
 
 	export class $trip2g_codellm_debugger_document_code_block extends $.$trip2g_codellm_debugger_document_code_block {
+		override block_title() {
+			return ( this.data() as any )?.block_title || ''
+		}
+
+		override prose_content() {
+			return ( this.data() as any )?.prose || ''
+		}
+
 		override content() {
 			// @ts-ignore
 			return this.data()?.content || ''
@@ -162,12 +179,23 @@ namespace $.$$ {
 			data?.run?.()
 		}
 
-		override pipe_content() {
-			const data = this.data() as any
-			return data?.output || data?.pipe || ''
+		override exit_code() {
+			return `Exit ${ ( this.data() as any )?.exitCode ?? 0 }`
 		}
 
-		override error_content() {
+		override stats_content() {
+			const data = this.data() as any
+			const seconds = ( ( data?.durationMs || 0 ) / 1000 ).toFixed( 0 )
+			const megabytes = ( ( data?.maxRssBytes || 0 ) / 1024 / 1024 ).toFixed( 2 )
+			return `${ seconds }s · ${ megabytes } MB`
+		}
+
+		override stdout_content() {
+			const data = this.data() as any
+		return data?.output || data?.stdout || ''
+		}
+
+		override stderr_content() {
 			const data = this.data() as any
 			return data?.error || data?.stderr || ''
 		}

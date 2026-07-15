@@ -290,9 +290,10 @@ input FleetInput {
 type RunBlockResult {
   index: Int!
   exitCode: Int!
+  durationMs: Int!
+  maxRssBytes: Int!
   stdout: String!
   stderr: String!
-  pipe: String!
 }
 
 type RunBlocksPayload {
@@ -1047,6 +1048,64 @@ func (ec *executionContext) fieldContext_RunBlockResult_exitCode(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _RunBlockResult_durationMs(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_durationMs,
+		func(ctx context.Context) (any, error) {
+			return obj.DurationMs, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_durationMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_maxRssBytes(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_maxRssBytes,
+		func(ctx context.Context) (any, error) {
+			return obj.MaxRssBytes, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_maxRssBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RunBlockResult_stdout(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1093,35 +1152,6 @@ func (ec *executionContext) _RunBlockResult_stderr(ctx context.Context, field gr
 }
 
 func (ec *executionContext) fieldContext_RunBlockResult_stderr(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RunBlockResult",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _RunBlockResult_pipe(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_RunBlockResult_pipe,
-		func(ctx context.Context) (any, error) {
-			return obj.Pipe, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_RunBlockResult_pipe(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RunBlockResult",
 		Field:      field,
@@ -1191,12 +1221,14 @@ func (ec *executionContext) fieldContext_RunBlocksPayload_results(_ context.Cont
 				return ec.fieldContext_RunBlockResult_index(ctx, field)
 			case "exitCode":
 				return ec.fieldContext_RunBlockResult_exitCode(ctx, field)
+			case "durationMs":
+				return ec.fieldContext_RunBlockResult_durationMs(ctx, field)
+			case "maxRssBytes":
+				return ec.fieldContext_RunBlockResult_maxRssBytes(ctx, field)
 			case "stdout":
 				return ec.fieldContext_RunBlockResult_stdout(ctx, field)
 			case "stderr":
 				return ec.fieldContext_RunBlockResult_stderr(ctx, field)
-			case "pipe":
-				return ec.fieldContext_RunBlockResult_pipe(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type RunBlockResult", field.Name)
 		},
@@ -3478,6 +3510,16 @@ func (ec *executionContext) _RunBlockResult(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "durationMs":
+			out.Values[i] = ec._RunBlockResult_durationMs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "maxRssBytes":
+			out.Values[i] = ec._RunBlockResult_maxRssBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "stdout":
 			out.Values[i] = ec._RunBlockResult_stdout(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3485,11 +3527,6 @@ func (ec *executionContext) _RunBlockResult(ctx context.Context, sel ast.Selecti
 			}
 		case "stderr":
 			out.Values[i] = ec._RunBlockResult_stderr(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "pipe":
-			out.Values[i] = ec._RunBlockResult_pipe(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

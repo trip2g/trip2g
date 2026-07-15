@@ -102,9 +102,10 @@ input FleetInput {
 type RunBlockResult {
   index: Int!
   exitCode: Int!
+  durationMs: Int!
+  maxRssBytes: Int!
   stdout: String!
   stderr: String!
-  pipe: String!
 }
 
 type RunBlocksPayload {

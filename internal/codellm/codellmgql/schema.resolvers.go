@@ -51,7 +51,7 @@ func (r *mutationResolver) RunBlocks(ctx context.Context, input model.RunBlocksI
 	for i, item := range result.Results {
 		results[i] = model.RunBlockResult{
 			Index: item.Index, ExitCode: item.ExitCode, Stdout: item.Stdout,
-			Stderr: item.Stderr, Pipe: item.Pipe,
+			Stderr: item.Stderr, DurationMs: int(item.DurationMs), MaxRssBytes: int(item.MaxRSSBytes),
 		}
 	}
 	return model.RunBlocksPayload{Output: result.Output, Results: results}, nil
