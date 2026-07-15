@@ -64,9 +64,12 @@ func main() {
 
 	srvCfg := codellm.Config{
 		AllowedPrograms: cfg.AllowedPrograms,
-		Sandbox:         coderun.SandboxPolicy{Mode: cfg.Sandbox},
-		MaxStdoutBytes:  cfg.MaxStdoutBytes,
-		Timeout:         cfg.Timeout,
+		Sandbox: coderun.SandboxPolicy{
+			Mode:    cfg.Sandbox,
+			Network: cfg.SandboxNetwork,
+		},
+		MaxStdoutBytes: cfg.MaxStdoutBytes,
+		Timeout:        cfg.Timeout,
 		// Secret VALUES live here (codellm's own env); this allowlist is the whole
 		// decision of what to expose to the child. The request carries no env.
 		ExposeEnv:       cfg.ExposeEnv,
@@ -83,7 +86,7 @@ func main() {
 		Handler:           codellm.New(srvCfg).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-	log.Printf("codellm listening on %s (sandbox=%s, programs=%v)", cfg.Addr, cfg.Sandbox, cfg.AllowedPrograms)
+	log.Printf("codellm listening on %s (sandbox=%s, network=%t, programs=%v)", cfg.Addr, cfg.Sandbox, cfg.SandboxNetwork, cfg.AllowedPrograms)
 	if err = srv.ListenAndServe(); err != nil {
 		log.Fatalf("server error: %v", err)
 	}

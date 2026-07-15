@@ -36,6 +36,10 @@ type Config struct {
 	// Sandbox is the OS-level isolation mode for each executed block.
 	Sandbox coderun.SandboxMode
 
+	// SandboxNetwork allows sandboxed blocks to use the network namespace.
+	// Filesystem and process isolation remain enabled.
+	SandboxNetwork bool
+
 	// Timeout bounds a single completion's code run; 0 = request-context bound.
 	Timeout time.Duration
 
@@ -130,6 +134,11 @@ func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_SANDBOX"); v != "" {
 		c.Sandbox = coderun.SandboxMode(v)
 	}
+	if v := os.Getenv("CODELLM_SANDBOX_NETWORK"); v != "" {
+		if enabled, err := strconv.ParseBool(v); err == nil {
+			c.SandboxNetwork = enabled
+		}
+	}
 	if v := os.Getenv("CODELLM_TIMEOUT"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			c.Timeout = d
@@ -162,12 +171,14 @@ func (c *Config) defineAndParseFlags(args []string) error {
 
 	allowedPrograms := strings.Join(c.AllowedPrograms, ",")
 	sandbox := string(c.Sandbox)
+	sandboxNetwork := c.SandboxNetwork
 	exposeEnv := strings.Join(c.ExposeEnv, ",")
 	exposeEnvPrefix := strings.Join(c.ExposeEnvPrefix, ",")
 
 	fs.StringVar(&c.Addr, "addr", c.Addr, "listen address for the OpenAI-compatible API; defaults to loopback since auth is a no-op seam")
 	fs.StringVar(&allowedPrograms, "allowed-programs", allowedPrograms, "comma-separated interpreter allowlist; empty disables code execution")
 	fs.StringVar(&sandbox, "sandbox", sandbox, "sandbox mode: native | besteffort | off")
+	fs.BoolVar(&sandboxNetwork, "sandbox-network", sandboxNetwork, "allow network access from sandboxed blocks")
 	fs.DurationVar(&c.Timeout, "timeout", c.Timeout, "per-completion code-run timeout; 0 = request-context bound")
 	fs.IntVar(&c.MaxStdoutBytes, "max-stdout-bytes", c.MaxStdoutBytes, "stdout cap per code block; 0 = 1 MiB default")
 	fs.StringVar(&c.APIKey, "api-key", c.APIKey, "codellm's OpenAI-standard api_key (Bearer); empty disables key auth")
@@ -184,6 +195,7 @@ func (c *Config) defineAndParseFlags(args []string) error {
 
 	c.AllowedPrograms = splitCSV(allowedPrograms)
 	c.Sandbox = coderun.SandboxMode(sandbox)
+	c.SandboxNetwork = sandboxNetwork
 	c.ExposeEnv = splitCSV(exposeEnv)
 	c.ExposeEnvPrefix = splitCSV(exposeEnvPrefix)
 	return nil
