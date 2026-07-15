@@ -31,7 +31,7 @@ http://localhost:9081 {
 	# codellm server-to-server /v1 lane is separate and does NOT go through Caddy.
 	# Upstream is a placeholder; the real private addr comes from deploy config.
 	handle /_codellm/* {
-		reverse_proxy http://localhost:8093
+		reverse_proxy http://localhost:8087
 	}
 
 	handle /assets/* {

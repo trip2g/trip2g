@@ -9,6 +9,38 @@ import (
 	"strconv"
 )
 
+type AssembleMarkdownOrErrorPayload interface {
+	IsAssembleMarkdownOrErrorPayload()
+}
+
+type ParseMarkdownOrErrorPayload interface {
+	IsParseMarkdownOrErrorPayload()
+}
+
+type RunBlocksOrErrorPayload interface {
+	IsRunBlocksOrErrorPayload()
+}
+
+type AssembleMarkdownInput struct {
+	Blocks []MdBlockInput `json:"blocks"`
+}
+
+type AssembleMarkdownPayload struct {
+	Content string `json:"content"`
+}
+
+func (AssembleMarkdownPayload) IsAssembleMarkdownOrErrorPayload() {}
+
+type ErrorPayload struct {
+	Message string `json:"message"`
+}
+
+func (ErrorPayload) IsParseMarkdownOrErrorPayload() {}
+
+func (ErrorPayload) IsAssembleMarkdownOrErrorPayload() {}
+
+func (ErrorPayload) IsRunBlocksOrErrorPayload() {}
+
 type MdBlock struct {
 	Index    int       `json:"index"`
 	Kind     BlockKind `json:"kind"`
@@ -25,8 +57,29 @@ type MdBlockInput struct {
 type Mutation struct {
 }
 
+type ParseMarkdownInput struct {
+	Content string `json:"content"`
+}
+
+type ParseMarkdownPayload struct {
+	Blocks []MdBlock `json:"blocks"`
+}
+
+func (ParseMarkdownPayload) IsParseMarkdownOrErrorPayload() {}
+
 type Query struct {
 }
+
+type RunBlocksInput struct {
+	Input  string         `json:"input"`
+	Blocks []MdBlockInput `json:"blocks"`
+}
+
+type RunBlocksPayload struct {
+	Output string `json:"output"`
+}
+
+func (RunBlocksPayload) IsRunBlocksOrErrorPayload() {}
 
 type BlockKind string
 

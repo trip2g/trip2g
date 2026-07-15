@@ -32,6 +32,9 @@ build_and_deploy: build-amd64 deploy
 gqlgen:
 	go tool github.com/99designs/gqlgen generate
 
+gqlgencodellm:
+	go tool github.com/99designs/gqlgen generate --config internal/codellm/codellmgql/gqlgen.yml
+
 graphqlgen: gqlgen
 	./scripts/waitfor localhost:8081
 	sleep 1 # avoid a strange error: connect ECONNREFUSED 127.0.0.1:8081

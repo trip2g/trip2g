@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql/playground"
 	goopenai "github.com/sashabaranov/go-openai"
 
 	"trip2g/internal/codellm/codellmgql"
@@ -137,10 +138,13 @@ func New(cfg Config) *Server {
 // auth seam (cfg.Auth); everything else (liveness /healthz, /v1/models for
 // client compat) is open. See the two-auth-regime note on Config.Auth.
 func (s *Server) Handler() http.Handler {
+	const graphqlPrefix = "/_system/codellm/graphql"
+
 	mux := http.NewServeMux()
 	// Auth-gated (browser cookie / fleet channel token — see cfg.Auth).
 	mux.Handle("POST /v1/chat/completions", s.cfg.Auth(http.HandlerFunc(s.handleChatCompletions)))
-	mux.Handle("/graphql", s.cfg.Auth(codellmgql.NewHTTPHandler(nil)))
+	mux.Handle("POST "+graphqlPrefix, s.cfg.Auth(codellmgql.NewHTTPHandler(nil)))
+	mux.Handle("GET "+graphqlPrefix, playground.Handler("CodeLLM GraphQL Playground", graphqlPrefix))
 	// Open: liveness + client compatibility, never gated.
 	mux.HandleFunc("GET /v1/models", s.handleModels)
 	mux.HandleFunc("GET /healthz", s.handleHealthz)

@@ -10,16 +10,7 @@ tmp_dir = "tmp"
 [build]
   cmd = "go build -tags=dev -o ./tmp/codellm ./cmd/codellm"
   bin = "./tmp/codellm"
-  args_bin = [
-    "--trip2g-url", "http://localhost:8081",
-    "--callback-url", "http://localhost:9090",
-    "--jwt-secret", "please-change-me-to-something-secret",
-    "--codellm-secret", "dev-codellm-secret",
-    "--agents-folder", "roles/",
-    "--allowed-programs", "python,bash,node",
-    "--graph-addr", "127.0.0.1:9099",
-    "--debug-listen", "127.0.0.1:9098",
-  ]
+  args_bin = []
   delay = 500
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules", "out", "obsidian-sync", "infra", "test-results", "playwright-report", "docs", "demo"]
   exclude_regex = ["_test.go", "easyjson"]

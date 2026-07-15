@@ -25,12 +25,46 @@ input MdBlockInput {
   content: String!
 }
 
-type Query {
-  # Split md into ordered code/prose blocks (codellm's own fence boundaries).
-  parseMarkdown(md: String!): [MdBlock!]!
+type ErrorPayload {
+  message: String!
 }
 
+input ParseMarkdownInput {
+  content: String!
+}
+
+type ParseMarkdownPayload {
+  blocks: [MdBlock!]!
+}
+
+union ParseMarkdownOrErrorPayload = ParseMarkdownPayload | ErrorPayload
+
+input AssembleMarkdownInput {
+  blocks: [MdBlockInput!]!
+}
+
+type AssembleMarkdownPayload {
+  content: String!
+}
+
+union AssembleMarkdownOrErrorPayload = AssembleMarkdownPayload | ErrorPayload
+
+type Query {
+  parseMarkdown(input: ParseMarkdownInput!): ParseMarkdownOrErrorPayload!
+}
+
+input RunBlocksInput {
+  input: String! # todo: fleet input json
+  blocks: [MdBlockInput!]!
+}
+
+type RunBlocksPayload {
+  output: String!
+}
+
+union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload
+
 type Mutation {
-  # Round-trip the ordered blocks back into a single markdown string.
-  assembleMarkdown(blocks: [MdBlockInput!]!): String!
+  assembleMarkdown(input: AssembleMarkdownInput!): AssembleMarkdownOrErrorPayload!
+  runBlocks(input: RunBlocksInput!): RunBlocksOrErrorPayload!
 }

@@ -6,19 +6,25 @@ package codellmgql
 
 import (
 	"context"
-
 	"trip2g/internal/codellm/codellmgql/codellmgen"
 	"trip2g/internal/codellm/codellmgql/model"
 )
 
 // AssembleMarkdown is the resolver for the assembleMarkdown field.
-func (r *mutationResolver) AssembleMarkdown(_ context.Context, blocks []model.MdBlockInput) (string, error) {
-	return assembleMarkdownBlocks(blocks), nil
+func (r *mutationResolver) AssembleMarkdown(ctx context.Context, input model.AssembleMarkdownInput) (model.AssembleMarkdownOrErrorPayload, error) {
+	md := assembleMarkdownBlocks(input.Blocks)
+	return model.AssembleMarkdownPayload{Content: md}, nil
+}
+
+// RunBlocks is the resolver for the runBlocks field.
+func (r *mutationResolver) RunBlocks(ctx context.Context, input model.RunBlocksInput) (model.RunBlocksOrErrorPayload, error) {
+	return model.RunBlocksPayload{}, nil
 }
 
 // ParseMarkdown is the resolver for the parseMarkdown field.
-func (r *queryResolver) ParseMarkdown(_ context.Context, md string) ([]model.MdBlock, error) {
-	return parseMarkdownBlocks(md), nil
+func (r *queryResolver) ParseMarkdown(ctx context.Context, input model.ParseMarkdownInput) (model.ParseMarkdownOrErrorPayload, error) {
+	blocks := parseMarkdownBlocks(input.Content)
+	return model.ParseMarkdownPayload{Blocks: blocks}, nil
 }
 
 // Mutation returns codellmgen.MutationResolver implementation.
