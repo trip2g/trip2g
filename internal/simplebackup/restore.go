@@ -137,7 +137,12 @@ func (m *Manager) RestoreOnStartup(ctx context.Context) error {
 // reads PRAGMA user_version (the backup generation counter), and closes the
 // connection so the file can safely be overwritten afterwards.
 func readUserVersion(path string) (int, error) {
-	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro")
+	// mode=ro prevents opening a writable handle; query_only additionally
+	// prevents SQLite from attempting implicit writes (for example a WAL
+	// checkpoint) while startup is only inspecting user_version.  Without the
+	// latter, a concurrent backup/restore can surface as "attempt to write a
+	// readonly database" and abort the whole agent boot.
+	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro&_pragma=query_only(1)")
 	if err != nil {
 		return 0, err
 	}
