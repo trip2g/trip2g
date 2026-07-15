@@ -577,7 +577,7 @@ services:
     ports:
       - "29094:9090"
     environment:
-      - TRIP2G_FLEET_FLEET_ID=e2ec
+      - TRIP2G_FLEET_FLEET_ID=llmcode
       - TRIP2G_FLEET_LISTEN=:9090
       - TRIP2G_FLEET_CALLBACK_URL=http://fleet-code:9090
       - TRIP2G_FLEET_TRIP2G_URL=http://app:20081

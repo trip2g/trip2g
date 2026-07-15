@@ -1,9 +1,10 @@
 ---
-description: "Krisp meetings → transcript notes (cron ingest, deterministic)"
-fleet_id: e2ec
+description: Krisp meetings → transcript notes (cron ingest, deterministic)
+fleet_id: codellm
 mode: cron
 cron_schedule: "* * * * *"
-write_patterns: ["transcripts/**"]
+write_patterns:
+  - transcripts/**
 max_depth: 1
 ---
 ```python
