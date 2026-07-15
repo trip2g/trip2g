@@ -65,7 +65,7 @@ type Query {
 
 input RunBlocksInput {
   input: FleetInput!
-  maxSteps: Int # stop after this many code blocks
+  maxSteps: Int # number of Markdown blocks; prose blocks are skipped
   blocks: [MdBlockInput!]!
 }
 

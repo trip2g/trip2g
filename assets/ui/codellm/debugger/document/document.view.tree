@@ -27,10 +27,21 @@ $trip2g_codellm_debugger_document_prose_block $mol_view
 
 $trip2g_codellm_debugger_document_code_block $mol_view
 	data null object
+	style *
+		flexDirection \column
 	sub /
-		<= Control $mol_view
+		<= MainSection $mol_view
 			sub /
-				<= Run $mol_button_major
-					title \Run
-		<= Textarea $mol_textarea
-			value <= content \
+				<= Control $mol_view
+					sub /
+						<= Run $mol_button_major
+							title \Run
+							click?event <=> handle_run?event null
+				<= Textarea $mol_textarea
+					value <= content \
+		<= PipeResult $mol_view
+			sub /
+				<= PipeControl $mol_view
+					sub /
+				<= Pipe $mol_text
+					text <= pipe_content \

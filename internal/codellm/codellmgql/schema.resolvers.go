@@ -19,17 +19,27 @@ func (r *mutationResolver) AssembleMarkdown(ctx context.Context, input model.Ass
 
 // RunBlocks is the resolver for the runBlocks field.
 func (r *mutationResolver) RunBlocks(ctx context.Context, input model.RunBlocksInput) (model.RunBlocksOrErrorPayload, error) {
-	body := assembleMarkdownBlocks(input.Blocks)
 	bag, err := json.Marshal(input.Input)
 	if err != nil {
 		// GraphQL errors are represented by a union payload.
 		//nolint:nilerr // GraphQL errors are represented by a union payload.
 		return model.ErrorPayload{Message: err.Error()}, nil
 	}
+	blocks := input.Blocks
 	maxSteps := 0
 	if input.MaxSteps != nil {
-		maxSteps = *input.MaxSteps
+		// maxSteps is the number of Markdown blocks selected by the debugger.
+		// Keep prose in the assembled document; coderun skips it while
+		// extracting executable fences.
+		last := *input.MaxSteps
+		if last < 0 {
+			last = 0
+		}
+		if last < len(blocks) {
+			blocks = blocks[:last]
+		}
 	}
+	body := assembleMarkdownBlocks(blocks)
 	if r.runner == nil {
 		return model.ErrorPayload{Message: "codellm: block runner is not configured"}, nil
 	}

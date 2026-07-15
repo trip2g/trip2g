@@ -67,3 +67,32 @@ func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
 	require.Equal(t, 0, got.Data.Run.Pipes[0].Index)
 	require.JSONEq(t, `{"hello":{}}`, got.Data.Run.Pipes[0].Content)
 }
+
+func TestRunBlocks_MaxStepsUsesMarkdownIndex(t *testing.T) {
+	h := NewHTTPHandler(nil, testBlockRunner{})
+	query := `mutation { runBlocks(input: { input: { changedFiles: [], attachedNotes: [], depth: 1 }, maxSteps: 1, blocks: [
+        { kind: CODE, language: "bash", content: "printf first" },
+        { kind: PROSE, content: "\n\n" },
+        { kind: CODE, language: "bash", content: "printf second" }
+      ] }) { ... on RunBlocksPayload { output pipes { index content } } ... on ErrorPayload { message } } }`
+	reqBody, err := json.Marshal(map[string]string{"query": query})
+	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	var got struct {
+		Data struct {
+			Run struct {
+				Output string `json:"output"`
+				Pipes  []any  `json:"pipes"`
+			} `json:"runBlocks"`
+		} `json:"data"`
+		Errors []any `json:"errors"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &got))
+	require.Empty(t, got.Errors)
+	require.Equal(t, "first", got.Data.Run.Output)
+	require.Empty(t, got.Data.Run.Pipes)
+}
