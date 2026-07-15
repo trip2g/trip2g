@@ -75,7 +75,11 @@ func parseFrontmatter(md string) map[string]interface{} {
 	if value == nil {
 		return map[string]interface{}{}
 	}
-	return yamlutil.Normalize(value).(map[string]interface{})
+	normalized, ok := yamlutil.Normalize(value).(map[string]interface{})
+	if !ok {
+		return map[string]interface{}{}
+	}
+	return normalized
 }
 
 func stripFrontmatter(md string) string {

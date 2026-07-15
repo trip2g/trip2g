@@ -10,7 +10,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"time"
@@ -18,7 +17,6 @@ import (
 	"trip2g/internal/codellm"
 	"trip2g/internal/coderun"
 	"trip2g/internal/delegatedadmin"
-	"trip2g/internal/graph/model"
 
 	"trip2g/cmd/codellm/appconfig"
 )
@@ -45,24 +43,24 @@ func main() {
 	}
 
 	// wait air restarts
-	for i := 3; i >= 0; i-- {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-		// check trip2g state, fail fast if it's down
-		role, fetchErr := admin.FetchViewerRole(ctx, "")
-		cancel()
-		if fetchErr != nil {
-			time.Sleep(time.Second)
-
-			if i == 0 {
-				log.Fatalf("failed to FetchViewerRole: %v", fetchErr)
-			}
-		}
-
-		if role != string(model.RoleGuest) {
-			log.Printf("unexpected role: %s", role)
-		}
-	}
+	// for i := 3; i >= 0; i-- {
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	//
+	// 	// check trip2g state, fail fast if it's down
+	// 	role, fetchErr := admin.FetchViewerRole(ctx, "")
+	// 	cancel()
+	// 	if fetchErr != nil {
+	// 		time.Sleep(time.Second)
+	//
+	// 		if i == 0 {
+	// 			log.Fatalf("failed to FetchViewerRole: %v", fetchErr)
+	// 		}
+	// 	}
+	//
+	// 	if role != string(model.RoleGuest) {
+	// 		log.Printf("unexpected role: %s", role)
+	// 	}
+	// }
 
 	srvCfg := codellm.Config{
 		AllowedPrograms: cfg.AllowedPrograms,

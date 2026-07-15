@@ -20,11 +20,17 @@ $trip2g_codellm_debugger_document $mol_page
 $trip2g_codellm_debugger_document_prose_block $mol_view
 	data null object
 	sub /
+		<= Control $mol_view
+			sub /
 		<= HTML $mol_html_view
 			html <= content \
 
 $trip2g_codellm_debugger_document_code_block $mol_view
 	data null object
 	sub /
+		<= Control $mol_view
+			sub /
+				<= Run $mol_button_major
+					title \Run
 		<= Textarea $mol_textarea
 			value <= content \
