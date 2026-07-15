@@ -197,7 +197,11 @@ namespace $.$$ {
 
 		override stderr_content() {
 			const data = this.data() as any
-			return data?.error || data?.stderr || ''
+			return data?.stderr || ''
+		}
+
+		override error_content() {
+			return ( this.data() as any )?.error || ''
 		}
 	}
 }

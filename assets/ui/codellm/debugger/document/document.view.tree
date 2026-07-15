@@ -46,6 +46,8 @@ $trip2g_codellm_debugger_document_code_block $mol_page
 			html <= prose_content \
 		<= Rows $mol_view
 			sub /
+				<= Error $mol_text
+					text <= error_content \
 				<= Code $mol_textarea
 					value <= content \
 				<= Stdout $mol_text
