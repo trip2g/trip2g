@@ -10,6 +10,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"trip2g/internal/codellm"
 	"trip2g/internal/coderun"
 	"trip2g/internal/delegatedadmin"
+	"trip2g/internal/graph/model"
 
 	"trip2g/cmd/codellm/appconfig"
 )
@@ -30,7 +32,7 @@ func main() {
 
 	cfg, err := appconfig.Get()
 	if err != nil {
-		log.Fatalf("codellm: config: %v", err)
+		log.Fatalf("config: %v", err)
 	}
 
 	// Delegated-admin gate for the browser-facing endpoints: each request's
@@ -39,7 +41,20 @@ func main() {
 	// the api_key TokenCheck seam below, so a caller can authenticate either way.
 	admin, err := delegatedadmin.New(delegatedadmin.Config{MonolithBaseURL: cfg.Trip2gBaseURL})
 	if err != nil {
-		log.Fatalf("codellm: delegated admin: %v", err)
+		log.Fatalf("delegated admin: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// check trip2g state, fail fast if it's down
+	role, err := admin.FetchViewerRole(ctx, "")
+	if err != nil {
+		log.Fatalf("failed to FetchViewerRole: %v", err)
+	}
+
+	if role != string(model.RoleGuest) {
+		log.Printf("unexpected role: %s", role)
 	}
 
 	srvCfg := codellm.Config{
@@ -65,6 +80,6 @@ func main() {
 	}
 	log.Printf("codellm listening on %s (sandbox=%s, programs=%v)", cfg.Addr, cfg.Sandbox, cfg.AllowedPrograms)
 	if err = srv.ListenAndServe(); err != nil {
-		log.Fatalf("codellm: server error: %v", err)
+		log.Fatalf("server error: %v", err)
 	}
 }

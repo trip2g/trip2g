@@ -69,6 +69,9 @@ air: docker-deps
 airfleet:
 	go tool github.com/air-verse/air -c .air.fleet.toml
 
+aircodellm:
+	go tool github.com/air-verse/air -c .air.codellm.toml
+
 # bench: 60s load test against http://localhost:8081/ + cpu profile saved to /tmp/trip2g-bench-*
 # Usage: make bench              — test homepage
 #        make bench URL=/ru      — test specific path

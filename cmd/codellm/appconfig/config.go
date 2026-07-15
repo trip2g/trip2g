@@ -71,7 +71,7 @@ type Config struct {
 
 // Defaults.
 const (
-	DefaultAddr            = "127.0.0.1:8082"
+	DefaultAddr            = "127.0.0.1:8087"
 	DefaultAllowedPrograms = "python,bash,node"
 	DefaultTimeout         = 300 * time.Second
 	DefaultTrip2gBaseURL   = "http://127.0.0.1:8081"
