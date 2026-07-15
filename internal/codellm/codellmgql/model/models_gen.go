@@ -36,6 +36,13 @@ type AssembleMarkdownPayload struct {
 
 func (AssembleMarkdownPayload) IsAssembleMarkdownOrErrorPayload() {}
 
+type BlockErrorPayload struct {
+	Index   int    `json:"index"`
+	Message string `json:"message"`
+}
+
+func (BlockErrorPayload) IsRunBlocksOrErrorPayload() {}
+
 type ErrorPayload struct {
 	Message string `json:"message"`
 }
@@ -85,9 +92,12 @@ func (ParseMarkdownPayload) IsParseMarkdownOrErrorPayload() {}
 type Query struct {
 }
 
-type RunBlockPipe struct {
-	Index   int    `json:"index"`
-	Content string `json:"content"`
+type RunBlockResult struct {
+	Index    int    `json:"index"`
+	ExitCode int    `json:"exitCode"`
+	Stdout   string `json:"stdout"`
+	Stderr   string `json:"stderr"`
+	Pipe     string `json:"pipe"`
 }
 
 type RunBlocksInput struct {
@@ -97,8 +107,8 @@ type RunBlocksInput struct {
 }
 
 type RunBlocksPayload struct {
-	Output string         `json:"output"`
-	Pipes  []RunBlockPipe `json:"pipes,omitempty"`
+	Output  string           `json:"output"`
+	Results []RunBlockResult `json:"results"`
 }
 
 func (RunBlocksPayload) IsRunBlocksOrErrorPayload() {}

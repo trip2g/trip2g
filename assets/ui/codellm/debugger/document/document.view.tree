@@ -43,5 +43,7 @@ $trip2g_codellm_debugger_document_code_block $mol_view
 			sub /
 				<= PipeControl $mol_view
 					sub /
-				<= Pipe $mol_text
-					text <= pipe_content \
+		<= Pipe $mol_text
+			text <= pipe_content \
+		<= Error $mol_text
+			text <= error_content \

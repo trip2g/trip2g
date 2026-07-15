@@ -45,15 +45,16 @@ func (r *mutationResolver) RunBlocks(ctx context.Context, input model.RunBlocksI
 	}
 	result, err := r.runner.RunBlocks(ctx, BlockRunRequest{Body: body, FleetInput: bag, MaxSteps: maxSteps})
 	if err != nil {
-		// GraphQL errors are represented by a union payload.
-		//nolint:nilerr // GraphQL errors are represented by a union payload.
-		return model.ErrorPayload{Message: err.Error()}, nil
+		return blockErrorPayload(err), nil
 	}
-	pipes := make([]model.RunBlockPipe, len(result.Pipes))
-	for i, p := range result.Pipes {
-		pipes[i] = model.RunBlockPipe{Index: p.Index, Content: p.Content}
+	results := make([]model.RunBlockResult, len(result.Results))
+	for i, item := range result.Results {
+		results[i] = model.RunBlockResult{
+			Index: item.Index, ExitCode: item.ExitCode, Stdout: item.Stdout,
+			Stderr: item.Stderr, Pipe: item.Pipe,
+		}
 	}
-	return model.RunBlocksPayload{Output: result.Output, Pipes: pipes}, nil
+	return model.RunBlocksPayload{Output: result.Output, Results: results}, nil
 }
 
 // ParseMarkdown is the resolver for the parseMarkdown field.

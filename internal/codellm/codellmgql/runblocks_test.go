@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
@@ -16,6 +17,12 @@ import (
 
 type testBlockRunner struct{}
 
+type failingBlockRunner struct{}
+
+func (failingBlockRunner) RunBlocks(context.Context, BlockRunRequest) (BlockRunResult, error) {
+	return BlockRunResult{}, errors.New("coderun: block 2/3: non-zero exit: boom")
+}
+
 func (testBlockRunner) RunBlocks(ctx context.Context, req BlockRunRequest) (BlockRunResult, error) {
 	out, debug, err := coderun.ExecBlocksDebug(ctx, coderun.CodeInput{
 		Body: req.Body, Input: req.FleetInput, AllowedPrograms: []string{"bash", "jq"},
@@ -24,11 +31,11 @@ func (testBlockRunner) RunBlocks(ctx context.Context, req BlockRunRequest) (Bloc
 	if err != nil {
 		return BlockRunResult{}, err
 	}
-	pipes := make([]BlockPipe, 0, max(0, len(debug)-1))
-	for _, d := range debug[:max(0, len(debug)-1)] {
-		pipes = append(pipes, BlockPipe{Index: d.Index, Content: d.PipeBuffer})
+	results := make([]BlockResult, 0, len(debug))
+	for _, d := range debug {
+		results = append(results, BlockResult{Index: d.Index, ExitCode: d.ExitCode, Stdout: d.Stdout, Stderr: d.Stderr, Pipe: d.PipeBuffer})
 	}
-	return BlockRunResult{Output: out, Pipes: pipes}, nil
+	return BlockRunResult{Output: out, Results: results}, nil
 }
 
 func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
@@ -40,7 +47,7 @@ func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
         { kind: CODE, language: "bash", content: "echo '{\"hello\":{}}'" },
         { kind: PROSE, content: "\\n\\n" },
         { kind: CODE, language: "bash", content: "jq .hello" }
-      ] }) { ... on RunBlocksPayload { output pipes { index content } } ... on ErrorPayload { message } } }`
+      ] }) { ... on RunBlocksPayload { output results { index stdout stderr pipe } } ... on ErrorPayload { message } } }`
 	reqBody, err := json.Marshal(map[string]string{"query": query})
 	require.NoError(t, err)
 	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(reqBody))
@@ -51,11 +58,13 @@ func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
 	var got struct {
 		Data struct {
 			Run struct {
-				Output string `json:"output"`
-				Pipes  []struct {
-					Index   int    `json:"index"`
-					Content string `json:"content"`
-				} `json:"pipes"`
+				Output  string `json:"output"`
+				Results []struct {
+					Index  int    `json:"index"`
+					Stdout string `json:"stdout"`
+					Stderr string `json:"stderr"`
+					Pipe   string `json:"pipe"`
+				} `json:"results"`
 			} `json:"runBlocks"`
 		} `json:"data"`
 		Errors []any `json:"errors"`
@@ -63,9 +72,9 @@ func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &got))
 	require.Empty(t, got.Errors)
 	require.Equal(t, "{}\n", got.Data.Run.Output)
-	require.Len(t, got.Data.Run.Pipes, 1)
-	require.Equal(t, 0, got.Data.Run.Pipes[0].Index)
-	require.JSONEq(t, `{"hello":{}}`, got.Data.Run.Pipes[0].Content)
+	require.Len(t, got.Data.Run.Results, 2)
+	require.Equal(t, 0, got.Data.Run.Results[0].Index)
+	require.JSONEq(t, `{"hello":{}}`, got.Data.Run.Results[0].Pipe)
 }
 
 func TestRunBlocks_MaxStepsUsesMarkdownIndex(t *testing.T) {
@@ -74,7 +83,7 @@ func TestRunBlocks_MaxStepsUsesMarkdownIndex(t *testing.T) {
         { kind: CODE, language: "bash", content: "printf first" },
         { kind: PROSE, content: "\n\n" },
         { kind: CODE, language: "bash", content: "printf second" }
-      ] }) { ... on RunBlocksPayload { output pipes { index content } } ... on ErrorPayload { message } } }`
+      ] }) { ... on RunBlocksPayload { output results { index stdout stderr pipe } } ... on ErrorPayload { message } } }`
 	reqBody, err := json.Marshal(map[string]string{"query": query})
 	require.NoError(t, err)
 	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(reqBody))
@@ -85,8 +94,8 @@ func TestRunBlocks_MaxStepsUsesMarkdownIndex(t *testing.T) {
 	var got struct {
 		Data struct {
 			Run struct {
-				Output string `json:"output"`
-				Pipes  []any  `json:"pipes"`
+				Output  string `json:"output"`
+				Results []any  `json:"results"`
 			} `json:"runBlocks"`
 		} `json:"data"`
 		Errors []any `json:"errors"`
@@ -94,5 +103,32 @@ func TestRunBlocks_MaxStepsUsesMarkdownIndex(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &got))
 	require.Empty(t, got.Errors)
 	require.Equal(t, "first", got.Data.Run.Output)
-	require.Empty(t, got.Data.Run.Pipes)
+	require.Len(t, got.Data.Run.Results, 1)
+}
+
+func TestRunBlocks_ReturnsBlockErrorPayload(t *testing.T) {
+	h := NewHTTPHandler(nil, failingBlockRunner{})
+	query := `mutation { runBlocks(input: { input: { changedFiles: [], attachedNotes: [], depth: 1 }, blocks: [
+        { kind: CODE, language: "bash", content: "true" }
+      ] }) { ... on BlockErrorPayload { index message } } }`
+	reqBody, err := json.Marshal(map[string]string{"query": query})
+	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPost, "/graphql", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	var got struct {
+		Data struct {
+			Run struct {
+				Index   int    `json:"index"`
+				Message string `json:"message"`
+			} `json:"runBlocks"`
+		} `json:"data"`
+		Errors []any `json:"errors"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &got))
+	require.Empty(t, got.Errors)
+	require.Equal(t, 1, got.Data.Run.Index)
+	require.Equal(t, "coderun: block 2/3: non-zero exit: boom", got.Data.Run.Message)
 }

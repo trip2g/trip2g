@@ -226,6 +226,11 @@ type ErrorPayload {
   message: String!
 }
 
+type BlockErrorPayload {
+  index: Int!
+  message: String!
+}
+
 input ParseMarkdownInput {
   content: String!
 }
@@ -253,7 +258,7 @@ type Query {
 
 input RunBlocksInput {
   input: FleetInput!
-  maxSteps: Int # stop after this many code blocks
+  maxSteps: Int # number of Markdown blocks; prose blocks are skipped
   blocks: [MdBlockInput!]!
 }
 
@@ -282,17 +287,20 @@ input FleetInput {
   now: String
 }
 
-type RunBlockPipe {
+type RunBlockResult {
   index: Int!
-  content: String!
+  exitCode: Int!
+  stdout: String!
+  stderr: String!
+  pipe: String!
 }
 
 type RunBlocksPayload {
   output: String!
-  pipes: [RunBlockPipe!]
+  results: [RunBlockResult!]!
 }
 
-union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload
+union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload | BlockErrorPayload
 
 type Mutation {
   assembleMarkdown(input: AssembleMarkdownInput!): AssembleMarkdownOrErrorPayload!
@@ -421,6 +429,64 @@ func (ec *executionContext) _AssembleMarkdownPayload_content(ctx context.Context
 func (ec *executionContext) fieldContext_AssembleMarkdownPayload_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AssembleMarkdownPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BlockErrorPayload_index(ctx context.Context, field graphql.CollectedField, obj *model.BlockErrorPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BlockErrorPayload_index,
+		func(ctx context.Context) (any, error) {
+			return obj.Index, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_BlockErrorPayload_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BlockErrorPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BlockErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.BlockErrorPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BlockErrorPayload_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_BlockErrorPayload_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BlockErrorPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -923,12 +989,12 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _RunBlockPipe_index(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockPipe) (ret graphql.Marshaler) {
+func (ec *executionContext) _RunBlockResult_index(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_RunBlockPipe_index,
+		ec.fieldContext_RunBlockResult_index,
 		func(ctx context.Context) (any, error) {
 			return obj.Index, nil
 		},
@@ -939,9 +1005,9 @@ func (ec *executionContext) _RunBlockPipe_index(ctx context.Context, field graph
 	)
 }
 
-func (ec *executionContext) fieldContext_RunBlockPipe_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RunBlockResult_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "RunBlockPipe",
+		Object:     "RunBlockResult",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -952,14 +1018,43 @@ func (ec *executionContext) fieldContext_RunBlockPipe_index(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _RunBlockPipe_content(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockPipe) (ret graphql.Marshaler) {
+func (ec *executionContext) _RunBlockResult_exitCode(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_RunBlockPipe_content,
+		ec.fieldContext_RunBlockResult_exitCode,
 		func(ctx context.Context) (any, error) {
-			return obj.Content, nil
+			return obj.ExitCode, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_exitCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_stdout(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_stdout,
+		func(ctx context.Context) (any, error) {
+			return obj.Stdout, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -968,9 +1063,67 @@ func (ec *executionContext) _RunBlockPipe_content(ctx context.Context, field gra
 	)
 }
 
-func (ec *executionContext) fieldContext_RunBlockPipe_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RunBlockResult_stdout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "RunBlockPipe",
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_stderr(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_stderr,
+		func(ctx context.Context) (any, error) {
+			return obj.Stderr, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_stderr(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_pipe(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_pipe,
+		func(ctx context.Context) (any, error) {
+			return obj.Pipe, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_pipe(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -1010,23 +1163,23 @@ func (ec *executionContext) fieldContext_RunBlocksPayload_output(_ context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _RunBlocksPayload_pipes(ctx context.Context, field graphql.CollectedField, obj *model.RunBlocksPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _RunBlocksPayload_results(ctx context.Context, field graphql.CollectedField, obj *model.RunBlocksPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_RunBlocksPayload_pipes,
+		ec.fieldContext_RunBlocksPayload_results,
 		func(ctx context.Context) (any, error) {
-			return obj.Pipes, nil
+			return obj.Results, nil
 		},
 		nil,
-		ec.marshalORunBlockPipe2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockPipeᚄ,
+		ec.marshalNRunBlockResult2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResultᚄ,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_RunBlocksPayload_pipes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_RunBlocksPayload_results(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "RunBlocksPayload",
 		Field:      field,
@@ -1035,11 +1188,17 @@ func (ec *executionContext) fieldContext_RunBlocksPayload_pipes(_ context.Contex
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "index":
-				return ec.fieldContext_RunBlockPipe_index(ctx, field)
-			case "content":
-				return ec.fieldContext_RunBlockPipe_content(ctx, field)
+				return ec.fieldContext_RunBlockResult_index(ctx, field)
+			case "exitCode":
+				return ec.fieldContext_RunBlockResult_exitCode(ctx, field)
+			case "stdout":
+				return ec.fieldContext_RunBlockResult_stdout(ctx, field)
+			case "stderr":
+				return ec.fieldContext_RunBlockResult_stderr(ctx, field)
+			case "pipe":
+				return ec.fieldContext_RunBlockResult_pipe(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type RunBlockPipe", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type RunBlockResult", field.Name)
 		},
 	}
 	return fc, nil
@@ -2890,6 +3049,13 @@ func (ec *executionContext) _RunBlocksOrErrorPayload(ctx context.Context, sel as
 			return graphql.Null
 		}
 		return ec._ErrorPayload(ctx, sel, obj)
+	case model.BlockErrorPayload:
+		return ec._BlockErrorPayload(ctx, sel, &obj)
+	case *model.BlockErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._BlockErrorPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -2912,6 +3078,50 @@ func (ec *executionContext) _AssembleMarkdownPayload(ctx context.Context, sel as
 			out.Values[i] = graphql.MarshalString("AssembleMarkdownPayload")
 		case "content":
 			out.Values[i] = ec._AssembleMarkdownPayload_content(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var blockErrorPayloadImplementors = []string{"BlockErrorPayload", "RunBlocksOrErrorPayload"}
+
+func (ec *executionContext) _BlockErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.BlockErrorPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, blockErrorPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BlockErrorPayload")
+		case "index":
+			out.Values[i] = ec._BlockErrorPayload_index(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._BlockErrorPayload_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3247,24 +3457,39 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var runBlockPipeImplementors = []string{"RunBlockPipe"}
+var runBlockResultImplementors = []string{"RunBlockResult"}
 
-func (ec *executionContext) _RunBlockPipe(ctx context.Context, sel ast.SelectionSet, obj *model.RunBlockPipe) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, runBlockPipeImplementors)
+func (ec *executionContext) _RunBlockResult(ctx context.Context, sel ast.SelectionSet, obj *model.RunBlockResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, runBlockResultImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("RunBlockPipe")
+			out.Values[i] = graphql.MarshalString("RunBlockResult")
 		case "index":
-			out.Values[i] = ec._RunBlockPipe_index(ctx, field, obj)
+			out.Values[i] = ec._RunBlockResult_index(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "content":
-			out.Values[i] = ec._RunBlockPipe_content(ctx, field, obj)
+		case "exitCode":
+			out.Values[i] = ec._RunBlockResult_exitCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stdout":
+			out.Values[i] = ec._RunBlockResult_stdout(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stderr":
+			out.Values[i] = ec._RunBlockResult_stderr(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pipe":
+			out.Values[i] = ec._RunBlockResult_pipe(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3307,8 +3532,11 @@ func (ec *executionContext) _RunBlocksPayload(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "pipes":
-			out.Values[i] = ec._RunBlocksPayload_pipes(ctx, field, obj)
+		case "results":
+			out.Values[i] = ec._RunBlocksPayload_results(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3896,8 +4124,52 @@ func (ec *executionContext) marshalNParseMarkdownOrErrorPayload2trip2gᚋinterna
 	return ec._ParseMarkdownOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNRunBlockPipe2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockPipe(ctx context.Context, sel ast.SelectionSet, v model.RunBlockPipe) graphql.Marshaler {
-	return ec._RunBlockPipe(ctx, sel, &v)
+func (ec *executionContext) marshalNRunBlockResult2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResult(ctx context.Context, sel ast.SelectionSet, v model.RunBlockResult) graphql.Marshaler {
+	return ec._RunBlockResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRunBlockResult2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RunBlockResult) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRunBlockResult2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResult(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNRunBlocksInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksInput(ctx context.Context, v any) (model.RunBlocksInput, error) {
@@ -4268,53 +4540,6 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
-}
-
-func (ec *executionContext) marshalORunBlockPipe2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockPipeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RunBlockPipe) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNRunBlockPipe2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockPipe(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

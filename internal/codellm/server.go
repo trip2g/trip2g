@@ -138,17 +138,14 @@ func (r blockRunner) RunBlocks(ctx context.Context, req codellmgql.BlockRunReque
 	if err != nil {
 		return codellmgql.BlockRunResult{}, err
 	}
-	// GraphQL exposes pipe edges, not per-block debug records. The last
-	// BlockDebug entry is the terminal block and has no downstream pipe.
-	pipeCount := len(debug)
-	if pipeCount > 0 {
-		pipeCount--
+	results := make([]codellmgql.BlockResult, 0, len(debug))
+	for _, d := range debug {
+		results = append(results, codellmgql.BlockResult{
+			Index: d.Index, ExitCode: d.ExitCode, Stdout: d.Stdout,
+			Stderr: d.Stderr, Pipe: d.PipeBuffer,
+		})
 	}
-	pipes := make([]codellmgql.BlockPipe, 0, pipeCount)
-	for _, d := range debug[:pipeCount] {
-		pipes = append(pipes, codellmgql.BlockPipe{Index: d.Index, Content: d.PipeBuffer})
-	}
-	return codellmgql.BlockRunResult{Output: out, Pipes: pipes}, nil
+	return codellmgql.BlockRunResult{Output: out, Results: results}, nil
 }
 
 // New builds a Server from cfg, filling in nil seams with no-op defaults.

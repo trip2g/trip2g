@@ -19,14 +19,17 @@ type BlockRunRequest struct {
 	MaxSteps   int
 }
 
-type BlockPipe struct {
-	Index   int
-	Content string
+type BlockResult struct {
+	Index    int
+	ExitCode int
+	Stdout   string
+	Stderr   string
+	Pipe     string
 }
 
 type BlockRunResult struct {
-	Output string
-	Pipes  []BlockPipe
+	Output  string
+	Results []BlockResult
 }
 
 type BlockRunner interface {

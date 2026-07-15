@@ -40,7 +40,8 @@ namespace $.$$ {
 		mutation RunBlocks($input: RunBlocksInput!) {
 			runBlocks(input: $input) {
 				__typename
-				... on RunBlocksPayload { output pipes { index content } }
+				... on RunBlocksPayload { output results { index exitCode stdout stderr pipe } }
+				... on BlockErrorPayload { index message }
 				... on ErrorPayload { message }
 			}
 		}
@@ -106,6 +107,10 @@ namespace $.$$ {
 
 			const payload = result.runBlocks
 			if( payload.__typename === 'ErrorPayload' ) throw new Error( payload.message )
+			if( payload.__typename === 'BlockErrorPayload' ) {
+				this.run_result( { ...payload, blockIndex: idx, error: payload.message } )
+				return
+			}
 			this.run_result( { ...payload, blockIndex: idx } )
 		}
 
@@ -118,7 +123,7 @@ namespace $.$$ {
 				.slice( 0, idx )
 				.filter( ( item: any ) => item.__typename === 'MarkdownCodeBlock' ).length
 			const runResult = this.run_result()
-			const pipes = runResult?.pipes || []
+			const results = runResult?.results || []
 			const lastCodeIndex = typeof runResult?.blockIndex === 'number'
 				? parsedBlocks
 					.slice( 0, runResult.blockIndex + 1 )
@@ -126,8 +131,10 @@ namespace $.$$ {
 				: -1
 			return {
 				...block,
-				pipe: pipes.find( ( pipe: any ) => pipe.index === codeIndex )?.content || '',
+				pipe: results.find( ( result: any ) => result.index === codeIndex )?.pipe || '',
+				stderr: results.find( ( result: any ) => result.index === codeIndex )?.stderr || '',
 				output: codeIndex === lastCodeIndex ? runResult?.output || '' : '',
+				error: idx === runResult?.blockIndex ? runResult?.error || '' : '',
 				run: () => this.run( idx ),
 			}
 		}
@@ -158,6 +165,11 @@ namespace $.$$ {
 		override pipe_content() {
 			const data = this.data() as any
 			return data?.output || data?.pipe || ''
+		}
+
+		override error_content() {
+			const data = this.data() as any
+			return data?.error || data?.stderr || ''
 		}
 	}
 }

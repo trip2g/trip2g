@@ -26,6 +26,10 @@ namespace $.$$ {
 		},
 		PipeControl: {
 			minWidth: rem( 5 ),
-		}
+		},
+		Error: {
+			color: 'red',
+			whiteSpace: 'pre-wrap',
+		},
 	} )
 }

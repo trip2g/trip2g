@@ -38,6 +38,11 @@ type ErrorPayload {
   message: String!
 }
 
+type BlockErrorPayload {
+  index: Int!
+  message: String!
+}
+
 input ParseMarkdownInput {
   content: String!
 }
@@ -94,17 +99,20 @@ input FleetInput {
   now: String
 }
 
-type RunBlockPipe {
+type RunBlockResult {
   index: Int!
-  content: String!
+  exitCode: Int!
+  stdout: String!
+  stderr: String!
+  pipe: String!
 }
 
 type RunBlocksPayload {
   output: String!
-  pipes: [RunBlockPipe!]
+  results: [RunBlockResult!]!
 }
 
-union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload
+union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload | BlockErrorPayload
 
 type Mutation {
   assembleMarkdown(input: AssembleMarkdownInput!): AssembleMarkdownOrErrorPayload!

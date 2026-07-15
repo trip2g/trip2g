@@ -1,5 +1,5 @@
 {"interpreters": [
-  {"name":"python","cmd":["python3"],"code_block_labels":["py","python","python3"],"ext":".py"},
+  {"name":"python","cmd":["python3","-S"],"code_block_labels":["py","python","python3"],"ext":".py"},
   {"name":"node","cmd":["node"],"code_block_labels":["js","javascript","node"],"ext":".js"},
   {"name":"bash","cmd":["bash"],"code_block_labels":["sh","bash"],"ext":".sh"},
   {"name":"ruby","cmd":["ruby"],"code_block_labels":["rb","ruby"],"ext":".rb"},
