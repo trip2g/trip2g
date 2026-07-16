@@ -9,11 +9,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	onboardingvault "trip2g/onboarding-vault"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 	"trip2g/internal/ptr"
@@ -104,7 +107,45 @@ func generateAntigravityJSON(apiKey, publicURL string) ([]byte, error) {
 	return json.MarshalIndent(cfg, "", "  ")
 }
 
-func Resolve(ctx context.Context, env Env, userID int, enableAdminGraphQL bool) ([]byte, error) {
+// maxVaultNameLen caps the vault name so it stays a usable filename.
+const maxVaultNameLen = 64
+
+// vaultNamePattern is an allowlist: the name becomes both a filename and a
+// path inside the archive, so anything that could escape either is rejected
+// rather than sanitised. Leading dot/dash keeps the name out of hidden-file
+// and option-flag territory.
+var vaultNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+
+func validateVaultName(name string) error {
+	if name == "" {
+		return &appreq.Error{Code: http.StatusBadRequest, Message: "name must not be empty"}
+	}
+
+	if len(name) > maxVaultNameLen {
+		return &appreq.Error{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("name must be at most %d characters", maxVaultNameLen),
+		}
+	}
+
+	if !vaultNamePattern.MatchString(name) {
+		return &appreq.Error{
+			Code:    http.StatusBadRequest,
+			Message: "name must start with a letter or digit and contain only letters, digits, dot, dash or underscore",
+		}
+	}
+
+	return nil
+}
+
+// Resolve builds the vault ZIP rooted at vaultName, which must already be
+// validated by validateVaultName.
+func Resolve(ctx context.Context, env Env, userID int, enableAdminGraphQL bool, vaultName string) ([]byte, error) {
+	err := validateVaultName(vaultName)
+	if err != nil {
+		return nil, err
+	}
+
 	// Generate new API key
 	apiKey := env.GenerateAPIKey()
 
@@ -182,7 +223,7 @@ func Resolve(ctx context.Context, env Env, userID int, enableAdminGraphQL bool) 
 		}
 	}
 
-	newPrefix := domainFromURL(publicURL) + "/"
+	newPrefix := vaultName + "/"
 
 	// Read embedded ZIP and modify files, replacing {{publicUrl}} placeholder.
 	modifiedZip, err := modifyZipFiles(onboardingvault.ZipData, replacements, publicURL, newPrefix)

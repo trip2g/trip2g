@@ -21,4 +21,21 @@ test.describe('Onboarding vault download', () => {
     const body = await res.body();
     expect(body.length).toBeGreaterThan(0);
   });
+
+  test('name sets the download filename', async ({ request }) => {
+    const token = await graphqlSignIn(request);
+    const res = await request.get(`${ENDPOINT}?name=secondbrain`, {
+      headers: { Cookie: `trip2g_e2e=${token}` },
+    });
+    expect(res.status()).toBe(200);
+    expect(res.headers()['content-disposition']).toContain('secondbrain.zip');
+  });
+
+  test('rejects an invalid name with 400', async ({ request }) => {
+    const token = await graphqlSignIn(request);
+    const res = await request.get(`${ENDPOINT}?name=${encodeURIComponent('../etc')}`, {
+      headers: { Cookie: `trip2g_e2e=${token}` },
+    });
+    expect(res.status()).toBe(400);
+  });
 });
