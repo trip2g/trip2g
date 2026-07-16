@@ -92,6 +92,7 @@ test.describe.serial('Fleet kanban vertical slice', () => {
   // patch_note on the first call, finish on the second.
   const roleSeed = [
     '---',
+    'fleet_id: e2e',
     'model: mock',
     'tools: [search, read_note, patch_note]',
     'read_patterns: ["boards/**","roles/**"]',

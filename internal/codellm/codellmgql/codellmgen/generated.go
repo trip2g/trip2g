@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"trip2g/internal/codellm/codellmgql/model"
+	"trip2g/internal/fleetinput"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -49,10 +50,11 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	AssembleMarkdown(ctx context.Context, blocks []model.MdBlockInput) (string, error)
+	AssembleMarkdown(ctx context.Context, input model.AssembleMarkdownInput) (model.AssembleMarkdownOrErrorPayload, error)
+	RunBlocks(ctx context.Context, input model.RunBlocksInput) (model.RunBlocksOrErrorPayload, error)
 }
 type QueryResolver interface {
-	ParseMarkdown(ctx context.Context, md string) ([]model.MdBlock, error)
+	ParseMarkdown(ctx context.Context, input model.ParseMarkdownInput) (model.ParseMarkdownOrErrorPayload, error)
 }
 
 type executableSchema struct {
@@ -80,7 +82,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAssembleMarkdownInput,
+		ec.unmarshalInputFleetAttachedNoteInput,
+		ec.unmarshalInputFleetChangeInput,
+		ec.unmarshalInputFleetInput,
 		ec.unmarshalInputMdBlockInput,
+		ec.unmarshalInputParseMarkdownInput,
+		ec.unmarshalInputRunBlocksInput,
 	)
 	first := true
 
@@ -180,7 +188,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "../schema.graphqls", Input: `# codellm's own GraphQL surface — markdown STRUCTURE only (editor/debugger
 # support), never execution. Execution stays the OpenAI REST path
-# (/v1/chat/completions + x_fleet_debug). See docs/dev/fleet_graphql.md.
+# (/v1/chat/completions). See docs/dev/fleet_graphql.md.
 #
 # parseMarkdown splits a body into ordered code/prose blocks, reusing codellm's
 # OWN ExtractFencedBlocks so block boundaries match execution exactly (a JS
@@ -192,11 +200,20 @@ enum BlockKind {
   PROSE # everything between/around fences, preserved verbatim
 }
 
-type MdBlock {
+scalar JSON
+
+union MarkdownBlock = MarkdownCodeBlock | MarkdownProseBlock
+
+type MarkdownCodeBlock {
   index: Int!
-  kind: BlockKind!
-  language: String # fence info string for CODE (may be ""); null for PROSE
-  content: String! # CODE: the code between fences; PROSE: the raw text
+  language: String!
+  content: String!
+}
+
+type MarkdownProseBlock {
+  index: Int!
+  content: String!
+  html: String!
 }
 
 input MdBlockInput {
@@ -205,14 +222,90 @@ input MdBlockInput {
   content: String!
 }
 
-type Query {
-  # Split md into ordered code/prose blocks (codellm's own fence boundaries).
-  parseMarkdown(md: String!): [MdBlock!]!
+type ErrorPayload {
+  message: String!
 }
 
+type BlockErrorPayload {
+  index: Int!
+  message: String!
+}
+
+input ParseMarkdownInput {
+  content: String!
+}
+
+type ParseMarkdownPayload {
+  frontmatter: JSON!
+  blocks: [MarkdownBlock!]!
+}
+
+union ParseMarkdownOrErrorPayload = ParseMarkdownPayload | ErrorPayload
+
+input AssembleMarkdownInput {
+  blocks: [MdBlockInput!]!
+}
+
+type AssembleMarkdownPayload {
+  content: String!
+}
+
+union AssembleMarkdownOrErrorPayload = AssembleMarkdownPayload | ErrorPayload
+
+type Query {
+  parseMarkdown(input: ParseMarkdownInput!): ParseMarkdownOrErrorPayload!
+}
+
+input RunBlocksInput {
+  input: FleetInput!
+  maxSteps: Int # number of Markdown blocks; prose blocks are skipped
+  blocks: [MdBlockInput!]!
+}
+
+input FleetChangeInput {
+  path: String!
+  event: String!
+  pathId: Int!
+  version: Int!
+  title: String!
+  content: String!
+}
+
+input FleetAttachedNoteInput {
+  path: String!
+  title: String!
+  content: String!
+  updatedAt: String!
+  tags: [String!]!
+}
+
+input FleetInput {
+  changedFiles: [FleetChangeInput!]!
+  changeFile: FleetChangeInput
+  attachedNotes: [FleetAttachedNoteInput!]!
+  depth: Int!
+  now: String
+}
+
+type RunBlockResult {
+  index: Int!
+  exitCode: Int!
+  durationMs: Int!
+  maxRssBytes: Int!
+  stdout: String!
+  stderr: String!
+}
+
+type RunBlocksPayload {
+  output: String!
+  results: [RunBlockResult!]!
+}
+
+union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload | BlockErrorPayload
+
 type Mutation {
-  # Round-trip the ordered blocks back into a single markdown string.
-  assembleMarkdown(blocks: [MdBlockInput!]!): String!
+  assembleMarkdown(input: AssembleMarkdownInput!): AssembleMarkdownOrErrorPayload!
+  runBlocks(input: RunBlocksInput!): RunBlocksOrErrorPayload!
 }
 `, BuiltIn: false},
 }
@@ -225,11 +318,22 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_assembleMarkdown_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "blocks", ec.unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAssembleMarkdownInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownInput)
 	if err != nil {
 		return nil, err
 	}
-	args["blocks"] = arg0
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_runBlocks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRunBlocksInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -247,11 +351,11 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_Query_parseMarkdown_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "md", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNParseMarkdownInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownInput)
 	if err != nil {
 		return nil, err
 	}
-	args["md"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -307,99 +411,12 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _MdBlock_index(ctx context.Context, field graphql.CollectedField, obj *model.MdBlock) (ret graphql.Marshaler) {
+func (ec *executionContext) _AssembleMarkdownPayload_content(ctx context.Context, field graphql.CollectedField, obj *model.AssembleMarkdownPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_MdBlock_index,
-		func(ctx context.Context) (any, error) {
-			return obj.Index, nil
-		},
-		nil,
-		ec.marshalNInt2int,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_MdBlock_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "MdBlock",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _MdBlock_kind(ctx context.Context, field graphql.CollectedField, obj *model.MdBlock) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_MdBlock_kind,
-		func(ctx context.Context) (any, error) {
-			return obj.Kind, nil
-		},
-		nil,
-		ec.marshalNBlockKind2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐBlockKind,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_MdBlock_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "MdBlock",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type BlockKind does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _MdBlock_language(ctx context.Context, field graphql.CollectedField, obj *model.MdBlock) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_MdBlock_language,
-		func(ctx context.Context) (any, error) {
-			return obj.Language, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_MdBlock_language(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "MdBlock",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _MdBlock_content(ctx context.Context, field graphql.CollectedField, obj *model.MdBlock) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_MdBlock_content,
+		ec.fieldContext_AssembleMarkdownPayload_content,
 		func(ctx context.Context) (any, error) {
 			return obj.Content, nil
 		},
@@ -410,9 +427,270 @@ func (ec *executionContext) _MdBlock_content(ctx context.Context, field graphql.
 	)
 }
 
-func (ec *executionContext) fieldContext_MdBlock_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AssembleMarkdownPayload_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "MdBlock",
+		Object:     "AssembleMarkdownPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BlockErrorPayload_index(ctx context.Context, field graphql.CollectedField, obj *model.BlockErrorPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BlockErrorPayload_index,
+		func(ctx context.Context) (any, error) {
+			return obj.Index, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_BlockErrorPayload_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BlockErrorPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BlockErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.BlockErrorPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BlockErrorPayload_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_BlockErrorPayload_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BlockErrorPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.ErrorPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ErrorPayload_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ErrorPayload_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ErrorPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MarkdownCodeBlock_index(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownCodeBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkdownCodeBlock_index,
+		func(ctx context.Context) (any, error) {
+			return obj.Index, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkdownCodeBlock_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkdownCodeBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MarkdownCodeBlock_language(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownCodeBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkdownCodeBlock_language,
+		func(ctx context.Context) (any, error) {
+			return obj.Language, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkdownCodeBlock_language(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkdownCodeBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MarkdownCodeBlock_content(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownCodeBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkdownCodeBlock_content,
+		func(ctx context.Context) (any, error) {
+			return obj.Content, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkdownCodeBlock_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkdownCodeBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MarkdownProseBlock_index(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownProseBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkdownProseBlock_index,
+		func(ctx context.Context) (any, error) {
+			return obj.Index, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkdownProseBlock_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkdownProseBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MarkdownProseBlock_content(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownProseBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkdownProseBlock_content,
+		func(ctx context.Context) (any, error) {
+			return obj.Content, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkdownProseBlock_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkdownProseBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MarkdownProseBlock_html(ctx context.Context, field graphql.CollectedField, obj *model.MarkdownProseBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MarkdownProseBlock_html,
+		func(ctx context.Context) (any, error) {
+			return obj.HTML, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MarkdownProseBlock_html(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MarkdownProseBlock",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -431,10 +709,10 @@ func (ec *executionContext) _Mutation_assembleMarkdown(ctx context.Context, fiel
 		ec.fieldContext_Mutation_assembleMarkdown,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AssembleMarkdown(ctx, fc.Args["blocks"].([]model.MdBlockInput))
+			return ec.resolvers.Mutation().AssembleMarkdown(ctx, fc.Args["input"].(model.AssembleMarkdownInput))
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalNAssembleMarkdownOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownOrErrorPayload,
 		true,
 		true,
 	)
@@ -447,7 +725,7 @@ func (ec *executionContext) fieldContext_Mutation_assembleMarkdown(ctx context.C
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type AssembleMarkdownOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -464,6 +742,105 @@ func (ec *executionContext) fieldContext_Mutation_assembleMarkdown(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_runBlocks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_runBlocks,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().RunBlocks(ctx, fc.Args["input"].(model.RunBlocksInput))
+		},
+		nil,
+		ec.marshalNRunBlocksOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_runBlocks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RunBlocksOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_runBlocks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParseMarkdownPayload_frontmatter(ctx context.Context, field graphql.CollectedField, obj *model.ParseMarkdownPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParseMarkdownPayload_frontmatter,
+		func(ctx context.Context) (any, error) {
+			return obj.Frontmatter, nil
+		},
+		nil,
+		ec.marshalNJSON2map,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParseMarkdownPayload_frontmatter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParseMarkdownPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type JSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ParseMarkdownPayload_blocks(ctx context.Context, field graphql.CollectedField, obj *model.ParseMarkdownPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ParseMarkdownPayload_blocks,
+		func(ctx context.Context) (any, error) {
+			return obj.Blocks, nil
+		},
+		nil,
+		ec.marshalNMarkdownBlock2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlockᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ParseMarkdownPayload_blocks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ParseMarkdownPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type MarkdownBlock does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_parseMarkdown(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -472,10 +849,10 @@ func (ec *executionContext) _Query_parseMarkdown(ctx context.Context, field grap
 		ec.fieldContext_Query_parseMarkdown,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().ParseMarkdown(ctx, fc.Args["md"].(string))
+			return ec.resolvers.Query().ParseMarkdown(ctx, fc.Args["input"].(model.ParseMarkdownInput))
 		},
 		nil,
-		ec.marshalNMdBlock2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockᚄ,
+		ec.marshalNParseMarkdownOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownOrErrorPayload,
 		true,
 		true,
 	)
@@ -488,17 +865,7 @@ func (ec *executionContext) fieldContext_Query_parseMarkdown(ctx context.Context
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "index":
-				return ec.fieldContext_MdBlock_index(ctx, field)
-			case "kind":
-				return ec.fieldContext_MdBlock_kind(ctx, field)
-			case "language":
-				return ec.fieldContext_MdBlock_language(ctx, field)
-			case "content":
-				return ec.fieldContext_MdBlock_content(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type MdBlock", field.Name)
+			return nil, errors.New("field of type ParseMarkdownOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -618,6 +985,252 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_index(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_index,
+		func(ctx context.Context) (any, error) {
+			return obj.Index, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_exitCode(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_exitCode,
+		func(ctx context.Context) (any, error) {
+			return obj.ExitCode, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_exitCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_durationMs(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_durationMs,
+		func(ctx context.Context) (any, error) {
+			return obj.DurationMs, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_durationMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_maxRssBytes(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_maxRssBytes,
+		func(ctx context.Context) (any, error) {
+			return obj.MaxRssBytes, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_maxRssBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_stdout(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_stdout,
+		func(ctx context.Context) (any, error) {
+			return obj.Stdout, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_stdout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlockResult_stderr(ctx context.Context, field graphql.CollectedField, obj *model.RunBlockResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlockResult_stderr,
+		func(ctx context.Context) (any, error) {
+			return obj.Stderr, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlockResult_stderr(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlockResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlocksPayload_output(ctx context.Context, field graphql.CollectedField, obj *model.RunBlocksPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlocksPayload_output,
+		func(ctx context.Context) (any, error) {
+			return obj.Output, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlocksPayload_output(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlocksPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunBlocksPayload_results(ctx context.Context, field graphql.CollectedField, obj *model.RunBlocksPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RunBlocksPayload_results,
+		func(ctx context.Context) (any, error) {
+			return obj.Results, nil
+		},
+		nil,
+		ec.marshalNRunBlockResult2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResultᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RunBlocksPayload_results(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunBlocksPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "index":
+				return ec.fieldContext_RunBlockResult_index(ctx, field)
+			case "exitCode":
+				return ec.fieldContext_RunBlockResult_exitCode(ctx, field)
+			case "durationMs":
+				return ec.fieldContext_RunBlockResult_durationMs(ctx, field)
+			case "maxRssBytes":
+				return ec.fieldContext_RunBlockResult_maxRssBytes(ctx, field)
+			case "stdout":
+				return ec.fieldContext_RunBlockResult_stdout(ctx, field)
+			case "stderr":
+				return ec.fieldContext_RunBlockResult_stderr(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RunBlockResult", field.Name)
 		},
 	}
 	return fc, nil
@@ -2069,6 +2682,205 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAssembleMarkdownInput(ctx context.Context, obj any) (model.AssembleMarkdownInput, error) {
+	var it model.AssembleMarkdownInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"blocks"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "blocks":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blocks"))
+			data, err := ec.unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Blocks = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFleetAttachedNoteInput(ctx context.Context, obj any) (fleetinput.AttachedNote, error) {
+	var it fleetinput.AttachedNote
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "title", "content", "updatedAt", "tags"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFleetChangeInput(ctx context.Context, obj any) (fleetinput.ChangeInfo, error) {
+	var it fleetinput.ChangeInfo
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "event", "pathId", "version", "title", "content"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "event":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("event"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Event = data
+		case "pathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathId"))
+			data, err := ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PathID = data
+		case "version":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("version"))
+			data, err := ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Version = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFleetInput(ctx context.Context, obj any) (fleetinput.Input, error) {
+	var it fleetinput.Input
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"changedFiles", "changeFile", "attachedNotes", "depth", "now"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "changedFiles":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changedFiles"))
+			data, err := ec.unmarshalNFleetChangeInput2ᚕtrip2gᚋinternalᚋfleetinputᚐChangeInfoᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangedFiles = data
+		case "changeFile":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("changeFile"))
+			data, err := ec.unmarshalOFleetChangeInput2ᚖtrip2gᚋinternalᚋfleetinputᚐChangeInfo(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChangeFile = data
+		case "attachedNotes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("attachedNotes"))
+			data, err := ec.unmarshalNFleetAttachedNoteInput2ᚕtrip2gᚋinternalᚋfleetinputᚐAttachedNoteᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AttachedNotes = data
+		case "depth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("depth"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Depth = data
+		case "now":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("now"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Now = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputMdBlockInput(ctx context.Context, obj any) (model.MdBlockInput, error) {
 	var it model.MdBlockInput
 	asMap := map[string]any{}
@@ -2110,39 +2922,375 @@ func (ec *executionContext) unmarshalInputMdBlockInput(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputParseMarkdownInput(ctx context.Context, obj any) (model.ParseMarkdownInput, error) {
+	var it model.ParseMarkdownInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"content"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRunBlocksInput(ctx context.Context, obj any) (model.RunBlocksInput, error) {
+	var it model.RunBlocksInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"input", "maxSteps", "blocks"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "input":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+			data, err := ec.unmarshalNFleetInput2ᚖtrip2gᚋinternalᚋfleetinputᚐInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Input = data
+		case "maxSteps":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxSteps"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxSteps = data
+		case "blocks":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blocks"))
+			data, err := ec.unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Blocks = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
+
+func (ec *executionContext) _AssembleMarkdownOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.AssembleMarkdownOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.AssembleMarkdownPayload:
+		return ec._AssembleMarkdownPayload(ctx, sel, &obj)
+	case *model.AssembleMarkdownPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AssembleMarkdownPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _MarkdownBlock(ctx context.Context, sel ast.SelectionSet, obj model.MarkdownBlock) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.MarkdownProseBlock:
+		return ec._MarkdownProseBlock(ctx, sel, &obj)
+	case *model.MarkdownProseBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MarkdownProseBlock(ctx, sel, obj)
+	case model.MarkdownCodeBlock:
+		return ec._MarkdownCodeBlock(ctx, sel, &obj)
+	case *model.MarkdownCodeBlock:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MarkdownCodeBlock(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ParseMarkdownOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ParseMarkdownOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ParseMarkdownPayload:
+		return ec._ParseMarkdownPayload(ctx, sel, &obj)
+	case *model.ParseMarkdownPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ParseMarkdownPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RunBlocksOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RunBlocksOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RunBlocksPayload:
+		return ec._RunBlocksPayload(ctx, sel, &obj)
+	case *model.RunBlocksPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RunBlocksPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.BlockErrorPayload:
+		return ec._BlockErrorPayload(ctx, sel, &obj)
+	case *model.BlockErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._BlockErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
 
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
 
-var mdBlockImplementors = []string{"MdBlock"}
+var assembleMarkdownPayloadImplementors = []string{"AssembleMarkdownPayload", "AssembleMarkdownOrErrorPayload"}
 
-func (ec *executionContext) _MdBlock(ctx context.Context, sel ast.SelectionSet, obj *model.MdBlock) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, mdBlockImplementors)
+func (ec *executionContext) _AssembleMarkdownPayload(ctx context.Context, sel ast.SelectionSet, obj *model.AssembleMarkdownPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, assembleMarkdownPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("MdBlock")
-		case "index":
-			out.Values[i] = ec._MdBlock_index(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("AssembleMarkdownPayload")
+		case "content":
+			out.Values[i] = ec._AssembleMarkdownPayload_content(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "kind":
-			out.Values[i] = ec._MdBlock_kind(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var blockErrorPayloadImplementors = []string{"BlockErrorPayload", "RunBlocksOrErrorPayload"}
+
+func (ec *executionContext) _BlockErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.BlockErrorPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, blockErrorPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BlockErrorPayload")
+		case "index":
+			out.Values[i] = ec._BlockErrorPayload_index(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._BlockErrorPayload_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var errorPayloadImplementors = []string{"ErrorPayload", "ParseMarkdownOrErrorPayload", "AssembleMarkdownOrErrorPayload", "RunBlocksOrErrorPayload"}
+
+func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ErrorPayload")
+		case "message":
+			out.Values[i] = ec._ErrorPayload_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var markdownCodeBlockImplementors = []string{"MarkdownCodeBlock", "MarkdownBlock"}
+
+func (ec *executionContext) _MarkdownCodeBlock(ctx context.Context, sel ast.SelectionSet, obj *model.MarkdownCodeBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, markdownCodeBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MarkdownCodeBlock")
+		case "index":
+			out.Values[i] = ec._MarkdownCodeBlock_index(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
 		case "language":
-			out.Values[i] = ec._MdBlock_language(ctx, field, obj)
+			out.Values[i] = ec._MarkdownCodeBlock_language(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "content":
-			out.Values[i] = ec._MdBlock_content(ctx, field, obj)
+			out.Values[i] = ec._MarkdownCodeBlock_content(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var markdownProseBlockImplementors = []string{"MarkdownProseBlock", "MarkdownBlock"}
+
+func (ec *executionContext) _MarkdownProseBlock(ctx context.Context, sel ast.SelectionSet, obj *model.MarkdownProseBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, markdownProseBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MarkdownProseBlock")
+		case "index":
+			out.Values[i] = ec._MarkdownProseBlock_index(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "content":
+			out.Values[i] = ec._MarkdownProseBlock_content(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "html":
+			out.Values[i] = ec._MarkdownProseBlock_html(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -2192,6 +3340,57 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_assembleMarkdown(ctx, field)
 			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "runBlocks":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_runBlocks(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var parseMarkdownPayloadImplementors = []string{"ParseMarkdownPayload", "ParseMarkdownOrErrorPayload"}
+
+func (ec *executionContext) _ParseMarkdownPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ParseMarkdownPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, parseMarkdownPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ParseMarkdownPayload")
+		case "frontmatter":
+			out.Values[i] = ec._ParseMarkdownPayload_frontmatter(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "blocks":
+			out.Values[i] = ec._ParseMarkdownPayload_blocks(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -2267,6 +3466,114 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var runBlockResultImplementors = []string{"RunBlockResult"}
+
+func (ec *executionContext) _RunBlockResult(ctx context.Context, sel ast.SelectionSet, obj *model.RunBlockResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, runBlockResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RunBlockResult")
+		case "index":
+			out.Values[i] = ec._RunBlockResult_index(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "exitCode":
+			out.Values[i] = ec._RunBlockResult_exitCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "durationMs":
+			out.Values[i] = ec._RunBlockResult_durationMs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "maxRssBytes":
+			out.Values[i] = ec._RunBlockResult_maxRssBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stdout":
+			out.Values[i] = ec._RunBlockResult_stdout(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stderr":
+			out.Values[i] = ec._RunBlockResult_stderr(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var runBlocksPayloadImplementors = []string{"RunBlocksPayload", "RunBlocksOrErrorPayload"}
+
+func (ec *executionContext) _RunBlocksPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RunBlocksPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, runBlocksPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RunBlocksPayload")
+		case "output":
+			out.Values[i] = ec._RunBlocksPayload_output(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "results":
+			out.Values[i] = ec._RunBlocksPayload_results(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2625,6 +3932,21 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAssembleMarkdownInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownInput(ctx context.Context, v any) (model.AssembleMarkdownInput, error) {
+	res, err := ec.unmarshalInputAssembleMarkdownInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAssembleMarkdownOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.AssembleMarkdownOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AssembleMarkdownOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNBlockKind2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐBlockKind(ctx context.Context, v any) (model.BlockKind, error) {
 	var res model.BlockKind
 	err := res.UnmarshalGQL(v)
@@ -2651,6 +3973,51 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNFleetAttachedNoteInput2trip2gᚋinternalᚋfleetinputᚐAttachedNote(ctx context.Context, v any) (fleetinput.AttachedNote, error) {
+	res, err := ec.unmarshalInputFleetAttachedNoteInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFleetAttachedNoteInput2ᚕtrip2gᚋinternalᚋfleetinputᚐAttachedNoteᚄ(ctx context.Context, v any) ([]fleetinput.AttachedNote, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]fleetinput.AttachedNote, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFleetAttachedNoteInput2trip2gᚋinternalᚋfleetinputᚐAttachedNote(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNFleetChangeInput2trip2gᚋinternalᚋfleetinputᚐChangeInfo(ctx context.Context, v any) (fleetinput.ChangeInfo, error) {
+	res, err := ec.unmarshalInputFleetChangeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFleetChangeInput2ᚕtrip2gᚋinternalᚋfleetinputᚐChangeInfoᚄ(ctx context.Context, v any) ([]fleetinput.ChangeInfo, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]fleetinput.ChangeInfo, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFleetChangeInput2trip2gᚋinternalᚋfleetinputᚐChangeInfo(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNFleetInput2ᚖtrip2gᚋinternalᚋfleetinputᚐInput(ctx context.Context, v any) (*fleetinput.Input, error) {
+	res, err := ec.unmarshalInputFleetInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2667,11 +4034,55 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNMdBlock2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlock(ctx context.Context, sel ast.SelectionSet, v model.MdBlock) graphql.Marshaler {
-	return ec._MdBlock(ctx, sel, &v)
+func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v any) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNMdBlock2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MdBlock) graphql.Marshaler {
+func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNJSON2map(ctx context.Context, v any) (map[string]any, error) {
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNJSON2map(ctx context.Context, sel ast.SelectionSet, v map[string]any) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalMap(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNMarkdownBlock2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlock(ctx context.Context, sel ast.SelectionSet, v model.MarkdownBlock) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MarkdownBlock(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMarkdownBlock2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlockᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MarkdownBlock) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2695,7 +4106,7 @@ func (ec *executionContext) marshalNMdBlock2ᚕtrip2gᚋinternalᚋcodellmᚋcod
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNMdBlock2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlock(ctx, sel, v[i])
+			ret[i] = ec.marshalNMarkdownBlock2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlock(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2735,6 +4146,84 @@ func (ec *executionContext) unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodell
 	return res, nil
 }
 
+func (ec *executionContext) unmarshalNParseMarkdownInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownInput(ctx context.Context, v any) (model.ParseMarkdownInput, error) {
+	res, err := ec.unmarshalInputParseMarkdownInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNParseMarkdownOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ParseMarkdownOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ParseMarkdownOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRunBlockResult2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResult(ctx context.Context, sel ast.SelectionSet, v model.RunBlockResult) graphql.Marshaler {
+	return ec._RunBlockResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRunBlockResult2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RunBlockResult) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRunBlockResult2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResult(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNRunBlocksInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksInput(ctx context.Context, v any) (model.RunBlocksInput, error) {
+	res, err := ec.unmarshalInputRunBlocksInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRunBlocksOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RunBlocksOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RunBlocksOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2749,6 +4238,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -3031,6 +4550,32 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOFleetChangeInput2ᚖtrip2gᚋinternalᚋfleetinputᚐChangeInfo(ctx context.Context, v any) (*fleetinput.ChangeInfo, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputFleetChangeInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v any) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalInt(*v)
 	return res
 }
 

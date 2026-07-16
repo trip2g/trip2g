@@ -36,6 +36,10 @@ type Config struct {
 	// Sandbox is the OS-level isolation mode for each executed block.
 	Sandbox coderun.SandboxMode
 
+	// SandboxNetwork allows sandboxed blocks to use the network namespace.
+	// Filesystem and process isolation remain enabled.
+	SandboxNetwork bool
+
 	// Timeout bounds a single completion's code run; 0 = request-context bound.
 	Timeout time.Duration
 
@@ -58,11 +62,20 @@ type Config struct {
 	// SSE proxy). Required and non-empty so the browser gate is always wired
 	// (fail-closed). Named to match fleet's appconfig.Trip2gBaseURL.
 	Trip2gBaseURL string
+
+	// ExposeEnv / ExposeEnvPrefix are the operator's allowlist of env var NAMES
+	// (exact) and name prefixes codellm exposes from its OWN environment to
+	// executed code, on every run. codellm owns the secrets, so codellm alone
+	// decides what to expose — the request carries nothing about env. Both empty
+	// (the default) = expose nothing. Holding the secret VALUES here (deploy-time
+	// env / mounted secret) is the point: fleet holds no secrets.
+	ExposeEnv       []string
+	ExposeEnvPrefix []string
 }
 
 // Defaults.
 const (
-	DefaultAddr            = "127.0.0.1:8082"
+	DefaultAddr            = "127.0.0.1:8087"
 	DefaultAllowedPrograms = "python,bash,node"
 	DefaultTimeout         = 300 * time.Second
 	DefaultTrip2gBaseURL   = "http://127.0.0.1:8081"
@@ -121,6 +134,11 @@ func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_SANDBOX"); v != "" {
 		c.Sandbox = coderun.SandboxMode(v)
 	}
+	if v := os.Getenv("CODELLM_SANDBOX_NETWORK"); v != "" {
+		if enabled, err := strconv.ParseBool(v); err == nil {
+			c.SandboxNetwork = enabled
+		}
+	}
 	if v := os.Getenv("CODELLM_TIMEOUT"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			c.Timeout = d
@@ -137,6 +155,12 @@ func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_TRIP2G_URL"); v != "" {
 		c.Trip2gBaseURL = v
 	}
+	if v := os.Getenv("CODELLM_EXPOSE_ENV"); v != "" {
+		c.ExposeEnv = splitCSV(v)
+	}
+	if v := os.Getenv("CODELLM_EXPOSE_ENV_PREFIX"); v != "" {
+		c.ExposeEnvPrefix = splitCSV(v)
+	}
 }
 
 // defineAndParseFlags registers flags seeded from the env-resolved config (so
@@ -147,14 +171,23 @@ func (c *Config) defineAndParseFlags(args []string) error {
 
 	allowedPrograms := strings.Join(c.AllowedPrograms, ",")
 	sandbox := string(c.Sandbox)
+	sandboxNetwork := c.SandboxNetwork
+	exposeEnv := strings.Join(c.ExposeEnv, ",")
+	exposeEnvPrefix := strings.Join(c.ExposeEnvPrefix, ",")
 
 	fs.StringVar(&c.Addr, "addr", c.Addr, "listen address for the OpenAI-compatible API; defaults to loopback since auth is a no-op seam")
 	fs.StringVar(&allowedPrograms, "allowed-programs", allowedPrograms, "comma-separated interpreter allowlist; empty disables code execution")
 	fs.StringVar(&sandbox, "sandbox", sandbox, "sandbox mode: native | besteffort | off")
+	fs.BoolVar(&sandboxNetwork, "sandbox-network", sandboxNetwork, "allow network access from sandboxed blocks")
 	fs.DurationVar(&c.Timeout, "timeout", c.Timeout, "per-completion code-run timeout; 0 = request-context bound")
 	fs.IntVar(&c.MaxStdoutBytes, "max-stdout-bytes", c.MaxStdoutBytes, "stdout cap per code block; 0 = 1 MiB default")
 	fs.StringVar(&c.APIKey, "api-key", c.APIKey, "codellm's OpenAI-standard api_key (Bearer); empty disables key auth")
 	fs.StringVar(&c.Trip2gBaseURL, "trip2g-url", c.Trip2gBaseURL, "base URL of the trip2g instance that answers viewer{role}")
+	fs.StringVar(&exposeEnv, "expose-env", exposeEnv,
+		"comma-separated allowlist of env var NAMES codellm may expose from its own env to code "+
+			"(a request can never exceed this); empty = expose nothing")
+	fs.StringVar(&exposeEnvPrefix, "expose-env-prefix", exposeEnvPrefix,
+		"comma-separated allowlist of env var name PREFIXES codellm may expose from its own env to code")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -162,6 +195,9 @@ func (c *Config) defineAndParseFlags(args []string) error {
 
 	c.AllowedPrograms = splitCSV(allowedPrograms)
 	c.Sandbox = coderun.SandboxMode(sandbox)
+	c.SandboxNetwork = sandboxNetwork
+	c.ExposeEnv = splitCSV(exposeEnv)
+	c.ExposeEnvPrefix = splitCSV(exposeEnvPrefix)
 	return nil
 }
 

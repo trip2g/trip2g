@@ -64,7 +64,6 @@ type Node struct {
 	NotePath       string   `json:"note_path"`
 	FleetIDs       []string `json:"fleet_ids"`
 	Mode           string   `json:"mode"`
-	Executor       string   `json:"executor,omitempty"`
 	ForEach        string   `json:"for_each,omitempty"`
 	Concurrency    string   `json:"concurrency,omitempty"`
 	MaxDepth       int      `json:"max_depth"`
@@ -207,7 +206,6 @@ func deriveNodes(roles []RoleInput, markers []Marker, hasRegistry bool) []Node {
 			NotePath:       r.NotePath,
 			FleetIDs:       fleets,
 			Mode:           r.Mode,
-			Executor:       r.Executor,
 			ForEach:        r.ForEach,
 			Concurrency:    r.Concurrency,
 			MaxDepth:       r.MaxDepth,

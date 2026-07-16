@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"syscall"
 	"time"
 
 	"trip2g/internal/webhookutil"
@@ -46,9 +48,13 @@ func ExecCode(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, str
 // block's own stdout; PipeBuffer is the inter-block buffer this block feeds into
 // the NEXT block's stdin (empty for the last block, which has no downstream).
 type BlockDebug struct {
-	Index      int
-	Stdout     string
-	PipeBuffer string
+	Index       int
+	ExitCode    int
+	DurationMs  int64
+	MaxRSSBytes int64
+	Stdout      string
+	Stderr      string
+	PipeBuffer  string
 }
 
 // ExecCodeDebug is ExecCode plus per-block capture for the debugger. It drives
@@ -59,6 +65,37 @@ type BlockDebug struct {
 func ExecCodeDebug(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange, string, []BlockDebug, error) {
 	core, err := Exec(ctx, in, true)
 	return core.Changes, core.Answer, core.Debug, err
+}
+
+// ExecBlocksDebug executes the fenced code blocks in Body sequentially and
+// returns the final stdout plus every inter-block pipe capture. Unlike
+// ExecCodeDebug it does not require the final stdout to be the Fleet
+// {changes,answer} JSON contract, making it suitable for interactive UIs.
+// steps <= 0 executes all blocks; a positive value executes only that prefix.
+func ExecBlocksDebug(ctx context.Context, in CodeInput, steps int) (string, []BlockDebug, error) {
+	blocks := ExtractFencedBlocks(in.Body)
+	if len(blocks) == 0 {
+		return "", nil, errors.New("coderun: no fenced code block found in rendered body")
+	}
+	if steps > 0 && steps < len(blocks) {
+		blocks = blocks[:steps]
+	}
+	programs, err := resolvePrograms(blocks, in)
+	if err != nil {
+		return "", nil, err
+	}
+	limit := in.MaxStdoutBytes
+	if limit == 0 {
+		limit = 1 << 20
+	}
+	if len(blocks) == 1 {
+		var out string
+		var debug []BlockDebug
+		out, debug, err = runSingleBlock(ctx, blocks[0], programs[0], in, limit, true)
+		return out, debug, err
+	}
+	out, debug, err := runMultiBlock(ctx, blocks, programs, in, limit, true)
+	return out, debug, err
 }
 
 // ExecResult is the execution core's result: the parsed {changes, answer}
@@ -117,7 +154,8 @@ func Exec(ctx context.Context, in CodeInput, capture bool) (ExecResult, error) {
 func runSingleBlock(
 	ctx context.Context, block FencedBlock, program string, in CodeInput, limit int, capture bool,
 ) (string, []BlockDebug, error) {
-	out, _, _, runErr := RunBlock(ctx, CodeSpec{
+	stats := RunBlockStats{}
+	out, stderr, _, runErr := RunBlock(ctx, CodeSpec{
 		Program:        program,
 		Code:           block.Code,
 		Input:          in.Input,
@@ -126,13 +164,14 @@ func runSingleBlock(
 		EnvPrefix:      in.EnvPrefix,
 		MaxStdoutBytes: limit,
 		Sandbox:        in.Sandbox,
+		Stats:          &stats,
 	})
 	if runErr != nil {
 		return "", nil, fmt.Errorf("coderun: %w", runErr)
 	}
 	var debug []BlockDebug
 	if capture {
-		debug = []BlockDebug{{Index: 0, Stdout: out}}
+		debug = []BlockDebug{{Index: 0, ExitCode: 0, DurationMs: stats.DurationMs, MaxRSSBytes: stats.MaxRSSBytes, Stdout: out, Stderr: stderr}}
 	}
 	return out, debug, nil
 }
@@ -150,13 +189,13 @@ func runMultiBlock(
 			taps[i] = &limitedBuffer{limit: limit}
 		}
 	}
-	out, pipeErr := runPipeline(ctx, blocks, programs, in, limit, taps)
+	out, stderrs, built, pipeErr := runPipeline(ctx, blocks, programs, in, limit, taps)
 	if pipeErr != nil {
 		return "", nil, pipeErr
 	}
 	var debug []BlockDebug
 	if capture {
-		debug = buildBlockDebug(taps, out, len(blocks))
+		debug = buildBlockDebug(built, taps, out, stderrs, len(blocks))
 	}
 	return out, debug, nil
 }
@@ -166,10 +205,15 @@ func runMultiBlock(
 // stdout into the pipe feeding block i+1, so its Stdout and PipeBuffer are the
 // same captured tap; the last block's Stdout is the final output and its
 // PipeBuffer is empty (no downstream).
-func buildBlockDebug(taps pipelineDebugTaps, finalStdout string, n int) []BlockDebug {
+func buildBlockDebug(built []builtBlock, taps pipelineDebugTaps, finalStdout string, stderrs []string, n int) []BlockDebug {
 	debug := make([]BlockDebug, n)
 	for i := range n {
-		d := BlockDebug{Index: i}
+		d := BlockDebug{Index: i, ExitCode: 0}
+		d.DurationMs = time.Since(built[i].startedAt).Milliseconds()
+		d.MaxRSSBytes = maxRSSBytes(built[i].cmd.ProcessState)
+		if i < len(stderrs) {
+			d.Stderr = stderrs[i]
+		}
 		if i < n-1 {
 			buf := taps[i].String()
 			d.Stdout = buf
@@ -180,6 +224,20 @@ func buildBlockDebug(taps pipelineDebugTaps, finalStdout string, n int) []BlockD
 		debug[i] = d
 	}
 	return debug
+}
+
+func maxRSSBytes(state *os.ProcessState) int64 {
+	if state == nil {
+		return 0
+	}
+	rusage, ok := state.SysUsage().(*syscall.Rusage)
+	if !ok || rusage == nil {
+		return 0
+	}
+	if runtime.GOOS == "darwin" {
+		return int64(rusage.Maxrss)
+	}
+	return int64(rusage.Maxrss) * 1024
 }
 
 // resolvePrograms resolves and allowlist-checks every block's program before
@@ -219,6 +277,7 @@ type builtBlock struct {
 	cancel    context.CancelFunc
 	errBuf    limitedBuffer
 	sandboxed bool
+	startedAt time.Time
 }
 
 // runPipeline runs len(blocks) > 1 as a true streaming pipeline: block i's
@@ -231,12 +290,12 @@ type builtBlock struct {
 // block i+1's stdin; the last block always goes to a capped buffer regardless.
 //
 // Returns the last block's captured stdout, or the earliest-index block error.
-func runPipeline(ctx context.Context, blocks []FencedBlock, programs []string, in CodeInput, limit int, debugTaps pipelineDebugTaps) (string, error) {
+func runPipeline(ctx context.Context, blocks []FencedBlock, programs []string, in CodeInput, limit int, debugTaps pipelineDebugTaps) (string, []string, []builtBlock, error) {
 	n := len(blocks)
 
 	built, err := buildPipelineBlocks(ctx, blocks, programs, in, limit)
 	if err != nil {
-		return "", err
+		return "", nil, nil, err
 	}
 	defer cleanupPipeline(built)
 
@@ -244,10 +303,11 @@ func runPipeline(ctx context.Context, blocks []FencedBlock, programs []string, i
 	defer closeAllPipes(pipes)
 
 	if startErr := startAll(built, pipes, n); startErr != nil {
-		return "", startErr
+		return "", nil, built, startErr
 	}
 
-	return waitPipeline(built, pipes, in.Sandbox, n)
+	out, stderrs, waitErr := waitPipeline(built, pipes, in.Sandbox, n)
+	return out, stderrs, built, waitErr
 }
 
 // buildPipelineBlocks prepares all blocks upfront — any build failure tears
@@ -300,6 +360,7 @@ func wirePipeline(built []builtBlock, limit int, debugTaps pipelineDebugTaps) []
 // pipes with the start error so blocked readers drain.
 func startAll(built []builtBlock, pipes []*io.PipeWriter, n int) error {
 	for i := range built {
+		built[i].startedAt = time.Now()
 		if sErr := built[i].cmd.Start(); sErr != nil {
 			for j := range i {
 				_ = pipes[j].CloseWithError(sErr)
@@ -318,7 +379,7 @@ type pipeWaitResult struct {
 
 // waitPipeline waits for all blocks, cancels on any failure, and returns the
 // last block's stdout string or the earliest-index block error.
-func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPolicy, n int) (string, error) {
+func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPolicy, n int) (string, []string, error) {
 	pipeCtx, pipeCancel := context.WithCancel(context.Background())
 	defer pipeCancel()
 
@@ -343,22 +404,22 @@ func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPol
 	for i, e := range errs {
 		if e != nil {
 			if built[i].blockCtx.Err() != nil {
-				return "", fmt.Errorf("coderun: %stimed out", blockPrefix(i, n))
+				return "", stderrs, fmt.Errorf("coderun: %stimed out", blockPrefix(i, n))
 			}
 			msg := stderrs[i]
 			if msg == "" {
 				msg = e.Error()
 			}
-			return "", fmt.Errorf("coderun: %snon-zero exit: %s", blockPrefix(i, n), msg)
+			return "", stderrs, fmt.Errorf("coderun: %snon-zero exit: %s", blockPrefix(i, n), msg)
 		}
 	}
 
 	// All blocks succeeded; extract the last block's stdout via the Stdout pointer.
 	lastBuf, ok := built[n-1].cmd.Stdout.(*limitedBuffer)
 	if !ok || lastBuf == nil {
-		return "", errors.New("coderun: internal error: last block stdout not captured")
+		return "", stderrs, errors.New("coderun: internal error: last block stdout not captured")
 	}
-	return lastBuf.String(), nil
+	return lastBuf.String(), stderrs, nil
 }
 
 // waitOne waits for block idx and sends its result on ch. Closes the

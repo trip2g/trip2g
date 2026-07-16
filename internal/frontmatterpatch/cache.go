@@ -9,6 +9,8 @@ import (
 	"sync"
 
 	jsonnet "github.com/google/go-jsonnet"
+
+	"trip2g/internal/yamlutil"
 )
 
 // ResultCache memoizes ApplyPatches results across note-loader reloads.
@@ -159,11 +161,11 @@ func PatchSetHash(patches []CompiledPatch) string {
 // canonical JSON form that Evaluate marshals (encoding/json sorts map keys), so
 // two maps with equal content hash equal regardless of iteration order.
 func hashMeta(rawMeta map[string]interface{}) string {
-	b, err := json.Marshal(normalizeYAML(rawMeta))
+	b, err := json.Marshal(yamlutil.Normalize(rawMeta))
 	if err != nil {
 		// Unmarshalable meta: return a value that never matches a stored entry,
 		// forcing a correct (uncached) recompute. Practically unreachable, since
-		// normalizeYAML produces JSON-marshalable values.
+		// yamlutil.Normalize produces JSON-marshalable values.
 		return "\x00unhashable"
 	}
 	sum := sha256.Sum256(b)

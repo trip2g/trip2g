@@ -21,15 +21,21 @@ type Env interface {
 	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)
 	NotePathByID(ctx context.Context, id int64) (db.NotePath, error)
 	SearchNotes(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
+	FilterNotePathIDsByFrontmatterKey(ctx context.Context, key interface{}) ([]int64, error)
+	FilterNotePathIDsByFrontmatterEquals(ctx context.Context, arg db.FilterNotePathIDsByFrontmatterEqualsParams) ([]int64, error)
 }
 
 func Resolve(ctx context.Context, env Env, filter *model.NotePathsFilter) ([]db.NotePath, error) {
+	var frontmatter []model.NoteFrontmatterPredicate
+	if filter != nil {
+		frontmatter = filter.Frontmatter
+	}
 	if filter != nil && len(filter.Paths) > 0 {
 		paths, err := env.ListNotePathsByValues(ctx, filter.Paths)
 		if err != nil {
 			return nil, err
 		}
-		return filterByScope(ctx, paths), nil
+		return applyFrontmatter(ctx, env, filterByScope(ctx, paths), frontmatter)
 	}
 
 	if filter != nil && filter.Search != nil {
@@ -40,7 +46,11 @@ func Resolve(ctx context.Context, env Env, filter *model.NotePathsFilter) ([]db.
 
 		// Search already filters by read_patterns (sitesearch enforces scope);
 		// convertSearchResults only wraps the results.
-		return convertSearchResults(ctx, env, conn.Nodes)
+		paths, err := convertSearchResults(ctx, env, conn.Nodes)
+		if err != nil {
+			return nil, err
+		}
+		return applyFrontmatter(ctx, env, paths, frontmatter)
 	}
 
 	if filter != nil && filter.Like != nil {
@@ -55,14 +65,66 @@ func Resolve(ctx context.Context, env Env, filter *model.NotePathsFilter) ([]db.
 		if err != nil {
 			return nil, err
 		}
-		return filterByScope(ctx, paths), nil
+		return applyFrontmatter(ctx, env, filterByScope(ctx, paths), frontmatter)
 	}
 
 	paths, err := env.AllVisibleNotePaths(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return filterByScope(ctx, paths), nil
+	return applyFrontmatter(ctx, env, filterByScope(ctx, paths), frontmatter)
+}
+
+func applyFrontmatter(ctx context.Context, env Env, paths []db.NotePath, predicates []model.NoteFrontmatterPredicate) ([]db.NotePath, error) {
+	if len(predicates) == 0 || len(paths) == 0 {
+		return paths, nil
+	}
+	ids := make([]int64, len(paths))
+	for i := range paths {
+		ids[i] = paths[i].ID
+	}
+	allowed := make(map[int64]struct{}, len(ids))
+	for _, id := range ids {
+		allowed[id] = struct{}{}
+	}
+	for _, p := range predicates {
+		matched, err := frontmatterMatches(ctx, env, p)
+		if err != nil {
+			return nil, err
+		}
+		set := make(map[int64]struct{}, len(matched))
+		for _, id := range matched {
+			set[id] = struct{}{}
+		}
+		if p.Exists != nil && !*p.Exists {
+			for id := range allowed {
+				if _, ok := set[id]; ok {
+					delete(allowed, id)
+				}
+			}
+		} else {
+			for id := range allowed {
+				if _, ok := set[id]; !ok {
+					delete(allowed, id)
+				}
+			}
+		}
+	}
+	out := paths[:0:0]
+	for _, p := range paths {
+		if _, ok := allowed[p.ID]; ok {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
+func frontmatterMatches(ctx context.Context, env Env, p model.NoteFrontmatterPredicate) ([]int64, error) {
+	if p.Equals == nil {
+		return env.FilterNotePathIDsByFrontmatterKey(ctx, p.Key)
+	}
+	params := db.FilterNotePathIDsByFrontmatterEqualsParams{Key: &p.Key, Value: *p.Equals}
+	return env.FilterNotePathIDsByFrontmatterEquals(ctx, params)
 }
 
 // filterByScope removes any db.NotePath whose Value (filesystem path) does not

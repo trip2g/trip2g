@@ -36,9 +36,9 @@ async function gql(request, baseURL, cookie, query, variables = {}) {
   return body.data;
 }
 
-async function mcpCall(request, url, name, args = {}) {
+async function mcpCall(request, url, name, args = {}, extraHeaders = {}) {
   const response = await request.post(url, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
     data: { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } },
   });
   expect(response.ok(), `MCP ${url} status ${response.status()}`).toBeTruthy();
@@ -172,19 +172,16 @@ test.describe.serial('Bidirectional Federation', () => {
     expect(text).toContain('20081');
   });
 
-  test('depth header at FederationMaxDepth is rejected', async () => {
-    // Default FederationMaxDepth is 3. Sending depth=3 must be rejected.
-    const response = await hubRequest.post(HUB_MCP, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-MCP-Federation-Depth': '3',
-      },
-      data: { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'search', arguments: { query: 'test' } } },
-    });
-    expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    const errorMsg = body.error?.message ?? '';
-    expect(errorMsg.toLowerCase()).toContain('max depth');
+  test('depth header at FederationMaxDepth is allowed (inclusive limit)', async () => {
+    // Default FederationMaxDepth is 3. depth=3 reaches the limit but is still allowed.
+    const result = await mcpCall(hubRequest, HUB_MCP, 'search', { query: 'test' }, { 'X-MCP-Federation-Depth': '3' });
+    expect(result.error).toBeUndefined();
+  });
+
+  test('depth header past FederationMaxDepth is rejected', async () => {
+    // depth=4 is one past the limit and must be rejected.
+    const result = await mcpCall(hubRequest, HUB_MCP, 'search', { query: 'test' }, { 'X-MCP-Federation-Depth': '4' });
+    expect(result.error?.message?.toLowerCase()).toContain('max depth');
   });
 
   test('revoke peer→hub outbound: targeted federated_search to hub returns revocation error', async () => {

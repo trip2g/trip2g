@@ -111,15 +111,21 @@ func FenceLangKnown(lang string) bool {
 
 // CodeSpec is the parameters for one code-execution call.
 type CodeSpec struct {
-	Program        string        // canonical program name (python, bash, node, ...)
-	Code           string        // source text written to a per-run temp file
-	Stdin          []byte        // fed to the child's stdin (pipeline: prior block's stdout); nil → /dev/null
-	Input          []byte        // delivery bag JSON; nil or empty → "{}"
-	Timeout        time.Duration // per-run timeout; 0 = bounded by ctx only
-	EnvPassthrough []string      // exact parent env var names to forward to child
-	EnvPrefix      []string      // parent env var name prefixes to forward to child
-	MaxStdoutBytes int           // stdout cap; 0 → 1 MiB default
-	Sandbox        SandboxPolicy // OS-level isolation; zero value = safe default (native)
+	Program        string         // canonical program name (python, bash, node, ...)
+	Code           string         // source text written to a per-run temp file
+	Stdin          []byte         // fed to the child's stdin (pipeline: prior block's stdout); nil → /dev/null
+	Input          []byte         // delivery bag JSON; nil or empty → "{}"
+	Timeout        time.Duration  // per-run timeout; 0 = bounded by ctx only
+	EnvPassthrough []string       // exact parent env var names to forward to child
+	EnvPrefix      []string       // parent env var name prefixes to forward to child
+	MaxStdoutBytes int            // stdout cap; 0 → 1 MiB default
+	Sandbox        SandboxPolicy  // OS-level isolation; zero value = safe default (native)
+	Stats          *RunBlockStats // optional execution metrics sink
+}
+
+type RunBlockStats struct {
+	DurationMs  int64
+	MaxRSSBytes int64
 }
 
 // codeOutput is the stdout JSON contract that every code program must emit.
@@ -230,7 +236,12 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 	var outBuf, errBuf limitedBuffer
 	prepareCmd(cmd, workDir, env, spec.Stdin, &outBuf, &errBuf, limit)
 
+	startedAt := time.Now()
 	runErr := cmd.Run()
+	if spec.Stats != nil {
+		spec.Stats.DurationMs = time.Since(startedAt).Milliseconds()
+		spec.Stats.MaxRSSBytes = maxRSSBytes(cmd.ProcessState)
+	}
 	// A sandboxed command that failed to START never ran the child: namespace
 	// creation was denied (e.g. unprivileged userns disabled) or a confinement
 	// step failed. Enforcing mode REFUSES the run (the code never ran, so this

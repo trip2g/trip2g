@@ -1943,6 +1943,12 @@ type NoteChangesSubscriptionPayload struct {
 	Changes []NoteChangeItem `json:"changes"`
 }
 
+type NoteFrontmatterPredicate struct {
+	Key    string  `json:"key"`
+	Exists *bool   `json:"exists,omitempty"`
+	Equals *string `json:"equals,omitempty"`
+}
+
 type NoteHideEvent struct {
 	Path string `json:"path"`
 	// Nullable: hidden note may no longer be in NoteViews.
@@ -1958,6 +1964,7 @@ type NoteInput struct {
 }
 
 type NotePathsFilter struct {
+	Frontmatter []NoteFrontmatterPredicate `json:"frontmatter,omitempty"`
 	// LIKE pattern with % and _ wildcards supported.
 	// For example, to find all note paths starting with "myfolder/", use "myfolder/%".
 	Like *string `json:"like,omitempty"`

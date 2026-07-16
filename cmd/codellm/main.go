@@ -30,7 +30,7 @@ func main() {
 
 	cfg, err := appconfig.Get()
 	if err != nil {
-		log.Fatalf("codellm: config: %v", err)
+		log.Fatalf("config: %v", err)
 	}
 
 	// Delegated-admin gate for the browser-facing endpoints: each request's
@@ -39,14 +39,41 @@ func main() {
 	// the api_key TokenCheck seam below, so a caller can authenticate either way.
 	admin, err := delegatedadmin.New(delegatedadmin.Config{MonolithBaseURL: cfg.Trip2gBaseURL})
 	if err != nil {
-		log.Fatalf("codellm: delegated admin: %v", err)
+		log.Fatalf("delegated admin: %v", err)
 	}
+
+	// wait air restarts
+	// for i := 3; i >= 0; i-- {
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	//
+	// 	// check trip2g state, fail fast if it's down
+	// 	role, fetchErr := admin.FetchViewerRole(ctx, "")
+	// 	cancel()
+	// 	if fetchErr != nil {
+	// 		time.Sleep(time.Second)
+	//
+	// 		if i == 0 {
+	// 			log.Fatalf("failed to FetchViewerRole: %v", fetchErr)
+	// 		}
+	// 	}
+	//
+	// 	if role != string(model.RoleGuest) {
+	// 		log.Printf("unexpected role: %s", role)
+	// 	}
+	// }
 
 	srvCfg := codellm.Config{
 		AllowedPrograms: cfg.AllowedPrograms,
-		Sandbox:         coderun.SandboxPolicy{Mode: cfg.Sandbox},
-		MaxStdoutBytes:  cfg.MaxStdoutBytes,
-		Timeout:         cfg.Timeout,
+		Sandbox: coderun.SandboxPolicy{
+			Mode:    cfg.Sandbox,
+			Network: cfg.SandboxNetwork,
+		},
+		MaxStdoutBytes: cfg.MaxStdoutBytes,
+		Timeout:        cfg.Timeout,
+		// Secret VALUES live here (codellm's own env); this allowlist is the whole
+		// decision of what to expose to the child. The request carries no env.
+		ExposeEnv:       cfg.ExposeEnv,
+		ExposeEnvPrefix: cfg.ExposeEnvPrefix,
 		// codellm's own OpenAI-standard api_key (Authorization: Bearer <api_key>),
 		// constant-time compared. An empty CODELLM_API_KEY disables key auth
 		// (fail-safe), leaving the browser delegated-admin gate as the only way in.
@@ -59,8 +86,8 @@ func main() {
 		Handler:           codellm.New(srvCfg).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-	log.Printf("codellm listening on %s (sandbox=%s, programs=%v)", cfg.Addr, cfg.Sandbox, cfg.AllowedPrograms)
+	log.Printf("codellm listening on %s (sandbox=%s, network=%t, programs=%v)", cfg.Addr, cfg.Sandbox, cfg.SandboxNetwork, cfg.AllowedPrograms)
 	if err = srv.ListenAndServe(); err != nil {
-		log.Fatalf("codellm: server error: %v", err)
+		log.Fatalf("server error: %v", err)
 	}
 }

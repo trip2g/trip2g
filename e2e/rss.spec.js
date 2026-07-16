@@ -25,12 +25,16 @@ test.describe('RSS Feed', () => {
     const response = await request.get('/feed.xml');
     const body = await response.text();
 
-    // public.md is free: true.
-    expect(body).toContain('/public');
+    // public.md is free: true -> rendered as an item; <guid> = publicURL + permalink,
+    // with no separator before the closing tag, so this anchors on the exact permalink.
+    expect(body).toContain('/public</guid>');
     expect(body).toContain('Public Content Page');
 
-    // paid_with_cut.md has no `free` key (defaults to paid).
-    expect(body).not.toContain('/paid_with_cut');
+    // paid_with_cut.md has no `free` key (defaults to paid) -> not rendered as an item.
+    // Other free notes (e.g. index.md) link to /paid_with_cut inside their
+    // <content:encoded>, so a bare substring check would false-positive on that link;
+    // anchoring on </guid> ensures we only check actual feed item membership.
+    expect(body).not.toContain('/paid_with_cut</guid>');
   });
 });
 

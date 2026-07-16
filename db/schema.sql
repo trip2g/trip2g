@@ -862,6 +862,20 @@ CREATE TABLE note_version_delivery_attribution (
   delivery_id integer not null
 );
 CREATE INDEX idx_nvda_delivery on note_version_delivery_attribution(delivery_kind, delivery_id);
+CREATE TABLE note_version_frontmatters (
+  version_id integer not null primary key references note_versions (id) on delete cascade,
+  data string not null check (json_valid(data))
+);
+CREATE TABLE note_version_frontmatter_key_values (
+  value string not null primary key,
+  created_by_version_id integer not null references note_versions (id) on delete restrict,
+  hidden_at datetime -- live and latest notes don't contain this key anymore
+);
+CREATE TABLE note_version_frontmatter_keys (
+  note_version_id integer not null references note_versions (id) on delete cascade,
+  key_id string not null references note_version_frontmatter_key_values (value) on delete cascade,
+  unique (note_version_id, key_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -988,4 +1002,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260621150755'),
   ('20260627000000'),
   ('20260628120000'),
-  ('20260628120100');
+  ('20260628120100'),
+  ('20260713100000'),
+  ('20260715051651');

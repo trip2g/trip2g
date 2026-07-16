@@ -72,7 +72,7 @@ type Input struct {
 	// InputBag, when non-empty, is delivered as a system message named
 	// "fleet_input" carrying the JSON delivery bag. codellm treats that message
 	// as $FLEET_INPUT (it does not scan it for fenced code); a real LLM sees a
-	// harmless labeled JSON context block. Used by the executor:code→codellm path.
+	// harmless labeled JSON context block. Used by the code→codellm path.
 	InputBag []byte
 
 	// HardFailApply makes a genuine write/patch APPLY failure (a bad or non-unique

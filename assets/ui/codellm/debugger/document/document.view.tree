@@ -1,0 +1,56 @@
+$trip2g_codellm_debugger_document $mol_book2_catalog
+	param \codellm_document
+	menu_title <= file_path
+	file_path \
+	close_icon null $mol_view
+	title <= file_path
+	spreads *
+		step_run <= StepRun $mol_book2
+			menu_title \Step Run
+			pages <= step_pages /$mol_view
+		editor <= Editor $mol_page
+			title \Editor
+			body /
+				<= Raw $mol_view
+					sub /
+						<= Textarea $mol_textarea
+							value <= raw_content \
+	ProseBlock* $trip2g_codellm_debugger_document_prose_block
+		data <= block_data* null object
+	CodeBlock* $trip2g_codellm_debugger_document_code_block
+		data <= block_data* null object
+
+$trip2g_codellm_debugger_document_prose_block $mol_view
+	data null object
+	sub /
+		<= Control $mol_view
+			sub /
+		<= HTML $mol_html_view
+			html <= content \
+
+$trip2g_codellm_debugger_document_code_block $mol_page
+	data null object
+	title <= block_title \
+	tools /
+		<= Run $mol_button_major
+			title \Run
+			click?event <=> handle_run?event null
+		<= ExitCode $mol_text
+			text <= exit_code \
+		<= Stats $mol_text
+			text <= stats_content \
+	style *
+		flexDirection \column
+	body /
+		<= Prose $mol_html_view
+			html <= prose_content \
+		<= Rows $mol_view
+			sub /
+				<= Error $mol_text
+					text <= error_content \
+				<= Code $mol_textarea
+					value <= content \
+				<= Stdout $mol_text
+					text <= stdout_content \
+				<= Stderr $mol_text
+					text <= stderr_content \

@@ -2,6 +2,7 @@ package serveasset_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -29,10 +30,12 @@ func testAsset() db.NoteAsset {
 }
 
 type envOpts struct {
-	rows      []db.NoteAsset
-	ownership assetindex.Ownership
-	known     bool
-	canRead   bool
+	rows        []db.NoteAsset
+	ownership   assetindex.Ownership
+	known       bool
+	canRead     bool
+	validAPIKey bool
+	apiKeyErr   error
 }
 
 func newEnv(o envOpts) *EnvMock {
@@ -53,6 +56,9 @@ func newEnv(o envOpts) *EnvMock {
 			}
 			return io.NopCloser(strings.NewReader(testBody[offset : offset+length])), nil
 		},
+		ValidAPIKeyFunc: func(ctx context.Context, plainKey string) (bool, error) {
+			return o.validAPIKey, o.apiKeyErr
+		},
 	}
 }
 
@@ -62,6 +68,7 @@ type reqOpts struct {
 	token       *usertoken.Data // nil = anonymous
 	ifNoneMatch string
 	rangeHdr    string
+	apiKey      string
 }
 
 func doRequest(t *testing.T, env serveasset.Env, o reqOpts) (*fasthttp.RequestCtx, bool) {
@@ -79,6 +86,9 @@ func doRequest(t *testing.T, env serveasset.Env, o reqOpts) (*fasthttp.RequestCt
 	}
 	if o.rangeHdr != "" {
 		ctx.Request.Header.Set("Range", o.rangeHdr)
+	}
+	if o.apiKey != "" {
+		ctx.Request.Header.Set("X-API-Key", o.apiKey)
 	}
 
 	req := &appreq.Request{
@@ -133,6 +143,50 @@ func TestHandle_PublicAsset_AnonymousGets200Immutable(t *testing.T) {
 	require.Equal(t, testBody, body(ctx))
 	// No session lookup or per-note check needed on the public path.
 	require.Empty(t, env.CanReadNoteCalls())
+	require.Empty(t, env.ValidAPIKeyCalls())
+}
+
+func TestHandle_PrivateAsset_ValidAPIKey200(t *testing.T) {
+	env := newEnv(envOpts{rows: []db.NoteAsset{testAsset()}, ownership: privateOwnership(), known: true, validAPIKey: true})
+
+	ctx, handled := doRequest(t, env, reqOpts{
+		path:   model.NoteAssetURLPath(testHash, "pic.png"),
+		apiKey: "valid-key",
+	})
+
+	require.True(t, handled)
+	require.Equal(t, http.StatusOK, ctx.Response.StatusCode())
+	require.Equal(t, testBody, body(ctx))
+	// A valid API key already has firehose read access (pushNotes bypassACL);
+	// it must not go through the per-note ACL check.
+	require.Empty(t, env.CanReadNoteCalls())
+}
+
+func TestHandle_PrivateAsset_InvalidAPIKey401(t *testing.T) {
+	env := newEnv(envOpts{rows: []db.NoteAsset{testAsset()}, ownership: privateOwnership(), known: true, validAPIKey: false})
+
+	ctx, handled := doRequest(t, env, reqOpts{
+		path:   model.NoteAssetURLPath(testHash, "pic.png"),
+		apiKey: "bogus-key",
+	})
+
+	require.True(t, handled)
+	require.Equal(t, http.StatusUnauthorized, ctx.Response.StatusCode(),
+		"an invalid API key must fail closed, not fall through to anonymous")
+	require.Empty(t, env.StreamAssetObjectCalls())
+}
+
+func TestHandle_PrivateAsset_APIKeyDBError500(t *testing.T) {
+	env := newEnv(envOpts{rows: []db.NoteAsset{testAsset()}, ownership: privateOwnership(), known: true, apiKeyErr: errors.New("db exploded")})
+
+	ctx, handled := doRequest(t, env, reqOpts{
+		path:   model.NoteAssetURLPath(testHash, "pic.png"),
+		apiKey: "some-key",
+	})
+
+	require.True(t, handled)
+	require.Equal(t, http.StatusInternalServerError, ctx.Response.StatusCode())
+	require.Empty(t, env.StreamAssetObjectCalls())
 }
 
 func TestHandle_IfNoneMatch_Returns304(t *testing.T) {

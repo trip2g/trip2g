@@ -140,7 +140,6 @@ func (f *Fleet) serveDebugRunBlock(w http.ResponseWriter, r *http.Request) {
 
 	body := req.Body
 	timeout := debugRunBlockDefaultTimeout
-	var envPassthrough, envPrefix []string
 	if req.Role != "" {
 		role, ok := f.roleByKey(urlKey(req.Role))
 		if !ok {
@@ -151,7 +150,6 @@ func (f *Fleet) serveDebugRunBlock(w http.ResponseWriter, r *http.Request) {
 		// targets the static fenced blocks. POST an inline body for a rendered
 		// variant.
 		body = role.Body
-		envPassthrough, envPrefix = role.EnvPassthrough, role.EnvPrefix
 		timeout = time.Duration(role.EffectiveTimeoutSeconds()) * time.Second
 	}
 
@@ -185,8 +183,6 @@ func (f *Fleet) serveDebugRunBlock(w http.ResponseWriter, r *http.Request) {
 		Stdin:          []byte(req.Stdin),
 		Input:          req.Input,
 		Timeout:        timeout,
-		EnvPassthrough: envPassthrough,
-		EnvPrefix:      envPrefix,
 		MaxStdoutBytes: f.cfg.MaxStdoutBytes,
 		Sandbox:        f.sandboxPolicy(),
 	})

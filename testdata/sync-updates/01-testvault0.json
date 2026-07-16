@@ -160,12 +160,32 @@
     "url": "http://localhost:20081/federation_kb_semi"
   },
   {
+    "path": "feed.md",
+    "url": "http://localhost:20081/feed.xml"
+  },
+  {
     "path": "fleet/boards/sprint.md",
     "url": "http://localhost:20081/fleet/boards/sprint"
   },
   {
     "path": "fleet/roles/triage.md",
     "url": "http://localhost:20081/fleet/roles/triage"
+  },
+  {
+    "path": "fleet_llmcode_english.md",
+    "url": "http://localhost:20081/fleet_llmcode_english"
+  },
+  {
+    "path": "fleet_llmcode_env.md",
+    "url": "http://localhost:20081/fleet_llmcode_env"
+  },
+  {
+    "path": "fleet_llmcode_russian.md",
+    "url": "http://localhost:20081/fleet_llmcode_russian"
+  },
+  {
+    "path": "fleet_llmcode_unlabelled.md",
+    "url": "http://localhost:20081/fleet_llmcode_unlabelled"
   },
   {
     "path": "folder/_banner.md",

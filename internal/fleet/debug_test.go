@@ -83,8 +83,8 @@ func TestDebugRunBlock_NonZeroExit(t *testing.T) {
 func TestDebugRunBlock_RoleLookup(t *testing.T) {
 	f := newDebugFleet()
 	f.SetRoles([]Role{{
-		NotePath: "roles/pipe.md", Executor: executorCode,
-		Body: "```bash\ncat\n```",
+		NotePath: "roles/pipe.md",
+		Body:     "```bash\ncat\n```",
 	}})
 	rec := postDebug(t, f, debugRunBlockRequest{
 		Role:  "roles/pipe.md",
@@ -164,8 +164,8 @@ func TestDebugBlocks_InlineBody(t *testing.T) {
 func TestDebugBlocks_RoleLookup(t *testing.T) {
 	f := newDebugFleet()
 	f.SetRoles([]Role{{
-		NotePath: "roles/pipe.md", Executor: executorCode,
-		Body: "```bash\ncat\n```\n```bash\necho second\n```",
+		NotePath: "roles/pipe.md",
+		Body:     "```bash\ncat\n```\n```bash\necho second\n```",
 	}})
 	r := httptest.NewRequest(http.MethodGet, "/debug/blocks?path=roles/pipe.md", nil)
 	rec := httptest.NewRecorder()

@@ -902,6 +902,21 @@ select * from note_paths
  where value in (sqlc.slice('paths'))
  order by id;
 
+-- name: FilterNotePathIDsByFrontmatterKey :many
+select distinct np.id
+  from note_paths np
+  join note_versions nv on nv.path_id = np.id and nv.version = np.version_count
+  join note_version_frontmatters f on f.version_id = nv.id
+  join note_version_frontmatter_keys k on k.note_version_id = nv.id
+ where k.key_id = sqlc.arg(key);
+
+-- name: FilterNotePathIDsByFrontmatterEquals :many
+select distinct np.id
+  from note_paths np
+  join note_versions nv on nv.path_id = np.id and nv.version = np.version_count
+  join note_version_frontmatters f on f.version_id = nv.id
+ where json_extract(f.data, '$.' || sqlc.arg(key)) = sqlc.arg(value);
+
 -- name: NotePathByID :one
 select * from note_paths
  where id = ?;

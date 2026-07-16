@@ -9,6 +9,13 @@ http://localhost:9081 {
 		reverse_proxy http://localhost:8081
 	}
 
+	# Browser-facing codellm GraphQL must match before the generic /_system/*
+	# monolith route below. The session cookie is forwarded and codellm performs
+	# the delegated-admin check itself.
+	handle /_system/codellm/* {
+		reverse_proxy http://localhost:8087
+	}
+
 	handle /_system/* {
 		reverse_proxy http://localhost:8081
 	}
@@ -23,15 +30,6 @@ http://localhost:9081 {
 	# Upstream is a placeholder; the real private addr comes from deploy config.
 	handle /_fleet/* {
 		reverse_proxy http://localhost:8092
-	}
-
-	# Same-origin, dumb pass-through to the codellm service (browser-facing
-	# /v1/* + /graphql for markdown structure). Forwards the session cookie; NO
-	# auth here — codellm gates with the same delegated middleware. The fleet↔
-	# codellm server-to-server /v1 lane is separate and does NOT go through Caddy.
-	# Upstream is a placeholder; the real private addr comes from deploy config.
-	handle /_codellm/* {
-		reverse_proxy http://localhost:8093
 	}
 
 	handle /assets/* {

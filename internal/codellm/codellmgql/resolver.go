@@ -6,11 +6,42 @@
 // docs/dev/fleet_graphql.md.
 package codellmgql
 
+import (
+	"context"
+)
+
 //go:generate go tool github.com/99designs/gqlgen generate --config gqlgen.yml
+
+// BlockRunRequest contains a markdown execution request.
+type BlockRunRequest struct {
+	Body       string
+	FleetInput []byte
+	MaxSteps   int
+}
+
+type BlockResult struct {
+	Index       int
+	ExitCode    int
+	DurationMs  int64
+	MaxRSSBytes int64
+	Stdout      string
+	Stderr      string
+}
+
+type BlockRunResult struct {
+	Output  string
+	Results []BlockResult
+}
+
+type BlockRunner interface {
+	RunBlocks(context.Context, BlockRunRequest) (BlockRunResult, error)
+}
 
 // Resolver is the gqlgen root resolver. parseMarkdown / assembleMarkdown are
 // pure functions over the request input (no state, no dependencies).
-type Resolver struct{}
+type Resolver struct{ runner BlockRunner }
 
 // NewResolver builds a Resolver.
-func NewResolver() *Resolver { return &Resolver{} }
+func NewResolver(runner BlockRunner) *Resolver {
+	return &Resolver{runner: runner}
+}

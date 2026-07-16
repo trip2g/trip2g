@@ -32,6 +32,9 @@ build_and_deploy: build-amd64 deploy
 gqlgen:
 	go tool github.com/99designs/gqlgen generate
 
+gqlgencodellm:
+	go tool github.com/99designs/gqlgen generate --config internal/codellm/codellmgql/gqlgen.yml
+
 graphqlgen: gqlgen
 	./scripts/waitfor localhost:8081
 	sleep 1 # avoid a strange error: connect ECONNREFUSED 127.0.0.1:8081
@@ -68,6 +71,9 @@ air: docker-deps
 #   LLM roles: export TRIP2G_FLEET_LLM_BASE_URL / TRIP2G_FLEET_LLM_API_KEY first.
 airfleet:
 	go tool github.com/air-verse/air -c .air.fleet.toml
+
+aircodellm:
+	go tool github.com/air-verse/air -c .air.codellm.toml
 
 # bench: 60s load test against http://localhost:8081/ + cpu profile saved to /tmp/trip2g-bench-*
 # Usage: make bench              — test homepage

@@ -7,14 +7,67 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"trip2g/internal/fleetinput"
 )
 
-type MdBlock struct {
-	Index    int       `json:"index"`
-	Kind     BlockKind `json:"kind"`
-	Language *string   `json:"language,omitempty"`
-	Content  string    `json:"content"`
+type AssembleMarkdownOrErrorPayload interface {
+	IsAssembleMarkdownOrErrorPayload()
 }
+
+type MarkdownBlock interface {
+	IsMarkdownBlock()
+}
+
+type ParseMarkdownOrErrorPayload interface {
+	IsParseMarkdownOrErrorPayload()
+}
+
+type RunBlocksOrErrorPayload interface {
+	IsRunBlocksOrErrorPayload()
+}
+
+type AssembleMarkdownInput struct {
+	Blocks []MdBlockInput `json:"blocks"`
+}
+
+type AssembleMarkdownPayload struct {
+	Content string `json:"content"`
+}
+
+func (AssembleMarkdownPayload) IsAssembleMarkdownOrErrorPayload() {}
+
+type BlockErrorPayload struct {
+	Index   int    `json:"index"`
+	Message string `json:"message"`
+}
+
+func (BlockErrorPayload) IsRunBlocksOrErrorPayload() {}
+
+type ErrorPayload struct {
+	Message string `json:"message"`
+}
+
+func (ErrorPayload) IsParseMarkdownOrErrorPayload() {}
+
+func (ErrorPayload) IsAssembleMarkdownOrErrorPayload() {}
+
+func (ErrorPayload) IsRunBlocksOrErrorPayload() {}
+
+type MarkdownCodeBlock struct {
+	Index    int    `json:"index"`
+	Language string `json:"language"`
+	Content  string `json:"content"`
+}
+
+func (MarkdownCodeBlock) IsMarkdownBlock() {}
+
+type MarkdownProseBlock struct {
+	Index   int    `json:"index"`
+	Content string `json:"content"`
+	HTML    string `json:"html"`
+}
+
+func (MarkdownProseBlock) IsMarkdownBlock() {}
 
 type MdBlockInput struct {
 	Kind     BlockKind `json:"kind"`
@@ -25,8 +78,41 @@ type MdBlockInput struct {
 type Mutation struct {
 }
 
+type ParseMarkdownInput struct {
+	Content string `json:"content"`
+}
+
+type ParseMarkdownPayload struct {
+	Frontmatter map[string]any  `json:"frontmatter"`
+	Blocks      []MarkdownBlock `json:"blocks"`
+}
+
+func (ParseMarkdownPayload) IsParseMarkdownOrErrorPayload() {}
+
 type Query struct {
 }
+
+type RunBlockResult struct {
+	Index       int    `json:"index"`
+	ExitCode    int    `json:"exitCode"`
+	DurationMs  int    `json:"durationMs"`
+	MaxRssBytes int    `json:"maxRssBytes"`
+	Stdout      string `json:"stdout"`
+	Stderr      string `json:"stderr"`
+}
+
+type RunBlocksInput struct {
+	Input    *fleetinput.Input `json:"input"`
+	MaxSteps *int              `json:"maxSteps,omitempty"`
+	Blocks   []MdBlockInput    `json:"blocks"`
+}
+
+type RunBlocksPayload struct {
+	Output  string           `json:"output"`
+	Results []RunBlockResult `json:"results"`
+}
+
+func (RunBlocksPayload) IsRunBlocksOrErrorPayload() {}
 
 type BlockKind string
 

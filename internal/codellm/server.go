@@ -12,16 +12,19 @@
 package codellm
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql/playground"
 	goopenai "github.com/sashabaranov/go-openai"
 
 	"trip2g/internal/codellm/codellmgql"
@@ -53,6 +56,15 @@ type Config struct {
 
 	// MaxStdoutBytes caps each block's captured stdout; 0 → 1 MiB default.
 	MaxStdoutBytes int
+
+	// ExposeEnv / ExposeEnvPrefix are the operator's allowlist of env var NAMES
+	// (exact) and name prefixes codellm exposes from its OWN environment to
+	// executed code, on every run. codellm owns the secrets, so codellm alone
+	// decides what to expose — the request carries nothing about env. Both empty
+	// (the default) means codellm exposes nothing: the secret-scrubbed
+	// PATH+FLEET_INPUT child env.
+	ExposeEnv       []string
+	ExposeEnvPrefix []string
 
 	// Timeout bounds a single completion's code run; 0 → bounded by the request
 	// context only.
@@ -113,6 +125,29 @@ type Server struct {
 	cfg Config
 }
 
+type blockRunner struct{ cfg Config }
+
+func (r blockRunner) RunBlocks(ctx context.Context, req codellmgql.BlockRunRequest) (codellmgql.BlockRunResult, error) {
+	out, debug, err := coderun.ExecBlocksDebug(ctx, coderun.CodeInput{
+		Body: req.Body, Input: req.FleetInput,
+		AllowedPrograms: r.cfg.AllowedPrograms,
+		Sandbox:         r.cfg.Sandbox, MaxStdoutBytes: r.cfg.MaxStdoutBytes,
+		Timeout: r.cfg.Timeout, EnvPassthrough: r.cfg.ExposeEnv,
+		EnvPrefix: r.cfg.ExposeEnvPrefix,
+	}, req.MaxSteps)
+	if err != nil {
+		return codellmgql.BlockRunResult{}, err
+	}
+	results := make([]codellmgql.BlockResult, 0, len(debug))
+	for _, d := range debug {
+		results = append(results, codellmgql.BlockResult{
+			Index: d.Index, ExitCode: d.ExitCode, Stdout: d.Stdout,
+			Stderr: d.Stderr, DurationMs: d.DurationMs, MaxRSSBytes: d.MaxRSSBytes,
+		})
+	}
+	return codellmgql.BlockRunResult{Output: out, Results: results}, nil
+}
+
 // New builds a Server from cfg, filling in nil seams with no-op defaults.
 func New(cfg Config) *Server {
 	if cfg.Auth == nil {
@@ -122,15 +157,20 @@ func New(cfg Config) *Server {
 }
 
 // Handler returns the HTTP handler for the service. The two BROWSER-facing
-// endpoints — execution (/v1/chat/completions, incl. the x_fleet_debug
-// extension) and the markdown-structure GraphQL (/graphql) — are wrapped by the
+// endpoints — execution (/v1/chat/completions) and the markdown-structure
+// GraphQL (/_system/codellm/graphql) — are wrapped by the
 // auth seam (cfg.Auth); everything else (liveness /healthz, /v1/models for
 // client compat) is open. See the two-auth-regime note on Config.Auth.
 func (s *Server) Handler() http.Handler {
+	const graphqlPrefix = "/_system/codellm/graphql"
+
 	mux := http.NewServeMux()
+	graphqlHandler := codellmgql.NewHTTPHandler(nil, blockRunner{cfg: s.cfg})
+	gqlAuthHandler := s.cfg.Auth(graphqlHandler)
 	// Auth-gated (browser cookie / fleet channel token — see cfg.Auth).
 	mux.Handle("POST /v1/chat/completions", s.cfg.Auth(http.HandlerFunc(s.handleChatCompletions)))
-	mux.Handle("/graphql", s.cfg.Auth(codellmgql.NewHTTPHandler(nil)))
+	mux.Handle("POST "+graphqlPrefix, gqlAuthHandler)
+	mux.Handle("GET "+graphqlPrefix, s.cfg.Auth(playground.Handler("CodeLLM GraphQL Playground", graphqlPrefix)))
 	// Open: liveness + client compatibility, never gated.
 	mux.HandleFunc("GET /v1/models", s.handleModels)
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
@@ -159,17 +199,12 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// x_fleet_debug is an opt-in EXTENSION field a real LLM ignores. When set, the
-	// response carries a non-standard x_fleet_debug block (per-block stdout + the
-	// inter-block pipe buffer). It is decoded separately because the standard
-	// ChatCompletionRequest struct drops unknown fields.
-	var ext struct {
-		XFleetDebug bool `json:"x_fleet_debug"`
-	}
-	_ = json.Unmarshal(raw, &ext)
-
 	body, bag := extractBodyAndBag(req.Messages)
 
+	// codellm alone decides what env to expose: its operator allowlist
+	// (ExposeEnv/ExposeEnvPrefix). buildChildEnv sources the VALUES from codellm's
+	// OWN environment for those names; the request carries nothing about env.
+	s.logExposedEnv()
 	in := coderun.CodeInput{
 		Body:            body,
 		AllowedPrograms: s.cfg.AllowedPrograms,
@@ -177,13 +212,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		MaxStdoutBytes:  s.cfg.MaxStdoutBytes,
 		Timeout:         s.cfg.Timeout,
 		Input:           bag,
-		// No EnvPassthrough/EnvPrefix: env passthrough is dropped by design —
-		// no parent env crosses the HTTP boundary.
-	}
-
-	if ext.XFleetDebug {
-		s.respondWithDebug(w, r, req.Model, in)
-		return
+		EnvPassthrough:  s.cfg.ExposeEnv,
+		EnvPrefix:       s.cfg.ExposeEnvPrefix,
 	}
 
 	changes, answer, err := coderun.ExecCode(r.Context(), in)
@@ -198,51 +228,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	resp := buildResponse(req.Model, changes, answer)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
-}
-
-// respondWithDebug runs the code with per-block capture (ExecCodeDebug) and
-// returns the standard completion PLUS the non-standard x_fleet_debug field.
-// A normal OpenAI client ignores the extra field; the debugger reads it to show
-// each block's stdout and the editable inter-block pipe buffer.
-func (s *Server) respondWithDebug(w http.ResponseWriter, r *http.Request, model string, in coderun.CodeInput) {
-	changes, answer, blocks, err := coderun.ExecCodeDebug(r.Context(), in)
-	if err != nil {
-		writeError(w, http.StatusUnprocessableEntity, "code_execution_error", err.Error())
-		return
-	}
-
-	resp := debugResponse{
-		ChatCompletionResponse: buildResponse(model, changes, answer),
-		XFleetDebug:            &fleetDebug{Blocks: toDebugBlocks(blocks)},
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(resp)
-}
-
-// debugResponse is a standard completion plus the x_fleet_debug extension. The
-// embedded ChatCompletionResponse marshals its fields inline, so a normal client
-// sees an ordinary completion and simply ignores the extra x_fleet_debug key.
-type debugResponse struct {
-	goopenai.ChatCompletionResponse
-	XFleetDebug *fleetDebug `json:"x_fleet_debug,omitempty"`
-}
-
-type fleetDebug struct {
-	Blocks []fleetDebugBlock `json:"blocks"`
-}
-
-type fleetDebugBlock struct {
-	Index      int    `json:"index"`
-	Stdout     string `json:"stdout"`
-	PipeBuffer string `json:"pipeBuffer"`
-}
-
-func toDebugBlocks(blocks []coderun.BlockDebug) []fleetDebugBlock {
-	out := make([]fleetDebugBlock, len(blocks))
-	for i, b := range blocks {
-		out[i] = fleetDebugBlock{Index: b.Index, Stdout: b.Stdout, PipeBuffer: b.PipeBuffer}
-	}
-	return out
 }
 
 // extractBodyAndBag concatenates the message contents that may contain fenced
@@ -261,6 +246,18 @@ func extractBodyAndBag(messages []goopenai.ChatCompletionMessage) (string, []byt
 		sb.WriteString("\n")
 	}
 	return sb.String(), bag
+}
+
+// logExposedEnv records, on each run with a non-empty allowlist, which env var
+// NAMES codellm exposes from its own env to the code child (never the values).
+// The allowlist IS the whole decision — the request carries nothing about env.
+func (s *Server) logExposedEnv() {
+	if len(s.cfg.ExposeEnv) == 0 && len(s.cfg.ExposeEnvPrefix) == 0 {
+		return
+	}
+	//nolint:sloglint // codellm has no logger instance; global slog is intentional here
+	slog.Info("codellm: exposing allowlisted env to code child (names only)",
+		"passthrough", s.cfg.ExposeEnv, "prefix", s.cfg.ExposeEnvPrefix)
 }
 
 // buildResponse maps the parsed {changes, answer} onto an OpenAI tool_calls

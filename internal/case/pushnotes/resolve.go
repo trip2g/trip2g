@@ -133,7 +133,7 @@ func validateUpdate(log logger.Logger, update model.PushNoteInput) *model.ErrorP
 	return nil
 }
 
-func buildNoteAssets(note *appmodel.NoteView) []model.PushedNoteAsset {
+func buildNoteAssets(note *appmodel.NoteView, publicURL string) []model.PushedNoteAsset {
 	assets := []model.PushedNoteAsset{}
 
 	for relativePath := range note.Assets {
@@ -147,7 +147,7 @@ func buildNoteAssets(note *appmodel.NoteView) []model.PushedNoteAsset {
 			hash = &replace.Hash
 			assetID = replace.ID
 			absolutePath = replace.AbsolutePath
-			url = replace.URL
+			url = appmodel.AbsoluteURL(publicURL, replace.URL)
 		}
 
 		assets = append(assets, model.PushedNoteAsset{
@@ -163,7 +163,7 @@ func buildNoteAssets(note *appmodel.NoteView) []model.PushedNoteAsset {
 	return assets
 }
 
-func buildLayoutAssets(layout appmodel.Layout) []model.PushedNoteAsset {
+func buildLayoutAssets(layout appmodel.Layout, publicURL string) []model.PushedNoteAsset {
 	assets := []model.PushedNoteAsset{}
 
 	for _, asset := range layout.Assets {
@@ -177,7 +177,7 @@ func buildLayoutAssets(layout appmodel.Layout) []model.PushedNoteAsset {
 			hash = &replace.Hash
 			assetID = replace.ID
 			absolutePath = replace.AbsolutePath
-			url = replace.URL
+			url = appmodel.AbsoluteURL(publicURL, replace.URL)
 		}
 
 		assets = append(assets, model.PushedNoteAsset{
@@ -198,7 +198,7 @@ func buildPushedNotes(nvs *appmodel.NoteViews, layouts *appmodel.Layouts, public
 	pushedNotes := []model.PushedNote{}
 
 	for _, note := range nvs.List {
-		assets := buildNoteAssets(note)
+		assets := buildNoteAssets(note, publicURL)
 		urlVal := nvs.ResolveFullURL(note, publicURL)
 		noteWarnings := warnings[note.Permalink]
 		if noteWarnings == nil {
@@ -214,7 +214,7 @@ func buildPushedNotes(nvs *appmodel.NoteViews, layouts *appmodel.Layouts, public
 	}
 
 	for _, layout := range layouts.Map {
-		assets := buildLayoutAssets(layout)
+		assets := buildLayoutAssets(layout, publicURL)
 		pushedNotes = append(pushedNotes, model.PushedNote{
 			ID:       layout.VersionID,
 			Path:     layout.Path,
@@ -244,7 +244,7 @@ func buildUpdatedNotes(nvs *appmodel.NoteViews, pathIDs []int64, publicURL strin
 		result = append(result, model.PushedNote{
 			ID:       note.VersionID,
 			Path:     note.Path,
-			Assets:   buildNoteAssets(note),
+			Assets:   buildNoteAssets(note, publicURL),
 			URL:      &urlVal,
 			Warnings: noteWarnings,
 		})

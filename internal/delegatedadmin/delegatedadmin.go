@@ -101,6 +101,10 @@ func (m *Middleware) Wrap(next http.Handler) http.Handler {
 	})
 }
 
+func (m *Middleware) FetchViewerRole(ctx context.Context, cookieHeader string) (string, error) {
+	return m.fetchViewerRole(ctx, cookieHeader)
+}
+
 type viewerRoleResponse struct {
 	Data struct {
 		Viewer struct {
@@ -127,7 +131,6 @@ func (m *Middleware) isAdmin(r *http.Request) bool {
 	return role == adminRole
 }
 
-// fetchViewerRole forwards the caller's raw Cookie header to the monolith and
 // returns the viewer role. Any transport/status/decode/GraphQL error is
 // returned so the caller can fail closed.
 func (m *Middleware) fetchViewerRole(ctx context.Context, cookieHeader string) (string, error) {

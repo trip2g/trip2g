@@ -165,7 +165,6 @@ var sources = []*ast.Source{
 type Role {
   name: String!
   path: String! # role note path under agents-folder
-  executor: String! # "llm" | "code"
   model: String
   triggerOn: [String!]! # create | update | remove
   triggerInclude: [String!]!
@@ -571,8 +570,6 @@ func (ec *executionContext) fieldContext_Query_roles(_ context.Context, field gr
 				return ec.fieldContext_Role_name(ctx, field)
 			case "path":
 				return ec.fieldContext_Role_path(ctx, field)
-			case "executor":
-				return ec.fieldContext_Role_executor(ctx, field)
 			case "model":
 				return ec.fieldContext_Role_model(ctx, field)
 			case "triggerOn":
@@ -814,35 +811,6 @@ func (ec *executionContext) _Role_path(ctx context.Context, field graphql.Collec
 }
 
 func (ec *executionContext) fieldContext_Role_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Role",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Role_executor(ctx context.Context, field graphql.CollectedField, obj *model.Role) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Role_executor,
-		func(ctx context.Context) (any, error) {
-			return obj.Executor, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Role_executor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Role",
 		Field:      field,
@@ -2868,11 +2836,6 @@ func (ec *executionContext) _Role(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "path":
 			out.Values[i] = ec._Role_path(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "executor":
-			out.Values[i] = ec._Role_executor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

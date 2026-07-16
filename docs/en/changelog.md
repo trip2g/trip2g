@@ -8,6 +8,16 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## Unreleased
+
+### Frontmatter key index
+
+- **What.** Note paths can be filtered by effective frontmatter keys and values through GraphQL. The server materializes frontmatter after patches and tracks whether each key is present in the latest or live note set.
+- **Why.** Key-aware filtering can narrow the candidate notes before evaluating JSON values such as `fleet_id`, without exposing SQL through the API.
+- **How.** Use `notePaths(filter: { frontmatter: [{ key: "fleet_id", equals: "codellm" }] })`. The index is built from latest/live snapshots; historical `note_versions` are not reparsed or backfilled, so metadata that existed only in an old version is not represented in the key index.
+
+---
+
 ## v0.10.0 (2026-07-13)
 
 ### RSS is now a template, not a Go feature

@@ -246,3 +246,57 @@ func TestAuthSeam(t *testing.T) {
 	rec := doChat(t, srv, []goopenai.ChatCompletionMessage{bashBody(`echo '{"changes":[],"answer":""}'`)})
 	require.Equal(t, http.StatusForbidden, rec.Code)
 }
+
+// TestChatCompletions_ExposesAllowlistedEnvToChild is the end-to-end proof: an
+// allowlisted name reaches the code child with its VALUE sourced from codellm's
+// OWN env (buildChildEnv). The request carries nothing about env — the codellm
+// allowlist is the whole decision.
+func TestChatCompletions_ExposesAllowlistedEnvToChild(t *testing.T) {
+	t.Setenv("MY_SECRET", "s3cr3t")
+	srv := New(Config{
+		AllowedPrograms: []string{"bash"},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
+		ExposeEnv:       []string{"MY_SECRET"},
+	})
+	script := `printf '{"changes":[],"answer":"%s"}' "$MY_SECRET"`
+	rec := doChat(t, srv, []goopenai.ChatCompletionMessage{
+		bashBody(script),
+		{Role: goopenai.ChatMessageRoleUser, Content: "Begin."},
+	})
+	resp := decodeResp(t, rec)
+	require.Equal(t, "s3cr3t", finishArgs(t, resp.Choices[0].Message.ToolCalls),
+		"allowlisted var value must reach the child from codellm's env")
+}
+
+// TestChatCompletions_EmptyAllowlistExposesNothing: with no allowlist, a var in
+// codellm's env never reaches the child.
+func TestChatCompletions_EmptyAllowlistExposesNothing(t *testing.T) {
+	t.Setenv("MY_SECRET", "s3cr3t")
+	srv := New(Config{
+		AllowedPrograms: []string{"bash"},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
+		// No ExposeEnv → expose nothing.
+	})
+	script := `printf '{"changes":[],"answer":"[%s]"}' "$MY_SECRET"`
+	rec := doChat(t, srv, []goopenai.ChatCompletionMessage{bashBody(script)})
+	resp := decodeResp(t, rec)
+	require.Equal(t, "[]", finishArgs(t, resp.Choices[0].Message.ToolCalls),
+		"empty allowlist must expose nothing")
+}
+
+// TestChatCompletions_NonAllowlistedEnvNotExposed: a var present in codellm's env
+// but NOT on the allowlist never reaches the child.
+func TestChatCompletions_NonAllowlistedEnvNotExposed(t *testing.T) {
+	t.Setenv("MY_SECRET", "s3cr3t")
+	srv := New(Config{
+		AllowedPrograms: []string{"bash"},
+		Sandbox:         coderun.SandboxPolicy{Mode: coderun.SandboxOff},
+		// MY_SECRET deliberately NOT allowlisted.
+		ExposeEnv: []string{"SOMETHING_ELSE"},
+	})
+	script := `printf '{"changes":[],"answer":"[%s]"}' "$MY_SECRET"`
+	rec := doChat(t, srv, []goopenai.ChatCompletionMessage{bashBody(script)})
+	resp := decodeResp(t, rec)
+	require.Equal(t, "[]", finishArgs(t, resp.Choices[0].Message.ToolCalls),
+		"non-allowlisted var must be absent from the child env")
+}

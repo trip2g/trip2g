@@ -1,6 +1,6 @@
 # codellm's own GraphQL surface — markdown STRUCTURE only (editor/debugger
 # support), never execution. Execution stays the OpenAI REST path
-# (/v1/chat/completions + x_fleet_debug). See docs/dev/fleet_graphql.md.
+# (/v1/chat/completions). See docs/dev/fleet_graphql.md.
 #
 # parseMarkdown splits a body into ordered code/prose blocks, reusing codellm's
 # OWN ExtractFencedBlocks so block boundaries match execution exactly (a JS
@@ -12,11 +12,20 @@ enum BlockKind {
   PROSE # everything between/around fences, preserved verbatim
 }
 
-type MdBlock {
+scalar JSON
+
+union MarkdownBlock = MarkdownCodeBlock | MarkdownProseBlock
+
+type MarkdownCodeBlock {
   index: Int!
-  kind: BlockKind!
-  language: String # fence info string for CODE (may be ""); null for PROSE
-  content: String! # CODE: the code between fences; PROSE: the raw text
+  language: String!
+  content: String!
+}
+
+type MarkdownProseBlock {
+  index: Int!
+  content: String!
+  html: String!
 }
 
 input MdBlockInput {
@@ -25,12 +34,88 @@ input MdBlockInput {
   content: String!
 }
 
-type Query {
-  # Split md into ordered code/prose blocks (codellm's own fence boundaries).
-  parseMarkdown(md: String!): [MdBlock!]!
+type ErrorPayload {
+  message: String!
 }
 
+type BlockErrorPayload {
+  index: Int!
+  message: String!
+}
+
+input ParseMarkdownInput {
+  content: String!
+}
+
+type ParseMarkdownPayload {
+  frontmatter: JSON!
+  blocks: [MarkdownBlock!]!
+}
+
+union ParseMarkdownOrErrorPayload = ParseMarkdownPayload | ErrorPayload
+
+input AssembleMarkdownInput {
+  blocks: [MdBlockInput!]!
+}
+
+type AssembleMarkdownPayload {
+  content: String!
+}
+
+union AssembleMarkdownOrErrorPayload = AssembleMarkdownPayload | ErrorPayload
+
+type Query {
+  parseMarkdown(input: ParseMarkdownInput!): ParseMarkdownOrErrorPayload!
+}
+
+input RunBlocksInput {
+  input: FleetInput!
+  maxSteps: Int # number of Markdown blocks; prose blocks are skipped
+  blocks: [MdBlockInput!]!
+}
+
+input FleetChangeInput {
+  path: String!
+  event: String!
+  pathId: Int!
+  version: Int!
+  title: String!
+  content: String!
+}
+
+input FleetAttachedNoteInput {
+  path: String!
+  title: String!
+  content: String!
+  updatedAt: String!
+  tags: [String!]!
+}
+
+input FleetInput {
+  changedFiles: [FleetChangeInput!]!
+  changeFile: FleetChangeInput
+  attachedNotes: [FleetAttachedNoteInput!]!
+  depth: Int!
+  now: String
+}
+
+type RunBlockResult {
+  index: Int!
+  exitCode: Int!
+  durationMs: Int!
+  maxRssBytes: Int!
+  stdout: String!
+  stderr: String!
+}
+
+type RunBlocksPayload {
+  output: String!
+  results: [RunBlockResult!]!
+}
+
+union RunBlocksOrErrorPayload = RunBlocksPayload | ErrorPayload | BlockErrorPayload
+
 type Mutation {
-  # Round-trip the ordered blocks back into a single markdown string.
-  assembleMarkdown(blocks: [MdBlockInput!]!): String!
+  assembleMarkdown(input: AssembleMarkdownInput!): AssembleMarkdownOrErrorPayload!
+  runBlocks(input: RunBlocksInput!): RunBlocksOrErrorPayload!
 }

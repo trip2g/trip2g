@@ -69,20 +69,19 @@ POST /v1/chat/completions
 }
 ```
 
+The wire is just: body (markdown+code) + `fleet_input` (trigger bag). Nothing about env travels from fleet — codellm owns the secrets, so codellm alone decides what to expose (see below).
+
 codellm concatenates the message contents, runs `ExtractFencedBlocks` over them (the system-prompt wrapper has no fences, so only the role body's blocks are found), executes the pipeline with the `fleet_input` message as the `$FLEET_INPUT` bag, and parses the last block's stdout as `{"changes":[...],"answer":"..."}` — exactly today's contract (`coderun.go:281`).
 
 **Delivery bag mechanism.** Today the bag is a `[]byte` written to `$FLEET_INPUT` (`CodeInput.Input`, `runcode.go:26`; the change-delivery bag is built by `buildInputBag` at `handler.go:227`, the cron bag by `buildCronInputBag` at `handler.go:351`). Over HTTP it must ride the request body. The bag is delivered as a `system` message named `fleet_input` whose content is the JSON. This needs a small, honest change to the shared runtime: add an optional `InputBag []byte` to `agentruntime.Input` (`runtime.go:40`) and have the message builder append the `fleet_input` message when it is set. A real LLM sees a labeled JSON context block (harmless); codellm treats it as `$FLEET_INPUT`.
 
-**Env passthrough is dropped — but secret-dependent skills are re-supported, better, at the executor.** `EnvPassthrough`/`EnvPrefix` (`runcode.go:27-28`) are live features: parsed from role frontmatter (`env_passthrough:` / `env_prefix:`, `role.go:64-65`), validated (`role.go:244`), forwarded to the code child (`buildChildEnv`, `coderun.go:388`). No parent env crosses the HTTP boundary, so a role that used `env_passthrough` to hand fleet's secret to its code stops working **as written**. The tempting fallback — "move the secret into the bag" — is **wrong**: the bag rides the request, pushing the secret across the very boundary we are hardening.
+**Env passthrough — codellm owns the whole decision (IMPLEMENTED).** codellm holds the secret VALUES in its own environment (deploy-time env / mounted secret) and declares an operator allowlist of exposable names: `ExposeEnv` / `ExposeEnvPrefix` (config `CODELLM_EXPOSE_ENV` / `CODELLM_EXPOSE_ENV_PREFIX`, comma lists; both empty = expose nothing, the safe default). On **every** code run codellm sets `coderun.CodeInput.EnvPassthrough`/`EnvPrefix` to that allowlist, and `buildChildEnv` (`coderun.go`) supplies the matching vars **from codellm's own `os.Environ()`** to the code child. codellm logs the exposed **names** (never values) at info level.
 
-The correct model: **secrets live at the executor (codellm), not in fleet's env, and a skill declares what it needs.**
+Fleet holds no secrets and sends nothing about env: there is no `fleet_env` message, and roles declare no `env_passthrough`/`env_prefix`. Since codellm owns the secrets, codellm alone decides what to expose — the allowlist IS the whole decision, so there is no request list to intersect and no way for a request to reach a var the operator did not allowlist.
 
-- A codellm skill (e.g. the Krisp KB pipeline) ships a manifest declaring `requires_secrets: [OPENROUTER_KEY, ...]` — capability, not value.
-- The secret values live in **codellm's own secret config** (deploy-time env / mounted secret for the playground) **or** are fetched at run from trip2g's existing admin secret store (`internal/case/admin/getsecret`) over the locked fleet↔codellm-adjacent channel. Never in the role note, never in fleet's env, never in the per-request bag.
-- **Install enforces presence:** registering the skill checks its `requires_secrets` are configured in codellm; if a key is missing, install/run **fails loudly** — "Krisp requires OPENROUTER_KEY; set it in codellm config" — instead of silently mis-running.
-- **At run, codellm injects only the declared keys** into that skill's sandbox (a per-skill allowlist), never codellm's whole env.
+For the krisp e2e, codellm's env holds `KRISP_TOKEN`/`KRISP_BASE_URL` with `CODELLM_EXPOSE_ENV=KRISP_TOKEN,KRISP_BASE_URL`; the role declares nothing about env, and its python reads the values from `os.environ` — the same code as the in-process path.
 
-Why this is a net upgrade, not a loss: today `env_passthrough` puts fleet's secret into the env of *every* code child of that role; the new model scopes secrets per-skill, at the execution boundary where the code actually runs, with an explicit declared-and-enforced requirement. The only thing genuinely gone is "silently inherit whatever fleet happened to have" — which was the leak. Existing roles using `env_passthrough:` still need porting to a manifest (see the pre-Phase-4 audit).
+Possible future hardening (not built): a per-skill manifest (`requires_secrets`) that install-checks presence and scopes exposure per skill rather than one flat codellm-wide allowlist; and fetching values from trip2g's admin secret store (`internal/case/admin/getsecret`) instead of codellm's env.
 
 ### Response (codellm → fleet) — tool_calls, decided
 
@@ -214,7 +213,7 @@ agentruntime.Input{
 Two migration constraints roles must satisfy (checklist for the reconciler's dry-run, `main.go:546`):
 1. The role's effective tool set must include `write_note`/`patch_note`/`finish` (empty `tools:` already yields the full default set at `runtime.go:334`, so most roles need nothing).
 2. `write_patterns` must be set for any role that writes — otherwise `ScopedKB` denies every change (the existing deny-all trap, `role.go:109`), same as today.
-3. **No `env_passthrough`/`env_prefix`.** A role that declares either (`role.go:64-65`) depends on a secret reaching its code child; that capability does not exist under codellm (see the env-passthrough drop). Such roles cannot migrate and must stay on the in-process path or be redesigned. The reconciler dry-run should flag them; see the pre-Phase-4 audit.
+3. **Env is a codellm operator concern, not a role concern.** Roles declare nothing about env (the old `env_passthrough`/`env_prefix` fields are gone). Code that needs a secret gets it because the operator put the value in codellm's env and named it in `CODELLM_EXPOSE_ENV`/`CODELLM_EXPOSE_ENV_PREFIX`. A var that is not on that allowlist (or absent from codellm's env) simply never reaches the child, so the code fails at runtime — configuring the allowlist is a codellm deploy step, per fleet.
 
 **Does the `exec(program, code)` tool move too?** Separate, smaller concern. `exec` (`makeExecInvoker`, `runtime.go:372`) is a tool an LLM role calls mid-reasoning, not a whole-role code run. Initial cutover targets `executor: code` only and **leaves `exec` in-process**. Consequence: to fully delete the sandbox from fleet, `exec` must also move (Phase 5) — until then fleet keeps `sandbox_linux.go` solely for `exec`. This is a genuine scope decision, flagged not papered over: shipping Phases 1–4 removes the code-role path and the debugger need; Phase 5 finishes the job by routing `exec` through codellm and dropping the sandbox from fleet entirely.
 

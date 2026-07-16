@@ -15,13 +15,9 @@ import (
 	"trip2g/internal/fleet/graph"
 )
 
-// toModelRole projects a parsed fleet.Role onto the GraphQL Role. executor ""
-// is reported as its effective default "llm"; an empty model is null.
+// toModelRole projects a parsed fleet.Role onto the GraphQL Role. An empty model
+// is null.
 func toModelRole(role fleet.Role) model.Role {
-	executor := role.Executor
-	if executor == "" {
-		executor = "llm"
-	}
 	var modelPtr *string
 	if role.Model != "" {
 		m := role.Model
@@ -30,7 +26,6 @@ func toModelRole(role fleet.Role) model.Role {
 	return model.Role{
 		Name:           roleName(role.NotePath),
 		Path:           role.NotePath,
-		Executor:       executor,
 		Model:          modelPtr,
 		TriggerOn:      role.TriggerOn,
 		TriggerInclude: role.TriggerInclude,

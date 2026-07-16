@@ -378,6 +378,15 @@ func (q *WriteQueries) DeleteNoteVersionChunksBeyond(ctx context.Context, arg De
 	return err
 }
 
+const deleteNoteVersionFrontmatterKeys = `-- name: DeleteNoteVersionFrontmatterKeys :exec
+delete from note_version_frontmatter_keys where note_version_id = ?
+`
+
+func (q *WriteQueries) DeleteNoteVersionFrontmatterKeys(ctx context.Context, noteVersionID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteNoteVersionFrontmatterKeys, noteVersionID)
+	return err
+}
+
 const deleteOIDCCredentials = `-- name: DeleteOIDCCredentials :exec
 delete from oidc_credentials where id = ?
 `
@@ -1757,6 +1766,22 @@ func (q *WriteQueries) InsertNoteVersionDeliveryAttribution(ctx context.Context,
 	return err
 }
 
+const insertNoteVersionFrontmatterKey = `-- name: InsertNoteVersionFrontmatterKey :exec
+insert into note_version_frontmatter_keys (note_version_id, key_id)
+values (?, ?)
+on conflict(note_version_id, key_id) do nothing
+`
+
+type InsertNoteVersionFrontmatterKeyParams struct {
+	NoteVersionID int64       `json:"note_version_id"`
+	KeyID         interface{} `json:"key_id"`
+}
+
+func (q *WriteQueries) InsertNoteVersionFrontmatterKey(ctx context.Context, arg InsertNoteVersionFrontmatterKeyParams) error {
+	_, err := q.db.ExecContext(ctx, insertNoteVersionFrontmatterKey, arg.NoteVersionID, arg.KeyID)
+	return err
+}
+
 const insertOIDCCredentials = `-- name: InsertOIDCCredentials :one
 insert into oidc_credentials (name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_by)
 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by
@@ -2947,6 +2972,28 @@ where id = ? and status = 'pending'
 
 func (q *WriteQueries) MarkWebhookDeliveryRunning(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, markWebhookDeliveryRunning, id)
+	return err
+}
+
+const refreshNoteVersionFrontmatterKeyVisibility = `-- name: RefreshNoteVersionFrontmatterKeyVisibility :exec
+update note_version_frontmatter_key_values
+set hidden_at = case when exists (
+  select 1
+    from note_version_frontmatter_keys k
+    join note_paths p on p.version_count > 0
+    join note_versions v on v.id = k.note_version_id and v.path_id = p.id and v.version = p.version_count
+   where k.key_id = note_version_frontmatter_key_values.value
+) or exists (
+  select 1
+    from note_version_frontmatter_keys k
+    join release_note_versions rnv on rnv.note_version_id = k.note_version_id
+    join releases r on r.id = rnv.release_id and r.is_live
+   where k.key_id = note_version_frontmatter_key_values.value
+) then null else coalesce(hidden_at, datetime('now')) end
+`
+
+func (q *WriteQueries) RefreshNoteVersionFrontmatterKeyVisibility(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, refreshNoteVersionFrontmatterKeyVisibility)
 	return err
 }
 
@@ -4671,6 +4718,38 @@ func (q *WriteQueries) UpsertNoteVersionEmbedding(ctx context.Context, arg Upser
 		arg.ContentHash,
 		arg.Tokens,
 	)
+	return err
+}
+
+const upsertNoteVersionFrontmatter = `-- name: UpsertNoteVersionFrontmatter :exec
+insert into note_version_frontmatters (version_id, data)
+values (?, ?)
+on conflict(version_id) do update set data = excluded.data
+`
+
+type UpsertNoteVersionFrontmatterParams struct {
+	VersionID int64       `json:"version_id"`
+	Data      interface{} `json:"data"`
+}
+
+func (q *WriteQueries) UpsertNoteVersionFrontmatter(ctx context.Context, arg UpsertNoteVersionFrontmatterParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNoteVersionFrontmatter, arg.VersionID, arg.Data)
+	return err
+}
+
+const upsertNoteVersionFrontmatterKey = `-- name: UpsertNoteVersionFrontmatterKey :exec
+insert into note_version_frontmatter_key_values (value, created_by_version_id, hidden_at)
+values (?, ?, null)
+on conflict(value) do update set hidden_at = null
+`
+
+type UpsertNoteVersionFrontmatterKeyParams struct {
+	Value              interface{} `json:"value"`
+	CreatedByVersionID int64       `json:"created_by_version_id"`
+}
+
+func (q *WriteQueries) UpsertNoteVersionFrontmatterKey(ctx context.Context, arg UpsertNoteVersionFrontmatterKeyParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNoteVersionFrontmatterKey, arg.Value, arg.CreatedByVersionID)
 	return err
 }
 

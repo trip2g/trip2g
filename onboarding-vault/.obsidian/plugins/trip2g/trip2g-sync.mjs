@@ -1808,6 +1808,332 @@ function resolveAssetPath(env, assetPath, notePath) {
 }
 __name(resolveAssetPath, "resolveAssetPath");
 
+// src/i18n.ts
+var en = {
+  // General
+  sync: "Sync",
+  syncStarting: "Starting sync...",
+  allFilesUpToDate: "All files are up to date",
+  syncError: "Sync error",
+  connectionSuccessful: "Connection successful",
+  connectionFailed: "Connection failed",
+  // Settings
+  settingsHeading: "Sync directories",
+  settingsDescription: "Configure directories to sync with remote servers. See onboarding guide for details.",
+  addSyncDirectory: "Add sync directory",
+  testAllConnections: "Test all connections",
+  pathLabel: "Sync folder",
+  pathPlaceholder: "Path to folder",
+  pathDesc: "Folder to sync. Use / for vault root (all files will be synced).",
+  apiUrlLabel: "API URL",
+  apiUrlPlaceholder: "https://yoursite.trip2g.com",
+  apiUrlDesc: "Your Trip2g site URL. Example: https://yoursite.trip2g.com",
+  apiKeyLabel: "API Key",
+  apiKeyPlaceholder: "API Key",
+  apiKeyDesc: "API key from your Trip2g admin panel.",
+  publishFieldLabel: "Publish fields",
+  publishFieldPlaceholder: "publish, public",
+  publishFieldDesc: "Only sync files with these frontmatter fields set to true. Comma-separated list. Leave empty to sync all files.",
+  twoWaySyncLabel: "Two-way sync",
+  twoWaySyncDesc: "Download updates from server. Enable for TG channel import or server-side automation.",
+  livePullIncludeLabel: "Live-pull include patterns",
+  livePullIncludeDesc: "Glob patterns (e.g. **) of notes to pull in real time as the server changes. Leave empty to disable live-pull. Requires two-way sync.",
+  livePullIncludePlaceholder: "**",
+  livePullExcludeLabel: "Live-pull exclude patterns",
+  livePullExcludeDesc: "Glob patterns to exclude from live-pull. Applied after include patterns.",
+  livePullExcludePlaceholder: "drafts/**",
+  testConnection: "Test connection",
+  resetSyncState: "Reset sync state",
+  resetSyncStateConfirm: "Reset sync state? Next sync will re-download all files from server.",
+  syncStateReset: "Sync state reset",
+  removeDirectory: "Remove sync directory",
+  removeDirectoryConfirm: "Remove this sync connection?",
+  error: "Error",
+  successfulConnections: /* @__PURE__ */ __name((success, fail) => fail === 0 ? `All connections successful (${success})` : `${success} successful, ${fail} failed`, "successfulConnections"),
+  globalSettingsHeading: "Global settings",
+  skipPushConfirmationLabel: "Skip push confirmation",
+  skipPushConfirmationDesc: "Don't show confirmation dialog before uploading files to server",
+  autoSyncOnSaveLabel: "Auto-sync on save",
+  autoSyncOnSaveDesc: "Automatically push local changes a few seconds after you save. Conflicts are skipped and left for the sync badge \u2014 never overwritten.",
+  hideSyncStatusLabel: "Hide sync badge",
+  hideSyncStatusDesc: "Don't show the pending-changes indicator on the ribbon icon",
+  showSyncWarningsLabel: "Show sync warnings",
+  showSyncWarningsDesc: "Show a popup with warnings after sync (e.g. broken links, missing assets)",
+  syncWarningsCount: /* @__PURE__ */ __name((count) => `\u26A0\uFE0F ${count} sync warning${count === 1 ? "" : "s"}`, "syncWarningsCount"),
+  onboardingLink: "Onboarding guide",
+  onboardingUrl: "https://trip2g.com/en/user/getting_started",
+  // Sync actions
+  pulledFiles: /* @__PURE__ */ __name((count) => `Pulled ${count} files from server`, "pulledFiles"),
+  pushedFiles: /* @__PURE__ */ __name((count) => `Pushed ${count} files to server`, "pushedFiles"),
+  hiddenNotes: /* @__PURE__ */ __name((count) => `Hid ${count} notes not found locally`, "hiddenNotes"),
+  pushed: "Pushed",
+  livePulledFiles: /* @__PURE__ */ __name((count) => `Live-pulled ${count} file${count === 1 ? "" : "s"} from server`, "livePulledFiles"),
+  livePullConflict: /* @__PURE__ */ __name((count) => `${count} note${count === 1 ? "" : "s"} changed on server but also edited locally \u2014 sync to resolve`, "livePullConflict"),
+  syncFailedAuth: "Trip2g: your changes aren't syncing \u2014 check your API key and site URL in settings.",
+  syncFailedGeneric: "Trip2g: sync failed \u2014 couldn't reach the server. Your changes are saved locally and will retry.",
+  // Status bar
+  statusBarTooltip: "Click: open \xB7 Right-click: copy",
+  urlCopied: "URL copied",
+  urlCopyFailed: "Failed to copy URL",
+  urlOpenFailed: "Failed to open URL",
+  // Auto-sync status bar (autoSyncOnSave)
+  autoStatusSynced: /* @__PURE__ */ __name((time) => `\u2713 synced ${time}`, "autoStatusSynced"),
+  autoStatusPending: /* @__PURE__ */ __name((count) => count > 1 ? `\u25CF ${count} pending\u2026` : `\u25CF pending\u2026`, "autoStatusPending"),
+  autoStatusSyncing: "\u21BB syncing\u2026",
+  autoStatusError: "\u26A0 sync error",
+  autoStatusTooltip: "Auto-sync on save",
+  pushedFilesTo: /* @__PURE__ */ __name((count, host) => `Published ${count} file${count === 1 ? "" : "s"} to ${host}`, "pushedFilesTo"),
+  pushError: /* @__PURE__ */ __name((message) => `Auto-sync failed: ${message}`, "pushError"),
+  // Conflict view
+  syncConflict: "Sync conflict",
+  conflictProgress: /* @__PURE__ */ __name((current, total) => `${current} / ${total}`, "conflictProgress"),
+  localVersion: "Local version",
+  serverVersion: "Server version",
+  localLines: /* @__PURE__ */ __name((count) => `Local: ${count} lines`, "localLines"),
+  serverLines: /* @__PURE__ */ __name((count) => `Server: ${count} lines`, "serverLines"),
+  linesChanged: /* @__PURE__ */ __name((added, removed, modified) => `+${added} -${removed} ~${modified}`, "linesChanged"),
+  keepLocal: "Keep local",
+  useServer: "Use server",
+  keepBoth: "Keep both",
+  skip: "Skip",
+  skipAll: /* @__PURE__ */ __name((remaining) => `Skip all (${remaining} remaining)`, "skipAll"),
+  noConflicts: "No conflicts to resolve",
+  allConflictsResolved: "All conflicts resolved!",
+  // Migration modal
+  syncSystemUpdate: "Sync system update",
+  migrationFoundFiles: /* @__PURE__ */ __name((count) => `Found ${count} files with differences between local and server.`, "migrationFoundFiles"),
+  migrationDescription: "This is a one-time setup after the plugin update.",
+  reviewEachConflict: "Review each conflict",
+  trustServerForAll: "Trust server for all",
+  // Directory selection
+  selectSyncDirectory: "Select sync directory",
+  syncThisDirectory: "Sync this directory",
+  noSyncDirsConfigured: "No sync directories configured. Please add one in settings first.",
+  openSettings: "Open Settings",
+  // Badge tooltips
+  pendingChanges: /* @__PURE__ */ __name((pull, push) => `Trip2g Sync (\u2193${pull} \u2191${push})`, "pendingChanges"),
+  pendingPull: /* @__PURE__ */ __name((count) => `Trip2g Sync (\u2193${count} from server)`, "pendingPull"),
+  pendingPush: /* @__PURE__ */ __name((count) => `Trip2g Sync (\u2191${count} to push)`, "pendingPush"),
+  // Progress messages
+  progressPulling: /* @__PURE__ */ __name((current, total) => `Pulling ${current}/${total}...`, "progressPulling"),
+  progressPushing: /* @__PURE__ */ __name((current, total) => `Pushing ${current}/${total}...`, "progressPushing"),
+  progressDownloadingAssets: /* @__PURE__ */ __name((current, total) => `Downloading assets ${current}/${total}...`, "progressDownloadingAssets"),
+  progressUploadingAssets: /* @__PURE__ */ __name((current, total) => `Uploading assets ${current}/${total}...`, "progressUploadingAssets"),
+  progressClassifying: "Analyzing files...",
+  // Server deleted modal
+  serverDeletedTitle: "Files deleted on server",
+  serverDeletedDescription: /* @__PURE__ */ __name((count) => `${count} file(s) were deleted/hidden on the server but still exist locally. What would you like to do?`, "serverDeletedDescription"),
+  serverDeletedFileList: "Affected files:",
+  deleteLocally: "Delete locally",
+  keepLocally: "Keep locally",
+  deletedLocally: /* @__PURE__ */ __name((count) => `Deleted ${count} local files`, "deletedLocally"),
+  keptLocally: /* @__PURE__ */ __name((count) => `Kept ${count} local files`, "keptLocally"),
+  // Push confirmation modal
+  pushConfirmTitle: "Confirm upload to server",
+  pushConfirmDescription: /* @__PURE__ */ __name((count) => `${count} file(s) will be uploaded to the server. Continue?`, "pushConfirmDescription"),
+  pushConfirmFileList: "Files to upload:",
+  pushConfirmProceed: "Upload",
+  pushConfirmCancel: "Cancel",
+  pushConfirmDontAskAgain: "Don't ask again",
+  // Asset conflict modal
+  assetConflictTitle: "Asset conflict",
+  assetConflictDescription: /* @__PURE__ */ __name((count) => `${count} asset(s) differ between local and server. Choose which version to keep:`, "assetConflictDescription"),
+  assetConflictFileList: "Conflicting assets:",
+  assetConflictKeepLocal: "Upload local",
+  assetConflictKeepRemote: "Download from server",
+  assetConflictSkip: "Skip",
+  assetConflictApplyToAll: "Apply to all conflicts",
+  assetUploaded: /* @__PURE__ */ __name((count) => `Uploaded ${count} assets`, "assetUploaded"),
+  assetDownloaded: /* @__PURE__ */ __name((count) => `Downloaded ${count} assets`, "assetDownloaded"),
+  assetTooLarge: /* @__PURE__ */ __name((fileName) => `File "${fileName}" is too large to upload`, "assetTooLarge")
+};
+var ru = {
+  // General
+  sync: "\u0421\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044F",
+  syncStarting: "\u041D\u0430\u0447\u0438\u043D\u0430\u044E \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044E...",
+  allFilesUpToDate: "\u0412\u0441\u0435 \u0444\u0430\u0439\u043B\u044B \u0430\u043A\u0442\u0443\u0430\u043B\u044C\u043D\u044B",
+  syncError: "\u041E\u0448\u0438\u0431\u043A\u0430 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438",
+  connectionSuccessful: "\u0421\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u0435 \u0443\u0441\u043F\u0435\u0448\u043D\u043E",
+  connectionFailed: "\u041E\u0448\u0438\u0431\u043A\u0430 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u044F",
+  // Settings
+  settingsHeading: "\u041F\u0430\u043F\u043A\u0438 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438",
+  settingsDescription: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043F\u0430\u043F\u043A\u0438 \u0434\u043B\u044F \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u0441 \u0443\u0434\u0430\u043B\u0451\u043D\u043D\u044B\u043C\u0438 \u0441\u0435\u0440\u0432\u0435\u0440\u0430\u043C\u0438. \u0421\u043C. \u0440\u0443\u043A\u043E\u0432\u043E\u0434\u0441\u0442\u0432\u043E \u043F\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0435.",
+  addSyncDirectory: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0430\u043F\u043A\u0443",
+  testAllConnections: "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0432\u0441\u0435 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u044F",
+  pathLabel: "\u041F\u0430\u043F\u043A\u0430 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438",
+  pathPlaceholder: "\u041F\u0443\u0442\u044C \u043A \u043F\u0430\u043F\u043A\u0435",
+  pathDesc: "\u041F\u0430\u043F\u043A\u0430 \u0434\u043B\u044F \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 / \u0434\u043B\u044F \u043A\u043E\u0440\u043D\u044F \u0445\u0440\u0430\u043D\u0438\u043B\u0438\u0449\u0430 (\u0432\u0441\u0435 \u0444\u0430\u0439\u043B\u044B \u0431\u0443\u0434\u0443\u0442 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D\u044B).",
+  apiUrlLabel: "API URL",
+  apiUrlPlaceholder: "https://yoursite.trip2g.com",
+  apiUrlDesc: "URL \u0432\u0430\u0448\u0435\u0433\u043E \u0441\u0430\u0439\u0442\u0430 Trip2g. \u041F\u0440\u0438\u043C\u0435\u0440: https://yoursite.trip2g.com",
+  apiKeyLabel: "API Key",
+  apiKeyPlaceholder: "API Key",
+  apiKeyDesc: "API \u043A\u043B\u044E\u0447 \u0438\u0437 \u0430\u0434\u043C\u0438\u043D-\u043F\u0430\u043D\u0435\u043B\u0438 Trip2g.",
+  publishFieldLabel: "\u041F\u043E\u043B\u044F \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0438",
+  publishFieldPlaceholder: "publish, public",
+  publishFieldDesc: "\u0421\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u0444\u0430\u0439\u043B\u044B \u0441 \u044D\u0442\u0438\u043C\u0438 \u043F\u043E\u043B\u044F\u043C\u0438 \u0432 frontmatter (\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435 true). \u0427\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E. \u041E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u043F\u0443\u0441\u0442\u044B\u043C \u0434\u043B\u044F \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u0432\u0441\u0435\u0445 \u0444\u0430\u0439\u043B\u043E\u0432.",
+  twoWaySyncLabel: "\u0414\u0432\u0443\u0441\u0442\u043E\u0440\u043E\u043D\u043D\u044F\u044F \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044F",
+  twoWaySyncDesc: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0442\u044C \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430. \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u0434\u043B\u044F \u0438\u043C\u043F\u043E\u0440\u0442\u0430 TG \u043A\u0430\u043D\u0430\u043B\u043E\u0432 \u0438\u043B\u0438 \u0441\u0435\u0440\u0432\u0435\u0440\u043D\u043E\u0439 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u0438.",
+  livePullIncludeLabel: "\u0428\u0430\u0431\u043B\u043E\u043D\u044B live-pull (\u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C)",
+  livePullIncludeDesc: "Glob-\u0448\u0430\u0431\u043B\u043E\u043D\u044B (\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, **) \u0437\u0430\u043C\u0435\u0442\u043E\u043A \u0434\u043B\u044F \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0432 \u0440\u0435\u0430\u043B\u044C\u043D\u043E\u043C \u0432\u0440\u0435\u043C\u0435\u043D\u0438 \u043F\u0440\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F\u0445 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435. \u041E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u043F\u0443\u0441\u0442\u044B\u043C, \u0447\u0442\u043E\u0431\u044B \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C live-pull. \u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u0434\u0432\u0443\u0441\u0442\u043E\u0440\u043E\u043D\u043D\u0435\u0439 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438.",
+  livePullIncludePlaceholder: "**",
+  livePullExcludeLabel: "\u0428\u0430\u0431\u043B\u043E\u043D\u044B live-pull (\u0438\u0441\u043A\u043B\u044E\u0447\u0438\u0442\u044C)",
+  livePullExcludeDesc: "Glob-\u0448\u0430\u0431\u043B\u043E\u043D\u044B \u0434\u043B\u044F \u0438\u0441\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u0438\u0437 live-pull. \u041F\u0440\u0438\u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0432\u043A\u043B\u044E\u0447\u0430\u044E\u0449\u0438\u0445 \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432.",
+  livePullExcludePlaceholder: "drafts/**",
+  testConnection: "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u0435",
+  resetSyncState: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438",
+  resetSyncStateConfirm: "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435? \u041F\u0440\u0438 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0439 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u0432\u0441\u0435 \u0444\u0430\u0439\u043B\u044B \u0431\u0443\u0434\u0443\u0442 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u044B \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430.",
+  syncStateReset: "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u043E",
+  removeDirectory: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u0430\u043F\u043A\u0443",
+  removeDirectoryConfirm: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u044D\u0442\u043E \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435?",
+  error: "\u041E\u0448\u0438\u0431\u043A\u0430",
+  successfulConnections: /* @__PURE__ */ __name((success, fail) => fail === 0 ? `\u0412\u0441\u0435 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u044F \u0443\u0441\u043F\u0435\u0448\u043D\u044B (${success})` : `${success} \u0443\u0441\u043F\u0435\u0448\u043D\u043E, ${fail} \u0441 \u043E\u0448\u0438\u0431\u043A\u043E\u0439`, "successfulConnections"),
+  globalSettingsHeading: "\u041E\u0431\u0449\u0438\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
+  skipPushConfirmationLabel: "\u041D\u0435 \u0441\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0442\u044C \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435",
+  skipPushConfirmationDesc: "\u041D\u0435 \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0434\u0438\u0430\u043B\u043E\u0433 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u0434 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u043E\u0439 \u0444\u0430\u0439\u043B\u043E\u0432 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440",
+  autoSyncOnSaveLabel: "\u0410\u0432\u0442\u043E\u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044F \u043F\u0440\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438",
+  autoSyncOnSaveDesc: "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0442\u044C \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u0447\u0435\u0440\u0435\u0437 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434 \u043F\u043E\u0441\u043B\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F. \u041A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u044B \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E\u0442\u0441\u044F \u0438 \u043E\u0441\u0442\u0430\u044E\u0442\u0441\u044F \u043D\u0430 \u0431\u0435\u0439\u0434\u0436\u0435 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u2014 \u043D\u0438\u043A\u043E\u0433\u0434\u0430 \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u044B\u0432\u0430\u044E\u0442\u0441\u044F.",
+  hideSyncStatusLabel: "\u0421\u043A\u0440\u044B\u0442\u044C \u0431\u0435\u0439\u0434\u0436 \u0441\u0438\u043D\u043A\u0430",
+  hideSyncStatusDesc: "\u041D\u0435 \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0438\u043D\u0434\u0438\u043A\u0430\u0442\u043E\u0440 \u043E\u0436\u0438\u0434\u0430\u044E\u0449\u0438\u0445 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439 \u043D\u0430 \u0438\u043A\u043E\u043D\u043A\u0435",
+  showSyncWarningsLabel: "\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u044F",
+  showSyncWarningsDesc: "\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u043E\u043A\u043D\u043E \u0441 \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u044F\u043C\u0438 \u043F\u043E\u0441\u043B\u0435 \u0441\u0438\u043D\u043A\u0430 (\u0431\u0438\u0442\u044B\u0435 \u0441\u0441\u044B\u043B\u043A\u0438, \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0435 \u0444\u0430\u0439\u043B\u044B)",
+  syncWarningsCount: /* @__PURE__ */ __name((count) => `\u26A0\uFE0F ${count} \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438${count === 1 ? "\u0435" : "\u0439"}`, "syncWarningsCount"),
+  onboardingLink: "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0441\u0442\u0432\u043E \u043F\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0435",
+  onboardingUrl: "https://trip2g.com/docs/onboarding",
+  // Sync actions
+  pulledFiles: /* @__PURE__ */ __name((count) => `\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u043E ${count} \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430`, "pulledFiles"),
+  pushedFiles: /* @__PURE__ */ __name((count) => `\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${count} \u0444\u0430\u0439\u043B\u043E\u0432 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440`, "pushedFiles"),
+  hiddenNotes: /* @__PURE__ */ __name((count) => `\u0421\u043A\u0440\u044B\u0442\u043E ${count} \u0437\u0430\u043C\u0435\u0442\u043E\u043A, \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0445 \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E`, "hiddenNotes"),
+  pushed: "\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E",
+  livePulledFiles: /* @__PURE__ */ __name((count) => `Live-pull: \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u043E ${count} \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430`, "livePulledFiles"),
+  livePullConflict: /* @__PURE__ */ __name((count) => `${count} \u0437\u0430\u043C\u0435\u0442\u043E\u043A \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u044B \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u0438 \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E \u2014 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0438\u0440\u0443\u0439\u0442\u0435 \u0434\u043B\u044F \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F`, "livePullConflict"),
+  syncFailedAuth: "Trip2g: \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043D\u0435 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0438\u0440\u0443\u044E\u0442\u0441\u044F \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 API-\u043A\u043B\u044E\u0447 \u0438 URL \u0441\u0430\u0439\u0442\u0430 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445.",
+  syncFailedGeneric: "Trip2g: \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044F \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C \u2014 \u0441\u0435\u0440\u0432\u0435\u0440 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D. \u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u044B \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E, \u043F\u043E\u043F\u0440\u043E\u0431\u0443\u0435\u043C \u0435\u0449\u0451 \u0440\u0430\u0437.",
+  // Status bar
+  statusBarTooltip: "\u041A\u043B\u0438\u043A: \u043E\u0442\u043A\u0440\u044B\u0442\u044C \xB7 \u041F\u0440\u0430\u0432\u044B\u0439 \u043A\u043B\u0438\u043A: \u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
+  urlCopied: "URL \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D",
+  urlCopyFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C URL",
+  urlOpenFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C URL",
+  // Auto-sync status bar (autoSyncOnSave)
+  autoStatusSynced: /* @__PURE__ */ __name((time) => `\u2713 \u0441\u0438\u043D\u0445\u0440. ${time}`, "autoStatusSynced"),
+  autoStatusPending: /* @__PURE__ */ __name((count) => count > 1 ? `\u25CF ${count} \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438\u2026` : `\u25CF \u043E\u0436\u0438\u0434\u0430\u043D\u0438\u0435\u2026`, "autoStatusPending"),
+  autoStatusSyncing: "\u21BB \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044F\u2026",
+  autoStatusError: "\u26A0 \u043E\u0448\u0438\u0431\u043A\u0430 \u0441\u0438\u043D\u0445\u0440.",
+  autoStatusTooltip: "\u0410\u0432\u0442\u043E\u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044F \u043F\u0440\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438",
+  pushedFilesTo: /* @__PURE__ */ __name((count, host) => `\u041E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043E ${count} \u0444\u0430\u0439\u043B(\u043E\u0432) \u043D\u0430 ${host}`, "pushedFilesTo"),
+  pushError: /* @__PURE__ */ __name((message) => `\u0410\u0432\u0442\u043E\u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044F \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C: ${message}`, "pushError"),
+  // Conflict view
+  syncConflict: "\u041A\u043E\u043D\u0444\u043B\u0438\u043A\u0442 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438",
+  conflictProgress: /* @__PURE__ */ __name((current, total) => `${current} / ${total}`, "conflictProgress"),
+  localVersion: "\u041B\u043E\u043A\u0430\u043B\u044C\u043D\u0430\u044F \u0432\u0435\u0440\u0441\u0438\u044F",
+  serverVersion: "\u0412\u0435\u0440\u0441\u0438\u044F \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435",
+  localLines: /* @__PURE__ */ __name((count) => `\u041B\u043E\u043A\u0430\u043B\u044C\u043D\u043E: ${count} \u0441\u0442\u0440\u043E\u043A`, "localLines"),
+  serverLines: /* @__PURE__ */ __name((count) => `\u0421\u0435\u0440\u0432\u0435\u0440: ${count} \u0441\u0442\u0440\u043E\u043A`, "serverLines"),
+  linesChanged: /* @__PURE__ */ __name((added, removed, modified) => `+${added} -${removed} ~${modified}`, "linesChanged"),
+  keepLocal: "\u041E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u0443\u044E",
+  useServer: "\u0412\u0437\u044F\u0442\u044C \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430",
+  keepBoth: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0431\u0435",
+  skip: "\u041F\u0440\u043E\u043F\u0443\u0441\u0442\u0438\u0442\u044C",
+  skipAll: /* @__PURE__ */ __name((remaining) => `\u041F\u0440\u043E\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u0432\u0441\u0435 (${remaining} \u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C)`, "skipAll"),
+  noConflicts: "\u041D\u0435\u0442 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u043E\u0432 \u0434\u043B\u044F \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F",
+  allConflictsResolved: "\u0412\u0441\u0435 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u044B \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u044B!",
+  // Migration modal
+  syncSystemUpdate: "\u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438",
+  migrationFoundFiles: /* @__PURE__ */ __name((count) => `\u041D\u0430\u0439\u0434\u0435\u043D\u043E ${count} \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0440\u0430\u0437\u043B\u0438\u0447\u0438\u044F\u043C\u0438 \u043C\u0435\u0436\u0434\u0443 \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u0439 \u0438 \u0441\u0435\u0440\u0432\u0435\u0440\u043D\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u044F\u043C\u0438.`, "migrationFoundFiles"),
+  migrationDescription: "\u042D\u0442\u043E \u043E\u0434\u043D\u043E\u0440\u0430\u0437\u043E\u0432\u0430\u044F \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u043F\u043E\u0441\u043B\u0435 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u043F\u043B\u0430\u0433\u0438\u043D\u0430.",
+  reviewEachConflict: "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u043A\u0430\u0436\u0434\u044B\u0439 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442",
+  trustServerForAll: "\u0414\u043E\u0432\u0435\u0440\u044F\u0442\u044C \u0441\u0435\u0440\u0432\u0435\u0440\u0443 \u0434\u043B\u044F \u0432\u0441\u0435\u0445",
+  // Directory selection
+  selectSyncDirectory: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438",
+  syncThisDirectory: "\u0421\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u044D\u0442\u0443 \u043F\u0430\u043F\u043A\u0443",
+  noSyncDirsConfigured: "\u041F\u0430\u043F\u043A\u0438 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u043D\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u044B. \u0414\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u0438\u0445 \u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445.",
+  openSettings: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
+  // Badge tooltips
+  pendingChanges: /* @__PURE__ */ __name((pull, push) => `Trip2g Sync (\u2193${pull} \u2191${push})`, "pendingChanges"),
+  pendingPull: /* @__PURE__ */ __name((count) => `Trip2g Sync (\u2193${count} \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430)`, "pendingPull"),
+  pendingPush: /* @__PURE__ */ __name((count) => `Trip2g Sync (\u2191${count} \u043A \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0435)`, "pendingPush"),
+  // Progress messages
+  progressPulling: /* @__PURE__ */ __name((current, total) => `\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 ${current}/${total}...`, "progressPulling"),
+  progressPushing: /* @__PURE__ */ __name((current, total) => `\u041E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 ${current}/${total}...`, "progressPushing"),
+  progressDownloadingAssets: /* @__PURE__ */ __name((current, total) => `\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0430\u0441\u0441\u0435\u0442\u043E\u0432 ${current}/${total}...`, "progressDownloadingAssets"),
+  progressUploadingAssets: /* @__PURE__ */ __name((current, total) => `\u041E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \u0430\u0441\u0441\u0435\u0442\u043E\u0432 ${current}/${total}...`, "progressUploadingAssets"),
+  progressClassifying: "\u0410\u043D\u0430\u043B\u0438\u0437 \u0444\u0430\u0439\u043B\u043E\u0432...",
+  // Server deleted modal
+  serverDeletedTitle: "\u0424\u0430\u0439\u043B\u044B \u0443\u0434\u0430\u043B\u0435\u043D\u044B \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435",
+  serverDeletedDescription: /* @__PURE__ */ __name((count) => `${count} \u0444\u0430\u0439\u043B(\u043E\u0432) \u0431\u044B\u043B\u0438 \u0443\u0434\u0430\u043B\u0435\u043D\u044B/\u0441\u043A\u0440\u044B\u0442\u044B \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435, \u043D\u043E \u0432\u0441\u0451 \u0435\u0449\u0451 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044E\u0442 \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E. \u0427\u0442\u043E \u0441\u0434\u0435\u043B\u0430\u0442\u044C?`, "serverDeletedDescription"),
+  serverDeletedFileList: "\u0417\u0430\u0442\u0440\u043E\u043D\u0443\u0442\u044B\u0435 \u0444\u0430\u0439\u043B\u044B:",
+  deleteLocally: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E",
+  keepLocally: "\u041E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E",
+  deletedLocally: /* @__PURE__ */ __name((count) => `\u0423\u0434\u0430\u043B\u0435\u043D\u043E ${count} \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u044B\u0445 \u0444\u0430\u0439\u043B\u043E\u0432`, "deletedLocally"),
+  keptLocally: /* @__PURE__ */ __name((count) => `\u041E\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u043E ${count} \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u044B\u0445 \u0444\u0430\u0439\u043B\u043E\u0432`, "keptLocally"),
+  // Push confirmation modal
+  pushConfirmTitle: "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0443 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440",
+  pushConfirmDescription: /* @__PURE__ */ __name((count) => `${count} \u0444\u0430\u0439\u043B(\u043E\u0432) \u0431\u0443\u0434\u0443\u0442 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u044B \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440. \u041F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u044C?`, "pushConfirmDescription"),
+  pushConfirmFileList: "\u0424\u0430\u0439\u043B\u044B \u0434\u043B\u044F \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438:",
+  pushConfirmProceed: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C",
+  pushConfirmCancel: "\u041E\u0442\u043C\u0435\u043D\u0430",
+  pushConfirmDontAskAgain: "\u0411\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u0441\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0442\u044C",
+  // Asset conflict modal
+  assetConflictTitle: "\u041A\u043E\u043D\u0444\u043B\u0438\u043A\u0442 \u0430\u0441\u0441\u0435\u0442\u043E\u0432",
+  assetConflictDescription: /* @__PURE__ */ __name((count) => `${count} \u0430\u0441\u0441\u0435\u0442(\u043E\u0432) \u043E\u0442\u043B\u0438\u0447\u0430\u044E\u0442\u0441\u044F \u043C\u0435\u0436\u0434\u0443 \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u0439 \u0438 \u0441\u0435\u0440\u0432\u0435\u0440\u043D\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u044F\u043C\u0438. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043A\u0430\u043A\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E \u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C:`, "assetConflictDescription"),
+  assetConflictFileList: "\u041A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u0443\u044E\u0449\u0438\u0435 \u0430\u0441\u0441\u0435\u0442\u044B:",
+  assetConflictKeepLocal: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u044B\u0435",
+  assetConflictKeepRemote: "\u0421\u043A\u0430\u0447\u0430\u0442\u044C \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430",
+  assetConflictSkip: "\u041F\u0440\u043E\u043F\u0443\u0441\u0442\u0438\u0442\u044C",
+  assetConflictApplyToAll: "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u043A\u043E \u0432\u0441\u0435\u043C \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u0430\u043C",
+  assetUploaded: /* @__PURE__ */ __name((count) => `\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043E ${count} \u0430\u0441\u0441\u0435\u0442\u043E\u0432`, "assetUploaded"),
+  assetDownloaded: /* @__PURE__ */ __name((count) => `\u0421\u043A\u0430\u0447\u0430\u043D\u043E ${count} \u0430\u0441\u0441\u0435\u0442\u043E\u0432`, "assetDownloaded"),
+  assetTooLarge: /* @__PURE__ */ __name((fileName) => `\u0424\u0430\u0439\u043B "${fileName}" \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u043E\u0439 \u0434\u043B\u044F \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438`, "assetTooLarge")
+};
+var translations = { en, ru };
+var currentLocale = "en";
+function t() {
+  return translations[currentLocale];
+}
+__name(t, "t");
+
+// src/sync/upload-retry.ts
+var AssetTooLargeError = class extends Error {
+  static {
+    __name(this, "AssetTooLargeError");
+  }
+  constructor(fileName) {
+    super(t().assetTooLarge(fileName));
+    this.name = "AssetTooLargeError";
+    this.fileName = fileName;
+  }
+};
+function isNonRetryableUploadError(e) {
+  return e instanceof AssetTooLargeError;
+}
+__name(isNonRetryableUploadError, "isNonRetryableUploadError");
+var defaultSleep = /* @__PURE__ */ __name((ms) => new Promise((resolve5) => setTimeout(resolve5, ms)), "defaultSleep");
+async function uploadWithRetry(attempt, opts = {}) {
+  const maxRetries = opts.maxRetries ?? 10;
+  const sleep = opts.sleep ?? defaultSleep;
+  for (let n = 1; n <= maxRetries; n++) {
+    try {
+      if (await attempt()) {
+        return true;
+      }
+    } catch (e) {
+      if (isNonRetryableUploadError(e)) {
+        opts.onGiveUp?.(e, n);
+        return false;
+      }
+      if (n < maxRetries) {
+        opts.onRetry?.(n, e);
+        await sleep(Math.pow(2, n - 1) * 1e3);
+        continue;
+      }
+      opts.onGiveUp?.(e, n);
+      return false;
+    }
+  }
+  return false;
+}
+__name(uploadWithRetry, "uploadWithRetry");
+
 // src/sync/cli/graphql-client.ts
 var GraphQLClient = class {
   constructor(url, options = {}) {
@@ -2318,23 +2644,13 @@ var NodeEnv = class {
     }
   }
   async uploadAsset(params) {
-    const maxRetries = 10;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const success = await this.uploadAssetOnce(params);
-        if (success) {
-          return true;
-        }
-      } catch (e) {
-        if (attempt < maxRetries) {
-          this.log(`\u26A0\uFE0F Upload attempt ${attempt} failed, retrying: ${params.relativePath}`);
-          continue;
-        }
-        console.error(`\u274C Failed to upload asset ${params.relativePath} after ${maxRetries} attempts: ${e}`);
-        return false;
-      }
-    }
-    return false;
+    return uploadWithRetry(() => this.uploadAssetOnce(params), {
+      // Preserve the CLI's original no-delay retry behavior.
+      sleep: /* @__PURE__ */ __name(async () => {
+      }, "sleep"),
+      onRetry: /* @__PURE__ */ __name((attempt) => this.log(`\u26A0\uFE0F Upload attempt ${attempt} failed, retrying: ${params.relativePath}`), "onRetry"),
+      onGiveUp: /* @__PURE__ */ __name((e) => console.error(`\u274C Failed to upload asset ${params.relativePath}: ${e}`), "onGiveUp")
+    });
   }
   async uploadAssetOnce(params) {
     const query = `mutation UploadNoteAsset($input: UploadNoteAssetInput!) {
@@ -2378,6 +2694,9 @@ var NodeEnv = class {
       },
       body: formData
     });
+    if (response.status === 413) {
+      throw new AssetTooLargeError(params.fileName);
+    }
     if (!response.ok) {
       const body = await response.text();
       throw new Error(`HTTP ${response.status}: ${response.statusText}
@@ -2849,14 +3168,23 @@ async function executePlan(env, plan, options = { twoWaySync: false }) {
     await handleLocalDeleted(env, plan.localDeleted, syncState);
   }
   if (pushedNotes.length > 0) {
-    const assetResult = await syncAssets(env, pushedNotes, options.twoWaySync);
+    const notes = pushedNotes.map((note) => ({
+      id: note.id,
+      path: note.path,
+      assets: (note.assets ?? []).map((a) => ({
+        id: a.path,
+        serverHash: a.sha256Hash,
+        serverUrl: a.url
+      }))
+    }));
+    const assetResult = await reconcileAssets(env, notes, options.twoWaySync);
     result.assetsUploaded = assetResult.uploaded;
     result.assetsDownloaded = assetResult.downloaded;
     result.errors.push(...assetResult.errors);
   }
   const unchangedPaths = plan.classifications.filter((c) => c.action === "unchanged" && c.remoteHash !== null).map((c) => c.path);
   if (unchangedPaths.length > 0) {
-    const assetResult = await uploadMissingAssetsForNotes(env, unchangedPaths);
+    const assetResult = await reconcileAssetsForUnchangedNotes(env, unchangedPaths);
     result.assetsUploaded += assetResult.uploaded;
     result.errors.push(...assetResult.errors);
   }
@@ -3079,95 +3407,93 @@ async function handleLocalDeleted(env, localDeleted, syncState) {
   }
 }
 __name(handleLocalDeleted, "handleLocalDeleted");
-async function syncAssets(env, pushedNotes, twoWaySync) {
-  console.log(`[Trip2g Sync] syncAssets called with ${pushedNotes.length} notes, twoWaySync=${twoWaySync}`);
+async function reconcileAssets(env, notes, twoWaySync) {
   const result = {
     uploaded: 0,
     downloaded: 0,
     conflictsResolved: 0,
     errors: []
   };
-  if (pushedNotes.length === 0) {
-    return result;
-  }
   const toUpload = [];
   const toDownload = [];
   const conflicts = [];
-  for (const note of pushedNotes) {
-    console.log(`[Trip2g Sync] Processing assets for note: ${note.path}, assets count: ${note.assets?.length ?? 0}`);
-    if (!note.assets || note.assets.length === 0) {
-      continue;
-    }
+  for (const note of notes) {
     for (const asset of note.assets) {
-      const localPath = await env.resolveAssetPath(asset.path, note.path);
-      console.log(`[Trip2g Sync] Asset "${asset.path}" -> localPath: ${localPath ?? "NOT FOUND"}, sha256Hash: ${asset.sha256Hash ?? "null"}`);
+      const localPath = await env.resolveAssetPath(asset.id, note.path);
       if (!localPath) {
         continue;
       }
-      if (!asset.sha256Hash || !asset.absolutePath || !asset.url) {
-        console.log(`[Trip2g Sync] Queuing upload: ${asset.path} (no hash on server)`);
-        toUpload.push({ noteId: note.id, notePath: note.path, asset, localPath });
-        continue;
-      }
       const exists = await env.fileExists(localPath);
-      if (exists) {
+      const onServer = !!asset.serverHash && !!asset.serverUrl;
+      if (!onServer) {
+        if (!exists) {
+          continue;
+        }
         try {
           const localData = await env.readBinaryFile(localPath);
           const localHash = await env.computeBinaryHash(localData);
-          if (localHash === asset.sha256Hash) {
-            continue;
-          }
-          conflicts.push({
-            path: asset.path,
-            absolutePath: localPath,
-            noteId: note.id,
-            localHash,
-            remoteHash: asset.sha256Hash,
-            remoteUrl: asset.url
-          });
+          toUpload.push({ noteId: note.id, assetId: asset.id, localPath, localHash });
         } catch (e) {
           result.errors.push(`Failed to read local asset ${localPath}: ${e}`);
         }
-      } else if (twoWaySync) {
-        toDownload.push({ asset, localPath });
+        continue;
+      }
+      if (!exists) {
+        if (twoWaySync) {
+          toDownload.push({ assetId: asset.id, url: asset.serverUrl, localPath });
+        }
+        continue;
+      }
+      try {
+        const localData = await env.readBinaryFile(localPath);
+        const localHash = await env.computeBinaryHash(localData);
+        if (localHash === asset.serverHash) {
+          continue;
+        }
+        conflicts.push({
+          path: asset.id,
+          absolutePath: localPath,
+          noteId: note.id,
+          localHash,
+          remoteHash: asset.serverHash,
+          remoteUrl: asset.serverUrl
+        });
+      } catch (e) {
+        result.errors.push(`Failed to read local asset ${localPath}: ${e}`);
       }
     }
   }
-  console.log(`[Trip2g Sync] Assets to upload: ${toUpload.length}, to download: ${toDownload.length}, conflicts: ${conflicts.length}`);
   if (toUpload.length > 0) {
-    const uniqueUploads = /* @__PURE__ */ new Map();
+    const unique = /* @__PURE__ */ new Map();
     for (const item of toUpload) {
       const key = `${item.noteId}:${item.localPath}`;
-      if (!uniqueUploads.has(key)) {
-        uniqueUploads.set(key, item);
+      if (!unique.has(key)) {
+        unique.set(key, item);
       }
     }
-    const deduped = Array.from(uniqueUploads.values());
+    const deduped = Array.from(unique.values());
     const uploadTotal = deduped.length;
     let uploadCurrent = 0;
-    console.log(`[Trip2g Sync] Uploading ${uploadTotal} unique (note, asset) pairs`);
     for (const item of deduped) {
       uploadCurrent++;
-      console.log(`[Trip2g Sync] Uploading asset ${uploadCurrent}/${uploadTotal}: ${item.localPath}`);
-      env.onProgress({ step: "upload_asset", current: uploadCurrent, total: uploadTotal, path: item.asset.path });
+      env.onProgress({ step: "upload_asset", current: uploadCurrent, total: uploadTotal, path: item.assetId });
       try {
         const localData = await env.readBinaryFile(item.localPath);
-        const localHash = await env.computeBinaryHash(localData);
         const blob = new Blob([localData]);
         const fileName = item.localPath.substring(item.localPath.lastIndexOf("/") + 1);
         const success = await env.uploadAsset({
           noteId: item.noteId,
           blob,
           fileName,
-          relativePath: item.asset.path,
+          relativePath: item.assetId,
           absolutePath: item.localPath,
-          sha256Hash: localHash
+          sha256Hash: item.localHash
         });
         if (success) {
           result.uploaded++;
         }
       } catch (e) {
-        result.errors.push(`Failed to upload asset ${item.asset.path}: ${e}`);
+        result.errors.push(`Failed to upload asset ${item.assetId}: ${e}`);
       }
     }
   }
@@ -3176,14 +3502,11 @@ async function syncAssets(env, pushedNotes, twoWaySync) {
     let downloadCurrent = 0;
     for (const item of toDownload) {
       downloadCurrent++;
-      env.onProgress({ step: "download_asset", current: downloadCurrent, total: downloadTotal, path: item.asset.path });
-      if (!item.asset.url) {
-        continue;
-      }
+      env.onProgress({ step: "download_asset", current: downloadCurrent, total: downloadTotal, path: item.assetId });
       try {
-        const data = await env.downloadAsset(item.asset.url);
+        const data = await env.downloadAsset(item.url);
         if (!data) {
-          result.errors.push(`Failed to download asset ${item.asset.path}`);
+          result.errors.push(`Failed to download asset ${item.assetId}`);
           continue;
         }
         const dirPath = item.localPath.substring(0, item.localPath.lastIndexOf("/"));
@@ -3193,7 +3516,7 @@ async function syncAssets(env, pushedNotes, twoWaySync) {
         await env.writeBinaryFile(item.localPath, data);
         result.downloaded++;
       } catch (e) {
-        result.errors.push(`Failed to download asset ${item.asset.path}: ${e}`);
+        result.errors.push(`Failed to download asset ${item.assetId}: ${e}`);
       }
     }
   }
@@ -3201,12 +3524,12 @@ async function syncAssets(env, pushedNotes, twoWaySync) {
     const assetResult = await handleAssetConflicts(env, conflicts, twoWaySync);
     result.uploaded += assetResult.uploaded;
     result.downloaded += assetResult.downloaded;
-    result.conflictsResolved = assetResult.conflictsResolved;
+    result.conflictsResolved += assetResult.conflictsResolved;
     result.errors.push(...assetResult.errors);
   }
   return result;
 }
-__name(syncAssets, "syncAssets");
+__name(reconcileAssets, "reconcileAssets");
 async function handleAssetConflicts(env, conflicts, twoWaySync) {
   const result = {
     uploaded: 0,
@@ -3308,81 +3631,23 @@ async function downloadAssetsForNotes(env, notePaths) {
   return result;
 }
 __name(downloadAssetsForNotes, "downloadAssetsForNotes");
-async function uploadMissingAssetsForNotes(env, notePaths) {
-  const result = { uploaded: 0, errors: [] };
+async function reconcileAssetsForUnchangedNotes(env, notePaths) {
   if (notePaths.length === 0) {
-    return result;
+    return { uploaded: 0, downloaded: 0, conflictsResolved: 0, errors: [] };
   }
   const noteAssets = await env.fetchNoteAssets(notePaths);
-  if (noteAssets.length === 0) {
-    return result;
-  }
-  const toUpload = [];
-  for (const note of noteAssets) {
-    for (const asset of note.assets) {
-      let localPath = asset.absolutePath?.replace(/^\//, "");
-      if (!localPath && asset.id) {
-        const noteDir = note.path.includes("/") ? note.path.substring(0, note.path.lastIndexOf("/")) : "";
-        const assetPath = asset.id.replace(/^\.\//, "");
-        localPath = noteDir ? `${noteDir}/${assetPath}` : assetPath;
-      }
-      if (!localPath) {
-        continue;
-      }
-      const exists = await env.fileExists(localPath);
-      if (!exists) {
-        continue;
-      }
-      try {
-        const localData = await env.readBinaryFile(localPath);
-        const localHash = await env.computeBinaryHash(localData);
-        if (localHash === asset.hash) {
-          continue;
-        }
-        toUpload.push({
-          noteId: note.noteId,
-          // version ID from server
-          notePath: note.path,
-          assetPath: asset.id,
-          localPath,
-          localHash
-        });
-      } catch (e) {
-        result.errors.push(`Failed to read local asset ${localPath}: ${e}`);
-      }
-    }
-  }
-  if (toUpload.length === 0) {
-    return result;
-  }
-  const total = toUpload.length;
-  let current = 0;
-  for (const item of toUpload) {
-    current++;
-    env.onProgress({ step: "upload_asset", current, total, path: item.assetPath });
-    try {
-      const localData = await env.readBinaryFile(item.localPath);
-      const blob = new Blob([localData]);
-      const fileName = item.localPath.substring(item.localPath.lastIndexOf("/") + 1);
-      const success = await env.uploadAsset({
-        noteId: item.noteId,
-        blob,
-        fileName,
-        relativePath: item.assetPath,
-        absolutePath: item.localPath,
-        sha256Hash: item.localHash
-        // Use pre-computed hash
-      });
-      if (success) {
-        result.uploaded++;
-      }
-    } catch (e) {
-      result.errors.push(`Failed to upload asset ${item.assetPath}: ${e}`);
-    }
-  }
-  return result;
+  const notes = noteAssets.map((note) => ({
+    id: note.noteId,
+    path: note.path,
+    assets: note.assets.map((a) => ({
+      id: a.id,
+      serverHash: a.hash || null,
+      serverUrl: a.url || null
+    }))
+  }));
+  return reconcileAssets(env, notes, false);
 }
-__name(uploadMissingAssetsForNotes, "uploadMissingAssetsForNotes");
+__name(reconcileAssetsForUnchangedNotes, "reconcileAssetsForUnchangedNotes");
 
 // src/sync/exclude.ts
 function makeExcludeMatcher(patterns) {

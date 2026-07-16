@@ -7,13 +7,27 @@ import (
 	"trip2g/internal/case/backjob/delivercronwebhook"
 	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/case/handletgpublishviews"
+	"trip2g/internal/case/materializenotefrontmatters"
 	"trip2g/internal/case/updatesubgraphs"
+	"trip2g/internal/model"
 	"trip2g/internal/notebus"
 
 	"github.com/valyala/fasthttp"
 )
 
+//nolint:gocognit // This coordinates independent post-save side effects.
 func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error {
+	nvs := a.LatestNoteViews()
+	changed := make([]*model.NoteView, 0, len(changedPathIDs))
+	for _, pathID := range changedPathIDs {
+		if note := nvs.GetByPathID(pathID); note != nil {
+			changed = append(changed, note)
+		}
+	}
+	if err := materializenotefrontmatters.Resolve(ctx, a, changed); err != nil {
+		return fmt.Errorf("failed to materialize note frontmatters: %w", err)
+	}
+
 	err := updatesubgraphs.Resolve(ctx, a)
 	if err != nil {
 		return fmt.Errorf("failed to update subgraphs: %w", err)
@@ -26,9 +40,9 @@ func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []i
 
 	// Enqueue embedding generation for changed notes (if vector search enabled)
 	if a.config.Features.VectorSearch.Enabled {
-		nvs := a.LatestNoteViews()
+		latestNotes := a.LatestNoteViews()
 		for _, pathID := range changedPathIDs {
-			noteView := nvs.GetByPathID(pathID)
+			noteView := latestNotes.GetByPathID(pathID)
 			if noteView != nil {
 				enqueueErr := a.GenerateNoteVersionEmbeddingJob.Enqueue(ctx, noteView.VersionID)
 				if enqueueErr != nil {

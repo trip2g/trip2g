@@ -1405,6 +1405,74 @@ func (q *Queries) FederationSecretByKID(ctx context.Context, kid string) (Federa
 	return i, err
 }
 
+const filterNotePathIDsByFrontmatterEquals = `-- name: FilterNotePathIDsByFrontmatterEquals :many
+select distinct np.id
+  from note_paths np
+  join note_versions nv on nv.path_id = np.id and nv.version = np.version_count
+  join note_version_frontmatters f on f.version_id = nv.id
+ where json_extract(f.data, '$.' || ?1) = ?2
+`
+
+type FilterNotePathIDsByFrontmatterEqualsParams struct {
+	Key   *string     `json:"key"`
+	Value interface{} `json:"value"`
+}
+
+func (q *Queries) FilterNotePathIDsByFrontmatterEquals(ctx context.Context, arg FilterNotePathIDsByFrontmatterEqualsParams) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, filterNotePathIDsByFrontmatterEquals, arg.Key, arg.Value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const filterNotePathIDsByFrontmatterKey = `-- name: FilterNotePathIDsByFrontmatterKey :many
+select distinct np.id
+  from note_paths np
+  join note_versions nv on nv.path_id = np.id and nv.version = np.version_count
+  join note_version_frontmatters f on f.version_id = nv.id
+  join note_version_frontmatter_keys k on k.note_version_id = nv.id
+ where k.key_id = ?1
+`
+
+func (q *Queries) FilterNotePathIDsByFrontmatterKey(ctx context.Context, key interface{}) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, filterNotePathIDsByFrontmatterKey, key)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const filteredTgBotChats = `-- name: FilteredTgBotChats :many
 select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite, bot_id
   from tg_bot_chats

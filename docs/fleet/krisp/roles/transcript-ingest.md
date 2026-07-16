@@ -1,10 +1,10 @@
 ---
-description: "Krisp meetings → transcript notes (cron ingest, deterministic)"
+description: Krisp meetings → transcript notes (cron ingest, deterministic)
+fleet_id: codellm
 mode: cron
 cron_schedule: "* * * * *"
-executor: code
-write_patterns: ["transcripts/**"]
-env_passthrough: ["KRISP_TOKEN", "KRISP_BASE_URL"]
+write_patterns:
+  - transcripts/**
 max_depth: 1
 ---
 ```python
@@ -12,6 +12,9 @@ import os
 import json
 import urllib.request
 
+# Runs in codellm. codellm exposes KRISP_* to this child from ITS OWN env, per
+# its operator expose-allowlist (CODELLM_EXPOSE_ENV), so they arrive as ordinary
+# env variables. The role declares nothing about env; fleet holds no secrets.
 base_url = os.environ['KRISP_BASE_URL'].rstrip('/')
 token = os.environ['KRISP_TOKEN']
 

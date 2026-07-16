@@ -36,6 +36,7 @@ import (
 	"trip2g/internal/case/backjob/updatetelegramaccountpost"
 	"trip2g/internal/case/backjob/updatetelegrammessage"
 	"trip2g/internal/case/backjob/updatetelegrampost"
+	"trip2g/internal/case/materializenotefrontmatters"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/chartdata"
@@ -525,6 +526,17 @@ func main() {
 
 	log.Info("writer slot acquired, starting writer subsystems")
 
+	// Materialize the already-loaded latest/live snapshots. RawMeta is effective
+	// (post-patch), so this does not reparse historical note versions.
+	err = materializenotefrontmatters.ResolveSnapshots(
+		ctx,
+		a,
+		a.LatestNoteViews(),
+		a.liveNoteLoader.NoteViews(),
+	)
+	if err != nil {
+		panic(fmt.Errorf("failed to materialize loaded note frontmatters: %w", err))
+	}
 	// BLOCK B — writer-only. Runs only after the writer slot is acquired.
 	// Everything here writes to the DB or starts a background loop that does.
 

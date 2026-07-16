@@ -30,7 +30,6 @@ type Query struct {
 type Role struct {
 	Name           string   `json:"name"`
 	Path           string   `json:"path"`
-	Executor       string   `json:"executor"`
 	Model          *string  `json:"model,omitempty"`
 	TriggerOn      []string `json:"triggerOn"`
 	TriggerInclude []string `json:"triggerInclude"`

@@ -35,6 +35,21 @@ services:
       - ./scripts:/scripts:ro
     command: python /scripts/data_mock_server.py
 
+  # Krisp API stub (cmd/mockserver + configs/krisp.jsonnet)
+  krisp-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.mockserver
+    command: ["--config", "/configs/krisp.jsonnet", "--listen", ":9092"]
+    container_name: trip2g-test-krispmock
+    ports:
+      - "19092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9092/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes: {}
 
   # lottie-converter:

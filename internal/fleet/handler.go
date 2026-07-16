@@ -14,6 +14,7 @@ import (
 
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/coderun"
+	"trip2g/internal/fleetinput"
 	"trip2g/internal/webhookutil"
 )
 
@@ -39,32 +40,15 @@ type deliveryPayload struct {
 
 // changeInfo mirrors handlenotewebhooks.ChangeInfo — the per-note trigger data
 // trip2g sends in the delivery payload's changes[] array.
-type changeInfo struct {
-	Path    string `json:"path"`
-	Event   string `json:"event"`
-	PathID  int64  `json:"path_id"`
-	Version int64  `json:"version"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
-}
+type changeInfo = fleetinput.ChangeInfo
 
 // attachedNote mirrors webhookutil.AttachedNote — a context note materialized
 // by trip2g via attach_notes. Meta is the key-allowlist trip2g sends (not the
 // full RawMeta).
-type attachedNote struct {
-	Path      string            `json:"path"`
-	Title     string            `json:"title"`
-	Content   string            `json:"content"`
-	UpdatedAt string            `json:"updated_at"`
-	Tags      []string          `json:"tags"`
-	Meta      map[string]string `json:"meta"`
-}
+type attachedNote = fleetinput.AttachedNote
 
 // maxBodyBytes caps the delivery payload size to guard against DoS.
 const maxBodyBytes = 10 * 1024 * 1024 // 10 MiB
-
-// inputKeyDepth is the JSON key for the depth field in the $FLEET_INPUT bag.
-const inputKeyDepth = "depth"
 
 // statusError is the AgentResponse status value for hard-failure responses.
 const statusError = "error"
@@ -228,12 +212,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 // (the same fields exposed to Jet templates). The scoped write token is never
 // included.
 func buildInputBag(rc renderCtx) []byte {
-	bag := map[string]any{
-		forEachChangedFiles:  rc.ChangedFiles,
-		"change_file":        rc.ChangeFile,
-		forEachAttachedNotes: rc.AttachedNotes,
-		inputKeyDepth:        rc.Depth,
-	}
+	bag := fleetinput.Input{ChangedFiles: rc.ChangedFiles, ChangeFile: rc.ChangeFile, AttachedNotes: rc.AttachedNotes, Depth: rc.Depth}
 	data, _ := json.Marshal(bag)
 	return data
 }
@@ -352,11 +331,8 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 // buildCronInputBag marshals the cron render context into the JSON bag delivered
 // to code programs via $FLEET_INPUT. Exposes now as an RFC3339 string.
 func buildCronInputBag(rc renderCtx) []byte {
-	bag := map[string]any{
-		forEachAttachedNotes: rc.AttachedNotes,
-		inputKeyDepth:        rc.Depth,
-		"now":                rc.Now.Format(time.RFC3339),
-	}
+	now := rc.Now.Format(time.RFC3339)
+	bag := fleetinput.Input{AttachedNotes: rc.AttachedNotes, Depth: rc.Depth, Now: &now}
 	data, _ := json.Marshal(bag)
 	return data
 }
@@ -371,51 +347,41 @@ type execRoleInput struct {
 	InputBag []byte // JSON bag for code executor ($FLEET_INPUT); nil for LLM executor
 }
 
-// execRole dispatches a single rendered instruction through the role's configured
-// executor (LLM agent run or deterministic code runner). Called from both change
-// delivery (with buildInputBag) and cron delivery (with buildCronInputBag).
+// execRole dispatches a single rendered instruction against this fleet's LLM.
+// Called from both change delivery (with buildInputBag) and cron delivery (with
+// buildCronInputBag).
+//
+// Uniform router: every role runs through f.llm — fleet does NOT branch on the
+// role and does NOT run code in-process. Routing is purely by fleet_id: a role
+// picks its fleet, and thus its endpoint. A codellm-backed fleet (--llm-base-url
+// → codellm) executes a rendered code body and returns write_note/patch_note/
+// finish tool_calls; a real-LLM fleet runs a prose body. The trigger bag rides
+// the fleet_input message (InputBag); writes go through ScopedKB(write_patterns);
+// HardFailApply gives all-or-nothing apply semantics (a failed apply fails the
+// run). Secrets never touch fleet — a codellm fleet exposes its own env to the
+// code child per its expose-allowlist.
 func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 	kb := newRemoteKB(p.GQL, p.Overlay)
-	if p.Role.Executor == executorCode {
-		// P3b cutover: executor:code no longer runs in-process. It routes through
-		// this fleet's LLM client (f.llm) — for a codellm-configured fleet, f.llm
-		// IS codellm (--llm-base-url points at it), which executes the rendered
-		// code body and returns write_note/patch_note/finish tool_calls. The
-		// delivery bag rides as a fleet_input system message (InputBag). Writes go
-		// through the same ScopedKB(write_patterns) enforcement as any llm role.
-		// HardFailApply preserves RunCode's all-or-nothing semantics (a failed
-		// apply fails the run). No MaxSteps pin: codellm's always-finish invariant
-		// stops the loop in one turn, so the normal step ceiling is safe.
-		return agentruntime.Run(p.Ctx, agentruntime.Input{
-			Instruction:   p.Instr,
-			ReadPatterns:  p.Role.ReadPatterns,
-			WritePatterns: p.Role.WritePatterns,
-			Tools:         p.Role.Tools,
-			Model:         orDefault(p.Role.Model, f.cfg.DefaultModel),
-			MaxTokens:     clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
-			MaxSteps:      clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
-			InputBag:      p.InputBag,
-			HardFailApply: true,
-			LLM:           f.llm,
-			KB:            kb,
-		})
-	}
 	return agentruntime.Run(p.Ctx, agentruntime.Input{
-		Instruction:     p.Instr,
-		ReadPatterns:    p.Role.ReadPatterns,
-		WritePatterns:   p.Role.WritePatterns,
-		Tools:           p.Role.Tools,
-		Model:           orDefault(p.Role.Model, f.cfg.DefaultModel),
-		MaxTokens:       clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
-		MaxSteps:        clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
-		AllowedPrograms: f.cfg.AllowedPrograms,
-		Sandbox:         f.sandboxPolicy(),
-		LLM:             f.llm,
-		KB:              kb,
+		Instruction:   p.Instr,
+		ReadPatterns:  p.Role.ReadPatterns,
+		WritePatterns: p.Role.WritePatterns,
+		Tools:         p.Role.Tools,
+		Model:         orDefault(p.Role.Model, f.cfg.DefaultModel),
+		MaxTokens:     clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
+		MaxSteps:      clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
+		InputBag:      p.InputBag,
+		HardFailApply: true,
+		LLM:           f.llm,
+		KB:            kb,
 	})
 }
 
-// sandboxPolicy maps the fleet-level sandbox config to the runtime policy.
+// sandboxPolicy maps the fleet-level sandbox config to the runtime policy. It is
+// used ONLY by the loopback /debug/run-block in-process block-debugger
+// (debug.go); the delivery path no longer runs code in-process. TODO(P5): when
+// the block-debugger moves to codellm, this and the fleet-level Sandbox/
+// SandboxNetwork/AllowedPrograms/MaxStdoutBytes config can be deleted.
 func (f *Fleet) sandboxPolicy() coderun.SandboxPolicy {
 	return coderun.SandboxPolicy{
 		Mode:    coderun.SandboxMode(f.cfg.Sandbox),

@@ -1447,6 +1447,7 @@ type SearchConnection @goExtraField(name: "Input", type: "*trip2g/internal/graph
 }
 
 input NotePathsFilter {
+	frontmatter: [NoteFrontmatterPredicate!]
   """
   LIKE pattern with % and _ wildcards supported.
   For example, to find all note paths starting with "myfolder/", use "myfolder/%".
@@ -1462,6 +1463,12 @@ input NotePathsFilter {
   Only return these specific note paths. Search and like will be ignored if paths is set.
   """
   paths: [String!]
+}
+
+input NoteFrontmatterPredicate {
+  key: String!
+  exists: Boolean
+  equals: String
 }
 
 input SimilarNotesInput {

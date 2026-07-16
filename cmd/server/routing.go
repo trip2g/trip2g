@@ -222,10 +222,21 @@ func (a *app) prepareMiddlewares() []Middleware {
 }
 
 // handleReplicaIntake authenticates a forwarded write from a read replica and
-// runs it through the full app handler. Reject (401) on a missing/invalid
-// X-Replica-Auth; 503 until the app handler is built (leader still warming up).
+// runs it through the full app handler. Missing X-Replica-Auth is treated as
+// an ordinary (non-replica) request and gets 404, since the internal listener
+// is also reachable by local health/debug tooling; an invalid X-Replica-Auth
+// gets 401; 503 until the app handler is built (leader still warming up).
 func (a *app) handleReplicaIntake(ctx *fasthttp.RequestCtx) {
 	auth := string(ctx.Request.Header.Peek(readreplica.AuthHeader))
+	if auth == "" {
+		// The internal listener is also reachable by local health/debug tooling.
+		// Do not treat ordinary requests as replica forwards: they must not get
+		// a misleading replica-auth error (or enter the write pipeline).
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString("404 internal endpoint")
+		return
+	}
+
 	if err := readreplica.VerifyAuth(a.config.UserToken.Secret, auth, time.Now()); err != nil {
 		a.log.Warn("replica intake: rejected request", "error", err, "remote", ctx.RemoteIP().String(), "path", string(ctx.Path()))
 		ctx.SetStatusCode(http.StatusUnauthorized)

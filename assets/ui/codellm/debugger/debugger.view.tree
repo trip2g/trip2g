@@ -1,0 +1,8 @@
+$trip2g_codellm_debugger $mol_book2_catalog
+	param \codellm_file
+	menu_title \CodeLLM Debugger
+	spreads *
+	Page* $trip2g_codellm_debugger_document
+		file_path <= file_path* \
+		title <= file_label* \
+		close_icon <= Spread_close
