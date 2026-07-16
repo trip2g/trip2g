@@ -37,6 +37,42 @@ func derivePlaceholderIDs(sourceID string) (string, string) {
 //     "mesh-barometer".
 //   - lid matches only call/definition forms so "mesh_art" does not match inside
 //     "mesh_article".
+//   - Matches inside an HTML comment are skipped: comment prose (e.g. "the
+//     kanban app") isn't an identifier, it's English text that happens to
+//     contain the word.
+//   - Matches inside an absolute URL (scheme://...) are skipped: the URL names
+//     an external artifact (e.g. a release asset in another repo) whose name
+//     must not track this file's name.
+var (
+	htmlCommentRe = regexp.MustCompile(`<!--[\s\S]*?-->`)
+	absoluteURLRe = regexp.MustCompile(`\b[a-zA-Z][a-zA-Z0-9+.-]*://[^\s'"<>()]+`)
+)
+
+// byteRange is a [start, end) byte offset range within scanned content.
+type byteRange struct{ start, end int }
+
+// skipRanges computes byte ranges that self-literal matches should ignore:
+// HTML comments and absolute URL tokens (see scanSelfLiteral's Rules).
+func skipRanges(content string) []byteRange {
+	var ranges []byteRange
+	for _, m := range htmlCommentRe.FindAllStringIndex(content, -1) {
+		ranges = append(ranges, byteRange{m[0], m[1]})
+	}
+	for _, m := range absoluteURLRe.FindAllStringIndex(content, -1) {
+		ranges = append(ranges, byteRange{m[0], m[1]})
+	}
+	return ranges
+}
+
+func inSkipRange(ranges []byteRange, pos int) bool {
+	for _, r := range ranges {
+		if pos >= r.start && pos < r.end {
+			return true
+		}
+	}
+	return false
+}
+
 func scanSelfLiteral(content, sourceID string) []model.NoteWarning {
 	lid, did := derivePlaceholderIDs(sourceID)
 	if lid == "" && did == "" {
@@ -50,10 +86,12 @@ func scanSelfLiteral(content, sourceID string) []model.NoteWarning {
 	}
 	var hits []hit
 
+	skip := skipRanges(content)
+
 	addHits := func(re *regexp.Regexp, kind, text string) {
 		for _, m := range re.FindAllStringSubmatchIndex(content, -1) {
 			start := m[2]
-			if start < 0 {
+			if start < 0 || inSkipRange(skip, start) {
 				continue
 			}
 			line := 1 + strings.Count(content[:start], "\n")

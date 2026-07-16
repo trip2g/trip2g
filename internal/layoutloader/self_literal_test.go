@@ -114,6 +114,46 @@ func TestScanSelfLiteral_DedupePerLine(t *testing.T) {
 	require.Len(t, ws, 1)
 }
 
+func TestScanSelfLiteral_HTMLCommentNotFlagged(t *testing.T) {
+	// English prose inside an HTML comment is not an identifier reference.
+	src := `<!-- Mount point for the React kanban app -->` + "\n"
+	ws := scanSelfLiteral(src, "/kanban")
+	require.Empty(t, ws)
+}
+
+func TestScanSelfLiteral_AbsoluteURLNotFlagged(t *testing.T) {
+	// kanban.js is the fixed release-asset name of a separate upstream repo;
+	// it must not be flagged as if it should track this layout's own name.
+	src := `<script src="https://github.com/trip2g/kanban_template/releases/latest/download/kanban.js"></script>` + "\n"
+	ws := scanSelfLiteral(src, "/kanban")
+	require.Empty(t, ws)
+}
+
+func TestScanSelfLiteral_RealViolationStillCaughtNearCommentsAndURLs(t *testing.T) {
+	src := `<!-- Mount point for the React kanban app -->` + "\n" +
+		`document.querySelector('.kanban__nav')` + "\n" +
+		`.kanban { color: red; }` + "\n"
+	ws := scanSelfLiteral(src, "/kanban")
+	require.Len(t, warnLines(t, ws, "@did"), 2)
+}
+
+func TestScanSelfLiteral_BEMCompoundStillNotFlagged(t *testing.T) {
+	// "kanban-header-right" — single dash, not a BEM boundary — must stay clean.
+	src := `.kanban-header-right { display: flex; }` + "\n"
+	ws := scanSelfLiteral(src, "/kanban")
+	require.Empty(t, ws)
+}
+
+func TestScanSelfLiteral_URLCarveOutScopedToToken(t *testing.T) {
+	// The URL carve-out must apply to the URL token only, not blank out the
+	// whole line: a real violation sharing a line with a URL is still caught.
+	src := `<script src="https://github.com/trip2g/kanban_template/releases/latest/download/kanban.js"></script><div class="kanban"></div>` + "\n"
+	ws := scanSelfLiteral(src, "/kanban")
+	require.Len(t, ws, 1)
+	require.Contains(t, ws[0].Message, "line 1")
+	require.Contains(t, ws[0].Message, "this file's @did")
+}
+
 func TestScanSelfLiteral_Clean(t *testing.T) {
 	src := `{{ block @lid() }}<div class="@did__x">@@did</div>{{ end }}` + "\n"
 	ws := scanSelfLiteral(src, "/mesh/bar")
