@@ -23,6 +23,7 @@ title: "Navigation"
 
 ### Use Cases
 
+- [[en/user/many-doors|What can you do with trip2g]]
 - [[en/user/telegram-blog-from-obsidian|Telegram blog from Obsidian]]
 - [[en/user/sell-obsidian-notes|Sell access to your notes]]
 - [[en/user/team-knowledge-base-mcp|Team KB agents can query]]

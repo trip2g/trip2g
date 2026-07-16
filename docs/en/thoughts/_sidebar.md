@@ -8,6 +8,7 @@ title: "Navigation"
 - [[en/thoughts/digital-sovereignty|Digital sovereignty]]
 - [[en/thoughts/dogfooding|Dogfooding]]
 - [[en/thoughts/universality-tax|The universality tax]]
+- [[en/thoughts/universal-tools|Universal tools have no elevator pitch]]
 - [[en/thoughts/paths-not-taken|Paths not taken]]
 - [[en/thoughts/filming-is-testing|Filming the demo is a test]]
 

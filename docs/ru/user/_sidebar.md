@@ -20,6 +20,7 @@ title: "Навигация"
 
 ### Примеры использования
 
+- [[ru/user/many-doors|Что можно делать с trip2g]]
 - [[ru/user/telegram-blog-from-obsidian|Блог в Telegram из Obsidian]]
 - [[ru/user/sell-obsidian-notes|Продажа доступа к заметкам]]
 - [[ru/user/team-knowledge-base-mcp|База знаний для агентов]]

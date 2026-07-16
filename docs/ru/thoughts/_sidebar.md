@@ -8,6 +8,7 @@ title: "Навигация"
 - [[ru/thoughts/digital-sovereignty|Цифровой суверенитет]]
 - [[ru/thoughts/dogfooding|Dogfooding]]
 - [[ru/thoughts/universality-tax|Налог на универсальность]]
+- [[ru/thoughts/universal-tools|У универсальных инструментов нет короткого питча]]
 - [[ru/thoughts/paths-not-taken|Дороги, которые мы не выбрали]]
 - [[ru/thoughts/filming-is-testing|Съёмка демо — это тест]]
 
