@@ -4,6 +4,10 @@
 // Access model (security boundary — fail closed):
 //   - Asset reachable via a layout or a publicly readable note → served
 //     anonymously with immutable caching.
+//   - A valid X-API-Key header grants access outright: an API key can already
+//     read every note via pushNotes (bypassACL), so this widens no real
+//     privilege. Checked before the session token; unlike checkapikey.Resolve
+//     this never writes to api_key_log — asset downloads are too hot a path.
 //   - Otherwise a session is required and the requester must be able to read
 //     at least one owning note (canreadnote semantics via env.CanReadNote).
 //   - Hash known in the DB but not referenced by any live note or layout →
@@ -45,6 +49,8 @@ type Env interface {
 	// StreamAssetObject streams length bytes of the asset starting at offset,
 	// without buffering the whole object in memory.
 	StreamAssetObject(ctx context.Context, asset db.NoteAsset, offset, length int64) (io.ReadCloser, error)
+	// ValidAPIKey reports whether plainKey is a currently valid API key.
+	ValidAPIKey(ctx context.Context, plainKey string) (bool, error)
 }
 
 const privateMaxAge = 300 // seconds; per-user access is re-checked after this
@@ -144,6 +150,21 @@ func Handle(req *appreq.Request) bool {
 // requester is allowed to read the asset.
 func enforceAccess(req *appreq.Request, env Env, ownership assetindex.Ownership, hash string) bool {
 	ctx := req.Req
+
+	if apiKey := string(ctx.Request.Header.Peek("X-API-Key")); apiKey != "" {
+		valid, err := env.ValidAPIKey(ctx, apiKey)
+		if err != nil {
+			env.Logger().Error("serveasset: API key validation failed", "hash", hash, "error", err)
+			ctx.SetStatusCode(http.StatusInternalServerError)
+			return true
+		}
+		if !valid {
+			ctx.SetStatusCode(http.StatusUnauthorized)
+			ctx.SetBodyString("401 Unauthorized")
+			return true
+		}
+		return false
+	}
 
 	token, tokenErr := req.UserToken()
 	if tokenErr != nil || token == nil {

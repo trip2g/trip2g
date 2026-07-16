@@ -275,25 +275,50 @@ func (a *app) ShortAPITokenSecret() string {
 	return a.config.UserToken.Secret
 }
 
-// ResolveAPIKey resolves an API key by value (tries sha256 hash first, then plain),
-// logs the action and IP, and returns the key record.
-func (a *app) ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error) {
-	// Try hashed value first (new keys), fall back to plain (old keys).
+// lookupAPIKeyRow resolves value to its ApiKey row, trying the sha256-hashed
+// form first (new keys) then falling back to a plaintext match (old keys).
+// found is false when no row matches; a genuine DB error is never swallowed.
+func (a *app) lookupAPIKeyRow(ctx context.Context, value string) (db.ApiKey, bool, error) {
 	hash := sha256.Sum256([]byte(value))
 	hashedValue := hex.EncodeToString(hash[:])
 
-	apiKey, err := a.Queries.ApiKeyByValue(ctx, hashedValue)
+	row, err := a.Queries.ApiKeyByValue(ctx, hashedValue)
 	if err != nil && !db.IsNoFound(err) {
-		return nil, fmt.Errorf("resolve api key: %w", err)
+		return db.ApiKey{}, false, fmt.Errorf("resolve api key: %w", err)
 	}
 	if db.IsNoFound(err) {
-		apiKey, err = a.Queries.ApiKeyByValue(ctx, value)
+		row, err = a.Queries.ApiKeyByValue(ctx, value)
 		if err != nil && !db.IsNoFound(err) {
-			return nil, fmt.Errorf("resolve api key (plain): %w", err)
+			return db.ApiKey{}, false, fmt.Errorf("resolve api key (plain): %w", err)
 		}
 		if db.IsNoFound(err) {
-			return nil, errors.New("invalid API key")
+			return db.ApiKey{}, false, nil
 		}
+	}
+
+	return row, true, nil
+}
+
+// ValidAPIKey reports whether plainKey is a currently valid API key. Unlike
+// ResolveAPIKey it writes no api_key_log entry — asset downloads are too hot
+// a path to log per-request.
+func (a *app) ValidAPIKey(ctx context.Context, plainKey string) (bool, error) {
+	_, found, err := a.lookupAPIKeyRow(ctx, plainKey)
+	if err != nil {
+		return false, err
+	}
+	return found, nil
+}
+
+// ResolveAPIKey resolves an API key by value (tries sha256 hash first, then plain),
+// logs the action and IP, and returns the key record.
+func (a *app) ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error) {
+	apiKey, found, err := a.lookupAPIKeyRow(ctx, value)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, errors.New("invalid API key")
 	}
 
 	req, _ := appreq.FromCtx(ctx)

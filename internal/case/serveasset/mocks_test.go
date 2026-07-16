@@ -39,6 +39,9 @@ var _ serveasset.Env = &EnvMock{}
 //			StreamAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset, offset int64, length int64) (io.ReadCloser, error) {
 //				panic("mock out the StreamAssetObject method")
 //			},
+//			ValidAPIKeyFunc: func(ctx context.Context, plainKey string) (bool, error) {
+//				panic("mock out the ValidAPIKey method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires serveasset.Env
@@ -60,6 +63,9 @@ type EnvMock struct {
 
 	// StreamAssetObjectFunc mocks the StreamAssetObject method.
 	StreamAssetObjectFunc func(ctx context.Context, asset db.NoteAsset, offset int64, length int64) (io.ReadCloser, error)
+
+	// ValidAPIKeyFunc mocks the ValidAPIKey method.
+	ValidAPIKeyFunc func(ctx context.Context, plainKey string) (bool, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -98,12 +104,20 @@ type EnvMock struct {
 			// Length is the length argument value.
 			Length int64
 		}
+		// ValidAPIKey holds details about calls to the ValidAPIKey method.
+		ValidAPIKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// PlainKey is the plainKey argument value.
+			PlainKey string
+		}
 	}
 	lockAssetOwnership         sync.RWMutex
 	lockCanReadNote            sync.RWMutex
 	lockLogger                 sync.RWMutex
 	lockNoteAssetsBySha256Hash sync.RWMutex
 	lockStreamAssetObject      sync.RWMutex
+	lockValidAPIKey            sync.RWMutex
 }
 
 // AssetOwnership calls AssetOwnershipFunc.
@@ -282,5 +296,41 @@ func (mock *EnvMock) StreamAssetObjectCalls() []struct {
 	mock.lockStreamAssetObject.RLock()
 	calls = mock.calls.StreamAssetObject
 	mock.lockStreamAssetObject.RUnlock()
+	return calls
+}
+
+// ValidAPIKey calls ValidAPIKeyFunc.
+func (mock *EnvMock) ValidAPIKey(ctx context.Context, plainKey string) (bool, error) {
+	if mock.ValidAPIKeyFunc == nil {
+		panic("EnvMock.ValidAPIKeyFunc: method is nil but Env.ValidAPIKey was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		PlainKey string
+	}{
+		Ctx:      ctx,
+		PlainKey: plainKey,
+	}
+	mock.lockValidAPIKey.Lock()
+	mock.calls.ValidAPIKey = append(mock.calls.ValidAPIKey, callInfo)
+	mock.lockValidAPIKey.Unlock()
+	return mock.ValidAPIKeyFunc(ctx, plainKey)
+}
+
+// ValidAPIKeyCalls gets all the calls that were made to ValidAPIKey.
+// Check the length with:
+//
+//	len(mockedEnv.ValidAPIKeyCalls())
+func (mock *EnvMock) ValidAPIKeyCalls() []struct {
+	Ctx      context.Context
+	PlainKey string
+} {
+	var calls []struct {
+		Ctx      context.Context
+		PlainKey string
+	}
+	mock.lockValidAPIKey.RLock()
+	calls = mock.calls.ValidAPIKey
+	mock.lockValidAPIKey.RUnlock()
 	return calls
 }
