@@ -415,6 +415,16 @@ func (ldr *loader) generatePageHTMLs() error {
 	return nil
 }
 
+// shouldWarnEmptyHTML reports whether empty rendered HTML is a real bug
+// signature. A note whose AST has no children is genuinely body-less (e.g.
+// pure frontmatter feeding a widget or a custom Jet layout) — empty HTML is
+// correct there and not worth a warning. Only warn when the AST had actual
+// content yet still rendered empty, since goldmark-meta already strips the
+// frontmatter node before this check runs.
+func shouldWarnEmptyHTML(doc ast.Node) bool {
+	return doc != nil && doc.HasChildren()
+}
+
 func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 	var buf bytes.Buffer
 
@@ -427,8 +437,8 @@ func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 
 	p.HTML = template.HTML(buf.String()) //nolint:gosec // it's safe from admins
 
-	if p.HTML == "" {
-		ldr.log.Warn("generated empty HTML", "path", p.Path, "content_len", len(p.Content), "ast_nil", p.Ast() == nil)
+	if p.HTML == "" && shouldWarnEmptyHTML(p.Ast()) {
+		ldr.log.Warn("generated empty HTML", "path", p.Path, "content_len", len(p.Content))
 	}
 
 	// Generate free HTML if needed
