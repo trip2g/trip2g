@@ -69,9 +69,17 @@ function replicaSuite(replicaUrl) {
     expect(body.data.__typename).toBe('Query');
   });
 
-  test('leader intake rejects an unauthenticated forward (no X-Replica-Auth → 401)', async ({ request }) => {
+  test('leader intake ignores an unauthenticated forward (no X-Replica-Auth → 404)', async ({ request }) => {
     const r = await request.post(`${LEADER_INTERNAL}/_system/graphql`, {
       headers: { 'Content-Type': 'application/json' },
+      data: { query: '{ __typename }' },
+    });
+    expect(r.status()).toBe(404);
+  });
+
+  test('leader intake rejects a forward with an invalid X-Replica-Auth (401)', async ({ request }) => {
+    const r = await request.post(`${LEADER_INTERNAL}/_system/graphql`, {
+      headers: { 'Content-Type': 'application/json', 'X-Replica-Auth': 'bogus' },
       data: { query: '{ __typename }' },
     });
     expect(r.status()).toBe(401);
