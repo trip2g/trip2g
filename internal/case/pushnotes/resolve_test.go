@@ -379,3 +379,142 @@ func TestResolve_UpdatedNotes(t *testing.T) {
 		require.Empty(t, payload.Updated)
 	})
 }
+
+// TestResolve_AssetURLAbsolutization covers the pushNotes GraphQL boundary:
+// note/layout asset URLs are content-addressed relative paths
+// (/_system/assets/{sha256}/{fileName}) and must be absolutized with
+// PublicURL before crossing to a consumer on a different origin (see
+// internal/model/asseturl.go doc comment on NoteAssetURLPath).
+func TestResolve_AssetURLAbsolutization(t *testing.T) {
+	ctx := context.Background()
+	mockLogger := &logger.TestLogger{}
+
+	const relativeAssetURL = "/_system/assets/deadbeef/image.png"
+
+	makeNVSWithAsset := func() *appmodel.NoteViews {
+		nvs := appmodel.NewNoteViews()
+		note := &appmodel.NoteView{
+			PathID:    42,
+			VersionID: 1,
+			Path:      "my-note.md",
+			Permalink: "/my-note",
+			Assets:    map[string]struct{}{"image.png": {}},
+			AssetReplaces: map[string]*appmodel.NoteAssetReplace{
+				"image.png": {ID: 7, URL: relativeAssetURL, Hash: "deadbeef"},
+			},
+		}
+		nvs.RegisterNote(note)
+		nvs.ExtractNoteList()
+		return nvs
+	}
+
+	makeLayoutsWithAsset := func() *appmodel.Layouts {
+		return &appmodel.Layouts{
+			Map: map[string]appmodel.Layout{
+				"_layouts/main.html": {
+					VersionID: 2,
+					Path:      "_layouts/main.html",
+					Assets:    []appmodel.LayoutAsset{{Path: "logo.png", Hash: "beadfeed"}},
+					AssetReplaces: map[string]*appmodel.NoteAssetReplace{
+						"logo.png": {ID: 8, URL: "/_system/assets/beadfeed/logo.png", Hash: "beadfeed"},
+					},
+				},
+			},
+		}
+	}
+
+	setupEnv := func(publicURL string) *EnvMock {
+		env := newEnvMock(mockLogger)
+		env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (int64, error) {
+			return 42, nil
+		}
+		env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			return makeNVSWithAsset(), nil
+		}
+		env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error {
+			return nil
+		}
+		env.LayoutsFunc = makeLayoutsWithAsset
+		env.PublicURLFunc = func() string { return publicURL }
+		return env
+	}
+
+	input := model.PushNotesInput{
+		Updates: []model.PushNoteInput{
+			{Path: "my-note.md", Content: "# Hello"},
+		},
+	}
+
+	t.Run("public URL set absolutizes both note and layout asset urls", func(t *testing.T) {
+		env := setupEnv("https://example.com")
+
+		result, err := pushnotes.Resolve(ctx, env, input)
+		require.NoError(t, err)
+
+		payload, ok := result.(*model.PushNotesPayload)
+		require.True(t, ok)
+
+		require.Len(t, payload.Updated, 1)
+		require.Len(t, payload.Updated[0].Assets, 1)
+		require.Equal(t, "https://example.com"+relativeAssetURL, payload.Updated[0].Assets[0].URL)
+
+		var noteEntry, layoutEntry *model.PushedNote
+		for i := range payload.Notes {
+			switch payload.Notes[i].Path {
+			case "my-note.md":
+				noteEntry = &payload.Notes[i]
+			case "_layouts/main.html":
+				layoutEntry = &payload.Notes[i]
+			}
+		}
+		require.NotNil(t, noteEntry)
+		require.Len(t, noteEntry.Assets, 1)
+		require.Equal(t, "https://example.com"+relativeAssetURL, noteEntry.Assets[0].URL)
+
+		require.NotNil(t, layoutEntry)
+		require.Len(t, layoutEntry.Assets, 1)
+		require.Equal(t, "https://example.com/_system/assets/beadfeed/logo.png", layoutEntry.Assets[0].URL)
+	})
+
+	t.Run("empty public URL leaves relative asset urls untouched", func(t *testing.T) {
+		env := setupEnv("")
+
+		result, err := pushnotes.Resolve(ctx, env, input)
+		require.NoError(t, err)
+
+		payload, ok := result.(*model.PushNotesPayload)
+		require.True(t, ok)
+
+		require.Len(t, payload.Updated, 1)
+		require.Equal(t, relativeAssetURL, payload.Updated[0].Assets[0].URL)
+	})
+
+	t.Run("already-absolute asset url passes through unchanged", func(t *testing.T) {
+		env := setupEnv("https://example.com")
+		env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			nvs := appmodel.NewNoteViews()
+			note := &appmodel.NoteView{
+				PathID:    42,
+				VersionID: 1,
+				Path:      "my-note.md",
+				Permalink: "/my-note",
+				Assets:    map[string]struct{}{"image.png": {}},
+				AssetReplaces: map[string]*appmodel.NoteAssetReplace{
+					"image.png": {ID: 7, URL: "https://cdn.other.com/image.png", Hash: "deadbeef"},
+				},
+			}
+			nvs.RegisterNote(note)
+			nvs.ExtractNoteList()
+			return nvs, nil
+		}
+
+		result, err := pushnotes.Resolve(ctx, env, input)
+		require.NoError(t, err)
+
+		payload, ok := result.(*model.PushNotesPayload)
+		require.True(t, ok)
+
+		require.Len(t, payload.Updated, 1)
+		require.Equal(t, "https://cdn.other.com/image.png", payload.Updated[0].Assets[0].URL)
+	})
+}
