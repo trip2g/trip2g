@@ -48,7 +48,7 @@ func (m *mockEnv) PublicURL() string {
 func TestResolve_IndexMDContainsPublicURL(t *testing.T) {
 	env := &mockEnv{publicURL: "https://example.com"}
 
-	zipData, err := Resolve(context.Background(), env, 1, false)
+	zipData, err := Resolve(context.Background(), env, 1, false, "example.com")
 	require.NoError(t, err)
 	require.NotEmpty(t, zipData)
 
@@ -79,7 +79,7 @@ func TestResolve_IndexMDContainsPublicURL(t *testing.T) {
 func TestResolve_EnableAdminGraphQL(t *testing.T) {
 	env := &mockEnv{publicURL: "https://example.com"}
 
-	_, err := Resolve(context.Background(), env, 7, true)
+	_, err := Resolve(context.Background(), env, 7, true, "example.com")
 	require.NoError(t, err)
 
 	require.Len(t, env.setAdminToolsCalls, 1)
@@ -91,16 +91,16 @@ func TestResolve_EnableAdminGraphQL(t *testing.T) {
 func TestResolve_AdminGraphQLDisabledByDefault(t *testing.T) {
 	env := &mockEnv{publicURL: "https://example.com"}
 
-	_, err := Resolve(context.Background(), env, 7, false)
+	_, err := Resolve(context.Background(), env, 7, false, "example.com")
 	require.NoError(t, err)
 
 	require.Empty(t, env.setAdminToolsCalls)
 }
 
-func TestResolve_FolderRenamedToDomain(t *testing.T) {
+func TestResolve_FolderRenamedToVaultName(t *testing.T) {
 	env := &mockEnv{publicURL: "https://trip2g.com"}
 
-	zipData, err := Resolve(context.Background(), env, 1, false)
+	zipData, err := Resolve(context.Background(), env, 1, false, "trip2g.com")
 	require.NoError(t, err)
 
 	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
@@ -114,10 +114,80 @@ func TestResolve_FolderRenamedToDomain(t *testing.T) {
 	}
 }
 
+// The vault name drives the archive root independently of the instance domain.
+func TestResolve_VaultNameDrivesRoot(t *testing.T) {
+	env := &mockEnv{publicURL: "https://trip2g.com"}
+
+	zipData, err := Resolve(context.Background(), env, 1, false, "secondbrain")
+	require.NoError(t, err)
+
+	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	require.NoError(t, err)
+
+	for _, file := range reader.File {
+		require.True(t, strings.HasPrefix(file.Name, "secondbrain/"),
+			"file %s should start with secondbrain/", file.Name)
+	}
+}
+
+// data.json carries the sync credentials; it must land under the requested root.
+func TestResolve_DataJSONUnderVaultName(t *testing.T) {
+	env := &mockEnv{publicURL: "https://trip2g.com"}
+
+	zipData, err := Resolve(context.Background(), env, 1, false, "secondbrain")
+	require.NoError(t, err)
+
+	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	require.NoError(t, err)
+
+	var content string
+	for _, file := range reader.File {
+		if file.Name != "secondbrain/.obsidian/plugins/trip2g/data.json" {
+			continue
+		}
+
+		rc, openErr := file.Open()
+		require.NoError(t, openErr)
+
+		data, readErr := io.ReadAll(rc)
+		rc.Close()
+		require.NoError(t, readErr)
+
+		content = string(data)
+		break
+	}
+
+	require.NotEmpty(t, content, "data.json should exist under secondbrain/")
+	require.Contains(t, content, "test-api-key-12345")
+}
+
+func TestResolve_EmptyVaultNameIsRejected(t *testing.T) {
+	env := &mockEnv{publicURL: "https://trip2g.com"}
+
+	_, err := Resolve(context.Background(), env, 1, false, "")
+	require.Error(t, err)
+}
+
+func TestValidateVaultName(t *testing.T) {
+	valid := []string{"secondbrain", "trip2g.com", "second-brain", "second_brain", "a", "A1", "vault.2"}
+	for _, name := range valid {
+		require.NoError(t, validateVaultName(name), "name %q should be valid", name)
+	}
+
+	invalid := []string{
+		"", ".", "..", "../etc", "a/b", `a\b`, "/etc/passwd", ".hidden", "-x",
+		"a b", "a\nb", "a\x00b", `a"b`, "мозг", "a\tb", "c:",
+		strings.Repeat("a", maxVaultNameLen+1),
+	}
+	for _, name := range invalid {
+		require.Error(t, validateVaultName(name), "name %q should be rejected", name)
+	}
+}
+
 func TestResolve_ExtractsWithoutDirFileCollision(t *testing.T) {
 	env := &mockEnv{publicURL: "https://example.com"}
 
-	zipData, err := Resolve(context.Background(), env, 1, false)
+	zipData, err := Resolve(context.Background(), env, 1, false, "example.com")
 	require.NoError(t, err)
 
 	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
@@ -150,7 +220,7 @@ func TestResolve_UnzipCLIExtractsCleanly(t *testing.T) {
 	}
 
 	env := &mockEnv{publicURL: "https://example.com"}
-	zipData, err := Resolve(context.Background(), env, 1, false)
+	zipData, err := Resolve(context.Background(), env, 1, false, "example.com")
 	require.NoError(t, err)
 
 	dir := t.TempDir()

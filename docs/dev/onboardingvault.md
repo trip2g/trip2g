@@ -18,8 +18,23 @@ Code: `internal/case/downloadonboardingvault/` (`endpoint.go`, `resolve.go`).
    - `.obsidian/plugins/trip2g/data.json` → `syncDirs[0].apiKey`
    - `.mcp.json` / `codex.json` → `Authorization: Bearer <key>`
    - `antigravity-mcp-config.json` → same
-4. Renames the vault folder to the instance domain and substitutes
-   `{{publicUrl}}` in `_index.md` / `AGENTS.md`.
+4. Names the vault after `?name` (or the instance domain when absent) and
+   substitutes `{{publicUrl}}` in `_index.md` / `AGENTS.md`.
+
+## `?name`
+
+Sets both the download filename (`<name>.zip`) and the archive's root folder
+(`<name>/`), so the caller knows where the vault unpacks instead of inferring
+it from the host. Absent → falls back to the instance domain (old behaviour).
+
+The name goes into a filesystem path and a `Content-Disposition` filename, so
+it is validated against an allowlist — `^[A-Za-z0-9][A-Za-z0-9._-]*$`, at most
+64 chars. Anything else (empty, `..`, slashes, spaces, unicode, leading dot or
+dash) is a `400`; a present-but-invalid name is never silently replaced by a
+fallback, and no API key is minted for a rejected request.
+
+- `/_system/onboarding-vault?name=secondbrain` → `secondbrain.zip`, root `secondbrain/`
+- `/_system/onboarding-vault` → `<domain>.zip`, root `<domain>/`
 
 ## `?enable_admin_graphql`
 

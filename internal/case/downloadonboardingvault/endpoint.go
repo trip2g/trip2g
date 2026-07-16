@@ -1,10 +1,13 @@
 package downloadonboardingvault
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"trip2g/internal/appreq"
 	onboardingvault "trip2g/onboarding-vault"
+
+	"github.com/valyala/fasthttp"
 )
 
 type Endpoint struct{}
@@ -36,12 +39,24 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	enableAdminGraphQL := qa.Has("enable_admin_graphql") &&
 		(len(qa.Peek("enable_admin_graphql")) == 0 || qa.GetBool("enable_admin_graphql"))
 
-	zipData, err := Resolve(ctx, env, token.ID, enableAdminGraphQL)
+	vaultName, err := resolveVaultName(qa, env.PublicURL())
+	if err != nil {
+		var appErr *appreq.Error
+		if errors.As(err, &appErr) {
+			ctx.SetStatusCode(appErr.Code)
+			ctx.SetBodyString(appErr.Message)
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	zipData, err := Resolve(ctx, env, token.ID, enableAdminGraphQL, vaultName)
 	if err != nil {
 		return nil, err
 	}
 
-	filename := makeFilename(env.PublicURL())
+	filename := vaultName + ".zip"
 
 	ctx.SetStatusCode(http.StatusOK)
 	ctx.SetContentType("application/zip")
@@ -59,8 +74,21 @@ func (*Endpoint) Method() string {
 	return http.MethodGet
 }
 
-// makeFilename creates a zip filename from the public URL domain.
-// Example: "https://trip2g.com" -> "trip2g.com.zip".
-func makeFilename(publicURL string) string {
-	return domainFromURL(publicURL) + ".zip"
+// resolveVaultName picks the archive name: explicit ?name wins, otherwise the
+// instance domain. It names both "<name>.zip" and the "<name>/" folder inside,
+// so a caller that passes it knows where to unpack from instead of guessing.
+// A present but invalid ?name is an error — never a silent fallback.
+func resolveVaultName(qa *fasthttp.Args, publicURL string) (string, error) {
+	if !qa.Has("name") {
+		return domainFromURL(publicURL), nil
+	}
+
+	name := string(qa.Peek("name"))
+
+	err := validateVaultName(name)
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
 }
