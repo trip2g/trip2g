@@ -1,24 +1,4 @@
 namespace $.$$ {
-	const submit_request = $trip2g_graphql_request(
-		`
-			mutation AdminCreateFrontmatterPatchMutation($input: CreateFrontmatterPatchInput!) {
-				admin {
-					data: createFrontmatterPatch(input: $input) {
-						__typename
-						... on CreateFrontmatterPatchPayload {
-							frontmatterPatch {
-								id
-							}
-						}
-						... on ErrorPayload {
-							message
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_frontmatterpatch_create extends $.$trip2g_admin_frontmatterpatch_create {
 		override description_bid(): string {
 			const description = this.description()
@@ -81,7 +61,7 @@ namespace $.$$ {
 			const includePatterns = this.include_patterns()
 			const excludePatterns = this.exclude_patterns()
 
-			const res = submit_request({
+			const res = $trip2g_admin_frontmatterpatch_create_create({
 				input: {
 					description: this.description(),
 					includePatterns,
@@ -92,13 +72,13 @@ namespace $.$$ {
 				},
 			})
 
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.message)
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.result(res.admin.payload.message)
 				return
 			}
 
-			if (res.admin.data.__typename === 'CreateFrontmatterPatchPayload') {
-				this.after_success(res.admin.data.frontmatterPatch.id)
+			if (res.admin.payload.__typename === 'CreateFrontmatterPatchPayload') {
+				this.after_success(res.admin.payload.frontmatterPatch.id)
 				return
 			}
 

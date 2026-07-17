@@ -1,41 +1,8 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminCronJobUpdate($id: Int64!) {
-			admin {
-				cronJob(id: $id) {
-					id
-					name
-					enabled
-					expression
-					lastExecAt
-				}
-			}
-		}
-	`)
-
-	const update_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminUpdateCronJob($input: UpdateCronJobInput!) {
-			admin {
-				updateCronJob(input: $input) {
-					__typename
-					... on UpdateCronJobPayload {
-						cronJob {
-							id
-							expression
-							enabled
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
 	export class $trip2g_admin_cronjob_update extends $.$trip2g_admin_cronjob_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = data_request({ id: this.cronjob_id() })
+			const res = $trip2g_admin_cronjob_update_data({ id: this.cronjob_id() })
 
 			if (!res.admin.cronJob) {
 				throw new Error('Cron Job not found')
@@ -86,7 +53,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = update_mutate({
+			const res = $trip2g_admin_cronjob_update_save({
 				input: {
 					id: this.cronjob_id(),
 					expression: this.expression(),
@@ -94,7 +61,7 @@ namespace $.$$ {
 				},
 			})
 
-			const result = res.admin.updateCronJob
+			const result = res.admin.payload
 			if (result.__typename === 'ErrorPayload') {
 				this.result(result.message)
 				return

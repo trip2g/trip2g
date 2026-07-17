@@ -1,0 +1,17 @@
+mutation ($input: UpdateCronJobInput!) {
+	admin {
+		payload: updateCronJob(input: $input) {
+			__typename
+			... on UpdateCronJobPayload {
+				cronJob {
+					id
+					expression
+					enabled
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

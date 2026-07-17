@@ -1,0 +1,14 @@
+query ($id: Int64!) {
+	admin {
+		cronJob(id: $id) {
+			id
+			executions {
+				id
+				startedAt
+				finishedAt
+				status
+				errorMessage
+			}
+		}
+	}
+}

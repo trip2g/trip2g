@@ -1,0 +1,18 @@
+mutation ($input: RunCronJobInput!) {
+	admin {
+		payload: runCronJob(input: $input) {
+			__typename
+			... on RunCronJobPayload {
+				execution {
+					id
+					job {
+						id
+					}
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

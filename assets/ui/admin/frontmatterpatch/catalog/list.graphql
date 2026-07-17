@@ -1,0 +1,14 @@
+query {
+	admin {
+		allFrontmatterPatches {
+			nodes {
+				id
+				description
+				priority
+				enabled
+				includePatterns
+				excludePatterns
+			}
+		}
+	}
+}
