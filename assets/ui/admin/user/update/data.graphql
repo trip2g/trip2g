@@ -1,0 +1,9 @@
+query ($id: Int64!) {
+	admin {
+		user(id: $id) {
+			id
+			email
+			createdAt
+		}
+	}
+}
