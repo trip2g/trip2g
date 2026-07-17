@@ -1,27 +1,13 @@
-namespace $.$$ {
-	const data_request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminBackgroundQueue($id: String!) {
-			admin {
-				backgroundQueue(id: $id) {
-					id
-					pendingCount
-					retryCount
-					stopped
-					jobs @exportType(name: "Job", single: true) {
-						id
-						name
-						params
-						retryCount
-					}
-				}
-			}
-		}
-	`)
+namespace $ {
+	export type $trip2g_admin_backgroundqueue_show_job_data =
+		NonNullable<trip2g_admin_backgroundqueue_show_dataQuery['admin']['backgroundQueue']>['jobs'][number]
+}
 
+namespace $.$$ {
 	export class $trip2g_admin_backgroundqueue_show extends $.$trip2g_admin_backgroundqueue_show {
 		@$mol_mem
 		data() {
-			const res = data_request( { id: this.queue_id() } )
+			const res = $trip2g_admin_backgroundqueue_show_data( { id: this.queue_id() } )
 			const data = res.admin.backgroundQueue
 			if( !data ) throw new Error( 'Queue not found' )
 			return data

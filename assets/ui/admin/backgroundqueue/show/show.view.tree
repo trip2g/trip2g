@@ -32,10 +32,10 @@ $trip2g_admin_backgroundqueue_show $mol_page
 				<= Jobs $mol_list
 					rows <= job_rows /$mol_view
 						<= Job*0 $trip2g_admin_backgroundqueue_show_job
-							data <= job_data* null $trip2g_graphql_AdminBackgroundQueueJob
+							data <= job_data* null $trip2g_admin_backgroundqueue_show_job_data
 
 $trip2g_admin_backgroundqueue_show_job $mol_view
-	data null $trip2g_graphql_AdminBackgroundQueueJob
+	data null $trip2g_admin_backgroundqueue_show_job_data
 	sub /
 		<= Row $mol_row
 			sub /
