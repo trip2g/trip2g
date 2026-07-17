@@ -843,6 +843,85 @@ func TestResolve_ScopedToken_LeadingSlashHideNotDenied(t *testing.T) {
 	require.True(t, called)
 }
 
+// A scoped credential (WebhookScoped=true) minted WITHOUT a DeliveryKind —
+// e.g. a future visitor-facing shortapitoken, since the dk claim is omitempty —
+// must still be deny-all on empty write_patterns. The deny-all branch used to
+// key off DeliveryKind, so such a token fell into the legacy empty=allow-all
+// path and could write ANY note.
+func TestResolve_ScopedNoDeliveryKind_EmptyWritePatterns_DenyAll(t *testing.T) {
+	tests := []struct {
+		name   string
+		change model.NoteChangeInput
+	}{
+		{
+			name:   "upsert outside any scope denied",
+			change: model.NoteChangeInput{Upsert: &model.NoteChangeUpsertInput{Path: "secrets/private.md", Content: "pwned"}},
+		},
+		{
+			name:   "patch denied",
+			change: model.NoteChangeInput{Patch: &model.NoteChangePatchInput{Path: "secrets/private.md", Find: "x", Replace: "y"}},
+		},
+		{
+			name:   "hide denied",
+			change: model.NoteChangeInput{Hide: &model.NoteChangeHideInput{Path: "secrets/private.md"}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Scoped shortapitoken with NO DeliveryKind and NO write scope.
+			req := &appreq.Request{
+				WebhookScoped:        true,
+				WebhookWritePatterns: []string{},
+			}
+			ctx := appreq.NewContext(context.Background(), req)
+
+			nvs := makeNVSWithNote("secrets/private.md", "x", 1)
+			env := &mockEnv{
+				latestNoteViews: func() *appmodel.NoteViews { return nvs },
+				// insertNote and hideNotePath intentionally nil — must NOT be reached.
+			}
+
+			out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+				ApiKey:  db.ApiKey{},
+				Changes: []model.NoteChangeInput{tc.change},
+			})
+			require.NoError(t, err)
+			ep, ok := out.(*model.ErrorPayload)
+			require.True(t, ok, "expected *ErrorPayload (write denied), got %T", out)
+			require.Contains(t, ep.Message, "write denied")
+		})
+	}
+}
+
+// Scoped, no DeliveryKind, non-empty matching write_patterns → allowed
+// (the fix must not over-deny in-scope writes).
+func TestResolve_ScopedNoDeliveryKind_MatchingPattern_Allowed(t *testing.T) {
+	req := &appreq.Request{
+		WebhookScoped:        true,
+		WebhookWritePatterns: []string{"notes/**"},
+	}
+	ctx := appreq.NewContext(context.Background(), req)
+
+	called := false
+	env := &mockEnv{
+		latestNoteViews:            appmodel.NewNoteViews,
+		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		prepareLatestNotes:         noopPrepare,
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{},
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "notes/todo.md", Content: "x"}},
+		},
+	})
+	require.NoError(t, err)
+	require.IsType(t, model.UpdateNotesSuccessPayload{}, out)
+	require.True(t, called)
+}
+
 // F2: unscoped/admin request (no DeliveryKind) + empty write_patterns → allowed (unchanged behavior).
 func TestResolve_Unscoped_EmptyWritePatterns_Allowed(t *testing.T) {
 	// No appreq in context — simulates admin/unscoped request.
