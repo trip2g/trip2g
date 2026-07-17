@@ -74,6 +74,7 @@ func TestRunBlocks_PipesOnlyBetweenCodeBlocks(t *testing.T) {
 	require.Equal(t, "{}\n", got.Data.Run.Output)
 	require.Len(t, got.Data.Run.Results, 2)
 	require.Equal(t, 0, got.Data.Run.Results[0].Index)
+	//nolint:testifylint // byte-exact stdout incl. trailing newline, not JSON-structural
 	require.Equal(t, "{\"hello\":{}}\n", got.Data.Run.Results[0].Stdout)
 }
 

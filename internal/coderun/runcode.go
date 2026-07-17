@@ -234,10 +234,11 @@ func maxRSSBytes(state *os.ProcessState) int64 {
 	if !ok || rusage == nil {
 		return 0
 	}
+	// Maxrss is int32 on 32-bit platforms, so the conversion is not always a no-op.
 	if runtime.GOOS == "darwin" {
-		return int64(rusage.Maxrss)
+		return int64(rusage.Maxrss) //nolint:unconvert // int32 on 32-bit GOARCH
 	}
-	return int64(rusage.Maxrss) * 1024
+	return int64(rusage.Maxrss) * 1024 //nolint:unconvert // int32 on 32-bit GOARCH
 }
 
 // resolvePrograms resolves and allowlist-checks every block's program before
@@ -290,7 +291,14 @@ type builtBlock struct {
 // block i+1's stdin; the last block always goes to a capped buffer regardless.
 //
 // Returns the last block's captured stdout, or the earliest-index block error.
-func runPipeline(ctx context.Context, blocks []FencedBlock, programs []string, in CodeInput, limit int, debugTaps pipelineDebugTaps) (string, []string, []builtBlock, error) {
+func runPipeline(
+	ctx context.Context,
+	blocks []FencedBlock,
+	programs []string,
+	in CodeInput,
+	limit int,
+	debugTaps pipelineDebugTaps,
+) (string, []string, []builtBlock, error) {
 	n := len(blocks)
 
 	built, err := buildPipelineBlocks(ctx, blocks, programs, in, limit)
