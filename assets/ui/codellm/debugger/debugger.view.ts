@@ -18,24 +18,12 @@ namespace $.$$ {
 		return body.data
 	}
 
-	const note_paths_query = $trip2g_graphql_raw_request( `
-		query CodeLLMDebugerNotePaths($filter: NotePathsFilter!) {
-			notePaths(filter:$filter) {
-				id
-				value
-				latestNoteView {
-					title
-				}
-			}
-		}
-	`)
-
 	type Block = { kind: 'CODE' | 'PROSE', language?: string, content: string }
 
 	export class $trip2g_codellm_debugger extends $.$trip2g_codellm_debugger {
 		@$mol_mem
 		documents() {
-			const req = note_paths_query( {
+			const req = $trip2g_codellm_debugger_note_paths( {
 				filter: {
 					frontmatter: [ { key: "fleet_id", equals: "codellm" } ],
 				}

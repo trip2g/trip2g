@@ -1,0 +1,17 @@
+mutation ($input: ClearBackgroundQueueInput!) {
+	admin {
+		payload: clearBackgroundQueue(input: $input) {
+			__typename
+			... on ClearBackgroundQueuePayload {
+				queue {
+					id
+					stopped
+				}
+				deletedCount
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

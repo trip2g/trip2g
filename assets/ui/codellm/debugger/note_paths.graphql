@@ -1,0 +1,9 @@
+query ($filter: NotePathsFilter!) {
+	notePaths(filter: $filter) {
+		id
+		value
+		latestNoteView {
+			title
+		}
+	}
+}
