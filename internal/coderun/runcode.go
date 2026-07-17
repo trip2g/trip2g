@@ -19,7 +19,7 @@ import (
 // Body must be pre-rendered (Jet-evaluated by the caller); the executor extracts
 // the fenced code blocks from the rendered text. Scope enforcement (KB writes,
 // write_patterns) is NOT part of code execution — it stays with the caller
-// (fleet's agentruntime.RunCode applies the returned changes through ScopedKB).
+// (fleet applies the returned changes through ScopedKB).
 type CodeInput struct {
 	Body            string        // Jet-rendered role body
 	Program         string        // optional override; empty → derived from fence language
@@ -108,8 +108,8 @@ type ExecResult struct {
 	Debug   []BlockDebug // nil unless capture was requested
 }
 
-// Exec is the shared execution core of ExecCode, ExecCodeDebug, and fleet's
-// agentruntime.RunCode: it extracts the fenced blocks, resolves+allowlist-checks
+// Exec is the shared execution core of ExecCode and ExecCodeDebug: it
+// extracts the fenced blocks, resolves+allowlist-checks
 // their programs, runs them (single block via RunBlock, multiple via the
 // streaming pipeline), and parses the last block's stdout as the {changes,
 // answer} contract. It performs no KB writes and no scope checks. When capture is

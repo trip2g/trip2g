@@ -49,7 +49,7 @@ func newTestFleet(hc *http.Client) *Fleet {
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, hc, &stubLLM{})
+	f := NewFleet(cfg, hc, &stubLLM{}, nil)
 	f.SetRoles([]Role{role})
 	return f
 }
@@ -119,7 +119,7 @@ func TestServeDelivery_HappyPathScopedWriteOnly(t *testing.T) {
 		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
 		MaxTokens: 4000, MaxSteps: 6, Concurrency: "skip", MaxDepth: 1,
 	}
-	f := NewFleet(cfg, hc, &stubLLM{})
+	f := NewFleet(cfg, hc, &stubLLM{}, nil)
 	f.SetRoles([]Role{role})
 
 	key := urlKey("roles/triage.md")
@@ -237,7 +237,7 @@ func TestServeDelivery_RunDetachedFromRequestContext(t *testing.T) {
 		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
 		MaxTokens: 4000, MaxSteps: 6, Concurrency: "skip", MaxDepth: 1,
 	}
-	f := NewFleet(cfg, hc, llm)
+	f := NewFleet(cfg, hc, llm, nil)
 	f.SetRoles([]Role{role})
 
 	key := urlKey("roles/triage.md")
@@ -304,7 +304,7 @@ func fanOutFleet(t *testing.T, llm agentruntime.LLM, forEach, body string) *Flee
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, http.DefaultClient, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm, nil)
 	f.SetRoles([]Role{role})
 	return f
 }
@@ -499,7 +499,7 @@ func newCodeRoleFleet(llm agentruntime.LLM) *Fleet {
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, http.DefaultClient, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm, nil)
 	f.SetRoles([]Role{role})
 	return f
 }
@@ -588,7 +588,7 @@ func newCronFleet(llm agentruntime.LLM) *Fleet {
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, http.DefaultClient, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm, nil)
 	f.SetRoles([]Role{role})
 	return f
 }
@@ -696,7 +696,7 @@ func TestServeCronDelivery_WithAttachedNotes(t *testing.T) {
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
 	llm := &recordLLM{}
-	f := NewFleet(cfg, http.DefaultClient, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm, nil)
 	f.SetRoles([]Role{role})
 
 	key := urlKey(role.NotePath)
@@ -742,7 +742,7 @@ func newTestFleetWithLLM(llm agentruntime.LLM) *Fleet {
 		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
 		TokenCeiling: 100000, StepCeiling: 25,
 	}
-	f := NewFleet(cfg, http.DefaultClient, llm)
+	f := NewFleet(cfg, http.DefaultClient, llm, nil)
 	f.SetRoles([]Role{role})
 	return f
 }
@@ -808,4 +808,67 @@ func TestServeDelivery_MaxBytesReader413(t *testing.T) {
 	f.ServeDelivery(rec, req)
 	require.Equal(t, http.StatusBadRequest, rec.Code,
 		"oversized body must be rejected by MaxBytesReader before the agent runs")
+}
+
+// execToolLLM scripts the agent loop: one exec(program, code) call, then finish.
+type execToolLLM struct{ idx int }
+
+func (s *execToolLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
+	defer func() { s.idx++ }()
+	if s.idx == 0 {
+		args, _ := json.Marshal(map[string]any{"program": "bash", "code": "echo hi"})
+		return agentruntime.ChatResult{
+			ToolCalls:    []agentruntime.ToolCall{{ID: "1", Name: "exec", Arguments: string(args)}},
+			PromptTokens: 10, CompletionTokens: 5,
+		}, nil
+	}
+	args, _ := json.Marshal(map[string]any{"answer": "done"})
+	return agentruntime.ChatResult{
+		ToolCalls:    []agentruntime.ToolCall{{ID: "2", Name: "finish", Arguments: string(args)}},
+		PromptTokens: 10, CompletionTokens: 5,
+	}, nil
+}
+
+// execEndpointLLM fakes the exec endpoint (codellm): it returns one write_note
+// plus finish, recording how often it was called.
+type execEndpointLLM struct{ calls atomic.Int32 }
+
+func (e *execEndpointLLM) Chat(_ context.Context, _ string, _ []agentruntime.Message, _ []agentruntime.ToolDef) (agentruntime.ChatResult, error) {
+	e.calls.Add(1)
+	wargs, _ := json.Marshal(map[string]any{"path": "boards/out.md", "content": "from exec"})
+	fargs, _ := json.Marshal(map[string]any{"answer": "wrote"})
+	return agentruntime.ChatResult{ToolCalls: []agentruntime.ToolCall{
+		{ID: "c0", Name: "write_note", Arguments: string(wargs)},
+		{ID: "c1", Name: "finish", Arguments: string(fargs)},
+	}}, nil
+}
+
+// TestServeDelivery_ExecToolRoutedThroughExecLLM pins the Phase-5 wiring: a
+// delivery whose model calls exec runs NO code in fleet — the call goes to the
+// fleet's execLLM (codellm) and the returned write lands through the scoped KB.
+func TestServeDelivery_ExecToolRoutedThroughExecLLM(t *testing.T) {
+	var scopedCalls atomic.Int32
+	srv, hc := newScopedKBServer(t, func(_, _ string) string {
+		scopedCalls.Add(1)
+		return `{"updateNotes":{"__typename":"UpdateNotesSuccessPayload","paths":["boards/out.md"]}}`
+	})
+
+	cfg := Config{
+		FleetID: "f1", FleetSecret: "seed", DefaultModel: "gpt-4o-mini",
+		Trip2gBaseURL: srv.URL, TokenCeiling: 100000, StepCeiling: 25,
+	}
+	role := Role{
+		NotePath: "roles/coder.md", Body: "Code.", Mode: "change",
+		ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
+		MaxTokens: 4000, MaxSteps: 6, Concurrency: "skip", MaxDepth: 1,
+	}
+	exec := &execEndpointLLM{}
+	f := NewFleet(cfg, hc, &execToolLLM{}, exec)
+	f.SetRoles([]Role{role})
+
+	rec := post(t, f, urlKey("roles/coder.md"), deliveryBody(t), true)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, int32(1), exec.calls.Load(), "exec must route through the exec endpoint")
+	require.Equal(t, int32(1), scopedCalls.Load(), "the exec write must land via the scoped KB")
 }

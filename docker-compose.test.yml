@@ -610,9 +610,9 @@ services:
   # child needs to create user/PID/mount namespaces and mount a private /proc
   # inside the container (default Docker containers drop CAP_SYS_ADMIN, so
   # namespace creation returns EPERM). python3 is installed for the no-new-privs
-  # probe (golang image ships bash, not python). The agentruntime package has no
+  # probe (golang image ships bash, not python). The coderun package has no
   # generated deps, so no `go generate` is needed. Network is intentionally left
-  # BLOCKED (no TRIP2G_FLEET_SANDBOX_NETWORK).
+  # BLOCKED (no network env override).
   sandbox-tests:
     image: golang:1.26
     working_dir: /src
@@ -628,7 +628,7 @@ services:
       - -c
       - >
         apt-get update -qq && apt-get install -y -qq python3 >/dev/null &&
-        go test -tags dev -race -run TestSandbox ./internal/agentruntime/...
+        go test -tags dev -race -run TestSandbox ./internal/coderun/...
 
 volumes:
   test-data:

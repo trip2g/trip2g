@@ -37,7 +37,7 @@ const (
 // Config holds the subset of fleet's machine-level settings layered via
 // env+flags through this package. ListenAddr/CallbackURL/Trip2gBaseURL are the
 // run/reconcile addresses; the rest select discovery scope, the default
-// model, and the GraphQL/codellm surfaces.
+// model, and the GraphQL surface.
 type Config struct {
 	AgentsFolder  string   // role-note folder (LIKE prefix), e.g. "roles/"
 	ListenAddr    string   // fleet's delivery HTTP listen address (run)
@@ -46,10 +46,6 @@ type Config struct {
 	GraphQLAddr   string   // fleet's own GraphQL read API (roles + roleGraph); empty = disabled
 	DefaultModel  string   // fallback model when a role omits model
 	OfferedTools  []string // allowed tools a role may declare
-
-	// CodellmBaseURL is a placeholder for the future codellm executor split
-	// (docs/dev/codellm_extraction.md). Unused until that lands.
-	CodellmBaseURL string
 
 	offeredToolsCSV string // raw flag value; Prepare splits it into OfferedTools
 }
@@ -90,9 +86,6 @@ func (c *Config) DefineFlags(fs *flag.FlagSet) {
 		"default model when a role omits model")
 	fs.StringVar(&c.offeredToolsCSV, "offered-tools", c.offeredToolsCSV,
 		"comma-separated allowed tools")
-	fs.StringVar(&c.CodellmBaseURL, "codellm-base-url", c.CodellmBaseURL,
-		"PLACEHOLDER (not yet wired): base URL of the future codellm executor split "+
-			"(docs/dev/codellm_extraction.md)")
 }
 
 // Prepare finalizes derived fields after flags/env have been parsed (splits
@@ -103,7 +96,7 @@ func (c *Config) Prepare() {
 
 // Validate checks the fields this package owns. AgentsFolder and OfferedTools
 // are required for discovery to do anything. GraphQLAddr/CallbackURL/
-// Trip2gBaseURL/DefaultModel/CodellmBaseURL have no hard requirement here:
+// Trip2gBaseURL/DefaultModel have no hard requirement here:
 // CallbackURL's daemon-mode requirement is enforced by cmd/fleet's own
 // validateConfig (fleet.Config), and the GraphQLAddr non-loopback caution
 // stays a documentation note (see DefineFlags), not a hard rule, since an
@@ -143,8 +136,7 @@ func Get(ctx context.Context, args []string) (*Config, error) {
 }
 
 // SplitCSV splits a comma-separated flag value into a trimmed, non-empty
-// slice of parts (blank entries dropped). Shared by OfferedTools here and
-// cmd/fleet's AllowedPrograms flag.
+// slice of parts (blank entries dropped).
 func SplitCSV(s string) []string {
 	var out []string
 	for _, p := range strings.Split(s, ",") {

@@ -80,26 +80,6 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 			wantErr: "OfferedTools",
 		},
 		{
-			name:    "sandbox_invalid_value",
-			mutate:  func(c *fleet.Config) { c.Sandbox = "chroot" },
-			wantErr: "Sandbox",
-		},
-		{
-			name:    "sandbox_off_ok",
-			mutate:  func(c *fleet.Config) { c.Sandbox = "off" },
-			wantErr: "",
-		},
-		{
-			name:    "debug_listen_non_loopback",
-			mutate:  func(c *fleet.Config) { c.DebugListenAddr = "0.0.0.0:9091" },
-			wantErr: "loopback",
-		},
-		{
-			name:    "debug_listen_loopback_ok",
-			mutate:  func(c *fleet.Config) { c.DebugListenAddr = "127.0.0.1:9091" },
-			wantErr: "",
-		},
-		{
 			name:    "all_fields_present",
 			mutate:  func(c *fleet.Config) {},
 			wantErr: "",

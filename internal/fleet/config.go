@@ -21,16 +21,13 @@ type Config struct {
 	FleetSecret            string        // per-role HMAC secret seed
 	LLMBaseURL             string        // OpenAI-compatible base URL (fleet-local, NOT a trip2g secret)
 	LLMAPIKey              string        // fleet-local LLM credential
+	ExecBaseURL            string        // OpenAI-compatible endpoint the exec tool routes code to (codellm); empty = exec disabled
+	ExecAPIKey             string        // credential for ExecBaseURL
 	DefaultModel           string        // fallback when a role omits model
 	TokenCeiling           int           // non-overridable per-run token cap
 	StepCeiling            int           // non-overridable per-run step cap
 	AgentsFolder           string        // e.g. "roles/" -> notePaths like "roles/%"
 	OfferedTools           []string      // a role's tools must be a subset of these
-	AllowedPrograms        []string      // programs allowed for code execution (empty = disabled)
-	MaxStdoutBytes         int           // stdout cap per code child (bytes); 0 → 1 MiB default
-	Sandbox                string        // code-exec sandbox mode: "native" (default, fail-closed) | "besteffort" | "off"
-	DebugListenAddr        string        // loopback-only debug HTTP surface for step-by-step block runs (empty = disabled; dev only)
-	SandboxNetwork         bool          // allow host network inside the code-exec sandbox
 	PollInterval           time.Duration // discovery/reconcile poll cadence
 	ShutdownGrace          time.Duration // max time to drain in-flight runs on shutdown
 	KeepWebhooksOnShutdown bool          // skip webhook deregister on shutdown (rolling deploys; trip2g retains + retries)

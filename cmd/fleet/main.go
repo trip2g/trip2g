@@ -26,7 +26,6 @@ import (
 	fleetappconfig "trip2g/cmd/fleet/appconfig"
 	"trip2g/internal/agentruntime"
 	"trip2g/internal/appconfig"
-	"trip2g/internal/coderun"
 	"trip2g/internal/delegatedadmin"
 	"trip2g/internal/fleet"
 	"trip2g/internal/fleet/fleetgql"
@@ -38,8 +37,6 @@ import (
 )
 
 func main() {
-	// Re-exec'd sandbox child? Confine and exec the interpreter; never returns.
-	coderun.MaybeRunSandboxChild()
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "fleet:", err)
 		os.Exit(1)
@@ -49,14 +46,13 @@ func main() {
 // cliFlags holds the parsed command-line state for a single invocation.
 type cliFlags struct {
 	cfg    fleet.Config
-	appCfg *fleetappconfig.Config // discovery scope, run/reconcile addrs, default model, offered tools, GraphQL/codellm addrs
+	appCfg *fleetappconfig.Config // discovery scope, run/reconcile addrs, default model, offered tools, GraphQL addr
 
-	dryRun           bool
-	oncePath         string // non-empty → one-shot mode; daemon must NOT start
-	vaultDir         string // KB root for --once (default ".")
-	targetPath       string // optional note in the vault to use as change_file context
-	interpretersPath string // non-empty → override embedded interpreters.json
-	graphAddr        string // non-empty → serve the dependency-graph debug UI/JSON; loopback-only
+	dryRun     bool
+	oncePath   string // non-empty → one-shot mode; daemon must NOT start
+	vaultDir   string // KB root for --once (default ".")
+	targetPath string // optional note in the vault to use as change_file context
+	graphAddr  string // non-empty → serve the dependency-graph debug UI/JSON; loopback-only
 }
 
 func run() error {
@@ -90,7 +86,7 @@ func run() error {
 	adminGQL := fleet.NewAdminGraphQLClient(cli.cfg.Trip2gBaseURL, cli.cfg.JWTSecret, cli.cfg.AdminEmail, httpClient)
 	llm := agentruntime.NewOpenAILLM(cli.cfg.LLMAPIKey, cli.cfg.LLMBaseURL)
 
-	f := fleet.NewFleet(cli.cfg, httpClient, llm)
+	f := fleet.NewFleet(cli.cfg, httpClient, llm, execLLM(cli.cfg))
 	discovery := fleet.NewDiscovery(adminGQL, cli.cfg.FleetID, cli.cfg.AgentsFolder, cli.cfg.OfferedTools)
 
 	// --dry-run: connect, print + flag each role's resolved config, then exit
@@ -136,11 +132,6 @@ func run() error {
 		_, _ = w.Write([]byte("ok"))
 	})
 	srv := &http.Server{Addr: cli.cfg.ListenAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
-
-	// Optional loopback-only debug surface for step-by-step code-block runs.
-	if dbgSrv := startDebugServer(lg, f, cli); dbgSrv != nil {
-		defer func() { _ = dbgSrv.Close() }()
-	}
 
 	srvErrCh := make(chan error, 1)
 	go func() {
@@ -228,25 +219,14 @@ func startFleetGraphQLServer(
 	return srv, nil
 }
 
-// startDebugServer starts the loopback-only step-by-step code-block debug
-// surface when DebugListenAddr is set (validateConfig already rejected
-// non-loopback addresses). Returns nil when disabled; the caller owns Close.
-func startDebugServer(lg logger.Logger, f *fleet.Fleet, cli cliFlags) *http.Server {
-	if cli.cfg.DebugListenAddr == "" {
+// execLLM builds the exec-tool client (codellm) when --exec-base-url is set.
+// nil disables the exec tool; program allowlisting and sandboxing are the
+// codellm operator's concern — fleet executes no code in-process.
+func execLLM(cfg fleet.Config) agentruntime.LLM {
+	if cfg.ExecBaseURL == "" {
 		return nil
 	}
-	srv := &http.Server{
-		Addr:              cli.cfg.DebugListenAddr,
-		Handler:           f.DebugHandler(),
-		ReadHeaderTimeout: 10 * time.Second,
-	}
-	go func() {
-		lg.Info("fleet debug listening (loopback only)", "addr", cli.cfg.DebugListenAddr)
-		if dbgErr := srv.ListenAndServe(); dbgErr != nil && dbgErr != http.ErrServerClosed {
-			lg.Error("debug server", "err", dbgErr)
-		}
-	}()
-	return srv
+	return agentruntime.NewOpenAILLM(cfg.ExecAPIKey, cfg.ExecBaseURL)
 }
 
 // newFleetGraphQLHandler builds the fleet GraphQL server's HTTP handler: a mux
@@ -345,12 +325,9 @@ func runOnce(ctx context.Context, cli cliFlags) error {
 		Model:         model,
 		MaxTokens:     maxTokens,
 		MaxSteps:      maxSteps,
-		Sandbox: coderun.SandboxPolicy{
-			Mode:    coderun.SandboxMode(cli.cfg.Sandbox),
-			Network: cli.cfg.SandboxNetwork,
-		},
-		LLM: llm,
-		KB:  kb,
+		ExecLLM:       execLLM(cli.cfg),
+		LLM:           llm,
+		KB:            kb,
 	})
 	if runErr != nil {
 		return fmt.Errorf("once: run: %w", runErr)
@@ -420,7 +397,7 @@ func validateLoopbackAddr(addr string) error {
 }
 
 // warnIfGraphQLAddrNonLoopback logs a loud warning when --graphql-addr is
-// bound off loopback. Unlike --graph-addr/--debug-listen, a non-loopback
+// bound off loopback. Unlike --graph-addr, a non-loopback
 // GraphQL bind is not hard-blocked — a remote-fleet-behind-its-own-Caddy setup
 // is a legitimate topology, and the delegated-admin gate still authenticates
 // every request — but the operator should see the exposure explicitly.
@@ -472,19 +449,6 @@ func validateConfig(cfg fleet.Config) error {
 	}
 	if len(cfg.OfferedTools) == 0 {
 		return errors.New("fleet: OfferedTools must be non-empty; use --offered-tools")
-	}
-	// The debug surface must never bind a non-loopback interface.
-	if cfg.DebugListenAddr != "" {
-		if err := fleet.ValidateLoopbackAddr(cfg.DebugListenAddr); err != nil {
-			return err
-		}
-	}
-	// Empty means the safe default (native); see SandboxPolicy.withDefaults.
-	switch cfg.Sandbox {
-	case "", string(coderun.SandboxNative), string(coderun.SandboxOff), string(coderun.SandboxBestEffort):
-	default:
-		return fmt.Errorf("fleet: Sandbox must be %q, %q or %q (got %q); use --sandbox",
-			coderun.SandboxNative, coderun.SandboxBestEffort, coderun.SandboxOff, cfg.Sandbox)
 	}
 	return nil
 }
@@ -555,14 +519,13 @@ func effectiveGrace(seconds int) time.Duration {
 // TRIP2G_ namespace when both run in the same environment.
 func parseFlags(ctx context.Context) (cliFlags, error) {
 	var cli cliFlags
-	var allowedPrograms string
 	var poll int
 	var graceSeconds int
 
 	fs := flag.NewFlagSet("fleet", flag.ContinueOnError)
 
 	// Discovery scope, run/reconcile addrs, default model, offered tools, and
-	// the GraphQL/codellm listen addrs: defined by cmd/fleet/appconfig on this
+	// the GraphQL listen addr: defined by cmd/fleet/appconfig on this
 	// same shared FlagSet, so they parse in the one Parse call below alongside
 	// the rest of fleet's flags.
 	cli.appCfg = fleetappconfig.DefaultConfig()
@@ -585,23 +548,15 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"OpenAI-compatible base URL")
 	fs.StringVar(&cli.cfg.LLMAPIKey, "llm-api-key", "",
 		"LLM API key (falls back to OPENAI_API_KEY)")
+	fs.StringVar(&cli.cfg.ExecBaseURL, "exec-base-url", "",
+		"OpenAI-compatible base URL the exec tool routes code to (codellm); "+
+			"empty = exec tool disabled. Program allowlisting and sandboxing are codellm's concern")
+	fs.StringVar(&cli.cfg.ExecAPIKey, "exec-api-key", "",
+		"API key for --exec-base-url")
 	fs.IntVar(&cli.cfg.TokenCeiling, "token-ceiling", 100000,
 		"non-overridable per-run token cap")
 	fs.IntVar(&cli.cfg.StepCeiling, "step-ceiling", 25,
 		"non-overridable per-run step cap")
-	fs.StringVar(&allowedPrograms, "allowed-programs", "",
-		"comma-separated programs allowed for code execution (empty = disabled; e.g. python,bash)")
-	fs.IntVar(&cli.cfg.MaxStdoutBytes, "max-stdout-bytes", 1<<20,
-		"stdout cap per code child (bytes)")
-	fs.StringVar(&cli.cfg.Sandbox, "sandbox", "native",
-		"code-exec sandbox mode: native|besteffort|off (native = PID+mount+net namespaces + private /proc + "+
-			"Landlock FS confinement + rlimits + no-new-privs, Linux-only, FAILS CLOSED when unsupported; "+
-			"besteffort degrades to UNSANDBOXED with a per-run warning; off disables isolation)")
-	fs.BoolVar(&cli.cfg.SandboxNetwork, "sandbox-network", false,
-		"allow host network access inside the code-exec sandbox")
-	fs.StringVar(&cli.cfg.DebugListenAddr, "debug-listen", "",
-		"loopback-only debug listen address for step-by-step code-block runs "+
-			"(e.g. 127.0.0.1:9091; empty = disabled; dev only, never expose publicly)")
 	fs.IntVar(&poll, "poll-seconds", 30,
 		"discovery/reconcile poll interval seconds")
 	fs.IntVar(&graceSeconds, "shutdown-grace-seconds", 30,
@@ -621,8 +576,6 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"vault directory for the local file KB (used with --once)")
 	fs.StringVar(&cli.targetPath, "target", "",
 		"note path in the vault to populate change_file context (used with --once)")
-	fs.StringVar(&cli.interpretersPath, "interpreters", "",
-		"path to interpreters JSON; replaces embedded defaults")
 
 	ef := appconfig.New(appconfig.EnvFlagConfig{
 		FlagSet:           fs,
@@ -632,12 +585,6 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 
 	if err := ef.Parse(ctx, os.Args[1:]); err != nil {
 		return cliFlags{}, err
-	}
-
-	if cli.interpretersPath != "" {
-		if err := coderun.LoadInterpretersFile(cli.interpretersPath); err != nil {
-			return cliFlags{}, fmt.Errorf("fleet: load interpreters: %w", err)
-		}
 	}
 
 	// OPENAI_API_KEY fallback for --once offline convenience.
@@ -652,7 +599,6 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 	cli.cfg.DefaultModel = cli.appCfg.DefaultModel
 	cli.cfg.AgentsFolder = cli.appCfg.AgentsFolder
 	cli.cfg.OfferedTools = cli.appCfg.OfferedTools
-	cli.cfg.AllowedPrograms = fleetappconfig.SplitCSV(allowedPrograms)
 	cli.cfg.PollInterval = time.Duration(poll) * time.Second
 	cli.cfg.ShutdownGrace = effectiveGrace(graceSeconds)
 	return cli, nil

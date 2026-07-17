@@ -55,7 +55,7 @@ jobs:
   # FLEET_SANDBOX_MUST_ENFORCE=1 turns the tests' t.Skip guards into HARD
   # FAILURES, so a runner without userns/Landlock fails the build instead of
   # quietly reporting "green" for tests that never ran. Network is left BLOCKED
-  # here on purpose (no TRIP2G_FLEET_SANDBOX_NETWORK): TestSandbox_NetworkBlocked
+  # here on purpose (no network env override): TestSandbox_NetworkBlocked
   # must enforce. python3 is installed explicitly because the golang image is
   # minimal; bash is already present.
   sandbox:
@@ -72,7 +72,7 @@ jobs:
             -e FLEET_SANDBOX_MUST_ENFORCE=1 \
             -e CGO_ENABLED=0 \
             golang:1.26 \
-            sh -c "apt-get update -q && apt-get install -y -q python3 && go test -tags dev -count=1 -timeout 120s ./internal/agentruntime/..."
+            sh -c "apt-get update -q && apt-get install -y -q python3 && go test -tags dev -count=1 -timeout 120s ./internal/coderun/..."
 
   e2e:
     runs-on: ubuntu-latest
