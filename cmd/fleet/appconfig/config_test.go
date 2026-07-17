@@ -14,7 +14,6 @@ func TestDefaultConfig(t *testing.T) {
 	require.Equal(t, DefaultTrip2gBaseURL, cfg.Trip2gBaseURL)
 	require.Equal(t, DefaultModel, cfg.DefaultModel)
 	require.Equal(t, DefaultGraphQLAddr, cfg.GraphQLAddr) // loopback by default
-	require.Empty(t, cfg.CodellmBaseURL)
 
 	cfg.Prepare()
 	require.Equal(t, []string{"search", "read_note", "patch_note", "write_note"}, cfg.OfferedTools)
@@ -33,14 +32,12 @@ func TestGetFlagsOverrideDefaults(t *testing.T) {
 		"-graphql-addr", "127.0.0.1:9093",
 		"-default-model", "gpt-5",
 		"-offered-tools", "search, read_note",
-		"-codellm-base-url", "http://localhost:9094",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "custom-roles/", cfg.AgentsFolder)
 	require.Equal(t, "127.0.0.1:9093", cfg.GraphQLAddr)
 	require.Equal(t, "gpt-5", cfg.DefaultModel)
 	require.Equal(t, []string{"search", "read_note"}, cfg.OfferedTools)
-	require.Equal(t, "http://localhost:9094", cfg.CodellmBaseURL)
 }
 
 func TestGetEnvOverridesDefaults(t *testing.T) {

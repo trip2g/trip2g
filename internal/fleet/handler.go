@@ -13,7 +13,6 @@ import (
 	"github.com/Khan/genqlient/graphql"
 
 	"trip2g/internal/agentruntime"
-	"trip2g/internal/coderun"
 	"trip2g/internal/fleetinput"
 	"trip2g/internal/webhookutil"
 )
@@ -359,7 +358,9 @@ type execRoleInput struct {
 // the fleet_input message (InputBag); writes go through ScopedKB(write_patterns);
 // HardFailApply gives all-or-nothing apply semantics (a failed apply fails the
 // run). Secrets never touch fleet — a codellm fleet exposes its own env to the
-// code child per its expose-allowlist.
+// code child per its expose-allowlist. The exec tool, when configured
+// (--exec-base-url), routes mid-run code through f.execLLM (codellm) the same
+// way — fleet runs no code in-process there either.
 func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 	kb := newRemoteKB(p.GQL, p.Overlay)
 	return agentruntime.Run(p.Ctx, agentruntime.Input{
@@ -372,21 +373,10 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 		MaxSteps:      clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
 		InputBag:      p.InputBag,
 		HardFailApply: true,
+		ExecLLM:       f.execLLM,
 		LLM:           f.llm,
 		KB:            kb,
 	})
-}
-
-// sandboxPolicy maps the fleet-level sandbox config to the runtime policy. It is
-// used ONLY by the loopback /debug/run-block in-process block-debugger
-// (debug.go); the delivery path no longer runs code in-process. TODO(P5): when
-// the block-debugger moves to codellm, this and the fleet-level Sandbox/
-// SandboxNetwork/AllowedPrograms/MaxStdoutBytes config can be deleted.
-func (f *Fleet) sandboxPolicy() coderun.SandboxPolicy {
-	return coderun.SandboxPolicy{
-		Mode:    coderun.SandboxMode(f.cfg.Sandbox),
-		Network: f.cfg.SandboxNetwork,
-	}
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {

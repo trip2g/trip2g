@@ -11,9 +11,10 @@ import (
 // registry (keyed by url key) together. It is the HTTP handler's owner.
 // hc is the HTTP client used to build per-delivery scoped graphql clients.
 type Fleet struct {
-	cfg Config
-	hc  *http.Client
-	llm agentruntime.LLM
+	cfg     Config
+	hc      *http.Client
+	llm     agentruntime.LLM
+	execLLM agentruntime.LLM // exec-tool endpoint (codellm); nil = exec disabled
 
 	mu       sync.RWMutex
 	registry map[string]Role // urlKey(notePath) -> Role
@@ -21,8 +22,9 @@ type Fleet struct {
 
 // NewFleet builds a Fleet with an empty registry.
 // hc is the HTTP client used for per-delivery scoped KB requests; nil uses
-// http.DefaultClient.
-func NewFleet(cfg Config, hc *http.Client, llm agentruntime.LLM) *Fleet {
+// http.DefaultClient. execLLM is the OpenAI-compatible endpoint the exec tool
+// routes code to (codellm); nil disables the exec tool.
+func NewFleet(cfg Config, hc *http.Client, llm, execLLM agentruntime.LLM) *Fleet {
 	if hc == nil {
 		hc = http.DefaultClient
 	}
@@ -30,6 +32,7 @@ func NewFleet(cfg Config, hc *http.Client, llm agentruntime.LLM) *Fleet {
 		cfg:      cfg,
 		hc:       hc,
 		llm:      llm,
+		execLLM:  execLLM,
 		registry: map[string]Role{},
 	}
 }

@@ -136,7 +136,7 @@ func (s *spyLogger) Warn(msg string, kv ...interface{}) {
 }
 
 // TestWarnIfGraphQLAddrNonLoopback verifies the loud opt-in warning fires only
-// for a non-loopback bind, matching --graph-addr/--debug-listen's loopback
+// for a non-loopback bind, matching --graph-addr's loopback
 // notion but without hard-blocking (a remote-fleet-behind-Caddy setup is
 // legitimate; the delegated-admin gate still authenticates every request).
 func TestWarnIfGraphQLAddrNonLoopback(t *testing.T) {

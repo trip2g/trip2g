@@ -5,8 +5,9 @@ tmp_dir = "tmp"
 # Runs cmd/fleet against a local `make air` hub with the dev defaults:
 #   - hub user-token secret = the dev default ("please-change-me-...")
 #   - graph UI  → http://127.0.0.1:9099/   (JSON at /graph.json)
-#   - code-block debug UI → http://127.0.0.1:9098/
 # LLM roles: export TRIP2G_FLEET_LLM_BASE_URL / TRIP2G_FLEET_LLM_API_KEY before running.
+# exec tool: export TRIP2G_FLEET_EXEC_BASE_URL / TRIP2G_FLEET_EXEC_API_KEY
+# (codellm, see `make aircodellm`); block debugging lives on codellm now.
 [build]
   cmd = "go build -tags=dev -o ./tmp/fleet ./cmd/fleet"
   bin = "./tmp/fleet"
@@ -16,9 +17,7 @@ tmp_dir = "tmp"
     "--jwt-secret", "please-change-me-to-something-secret",
     "--fleet-secret", "dev-fleet-secret",
     "--agents-folder", "roles/",
-    "--allowed-programs", "python,bash,node",
     "--graph-addr", "127.0.0.1:9099",
-    "--debug-listen", "127.0.0.1:9098",
   ]
   delay = 500
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules", "out", "obsidian-sync", "infra", "test-results", "playwright-report", "docs", "demo"]

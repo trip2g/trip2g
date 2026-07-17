@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"trip2g/internal/coderun"
 	"trip2g/internal/webhookutil"
 )
 
@@ -54,14 +53,13 @@ type Input struct {
 	// An empty (nil) Tools means the full default offered set (backward-compat).
 	Tools []string
 
-	// AllowedPrograms is the fleet-level allowlist for code execution. When
-	// non-empty, the exec(program, code) tool is advertised to the model and
-	// enabled at execution time. An empty slice disables exec entirely.
-	AllowedPrograms []string
-
-	// Sandbox is the OS-level isolation policy for the exec tool's code runs.
-	// The zero value is the safe default (native where supported).
-	Sandbox coderun.SandboxPolicy
+	// ExecLLM, when non-nil, enables the exec(program, code) tool: the code is
+	// sent as a one-fenced-block chat completion to this OpenAI-compatible
+	// endpoint (codellm), which executes it and returns the writes as
+	// write_note/patch_note tool calls plus finish(answer). nil disables exec
+	// entirely. Program allowlisting and sandboxing are codellm's concern —
+	// fleet executes no code in-process.
+	ExecLLM LLM
 
 	// MaxTokens is the NON-overridable per-run token hard-cap (safety floor).
 	// The model has no tool to change it; the loop enforces it. Must be > 0.
@@ -79,8 +77,8 @@ type Input struct {
 	// patch find, a KB write error — NOT an out-of-scope denial) fail the whole
 	// run instead of feeding the error back to the model as a soft, self-
 	// correctable tool result. Set for executor:code/codellm runs to preserve
-	// RunCode's all-or-nothing semantics; left false for real-LLM roles so they
-	// keep their self-correction loop.
+	// the code path's all-or-nothing semantics; left false for real-LLM roles
+	// so they keep their self-correction loop.
 	HardFailApply bool
 
 	LLM LLM
@@ -135,7 +133,7 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 	}
 
 	scoped := NewScopedKB(in.KB, in.ReadPatterns, in.WritePatterns)
-	tools := allowedToolDefs(in.Tools, in.AllowedPrograms)
+	tools := allowedToolDefs(in.Tools, in.ExecLLM != nil)
 	// permitted is the execution-time enforcement set: same as the advertised set.
 	// finish is always present (already guaranteed by allowedToolDefs).
 	permitted := make(map[string]bool, len(tools))
@@ -145,7 +143,7 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 
 	// Tool registry: extension invokers (exec + future MCP plug-ins) are called
 	// before the built-in switch in execTool. Built-in tools leave this nil-safe.
-	invokers := buildInvokers(in.AllowedPrograms, in.Sandbox)
+	invokers := buildInvokers(in.ExecLLM)
 
 	messages := []Message{
 		{
@@ -220,8 +218,9 @@ func Run(ctx context.Context, in Input) (*Result, error) {
 			output, applyFailed := execTool(ctx, scoped, res, call, invokers)
 			// Apply-error hard-fail (executor:code/codellm path): a genuine write/
 			// patch apply failure (bad/non-unique find, KB write error) fails the
-			// whole run, preserving RunCode's all-or-nothing semantics. Real-LLM
-			// roles (HardFailApply=false) keep the soft, self-correctable tool result.
+			// whole run, preserving the code path's all-or-nothing semantics.
+			// Real-LLM roles (HardFailApply=false) keep the soft, self-correctable
+			// tool result.
 			if applyFailed && in.HardFailApply {
 				return nil, fmt.Errorf("agentruntime: apply %s: %s", call.Name, output)
 			}
@@ -370,9 +369,9 @@ func formatPatterns(patterns []string) string {
 // allowedToolDefs returns the ToolDef slice the model will see. When allowlist
 // is non-empty, only tools named in it are included; finish is always injected
 // regardless. An empty allowlist returns the full default offered set.
-// allowedPrograms gates whether exec is included in the base set.
-func allowedToolDefs(allowlist []string, allowedPrograms []string) []ToolDef {
-	all := toolDefs(allowedPrograms)
+// execEnabled gates whether exec is included in the base set.
+func allowedToolDefs(allowlist []string, execEnabled bool) []ToolDef {
+	all := toolDefs(execEnabled)
 	if len(allowlist) == 0 {
 		return all
 	}
@@ -392,24 +391,33 @@ func allowedToolDefs(allowlist []string, allowedPrograms []string) []ToolDef {
 	return out
 }
 
-// buildInvokers constructs the extension tool registry. When allowedPrograms is
-// non-empty, exec is registered.
-// Future MCP tools: add invokers here, gated by the same allowedPrograms mechanism
-// or a dedicated per-tool allowlist. Never add tools unconditionally.
-func buildInvokers(allowedPrograms []string, sandbox coderun.SandboxPolicy) map[string]toolInvoker {
-	if len(allowedPrograms) == 0 {
+// execModel is the model id sent on exec-tool chat calls. codellm echoes it;
+// the exec endpoint does not route by model.
+const execModel = "codellm"
+
+// buildInvokers constructs the extension tool registry. When execLLM is
+// non-nil, exec is registered.
+// Future MCP tools: add invokers here, gated by their own enablement knobs.
+// Never add tools unconditionally.
+func buildInvokers(execLLM LLM) map[string]toolInvoker {
+	if execLLM == nil {
 		return nil
 	}
 	return map[string]toolInvoker{
-		toolExec: makeExecInvoker(allowedPrograms, sandbox),
+		toolExec: makeExecInvoker(execLLM),
 	}
 }
 
-// makeExecInvoker returns an invoker for the exec(program, code) tool.
-// It runs the code via RunBlock (secret-scrubbed), parses stdout as write JSON,
-// and applies changes via the scoped KB — same write_patterns enforcement as
-// write_note. Out-of-scope writes are denied and recorded, not silently dropped.
-func makeExecInvoker(allowedPrograms []string, sandbox coderun.SandboxPolicy) toolInvoker {
+// makeExecInvoker returns an invoker for the exec(program, code) tool. It wraps
+// the code in a single fenced block labeled with the program name and sends it
+// as a one-shot chat completion to execLLM (codellm), which executes the block
+// and returns the writes as write_note/patch_note tool calls plus finish(answer).
+// Those changes are applied via the scoped KB — same write_patterns enforcement
+// as write_note. Out-of-scope writes are denied and recorded, not silently
+// dropped. Program allowlisting and sandboxing are codellm-authoritative: a
+// disallowed program or failing block comes back as a deterministic error (422),
+// surfaced to the model as a soft tool error.
+func makeExecInvoker(execLLM LLM) toolInvoker {
 	return func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) string {
 		var args struct {
 			Program string `json:"program"`
@@ -418,20 +426,17 @@ func makeExecInvoker(allowedPrograms []string, sandbox coderun.SandboxPolicy) to
 		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
 			return "error: invalid arguments: " + err.Error()
 		}
-		if !coderun.IsAllowed(args.Program, allowedPrograms) {
-			return fmt.Sprintf("error: program %q not in allowed_programs", args.Program)
+		body, err := fenceCodeBlock(args.Program, args.Code)
+		if err != nil {
+			return "error: " + err.Error()
 		}
-		stdout, _, _, runErr := coderun.RunBlock(ctx, coderun.CodeSpec{
-			Program: args.Program,
-			Code:    args.Code,
-			Sandbox: sandbox,
-			// No Input bag: exec tool runs inline; the model already has context.
-			// No Timeout: the call is bounded by the parent run context.
-		})
-		if runErr != nil {
-			return "error: " + runErr.Error()
+		// No fleet_input message: exec runs inline; the model already has context.
+		// No explicit timeout: the call is bounded by the parent run context.
+		chat, err := execLLM.Chat(ctx, execModel, []Message{{Role: RoleUser, Content: body}}, nil)
+		if err != nil {
+			return "error: " + err.Error()
 		}
-		changes, answer, perr := coderun.ParseCodeOutput(stdout)
+		changes, answer, perr := changesFromToolCalls(chat.ToolCalls)
 		if perr != nil {
 			return "error: " + perr.Error()
 		}
@@ -462,8 +467,73 @@ func makeExecInvoker(allowedPrograms []string, sandbox coderun.SandboxPolicy) to
 	}
 }
 
+// fenceCodeBlock wraps code in a ```program fenced block for the exec wire
+// protocol. The program name doubles as the fence label — valid because every
+// interpreter name is also a registered fence label (pinned by
+// TestInterpreterNamesAreFenceLabels in the coderun package). Code that itself
+// contains a ``` marker cannot ride the one-block protocol and is rejected up
+// front (a deterministic error beats silent block corruption).
+func fenceCodeBlock(program, code string) (string, error) {
+	if program == "" || strings.ContainsAny(program, " \t\n`") {
+		return "", fmt.Errorf("exec: invalid program name %q", program)
+	}
+	if strings.Contains(code, "```") {
+		return "", errors.New("exec: code containing ``` cannot be sent as a fenced block")
+	}
+	if !strings.HasSuffix(code, "\n") {
+		code += "\n"
+	}
+	return "```" + program + "\n" + code + "```", nil
+}
+
+// changesFromToolCalls maps the exec endpoint's write_note/patch_note/finish
+// tool calls back to AgentChanges plus the finish answer (the inverse of
+// codellm's {changes}→tool_calls mapping). Any other tool name is an error —
+// the exec endpoint's contract is exactly these three.
+func changesFromToolCalls(calls []ToolCall) ([]webhookutil.AgentChange, string, error) {
+	var changes []webhookutil.AgentChange
+	var answer string
+	for _, tc := range calls {
+		switch tc.Name {
+		case toolWriteNote:
+			var a struct {
+				Path    string `json:"path"`
+				Content string `json:"content"`
+			}
+			if err := json.Unmarshal([]byte(tc.Arguments), &a); err != nil {
+				return nil, "", fmt.Errorf("exec: %s arguments: %w", tc.Name, err)
+			}
+			changes = append(changes, webhookutil.AgentChange{
+				Path:    a.Path,
+				Content: a.Content,
+				Kind:    webhookutil.AgentChangeKindWrite,
+			})
+		case toolPatchNote:
+			var a struct {
+				Path    string `json:"path"`
+				Find    string `json:"find"`
+				Replace string `json:"replace"`
+			}
+			if err := json.Unmarshal([]byte(tc.Arguments), &a); err != nil {
+				return nil, "", fmt.Errorf("exec: %s arguments: %w", tc.Name, err)
+			}
+			changes = append(changes, webhookutil.AgentChange{
+				Path:    a.Path,
+				Find:    a.Find,
+				Replace: a.Replace,
+				Kind:    webhookutil.AgentChangeKindPatch,
+			})
+		case toolFinish:
+			answer = finishAnswer(tc.Arguments)
+		default:
+			return nil, "", fmt.Errorf("exec: unexpected tool call %q from exec endpoint", tc.Name)
+		}
+	}
+	return changes, answer, nil
+}
+
 // execToolDef returns the ToolDef for the exec tool advertised to the model
-// when AllowedPrograms is non-empty.
+// when ExecLLM is set.
 func execToolDef() ToolDef {
 	return ToolDef{
 		Name:        toolExec,
@@ -486,8 +556,8 @@ func execToolDef() ToolDef {
 }
 
 // toolDefs returns the full set of ToolDefs offered to the model.
-// The exec tool is included when allowedPrograms is non-empty.
-func toolDefs(allowedPrograms []string) []ToolDef {
+// The exec tool is included when execEnabled is true.
+func toolDefs(execEnabled bool) []ToolDef {
 	out := []ToolDef{
 		{
 			Name:        toolSearch,
@@ -548,7 +618,7 @@ func toolDefs(allowedPrograms []string) []ToolDef {
 			},
 		},
 	}
-	if len(allowedPrograms) > 0 {
+	if execEnabled {
 		out = append(out, execToolDef())
 	}
 	return out
