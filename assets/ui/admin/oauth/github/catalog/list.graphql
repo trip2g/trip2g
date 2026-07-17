@@ -1,0 +1,13 @@
+query {
+	admin {
+		allGitHubOAuthCredentials {
+			nodes {
+				id
+				name
+				clientId
+				active
+				createdAt
+			}
+		}
+	}
+}

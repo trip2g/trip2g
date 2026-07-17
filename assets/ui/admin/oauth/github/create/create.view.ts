@@ -1,35 +1,8 @@
 namespace $.$$ {
-	const urls_query = $trip2g_graphql_request(/* GraphQL */ `
-		query GitHubOAuthUrls($input: OAuthUrlInput!) {
-			publicUrl
-			githubAuthUrl(input: $input) {
-				callbackUrl
-			}
-		}
-	`)
-
-	const create_mutation = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminCreateGitHubOAuthCredentials($input: CreateGitHubOAuthCredentialsInput!) {
-			admin {
-				data: createGitHubOAuthCredentials(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreateGitHubOAuthCredentialsPayload {
-						credentials {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_oauth_github_create extends $.$trip2g_admin_oauth_github_create {
 		@$mol_mem
 		urls() {
-			return urls_query({ input: { redirectUrl: '/', dry: true } })
+			return $trip2g_admin_oauth_github_create_urls({ input: { redirectUrl: '/', dry: true } })
 		}
 
 		override homepage_url() {
@@ -48,7 +21,7 @@ namespace $.$$ {
 		submit() {
 			this.result( '' )
 
-			const res = create_mutation({
+			const res = $trip2g_admin_oauth_github_create_submit({
 				input: {
 					name: this.name(),
 					clientId: this.client_id(),

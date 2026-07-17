@@ -1,37 +1,4 @@
 namespace $.$$ {
-	const query = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminGoogleOAuthCredentialsById($id: Int!) {
-			admin {
-				googleOAuthCredentials(id: $id) {
-					id
-					name
-					clientId
-					active
-					createdAt
-					createdBy { id email }
-				}
-			}
-		}
-	`)
-
-	const set_active_mutation = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminSetActiveGoogleOAuthCredentials($input: SetActiveGoogleOAuthCredentialsInput!) {
-			admin {
-				data: setActiveGoogleOAuthCredentials(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on SetActiveGoogleOAuthCredentialsPayload {
-						credentials {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_oauth_google_show extends $.$trip2g_admin_oauth_google_show {
 		action() {
 			return this.$.$mol_state_arg.value( 'action' ) || 'view'
@@ -39,7 +6,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data( reset?: null ) {
-			const data = query({ id: this.credentials_id() }).admin.googleOAuthCredentials
+			const data = $trip2g_admin_oauth_google_show_data({ id: this.credentials_id() }).admin.googleOAuthCredentials
 			if (!data) throw new Error('Google OAuth credentials not found')
 			return data
 		}
@@ -88,7 +55,7 @@ namespace $.$$ {
 		set_active_click() {
 			if( this.data().active ) return
 
-			const res = set_active_mutation({
+			const res = $trip2g_admin_oauth_google_show_activate({
 				input: { id: this.credentials_id() },
 			})
 

@@ -1,0 +1,13 @@
+mutation ($input: DeleteGitHubOAuthCredentialsInput!) {
+	admin {
+		data: deleteGitHubOAuthCredentials(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on DeleteGitHubOAuthCredentialsPayload {
+				deletedId
+			}
+		}
+	}
+}

@@ -1,0 +1,13 @@
+mutation {
+	admin {
+		data: deactivateGitHubOAuth {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on DeactivateGitHubOAuthPayload {
+				success
+			}
+		}
+	}
+}
