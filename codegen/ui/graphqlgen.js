@@ -3,28 +3,22 @@
 // Ported from github.com/trip2g/mol_graphql (codegen/graphqlgen.js).
 //
 // Schema comes from the checked-in SDL files — NO live introspection, no dev
-// server needed (unlike the legacy root graphqlgen.js, which this coexists
-// with and will eventually replace).
+// server needed (unlike the retired legacy root graphqlgen.js, which needed a
+// running server).
 //
 // Endpoint routing is by file suffix, not directory:
 //   *.graphql          → main endpoint  (/_system/graphql),        runtime $trip2g_gql
 //   *.codellm.graphql  → codellm subgraph (/_system/codellm/graphql), runtime $trip2g_codellm_gql
 //
-// Coexistence with the legacy pipeline (assets/ui/graphql/queries.ts):
-// `molSchemaTypes: false` — generated files reference the schema types
-// (enums, inputs, Scalars, Maybe/Exact helpers) that queries.ts already
-// declares in `namespace $`, instead of re-declaring all 281 of them.
-// Known caveat: queries.ts was generated with the default pascalCase naming
-// while this config uses `namingConvention: 'keep'`; the two disagree only on
-// acronym casing (the *OIDCCredentials* family, unused by any component yet).
-// When queries.ts is retired, flip molSchemaTypes on and this block owns the
-// shared types file.
+// The main block owns the shared schema types (enums, inputs, Scalars,
+// Maybe/Exact helpers) in assets/ui/gql/schema.graphql.ts, declared once in
+// `namespace $` and referenced by every generated file.
 //
-// The codellm block cannot reuse queries.ts (different schema), so it emits
-// its own schema types with `onlyOperationTypes` (enums + inputs only) into
-// the runtime module, strips the helper aliases queries.ts already declares
-// (molStripHelpers), and renames `Scalars` (molScalarsName) to avoid the
-// duplicate-identifier collision in `namespace $`.
+// The codellm block has a different schema, so it emits its own schema types
+// with `onlyOperationTypes` (enums + inputs only) into
+// assets/ui/codellm/gql/schema.graphql.ts, strips the helper aliases the main
+// block already declares (molStripHelpers), and renames `Scalars`
+// (molScalarsName) to avoid the duplicate-identifier collision in `namespace $`.
 
 const base = {
 	// repo-relative assets/ui/user/favoritenote/notes.graphql is workspace
@@ -51,7 +45,7 @@ module.exports = {
 			config: {
 				...base,
 				molRuntime: '$trip2g_gql',
-				molSchemaTypes: false, // reuse queries.ts declarations while it lives
+				molSchemaTypes: 'assets/ui/gql/schema.graphql.ts',
 			},
 		},
 		'./codellm-subgraph': {
@@ -64,7 +58,7 @@ module.exports = {
 				molRuntime: '$trip2g_codellm_gql',
 				molSchemaTypes: 'assets/ui/codellm/gql/schema.graphql.ts',
 				onlyOperationTypes: true, // enums + inputs, no object types (inlined in results anyway)
-				molStripHelpers: true, // Maybe/Exact/... already declared by queries.ts
+				molStripHelpers: true, // Maybe/Exact/... already declared by the main schema types
 				molScalarsName: '$trip2g_codellm_gql_scalars', // avoid duplicate `Scalars`
 			},
 		},

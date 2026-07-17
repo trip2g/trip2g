@@ -16,7 +16,7 @@ namespace $.$$ {
 		override editor() {
 			const viewer = this.viewer()
 		
-			if (viewer.role === $trip2g_graphql_role.Admin) {
+			if (viewer.role === Role.ADMIN) {
 				return this.Editor()
 			}
 		
@@ -26,7 +26,7 @@ namespace $.$$ {
 		override admin_link() {
 			const viewer = this.viewer()
 
-			if (viewer.role === $trip2g_graphql_role.Admin) {
+			if (viewer.role === Role.ADMIN) {
 				return this.AdminLink()
 			}
 

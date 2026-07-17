@@ -1,6 +1,6 @@
 namespace $.$$ {
 
-	const sub = $trip2g_graphql_subscription(/* GraphQL */ `
+	const sub = $trip2g_graphql_raw_subscription(/* GraphQL */ `
 		subscription CurrentTime($format: String) {
 			currentTime(format: $format)
 		}

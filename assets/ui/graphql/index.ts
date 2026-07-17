@@ -1,6 +1,4 @@
 namespace $ {
-	export const $trip2g_graphql = (s: string) => s
-
 	type GraphQLError = {
 		message: string
 		path: string[]
@@ -25,44 +23,11 @@ namespace $ {
 		}
 	}
 
-	class cache extends $mol_object2 {
-		@$mol_mem_key
-		typename(key: string, val?: number) {
-			return val || 0
-		}
-
-		is_root(tn: string) {
-			return tn === 'Query' || tn === 'Mutation' || tn === 'AdminQuery' || tn === 'AdminMutation'
-		}
-
-		markTypenames(value: unknown, reset: boolean): void {
-			if (Array.isArray(value)) {
-				for (const item of value) this.markTypenames(item, reset)
-			} else if (value && typeof value === 'object') {
-				const obj = value as Record<string, unknown>
-
-				if (typeof obj.__typename === 'string' && !this.is_root(obj.__typename)) {
-					const nv = reset ? this.typename(obj.__typename) + 1 : undefined
-					this.typename(obj.__typename, nv)
-				}
-
-				for (const key in obj) {
-					this.markTypenames(obj[key], reset)
-				}
-			}
-		}
-	}
-
-	type RequestOptions = {
-		resetCache?: boolean // true by default
-	}
-
 	const reset_marker = new reset_query_marker()
 
-	// The single invalidation marker is shared by BOTH request paths: the legacy
-	// $trip2g_graphql_raw_request below and the codegen-driven $trip2g_gql_request
-	// (assets/ui/gql/). A mutation through either path must refetch queries made
-	// through the other, so there is exactly one marker.
+	// The single invalidation marker shared by every request path (the
+	// codegen-driven $trip2g_gql_request in assets/ui/gql/ and any raw caller):
+	// a mutation must refetch every subscribed query, so there is exactly one marker.
 
 	/** Subscribe the calling memo to the invalidation marker (a query read). */
 	export function $trip2g_graphql_reset_marker_watch() {
@@ -72,36 +37,6 @@ namespace $ {
 	/** Bump the invalidation marker: every subscribed query refetches (a mutation happened). */
 	export function $trip2g_graphql_reset_marker_bump() {
 		reset_marker.query_marker(reset_marker.query_marker() + 1)
-	}
-
-	export function $trip2g_graphql_raw_request(query: string, request_path?: string) {
-		// replace @exportType directives
-		query = query.replace(/@exportType\s*(\([^)]*\))?\s*/g, '')
-
-		return (variables?: any, opts?: RequestOptions): any => {
-			const res = $.$mol_fetch.json(request_path || '/_system/graphql', {
-				method: 'POST',
-				credentials: 'include',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ query, variables }),
-			}) as { data?: any; errors?: any[] }
-
-			if (res.errors) {
-				throw new $.$trip2g_graphql_error('GraphQL Error', res.errors)
-			}
-
-			const isMutation = !!query.match(/^\s+mutation/)
-
-			if (opts?.resetCache !== false) {
-				if (isMutation) {
-					$trip2g_graphql_reset_marker_bump()
-				} else {
-					$trip2g_graphql_reset_marker_watch()
-				}
-			}
-
-			return res.data
-		}
 	}
 
 	export function $trip2g_graphql_make_map<K extends PropertyKey, T extends { id: K }>(rows: T[]) {

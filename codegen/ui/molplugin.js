@@ -37,11 +37,11 @@
 // trip2g additions over the demo version:
 //   molScalarsName   rename the `Scalars` type (declaration + references) in
 //                    every output of the block - lets a second-endpoint block
-//                    declare its own scalars next to the legacy queries.ts
+//                    declare its own scalars next to the main block's
 //                    without a duplicate-identifier collision in `namespace $`
 //   molStripHelpers  in schema mode, drop the shared helper aliases
 //                    (Maybe/InputMaybe/Exact/MakeOptional/MakeMaybe/MakeEmpty/
-//                    Incremental) that queries.ts already declares
+//                    Incremental) that the main block's schema types already declare
 //
 // `config.revalidation` picks the invalidation metadata baked into the wrappers:
 //   'all' (default)  pass caller opts through - every query subscribes to the
@@ -126,8 +126,8 @@ function escapeDollars(code) {
 	return code.replace(/\$/g, '\\u0024')
 }
 
-// drop the shared helper aliases the legacy queries.ts already declares in
-// `namespace $` (all single-line in stock plugin output)
+// drop the shared helper aliases the main block's schema types already declare
+// in `namespace $` (all single-line in stock plugin output)
 function stripSharedHelpers(code) {
 	return code
 		.split('\n')

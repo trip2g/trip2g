@@ -48,7 +48,7 @@ Generated code is committed. After editing a source of generated code, run the m
 | `go generate ./internal/defaulttemplate/...` | after editing `views.html` or `langs/*.toml` (quicktemplate, not Go templates) |
 | `go generate ./internal/router/...` | after adding HTTP endpoints |
 | `npm run build` | TypeScript + Vite build |
-| `npm run graphqlgen` | frontend GraphQL types (needs the server running on :8081) |
+| `npm run codegen:ui` | frontend GraphQL types from co-located `.graphql` files (no server needed) |
 | `npm run test:e2e` | Playwright E2E tests |
 | `go run -tags dev ./cmd/server lint docs` | check doc links after editing anything under `docs/` |
 

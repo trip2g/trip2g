@@ -14,7 +14,7 @@ vecbench-eval:
 vecbench-down:
 	./scripts/vecbench.sh down
 
-build-amd64: graphqlgen test
+build-amd64: gqlgen test
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./tmp/amd64 -ldflags="$(LDFLAGS)" ./cmd/server
 
 build:
@@ -34,11 +34,6 @@ gqlgen:
 
 gqlgencodellm:
 	go tool github.com/99designs/gqlgen generate --config cmd/codellm/internal/codellm/codellmgql/gqlgen.yml
-
-graphqlgen: gqlgen
-	./scripts/waitfor localhost:8081
-	sleep 1 # avoid a strange error: connect ECONNREFUSED 127.0.0.1:8081
-	npm run graphqlgen
 
 sqlc:
 	go tool github.com/sqlc-dev/sqlc/cmd/sqlc generate

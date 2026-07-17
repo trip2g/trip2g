@@ -35,7 +35,7 @@ module.exports = {
 		const root = config.molRoot || '.'
 		const runtime = config.molRuntime || '$graphql'
 		// molSchemaTypes: false skips the shared types file (reuse the types
-		// another file already declares, e.g. the legacy queries.ts)
+		// another block already declares)
 		const schemaTypesFile = config.molSchemaTypes === false ? null : config.molSchemaTypes || 'graphql/schema.graphql.ts'
 
 		const pluginMap = {

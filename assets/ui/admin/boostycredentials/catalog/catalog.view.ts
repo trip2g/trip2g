@@ -1,5 +1,5 @@
 namespace $.$$ {
-	const state = $trip2g_graphql_boosty_credentials_state_enum
+	const state = BoostyCredentialsStateEnum
 
 	export class $trip2g_admin_boostycredentials_catalog extends $.$trip2g_admin_boostycredentials_catalog {
 		@$mol_mem
@@ -7,9 +7,9 @@ namespace $.$$ {
 			const filter = this.$.$mol_state_arg.value( 'filter' ) || 'all'
 			switch( filter ) {
 				case 'active':
-					return state.Active
+					return state.ACTIVE
 				case 'deleted':
-					return state.Deleted
+					return state.DELETED
 				default:
 					return null
 			}

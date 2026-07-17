@@ -1,23 +1,4 @@
 namespace $.$$ {
-	const run_query = /* GraphQL */ `
-		mutation RunBlocks($input: RunBlocksInput!) {
-			runBlocks(input: $input) {
-				... on RunBlocksPayload { output pipes { index content } }
-				... on ErrorPayload { message }
-			}
-		}
-	`
-	const run_request = async ( variables: any ) => {
-		const response = await fetch( '/_system/codellm/graphql', {
-			method: 'POST', credentials: 'same-origin',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify( { query: run_query, variables } ),
-		} )
-		const body = await response.json()
-		if( body.errors?.length ) throw new Error( body.errors[ 0 ].message )
-		return body.data
-	}
-
 	type Block = { kind: 'CODE' | 'PROSE', language?: string, content: string }
 
 	export class $trip2g_codellm_debugger extends $.$trip2g_codellm_debugger {
