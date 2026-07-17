@@ -58,10 +58,13 @@ func normalizeNotePath(p string) string {
 
 func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
 	wp := appreq.WebhookWritePatterns(ctx)
-	// Scoped-token requests (fleet calls via shortapitoken): deny-all when
-	// write_patterns is empty, and deny on no-match when non-empty.
+	// Scoped-token requests (shortapitoken): deny-all when write_patterns is
+	// empty, and deny on no-match when non-empty. Keyed off Scoped — the flag
+	// every shortapitoken carries — not off DeliveryKind, which is an optional
+	// claim: a scoped token minted without it must not fall through to the
+	// legacy allow-all. DeliveryKind kept as a defensive second signal.
 	// Unscoped/admin requests keep the legacy behaviour: empty = allow all.
-	if appreq.WebhookDeliveryKind(ctx) != "" {
+	if appreq.Scoped(ctx) || appreq.WebhookDeliveryKind(ctx) != "" {
 		if len(wp) == 0 || !webhookutil.MatchesAny(path, wp) {
 			return &model.ErrorPayload{Message: "write denied for path: " + path}
 		}
