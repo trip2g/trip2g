@@ -107,9 +107,10 @@ func cacheTestEnv(views *model.NoteViews, layouts *model.Layouts) (*EnvMock, *pa
 		LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 			return db.LastUserNoteViewRow{}, nil
 		},
-		ConfigEpochFunc:     func() uint64 { return *epoch },
-		CachedPageFunc:      pc.Get,
-		StoreCachedPageFunc: pc.Set,
+		ReaderMovesActiveFunc: func() bool { return false },
+		ConfigEpochFunc:       func() uint64 { return *epoch },
+		CachedPageFunc:        pc.Get,
+		StoreCachedPageFunc:   pc.Set,
 	}
 	return env, pc, epoch
 }
