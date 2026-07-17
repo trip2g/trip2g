@@ -85,6 +85,12 @@ var _ rendernotepage.Env = &EnvMock{}
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
 //			},
+//			PublishReaderMoveFunc: func(fromPathID *int64, toPathID int64, viewerID string)  {
+//				panic("mock out the PublishReaderMove method")
+//			},
+//			ReaderMovesActiveFunc: func() bool {
+//				panic("mock out the ReaderMovesActive method")
+//			},
 //			RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)  {
 //				panic("mock out the RecordUserNoteView method")
 //			},
@@ -178,6 +184,12 @@ type EnvMock struct {
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
+
+	// PublishReaderMoveFunc mocks the PublishReaderMove method.
+	PublishReaderMoveFunc func(fromPathID *int64, toPathID int64, viewerID string)
+
+	// ReaderMovesActiveFunc mocks the ReaderMovesActive method.
+	ReaderMovesActiveFunc func() bool
 
 	// RecordUserNoteViewFunc mocks the RecordUserNoteView method.
 	RecordUserNoteViewFunc func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
@@ -306,6 +318,18 @@ type EnvMock struct {
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
+		// PublishReaderMove holds details about calls to the PublishReaderMove method.
+		PublishReaderMove []struct {
+			// FromPathID is the fromPathID argument value.
+			FromPathID *int64
+			// ToPathID is the toPathID argument value.
+			ToPathID int64
+			// ViewerID is the viewerID argument value.
+			ViewerID string
+		}
+		// ReaderMovesActive holds details about calls to the ReaderMovesActive method.
+		ReaderMovesActive []struct {
+		}
 		// RecordUserNoteView holds details about calls to the RecordUserNoteView method.
 		RecordUserNoteView []struct {
 			// Ctx is the ctx argument value.
@@ -372,6 +396,8 @@ type EnvMock struct {
 	lockLogger                              sync.RWMutex
 	lockNoteVersionEditor                   sync.RWMutex
 	lockPublicURL                           sync.RWMutex
+	lockPublishReaderMove                   sync.RWMutex
+	lockReaderMovesActive                   sync.RWMutex
 	lockRecordUserNoteView                  sync.RWMutex
 	lockSiteConfig                          sync.RWMutex
 	lockSiteTitleTemplate                   sync.RWMutex
@@ -1007,6 +1033,73 @@ func (mock *EnvMock) PublicURLCalls() []struct {
 	mock.lockPublicURL.RLock()
 	calls = mock.calls.PublicURL
 	mock.lockPublicURL.RUnlock()
+	return calls
+}
+
+// PublishReaderMove calls PublishReaderMoveFunc.
+func (mock *EnvMock) PublishReaderMove(fromPathID *int64, toPathID int64, viewerID string) {
+	if mock.PublishReaderMoveFunc == nil {
+		panic("EnvMock.PublishReaderMoveFunc: method is nil but Env.PublishReaderMove was just called")
+	}
+	callInfo := struct {
+		FromPathID *int64
+		ToPathID   int64
+		ViewerID   string
+	}{
+		FromPathID: fromPathID,
+		ToPathID:   toPathID,
+		ViewerID:   viewerID,
+	}
+	mock.lockPublishReaderMove.Lock()
+	mock.calls.PublishReaderMove = append(mock.calls.PublishReaderMove, callInfo)
+	mock.lockPublishReaderMove.Unlock()
+	mock.PublishReaderMoveFunc(fromPathID, toPathID, viewerID)
+}
+
+// PublishReaderMoveCalls gets all the calls that were made to PublishReaderMove.
+// Check the length with:
+//
+//	len(mockedEnv.PublishReaderMoveCalls())
+func (mock *EnvMock) PublishReaderMoveCalls() []struct {
+	FromPathID *int64
+	ToPathID   int64
+	ViewerID   string
+} {
+	var calls []struct {
+		FromPathID *int64
+		ToPathID   int64
+		ViewerID   string
+	}
+	mock.lockPublishReaderMove.RLock()
+	calls = mock.calls.PublishReaderMove
+	mock.lockPublishReaderMove.RUnlock()
+	return calls
+}
+
+// ReaderMovesActive calls ReaderMovesActiveFunc.
+func (mock *EnvMock) ReaderMovesActive() bool {
+	if mock.ReaderMovesActiveFunc == nil {
+		panic("EnvMock.ReaderMovesActiveFunc: method is nil but Env.ReaderMovesActive was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockReaderMovesActive.Lock()
+	mock.calls.ReaderMovesActive = append(mock.calls.ReaderMovesActive, callInfo)
+	mock.lockReaderMovesActive.Unlock()
+	return mock.ReaderMovesActiveFunc()
+}
+
+// ReaderMovesActiveCalls gets all the calls that were made to ReaderMovesActive.
+// Check the length with:
+//
+//	len(mockedEnv.ReaderMovesActiveCalls())
+func (mock *EnvMock) ReaderMovesActiveCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockReaderMovesActive.RLock()
+	calls = mock.calls.ReaderMovesActive
+	mock.lockReaderMovesActive.RUnlock()
 	return calls
 }
 

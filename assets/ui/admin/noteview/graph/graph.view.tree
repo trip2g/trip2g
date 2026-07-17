@@ -24,6 +24,7 @@ $trip2g_admin_noteview_graph $mol_page
 			public_outside <= public_outside
 			group_by <= group_by
 			save_message? <=> save_message?
+		<= moves_watcher null
 
 $trip2g_admin_noteview_graph_cytoscape $mol_view
 	relayout? null
