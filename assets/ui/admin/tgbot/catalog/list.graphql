@@ -1,0 +1,16 @@
+query {
+	admin {
+		allTgBots {
+			nodes {
+				id
+				name
+				description
+				enabled
+				createdAt
+				createdBy {
+					email
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,18 @@
+query ($filter: AdminTgBotChatsFilterInput!) {
+	admin {
+		tgBotChats(filter: $filter) {
+			nodes {
+				id
+				chatType
+				chatTitle
+				addedAt
+				removedAt
+				memberCount
+				subgraphAccesses {
+					id
+					subgraphId
+				}
+			}
+		}
+	}
+}

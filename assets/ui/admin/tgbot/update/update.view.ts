@@ -1,44 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminShowTgBot($id: Int64!) {
-			admin {
-				tgBot(id: $id) {
-					id
-					name
-					description
-					enabled
-					createdAt
-					createdBy {
-						email
-					}
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminUpdateTgBotMutation($input: UpdateTgBotInput!) {
-			admin {
-				payload: updateTgBot(input: $input) {
-					__typename
-					... on UpdateTgBotPayload {
-						tgBot {
-							id
-							description
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_tgbot_update extends $.$trip2g_admin_tgbot_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request({ id: this.tgbot_id() })
+			const res = $trip2g_admin_tgbot_update_data({ id: this.tgbot_id() })
 
 			if (!res.admin.tgBot) {
 				throw new Error('TG Bot not found')
@@ -70,7 +34,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_tgbot_update_save({
 				input: {
 					id: this.tgbot_id(),
 					description: this.description(),

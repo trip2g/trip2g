@@ -1,33 +1,8 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(
-		`
-			query AdminTgBotPublishTags($filter: AdminTgBotChatsFilterInput!) {
-				admin {
-					tgBotChats(filter: $filter) {
-						nodes {
-							id
-							chatType
-							chatTitle
-							addedAt
-							removedAt
-							memberCount
-							publishTags {
-								id
-							}
-							publishInstantTags {
-								id
-							}
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_tgbot_show_publishtags extends $.$trip2g_admin_tgbot_show_publishtags {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = data_request({
+			const res = $trip2g_admin_tgbot_show_publishtags_list({
 				filter: {
 					botId: this.bot_id(),
 				}

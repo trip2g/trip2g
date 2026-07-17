@@ -1,0 +1,13 @@
+mutation ($input: SetTgChatSubgraphsInput!) {
+	admin {
+		payload: setTgChatSubgraphs(input: $input) {
+			__typename
+			... on SetTgChatSubgraphsPayload {
+				success
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

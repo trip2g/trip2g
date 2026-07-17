@@ -1,0 +1,14 @@
+query ($id: Int64!) {
+	admin {
+		tgBot(id: $id) {
+			id
+			name
+			description
+			enabled
+			createdAt
+			createdBy {
+				email
+			}
+		}
+	}
+}
