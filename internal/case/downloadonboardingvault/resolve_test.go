@@ -19,8 +19,49 @@ import (
 
 type mockEnv struct {
 	publicURL string
+	// vaultZip overrides the fixture archive; set to []byte{} to simulate a
+	// build without the onboarding vault.
+	vaultZip []byte
 
 	setAdminToolsCalls []db.SetApiKeyMcpAdminToolsParams
+}
+
+// testVaultZip builds a minimal vault archive in memory, so tests never
+// depend on the generated onboarding-vault/vault.zip release artifact.
+func testVaultZip() []byte {
+	var buf bytes.Buffer
+	writer := zip.NewWriter(&buf)
+
+	files := []struct{ name, content string }{
+		{oldPrefix + "_index.md", "# Welcome\n\n{{publicUrl}}\n"},
+		{oldPrefix + ".obsidian/app.json", "{}"},
+	}
+
+	for _, file := range files {
+		w, err := writer.Create(file.name)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = w.Write([]byte(file.content))
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	err := writer.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	return buf.Bytes()
+}
+
+func (m *mockEnv) OnboardingVaultZip() []byte {
+	if m.vaultZip == nil {
+		return testVaultZip()
+	}
+	return m.vaultZip
 }
 
 func (m *mockEnv) GenerateAPIKey() string {

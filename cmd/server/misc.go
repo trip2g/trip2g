@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
+	onboardingvault "trip2g/onboarding-vault"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -149,6 +150,10 @@ func (a *app) GenerateAPIKey() string {
 	}
 
 	return string(result)
+}
+
+func (a *app) OnboardingVaultZip() []byte {
+	return onboardingvault.ZipData
 }
 
 func (a *app) GenerateGitToken() string {
