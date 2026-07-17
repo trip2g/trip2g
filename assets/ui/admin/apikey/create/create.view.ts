@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminCreateApiKey($input: CreateApiKeyInput!) {
-			admin {
-				data: createApiKey(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreateApiKeyPayload {
-						value
-						apiKey {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
 	export class $trip2g_admin_apikey_create extends $.$trip2g_admin_apikey_create {
 		override body() {
 			if (this.api_key() !== '') {
@@ -27,7 +9,7 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const res = mutate({
+			const res = $trip2g_admin_apikey_create_create({
 				input: {
 					description: this.description(),
 				},

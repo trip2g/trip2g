@@ -1,38 +1,10 @@
 namespace $.$$ {
-	const keysQuery = $trip2g_graphql_request(/* GraphQL */`
-		query AdminSecretKeys($filter: SecretKeysFilter) {
-			admin {
-				secretKeys(filter: $filter)
-			}
-		}
-	`)
-
-	const setMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminSetSecret($input: SetSecretInput!) {
-			admin {
-				setSecret(input: $input) {
-					key
-				}
-			}
-		}
-	`)
-
-	const deleteMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminDeleteSecret($id: String!) {
-			admin {
-				deleteSecret(id: $id) {
-					id
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_secrets extends $.$trip2g_admin_secrets {
 		@$mol_mem
 		keys( reset?: null ): string[] {
 			const prefix = this.key_prefix()
 			if( !prefix ) return []
-			return keysQuery({ filter: { idPrefix: prefix } }).admin.secretKeys
+			return $trip2g_admin_secrets_keys({ filter: { idPrefix: prefix } }).admin.secretKeys
 		}
 
 		key_rows() {
@@ -59,7 +31,7 @@ namespace $.$$ {
 			if( next === undefined ) return null
 			const key = this.keys()[ index ]
 			if( !key ) return null
-			setMutate({ input: { key, value: this.key_new_value( index ) } })
+			$trip2g_admin_secrets_set({ input: { key, value: this.key_new_value( index ) } })
 			this.key_new_value( index, '' )
 			this.keys( null )
 			return null
@@ -69,7 +41,7 @@ namespace $.$$ {
 			if( next === undefined ) return null
 			const key = this.keys()[ index ]
 			if( !key ) return null
-			deleteMutate({ id: key })
+			$trip2g_admin_secrets_delete({ id: key })
 			this.keys( null )
 			return null
 		}
@@ -89,7 +61,7 @@ namespace $.$$ {
 				return null
 			}
 			const key = this.key_prefix() + name
-			setMutate({ input: { key, value } })
+			$trip2g_admin_secrets_set({ input: { key, value } })
 			this.new_name( '' )
 			this.new_value( '' )
 			this.add_result( 'Secret added' )

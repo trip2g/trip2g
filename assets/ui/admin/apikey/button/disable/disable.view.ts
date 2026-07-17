@@ -1,21 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation DisableApiKey($input: DisableApiKeyInput!) {
-			admin {
-				data: disableApiKey(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on DisableApiKeyPayload {
-						apiKey {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
 	export class $trip2g_admin_apikey_button_disable extends $.$trip2g_admin_apikey_button_disable {
 		override handle_click() {
 			console.log('handle click')
@@ -23,7 +6,7 @@ namespace $.$$ {
 				throw new Error('API key ID is not set')
 			}
 
-			const res = mutate({
+			const res = $trip2g_admin_apikey_button_disable_disable({
 				input: {
 					id: this.id()
 				},

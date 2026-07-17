@@ -1,0 +1,16 @@
+mutation ($input: CreateGitTokenInput!) {
+	admin {
+		data: createGitToken(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateGitTokenPayload {
+				value
+				gitToken {
+					id
+				}
+			}
+		}
+	}
+}

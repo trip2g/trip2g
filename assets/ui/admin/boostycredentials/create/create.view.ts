@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminCreateBoostyCreds($input: CreateBoostyCredentialsInput!) {
-			admin {
-				payload: createBoostyCredentials(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreateBoostyCredentialsPayload {
-						boostyCredentials {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_boostycredentials_create extends $.$trip2g_admin_boostycredentials_create {
 		override body() {
 			if( this.credentials_id_string() !== '' ) {
@@ -58,7 +40,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_boostycredentials_create_create({
 				input: {
 					authData: this.auth_data(),
 					deviceId: this.device_id(),

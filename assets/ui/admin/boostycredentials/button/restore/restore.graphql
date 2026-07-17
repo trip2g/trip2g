@@ -1,0 +1,15 @@
+mutation ($input: RestoreBoostyCredentialsInput!) {
+	admin {
+		payload: restoreBoostyCredentials(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on RestoreBoostyCredentialsPayload {
+				boostyCredentials {
+					id
+				}
+			}
+		}
+	}
+}

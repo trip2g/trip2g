@@ -1,0 +1,13 @@
+mutation ($input: SetBoostyTierSubgraphsInput!) {
+	admin {
+		data: setBoostyTierSubgraphs(input: $input) {
+			__typename
+			... on SetBoostyTierSubgraphsPayload {
+				success
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

@@ -1,25 +1,7 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminRestoreBoostyCredentials($input: RestoreBoostyCredentialsInput!) {
-			admin {
-				payload: restoreBoostyCredentials(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on RestoreBoostyCredentialsPayload {
-						boostyCredentials {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_boostycredentials_button_restore extends $.$trip2g_admin_boostycredentials_button_restore {
 		restore( event?: Event ) {
-			const res = mutate({
+			const res = $trip2g_admin_boostycredentials_button_restore_restore({
 				input: {
 					id: this.credentials_id()
 				}

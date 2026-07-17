@@ -1,28 +1,10 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminDeleteBoostyCredentials($input: DeleteBoostyCredentialsInput!) {
-			admin {
-				payload: deleteBoostyCredentials(input: $input) {
-					__typename
-					... on ErrorPayload{
-						message
-					}
-					... on DeleteBoostyCredentialsPayload {
-						boostyCredentials {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_boostycredentials_button_delete extends $.$trip2g_admin_boostycredentials_button_delete {
 		delete( event?: Event ) {
 			event?.preventDefault()
 			event?.stopPropagation()
 
-			const res = mutate({
+			const res = $trip2g_admin_boostycredentials_button_delete_delete({
 				input: {
 					id: this.credentials_id()
 				}
