@@ -1,18 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation CreateEmailWaitListRequestMutation ($input: CreateEmailWaitListRequestInput!) {
-			createEmailWaitListRequest(input: $input) {
-				__typename
-				... on ErrorPayload {
-					message
-				}
-				... on CreateEmailWaitListRequestPayload {
-					success
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_user_paywall_conversationprompt_email extends $.$trip2g_user_paywall_conversationprompt_email {
 		@$mol_mem
 		done( next?: boolean ) {
@@ -28,7 +14,7 @@ namespace $.$$ {
 		}
 
 		override request() {
-			const res = mutate({
+			const res = $trip2g_user_paywall_conversationprompt_email_create({
 				input: {
 					email: this.email(),
 					pathId: $trip2g_user_paywall_page.id(),

@@ -1,18 +1,4 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query SiteSearch($input: SearchInput!) {
-			search(input: $input) {
-				nodes {
-					highlightedTitle
-					highlightedContent
-					id: url
-					score
-					matchOrigin
-				}
-			}
-		}
-	`)
-
 	const OPEN = 'open'
 
 	export class $trip2g_user_search extends $.$trip2g_user_search {
@@ -68,7 +54,7 @@ namespace $.$$ {
 			// debounce
 			this.$.$mol_wait_timeout( 1000 )
 
-			const res = request({
+			const res = $trip2g_user_search_search({
 				input: { query },
 			})
 

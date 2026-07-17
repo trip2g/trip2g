@@ -1,0 +1,14 @@
+query ($input: NoteInput!) {
+	viewer {
+		role
+	}
+	note(input: $input) {
+		versionId
+		taskList {
+			index
+			line
+			checked
+			text
+		}
+	}
+}

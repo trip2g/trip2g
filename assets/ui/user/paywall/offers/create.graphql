@@ -1,0 +1,11 @@
+mutation ($input: CreatePaymentLinkInput!) {
+	data: createPaymentLink(input: $input) {
+		__typename
+		... on CreatePaymentLinkPayload {
+			redirectUrl
+		}
+		... on ErrorPayload {
+			message
+		}
+	}
+}

@@ -1,0 +1,22 @@
+mutation ($input: UpdateNotesInput!) {
+	updateNotes(input: $input) {
+		__typename
+		... on UpdateNotesSuccessPayload {
+			updated {
+				path
+				versionId
+			}
+		}
+		... on UpdateNotesHashMismatchPayload {
+			path
+			actualHash
+		}
+		... on UpdateNotesPatchNotFoundPayload {
+			path
+			find
+		}
+		... on ErrorPayload {
+			message
+		}
+	}
+}

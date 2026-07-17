@@ -1,26 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query UserSubscriptions {
-			viewer {
-				user {
-					subgraphAccesses {
-						id
-						createdAt
-						expiresAt
-						subgraph {
-							name
-							homePath
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_user_space_subscriptions extends $.$trip2g_user_space_subscriptions {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request()
+			const res = $trip2g_user_space_subscriptions_list()
 
 			if (!res.viewer.user) {
 				throw new Error('User not found')

@@ -1,43 +1,6 @@
 namespace $.$$ {
-	const request_query = $trip2g_graphql_request(/* GraphQL */ `
-		query PaywallQuery($filter: ViewerOffersFilter!) {
-			viewer {
-				offers(filter: $filter) {
-					__typename
-					... on ActiveOffers {
-						nodes {
-							id
-							priceUSD
-							subgraphs {
-								name
-							}
-						}
-					}
-					... on SubgraphWaitList {
-						tgBotUrl
-						emailAllowed
-					}
-				}
-			}
-		}
-	`)
-
-	const payment_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation CreatePaymentLink($input: CreatePaymentLinkInput!) {
-			data: createPaymentLink(input: $input) {
-				__typename
-				... on CreatePaymentLinkPayload {
-					redirectUrl
-				}
-				... on ErrorPayload {
-					message
-				}
-			}
-		}
-	`)
-
 	const request = ( page_id: number ) => {
-		const res = request_query({
+		const res = $trip2g_user_paywall_offers_data({
 			filter: {
 				pageId: page_id,
 			}
@@ -90,7 +53,7 @@ namespace $.$$ {
 		buy( id?: any ) {
 			id = id || this.$.$mol_state_arg.value( 'offer' )
 
-			const res = payment_mutate({
+			const res = $trip2g_user_paywall_offers_create({
 				input: {
 					email: this.current_email() || null,
 					offerId: id,

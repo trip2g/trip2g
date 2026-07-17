@@ -1,0 +1,15 @@
+query {
+	viewer {
+		user {
+			subgraphAccesses {
+				id
+				createdAt
+				expiresAt
+				subgraph {
+					name
+					homePath
+				}
+			}
+		}
+	}
+}

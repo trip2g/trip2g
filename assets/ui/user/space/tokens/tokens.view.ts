@@ -1,63 +1,8 @@
 namespace $.$$ {
-	const listRequest = $trip2g_graphql_request(/* GraphQL */ `
-		query UserTokensList {
-			viewer {
-				user {
-					tokens {
-						id
-						name
-						tokenPrefix
-						scope
-						createdAt
-						lastUsedAt
-						expiresAt
-					}
-				}
-			}
-		}
-	`)
-
-	const createMutation = $trip2g_graphql_request(/* GraphQL */ `
-		mutation CreateUserToken($input: CreateUserTokenInput!) {
-			createUserToken(input: $input) {
-				... on CreateUserTokenPayload {
-					plaintextToken
-					token {
-						id
-						name
-						tokenPrefix
-						scope
-						createdAt
-						lastUsedAt
-						expiresAt
-					}
-				}
-				... on ErrorPayload {
-					message
-				}
-			}
-		}
-	`)
-
-	const revokeMutation = $trip2g_graphql_request(/* GraphQL */ `
-		mutation RevokeUserToken($input: RevokeUserTokenInput!) {
-			revokeUserToken(input: $input) {
-				... on RevokeUserTokenPayload {
-					token {
-						id
-					}
-				}
-				... on ErrorPayload {
-					message
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_user_space_tokens extends $.$trip2g_user_space_tokens {
 		@$mol_mem
 		data(reset?: null) {
-			const res = listRequest()
+			const res = $trip2g_user_space_tokens_list()
 			if (!res.viewer.user) {
 				return $trip2g_graphql_make_map([])
 			}
@@ -111,7 +56,7 @@ namespace $.$$ {
 		}
 
 		override revoke(id: any) {
-			revokeMutation({ input: { id: this.row(id).id } })
+			$trip2g_user_space_tokens_revoke({ input: { id: this.row(id).id } })
 			this.data(null)
 		}
 
@@ -151,7 +96,7 @@ namespace $.$$ {
 			else if (expiry === '1y') expiresInDays = 365
 			else expiresInDays = null
 
-			const res = createMutation({
+			const res = $trip2g_user_space_tokens_create({
 				input: {
 					name,
 					expiresInDays,
