@@ -1,39 +1,4 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminShowRedirect($id: Int64!) {
-			admin {
-				redirect(id: $id) {
-					id
-					createdAt
-					pattern
-					ignoreCase
-					isRegex
-					target
-					createdBy {
-						id
-						email
-					}
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminDeleteRedirectMutation($input: DeleteRedirectInput!) {
-			admin {
-				payload: deleteRedirect(input: $input) {
-					__typename
-					... on DeleteRedirectPayload {
-						id
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_redirect_show extends $.$trip2g_admin_redirect_show {
 		action() {
 			return this.$.$mol_state_arg.value('action') || 'view';
@@ -41,7 +6,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data(reset?: null) {
-			const res = request({ id: this.redirect_id() })
+			const res = $trip2g_admin_redirect_show_data({ id: this.redirect_id() })
 
 			if (!res.admin.redirect) {
 				throw new Error('Redirect not found')
@@ -80,7 +45,7 @@ namespace $.$$ {
 		}
 
 		delete() {
-			const res = mutate({
+			const res = $trip2g_admin_redirect_show_delete({
 				input: {
 					id: this.redirect_id()
 				},

@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminCreateNotFoundIgnoredPatternMutation($input: CreateNotFoundIgnoredPatternInput!) {
-			admin {
-				payload: createNotFoundIgnoredPattern(input: $input) {
-					__typename
-					... on CreateNotFoundIgnoredPatternPayload {
-						notFoundIgnoredPattern {
-							id
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_notfoundpattern_create extends $.$trip2g_admin_notfoundpattern_create {
 		override body() {
 			if( this.pattern_id_string() !== '' ) {
@@ -36,7 +18,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_notfoundpattern_create_create({
 				input: {
 					pattern: this.pattern()
 				},

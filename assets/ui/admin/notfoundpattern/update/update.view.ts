@@ -1,46 +1,10 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminShowNotFoundIgnoredPattern {
-			admin {
-				allNotFoundIgnoredPatterns {
-					nodes {
-						id
-						pattern
-						createdAt
-						createdBy {
-							id
-							email
-						}
-					}
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminUpdateNotFoundIgnoredPatternMutation($input: UpdateNotFoundIgnoredPatternInput!) {
-			admin {
-				data: updateNotFoundIgnoredPattern(input: $input) {
-					__typename
-					... on UpdateNotFoundIgnoredPatternPayload {
-						notFoundIgnoredPattern {
-							id
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_notfoundpattern_update extends $.$trip2g_admin_notfoundpattern_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request()
+			const res = $trip2g_admin_notfoundpattern_update_data()
 
-			const pattern = res.admin.allNotFoundIgnoredPatterns.nodes.find((n: any) => n.id === this.pattern_id())
+			const pattern = res.admin.allNotFoundIgnoredPatterns.nodes.find(n => n.id === this.pattern_id())
 			if (!pattern) {
 				throw new Error('Ignored Pattern not found')
 			}
@@ -63,7 +27,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_notfoundpattern_update_save({
 				input: {
 					id: this.pattern_id(),
 					pattern: this.pattern()
