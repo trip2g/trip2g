@@ -1,24 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminAuditLogs($filter: AdminAuditLogsFilterInput!) {
-			admin {
-				auditLogs(filter: $filter) {
-					nodes {
-						id
-						createdAt
-						level
-						message
-						params
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_auditlog_catalog extends $.$trip2g_admin_auditlog_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request({
+			const res = $trip2g_admin_auditlog_catalog_list({
 				filter: {},
 			})
 

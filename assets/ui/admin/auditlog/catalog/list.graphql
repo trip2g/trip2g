@@ -1,0 +1,13 @@
+query ($filter: AdminAuditLogsFilterInput!) {
+	admin {
+		auditLogs(filter: $filter) {
+			nodes {
+				id
+				createdAt
+				level
+				message
+				params
+			}
+		}
+	}
+}

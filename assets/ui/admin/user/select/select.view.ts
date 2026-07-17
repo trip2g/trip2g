@@ -1,21 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminSelectUser {
-			admin {
-				allUsers {
-					nodes {
-						id
-						email
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_user_select extends $.$trip2g_admin_user_select {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request()
+			const res = $trip2g_admin_user_select_list()
 
 			return res.admin.allUsers.nodes
 		}

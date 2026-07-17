@@ -1,0 +1,13 @@
+query {
+	admin {
+		allAdmins {
+			nodes {
+				id
+				grantedAt
+				user {
+					email
+				}
+			}
+		}
+	}
+}

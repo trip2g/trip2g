@@ -1,30 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminListUserBans {
-			admin {
-				allUserUserBans {
-					nodes {
-						id: userId
-						user {
-							__typename
-							email
-						}
-						bannedBy {
-							user {
-								email
-							}
-						}
-						createdAt
-						reason
-					}
-				}
-			}
-		}
-	`)
 	export class $trip2g_admin_user_bans extends $.$trip2g_admin_user_bans {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_user_bans_list()
 
 			return $trip2g_graphql_make_map( res.admin.allUserUserBans.nodes )
 		}

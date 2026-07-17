@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminCreateAdmin($input: CreateAdminInput!) {
-			admin {
-				data: createAdmin(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreateAdminPayload {
-						admin {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_admin_create extends $.$trip2g_admin_admin_create {
 		override user_id(): number {
 			const id = this.$.$mol_state_arg.value('user_id')
@@ -33,7 +15,7 @@ namespace $.$$ {
 				throw new Error('User ID is required')
 			}
 
-			const res = mutate({
+			const res = $trip2g_admin_admin_create_create({
 				input: {
 					userId: userId,
 				},

@@ -1,0 +1,12 @@
+query {
+	admin {
+		allUsers {
+			nodes {
+				id
+				email
+				createdAt
+				ban { reason }
+			}
+		}
+	}
+}

@@ -1,0 +1,16 @@
+mutation ($input: UpdateUserInput!) {
+	admin {
+		updateUser(input: $input) {
+			__typename
+			... on UpdateUserPayload {
+				user {
+					id
+					email
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
