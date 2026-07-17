@@ -12,6 +12,10 @@ namespace $.$$ {
 					nodes {
 						id
 						subgraphNames
+						meta {
+							key
+							raw
+						}
 						title
 						pathId
 						free
@@ -49,7 +53,7 @@ namespace $.$$ {
 
 	type graph_layout_node = {
 		id: string
-		subgraphNames: readonly string[]
+		groups: readonly string[]
 		free: boolean
 		saved: { x: number, y: number } | null
 	}
@@ -61,7 +65,7 @@ namespace $.$$ {
 
 	// Deterministic Fruchterman-Reingold force layout:
 	// - repulsion between all node pairs, spring attraction along edges
-	// - attraction to subgraph centroids (visible clusters)
+	// - attraction to group centroids (visible clusters)
 	// - optional radial pull of public (free) notes to an outer ring
 	// Nodes with saved positions are kept fixed when pin_saved is set.
 	function graph_layout_positions(
@@ -125,14 +129,14 @@ namespace $.$$ {
 
 		const clusters = new Map<string, number[]>()
 		nodes.forEach( ( node, i ) => {
-			for( const name of node.subgraphNames ) {
+			for( const name of node.groups ) {
 				let members = clusters.get( name )
 				if( !members ) clusters.set( name, members = [] )
 				members.push( i )
 			}
 		} )
 
-		const K_CLUSTER = L * 3 // subgraph centroid springs, tighter than global scale
+		const K_CLUSTER = L * 3 // group centroid springs, tighter than global scale
 		const K_GRAVITY = L * 12 // weak pull to center, keeps components together
 		const R_PUBLIC = scale * 0.6 // target ring radius for public notes
 
@@ -182,7 +186,7 @@ namespace $.$$ {
 				dy[ b ] += fy
 			}
 
-			// attraction to subgraph centroids: clusters emerge
+			// attraction to group centroids: clusters emerge
 			for( const members of clusters.values() ) {
 				if( members.length < 2 ) continue
 				let mx = 0, my = 0
@@ -290,12 +294,23 @@ namespace $.$$ {
 			return { data, subgraphs }
 		}
 
+		// Cluster groups of a node for the selected frontmatter field.
+		// "subgraph" (the default) keeps the multi-value subgraphNames behavior;
+		// any other field groups by its stringified frontmatter value.
+		node_groups( item: { subgraphNames?: readonly string[] | null, meta?: readonly { key: string, raw: string }[] | null } ): readonly string[] {
+			const field = this.group_by().trim()
+			if( !field || field === 'subgraph' ) return item.subgraphNames ?? []
+
+			const value = item.meta?.find( entry => entry.key === field )?.raw.trim() ?? ''
+			return value ? [ value ] : []
+		}
+
 		layout_input( use_saved: boolean ) {
 			const { data } = this.graph_data()
 
 			const nodes: graph_layout_node[] = data.map( item => ( {
 				id: item.id,
-				subgraphNames: item.subgraphNames ?? [],
+				groups: this.node_groups( item ),
 				free: Boolean( item.free ),
 				saved: use_saved && item.graphPosition
 					? { x: item.graphPosition.x, y: item.graphPosition.y }
