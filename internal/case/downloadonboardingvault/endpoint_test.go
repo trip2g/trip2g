@@ -40,6 +40,18 @@ func zipRoots(t *testing.T, zipData []byte) map[string]bool {
 	return roots
 }
 
+// A build without the vault archive reports 404 instead of serving junk.
+func TestEndpoint_MissingVaultReturns404(t *testing.T) {
+	env := &mockEnv{publicURL: "https://example.com", vaultZip: []byte{}}
+	req := adminRequest(env, "/_system/onboarding-vault?name=secondbrain")
+
+	_, err := (&Endpoint{}).Handle(req)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusNotFound, req.Req.Response.StatusCode())
+	require.Empty(t, req.Req.Response.Header.Peek("Content-Disposition"))
+}
+
 func TestEndpoint_NameSetsFilenameAndRoot(t *testing.T) {
 	env := &mockEnv{publicURL: "https://example.com"}
 	req := adminRequest(env, "/_system/onboarding-vault?enable_admin_graphql&name=secondbrain")

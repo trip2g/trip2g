@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"trip2g/internal/appreq"
-	onboardingvault "trip2g/onboarding-vault"
 
 	"github.com/valyala/fasthttp"
 )
@@ -16,7 +15,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	env := req.Env.(Env)
 	ctx := req.Req
 
-	if len(onboardingvault.ZipData) == 0 {
+	if len(env.OnboardingVaultZip()) == 0 {
 		ctx.SetStatusCode(http.StatusNotFound)
 		return nil, nil
 	}

@@ -14,8 +14,6 @@ import (
 	"regexp"
 	"strings"
 
-	onboardingvault "trip2g/onboarding-vault"
-
 	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
@@ -28,6 +26,9 @@ type Env interface {
 	SetApiKeyMcpAdminTools(ctx context.Context, arg db.SetApiKeyMcpAdminToolsParams) error
 	LatestNoteViews() *model.NoteViews
 	PublicURL() string
+	// OnboardingVaultZip returns the vault template archive, empty when the
+	// vault was not built into this binary.
+	OnboardingVaultZip() []byte
 }
 
 const oldPrefix = "onboarding-vault/"
@@ -226,7 +227,7 @@ func Resolve(ctx context.Context, env Env, userID int, enableAdminGraphQL bool, 
 	newPrefix := vaultName + "/"
 
 	// Read embedded ZIP and modify files, replacing {{publicUrl}} placeholder.
-	modifiedZip, err := modifyZipFiles(onboardingvault.ZipData, replacements, publicURL, newPrefix)
+	modifiedZip, err := modifyZipFiles(env.OnboardingVaultZip(), replacements, publicURL, newPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify zip: %w", err)
 	}
