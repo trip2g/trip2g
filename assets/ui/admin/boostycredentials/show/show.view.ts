@@ -1,41 +1,6 @@
 namespace $.$$ {
-	const request_query = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminBoostyCredentialsById($id: Int64!) {
-			admin {
-				boostyCredentials(id: $id) {
-					createdAt
-					deviceId
-					blogName
-					state
-
-					createdBy {
-						email
-					}
-
-					tiers {
-						nodes {
-							id
-							name
-
-							subgraphs {
-								id
-							}
-						}
-					}
-					
-					members {
-						nodes {
-							email
-							status
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	const request = ( id: number ) => {
-		const res = request_query({ id })
+		const res = $trip2g_admin_boostycredentials_show_show({ id })
 
 		if( !res.admin.boostyCredentials ) {
 			throw new Error( `Boosty credentials with ID ${ id } not found` )

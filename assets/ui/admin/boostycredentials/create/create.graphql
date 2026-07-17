@@ -1,0 +1,15 @@
+mutation ($input: CreateBoostyCredentialsInput!) {
+	admin {
+		payload: createBoostyCredentials(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateBoostyCredentialsPayload {
+				boostyCredentials {
+					id
+				}
+			}
+		}
+	}
+}

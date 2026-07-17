@@ -1,0 +1,16 @@
+mutation ($input: CreateApiKeyInput!) {
+	admin {
+		data: createApiKey(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateApiKeyPayload {
+				value
+				apiKey {
+					id
+				}
+			}
+		}
+	}
+}

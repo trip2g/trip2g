@@ -1,32 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminListApiKeys {
-			admin {
-				allApiKeys {
-					nodes {
-						id
-						createdAt
-						description
-						createdBy {
-							id
-							email
-						}
-						disabledAt
-						disabledBy {
-							id
-							email
-						}
-						enableMcpAdminTools
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_apikey_catalog extends $.$trip2g_admin_apikey_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_apikey_catalog_list()
 			return $trip2g_graphql_make_map( res.admin.allApiKeys.nodes )
 		}
 

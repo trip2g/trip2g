@@ -1,0 +1,17 @@
+query ($filter: AdminBoostyCredentialsFilterInput) {
+	admin {
+		allBoostyCredentials(filter: $filter) {
+			nodes {
+				id
+				state
+				deviceId
+				blogName
+				createdAt
+				createdBy {
+					id
+					email
+				}
+			}
+		}
+	}
+}

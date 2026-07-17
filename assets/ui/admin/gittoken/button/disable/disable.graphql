@@ -1,0 +1,15 @@
+mutation ($input: DisableGitTokenInput!) {
+	admin {
+		data: disableGitToken(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on DisableGitTokenPayload {
+				gitToken {
+					id
+				}
+			}
+		}
+	}
+}

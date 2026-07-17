@@ -1,0 +1,15 @@
+mutation ($input: SetApiKeyMcpAdminToolsInput!) {
+	admin {
+		data: setApiKeyMcpAdminTools(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on SetApiKeyMcpAdminToolsPayload {
+				apiKey {
+					id
+				}
+			}
+		}
+	}
+}

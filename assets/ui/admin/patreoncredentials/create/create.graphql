@@ -1,0 +1,15 @@
+mutation ($input: CreatePatreonCredentialsInput!) {
+	admin {
+		payload: createPatreonCredentials(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreatePatreonCredentialsPayload {
+				patreonCredentials {
+					id
+				}
+			}
+		}
+	}
+}

@@ -1,43 +1,14 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminPatreoncredentialsShowSubgraphs {
-			admin {
-				allSubgraphs {
-					nodes {
-						id
-						name
-					}
-				}
-			}
-		}
-	`)
-
-	const mutate_save = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminPatreoncredentialsShowSubgraphsSave($input: SetPatreonTierSubgraphsInput!) {
-			admin {
-				data: setPatreonTierSubgraphs(input: $input) {
-					__typename
-					... on SetPatreonTierSubgraphsPayload {
-						success
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_patreoncredentials_show_subgraphs extends $.$trip2g_admin_patreoncredentials_show_subgraphs {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_patreoncredentials_show_subgraphs_list()
 
 			return res.admin.allSubgraphs.nodes
 		}
 
 		save( subgraph_ids: number[] ) {
-			const res = mutate_save({
+			const res = $trip2g_admin_patreoncredentials_show_subgraphs_save({
 				input: {
 					tierId: this.tier_id(),
 					subgraphIds: subgraph_ids,

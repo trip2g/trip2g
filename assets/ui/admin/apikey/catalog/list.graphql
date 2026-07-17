@@ -1,0 +1,21 @@
+query {
+	admin {
+		allApiKeys {
+			nodes {
+				id
+				createdAt
+				description
+				createdBy {
+					id
+					email
+				}
+				disabledAt
+				disabledBy {
+					id
+					email
+				}
+				enableMcpAdminTools
+			}
+		}
+	}
+}

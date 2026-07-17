@@ -1,26 +1,7 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation RefreshBoostyData($input: RefreshBoostyDataInput!) {
-			admin {
-				payload: refreshBoostyData(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on RefreshBoostyDataPayload {
-						success
-						credentials {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_boostycredentials_button_refresh extends $.$trip2g_admin_boostycredentials_button_refresh {
 		refresh( event?: Event ) {
-			const res = mutate({
+			const res = $trip2g_admin_boostycredentials_button_refresh_refresh({
 				input: {
 					credentialsId: this.credentials_id()
 				}

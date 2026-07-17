@@ -1,22 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminApiKeyShowQuery($filter: ApiKeyLogsFilterInput!) {
-			admin {
-				apiKeyLogs(filter: $filter) {
-					nodes {
-						createdAt
-						actionName
-						ip
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_apikey_show extends $.$trip2g_admin_apikey_show {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request({
+			const res = $trip2g_admin_apikey_show_show({
 				filter: {
 					apiKeyId: this.apikey_id(),
 				},

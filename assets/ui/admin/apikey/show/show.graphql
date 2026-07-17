@@ -1,0 +1,11 @@
+query ($filter: ApiKeyLogsFilterInput!) {
+	admin {
+		apiKeyLogs(filter: $filter) {
+			nodes {
+				createdAt
+				actionName
+				ip
+			}
+		}
+	}
+}
