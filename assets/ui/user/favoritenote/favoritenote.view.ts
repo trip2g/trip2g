@@ -1,32 +1,4 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(/* GraphQL */ `
-		query FavoriteNotes {
-			viewer {
-				user {
-					favoriteNotes {
-						pathId
-					}
-				}
-			}
-		}
-	`)
-
-	const toggle_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation ToggleFavoriteNote($input: ToggleFavoriteNoteInput!) {
-			payload: toggleFavoriteNote(input: $input) {
-				__typename
-				... on ToggleFavoriteNotePayload {
-					favoriteNotes {
-						pathId
-					}
-				}
-				... on ErrorPayload {
-					message
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_user_favoritenote extends $.$trip2g_user_favoritenote {
 		@$mol_mem
 		path_id() {
@@ -53,7 +25,7 @@ namespace $.$$ {
 				return next
 			}
 
-			const res = data_request()
+			const res = $trip2g_user_favoritenote_notes()
 
 			const notes = res.viewer.user?.favoriteNotes || []
 			return notes.map(note => note.pathId)
@@ -72,7 +44,7 @@ namespace $.$$ {
 		}
 
 		override click() {
-			const res = toggle_mutate({
+			const res = $trip2g_user_favoritenote_toggle({
 				input: {
 					pathId: this.path_id(),
 					value: !this.active(),

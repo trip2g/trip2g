@@ -1,0 +1,15 @@
+mutation ($input: UpdateRedirectInput!) {
+	admin {
+		payload: updateRedirect(input: $input) {
+			__typename
+			... on UpdateRedirectPayload {
+				redirect {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

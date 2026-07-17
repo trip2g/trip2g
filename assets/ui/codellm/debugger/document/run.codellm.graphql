@@ -1,0 +1,8 @@
+mutation ($input: RunBlocksInput!) {
+	runBlocks(input: $input) {
+		__typename
+		... on RunBlocksPayload { output results { index exitCode durationMs maxRssBytes stdout stderr } }
+		... on BlockErrorPayload { index message }
+		... on ErrorPayload { message }
+	}
+}

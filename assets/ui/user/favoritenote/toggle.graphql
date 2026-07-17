@@ -1,0 +1,13 @@
+mutation ($input: ToggleFavoriteNoteInput!) {
+	payload: toggleFavoriteNote(input: $input) {
+		__typename
+		... on ToggleFavoriteNotePayload {
+			favoriteNotes {
+				pathId
+			}
+		}
+		... on ErrorPayload {
+			message
+		}
+	}
+}

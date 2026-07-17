@@ -1,0 +1,16 @@
+query ($id: Int64!) {
+	admin {
+		redirect(id: $id) {
+			id
+			createdAt
+			pattern
+			ignoreCase
+			isRegex
+			target
+			createdBy {
+				id
+				email
+			}
+		}
+	}
+}

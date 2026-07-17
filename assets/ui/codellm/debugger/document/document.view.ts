@@ -8,45 +8,6 @@ namespace $.$$ {
 		}
 	`)
 
-	const parse_query = $trip2g_codellm_graphql_raw_request( `
-		query ParseQueryDocumentQuery($input: ParseMarkdownInput!) {
-			parseMarkdown(input: $input) {
-				... on ErrorPayload {
-					message
-				}
-				... on ParseMarkdownPayload {
-					blocks {
-						__typename
-
-						... on MarkdownCodeBlock {
-							index
-							language
-							content
-						}
-
-						... on MarkdownProseBlock {
-							index
-							content
-							index
-							html
-						}
-					}
-				}
-			}
-		}
-	`)
-
-	const run_query = $trip2g_codellm_graphql_raw_request( `
-		mutation RunBlocks($input: RunBlocksInput!) {
-			runBlocks(input: $input) {
-				__typename
-				... on RunBlocksPayload { output results { index exitCode durationMs maxRssBytes stdout stderr } }
-				... on BlockErrorPayload { index message }
-				... on ErrorPayload { message }
-			}
-		}
-	`)
-
 	export class $trip2g_codellm_debugger_document extends $.$trip2g_codellm_debugger_document {
 		@$mol_mem
 		note_content() {
@@ -61,13 +22,15 @@ namespace $.$$ {
 
 		@$mol_mem
 		parse_result() {
-			const data = parse_query( {
+			const data = $trip2g_codellm_debugger_document_parse( {
 				input: {
 					content: this.note_content(),
 				}
 			} )
 
-			return data.parseMarkdown
+			const payload = data.parseMarkdown
+			if( !( 'blocks' in payload ) ) throw new Error( payload.message )
+			return payload
 		}
 
 		override step_pages(): readonly ( $mol_view )[] {
@@ -87,14 +50,12 @@ namespace $.$$ {
 				if( block.__typename === 'MarkdownCodeBlock' && block.language ) input.language = block.language
 				return input
 			} )
-			const result = run_query( {
+			const result = $trip2g_codellm_debugger_document_run( {
 				input: {
 					input: { changedFiles: [], attachedNotes: [], depth: 1 },
 					maxSteps: idx+1,
 					blocks,
 				}
-			}, {
-				resetCache: true,
 			} )
 
 			const payload = result.runBlocks

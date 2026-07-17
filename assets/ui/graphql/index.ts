@@ -59,6 +59,21 @@ namespace $ {
 
 	const reset_marker = new reset_query_marker()
 
+	// The single invalidation marker is shared by BOTH request paths: the legacy
+	// $trip2g_graphql_raw_request below and the codegen-driven $trip2g_gql_request
+	// (assets/ui/gql/). A mutation through either path must refetch queries made
+	// through the other, so there is exactly one marker.
+
+	/** Subscribe the calling memo to the invalidation marker (a query read). */
+	export function $trip2g_graphql_reset_marker_watch() {
+		reset_marker.query_marker()
+	}
+
+	/** Bump the invalidation marker: every subscribed query refetches (a mutation happened). */
+	export function $trip2g_graphql_reset_marker_bump() {
+		reset_marker.query_marker(reset_marker.query_marker() + 1)
+	}
+
 	export function $trip2g_graphql_raw_request(query: string, request_path?: string) {
 		// replace @exportType directives
 		query = query.replace(/@exportType\s*(\([^)]*\))?\s*/g, '')
@@ -79,9 +94,9 @@ namespace $ {
 
 			if (opts?.resetCache !== false) {
 				if (isMutation) {
-					reset_marker.query_marker(reset_marker.query_marker() + 1)
+					$trip2g_graphql_reset_marker_bump()
 				} else {
-					reset_marker.query_marker()
+					$trip2g_graphql_reset_marker_watch()
 				}
 			}
 
