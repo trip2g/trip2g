@@ -1,29 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminOffers {
-			admin {
-				allOffers {
-					nodes {
-						id
-						publicId
-						createdAt
-						lifetime
-						priceUSD
-						startsAt
-						endsAt
-						subgraphs {
-							name
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_offer_catalog extends $.$trip2g_admin_offer_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_offer_catalog_list()
 
 			return $trip2g_graphql_make_map( res.admin.allOffers.nodes )
 		}

@@ -1,0 +1,14 @@
+query {
+	admin {
+		storageUsage {
+			db {
+				current(format: MB)
+				limit(format: MB)
+			}
+			assets {
+				current(format: MB)
+				limit(format: MB)
+			}
+		}
+	}
+}

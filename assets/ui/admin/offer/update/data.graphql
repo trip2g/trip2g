@@ -1,0 +1,18 @@
+query ($id: Int64!) {
+	admin {
+		offer(id: $id) {
+			id
+			publicId
+			createdAt
+			lifetime
+			priceUSD
+			startsAt
+			endsAt
+			subgraphIds
+			subgraphs {
+				id
+				name
+			}
+		}
+	}
+}
