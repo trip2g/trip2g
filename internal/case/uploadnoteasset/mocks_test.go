@@ -47,6 +47,9 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //			NoteVersionAssetPathsFunc: func(ctx context.Context, id int64) (map[string]struct{}, error) {
 //				panic("mock out the NoteVersionAssetPaths method")
 //			},
+//			NoteVersionByIDFunc: func(ctx context.Context, id int64) (db.NoteVersionByIDRow, error) {
+//				panic("mock out the NoteVersionByID method")
+//			},
 //			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 //				panic("mock out the PrepareLatestNotes method")
 //			},
@@ -86,6 +89,9 @@ type EnvMock struct {
 
 	// NoteVersionAssetPathsFunc mocks the NoteVersionAssetPaths method.
 	NoteVersionAssetPathsFunc func(ctx context.Context, id int64) (map[string]struct{}, error)
+
+	// NoteVersionByIDFunc mocks the NoteVersionByID method.
+	NoteVersionByIDFunc func(ctx context.Context, id int64) (db.NoteVersionByIDRow, error)
 
 	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
 	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
@@ -150,6 +156,13 @@ type EnvMock struct {
 			// ID is the id argument value.
 			ID int64
 		}
+		// NoteVersionByID holds details about calls to the NoteVersionByID method.
+		NoteVersionByID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 		// PrepareLatestNotes holds details about calls to the PrepareLatestNotes method.
 		PrepareLatestNotes []struct {
 			// Ctx is the ctx argument value.
@@ -182,6 +195,7 @@ type EnvMock struct {
 	lockNoteAssetByPathAndHash sync.RWMutex
 	lockNoteAssetExists        sync.RWMutex
 	lockNoteVersionAssetPaths  sync.RWMutex
+	lockNoteVersionByID        sync.RWMutex
 	lockPrepareLatestNotes     sync.RWMutex
 	lockPutAssetObject         sync.RWMutex
 	lockUpsertNoteVersionAsset sync.RWMutex
@@ -463,6 +477,42 @@ func (mock *EnvMock) NoteVersionAssetPathsCalls() []struct {
 	mock.lockNoteVersionAssetPaths.RLock()
 	calls = mock.calls.NoteVersionAssetPaths
 	mock.lockNoteVersionAssetPaths.RUnlock()
+	return calls
+}
+
+// NoteVersionByID calls NoteVersionByIDFunc.
+func (mock *EnvMock) NoteVersionByID(ctx context.Context, id int64) (db.NoteVersionByIDRow, error) {
+	if mock.NoteVersionByIDFunc == nil {
+		panic("EnvMock.NoteVersionByIDFunc: method is nil but Env.NoteVersionByID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockNoteVersionByID.Lock()
+	mock.calls.NoteVersionByID = append(mock.calls.NoteVersionByID, callInfo)
+	mock.lockNoteVersionByID.Unlock()
+	return mock.NoteVersionByIDFunc(ctx, id)
+}
+
+// NoteVersionByIDCalls gets all the calls that were made to NoteVersionByID.
+// Check the length with:
+//
+//	len(mockedEnv.NoteVersionByIDCalls())
+func (mock *EnvMock) NoteVersionByIDCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockNoteVersionByID.RLock()
+	calls = mock.calls.NoteVersionByID
+	mock.lockNoteVersionByID.RUnlock()
 	return calls
 }
 

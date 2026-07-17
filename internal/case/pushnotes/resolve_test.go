@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -517,4 +518,53 @@ func TestResolve_AssetURLAbsolutization(t *testing.T) {
 		require.Len(t, payload.Updated, 1)
 		require.Equal(t, "https://cdn.other.com/image.png", payload.Updated[0].Assets[0].URL)
 	})
+}
+
+// TestResolve_ScopedToken pins the scope guard: pushNotes is the infra/sync
+// lane (full-vault push) with no per-path scoping, so a scoped shortapitoken
+// must be denied outright; unscoped full API keys keep working.
+func TestResolve_ScopedToken(t *testing.T) {
+	mockLogger := &logger.TestLogger{}
+
+	tests := []struct {
+		name       string
+		ctx        context.Context
+		wantDenied bool
+	}{
+		{
+			name: "scoped token denied",
+			ctx: appreq.NewContext(context.Background(), &appreq.Request{
+				WebhookScoped:        true,
+				WebhookDeliveryKind:  "change",
+				WebhookWritePatterns: []string{"notes/**"},
+			}),
+			wantDenied: true,
+		},
+		{
+			name:       "unscoped key allowed",
+			ctx:        context.Background(),
+			wantDenied: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := newEnvMock(mockLogger)
+			env.LatestNoteViewsFunc = appmodel.NewNoteViews
+			env.LayoutsFunc = func() *appmodel.Layouts {
+				return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+			}
+
+			result, err := pushnotes.Resolve(tt.ctx, env, model.PushNotesInput{})
+			require.NoError(t, err)
+
+			if tt.wantDenied {
+				ep, ok := result.(*model.ErrorPayload)
+				require.True(t, ok, "expected *ErrorPayload for scoped token, got %T", result)
+				require.Contains(t, ep.Message, "scoped token")
+				return
+			}
+			require.IsType(t, &model.PushNotesPayload{}, result)
+		})
+	}
 }

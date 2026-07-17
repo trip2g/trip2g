@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
+	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -179,6 +180,51 @@ func TestResolve(t *testing.T) {
 				require.True(t, ok, "env should be a mock for callback tests")
 				tt.afterCallback(t, mockEnv)
 			}
+		})
+	}
+}
+
+// TestResolve_ScopedToken pins the scope guard: hideNotes is a bulk-hide infra
+// mutation that never consults write_patterns, so a scoped shortapitoken must
+// be denied outright; unscoped full API keys keep working.
+func TestResolve_ScopedToken(t *testing.T) {
+	tests := []struct {
+		name       string
+		ctx        context.Context
+		wantDenied bool
+	}{
+		{
+			name: "scoped token denied",
+			ctx: appreq.NewContext(context.Background(), &appreq.Request{
+				WebhookScoped:        true,
+				WebhookDeliveryKind:  "change",
+				WebhookWritePatterns: []string{"notes/**"},
+			}),
+			wantDenied: true,
+		},
+		{
+			name:       "unscoped key allowed",
+			ctx:        context.Background(),
+			wantDenied: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := newTestEnv(func(_ context.Context, _ db.HideNotePathParams) error { return nil })
+
+			result, err := Resolve(tt.ctx, env, model.HideNotesInput{Paths: []string{"note.md"}})
+			require.NoError(t, err)
+
+			if tt.wantDenied {
+				ep, ok := result.(*model.ErrorPayload)
+				require.True(t, ok, "expected *ErrorPayload for scoped token, got %T", result)
+				require.Contains(t, ep.Message, "scoped token")
+				require.Empty(t, env.HideNotePathCalls(), "HideNotePath must not be reached for scoped tokens")
+				return
+			}
+			require.IsType(t, &model.HideNotesPayload{}, result)
+			require.Len(t, env.HideNotePathCalls(), 1)
 		})
 	}
 }

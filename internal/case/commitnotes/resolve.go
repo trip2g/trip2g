@@ -3,6 +3,7 @@ package commitnotes
 import (
 	"context"
 	"fmt"
+	"trip2g/internal/appreq"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 )
@@ -41,6 +42,12 @@ func buildUpdatedNotes(nvs *appmodel.NoteViews, pathIDs []int64, publicURL strin
 }
 
 func Resolve(ctx context.Context, env Env) (Payload, error) {
+	// commitNotes has no path input, so per-path scoping is undefined — scoped
+	// tokens are denied outright.
+	if err := appreq.RequireUnscoped(ctx); err != nil {
+		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // authorization denial returned as payload, not as error.
+	}
+
 	pathIDs, err := env.ListUncommittedPaths(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list uncommitted paths: %w", err)

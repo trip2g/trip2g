@@ -296,6 +296,19 @@ func Scoped(ctx context.Context) bool {
 	return req.WebhookScoped
 }
 
+// ErrScopedToken is returned by RequireUnscoped for scoped-token requests.
+var ErrScopedToken = errors.New("operation not available to scoped tokens; use updateNotes within the token's write scope")
+
+// RequireUnscoped fails closed for scoped-token requests on operations that
+// have no per-path write scoping (pushNotes, hideNotes, commitNotes): a
+// shortapitoken must not reach the full-vault infra/sync lane.
+func RequireUnscoped(ctx context.Context) error {
+	if Scoped(ctx) {
+		return ErrScopedToken
+	}
+	return nil
+}
+
 // WebhookWritePatterns returns the write-scope globs stamped on the request
 // by a shortapitoken delivery. Empty/nil means unscoped (no enforcement).
 func WebhookWritePatterns(ctx context.Context) []string {

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
@@ -31,6 +32,7 @@ type Env interface {
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
+	NoteVersionByID(ctx context.Context, id int64) (db.NoteVersionByIDRow, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
 }
@@ -424,6 +426,116 @@ func TestResolve(t *testing.T) {
 			if tt.validate != nil {
 				tt.validate(t, payload, env)
 			}
+		})
+	}
+}
+
+// TestResolve_ScopedToken pins write-scope enforcement for uploadNoteAsset:
+// a scoped shortapitoken may attach assets only to notes whose path matches
+// its write_patterns (same matcher as updateNotes); unscoped requests skip
+// the note-path lookup entirely.
+func TestResolve_ScopedToken(t *testing.T) {
+	testContent := []byte("asset bytes")
+	testHash := calcHash(testContent)
+
+	makeInput := func() model.UploadNoteAssetInput {
+		return model.UploadNoteAssetInput{
+			NoteID:       42,
+			Path:         "images/pic.png",
+			AbsolutePath: "/abs/images/pic.png",
+			Sha256Hash:   testHash,
+			File: graphql.Upload{
+				File:     bytes.NewReader(testContent),
+				Filename: "pic.png",
+				Size:     int64(len(testContent)),
+			},
+		}
+	}
+
+	// makeEnv returns mocks for the asset-reuse happy path (existing asset,
+	// object present, link upserted). notePath is what NoteVersionByID reports
+	// for version 42; leave NoteVersionByIDFunc nil to assert it is not called.
+	makeEnv := func(notePath string) *EnvMock {
+		env := &EnvMock{
+			LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
+			NoteVersionAssetPathsFunc: func(_ context.Context, _ int64) (map[string]struct{}, error) {
+				return map[string]struct{}{"images/pic.png": {}}, nil
+			},
+			NoteAssetByPathAndHashFunc: func(_ context.Context, _ db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
+				return db.NoteAsset{ID: 1}, nil
+			},
+			NoteAssetExistsFunc: func(_ context.Context, _ db.NoteAsset) (bool, error) { return true, nil },
+			UpsertNoteVersionAssetFunc: func(_ context.Context, _ db.UpsertNoteVersionAssetParams) error {
+				return nil
+			},
+			PrepareLatestNotesFunc: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+				return &appmodel.NoteViews{}, nil
+			},
+		}
+		if notePath != "" {
+			env.NoteVersionByIDFunc = func(_ context.Context, id int64) (db.NoteVersionByIDRow, error) {
+				require.Equal(t, int64(42), id)
+				return db.NoteVersionByIDRow{VersionID: id, Path: notePath}, nil
+			}
+		}
+		return env
+	}
+
+	scopedCtx := func(patterns []string) context.Context {
+		return appreq.NewContext(context.Background(), &appreq.Request{
+			WebhookScoped:        true,
+			WebhookDeliveryKind:  "change",
+			WebhookWritePatterns: patterns,
+		})
+	}
+
+	tests := []struct {
+		name       string
+		ctx        context.Context
+		notePath   string // "" = NoteVersionByID must not be called
+		wantDenied bool
+	}{
+		{
+			name:     "scoped token with matching pattern allowed",
+			ctx:      scopedCtx([]string{"notes/**"}),
+			notePath: "notes/todo.md",
+		},
+		{
+			name:       "scoped token with non-matching pattern denied",
+			ctx:        scopedCtx([]string{"notes/**"}),
+			notePath:   "secrets/private.md",
+			wantDenied: true,
+		},
+		{
+			name:       "scoped token with empty patterns denied",
+			ctx:        scopedCtx([]string{}),
+			notePath:   "notes/todo.md",
+			wantDenied: true,
+		},
+		{
+			name:     "unscoped request allowed without path lookup",
+			ctx:      context.Background(),
+			notePath: "", // NoteVersionByIDFunc stays nil — a call would panic
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := makeEnv(tt.notePath)
+
+			result, err := uploadnoteasset.Resolve(tt.ctx, env, makeInput())
+			require.NoError(t, err)
+
+			if tt.wantDenied {
+				ep, ok := result.(*model.ErrorPayload)
+				require.True(t, ok, "expected *ErrorPayload (write denied), got %T", result)
+				require.Contains(t, ep.Message, "write denied for path: "+tt.notePath)
+				require.Empty(t, env.UpsertNoteVersionAssetCalls(), "denied upload must not link the asset")
+				require.Empty(t, env.NoteVersionAssetPathsCalls(), "denied upload must not proceed to validation")
+				return
+			}
+			require.IsType(t, &model.UploadNoteAssetPayload{}, result)
+			require.Len(t, env.UpsertNoteVersionAssetCalls(), 1)
 		})
 	}
 }
