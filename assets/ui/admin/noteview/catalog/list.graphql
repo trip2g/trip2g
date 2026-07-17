@@ -1,0 +1,14 @@
+query {
+	admin {
+		allLatestNoteViews {
+			nodes {
+				id
+				path
+				title
+				free
+				permalink
+				pathId
+			}
+		}
+	}
+}

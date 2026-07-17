@@ -1,0 +1,29 @@
+query {
+	admin {
+		allSubgraphs {
+			nodes {
+				name
+				color
+			}
+		}
+		allLatestNoteViews {
+			nodes {
+				id
+				subgraphNames
+				title
+				pathId
+				free
+				isHomePage
+				graphPosition {
+					x
+					y
+				}
+				inLinks {
+					title
+					pathId
+					id
+				}
+			}
+		}
+	}
+}

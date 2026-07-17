@@ -1,0 +1,15 @@
+query {
+	admin {
+		allHtmlInjections {
+			nodes {
+				id
+				createdAt
+				activeFrom
+				activeTo
+				description
+				position
+				placement
+			}
+		}
+	}
+}

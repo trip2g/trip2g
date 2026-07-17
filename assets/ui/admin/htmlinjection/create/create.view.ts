@@ -1,24 +1,4 @@
 namespace $.$$ {
-	const submit_request = $trip2g_graphql_request(
-		`
-			mutation AdminCreateHtmlInjectionMutation($input: CreateHtmlInjectionInput!) {
-				admin {
-					data: createHtmlInjection(input: $input) {
-						__typename
-						... on CreateHtmlInjectionPayload {
-							htmlInjection {
-								id
-							}
-						}
-						... on ErrorPayload {
-							message
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_htmlinjection_create extends $.$trip2g_admin_htmlinjection_create {
 		override description_bid(): string {
 			// Description is optional
@@ -69,7 +49,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = submit_request({
+			const res = $trip2g_admin_htmlinjection_create_create({
 				input: {
 					description: this.description(),
 					placement: this.placement(),

@@ -1,0 +1,12 @@
+query ($id: Int64!) {
+	admin {
+		noteAsset(id: $id) {
+			id
+			absolutePath
+			fileName
+			size
+			createdAt
+			url
+		}
+	}
+}
