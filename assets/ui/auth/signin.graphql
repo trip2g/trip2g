@@ -1,0 +1,12 @@
+mutation ($input: SignInByEmailInput!) {
+	data: signInByEmail(input: $input) {
+		... on SignInPayload {
+			__typename
+			token
+		}
+		... on ErrorPayload {
+			__typename
+			message
+		}
+	}
+}
