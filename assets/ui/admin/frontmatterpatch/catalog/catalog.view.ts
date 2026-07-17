@@ -1,27 +1,8 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(
-		`
-			query AdminFrontmatterPatches {
-				admin {
-					allFrontmatterPatches {
-						nodes {
-							id
-							description
-							priority
-							enabled
-							includePatterns
-							excludePatterns
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_frontmatterpatch_catalog extends $.$trip2g_admin_frontmatterpatch_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = data_request()
+			const res = $trip2g_admin_frontmatterpatch_catalog_list()
 
 			return $trip2g_graphql_make_map( res.admin.allFrontmatterPatches.nodes )
 		}

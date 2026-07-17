@@ -1,0 +1,13 @@
+query {
+	admin {
+		allCronJobs {
+			nodes {
+				id
+				name
+				enabled
+				expression
+				lastExecAt
+			}
+		}
+	}
+}

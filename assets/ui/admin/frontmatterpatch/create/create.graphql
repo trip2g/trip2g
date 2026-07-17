@@ -1,0 +1,15 @@
+mutation ($input: CreateFrontmatterPatchInput!) {
+	admin {
+		payload: createFrontmatterPatch(input: $input) {
+			__typename
+			... on CreateFrontmatterPatchPayload {
+				frontmatterPatch {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
