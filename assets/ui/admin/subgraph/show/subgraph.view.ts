@@ -1,41 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminShowSubgraph($id: Int64!) {
-			admin {
-				subgraph(id: $id) {
-					id
-					name
-					color
-					hidden
-					requireSignin
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation UpdateSubgraph($input: UpdateSubgraphInput!) {
-			admin {
-				payload: updateSubgraph(input: $input) {
-					__typename
-					... on UpdateSubgraphPayload {
-						subgraph {
-							id
-							color
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_subgraph_show extends $.$trip2g_admin_subgraph_show {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request({ id: this.subgraph_id() })
+			const res = $trip2g_admin_subgraph_show_data({ id: this.subgraph_id() })
 
 			if (!res.admin.subgraph) {
 				throw new Error('Subgraph not found')
@@ -76,7 +43,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_subgraph_show_save({
 				input: {
 					id: this.subgraph_id(),
 					color: this.subgraph_color(),

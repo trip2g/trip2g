@@ -1,0 +1,15 @@
+mutation ($input: CreateUserSubgraphAccessInput!) {
+	admin {
+		data: createUserSubgraphAccess(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateUserSubgraphAccessPayload {
+				accesses {
+					id
+				}
+			}
+		}
+	}
+}

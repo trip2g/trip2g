@@ -1,0 +1,13 @@
+mutation ($input: AddFederationSecretSubgraphInput!) {
+	admin {
+		data: addFederationSecretSubgraph(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on AddFederationSecretSubgraphPayload {
+				success
+			}
+		}
+	}
+}

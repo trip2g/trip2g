@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminCreateUserSubgraphAccess($input: CreateUserSubgraphAccessInput!) {
-			admin {
-				data: createUserSubgraphAccess(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreateUserSubgraphAccessPayload {
-						accesses {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_usersubgraphaccesses_create extends $.$trip2g_admin_usersubgraphaccesses_create {
 		@$mol_mem
 		user_id(next?: number): number {
@@ -54,7 +36,7 @@ namespace $.$$ {
 				throw new Error('Subgraph is required')
 			}
 
-			const res = mutate({
+			const res = $trip2g_admin_usersubgraphaccesses_create_create({
 				input: {
 					userId: userId,
 					subgraphIds: [subgraphId],

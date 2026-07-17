@@ -1,45 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminUserSubgraphAccess($id: Int64!) {
-			admin {
-				allSubgraphs {
-					nodes {
-						id
-						name
-					}
-				}
-
-				userSubgraphAccess(id: $id) {
-					userId
-					subgraphId
-					expiresAt
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminUpdateUserSubgraphAccess($input: UpdateUserSubgraphAccessInput!) {
-			admin {
-				payload: updateUserSubgraphAccess(input: $input) {
-					... on UpdateUserSubgraphAccessPayload {
-						userSubgraphAccess {
-							__typename
-							expiresAt
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_usersubgraphaccesses_show extends $.$trip2g_admin_usersubgraphaccesses_show {
 		@$mol_mem
 		all_data(reset?: null) {
-			const res = request({ id: this.access_id() })
+			const res = $trip2g_admin_usersubgraphaccesses_show_data({ id: this.access_id() })
 
 			return res.admin
 		}
@@ -78,7 +41,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_usersubgraphaccesses_show_save({
 				input: {
 					id: this.access_id(),
 					expiresAt: $trip2g_moment_toserver(this.expires_at_moment()),

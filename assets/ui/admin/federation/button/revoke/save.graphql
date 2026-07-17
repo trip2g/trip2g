@@ -1,0 +1,13 @@
+mutation ($id: Int64!) {
+	admin {
+		data: revokeFederationSecret(id: $id) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on RevokeFederationSecretPayload {
+				revokedId
+			}
+		}
+	}
+}
