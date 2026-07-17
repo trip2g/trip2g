@@ -6,6 +6,7 @@ title: "Навигация"
 
 - [[ru/user/Начало работы|Начало работы]]
 - [[ru/user/onboarding-vault|Стартовый архив хранилища]]
+- [[ru/user/admin_onboarding|Обзор панели управления]]
 - [[ru/user/protocol|Как работает trip2g]]
 - [[ru/user/hosting|Хостинг]]
 - [[ru/user/selfhosted|Self-hosted]]
