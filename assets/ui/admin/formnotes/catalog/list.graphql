@@ -1,0 +1,11 @@
+query {
+	admin {
+		formNotes {
+			id
+			path
+			pathId
+			submitCount
+			lastSubmitAt
+		}
+	}
+}

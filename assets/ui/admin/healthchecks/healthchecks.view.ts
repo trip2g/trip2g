@@ -1,20 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminHealthChecks {
-			admin {
-				healthChecks {
-					id
-					status
-					description
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_healthchecks extends $.$trip2g_admin_healthchecks {
 		@$mol_mem
 		data() {
-			const res = request()
+			const res = $trip2g_admin_healthchecks_list()
 			return $trip2g_graphql_make_map(res.admin.healthChecks);
 		}
 

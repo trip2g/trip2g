@@ -1,35 +1,11 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminFormSubmits($filter: AdminFormSubmitsFilterInput) {
-			admin {
-				formSubmits(filter: $filter) {
-					totalCount
-					nodes {
-						id
-						noteVersionId
-						formId
-						ip
-						status
-						createdAt
-						fields {
-							__typename
-							... on AdminFormStringValue { name sv: value }
-							... on AdminFormIntValue { name iv: value }
-							... on AdminFormBoolValue { name bv: value }
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_formsubmits_catalog extends $.$trip2g_admin_formsubmits_catalog {
 		@$mol_mem
 		data( reset?: null ) {
 			const id = this.note_path_id()
 			if( !id ) return []
 
-			const res = request({ filter: { notePathId: id } })
+			const res = $trip2g_admin_formsubmits_catalog_list({ filter: { notePathId: id } })
 			return res.admin.formSubmits.nodes
 		}
 

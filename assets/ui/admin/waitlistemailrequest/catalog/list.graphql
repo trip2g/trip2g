@@ -1,0 +1,12 @@
+query {
+	admin {
+		allWaitListEmailRequests {
+			nodes {
+				email
+				createdAt
+				ip
+				notePath
+			}
+		}
+	}
+}

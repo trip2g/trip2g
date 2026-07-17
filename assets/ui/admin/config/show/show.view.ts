@@ -1,110 +1,4 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminConfigValue($id: String!) {
-			admin {
-				configValue(id: $id) {
-					__typename
-					id
-					description
-					updatedAt
-					... on AdminConfigStringValue {
-						stringValue: value
-						history {
-							id
-							value
-							createdAt
-							createdBy {
-								email
-							}
-						}
-					}
-					... on AdminConfigBoolValue {
-						boolValue: value
-						boolHistory: history {
-							id
-							value
-							createdAt
-							createdBy {
-								email
-							}
-						}
-					}
-					... on AdminConfigIntValue {
-						intValue: value
-						intHistory: history {
-							id
-							value
-							createdAt
-							createdBy {
-								email
-							}
-						}
-					}
-				}
-			}
-		}
-	`)
-
-	const set_string_value = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminSetConfigStringValue($input: SetConfigStringValueInput!) {
-			admin {
-				setConfigStringValue(input: $input) {
-					__typename
-					... on SetConfigStringValueSuccess {
-						configValue {
-							id
-							value
-							updatedAt
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
-	const set_bool_value = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminSetConfigBoolValue($input: SetConfigBoolValueInput!) {
-			admin {
-				setConfigBoolValue(input: $input) {
-					__typename
-					... on SetConfigBoolValueSuccess {
-						configValue {
-							id
-							value
-							updatedAt
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
-	const set_int_value = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminSetConfigIntValue($input: SetConfigIntValueInput!) {
-			admin {
-				setConfigIntValue(input: $input) {
-					__typename
-					... on SetConfigIntValueSuccess {
-						configValue {
-							id
-							value
-							updatedAt
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	const TIMEZONE_SUGGESTS = [
 		'UTC',
 		'America/New_York',
@@ -125,7 +19,7 @@ namespace $.$$ {
 	export class $trip2g_admin_config_show extends $.$trip2g_admin_config_show {
 		@$mol_mem
 		data(reset?: null) {
-			const res = data_request({ id: this.config_id() })
+			const res = $trip2g_admin_config_show_data({ id: this.config_id() })
 			if (!res.admin.configValue) {
 				throw new Error('Config not found')
 			}
@@ -253,7 +147,7 @@ namespace $.$$ {
 
 			if (this.is_bool_config()) {
 				const value = this.edit_value_bool()
-				const res = set_bool_value({ input: { id: configId, value } })
+				const res = $trip2g_admin_config_show_save_bool({ input: { id: configId, value } })
 				const result = res.admin.setConfigBoolValue
 				if (result.__typename === 'ErrorPayload') {
 					this.result_message(result.message)
@@ -263,7 +157,7 @@ namespace $.$$ {
 				this.data(null)
 			} else if (this.is_int_config()) {
 				const value = this.edit_value_int()
-				const res = set_int_value({ input: { id: configId, value } })
+				const res = $trip2g_admin_config_show_save_int({ input: { id: configId, value } })
 				const result = res.admin.setConfigIntValue
 				if (result.__typename === 'ErrorPayload') {
 					this.result_message(result.message)
@@ -273,7 +167,7 @@ namespace $.$$ {
 				this.data(null)
 			} else {
 				const value = this.edit_value_string()
-				const res = set_string_value({ input: { id: configId, value } })
+				const res = $trip2g_admin_config_show_save_string({ input: { id: configId, value } })
 				const result = res.admin.setConfigStringValue
 				if (result.__typename === 'ErrorPayload') {
 					this.result_message(result.message)
