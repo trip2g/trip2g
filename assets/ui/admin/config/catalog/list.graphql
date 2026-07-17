@@ -1,0 +1,22 @@
+query {
+	admin {
+		configValues {
+			__typename
+			id
+			description
+			updatedAt
+			updatedBy {
+				email
+			}
+			... on AdminConfigStringValue {
+				stringValue: value
+			}
+			... on AdminConfigBoolValue {
+				boolValue: value
+			}
+			... on AdminConfigIntValue {
+				intValue: value
+			}
+		}
+	}
+}

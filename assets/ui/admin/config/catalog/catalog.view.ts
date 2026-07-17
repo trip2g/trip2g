@@ -1,33 +1,8 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminConfigValues {
-			admin {
-				configValues {
-					__typename
-					id
-					description
-					updatedAt
-					updatedBy {
-						email
-					}
-					... on AdminConfigStringValue {
-						stringValue: value
-					}
-					... on AdminConfigBoolValue {
-						boolValue: value
-					}
-					... on AdminConfigIntValue {
-						intValue: value
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_config_catalog extends $.$trip2g_admin_config_catalog {
 		@$mol_mem
 		data(reset?: null) {
-			const res = data_request()
+			const res = $trip2g_admin_config_catalog_list()
 			// Sort by id for stable order.
 			const sorted = [...res.admin.configValues].sort((a, b) => a.id.localeCompare(b.id))
 			return $trip2g_graphql_make_map(sorted)

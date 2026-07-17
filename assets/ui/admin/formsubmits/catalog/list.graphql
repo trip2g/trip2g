@@ -1,0 +1,21 @@
+query ($filter: AdminFormSubmitsFilterInput) {
+	admin {
+		formSubmits(filter: $filter) {
+			totalCount
+			nodes {
+				id
+				noteVersionId
+				formId
+				ip
+				status
+				createdAt
+				fields {
+					__typename
+					... on AdminFormStringValue { name sv: value }
+					... on AdminFormIntValue { name iv: value }
+					... on AdminFormBoolValue { name bv: value }
+				}
+			}
+		}
+	}
+}
