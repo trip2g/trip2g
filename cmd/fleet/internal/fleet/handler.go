@@ -12,7 +12,7 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/cmd/fleet/internal/agentruntime"
 	"trip2g/internal/fleetinput"
 	"trip2g/internal/webhookutil"
 )

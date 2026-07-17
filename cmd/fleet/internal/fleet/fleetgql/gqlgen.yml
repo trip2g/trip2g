@@ -2,25 +2,25 @@
 # Separate from the monolith's repo-root gqlgen.yml and its generated package —
 # this is a standalone 2-query read API compiled into cmd/fleet.
 #
-# Regenerate:
-#   go tool github.com/99designs/gqlgen generate --config internal/fleet/fleetgql/gqlgen.yml
+# Paths are package-local: regenerate with
+#   go generate ./cmd/fleet/internal/fleet/fleetgql/...
 
 schema:
-  - internal/fleet/fleetgql/schema.graphqls
+  - schema.graphqls
 
 exec:
   package: fleetgen
   layout: single-file
-  filename: internal/fleet/fleetgql/fleetgen/generated.go
+  filename: fleetgen/generated.go
 
 model:
-  filename: internal/fleet/fleetgql/model/models_gen.go
+  filename: model/models_gen.go
   package: model
 
 resolver:
   package: fleetgql
   layout: follow-schema
-  dir: internal/fleet/fleetgql
+  dir: .
   filename_template: "{name}.resolvers.go"
 
 omit_slice_element_pointers: true

@@ -13,7 +13,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 )
 
 // gqlDoerFunc adapts a func to genqlient's graphql.Doer.

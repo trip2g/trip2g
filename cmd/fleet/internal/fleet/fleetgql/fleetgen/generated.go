@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-	"trip2g/internal/fleet/fleetgql/model"
+	"trip2g/cmd/fleet/internal/fleet/fleetgql/model"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -349,7 +349,7 @@ func (ec *executionContext) _GraphEdge_kind(ctx context.Context, field graphql.C
 			return obj.Kind, nil
 		},
 		nil,
-		ec.marshalNEdgeKind2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐEdgeKind,
+		ec.marshalNEdgeKind2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐEdgeKind,
 		true,
 		true,
 	)
@@ -552,7 +552,7 @@ func (ec *executionContext) _Query_roles(ctx context.Context, field graphql.Coll
 			return ec.resolvers.Query().Roles(ctx)
 		},
 		nil,
-		ec.marshalNRole2ᚕtrip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleᚄ,
+		ec.marshalNRole2ᚕtrip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleᚄ,
 		true,
 		true,
 	)
@@ -599,7 +599,7 @@ func (ec *executionContext) _Query_roleGraph(ctx context.Context, field graphql.
 			return ec.resolvers.Query().RoleGraph(ctx)
 		},
 		nil,
-		ec.marshalNRoleGraph2ᚖtrip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleGraph,
+		ec.marshalNRoleGraph2ᚖtrip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleGraph,
 		true,
 		true,
 	)
@@ -1007,7 +1007,7 @@ func (ec *executionContext) _RoleGraph_nodes(ctx context.Context, field graphql.
 			return obj.Nodes, nil
 		},
 		nil,
-		ec.marshalNGraphNode2ᚕtrip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphNodeᚄ,
+		ec.marshalNGraphNode2ᚕtrip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphNodeᚄ,
 		true,
 		true,
 	)
@@ -1046,7 +1046,7 @@ func (ec *executionContext) _RoleGraph_edges(ctx context.Context, field graphql.
 			return obj.Edges, nil
 		},
 		nil,
-		ec.marshalNGraphEdge2ᚕtrip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphEdgeᚄ,
+		ec.marshalNGraphEdge2ᚕtrip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphEdgeᚄ,
 		true,
 		true,
 	)
@@ -3294,21 +3294,21 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNEdgeKind2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐEdgeKind(ctx context.Context, v any) (model.EdgeKind, error) {
+func (ec *executionContext) unmarshalNEdgeKind2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐEdgeKind(ctx context.Context, v any) (model.EdgeKind, error) {
 	var res model.EdgeKind
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNEdgeKind2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐEdgeKind(ctx context.Context, sel ast.SelectionSet, v model.EdgeKind) graphql.Marshaler {
+func (ec *executionContext) marshalNEdgeKind2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐEdgeKind(ctx context.Context, sel ast.SelectionSet, v model.EdgeKind) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) marshalNGraphEdge2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphEdge(ctx context.Context, sel ast.SelectionSet, v model.GraphEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNGraphEdge2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphEdge(ctx context.Context, sel ast.SelectionSet, v model.GraphEdge) graphql.Marshaler {
 	return ec._GraphEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNGraphEdge2ᚕtrip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.GraphEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNGraphEdge2ᚕtrip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.GraphEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3332,7 +3332,7 @@ func (ec *executionContext) marshalNGraphEdge2ᚕtrip2gᚋinternalᚋfleetᚋfle
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNGraphEdge2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNGraphEdge2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -3352,11 +3352,11 @@ func (ec *executionContext) marshalNGraphEdge2ᚕtrip2gᚋinternalᚋfleetᚋfle
 	return ret
 }
 
-func (ec *executionContext) marshalNGraphNode2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphNode(ctx context.Context, sel ast.SelectionSet, v model.GraphNode) graphql.Marshaler {
+func (ec *executionContext) marshalNGraphNode2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphNode(ctx context.Context, sel ast.SelectionSet, v model.GraphNode) graphql.Marshaler {
 	return ec._GraphNode(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNGraphNode2ᚕtrip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphNodeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.GraphNode) graphql.Marshaler {
+func (ec *executionContext) marshalNGraphNode2ᚕtrip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphNodeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.GraphNode) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3380,7 +3380,7 @@ func (ec *executionContext) marshalNGraphNode2ᚕtrip2gᚋinternalᚋfleetᚋfle
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNGraphNode2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphNode(ctx, sel, v[i])
+			ret[i] = ec.marshalNGraphNode2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐGraphNode(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -3400,11 +3400,11 @@ func (ec *executionContext) marshalNGraphNode2ᚕtrip2gᚋinternalᚋfleetᚋfle
 	return ret
 }
 
-func (ec *executionContext) marshalNRole2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v model.Role) graphql.Marshaler {
+func (ec *executionContext) marshalNRole2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v model.Role) graphql.Marshaler {
 	return ec._Role(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNRole2ᚕtrip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Role) graphql.Marshaler {
+func (ec *executionContext) marshalNRole2ᚕtrip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Role) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3428,7 +3428,7 @@ func (ec *executionContext) marshalNRole2ᚕtrip2gᚋinternalᚋfleetᚋfleetgql
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNRole2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRole(ctx, sel, v[i])
+			ret[i] = ec.marshalNRole2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRole(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -3448,11 +3448,11 @@ func (ec *executionContext) marshalNRole2ᚕtrip2gᚋinternalᚋfleetᚋfleetgql
 	return ret
 }
 
-func (ec *executionContext) marshalNRoleGraph2trip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleGraph(ctx context.Context, sel ast.SelectionSet, v model.RoleGraph) graphql.Marshaler {
+func (ec *executionContext) marshalNRoleGraph2trip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleGraph(ctx context.Context, sel ast.SelectionSet, v model.RoleGraph) graphql.Marshaler {
 	return ec._RoleGraph(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNRoleGraph2ᚖtrip2gᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleGraph(ctx context.Context, sel ast.SelectionSet, v *model.RoleGraph) graphql.Marshaler {
+func (ec *executionContext) marshalNRoleGraph2ᚖtrip2gᚋcmdᚋfleetᚋinternalᚋfleetᚋfleetgqlᚋmodelᚐRoleGraph(ctx context.Context, sel ast.SelectionSet, v *model.RoleGraph) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

@@ -6,9 +6,9 @@ package fleetgql
 
 import (
 	"context"
-	"trip2g/internal/fleet/fleetgql/fleetgen"
-	"trip2g/internal/fleet/fleetgql/model"
-	"trip2g/internal/fleet/graph"
+	"trip2g/cmd/fleet/internal/fleet/fleetgql/fleetgen"
+	"trip2g/cmd/fleet/internal/fleet/fleetgql/model"
+	"trip2g/cmd/fleet/internal/fleet/graph"
 )
 
 // Roles is the resolver for the roles field.

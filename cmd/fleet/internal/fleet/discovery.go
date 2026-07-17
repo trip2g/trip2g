@@ -6,7 +6,7 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 
-	"trip2g/internal/fleet/trip2ggql"
+	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
 )
 
 // Discovery polls trip2g for role notes under AgentsFolder over the admin lane.

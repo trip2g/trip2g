@@ -62,7 +62,7 @@ func TestResolve_UpdatesConcurrencyAndAttach(t *testing.T) {
 }
 
 // TestResolve_IDAndURLOnly_PassesPatchSemantics is a regression guard for the
-// fleet hash-registry takeover (internal/fleet/reconcile.go's update()): a
+// fleet hash-registry takeover (cmd/fleet/internal/fleet/reconcile.go's update()): a
 // caller that sends ONLY {id, url} — every other field left nil/absent — must
 // pass validateBounds and PATCH-merge cleanly, leaving every other existing
 // field (enabled, description, onCreate/onUpdate/onRemove, timeoutSeconds,

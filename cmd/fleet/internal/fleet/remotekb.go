@@ -8,8 +8,8 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 
-	"trip2g/internal/agentruntime"
-	"trip2g/internal/fleet/trip2ggql"
+	"trip2g/cmd/fleet/internal/agentruntime"
+	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
 )
 
 // JSON map keys used in the hybrid UpdateNotesScoped variables.

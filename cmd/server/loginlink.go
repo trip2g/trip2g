@@ -12,7 +12,7 @@ import (
 )
 
 // loginLinkExpiry is how long the minted HAT stays valid; mirrors the fleet's
-// admin-HAT lifetime in internal/fleet/hatauth.go.
+// admin-HAT lifetime in cmd/fleet/internal/fleet/hatauth.go.
 const loginLinkExpiry = 5 * time.Minute
 
 // runLoginLink is the entry-point for the "login-link" subcommand. It mints a
@@ -41,7 +41,7 @@ func runLoginLink() {
 		os.Exit(1)
 	}
 
-	// AdminEnter mirrors internal/fleet/hatauth.go: the owner must land as admin,
+	// AdminEnter mirrors cmd/fleet/internal/fleet/hatauth.go: the owner must land as admin,
 	// not just as a signed-in user, since this is the bootstrap login on a fresh box.
 	manager := hotauthtoken.NewManager(hotauthtoken.Config{Secret: secret, ExpiresIn: loginLinkExpiry})
 	token, err := manager.NewToken(model.HotAuthToken{Email: config.OwnerEmail, AdminEnter: true})

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 )
 
 // rgRole builds a change-triggerable role (mode change, fires on create+update).

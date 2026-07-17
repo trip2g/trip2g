@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 )
 
 // Role mode values (mirrors internal/fleet role modes).

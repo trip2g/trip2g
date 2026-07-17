@@ -8,7 +8,7 @@ package fleetgql
 import (
 	"context"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 )
 
 //go:generate go tool github.com/99designs/gqlgen generate --config gqlgen.yml

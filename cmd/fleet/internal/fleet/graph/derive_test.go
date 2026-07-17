@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 )
 
 // changeRole builds a minimal valid change-mode RoleInput for derive tests.
