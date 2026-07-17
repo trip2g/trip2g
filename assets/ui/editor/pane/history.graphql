@@ -1,0 +1,10 @@
+query ($filter: AdminNoteVersionHistoryFilter!) {
+	admin {
+		noteVersionHistory(filter: $filter) {
+			nodes {
+				versionId
+				version
+			}
+		}
+	}
+}

@@ -1,86 +1,4 @@
 namespace $.$$ {
-	const content_request = $trip2g_graphql_request(/* GraphQL */ `
-		query EditorNoteContent($filter: NotePathsFilter) {
-			notePaths(filter: $filter) {
-				id
-				value
-				content
-			}
-		}
-	`)
-
-	const save_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation EditorPushNotes($input: PushNotesInput!) {
-			pushNotes(input: $input) {
-				__typename
-				... on ErrorPayload {
-					message
-				}
-				... on PushNotesPayload {
-					updated {
-						path
-						url
-						id
-					}
-				}
-			}
-		}
-	`)
-
-	// Create-only upsert: `expectedHash: ""` means "expect this path absent", so the
-	// server creates the note iff it does not exist, else returns a HashMismatch and
-	// leaves the existing note untouched (race-proof guard for the new-file flow).
-	const create_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation EditorCreateNote($input: UpdateNotesInput!) {
-			updateNotes(input: $input) {
-				__typename
-				... on UpdateNotesSuccessPayload {
-					paths
-				}
-				... on UpdateNotesHashMismatchPayload {
-					path
-					actualHash
-				}
-				... on ErrorPayload {
-					message
-				}
-			}
-		}
-	`)
-
-	const resolve_request = $trip2g_graphql_request(/* GraphQL */ `
-		query ResolveWikilinks($filter: ResolveWikilinksFilter!) {
-			resolveWikilinks(filter: $filter) {
-				link
-				path
-				url
-			}
-		}
-	`)
-
-	const history_request = $trip2g_graphql_request(/* GraphQL */ `
-		query EditorNoteVersionsForDiff($filter: AdminNoteVersionHistoryFilter!) {
-			admin {
-				noteVersionHistory(filter: $filter) {
-					nodes {
-						versionId
-						version
-					}
-				}
-			}
-		}
-	`)
-
-	const version_content_request = $trip2g_graphql_request(/* GraphQL */ `
-		query EditorExternalVersion($versionId: Int64!) {
-			admin {
-				noteVersion(versionId: $versionId) {
-					content
-				}
-			}
-		}
-	`)
-
 	const EDITOR_CHANGES_QUERY = /* GraphQL */ `
 		subscription EditorNoteChanges($filter: NoteChangesFilter!) {
 			noteChanges(filter: $filter) {
@@ -122,12 +40,12 @@ namespace $.$$ {
 		loaded_note_path(path: string): { id: any; content: string; versionId?: number } | null {
 			if (!path) return null
 			this.reload_counter(path) // reactive dependency
-			const res = content_request({ filter: { paths: [path] } })
+			const res = $trip2g_editor_pane_content({ filter: { paths: [path] } })
 			const np = res.notePaths[0]
 			if (!np) return null
 			// Initialise baseline from the freshly loaded version (if available).
 			// Use the version history to get the latest versionId for this path.
-			const hist = history_request({ filter: { path, limit: 1 } })
+			const hist = $trip2g_editor_pane_history({ filter: { path, limit: 1 } })
 			const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
 			if (latestVersionId) {
 				setTimeout(() => { this.baseline_version_id(path, latestVersionId) }, 0)
@@ -158,7 +76,7 @@ namespace $.$$ {
 					if (link) {
 						const pathId = this.note_path_id()
 						if (pathId !== null) {
-							const res = resolve_request({ filter: { notePathId: pathId, links: [link] } })
+							const res = $trip2g_editor_pane_resolve({ filter: { notePathId: pathId, links: [link] } })
 							const resolved = res.resolveWikilinks[0]
 							if (resolved?.path) this.path(resolved.path)
 						}
@@ -258,14 +176,14 @@ namespace $.$$ {
 				.map(p => ({ path: p, content: this.change(p) }))
 				.filter((u): u is { path: string; content: string } => u.content !== null)
 			if (updates.length === 0) return
-			const res = save_mutate({ input: { updates } })
+			const res = $trip2g_editor_pane_save({ input: { updates } })
 			if (res.pushNotes.__typename === 'ErrorPayload') {
 				throw new Error(res.pushNotes.message)
 			}
 			// Advance the baseline to the just-saved version id, taken directly from the
 			// mutation response (a re-fetch returns a stale cached version). This suppresses
 			// the self-echo SSE event so our own save is not shown as "updated elsewhere".
-			const updated = (res.pushNotes as any).updated as Array<{ path: string; id: number }> | undefined
+			const updated = res.pushNotes.updated
 			for (const u of updated ?? []) {
 				if (u.id) this.baseline_version_id(u.path, Number(u.id))
 			}
@@ -318,7 +236,7 @@ namespace $.$$ {
 				return null
 			}
 			const content = $trip2g_editor_newfile_initial_content(res.path)
-			const result = create_mutate({
+			const result = $trip2g_editor_pane_create({
 				input: { changes: [{ upsert: { path: res.path, content, expectedHash: '' } }] },
 			})
 			const payload = result.updateNotes
@@ -336,7 +254,7 @@ namespace $.$$ {
 			// paths (no version id), so fetch the just-created version id and advance the
 			// baseline synchronously — this suppresses the create's own self-echo SSE event
 			// before the file is opened.
-			const hist = history_request({ filter: { path: res.path, limit: 1 } })
+			const hist = $trip2g_editor_pane_history({ filter: { path: res.path, limit: 1 } })
 			const latestVersionId = hist.admin.noteVersionHistory.nodes[0]?.versionId ?? 0
 			if (latestVersionId) this.baseline_version_id(res.path, Number(latestVersionId))
 			this.newfile_value('')
@@ -421,7 +339,7 @@ namespace $.$$ {
 				const path = this.path()
 				if (!path) return null
 				// Fetch the two most recent version IDs for this path.
-				const res = history_request({ filter: { path, limit: 2 } })
+				const res = $trip2g_editor_pane_history({ filter: { path, limit: 2 } })
 				const nodes = res.admin.noteVersionHistory.nodes
 				// Need at least 2 versions to show a meaningful diff.
 				if (nodes.length < 2) return null
@@ -482,7 +400,7 @@ namespace $.$$ {
 				const path = this.path()
 				const versionId = this.pending_external_update()
 				if (!path || !versionId) return null
-				const res = version_content_request({ versionId })
+				const res = $trip2g_editor_pane_version({ versionId })
 				const theirs = res.admin.noteVersion?.content ?? ''
 				const mine = this.content()
 				const merged = $trip2g_editor_merge(mine, theirs)
