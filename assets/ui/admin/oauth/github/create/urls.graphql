@@ -1,0 +1,6 @@
+query ($input: OAuthUrlInput!) {
+	publicUrl
+	githubAuthUrl(input: $input) {
+		callbackUrl
+	}
+}

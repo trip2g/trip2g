@@ -1,0 +1,15 @@
+mutation ($input: SetActiveGoogleOAuthCredentialsInput!) {
+	admin {
+		data: setActiveGoogleOAuthCredentials(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on SetActiveGoogleOAuthCredentialsPayload {
+				credentials {
+					id
+				}
+			}
+		}
+	}
+}

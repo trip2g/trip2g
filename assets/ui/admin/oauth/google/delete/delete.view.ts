@@ -1,23 +1,7 @@
 namespace $.$$ {
-	const delete_mutation = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminDeleteGoogleOAuthCredentials($input: DeleteGoogleOAuthCredentialsInput!) {
-			admin {
-				data: deleteGoogleOAuthCredentials(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on DeleteGoogleOAuthCredentialsPayload {
-						deletedId
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_oauth_google_delete extends $.$trip2g_admin_oauth_google_delete {
 		delete() {
-			const res = delete_mutation({
+			const res = $trip2g_admin_oauth_google_delete_confirm({
 				input: { id: this.credentials_id() },
 			})
 

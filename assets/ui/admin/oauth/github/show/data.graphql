@@ -1,0 +1,12 @@
+query ($id: Int!) {
+	admin {
+		gitHubOAuthCredentials(id: $id) {
+			id
+			name
+			clientId
+			active
+			createdAt
+			createdBy { id email }
+		}
+	}
+}

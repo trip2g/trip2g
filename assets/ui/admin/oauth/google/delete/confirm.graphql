@@ -1,0 +1,13 @@
+mutation ($input: DeleteGoogleOAuthCredentialsInput!) {
+	admin {
+		data: deleteGoogleOAuthCredentials(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on DeleteGoogleOAuthCredentialsPayload {
+				deletedId
+			}
+		}
+	}
+}
