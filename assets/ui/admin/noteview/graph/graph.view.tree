@@ -3,8 +3,24 @@ $trip2g_admin_noteview_graph $mol_page
 	close_icon null $mol_view
 	menu_tools / <= close_icon
 	body /
-		<= Header $mol_view
-			sub / <= save_message? \
+		<= Header $mol_row
+			sub /
+				<= AutoLayoutButton $mol_button_minor
+					title \Auto layout
+					click? <=> auto_layout? null
+				<= SavePositionsButton $mol_button_minor
+					title \Save positions
+					click? <=> save_positions? null
+				<= PublicOutsideCheck $mol_check_box
+					title \Public outside
+					checked? <=> public_outside? false
+				<= save_message? \
 		<= Graph $trip2g_admin_noteview_graph_cytoscape
+			public_outside <= public_outside
+			save_message? <=> save_message?
 
 $trip2g_admin_noteview_graph_cytoscape $mol_view
+	relayout? null
+	save_all? null
+	public_outside false
+	save_message? \
