@@ -9,11 +9,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/translit"
+	"trip2g/internal/webhookutil"
 )
 
 type Env interface {
@@ -26,6 +28,7 @@ type Env interface {
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
+	NoteVersionByID(ctx context.Context, id int64) (db.NoteVersionByIDRow, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	CheckStorageLimits(ctx context.Context, additionalAssetBytes int64) (string, error)
 }
@@ -36,7 +39,36 @@ var reUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9_.-]`)
 type Input = model.UploadNoteAssetInput
 type Payload = model.UploadNoteAssetOrErrorPayload
 
+// scopedWriteDenied enforces write_patterns for scoped-token requests: noteID
+// (a note VERSION id) must resolve to a note path within the token's write
+// scope, matched with the same matcher updateNotes uses. Returns a non-nil
+// payload when the upload must be rejected.
+func scopedWriteDenied(ctx context.Context, env Env, noteID int64) (*model.ErrorPayload, error) {
+	if !appreq.Scoped(ctx) {
+		return nil, nil
+	}
+	row, err := env.NoteVersionByID(ctx, noteID)
+	if err != nil {
+		if db.IsNoFound(err) {
+			return &model.ErrorPayload{Message: fmt.Sprintf("note version not found: %d", noteID)}, nil
+		}
+		return nil, fmt.Errorf("failed to resolve note version %d: %w", noteID, err)
+	}
+	if webhookutil.WriteScopeDenied(ctx, row.Path) {
+		return &model.ErrorPayload{Message: "write denied for path: " + row.Path}, nil
+	}
+	return nil, nil
+}
+
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	denied, deniedErr := scopedWriteDenied(ctx, env, input.NoteID)
+	if deniedErr != nil {
+		return nil, deniedErr
+	}
+	if denied != nil {
+		return denied, nil
+	}
+
 	// Step 1: Validation
 	assetPaths, err := env.NoteVersionAssetPaths(ctx, input.NoteID)
 	if err != nil {

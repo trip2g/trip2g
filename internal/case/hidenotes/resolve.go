@@ -25,6 +25,12 @@ type Input = model.HideNotesInput
 type Payload = model.HideNotesOrErrorPayload
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	// hideNotes is a bulk-hide infra mutation with no per-path scoping — scoped
+	// tokens are denied outright (updateNotes' hide change is the scoped path).
+	if err := appreq.RequireUnscoped(ctx); err != nil {
+		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // authorization denial returned as payload, not as error.
+	}
+
 	// Collect note info before hiding (notes may be removed from NoteViews after reload).
 	nvs := env.LatestNoteViews()
 	var webhookChanges []handlenotewebhooks.NoteChange

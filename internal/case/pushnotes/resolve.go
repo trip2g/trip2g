@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"trip2g/internal/appreq"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 
@@ -38,6 +39,12 @@ var allowedContentTypes = map[string]struct{}{ //nolint:gochecknoglobals // it's
 }
 
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
+	// pushNotes is the full-vault sync lane with no per-path scoping — scoped
+	// tokens are denied outright.
+	if err := appreq.RequireUnscoped(ctx); err != nil {
+		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // authorization denial returned as payload, not as error.
+	}
+
 	log := logger.WithPrefix(env.Logger(), "pushNotes:")
 
 	// Check storage limits before writing.
