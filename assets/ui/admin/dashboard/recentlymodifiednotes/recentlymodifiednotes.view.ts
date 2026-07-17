@@ -1,20 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminRecentlyModifiedNotes {
-			admin {
-				recentlyModifiedNoteViews {
-				id
-				title
-				permalink
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_dashboard_recentlymodifiednotes extends $.$trip2g_admin_dashboard_recentlymodifiednotes {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_dashboard_recentlymodifiednotes_recentlymodifiednotes()
 
 			return $trip2g_graphql_make_map( res.admin.recentlyModifiedNoteViews )
 		}

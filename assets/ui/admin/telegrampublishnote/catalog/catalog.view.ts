@@ -1,38 +1,8 @@
 namespace $.$$ {
-	const count_request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminTelegramPublishNoteCount($filter: AdminTelegramPublishNotesFilter!) {
-			admin {
-				allTelegramPublishNotes(filter: $filter) {
-					count
-				}
-			}
-		}
-	`)
-
-	const data_request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminTelegramPublishNotes($filter: AdminTelegramPublishNotesFilter!) {
-			admin {
-				allTelegramPublishNotes(filter: $filter) {
-					nodes {
-						id
-						publishAt
-						secondsUntilPublish
-						publishedAt
-						status
-						errorCount
-						noteView {
-							title
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_telegrampublishnote_catalog extends $.$trip2g_admin_telegrampublishnote_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = data_request({
+			const res = $trip2g_admin_telegrampublishnote_catalog_list({
 				filter: {
 					includeSent: this.show_sent(),
 					// includeOutdated: this.show_outdated(),
@@ -64,7 +34,7 @@ namespace $.$$ {
 		}
 
 		override show_sent_title(): string {
-			const res = count_request({ filter: { includeSent: true } })
+			const res = $trip2g_admin_telegrampublishnote_catalog_count({ filter: { includeSent: true } })
 			const count = res.admin.allTelegramPublishNotes.count
 			return super.show_sent_title().replace( '{count}', count.toString() )
 		}

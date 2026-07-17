@@ -1,48 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminShowOffer($id: Int64!) {
-			admin {
-				offer(id: $id) {
-					id
-					publicId
-					createdAt
-					lifetime
-					priceUSD
-					startsAt
-					endsAt
-					subgraphIds
-					subgraphs {
-						id
-						name
-					}
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminUpdateOfferMutation($input: UpdateOfferInput!) {
-			admin {
-				payload: updateOffer(input: $input) {
-					__typename
-					... on UpdateOfferPayload {
-						offer {
-							id
-							publicId
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_offer_update extends $.$trip2g_admin_offer_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request({ id: this.offer_id() })
+			const res = $trip2g_admin_offer_update_data({ id: this.offer_id() })
 
 			if (!res.admin.offer) {
 				throw new Error('Offer not found')
@@ -143,7 +103,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_offer_update_save({
 				input: {
 					id: this.offer_id(),
 					priceUSD: this.price_usd(),

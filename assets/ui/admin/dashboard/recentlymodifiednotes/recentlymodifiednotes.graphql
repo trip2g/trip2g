@@ -1,0 +1,9 @@
+query {
+	admin {
+		recentlyModifiedNoteViews {
+			id
+			title
+			permalink
+		}
+	}
+}

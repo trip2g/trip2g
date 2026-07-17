@@ -1,25 +1,7 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminMakeReleaseLive($input: MakeReleaseLiveInput!) {
-			admin {
-				payload: makeReleaseLive(input:$input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on MakeReleaseLivePayload {
-						release {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_release_button_makelive extends $.$trip2g_admin_release_button_makelive {
 		override handle_click() {
-			const res = mutate({
+			const res = $trip2g_admin_release_button_makelive_makelive({
 				input: {
 					id: this.release_id(),
 				},

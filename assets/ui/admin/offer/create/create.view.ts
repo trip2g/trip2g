@@ -1,23 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminCreateOfferMutation($input: CreateOfferInput!) {
-			admin {
-				payload: createOffer(input: $input) {
-					__typename
-					... on CreateOfferPayload {
-						offer {
-							id
-							publicId
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_offer_create extends $.$trip2g_admin_offer_create {
 		override body() {
 			if( this.offer_public_id() !== '' ) {
@@ -74,7 +55,7 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const res = mutate({
+			const res = $trip2g_admin_offer_create_create({
 				input: {
 					priceUSD: this.price_usd(),
 					subgraphIds: this.subgraph_ids() as number[],

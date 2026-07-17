@@ -1,0 +1,27 @@
+query ($id: Int64!) {
+	admin {
+		telegramPublishNote(id: $id) {
+			id
+			createdAt
+			publishAt
+			secondsUntilPublish
+			publishedAt
+			status
+			lastError
+			tags {
+				label
+			}
+			chats {
+				chatTitle
+				chatType
+			}
+			noteView {
+				title
+			}
+			post {
+				content
+				warnings
+			}
+		}
+	}
+}

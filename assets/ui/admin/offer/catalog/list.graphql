@@ -1,0 +1,18 @@
+query {
+	admin {
+		allOffers {
+			nodes {
+				id
+				publicId
+				createdAt
+				lifetime
+				priceUSD
+				startsAt
+				endsAt
+				subgraphs {
+					name
+				}
+			}
+		}
+	}
+}

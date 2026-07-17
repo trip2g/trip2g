@@ -1,0 +1,15 @@
+query {
+	admin {
+		allReleases {
+			nodes {
+				id
+				createdAt
+				createdBy {
+					email
+				}
+				title
+				isLive
+			}
+		}
+	}
+}
