@@ -1,0 +1,17 @@
+query {
+	admin {
+		allTelegramAccounts {
+			nodes {
+				id
+				phone
+				displayName
+				isPremium
+				enabled
+				createdAt
+				createdBy {
+					email
+				}
+			}
+		}
+	}
+}

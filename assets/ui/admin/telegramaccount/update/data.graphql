@@ -1,0 +1,11 @@
+query ($id: Int64!) {
+	admin {
+		telegramAccount(id: $id) {
+			id
+			phone
+			displayName
+			isPremium
+			enabled
+		}
+	}
+}

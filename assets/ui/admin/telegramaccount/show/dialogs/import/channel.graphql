@@ -1,0 +1,13 @@
+mutation ($input: AdminImportTelegramAccountChannelInput!) {
+	admin {
+		payload: importTelegramAccountChannel(input: $input) {
+			__typename
+			... on AdminImportTelegramAccountChannelPayload {
+				success
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

@@ -1,31 +1,8 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(
-		`
-			query AdminTelegramAccountDialogs($id: Int64!, $limit: Int) {
-				admin {
-					telegramAccount(id: $id) {
-						dialogs(limit: $limit) {
-							id
-							username
-							title
-							type
-							publishTags {
-								id
-							}
-							publishInstantTags {
-								id
-							}
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_telegramaccount_show_dialogs extends $.$trip2g_admin_telegramaccount_show_dialogs {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = data_request({
+			const res = $trip2g_admin_telegramaccount_show_dialogs_dialogs({
 				id: String(this.account_id()),
 				limit: this.load_all() ? 0 : undefined,
 			})

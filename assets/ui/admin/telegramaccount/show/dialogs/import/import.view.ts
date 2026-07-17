@@ -1,20 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminImportTelegramAccountChannel($input: AdminImportTelegramAccountChannelInput!) {
-			admin {
-				payload: importTelegramAccountChannel(input: $input) {
-					__typename
-					... on AdminImportTelegramAccountChannelPayload {
-						success
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_telegramaccount_show_dialogs_import extends $.$trip2g_admin_telegramaccount_show_dialogs_import {
 		account_id() {
 			return this.$.$mol_state_arg.value('account_id') || ''
@@ -43,7 +27,7 @@ namespace $.$$ {
 				throw new Error('Base path is required')
 			}
 
-			const res = mutate({
+			const res = $trip2g_admin_telegramaccount_show_dialogs_import_channel({
 				input: {
 					accountId: this.account_id(),
 					channelId: this.chat_id(),

@@ -1,24 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation StartTelegramAccountAuth($input: AdminStartTelegramAccountAuthInput!) {
-			admin {
-				payload: startTelegramAccountAuth(input: $input) {
-					__typename
-					... on AdminStartTelegramAccountAuthPayload {
-						authState {
-							phone
-							state
-							passwordHint
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_telegramaccount_create_step0 extends $.$trip2g_admin_telegramaccount_create_step0 {
 		override phone_bid(): string {
 			if (this.phone().trim() === '') {
@@ -55,7 +35,7 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const res = mutate({
+			const res = $trip2g_admin_telegramaccount_create_step0_start({
 				input: {
 					phone: this.phone().trim(),
 					apiId: parseInt(this.api_id().trim(), 10),

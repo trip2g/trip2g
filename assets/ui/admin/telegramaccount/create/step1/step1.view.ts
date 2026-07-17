@@ -1,25 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation CompleteTelegramAccountAuth($input: AdminCompleteTelegramAccountAuthInput!) {
-			admin {
-				payload: completeTelegramAccountAuth(input: $input) {
-					__typename
-					... on AdminCompleteTelegramAccountAuthPayload {
-						account {
-							id
-							phone
-							displayName
-							isPremium
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_telegramaccount_create_step1 extends $.$trip2g_admin_telegramaccount_create_step1 {
 		phone(): string {
 			return this.$.$mol_state_arg.value('phone') || ''
@@ -33,17 +12,15 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const input: any = {
-				phone: this.phone(),
-				code: this.code().trim()
-			}
+			const password = this.password().trim()
 
-			const pwd = this.password().trim()
-			if (pwd !== '') {
-				input.password = pwd
-			}
-
-			const res = mutate({ input })
+			const res = $trip2g_admin_telegramaccount_create_step1_complete({
+				input: {
+					phone: this.phone(),
+					code: this.code().trim(),
+					password: password !== '' ? password : undefined,
+				},
+			})
 
 			if (res.admin.payload.__typename === 'ErrorPayload') {
 				this.result(res.admin.payload.message)

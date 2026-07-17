@@ -1,28 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request( /* GraphQL */ `
-		query AdminTelegramAccounts {
-			admin {
-				allTelegramAccounts {
-					nodes {
-						id
-						phone
-						displayName
-						isPremium
-						enabled
-						createdAt
-						createdBy {
-							email
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_telegramaccount_catalog extends $.$trip2g_admin_telegramaccount_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_telegramaccount_catalog_list()
 			return $trip2g_graphql_make_map( res.admin.allTelegramAccounts.nodes )
 		}
 

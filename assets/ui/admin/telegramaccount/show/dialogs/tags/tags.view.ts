@@ -1,43 +1,14 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminTelegramAccountShowDialogsTags {
-			admin {
-				allTelegramPublishTags {
-					nodes {
-						id
-						label
-					}
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminTelegramAccountShowDialogsTagsSave($input: AdminSetTelegramAccountChatPublishTagsInput!) {
-			admin {
-				payload: setTelegramAccountChatPublishTags(input: $input) {
-					__typename
-					... on AdminSetTelegramAccountChatPublishTagsPayload {
-						success
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_telegramaccount_show_dialogs_tags extends $.$trip2g_admin_telegramaccount_show_dialogs_tags {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_telegramaccount_show_dialogs_tags_list()
 
 			return res.admin.allTelegramPublishTags.nodes
 		}
 
 		save( tag_ids: number[] ) {
-			const res = mutate( {
+			const res = $trip2g_admin_telegramaccount_show_dialogs_tags_save( {
 				input: {
 					accountId: String(this.account_id()),
 					telegramChatId: this.chat_id(),
