@@ -1,0 +1,15 @@
+mutation ($input: UpdateCronWebhookInput!) {
+	admin {
+		payload: updateCronWebhook(input: $input) {
+			__typename
+			... on UpdateCronWebhookPayload {
+				cronWebhook {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

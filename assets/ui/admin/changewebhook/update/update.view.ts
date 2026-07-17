@@ -1,52 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminShowChangeWebhookForUpdate($id: Int64!) {
-			admin {
-				changeWebhook(id: $id) {
-					id
-					url
-					enabled
-					description
-					instruction
-					includePatterns
-					excludePatterns
-					passApiKey
-					includeContent
-					maxDepth
-					timeoutSeconds
-					maxRetries
-					onCreate
-					onUpdate
-					onRemove
-					readPatterns
-					writePatterns
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminChangeWebhookUpdateMutation($input: ChangeWebhookUpdateInput!) {
-			admin {
-				payload: changeWebhookUpdate(input: $input) {
-					__typename
-					... on ChangeWebhookUpdatePayload {
-						webhook {
-							id
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_changewebhook_update extends $.$trip2g_admin_changewebhook_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request({ id: this.changewebhook_id() })
+			const res = $trip2g_admin_changewebhook_update_data({ id: this.changewebhook_id() })
 			const wh = res.admin.changeWebhook
 			if( !wh ) throw new Error( 'Webhook not found' )
 			return wh
@@ -112,7 +68,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_changewebhook_update_save({
 				input: {
 					id: this.changewebhook_id(),
 					url: this.url(),

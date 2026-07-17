@@ -1,28 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminCronWebhooks {
-			admin {
-				allCronWebhooks {
-					nodes {
-						id
-						url
-						cronSchedule
-						enabled
-						description
-						nextRunAt
-						lastDeliveryAt
-						lastDeliveryStatus
-						createdAt
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_cronwebhook_catalog extends $.$trip2g_admin_cronwebhook_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_cronwebhook_catalog_list()
 			return $trip2g_graphql_make_map( res.admin.allCronWebhooks.nodes )
 		}
 

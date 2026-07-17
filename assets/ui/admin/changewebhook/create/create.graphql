@@ -1,0 +1,16 @@
+mutation ($input: ChangeWebhookCreateInput!) {
+	admin {
+		payload: changeWebhookCreate(input: $input) {
+			__typename
+			... on ChangeWebhookCreatePayload {
+				webhook {
+					id
+				}
+				secret
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

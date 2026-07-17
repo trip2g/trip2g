@@ -1,0 +1,15 @@
+mutation ($input: TriggerChangeWebhookInput!) {
+	admin {
+		payload: triggerChangeWebhook(input: $input) {
+			__typename
+			... on TriggerChangeWebhookPayload {
+				matchedCount
+				ignoredCount
+				deliveryId
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
