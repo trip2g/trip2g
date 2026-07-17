@@ -2097,6 +2097,17 @@ type PushedNoteAsset struct {
 type Query struct {
 }
 
+type ReaderMoveEvent struct {
+	// Null = entry from outside the KB (direct link, search, external referrer).
+	FromPathID *int64    `json:"fromPathId,omitempty"`
+	ToPathID   int64     `json:"toPathId"`
+	At         time.Time `json:"at"`
+	// Anonymous walk-continuity token: hourly-rotated HMAC over the viewer id,
+	// never a user id. Same reader = same token within the hour (one color per
+	// walk on the dashboard), unlinkable across hours or restarts.
+	SessionKey string `json:"sessionKey"`
+}
+
 type RefreshBoostyDataInput struct {
 	CredentialsID int64 `json:"credentialsId"`
 }

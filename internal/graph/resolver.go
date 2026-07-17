@@ -132,6 +132,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/movebus"
 	"trip2g/internal/notebus"
 )
 
@@ -499,6 +500,10 @@ type Env interface {
 	// notebus
 	SubscribeNoteChanges(include, exclude []string) *notebus.Subscriber
 	UnsubscribeNoteChanges(sub *notebus.Subscriber)
+
+	// movebus (realtime reader movement, ephemeral)
+	SubscribeReaderMoves() *movebus.Subscriber
+	UnsubscribeReaderMoves(sub *movebus.Subscriber)
 
 	LockNoteWrites()
 	UnlockNoteWrites()

@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -71,6 +72,15 @@ type Env interface {
 	CachedPage(key pagecache.Key) ([]byte, bool)
 	// StoreCachedPage records pre-gzipped response bytes for key.
 	StoreCachedPage(key pagecache.Key, gz []byte)
+
+	// ReaderMovesActive reports whether anyone watches the live movement
+	// stream. Checked before any per-move work so an idle instance pays
+	// nothing (not even the referrer lookup).
+	ReaderMovesActive() bool
+	// PublishReaderMove emits an ephemeral reader movement event (movebus).
+	// viewerID never leaves the process — the bus replaces it with an
+	// anonymous hourly-rotated session key.
+	PublishReaderMove(fromPathID *int64, toPathID int64, viewerID string)
 }
 
 type Request struct {
@@ -454,6 +464,17 @@ func handleUserToken(
 		env.RecordUserNoteView(bgCtx, userID, note, referrerVersionID)
 	}()
 
+	// Ephemeral realtime movement event for the admin graph. Guarded on the
+	// subscriber count first: with nobody watching this whole block is one
+	// boolean check.
+	if env.ReaderMovesActive() {
+		var fromPathID *int64
+		if referrerNote := findReferrerNote(referrer, notes); referrerNote != nil {
+			fromPathID = &referrerNote.PathID
+		}
+		env.PublishReaderMove(fromPathID, note.PathID, strconv.FormatInt(userID, 10))
+	}
+
 	lastViewParams := db.LastUserNoteViewParams{
 		UserID: userID,
 		PathID: note.PathID,
@@ -473,6 +494,16 @@ func handleUserToken(
 
 // extractReferrerVersionID tries to find the version ID from a referrer URL.
 func extractReferrerVersionID(referrer string, notes *model.NoteViews) *int64 {
+	referrerNote := findReferrerNote(referrer, notes)
+	if referrerNote == nil {
+		return nil
+	}
+
+	return &referrerNote.VersionID
+}
+
+// findReferrerNote resolves the note a referrer URL points at, or nil.
+func findReferrerNote(referrer string, notes *model.NoteViews) *model.NoteView {
 	if referrer == "" {
 		return nil
 	}
@@ -495,13 +526,7 @@ func extractReferrerVersionID(referrer string, notes *model.NoteViews) *int64 {
 		referrerPath = "/"
 	}
 
-	// Try to find the note by path
-	referrerNote := notes.GetByPath(referrerPath)
-	if referrerNote == nil {
-		return nil
-	}
-
-	return &referrerNote.VersionID
+	return notes.GetByPath(referrerPath)
 }
 
 // formatTitle applies the site title template to the note title.

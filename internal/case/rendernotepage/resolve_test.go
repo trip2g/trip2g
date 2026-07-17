@@ -96,6 +96,7 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -143,6 +144,7 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -208,6 +210,7 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -273,6 +276,7 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -422,6 +426,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -483,6 +488,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -545,6 +551,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -607,6 +614,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -668,6 +676,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -726,6 +735,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -852,6 +862,7 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -909,6 +920,7 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -993,6 +1005,7 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 				}
 
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1049,6 +1062,7 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1197,6 +1211,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1234,6 +1249,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1271,6 +1287,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1302,6 +1319,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1333,6 +1351,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1361,6 +1380,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1403,6 +1423,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1487,6 +1508,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 				}
 
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1593,6 +1615,7 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1631,6 +1654,7 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1687,6 +1711,7 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ReaderMovesActiveFunc: func() bool { return false },
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
@@ -1802,6 +1827,7 @@ func TestResolve_SiteTitleTemplate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &EnvMock{
+				ReaderMovesActiveFunc: func() bool { return false },
 				LoggerFunc: func() logger.Logger {
 					return &logger.DummyLogger{}
 				},
@@ -1878,6 +1904,7 @@ func TestResolve_SigninWall(t *testing.T) {
 	// Override fields as needed per test case.
 	baseEnv := func(nv *model.NoteViews) *EnvMock {
 		return &EnvMock{
+			ReaderMovesActiveFunc: func() bool { return false },
 			LoggerFunc: func() logger.Logger {
 				return &logger.DummyLogger{}
 			},
@@ -2049,6 +2076,7 @@ func TestResolve_UsesPublicTelegramUsernameWhenAvailable(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		ReaderMovesActiveFunc: func() bool { return false },
 		LoggerFunc:            func() logger.Logger { return &logger.DummyLogger{} },
 		SiteConfigFunc:        func(ctx context.Context) model.SiteConfig { return model.SiteConfig{} },
 		SiteTitleTemplateFunc: func() string { return "%s" },
@@ -2100,6 +2128,7 @@ func TestResolve_FallsBackToNumericTelegramLinkWhenUsernameUnavailable(t *testin
 	}
 
 	env := &EnvMock{
+		ReaderMovesActiveFunc: func() bool { return false },
 		LoggerFunc:            func() logger.Logger { return &logger.DummyLogger{} },
 		SiteConfigFunc:        func(ctx context.Context) model.SiteConfig { return model.SiteConfig{} },
 		SiteTitleTemplateFunc: func() string { return "%s" },

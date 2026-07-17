@@ -12,6 +12,10 @@ namespace $.$$ {
 					nodes {
 						id
 						subgraphNames
+						meta {
+							key
+							raw
+						}
 						title
 						pathId
 						free
@@ -49,7 +53,7 @@ namespace $.$$ {
 
 	type graph_layout_node = {
 		id: string
-		subgraphNames: readonly string[]
+		groups: readonly string[]
 		free: boolean
 		saved: { x: number, y: number } | null
 	}
@@ -61,7 +65,7 @@ namespace $.$$ {
 
 	// Deterministic Fruchterman-Reingold force layout:
 	// - repulsion between all node pairs, spring attraction along edges
-	// - attraction to subgraph centroids (visible clusters)
+	// - attraction to group centroids (visible clusters)
 	// - optional radial pull of public (free) notes to an outer ring
 	// Nodes with saved positions are kept fixed when pin_saved is set.
 	function graph_layout_positions(
@@ -125,14 +129,14 @@ namespace $.$$ {
 
 		const clusters = new Map<string, number[]>()
 		nodes.forEach( ( node, i ) => {
-			for( const name of node.subgraphNames ) {
+			for( const name of node.groups ) {
 				let members = clusters.get( name )
 				if( !members ) clusters.set( name, members = [] )
 				members.push( i )
 			}
 		} )
 
-		const K_CLUSTER = L * 3 // subgraph centroid springs, tighter than global scale
+		const K_CLUSTER = L * 3 // group centroid springs, tighter than global scale
 		const K_GRAVITY = L * 12 // weak pull to center, keeps components together
 		const R_PUBLIC = scale * 0.6 // target ring radius for public notes
 
@@ -182,7 +186,7 @@ namespace $.$$ {
 				dy[ b ] += fy
 			}
 
-			// attraction to subgraph centroids: clusters emerge
+			// attraction to group centroids: clusters emerge
 			for( const members of clusters.values() ) {
 				if( members.length < 2 ) continue
 				let mx = 0, my = 0
@@ -249,6 +253,31 @@ namespace $.$$ {
 		return result
 	}
 
+	const MOVES_QUERY = `
+		subscription ReaderMoves {
+			readerMoves {
+				fromPathId
+				toPathId
+				sessionKey
+			}
+		}
+	`
+
+	type reader_move = {
+		fromPathId?: number | null
+		toPathId: number
+		sessionKey: string
+	}
+
+	// Stable color per anonymous session key, so one reader's walk reads as
+	// one moving trace on the graph.
+	function move_color( key: string ) {
+		let hash = 0
+		for( let i = 0; i < key.length; i++ ) hash = ( hash * 31 + key.charCodeAt( i ) ) | 0
+		const hue = ( ( hash % 360 ) + 360 ) % 360
+		return `hsl(${ hue }, 90%, 60%)`
+	}
+
 	export class $trip2g_admin_noteview_graph extends $.$trip2g_admin_noteview_graph {
 		auto_layout() {
 			this.Graph().relayout()
@@ -256,6 +285,32 @@ namespace $.$$ {
 
 		save_positions() {
 			this.Graph().save_all()
+		}
+
+		@ $mol_mem
+		moves_subscription() {
+			return $trip2g_graphql_raw_subscription( MOVES_QUERY )
+		}
+
+		// Pulled reactively from the page body (view.tree), like
+		// $trip2g_user_live.watcher_result: each SSE event re-runs this memo.
+		@ $mol_mem
+		moves_watcher( next?: null ) {
+			const sub = this.moves_subscription()
+			const move: reader_move | undefined = sub.data()?.readerMoves
+			if( !move ) {
+				const err = sub.error()
+				if( err ) console.log( 'readerMoves subscription error', err )
+				return null
+			}
+			setTimeout( () => {
+				try {
+					( this.Graph() as $trip2g_admin_noteview_graph_cytoscape ).animate_move( move )
+				} catch( err ) {
+					console.error( 'readerMoves animation failed', err )
+				}
+			}, 0 )
+			return null
 		}
 	}
 
@@ -290,12 +345,23 @@ namespace $.$$ {
 			return { data, subgraphs }
 		}
 
+		// Cluster groups of a node for the selected frontmatter field.
+		// "subgraph" (the default) keeps the multi-value subgraphNames behavior;
+		// any other field groups by its stringified frontmatter value.
+		node_groups( item: { subgraphNames?: readonly string[] | null, meta?: readonly { key: string, raw: string }[] | null } ): readonly string[] {
+			const field = this.group_by().trim()
+			if( !field || field === 'subgraph' ) return item.subgraphNames ?? []
+
+			const value = item.meta?.find( entry => entry.key === field )?.raw.trim() ?? ''
+			return value ? [ value ] : []
+		}
+
 		layout_input( use_saved: boolean ) {
 			const { data } = this.graph_data()
 
 			const nodes: graph_layout_node[] = data.map( item => ( {
 				id: item.id,
-				subgraphNames: item.subgraphNames ?? [],
+				groups: this.node_groups( item ),
 				free: Boolean( item.free ),
 				saved: use_saved && item.graphPosition
 					? { x: item.graphPosition.x, y: item.graphPosition.y }
@@ -434,6 +500,36 @@ namespace $.$$ {
 						'target-arrow-shape': 'triangle',
 						'curve-style': 'bezier'
 					}
+				},
+				// Realtime reader movement (readerMoves subscription)
+				{
+					selector: 'node.move-pulse',
+					style: {
+						'border-width': 8,
+						'border-color': 'data(moveColor)',
+						'border-opacity': 0.9
+					}
+				},
+				{
+					selector: 'edge.move-pulse',
+					style: {
+						'width': 5,
+						'line-color': 'data(moveColor)',
+						'target-arrow-color': 'data(moveColor)'
+					}
+				},
+				// Navigation without a wikilink edge: ephemeral dashed edge
+				{
+					selector: 'edge.move-ephemeral',
+					style: {
+						'width': 3,
+						'line-style': 'dashed',
+						'line-color': 'data(moveColor)',
+						'target-arrow-color': 'data(moveColor)',
+						'target-arrow-shape': 'triangle',
+						'curve-style': 'bezier',
+						'opacity': 0.8
+					}
 				}
 			] )
 
@@ -491,6 +587,59 @@ namespace $.$$ {
 			}
 
 			this.save_message( `Saved ${ positions.length } positions` )
+		}
+
+		node_by_path_id( pathId: number ) {
+			return this.cytoscape_instance().nodes().filter(
+				( node: any ) => String( node.data( 'pathId' ) ) === String( pathId )
+			)
+		}
+
+		pulse( elements: any, color: string ) {
+			elements.data( 'moveColor', color )
+			elements.addClass( 'move-pulse' )
+			setTimeout( () => elements.removeClass( 'move-pulse' ), 1500 )
+		}
+
+		// Animate one reader movement event: pulse the target node, pulse the
+		// from→to edge when the navigation follows a wikilink, otherwise draw
+		// an ephemeral dashed edge. Color keyed by the anonymous session key.
+		animate_move( move: { fromPathId?: number | null, toPathId: number, sessionKey: string } ) {
+			const cy = this.cytoscape_instance()
+			const color = move_color( move.sessionKey )
+
+			const to = this.node_by_path_id( move.toPathId )
+			if( !to.length ) return
+			this.pulse( to, color )
+
+			if( move.fromPathId == null ) return // entry from outside the KB
+			const from = this.node_by_path_id( move.fromPathId )
+			if( !from.length ) return
+
+			const from_id = from.eq( 0 ).id()
+			const to_id = to.eq( 0 ).id()
+
+			const edge = cy.edges().filter( ( e: any ) =>
+				( e.data( 'source' ) === from_id && e.data( 'target' ) === to_id ) ||
+				( e.data( 'source' ) === to_id && e.data( 'target' ) === from_id )
+			)
+			if( edge.length ) {
+				this.pulse( edge, color )
+				return
+			}
+
+			// No wikilink between the notes (nav via search, menu, direct URL)
+			const added = cy.add( {
+				group: 'edges',
+				data: {
+					id: `move-${ move.sessionKey }-${ Date.now() }-${ Math.random().toString( 36 ).slice( 2 ) }`,
+					source: from_id,
+					target: to_id,
+					moveColor: color,
+				},
+				classes: 'move-ephemeral',
+			} )
+			setTimeout( () => added.remove(), 2500 )
 		}
 
 		save_position( pathId: string, x: number, y: number ) {

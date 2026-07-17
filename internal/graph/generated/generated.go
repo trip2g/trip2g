@@ -838,6 +838,7 @@ type SubgraphResolver interface {
 type SubscriptionResolver interface {
 	CurrentTime(ctx context.Context, format *string) (<-chan string, error)
 	NoteChanges(ctx context.Context, filter model.NoteChangesFilter) (<-chan *model.NoteChangesSubscriptionPayload, error)
+	ReaderMoves(ctx context.Context) (<-chan *model.ReaderMoveEvent, error)
 }
 type ToggleFavoriteNotePayloadResolver interface {
 	FavoriteNotes(ctx context.Context, obj *model.ToggleFavoriteNotePayload) ([]model.PublicNote, error)
@@ -3220,6 +3221,21 @@ type NoteHideEvent {
 
 union NoteChangeItem = NoteUpsertEvent | NoteHideEvent
 
+# readerMoves subscription
+
+type ReaderMoveEvent {
+  """Null = entry from outside the KB (direct link, search, external referrer)."""
+  fromPathId: Int64
+  toPathId:   Int64!
+  at:         Time!
+  """
+  Anonymous walk-continuity token: hourly-rotated HMAC over the viewer id,
+  never a user id. Same reader = same token within the hour (one color per
+  walk on the dashboard), unlinkable across hours or restarts.
+  """
+  sessionKey: String!
+}
+
 type NoteChangesSubscriptionPayload {
   """
   Filtered batch of changes. Always non-empty — if no change passes the
@@ -3247,6 +3263,12 @@ type Subscription {
     - hideNotes → hide
   """
   noteChanges(filter: NoteChangesFilter!): NoteChangesSubscriptionPayload!
+  """
+  Realtime reader movement events (ephemeral — nothing is persisted, a late
+  subscriber sees no history).
+  Auth: admin session or instance API key ONLY — stricter than noteChanges.
+  """
+  readerMoves: ReaderMoveEvent!
 }
 
 type Mutation {
@@ -38151,6 +38173,122 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _ReaderMoveEvent_fromPathId(ctx context.Context, field graphql.CollectedField, obj *model.ReaderMoveEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReaderMoveEvent_fromPathId,
+		func(ctx context.Context) (any, error) {
+			return obj.FromPathID, nil
+		},
+		nil,
+		ec.marshalOInt642ᚖint64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReaderMoveEvent_fromPathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReaderMoveEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReaderMoveEvent_toPathId(ctx context.Context, field graphql.CollectedField, obj *model.ReaderMoveEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReaderMoveEvent_toPathId,
+		func(ctx context.Context) (any, error) {
+			return obj.ToPathID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReaderMoveEvent_toPathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReaderMoveEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReaderMoveEvent_at(ctx context.Context, field graphql.CollectedField, obj *model.ReaderMoveEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReaderMoveEvent_at,
+		func(ctx context.Context) (any, error) {
+			return obj.At, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReaderMoveEvent_at(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReaderMoveEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReaderMoveEvent_sessionKey(ctx context.Context, field graphql.CollectedField, obj *model.ReaderMoveEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReaderMoveEvent_sessionKey,
+		func(ctx context.Context) (any, error) {
+			return obj.SessionKey, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReaderMoveEvent_sessionKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReaderMoveEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RefreshBoostyDataPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RefreshBoostyDataPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40880,6 +41018,45 @@ func (ec *executionContext) fieldContext_Subscription_noteChanges(ctx context.Co
 	if fc.Args, err = ec.field_Subscription_noteChanges_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_readerMoves(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Subscription_readerMoves,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Subscription().ReaderMoves(ctx)
+		},
+		nil,
+		ec.marshalNReaderMoveEvent2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐReaderMoveEvent,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Subscription_readerMoves(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "fromPathId":
+				return ec.fieldContext_ReaderMoveEvent_fromPathId(ctx, field)
+			case "toPathId":
+				return ec.fieldContext_ReaderMoveEvent_toPathId(ctx, field)
+			case "at":
+				return ec.fieldContext_ReaderMoveEvent_at(ctx, field)
+			case "sessionKey":
+				return ec.fieldContext_ReaderMoveEvent_sessionKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReaderMoveEvent", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -75919,6 +76096,57 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
+var readerMoveEventImplementors = []string{"ReaderMoveEvent"}
+
+func (ec *executionContext) _ReaderMoveEvent(ctx context.Context, sel ast.SelectionSet, obj *model.ReaderMoveEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, readerMoveEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReaderMoveEvent")
+		case "fromPathId":
+			out.Values[i] = ec._ReaderMoveEvent_fromPathId(ctx, field, obj)
+		case "toPathId":
+			out.Values[i] = ec._ReaderMoveEvent_toPathId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "at":
+			out.Values[i] = ec._ReaderMoveEvent_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sessionKey":
+			out.Values[i] = ec._ReaderMoveEvent_sessionKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var refreshBoostyDataPayloadImplementors = []string{"RefreshBoostyDataPayload", "RefreshBoostyDataOrErrorPayload"}
 
 func (ec *executionContext) _RefreshBoostyDataPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RefreshBoostyDataPayload) graphql.Marshaler {
@@ -78020,6 +78248,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_currentTime(ctx, fields[0])
 	case "noteChanges":
 		return ec._Subscription_noteChanges(ctx, fields[0])
+	case "readerMoves":
+		return ec._Subscription_readerMoves(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -86422,6 +86652,20 @@ func (ec *executionContext) marshalNPushedNoteAsset2ᚕtrip2gᚋinternalᚋgraph
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNReaderMoveEvent2trip2gᚋinternalᚋgraphᚋmodelᚐReaderMoveEvent(ctx context.Context, sel ast.SelectionSet, v model.ReaderMoveEvent) graphql.Marshaler {
+	return ec._ReaderMoveEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNReaderMoveEvent2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐReaderMoveEvent(ctx context.Context, sel ast.SelectionSet, v *model.ReaderMoveEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ReaderMoveEvent(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRefreshBoostyDataInput2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshBoostyDataInput(ctx context.Context, v any) (model.RefreshBoostyDataInput, error) {

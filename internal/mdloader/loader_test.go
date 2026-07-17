@@ -1,6 +1,7 @@
 package mdloader_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"trip2g/internal/frontmatterpatch"
@@ -2211,6 +2212,53 @@ func TestVaultPatchIsSystemWithUnderscore(t *testing.T) {
 	note := pages.PathMap["_rules.md"]
 	require.NotNil(t, note)
 	require.True(t, note.IsSystem(), "vault patch file at _rules.md should be a system note")
+}
+
+// TestDocsGraphGroupsPatch verifies the real docs vault patch file
+// (docs/_graph_groups.md) assigns section subgraphs to notes without one
+// and leaves explicit subgraphs untouched.
+func TestDocsGraphGroupsPatch(t *testing.T) {
+	log := logger.TestLogger{}
+
+	patch, err := os.ReadFile("../../docs/_graph_groups.md")
+	require.NoError(t, err, "docs/_graph_groups.md should exist")
+
+	sources := []mdloader.SourceFile{
+		{Path: "_graph_groups.md", Content: patch},
+		{Path: "demo/hello.md", Content: []byte("---\nfree: true\n---\nHello")},
+		{Path: "demo/blog/post.md", Content: []byte("---\nfree: true\n---\nPost")},
+		{Path: "en/user/editor.md", Content: []byte("---\nfree: true\n---\nEditor")},
+		{Path: "ru/user/editor.md", Content: []byte("---\nfree: true\n---\nРедактор")},
+		{Path: "en/hub/philosophers.md", Content: []byte("Hub")},
+		{Path: "ru/hub/philosophers.md", Content: []byte("Хаб")},
+		{Path: "demo/premium.md", Content: []byte("---\nsubgraph: premium\n---\nPaid")},
+		{Path: "index.md", Content: []byte("Root note, not covered")},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sources,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	expect := map[string]string{
+		"demo/hello.md":          "demo",
+		"demo/blog/post.md":      "demo",
+		"en/user/editor.md":      "en_user",
+		"ru/user/editor.md":      "ru_user",
+		"en/hub/philosophers.md": "hub",
+		"ru/hub/philosophers.md": "hub",
+		"demo/premium.md":        "premium",
+	}
+	for path, subgraph := range expect {
+		note := pages.PathMap[path]
+		require.NotNil(t, note, path)
+		require.Equal(t, []string{subgraph}, note.SubgraphNames, path)
+	}
+
+	root := pages.PathMap["index.md"]
+	require.NotNil(t, root)
+	require.Empty(t, root.SubgraphNames, "root note outside include patterns should stay ungrouped")
 }
 
 func TestWikilinkEscapedPipeInTable(t *testing.T) {

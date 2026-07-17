@@ -1,7 +1,6 @@
 namespace $.$$ {
 	export class $trip2g_admin_gittoken_button_disable extends $.$trip2g_admin_gittoken_button_disable {
 		override handle_click() {
-			console.log('handle click')
 			if (this.id() === 0) {
 				throw new Error('Git token ID is not set')
 			}

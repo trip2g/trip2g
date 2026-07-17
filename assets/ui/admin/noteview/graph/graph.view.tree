@@ -14,13 +14,21 @@ $trip2g_admin_noteview_graph $mol_page
 				<= PublicOutsideCheck $mol_check_box
 					title \Public outside
 					checked? <=> public_outside? false
+				<= GroupByLabel $mol_view
+					sub / \Group by:
+				<= GroupByString $mol_string
+					hint \subgraph
+					value? <=> group_by? \subgraph
 				<= save_message? \
 		<= Graph $trip2g_admin_noteview_graph_cytoscape
 			public_outside <= public_outside
+			group_by <= group_by
 			save_message? <=> save_message?
+		<= moves_watcher null
 
 $trip2g_admin_noteview_graph_cytoscape $mol_view
 	relayout? null
 	save_all? null
 	public_outside false
+	group_by \subgraph
 	save_message? \

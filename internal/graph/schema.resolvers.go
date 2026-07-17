@@ -3276,6 +3276,49 @@ func (r *subscriptionResolver) NoteChanges(ctx context.Context, filter model.Not
 	return ch, nil
 }
 
+// ReaderMoves is the resolver for the readerMoves field.
+func (r *subscriptionResolver) ReaderMoves(ctx context.Context) (<-chan *model.ReaderMoveEvent, error) {
+	// Auth: admin session or instance API key only — stricter than
+	// noteChanges (see readerMovesAuth).
+	err := readerMovesAuth(ctx, r.DefaultEnv)
+	if err != nil {
+		return nil, err
+	}
+
+	sub := r.DefaultEnv.SubscribeReaderMoves()
+
+	ch := make(chan *model.ReaderMoveEvent, 1)
+
+	go func() {
+		defer close(ch)
+		defer r.DefaultEnv.UnsubscribeReaderMoves(sub)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case move, ok := <-sub.Ch:
+				if !ok {
+					return
+				}
+				event := &model.ReaderMoveEvent{
+					FromPathID: move.FromPathID,
+					ToPathID:   move.ToPathID,
+					At:         move.At,
+					SessionKey: move.SessionKey,
+				}
+				select {
+				case ch <- event:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+
+	return ch, nil
+}
+
 // FavoriteNotes is the resolver for the favoriteNotes field.
 func (r *toggleFavoriteNotePayloadResolver) FavoriteNotes(ctx context.Context, obj *model.ToggleFavoriteNotePayload) ([]model.PublicNote, error) {
 	userResolver := userResolver{Resolver: r.Resolver}
