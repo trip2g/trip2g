@@ -1,0 +1,16 @@
+mutation ($input: AdminUpdateTelegramAccountInput!) {
+	admin {
+		payload: updateTelegramAccount(input: $input) {
+			__typename
+			... on AdminUpdateTelegramAccountPayload {
+				account {
+					id
+					enabled
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

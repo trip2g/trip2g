@@ -1,0 +1,13 @@
+mutation ($input: AdminSetTelegramAccountChatPublishTagsInput!) {
+	admin {
+		payload: setTelegramAccountChatPublishTags(input: $input) {
+			__typename
+			... on AdminSetTelegramAccountChatPublishTagsPayload {
+				success
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

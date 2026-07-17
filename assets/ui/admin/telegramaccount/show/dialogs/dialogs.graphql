@@ -1,0 +1,18 @@
+query ($id: Int64!, $limit: Int) {
+	admin {
+		telegramAccount(id: $id) {
+			dialogs(limit: $limit) {
+				id
+				username
+				title
+				type
+				publishTags {
+					id
+				}
+				publishInstantTags {
+					id
+				}
+			}
+		}
+	}
+}

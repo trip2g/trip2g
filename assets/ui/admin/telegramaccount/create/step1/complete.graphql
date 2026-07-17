@@ -1,0 +1,18 @@
+mutation ($input: AdminCompleteTelegramAccountAuthInput!) {
+	admin {
+		payload: completeTelegramAccountAuth(input: $input) {
+			__typename
+			... on AdminCompleteTelegramAccountAuthPayload {
+				account {
+					id
+					phone
+					displayName
+					isPremium
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

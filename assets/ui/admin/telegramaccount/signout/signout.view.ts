@@ -1,26 +1,7 @@
 namespace $.$$ {
-	const signout_request = $trip2g_graphql_request(
-		`
-			mutation AdminSignOutTelegramAccount($input: AdminSignOutTelegramAccountInput!) {
-				admin {
-					data: signOutTelegramAccount(input: $input) {
-						... on AdminSignOutTelegramAccountPayload {
-							success
-							__typename
-						}
-
-						... on ErrorPayload {
-							message
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_telegramaccount_signout extends $.$trip2g_admin_telegramaccount_signout {
 		signout() {
-			const res = signout_request({
+			const res = $trip2g_admin_telegramaccount_signout_signout({
 				input: {
 					id: String(this.account_id()),
 				},
