@@ -628,7 +628,7 @@ services:
       - -c
       - >
         apt-get update -qq && apt-get install -y -qq python3 >/dev/null &&
-        go test -tags dev -race -run TestSandbox ./internal/coderun/...
+        go test -tags dev -race -run TestSandbox ./cmd/codellm/internal/coderun/...
 
 volumes:
   test-data:
