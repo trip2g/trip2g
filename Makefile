@@ -33,7 +33,7 @@ gqlgen:
 	go tool github.com/99designs/gqlgen generate
 
 gqlgencodellm:
-	go tool github.com/99designs/gqlgen generate --config internal/codellm/codellmgql/gqlgen.yml
+	go tool github.com/99designs/gqlgen generate --config cmd/codellm/internal/codellm/codellmgql/gqlgen.yml
 
 graphqlgen: gqlgen
 	./scripts/waitfor localhost:8081

@@ -24,12 +24,12 @@ import (
 	"time"
 
 	fleetappconfig "trip2g/cmd/fleet/appconfig"
-	"trip2g/internal/agentruntime"
+	"trip2g/cmd/fleet/internal/agentruntime"
+	"trip2g/cmd/fleet/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet/fleetgql"
+	"trip2g/cmd/fleet/internal/fleet/graph"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/delegatedadmin"
-	"trip2g/internal/fleet"
-	"trip2g/internal/fleet/fleetgql"
-	"trip2g/internal/fleet/graph"
 	"trip2g/internal/logger"
 	"trip2g/internal/zerologger"
 

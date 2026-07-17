@@ -72,7 +72,7 @@ jobs:
             -e FLEET_SANDBOX_MUST_ENFORCE=1 \
             -e CGO_ENABLED=0 \
             golang:1.26 \
-            sh -c "apt-get update -q && apt-get install -y -q python3 && go test -tags dev -count=1 -timeout 120s ./internal/coderun/..."
+            sh -c "apt-get update -q && apt-get install -y -q python3 && go test -tags dev -count=1 -timeout 120s ./cmd/codellm/internal/coderun/..."
 
   e2e:
     runs-on: ubuntu-latest

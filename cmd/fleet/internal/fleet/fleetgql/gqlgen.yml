@@ -1,0 +1,28 @@
+# gqlgen config for the fleet binary's own GraphQL surface (roles + roleGraph).
+# Separate from the monolith's repo-root gqlgen.yml and its generated package —
+# this is a standalone 2-query read API compiled into cmd/fleet.
+#
+# Paths are package-local: regenerate with
+#   go generate ./cmd/fleet/internal/fleet/fleetgql/...
+
+schema:
+  - schema.graphqls
+
+exec:
+  package: fleetgen
+  layout: single-file
+  filename: fleetgen/generated.go
+
+model:
+  filename: model/models_gen.go
+  package: model
+
+resolver:
+  package: fleetgql
+  layout: follow-schema
+  dir: .
+  filename_template: "{name}.resolvers.go"
+
+omit_slice_element_pointers: true
+omit_complexity: true
+skip_mod_tidy: true

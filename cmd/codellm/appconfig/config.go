@@ -18,7 +18,7 @@ import (
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 
-	"trip2g/internal/coderun"
+	"trip2g/cmd/codellm/internal/coderun"
 )
 
 // Config holds codellm's runtime configuration.
