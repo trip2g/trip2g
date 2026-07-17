@@ -9,7 +9,7 @@ import (
 )
 
 // NewAdminGraphQLClient builds the genqlient client for the trip2g admin lane:
-// the typed operations in internal/fleet/trip2ggql POSTed as raw GraphQL to
+// the typed operations in cmd/fleet/internal/fleet/trip2ggql POSTed as raw GraphQL to
 // <baseURL>/_system/graphql, authenticated by a HAT-minted admin session
 // cookie. The cookie is minted on first use and refreshed on a 401 (re-auth +
 // one retry), matching the old hand-written GraphQLAdmin lane.

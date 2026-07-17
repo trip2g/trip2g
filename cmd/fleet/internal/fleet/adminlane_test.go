@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/fleet/trip2ggql"
+	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
 )
 
 // hatCookieHandler writes a trip2g_token session cookie + 302, mimicking the

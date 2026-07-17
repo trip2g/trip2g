@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 	"trip2g/internal/logger"
 
 	"github.com/stretchr/testify/require"

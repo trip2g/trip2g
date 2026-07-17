@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 )
 
 // Edge kinds served by the fleet GraphQL roleGraph query.

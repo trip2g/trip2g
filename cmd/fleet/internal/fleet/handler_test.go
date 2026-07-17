@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/cmd/fleet/internal/agentruntime"
 	"trip2g/internal/webhookutil"
 
 	"github.com/stretchr/testify/require"

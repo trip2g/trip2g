@@ -12,8 +12,8 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 
-	"trip2g/internal/fleet"
-	"trip2g/internal/fleet/trip2ggql"
+	"trip2g/cmd/fleet/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
 )
 
 // Server serves the fleet dependency graph on a localhost-only debug surface:

@@ -9,7 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"trip2g/internal/fleet/fleetgql/fleetgen"
+	"trip2g/cmd/fleet/internal/fleet/fleetgql/fleetgen"
 )
 
 // NewHTTPHandler builds the fleet GraphQL HTTP handler (POST /graphql) over the

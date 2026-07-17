@@ -11,7 +11,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/fleet/trip2ggql"
+	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
 )
 
 // gqlDoerFunc adapts a func to genqlient's graphql.Doer for tests.

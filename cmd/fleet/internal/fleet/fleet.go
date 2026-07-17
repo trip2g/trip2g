@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync"
 
-	"trip2g/internal/agentruntime"
+	"trip2g/cmd/fleet/internal/agentruntime"
 )
 
 // Fleet ties config, the trip2g HTTP client, the LLM, and the live role

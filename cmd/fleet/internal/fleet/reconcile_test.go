@@ -13,7 +13,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/fleet/trip2ggql"
+	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
 )
 
 // legacySpecVer reproduces the pre-schema-bump specVer hash (no schema token,

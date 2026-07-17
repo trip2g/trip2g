@@ -10,9 +10,9 @@ import (
 	"path"
 	"strings"
 
-	"trip2g/internal/fleet"
-	"trip2g/internal/fleet/fleetgql/model"
-	"trip2g/internal/fleet/graph"
+	"trip2g/cmd/fleet/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet/fleetgql/model"
+	"trip2g/cmd/fleet/internal/fleet/graph"
 )
 
 // toModelRole projects a parsed fleet.Role onto the GraphQL Role. An empty model

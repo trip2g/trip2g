@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 )
 
 // authFakeSource is a static fleetgql.RoleSource for the auth integration test.
@@ -102,7 +102,7 @@ func TestGraphQLServerGatesEntireMux(t *testing.T) {
 // stub handler and asserts a cookieless request reaches the handler (i.e. is
 // NOT rejected by the admin-cookie gate), unlike the GraphQL mux above. Real
 // HMAC-signature coverage of ServeDelivery itself lives in
-// internal/fleet/handler_test.go.
+// cmd/fleet/internal/fleet/handler_test.go.
 func TestWebhookDeliveryNotCookieGated(t *testing.T) {
 	var reached bool
 	deliveryMux := http.NewServeMux()

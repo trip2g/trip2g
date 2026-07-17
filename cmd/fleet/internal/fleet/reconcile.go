@@ -12,7 +12,7 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 
-	"trip2g/internal/fleet/trip2ggql"
+	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
 )
 
 // Reconciler drives the desired-vs-actual webhook diff over the genqlient admin

@@ -16,7 +16,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/fleet"
+	"trip2g/cmd/fleet/internal/fleet"
 	"trip2g/internal/logger"
 )
 
