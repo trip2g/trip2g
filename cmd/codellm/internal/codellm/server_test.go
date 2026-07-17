@@ -10,7 +10,7 @@ import (
 	goopenai "github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/coderun"
+	"trip2g/cmd/codellm/internal/coderun"
 )
 
 // newTestServer builds a codellm server that runs bash blocks unsandboxed, so

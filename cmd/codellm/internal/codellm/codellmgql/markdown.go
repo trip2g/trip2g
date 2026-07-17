@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"strings"
 
-	"trip2g/internal/codellm/codellmgql/model"
-	"trip2g/internal/coderun"
+	"trip2g/cmd/codellm/internal/codellm/codellmgql/model"
+	"trip2g/cmd/codellm/internal/coderun"
 	"trip2g/internal/yamlutil"
 
 	"github.com/yuin/goldmark"

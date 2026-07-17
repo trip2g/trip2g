@@ -27,8 +27,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	goopenai "github.com/sashabaranov/go-openai"
 
-	"trip2g/internal/codellm/codellmgql"
-	"trip2g/internal/coderun"
+	"trip2g/cmd/codellm/internal/codellm/codellmgql"
+	"trip2g/cmd/codellm/internal/coderun"
 	"trip2g/internal/webhookutil"
 )
 

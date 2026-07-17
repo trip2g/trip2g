@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/coderun"
+	"trip2g/cmd/codellm/internal/coderun"
 )
 
 func TestGetArgs_Defaults(t *testing.T) {

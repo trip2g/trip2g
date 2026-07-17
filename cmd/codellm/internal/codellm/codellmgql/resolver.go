@@ -10,7 +10,9 @@ import (
 	"context"
 )
 
-//go:generate go tool github.com/99designs/gqlgen generate --config gqlgen.yml
+// gqlgen.yml paths are repo-root-relative; -C runs from the root so package-local
+// `go generate` and the Makefile target resolve them identically (no stray dirs).
+//go:generate go -C ../../../../.. tool github.com/99designs/gqlgen generate --config cmd/codellm/internal/codellm/codellmgql/gqlgen.yml
 
 // BlockRunRequest contains a markdown execution request.
 type BlockRunRequest struct {

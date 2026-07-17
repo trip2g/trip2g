@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/coderun"
+	"trip2g/cmd/codellm/internal/coderun"
 	"trip2g/internal/delegatedadmin"
 )
 

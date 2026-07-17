@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"trip2g/internal/codellm/codellmgql/model"
+	"trip2g/cmd/codellm/internal/codellm/codellmgql/model"
 )
 
 var blockErrorPattern = regexp.MustCompile(`block ([0-9]+)(?:/[0-9]+)?:`)

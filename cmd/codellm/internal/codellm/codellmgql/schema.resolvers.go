@@ -7,8 +7,8 @@ package codellmgql
 import (
 	"context"
 	"encoding/json"
-	"trip2g/internal/codellm/codellmgql/codellmgen"
-	"trip2g/internal/codellm/codellmgql/model"
+	"trip2g/cmd/codellm/internal/codellm/codellmgql/codellmgen"
+	"trip2g/cmd/codellm/internal/codellm/codellmgql/model"
 )
 
 // AssembleMarkdown is the resolver for the assembleMarkdown field.

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-	"trip2g/internal/codellm/codellmgql/model"
+	"trip2g/cmd/codellm/internal/codellm/codellmgql/model"
 	"trip2g/internal/fleetinput"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -318,7 +318,7 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_assembleMarkdown_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAssembleMarkdownInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAssembleMarkdownInput2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownInput)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func (ec *executionContext) field_Mutation_assembleMarkdown_args(ctx context.Con
 func (ec *executionContext) field_Mutation_runBlocks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRunBlocksInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRunBlocksInput2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksInput)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +351,7 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_Query_parseMarkdown_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNParseMarkdownInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNParseMarkdownInput2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownInput)
 	if err != nil {
 		return nil, err
 	}
@@ -712,7 +712,7 @@ func (ec *executionContext) _Mutation_assembleMarkdown(ctx context.Context, fiel
 			return ec.resolvers.Mutation().AssembleMarkdown(ctx, fc.Args["input"].(model.AssembleMarkdownInput))
 		},
 		nil,
-		ec.marshalNAssembleMarkdownOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownOrErrorPayload,
+		ec.marshalNAssembleMarkdownOrErrorPayload2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownOrErrorPayload,
 		true,
 		true,
 	)
@@ -753,7 +753,7 @@ func (ec *executionContext) _Mutation_runBlocks(ctx context.Context, field graph
 			return ec.resolvers.Mutation().RunBlocks(ctx, fc.Args["input"].(model.RunBlocksInput))
 		},
 		nil,
-		ec.marshalNRunBlocksOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksOrErrorPayload,
+		ec.marshalNRunBlocksOrErrorPayload2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksOrErrorPayload,
 		true,
 		true,
 	)
@@ -822,7 +822,7 @@ func (ec *executionContext) _ParseMarkdownPayload_blocks(ctx context.Context, fi
 			return obj.Blocks, nil
 		},
 		nil,
-		ec.marshalNMarkdownBlock2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlockᚄ,
+		ec.marshalNMarkdownBlock2ᚕtrip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlockᚄ,
 		true,
 		true,
 	)
@@ -852,7 +852,7 @@ func (ec *executionContext) _Query_parseMarkdown(ctx context.Context, field grap
 			return ec.resolvers.Query().ParseMarkdown(ctx, fc.Args["input"].(model.ParseMarkdownInput))
 		},
 		nil,
-		ec.marshalNParseMarkdownOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownOrErrorPayload,
+		ec.marshalNParseMarkdownOrErrorPayload2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownOrErrorPayload,
 		true,
 		true,
 	)
@@ -1203,7 +1203,7 @@ func (ec *executionContext) _RunBlocksPayload_results(ctx context.Context, field
 			return obj.Results, nil
 		},
 		nil,
-		ec.marshalNRunBlockResult2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResultᚄ,
+		ec.marshalNRunBlockResult2ᚕtrip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResultᚄ,
 		true,
 		true,
 	)
@@ -2698,7 +2698,7 @@ func (ec *executionContext) unmarshalInputAssembleMarkdownInput(ctx context.Cont
 		switch k {
 		case "blocks":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blocks"))
-			data, err := ec.unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx, v)
+			data, err := ec.unmarshalNMdBlockInput2ᚕtrip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2897,7 +2897,7 @@ func (ec *executionContext) unmarshalInputMdBlockInput(ctx context.Context, obj 
 		switch k {
 		case "kind":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kind"))
-			data, err := ec.unmarshalNBlockKind2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐBlockKind(ctx, v)
+			data, err := ec.unmarshalNBlockKind2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐBlockKind(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2979,7 +2979,7 @@ func (ec *executionContext) unmarshalInputRunBlocksInput(ctx context.Context, ob
 			it.MaxSteps = data
 		case "blocks":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blocks"))
-			data, err := ec.unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx, v)
+			data, err := ec.unmarshalNMdBlockInput2ᚕtrip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3932,12 +3932,12 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) unmarshalNAssembleMarkdownInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownInput(ctx context.Context, v any) (model.AssembleMarkdownInput, error) {
+func (ec *executionContext) unmarshalNAssembleMarkdownInput2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownInput(ctx context.Context, v any) (model.AssembleMarkdownInput, error) {
 	res, err := ec.unmarshalInputAssembleMarkdownInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNAssembleMarkdownOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.AssembleMarkdownOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNAssembleMarkdownOrErrorPayload2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐAssembleMarkdownOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.AssembleMarkdownOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3947,13 +3947,13 @@ func (ec *executionContext) marshalNAssembleMarkdownOrErrorPayload2trip2gᚋinte
 	return ec._AssembleMarkdownOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNBlockKind2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐBlockKind(ctx context.Context, v any) (model.BlockKind, error) {
+func (ec *executionContext) unmarshalNBlockKind2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐBlockKind(ctx context.Context, v any) (model.BlockKind, error) {
 	var res model.BlockKind
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNBlockKind2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐBlockKind(ctx context.Context, sel ast.SelectionSet, v model.BlockKind) graphql.Marshaler {
+func (ec *executionContext) marshalNBlockKind2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐBlockKind(ctx context.Context, sel ast.SelectionSet, v model.BlockKind) graphql.Marshaler {
 	return v
 }
 
@@ -4072,7 +4072,7 @@ func (ec *executionContext) marshalNJSON2map(ctx context.Context, sel ast.Select
 	return res
 }
 
-func (ec *executionContext) marshalNMarkdownBlock2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlock(ctx context.Context, sel ast.SelectionSet, v model.MarkdownBlock) graphql.Marshaler {
+func (ec *executionContext) marshalNMarkdownBlock2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlock(ctx context.Context, sel ast.SelectionSet, v model.MarkdownBlock) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4082,7 +4082,7 @@ func (ec *executionContext) marshalNMarkdownBlock2trip2gᚋinternalᚋcodellmᚋ
 	return ec._MarkdownBlock(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNMarkdownBlock2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlockᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MarkdownBlock) graphql.Marshaler {
+func (ec *executionContext) marshalNMarkdownBlock2ᚕtrip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlockᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MarkdownBlock) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4106,7 +4106,7 @@ func (ec *executionContext) marshalNMarkdownBlock2ᚕtrip2gᚋinternalᚋcodellm
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNMarkdownBlock2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlock(ctx, sel, v[i])
+			ret[i] = ec.marshalNMarkdownBlock2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMarkdownBlock(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4126,19 +4126,19 @@ func (ec *executionContext) marshalNMarkdownBlock2ᚕtrip2gᚋinternalᚋcodellm
 	return ret
 }
 
-func (ec *executionContext) unmarshalNMdBlockInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInput(ctx context.Context, v any) (model.MdBlockInput, error) {
+func (ec *executionContext) unmarshalNMdBlockInput2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInput(ctx context.Context, v any) (model.MdBlockInput, error) {
 	res, err := ec.unmarshalInputMdBlockInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx context.Context, v any) ([]model.MdBlockInput, error) {
+func (ec *executionContext) unmarshalNMdBlockInput2ᚕtrip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInputᚄ(ctx context.Context, v any) ([]model.MdBlockInput, error) {
 	var vSlice []any
 	vSlice = graphql.CoerceList(v)
 	var err error
 	res := make([]model.MdBlockInput, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNMdBlockInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInput(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNMdBlockInput2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐMdBlockInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -4146,12 +4146,12 @@ func (ec *executionContext) unmarshalNMdBlockInput2ᚕtrip2gᚋinternalᚋcodell
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalNParseMarkdownInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownInput(ctx context.Context, v any) (model.ParseMarkdownInput, error) {
+func (ec *executionContext) unmarshalNParseMarkdownInput2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownInput(ctx context.Context, v any) (model.ParseMarkdownInput, error) {
 	res, err := ec.unmarshalInputParseMarkdownInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNParseMarkdownOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ParseMarkdownOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNParseMarkdownOrErrorPayload2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐParseMarkdownOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ParseMarkdownOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4161,11 +4161,11 @@ func (ec *executionContext) marshalNParseMarkdownOrErrorPayload2trip2gᚋinterna
 	return ec._ParseMarkdownOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNRunBlockResult2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResult(ctx context.Context, sel ast.SelectionSet, v model.RunBlockResult) graphql.Marshaler {
+func (ec *executionContext) marshalNRunBlockResult2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResult(ctx context.Context, sel ast.SelectionSet, v model.RunBlockResult) graphql.Marshaler {
 	return ec._RunBlockResult(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNRunBlockResult2ᚕtrip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RunBlockResult) graphql.Marshaler {
+func (ec *executionContext) marshalNRunBlockResult2ᚕtrip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.RunBlockResult) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4189,7 +4189,7 @@ func (ec *executionContext) marshalNRunBlockResult2ᚕtrip2gᚋinternalᚋcodell
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNRunBlockResult2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResult(ctx, sel, v[i])
+			ret[i] = ec.marshalNRunBlockResult2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlockResult(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4209,12 +4209,12 @@ func (ec *executionContext) marshalNRunBlockResult2ᚕtrip2gᚋinternalᚋcodell
 	return ret
 }
 
-func (ec *executionContext) unmarshalNRunBlocksInput2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksInput(ctx context.Context, v any) (model.RunBlocksInput, error) {
+func (ec *executionContext) unmarshalNRunBlocksInput2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksInput(ctx context.Context, v any) (model.RunBlocksInput, error) {
 	res, err := ec.unmarshalInputRunBlocksInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNRunBlocksOrErrorPayload2trip2gᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RunBlocksOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNRunBlocksOrErrorPayload2trip2gᚋcmdᚋcodellmᚋinternalᚋcodellmᚋcodellmgqlᚋmodelᚐRunBlocksOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RunBlocksOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

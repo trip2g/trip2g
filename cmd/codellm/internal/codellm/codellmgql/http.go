@@ -9,7 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"trip2g/internal/codellm/codellmgql/codellmgen"
+	"trip2g/cmd/codellm/internal/codellm/codellmgql/codellmgen"
 )
 
 // NewHTTPHandler builds codellm's markdown-structure GraphQL handler

@@ -4,24 +4,24 @@
 # fleetgql setup (#231).
 #
 # Regenerate:
-#   go tool github.com/99designs/gqlgen generate --config internal/codellm/codellmgql/gqlgen.yml
+#   go tool github.com/99designs/gqlgen generate --config cmd/codellm/internal/codellm/codellmgql/gqlgen.yml
 
 schema:
-  - internal/codellm/codellmgql/schema.graphqls
+  - cmd/codellm/internal/codellm/codellmgql/schema.graphqls
 
 exec:
   package: codellmgen
   layout: single-file
-  filename: internal/codellm/codellmgql/codellmgen/generated.go
+  filename: cmd/codellm/internal/codellm/codellmgql/codellmgen/generated.go
 
 model:
-  filename: internal/codellm/codellmgql/model/models_gen.go
+  filename: cmd/codellm/internal/codellm/codellmgql/model/models_gen.go
   package: model
 
 resolver:
   package: codellmgql
   layout: follow-schema
-  dir: internal/codellm/codellmgql
+  dir: cmd/codellm/internal/codellm/codellmgql
   filename_template: "{name}.resolvers.go"
 
 omit_slice_element_pointers: true

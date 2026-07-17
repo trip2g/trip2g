@@ -14,8 +14,8 @@ import (
 	"net/http"
 	"time"
 
-	"trip2g/internal/codellm"
-	"trip2g/internal/coderun"
+	"trip2g/cmd/codellm/internal/codellm"
+	"trip2g/cmd/codellm/internal/coderun"
 	"trip2g/internal/delegatedadmin"
 
 	"trip2g/cmd/codellm/appconfig"

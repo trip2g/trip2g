@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"trip2g/internal/codellm/codellmgql/model"
+	"trip2g/cmd/codellm/internal/codellm/codellmgql/model"
 )
 
 // toInput converts parsed blocks into assemble inputs (drops index, which the
