@@ -196,6 +196,26 @@ func TestChatCompletions_ExecError422(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, rec.Code, "body: %s", rec.Body.String())
 }
 
+// TestChatCompletions_DisallowedProgram422 asserts allowlisting is
+// codellm-authoritative at the wire: a fenced block whose program is outside
+// AllowedPrograms is a deterministic 422 naming the allowlist. Fleet's exec
+// tool surfaces this to its model as a soft error (asserted on the
+// agentruntime side against a stub of this contract; the full
+// agentruntime→codellm→sandbox path is covered by the docker e2e suite).
+func TestChatCompletions_DisallowedProgram422(t *testing.T) {
+	srv := newTestServer() // allows bash only
+	rec := doChat(t, srv, []goopenai.ChatCompletionMessage{{
+		Role:    goopenai.ChatMessageRoleSystem,
+		Content: "You are a scoped micro-agent.\n```python\nprint(\"nope\")\n```",
+	}})
+	require.Equal(t, http.StatusUnprocessableEntity, rec.Code, "body: %s", rec.Body.String())
+
+	var e apiError
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &e))
+	require.Equal(t, "code_execution_error", e.Error.Type)
+	require.Contains(t, e.Error.Message, "not in --allowed-programs")
+}
+
 // TestChatCompletions_NoFencedBlock422 asserts a request carrying no fenced code
 // is a hard 422 (nothing to execute), not a silent empty success.
 func TestChatCompletions_NoFencedBlock422(t *testing.T) {
