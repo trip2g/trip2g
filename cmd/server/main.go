@@ -52,6 +52,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/metrics"
 	"trip2g/internal/model"
+	"trip2g/internal/movebus"
 	"trip2g/internal/notebus"
 	"trip2g/internal/noteloader"
 	"trip2g/internal/notfoundtracker"
@@ -180,6 +181,7 @@ type appState struct {
 	writeHolder *db.WriteHolder
 
 	noteBus *notebus.Bus
+	moveBus *movebus.Bus
 
 	log logger.Logger
 
@@ -372,6 +374,7 @@ func main() {
 
 			log:     log,
 			noteBus: notebus.New(log),
+			moveBus: movebus.New(log),
 			conn:    conn,
 			// mail:    mailyak.New(mailAddr, mailAuth),
 

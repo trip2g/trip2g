@@ -2055,6 +2055,21 @@ type NoteHideEvent {
 
 union NoteChangeItem = NoteUpsertEvent | NoteHideEvent
 
+# readerMoves subscription
+
+type ReaderMoveEvent {
+  """Null = entry from outside the KB (direct link, search, external referrer)."""
+  fromPathId: Int64
+  toPathId:   Int64!
+  at:         Time!
+  """
+  Anonymous walk-continuity token: hourly-rotated HMAC over the viewer id,
+  never a user id. Same reader = same token within the hour (one color per
+  walk on the dashboard), unlinkable across hours or restarts.
+  """
+  sessionKey: String!
+}
+
 type NoteChangesSubscriptionPayload {
   """
   Filtered batch of changes. Always non-empty — if no change passes the
@@ -2082,6 +2097,12 @@ type Subscription {
     - hideNotes → hide
   """
   noteChanges(filter: NoteChangesFilter!): NoteChangesSubscriptionPayload!
+  """
+  Realtime reader movement events (ephemeral — nothing is persisted, a late
+  subscriber sees no history).
+  Auth: admin session or instance API key ONLY — stricter than noteChanges.
+  """
+  readerMoves: ReaderMoveEvent!
 }
 
 type Mutation {
