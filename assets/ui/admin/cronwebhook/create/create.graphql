@@ -1,0 +1,16 @@
+mutation ($input: CreateCronWebhookInput!) {
+	admin {
+		payload: createCronWebhook(input: $input) {
+			__typename
+			... on CreateCronWebhookPayload {
+				cronWebhook {
+					id
+				}
+				secret
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

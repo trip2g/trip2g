@@ -1,0 +1,15 @@
+query ($id: Int64!) {
+	admin {
+		cronWebhookDeliveries(filter: { cronWebhookId: $id, limit: 20 }) {
+			nodes {
+				id
+				status
+				responseStatus
+				attempt
+				durationMs
+				createdAt
+				completedAt
+			}
+		}
+	}
+}

@@ -1,0 +1,18 @@
+query {
+	admin {
+		allChangeWebhooks {
+			nodes {
+				id
+				url
+				enabled
+				description
+				onCreate
+				onUpdate
+				onRemove
+				lastDeliveryAt
+				lastDeliveryStatus
+				createdAt
+			}
+		}
+	}
+}

@@ -1,0 +1,13 @@
+mutation ($input: ChangeWebhookDeleteInput!) {
+	admin {
+		payload: changeWebhookDelete(input: $input) {
+			__typename
+			... on ChangeWebhookDeletePayload {
+				deletedId
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

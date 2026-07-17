@@ -1,23 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminChangeWebhookCreateMutation($input: ChangeWebhookCreateInput!) {
-			admin {
-				payload: changeWebhookCreate(input: $input) {
-					__typename
-					... on ChangeWebhookCreatePayload {
-						webhook {
-							id
-						}
-						secret
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_changewebhook_create extends $.$trip2g_admin_changewebhook_create {
 		override body() {
 			if( this.created_id_string() !== '' ) {
@@ -48,7 +29,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_changewebhook_create_create({
 				input: {
 					url: this.url(),
 					includePatterns: this.parse_patterns( this.include_patterns_raw() ),

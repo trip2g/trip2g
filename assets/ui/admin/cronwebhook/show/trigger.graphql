@@ -1,0 +1,13 @@
+mutation ($input: TriggerCronWebhookInput!) {
+	admin {
+		payload: triggerCronWebhook(input: $input) {
+			__typename
+			... on TriggerCronWebhookPayload {
+				deliveryId
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

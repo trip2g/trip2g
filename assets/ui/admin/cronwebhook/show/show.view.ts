@@ -1,95 +1,4 @@
 namespace $.$$ {
-	const deliveriesQuery = $trip2g_graphql_request(/* GraphQL */`
-		query AdminCronWebhookDeliveries($id: Int64!) {
-			admin {
-				cronWebhookDeliveries(filter: { cronWebhookId: $id, limit: 20 }) {
-					nodes {
-						id
-						status
-						responseStatus
-						attempt
-						durationMs
-						createdAt
-						completedAt
-					}
-				}
-			}
-		}
-	`)
-
-	const cronWebhookQuery = $trip2g_graphql_request(/* GraphQL */`
-		query AdminGetCronWebhook($id: Int64!) {
-			admin {
-				cronWebhook(id: $id) {
-					id
-					url
-					cronSchedule
-					enabled
-					description
-					instruction
-					hasSecret
-					passApiKey
-					maxDepth
-					timeoutSeconds
-					maxRetries
-					readPatterns
-					writePatterns
-					nextRunAt
-					createdAt
-					secretPrefix
-				}
-			}
-		}
-	`)
-
-	const deleteMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminDeleteCronWebhookMutation($input: DeleteCronWebhookInput!) {
-			admin {
-				payload: deleteCronWebhook(input: $input) {
-					__typename
-					... on DeleteCronWebhookPayload {
-						deletedId
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
-	const regenerateMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminRegenerateCronWebhookSecretMutation($input: RegenerateCronWebhookSecretInput!) {
-			admin {
-				payload: regenerateCronWebhookSecret(input: $input) {
-					__typename
-					... on RegenerateCronWebhookSecretPayload {
-						secret
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
-	const triggerMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminTriggerCronWebhookMutation($input: TriggerCronWebhookInput!) {
-			admin {
-				payload: triggerCronWebhook(input: $input) {
-					__typename
-					... on TriggerCronWebhookPayload {
-						deliveryId
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_cronwebhook_show extends $.$trip2g_admin_cronwebhook_show {
 		action() {
 			return this.$.$mol_state_arg.value('action') || 'view'
@@ -97,7 +6,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data(reset?: null) {
-			const res = cronWebhookQuery({ id: this.cronwebhook_id() })
+			const res = $trip2g_admin_cronwebhook_show_data({ id: this.cronwebhook_id() })
 			const cw = res.admin.cronWebhook
 			if( !cw ) throw new Error( 'Cron Webhook not found' )
 			return cw
@@ -105,7 +14,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		deliveries(reset?: null) {
-			const res = deliveriesQuery({ id: this.cronwebhook_id() })
+			const res = $trip2g_admin_cronwebhook_show_deliveries({ id: this.cronwebhook_id() })
 			return res.admin.cronWebhookDeliveries.nodes
 		}
 
@@ -172,7 +81,7 @@ namespace $.$$ {
 		}
 
 		delete() {
-			const res = deleteMutate({ input: { id: this.cronwebhook_id() } })
+			const res = $trip2g_admin_cronwebhook_show_delete({ input: { id: this.cronwebhook_id() } })
 
 			if( res.admin.payload.__typename === 'ErrorPayload' ) {
 				this.delete_result( res.admin.payload.message )
@@ -189,7 +98,7 @@ namespace $.$$ {
 		}
 
 		regenerate_secret() {
-			const res = regenerateMutate({ input: { id: this.cronwebhook_id() } })
+			const res = $trip2g_admin_cronwebhook_show_regenerate_secret({ input: { id: this.cronwebhook_id() } })
 
 			if( res.admin.payload.__typename === 'ErrorPayload' ) {
 				this.secret_result( res.admin.payload.message )
@@ -205,7 +114,7 @@ namespace $.$$ {
 		}
 
 		trigger() {
-			const res = triggerMutate({ input: { cronWebhookId: this.cronwebhook_id() } })
+			const res = $trip2g_admin_cronwebhook_show_trigger({ input: { cronWebhookId: this.cronwebhook_id() } })
 
 			if( res.admin.payload.__typename === 'ErrorPayload' ) {
 				this.trigger_result( res.admin.payload.message )

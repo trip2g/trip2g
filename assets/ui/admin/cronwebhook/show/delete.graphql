@@ -1,0 +1,13 @@
+mutation ($input: DeleteCronWebhookInput!) {
+	admin {
+		payload: deleteCronWebhook(input: $input) {
+			__typename
+			... on DeleteCronWebhookPayload {
+				deletedId
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

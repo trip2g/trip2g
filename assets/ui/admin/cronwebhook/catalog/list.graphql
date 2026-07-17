@@ -1,0 +1,17 @@
+query {
+	admin {
+		allCronWebhooks {
+			nodes {
+				id
+				url
+				cronSchedule
+				enabled
+				description
+				nextRunAt
+				lastDeliveryAt
+				lastDeliveryStatus
+				createdAt
+			}
+		}
+	}
+}

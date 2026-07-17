@@ -1,0 +1,26 @@
+query ($id: Int64!) {
+	admin {
+		changeWebhook(id: $id) {
+			id
+			url
+			enabled
+			description
+			instruction
+			hasSecret
+			passApiKey
+			includeContent
+			maxDepth
+			timeoutSeconds
+			maxRetries
+			onCreate
+			onUpdate
+			onRemove
+			includePatterns
+			excludePatterns
+			readPatterns
+			writePatterns
+			createdAt
+			secretPrefix
+		}
+	}
+}
