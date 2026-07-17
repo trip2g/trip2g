@@ -1,22 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminNoteView($id: String!) {
-			admin {
-				noteView(id: $id) {
-					__typename
-					path
-					title
-					permalink
-					content
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_noteview_show extends $.$trip2g_admin_noteview_show {
 		@$mol_mem
 		data() {
-			const res = request({ id: this.noteview_id() })
+			const res = $trip2g_admin_noteview_show_data({ id: this.noteview_id() })
 
 			if (!res.admin.noteView) {
 				throw new Error('NoteView not found')

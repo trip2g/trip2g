@@ -1,47 +1,8 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(
-		`
-			query AdminUpdateDataHtmlInjection($id: Int64!) {
-				admin {
-					htmlInjection(id: $id) {
-						id
-						createdAt
-						activeFrom
-						activeTo
-						description
-						position
-						placement
-						content
-					}
-				}
-			}
-		`
-	)
-
-	const submit_request = $trip2g_graphql_request(
-		`
-			mutation AdminUpdateHtmlInjection($input: UpdateHtmlInjectionInput!) {
-				admin {
-					data: updateHtmlInjection(input: $input) {
-						__typename
-						... on UpdateHtmlInjectionPayload {
-							htmlInjection {
-								id
-							}
-						}
-						... on ErrorPayload {
-							message
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_htmlinjection_update extends $.$trip2g_admin_htmlinjection_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = data_request({
+			const res = $trip2g_admin_htmlinjection_update_data({
 				id: this.htmlinjection_id()
 			})
 
@@ -144,7 +105,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = submit_request({
+			const res = $trip2g_admin_htmlinjection_update_save({
 				input: {
 					id: this.htmlinjection_id(),
 					description: this.description(),

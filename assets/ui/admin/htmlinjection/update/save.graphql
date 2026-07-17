@@ -1,0 +1,15 @@
+mutation ($input: UpdateHtmlInjectionInput!) {
+	admin {
+		data: updateHtmlInjection(input: $input) {
+			__typename
+			... on UpdateHtmlInjectionPayload {
+				htmlInjection {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
