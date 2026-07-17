@@ -1,0 +1,15 @@
+query {
+	admin {
+		allNotFoundIgnoredPatterns {
+			nodes {
+				id
+				pattern
+				createdAt
+				createdBy {
+					id
+					email
+				}
+			}
+		}
+	}
+}
