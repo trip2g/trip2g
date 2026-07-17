@@ -1,24 +1,7 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminCreateOutboundFederationSecret($input: CreateOutboundFederationSecretInput!) {
-			admin {
-				data: createOutboundFederationSecret(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreateOutboundFederationSecretPayload {
-						id
-						kid
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_federation_outbound extends $.$trip2g_admin_federation_outbound {
 		override submit() {
-			const res = mutate({
+			const res = $trip2g_admin_federation_outbound_create({
 				input: {
 					kid: this.kid(),
 					secretHex: this.secret_hex(),

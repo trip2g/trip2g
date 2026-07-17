@@ -1,0 +1,16 @@
+mutation ($input: UpdateSubgraphInput!) {
+	admin {
+		payload: updateSubgraph(input: $input) {
+			__typename
+			... on UpdateSubgraphPayload {
+				subgraph {
+					id
+					color
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

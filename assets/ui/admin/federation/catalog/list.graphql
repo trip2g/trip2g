@@ -1,0 +1,14 @@
+query {
+	admin {
+		federationSecrets {
+			id
+			kid
+			kbUrl
+			description
+			createdAt
+			createdBy
+			revokedAt
+			subgraphCount
+		}
+	}
+}
