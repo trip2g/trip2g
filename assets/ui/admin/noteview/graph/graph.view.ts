@@ -1,56 +1,4 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminGraph {
-			admin {
-				allSubgraphs {
-					nodes {
-						name
-						color
-					}
-				}
-				allLatestNoteViews {
-					nodes {
-						id
-						subgraphNames
-						meta {
-							key
-							raw
-						}
-						title
-						pathId
-						free
-						isHomePage
-						graphPosition{
-							x,
-							y,
-						}
-						inLinks {
-							title
-							pathId
-							id
-						}
-					}
-				}
-			}
-		}
-`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation UpdateNoteGraphPositions($input: UpdateNoteGraphPositionsInput!) {
-			admin {
-				payload: updateNoteGraphPositions(input: $input) {
-					__typename
-					... on UpdateNoteGraphPositionsPayload {
-						success
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	type graph_layout_node = {
 		id: string
 		groups: readonly string[]
@@ -325,7 +273,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data() {
-			const res = request()
+			const res = $trip2g_admin_noteview_graph_data()
 
 			return {
 				nodes: res.admin.allLatestNoteViews.nodes,
@@ -577,7 +525,7 @@ namespace $.$$ {
 
 			if( !positions.length ) return
 
-			const res = mutate({
+			const res = $trip2g_admin_noteview_graph_save({
 				input: { positions },
 			})
 
@@ -643,7 +591,7 @@ namespace $.$$ {
 		}
 
 		save_position( pathId: string, x: number, y: number ) {
-			const res = mutate({
+			const res = $trip2g_admin_noteview_graph_save({
 				input: {
 					positions: [{ pathId, x, y }]
 				},
