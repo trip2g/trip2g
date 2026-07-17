@@ -1,0 +1,7 @@
+query ($filter: ResolveWikilinksFilter!) {
+	resolveWikilinks(filter: $filter) {
+		link
+		path
+		url
+	}
+}

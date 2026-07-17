@@ -1,25 +1,11 @@
 namespace $.$$ {
-	const diff_request = $trip2g_graphql_request(/* GraphQL */ `
-		query EditorNoteVersionDiff($filter: NoteVersionDiffFilter!) {
-			admin {
-				noteVersionDiff(filter: $filter) {
-					unified
-					word
-					addedLines
-					removedLines
-					changedWords
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_editor_diff extends $.$trip2g_editor_diff {
 		@$mol_mem
 		diff_result() {
 			const from = this.from_version_id()
 			const to = this.to_version_id()
 			if (!from || !to) return null
-			const res = diff_request({ filter: { fromVersionId: from, toVersionId: to } })
+			const res = $trip2g_editor_diff_diff({ filter: { fromVersionId: from, toVersionId: to } })
 			return res.admin.noteVersionDiff ?? null
 		}
 
