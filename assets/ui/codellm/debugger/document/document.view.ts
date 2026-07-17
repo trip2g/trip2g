@@ -1,17 +1,8 @@
 namespace $.$$ {
-	const note_content_query = $trip2g_graphql_raw_request( `
-		query CodeLLMDebugerDocumentNotePaths($filter: NotePathsFilter!) {
-			notePaths(filter:$filter) {
-				id
-				content
-			}
-		}
-	`)
-
 	export class $trip2g_codellm_debugger_document extends $.$trip2g_codellm_debugger_document {
 		@$mol_mem
 		note_content() {
-			const data = note_content_query( {
+			const data = $trip2g_codellm_debugger_document_note_content( {
 				filter: {
 					paths: [ this.file_path() ],
 				}
