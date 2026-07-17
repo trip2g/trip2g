@@ -1,55 +1,4 @@
 namespace $.$$ {
-	const signout_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation SignOut {
-			data: signOut {
-				... on ErrorPayload {
-					__typename
-					message
-				}
-				... on SignOutPayload {
-					__typename
-					viewer {
-						id
-					}
-				}
-			}
-		}
-	`)
-
-	const request_email_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {
-			data: requestEmailSignInCode(input: $input) {
-				... on ErrorPayload {
-					__typename
-					message
-				}
-				... on RequestEmailSignInCodePayload {
-					__typename
-					success
-				}
-				... on RequestCaptchaPayload {
-					__typename
-					siteKey
-				}
-			}
-		}
-	`)
-
-	const signin_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation SignInByEmail($input: SignInByEmailInput!) {
-			data: signInByEmail(input: $input) {
-				... on SignInPayload {
-					__typename
-					token
-				}
-				... on ErrorPayload {
-					__typename
-					message
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me( reset?: null ) {
 			return $trip2g_auth_viewer.current( reset )
@@ -64,7 +13,7 @@ namespace $.$$ {
 		}
 
 		signout() {
-			const res = signout_mutate()
+			const res = $trip2g_auth_signout()
 
 			if( res.data.__typename === 'ErrorPayload' ) {
 				throw new Error( res.data.message )
@@ -150,7 +99,7 @@ namespace $.$$ {
 			if( captchaToken ) {
 				input.captchaToken = captchaToken
 			}
-			return request_email_mutate({ input })
+			return $trip2g_auth_request_email({ input })
 		}
 
 		submit() {
@@ -265,7 +214,7 @@ namespace $.$$ {
 				}
 			}
 
-			const res = signin_mutate({
+			const res = $trip2g_auth_signin({
 				input: {
 					email,
 					code: this.code(),

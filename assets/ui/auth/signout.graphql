@@ -1,0 +1,14 @@
+mutation {
+	data: signOut {
+		... on ErrorPayload {
+			__typename
+			message
+		}
+		... on SignOutPayload {
+			__typename
+			viewer {
+				id
+			}
+		}
+	}
+}
