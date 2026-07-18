@@ -25,7 +25,7 @@ func Resolve(ctx context.Context, env Env, task Params) error {
 	env.Logger().Info("Sending sign-in code", "email", task.Email)
 
 	if env.LogSignInCodes() {
-		env.Logger().Warn("sign-in code (LOG_SIGN_IN_CODES enabled — insecure, for bootstrap only)",
+		env.Logger().Warn("sign-in code logged (no SMTP or LogSignInCodes enabled) — insecure, for dev/bootstrap only",
 			"email", task.Email, "code", task.Code)
 	}
 

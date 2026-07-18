@@ -31,14 +31,8 @@ var _ Env = &EnvMock{}
 //			IncrementAndCheckSigninCounterFunc: func() bool {
 //				panic("mock out the IncrementAndCheckSigninCounter method")
 //			},
-//			LogSignInCodesFunc: func() bool {
-//				panic("mock out the LogSignInCodes method")
-//			},
 //			MaxActiveSignInCodesFunc: func() int64 {
 //				panic("mock out the MaxActiveSignInCodes method")
-//			},
-//			SMTPHostFunc: func() string {
-//				panic("mock out the SMTPHost method")
 //			},
 //			TryToAutoRegisterUserFunc: func(ctx context.Context, email string) (*db.User, error) {
 //				panic("mock out the TryToAutoRegisterUser method")
@@ -74,14 +68,8 @@ type EnvMock struct {
 	// IncrementAndCheckSigninCounterFunc mocks the IncrementAndCheckSigninCounter method.
 	IncrementAndCheckSigninCounterFunc func() bool
 
-	// LogSignInCodesFunc mocks the LogSignInCodes method.
-	LogSignInCodesFunc func() bool
-
 	// MaxActiveSignInCodesFunc mocks the MaxActiveSignInCodes method.
 	MaxActiveSignInCodesFunc func() int64
-
-	// SMTPHostFunc mocks the SMTPHost method.
-	SMTPHostFunc func() string
 
 	// TryToAutoRegisterUserFunc mocks the TryToAutoRegisterUser method.
 	TryToAutoRegisterUserFunc func(ctx context.Context, email string) (*db.User, error)
@@ -126,14 +114,8 @@ type EnvMock struct {
 		// IncrementAndCheckSigninCounter holds details about calls to the IncrementAndCheckSigninCounter method.
 		IncrementAndCheckSigninCounter []struct {
 		}
-		// LogSignInCodes holds details about calls to the LogSignInCodes method.
-		LogSignInCodes []struct {
-		}
 		// MaxActiveSignInCodes holds details about calls to the MaxActiveSignInCodes method.
 		MaxActiveSignInCodes []struct {
-		}
-		// SMTPHost holds details about calls to the SMTPHost method.
-		SMTPHost []struct {
 		}
 		// TryToAutoRegisterUser holds details about calls to the TryToAutoRegisterUser method.
 		TryToAutoRegisterUser []struct {
@@ -173,9 +155,7 @@ type EnvMock struct {
 	lockCreateSignInCode               sync.RWMutex
 	lockEnqueueRequestSignInEmail      sync.RWMutex
 	lockIncrementAndCheckSigninCounter sync.RWMutex
-	lockLogSignInCodes                 sync.RWMutex
 	lockMaxActiveSignInCodes           sync.RWMutex
-	lockSMTPHost                       sync.RWMutex
 	lockTryToAutoRegisterUser          sync.RWMutex
 	lockTurnstileSiteKey               sync.RWMutex
 	lockUserBanByUserID                sync.RWMutex
@@ -322,33 +302,6 @@ func (mock *EnvMock) IncrementAndCheckSigninCounterCalls() []struct {
 	return calls
 }
 
-// LogSignInCodes calls LogSignInCodesFunc.
-func (mock *EnvMock) LogSignInCodes() bool {
-	if mock.LogSignInCodesFunc == nil {
-		panic("EnvMock.LogSignInCodesFunc: method is nil but Env.LogSignInCodes was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockLogSignInCodes.Lock()
-	mock.calls.LogSignInCodes = append(mock.calls.LogSignInCodes, callInfo)
-	mock.lockLogSignInCodes.Unlock()
-	return mock.LogSignInCodesFunc()
-}
-
-// LogSignInCodesCalls gets all the calls that were made to LogSignInCodes.
-// Check the length with:
-//
-//	len(mockedEnv.LogSignInCodesCalls())
-func (mock *EnvMock) LogSignInCodesCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockLogSignInCodes.RLock()
-	calls = mock.calls.LogSignInCodes
-	mock.lockLogSignInCodes.RUnlock()
-	return calls
-}
-
 // MaxActiveSignInCodes calls MaxActiveSignInCodesFunc.
 func (mock *EnvMock) MaxActiveSignInCodes() int64 {
 	if mock.MaxActiveSignInCodesFunc == nil {
@@ -373,33 +326,6 @@ func (mock *EnvMock) MaxActiveSignInCodesCalls() []struct {
 	mock.lockMaxActiveSignInCodes.RLock()
 	calls = mock.calls.MaxActiveSignInCodes
 	mock.lockMaxActiveSignInCodes.RUnlock()
-	return calls
-}
-
-// SMTPHost calls SMTPHostFunc.
-func (mock *EnvMock) SMTPHost() string {
-	if mock.SMTPHostFunc == nil {
-		panic("EnvMock.SMTPHostFunc: method is nil but Env.SMTPHost was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockSMTPHost.Lock()
-	mock.calls.SMTPHost = append(mock.calls.SMTPHost, callInfo)
-	mock.lockSMTPHost.Unlock()
-	return mock.SMTPHostFunc()
-}
-
-// SMTPHostCalls gets all the calls that were made to SMTPHost.
-// Check the length with:
-//
-//	len(mockedEnv.SMTPHostCalls())
-func (mock *EnvMock) SMTPHostCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockSMTPHost.RLock()
-	calls = mock.calls.SMTPHost
-	mock.lockSMTPHost.RUnlock()
 	return calls
 }
 
