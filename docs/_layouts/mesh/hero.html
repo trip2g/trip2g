@@ -66,8 +66,13 @@
     {{yield mesh_button(label=docs_label, href="/"+lang+"/user", modifier="@did__cta")}}
   </div>
   <div class="@did__video">
-    <video controls preload="none" playsinline poster="{{ asset("demo-"+lang+"-poster.jpg") }}">
-      <source src="{{ asset("demo-"+lang+".mp4") }}" type="video/mp4">
+    {* asset() only registers static string literals; build a map so both
+       variants are discovered/uploaded, then pick one by lang at runtime,
+       falling back to en for any unexpected lang *}
+    {{ posters := map("en", asset("demo-en-poster.jpg"), "ru", asset("demo-ru-poster.jpg")) }}
+    {{ videos := map("en", asset("demo-en.mp4"), "ru", asset("demo-ru.mp4")) }}
+    <video controls preload="none" playsinline poster="{{ coalesce(posters[lang], posters["en"]) }}">
+      <source src="{{ coalesce(videos[lang], videos["en"]) }}" type="video/mp4">
     </video>
   </div>
 </section>

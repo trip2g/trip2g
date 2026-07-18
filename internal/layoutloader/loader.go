@@ -566,6 +566,21 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, pa
 		return reflect.ValueOf(fmt.Sprintf("%T: %+v\nmethods: %v", iface, iface, methods))
 	})
 
+	// coalesce returns the first argument that is set and non-empty, else the last
+	// argument. Useful for value fallback since Jet's `||` is boolean, not
+	// value-coalescing: coalesce(videos[lang], videos["en"]).
+	views.AddGlobalFunc("coalesce", func(a jet.Arguments) reflect.Value {
+		a.RequireNumOfArguments("coalesce", 1, -1)
+		n := a.NumOfArguments()
+		for i := range n {
+			v := a.Get(i)
+			if v.IsValid() && !isEmptyValue(v) {
+				return v
+			}
+		}
+		return a.Get(n - 1)
+	})
+
 	// yield_blocks is registered with a mutable slice pointer so the second pass
 	// can populate block names after all templates are parsed.
 	blockNames := make([]string, 0)
@@ -586,6 +601,29 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, pa
 	}
 
 	return view, ""
+}
+
+// isEmptyValue reports whether v should be treated as "not set" by coalesce:
+// invalid values (e.g. a map index miss), nil pointers/interfaces, empty
+// strings, and zero-length slices/maps.
+func isEmptyValue(v reflect.Value) bool {
+	if !v.IsValid() {
+		return true
+	}
+	if v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return true
+		}
+		v = v.Elem()
+	}
+	switch v.Kind() { //nolint:exhaustive // only pointer/string/slice/map have a meaningful empty; all other kinds are never empty
+	case reflect.Ptr:
+		return v.IsNil()
+	case reflect.String, reflect.Slice, reflect.Map:
+		return v.Len() == 0
+	default:
+		return false
+	}
 }
 
 type assetFinder struct {
