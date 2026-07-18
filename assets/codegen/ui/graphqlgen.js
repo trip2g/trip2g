@@ -1,6 +1,6 @@
 // GraphQL codegen for the frontend: .graphql files co-located with $mol
 // components → per-file <name>.graphql.ts typed wrappers in `namespace $`.
-// Ported from github.com/trip2g/mol_graphql (codegen/graphqlgen.js).
+// Ported from the graphqlgen.js of github.com/trip2g/mol_graphql.
 //
 // Schema comes from the checked-in SDL files — NO live introspection, no dev
 // server needed (unlike the retired legacy root graphqlgen.js, which needed a
