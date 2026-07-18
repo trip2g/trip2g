@@ -381,6 +381,56 @@ func TestResolve_UpdatedNotes(t *testing.T) {
 	})
 }
 
+// TestResolve_LayoutWarnings covers the bug where a layout's parse/render
+// warnings were dropped: buildPushedNotes hardcoded an empty Warnings slice
+// for every layout instead of forwarding layout.Warnings.
+func TestResolve_LayoutWarnings(t *testing.T) {
+	ctx := context.Background()
+	mockLogger := &logger.TestLogger{}
+
+	env := newEnvMock(mockLogger)
+	env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (int64, error) {
+		return 1, nil
+	}
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+		nvs := appmodel.NewNoteViews()
+		nvs.ExtractNoteList()
+		return nvs, nil
+	}
+	env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error { return nil }
+	env.LayoutsFunc = func() *appmodel.Layouts {
+		return &appmodel.Layouts{
+			Map: map[string]appmodel.Layout{
+				"broken": {
+					VersionID: 7,
+					Path:      "_layouts/broken.html",
+					Warnings: []appmodel.NoteWarning{
+						{Level: appmodel.NoteWarningCritical, Message: "parse error: unexpected token"},
+					},
+				},
+			},
+		}
+	}
+	env.PublicURLFunc = func() string { return "https://example.com" }
+
+	input := model.PushNotesInput{
+		Updates: []model.PushNoteInput{
+			{Path: "_layouts/broken.html", Content: "{{ broken"},
+		},
+	}
+
+	result, err := pushnotes.Resolve(ctx, env, input)
+	require.NoError(t, err)
+
+	payload, ok := result.(*model.PushNotesPayload)
+	require.True(t, ok)
+
+	require.Len(t, payload.Notes, 1)
+	require.Len(t, payload.Notes[0].Warnings, 1)
+	require.Equal(t, appmodel.NoteWarningCritical, payload.Notes[0].Warnings[0].Level)
+	require.Equal(t, "parse error: unexpected token", payload.Notes[0].Warnings[0].Message)
+}
+
 // TestResolve_AssetURLAbsolutization covers the pushNotes GraphQL boundary:
 // note/layout asset URLs are content-addressed relative paths
 // (/_system/assets/{sha256}/{fileName}) and must be absolutized with
