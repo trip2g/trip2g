@@ -112,7 +112,10 @@ func (a *app) SendMail(_ context.Context, data model.Mail) error {
 }
 
 func (a *app) LogSignInCodes() bool {
-	return a.config.LogSignInCodes
+	// Without SMTP the code can't be emailed, so log it server-side instead:
+	// this keeps dev and unconfigured/bootstrap sign-in working. An explicit
+	// LogSignInCodes flag forces logging even when SMTP is configured.
+	return a.config.LogSignInCodes || a.config.SMTPHost == ""
 }
 
 func (a *app) SMTPHost() string {

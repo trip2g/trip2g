@@ -20,8 +20,6 @@ type Env interface {
 	CreateSignInCode(ctx context.Context, userID int64) (string, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
 	MaxActiveSignInCodes() int64
-	SMTPHost() string
-	LogSignInCodes() bool
 
 	// patreon, boosty, etc
 	TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error)
@@ -65,12 +63,6 @@ func Resolve(ctx context.Context, env Env, input Input, remoteIP string) (model.
 		if env.IncrementAndCheckSigninCounter() {
 			return &model.RequestCaptchaPayload{SiteKey: siteKey}, nil
 		}
-	}
-
-	if env.SMTPHost() == "" && !env.LogSignInCodes() {
-		return &model.ErrorPayload{
-			Message: "Email delivery isn't configured on this server, so no code can be sent. Sign in with Google or GitHub instead, or ask the site admin.",
-		}, nil
 	}
 
 	user, err := env.UserByEmail(ctx, input.Email)
