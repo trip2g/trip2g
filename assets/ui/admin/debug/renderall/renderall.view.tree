@@ -1,0 +1,32 @@
+$trip2g_admin_debug_renderall $mol_page
+	title @ \Render All Pages
+	close_icon null $mol_view
+	tools /
+		<= Test_fail $mol_check_box
+			title @ \Emulate failures
+			checked? <=> test_fail? false
+		<= Scan $mol_button_minor
+			title @ \Scan errors
+			click? <=> scan? null
+		<= close_icon
+	App $trip2g_admin_app
+	body /
+		<= Stats $mol_view
+			sub /
+				<= stats \
+		<= Grid $mol_view
+			sub <= cells /$mol_view
+	Cell*0 $mol_view
+		sub /
+			<= Cell_head* $mol_view
+				sub /
+					<= Cell_link* $mol_link
+						target \_blank
+						uri <= route_uri* \
+						sub /
+							<= route_label* \
+					<= Cell_status* $mol_view
+						sub /
+							<= cell_status* \
+			<= Frame* $mol_frame
+				uri <= route_uri* \
