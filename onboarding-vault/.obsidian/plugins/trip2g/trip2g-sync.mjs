@@ -1765,6 +1765,27 @@ function isAlwaysPublishable(path5) {
   return false;
 }
 __name(isAlwaysPublishable, "isAlwaysPublishable");
+function sameOrigin(apiUrl, assetUrl) {
+  try {
+    return new URL(apiUrl).origin === new URL(assetUrl).origin;
+  } catch {
+    return false;
+  }
+}
+__name(sameOrigin, "sameOrigin");
+function resolveAssetUrl(apiUrl, url) {
+  try {
+    new URL(url);
+    return url;
+  } catch {
+  }
+  try {
+    return new URL(url, apiUrl).toString();
+  } catch {
+    return url;
+  }
+}
+__name(resolveAssetUrl, "resolveAssetUrl");
 
 // src/sync/resolve.ts
 import * as path from "path";
@@ -2264,6 +2285,10 @@ var PushNotesDocument = gql`
           absolutePath
           url
         }
+        warnings {
+          level
+          message
+        }
       }
       updated {
         path
@@ -2562,7 +2587,8 @@ var NodeEnv = class {
           absolutePath: a.absolutePath ?? null,
           url: a.url ?? null
         })),
-        url: urlMap.get(n.path) ?? null
+        url: urlMap.get(n.path) ?? null,
+        warnings: n.warnings.map((w) => ({ level: w.level, message: w.message }))
       }));
     } catch (e) {
       const paths = processedUpdates.map((u) => u.path).join(", ");
@@ -2718,15 +2744,17 @@ ${body}`);
     return true;
   }
   async downloadAsset(url) {
+    const resolvedUrl = resolveAssetUrl(this.apiUrl, url);
     try {
-      const response = await fetch(url);
+      const headers = sameOrigin(this.apiUrl, resolvedUrl) ? { "X-API-Key": this.apiKey } : void 0;
+      const response = await fetch(resolvedUrl, { headers });
       if (!response.ok) {
         console.error(`\u274C Failed to download asset: HTTP ${response.status}`);
         return null;
       }
       return await response.arrayBuffer();
     } catch (e) {
-      console.error(`\u274C Failed to download asset from ${url}: ${e}`);
+      console.error(`\u274C Failed to download asset from ${resolvedUrl}: ${e}`);
       return null;
     }
   }
@@ -3162,6 +3190,7 @@ async function executePlan(env, plan, options = { twoWaySync: false }) {
       result.pushed = pushResult.count;
       result.errors.push(...pushResult.errors);
       pushedNotes = pushResult.pushedNotes;
+      result.warnings.push(...pushResult.warnings);
     }
   }
   if (plan.localDeleted.length > 0) {
@@ -3198,9 +3227,23 @@ async function executePlan(env, plan, options = { twoWaySync: false }) {
     }
   }
   await env.saveSyncState(syncState);
+  result.warnings = dedupeWarnings(result.warnings);
   return result;
 }
 __name(executePlan, "executePlan");
+function dedupeWarnings(warnings) {
+  const seen = /* @__PURE__ */ new Set();
+  const deduped = [];
+  for (const w of warnings) {
+    const key = `${w.path}\0${w.level}\0${w.message}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(w);
+    }
+  }
+  return deduped;
+}
+__name(dedupeWarnings, "dedupeWarnings");
 async function localFileIsNonEmpty(env, path5) {
   if (!await env.fileExists(path5)) {
     return false;
@@ -3257,7 +3300,7 @@ async function executePulls(env, pulls, syncState) {
 __name(executePulls, "executePulls");
 async function executePushes(env, pushes, syncState) {
   if (pushes.length === 0) {
-    return { count: 0, errors: [], pushedNotes: [], urls: [] };
+    return { count: 0, errors: [], pushedNotes: [], urls: [], warnings: [] };
   }
   const errors = [];
   const updates = [];
@@ -3295,7 +3338,17 @@ async function executePushes(env, pushes, syncState) {
   }
   const filteredNotes = pushedNotes.filter((n) => updatePaths.has(n.path));
   const urls = filteredNotes.filter((n) => typeof n.url === "string").map((n) => ({ path: n.path, url: n.url }));
-  return { count: pushedCount, errors, pushedNotes: filteredNotes, urls };
+  const notesByPath = /* @__PURE__ */ new Map();
+  for (const note of pushedNotes) {
+    notesByPath.set(note.path, note);
+  }
+  const warnings = [];
+  for (const note of notesByPath.values()) {
+    for (const w of note.warnings ?? []) {
+      warnings.push({ path: note.path, level: w.level, message: w.message });
+    }
+  }
+  return { count: pushedCount, errors, pushedNotes: filteredNotes, urls, warnings };
 }
 __name(executePushes, "executePushes");
 async function handleConflicts(env, conflicts, syncState) {
@@ -4642,11 +4695,30 @@ async function main() {
   }
   if (result.warnings.length > 0) {
     console.log(`  Warnings:           ${result.warnings.length}`);
-    for (const w of result.warnings) {
-      console.log(`    \u26A0\uFE0F  [${w.level}] ${w.path}: ${w.message}`);
-    }
   }
   console.log("=".repeat(60));
+  let hasCritical = false;
+  if (result.warnings.length > 0) {
+    const RED = "\x1B[31m";
+    const YELLOW = "\x1B[33m";
+    const RESET = "\x1B[0m";
+    const byPath = /* @__PURE__ */ new Map();
+    for (const w of result.warnings) {
+      const forPath = byPath.get(w.path) ?? [];
+      forPath.push(w);
+      byPath.set(w.path, forPath);
+    }
+    console.log("\n\u26A0\uFE0F  Warnings:");
+    for (const [path5, warnings] of byPath) {
+      console.log(`  ${path5}`);
+      for (const w of warnings) {
+        const isCritical = w.level === "CRITICAL";
+        hasCritical = hasCritical || isCritical;
+        const color = isCritical ? RED : YELLOW;
+        console.log(`    ${color}[${w.level}]${RESET} ${w.message}`);
+      }
+    }
+  }
   const updatedUrls = result.updatedUrls ?? [];
   if (updatedUrls.length > 0) {
     console.log("\n\u{1F4CE} Published:");
@@ -4661,6 +4733,10 @@ async function main() {
     } else {
       console.log(`\u{1F4A1} --updated-output $(mktemp /tmp/updated-XXXXXX.json)`);
     }
+  }
+  if (hasCritical) {
+    console.error("\n\u274C Critical warnings detected, aborting.");
+    process.exit(1);
   }
 }
 __name(main, "main");

@@ -222,12 +222,16 @@ func buildPushedNotes(nvs *appmodel.NoteViews, layouts *appmodel.Layouts, public
 
 	for _, layout := range layouts.Map {
 		assets := buildLayoutAssets(layout, publicURL)
+		layoutWarnings := layout.Warnings
+		if layoutWarnings == nil {
+			layoutWarnings = []appmodel.NoteWarning{}
+		}
 		pushedNotes = append(pushedNotes, model.PushedNote{
 			ID:       layout.VersionID,
 			Path:     layout.Path,
 			Assets:   assets,
 			URL:      nil,
-			Warnings: []appmodel.NoteWarning{},
+			Warnings: layoutWarnings,
 		})
 	}
 
@@ -235,7 +239,9 @@ func buildPushedNotes(nvs *appmodel.NoteViews, layouts *appmodel.Layouts, public
 }
 
 // buildUpdatedNotes returns PushedNote entries for only the notes with the given pathIDs.
-// Notes not found in nvs (e.g. deleted) are silently skipped.
+// Notes not found in nvs (e.g. deleted) are silently skipped. Layouts are always skipped
+// here since they never register into nvs (see noteloader.Load) - their warnings only
+// surface through the full notes list built by buildPushedNotes.
 func buildUpdatedNotes(nvs *appmodel.NoteViews, pathIDs []int64, publicURL string) []model.PushedNote {
 	result := make([]model.PushedNote, 0, len(pathIDs))
 	for _, id := range pathIDs {
