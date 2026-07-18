@@ -88,9 +88,9 @@ window.__trip2g_settings = {
 {% elseif ctx.OnboardingMode %}
   {%= Onboarding(ctx) %}
 {% elseif ctx.NotFoundMode %}
-  {%= NotFound(ctx) %}
+  {%= notFoundBody(ctx) %}
 {% elseif ctx.ServerErrorMode %}
-  {%= ServerError(ctx) %}
+  {%= serverErrorBody(ctx) %}
 {% elseif ctx.UnsupportedFileExt != "" %}
   {%= UnsupportedFile(ctx) %}
 {% else %}
@@ -503,7 +503,7 @@ window.__trip2g_settings = {
 </div>
 {% endfunc %}
 
-{% func NotFound(ctx *Ctx) %}
+{% func notFoundBody(ctx *Ctx) %}
 {% code
   headerRef := ctx.HeaderRef()
   footerRef := ctx.FooterRef()
@@ -530,7 +530,7 @@ window.__trip2g_settings = {
 {% endif %}
 {% endfunc %}
 
-{% func ServerError(ctx *Ctx) %}
+{% func serverErrorBody(ctx *Ctx) %}
 {% code
   headerRef := ctx.HeaderRef()
   footerRef := ctx.FooterRef()
@@ -546,6 +546,9 @@ window.__trip2g_settings = {
   <main class="notfound">
     <div class="notfound__code">500</div>
     <p class="notfound__message">Something went wrong</p>
+    {% if ctx.ServerErrorDetail != "" %}
+    <pre class="notfound__detail">{%s ctx.ServerErrorDetail %}</pre>
+    {% endif %}
     <a class="notfound__home" href="/">← Home</a>
   </main>
 </div>

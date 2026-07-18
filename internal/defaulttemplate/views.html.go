@@ -375,7 +375,7 @@ window.__trip2g_settings = {
 		qw422016.N().S(`
   `)
 //line views.html:91
-		StreamNotFound(qw422016, ctx)
+		streamnotFoundBody(qw422016, ctx)
 //line views.html:91
 		qw422016.N().S(`
 `)
@@ -385,7 +385,7 @@ window.__trip2g_settings = {
 		qw422016.N().S(`
   `)
 //line views.html:93
-		StreamServerError(qw422016, ctx)
+		streamserverErrorBody(qw422016, ctx)
 //line views.html:93
 		qw422016.N().S(`
 `)
@@ -2235,7 +2235,7 @@ func PayWall(ctx *Ctx) string {
 }
 
 //line views.html:506
-func StreamNotFound(qw422016 *qt422016.Writer, ctx *Ctx) {
+func streamnotFoundBody(qw422016 *qt422016.Writer, ctx *Ctx) {
 //line views.html:506
 	qw422016.N().S(`
 `)
@@ -2325,22 +2325,22 @@ func StreamNotFound(qw422016 *qt422016.Writer, ctx *Ctx) {
 }
 
 //line views.html:531
-func WriteNotFound(qq422016 qtio422016.Writer, ctx *Ctx) {
+func writenotFoundBody(qq422016 qtio422016.Writer, ctx *Ctx) {
 //line views.html:531
 	qw422016 := qt422016.AcquireWriter(qq422016)
 //line views.html:531
-	StreamNotFound(qw422016, ctx)
+	streamnotFoundBody(qw422016, ctx)
 //line views.html:531
 	qt422016.ReleaseWriter(qw422016)
 //line views.html:531
 }
 
 //line views.html:531
-func NotFound(ctx *Ctx) string {
+func notFoundBody(ctx *Ctx) string {
 //line views.html:531
 	qb422016 := qt422016.AcquireByteBuffer()
 //line views.html:531
-	WriteNotFound(qb422016, ctx)
+	writenotFoundBody(qb422016, ctx)
 //line views.html:531
 	qs422016 := string(qb422016.B)
 //line views.html:531
@@ -2351,7 +2351,7 @@ func NotFound(ctx *Ctx) string {
 }
 
 //line views.html:533
-func StreamServerError(qw422016 *qt422016.Writer, ctx *Ctx) {
+func streamserverErrorBody(qw422016 *qt422016.Writer, ctx *Ctx) {
 //line views.html:533
 	qw422016.N().S(`
 `)
@@ -2402,142 +2402,157 @@ func StreamServerError(qw422016 *qt422016.Writer, ctx *Ctx) {
   <main class="notfound">
     <div class="notfound__code">500</div>
     <p class="notfound__message">Something went wrong</p>
+    `)
+//line views.html:549
+	if ctx.ServerErrorDetail != "" {
+//line views.html:549
+		qw422016.N().S(`
+    <pre class="notfound__detail">`)
+//line views.html:550
+		qw422016.E().S(ctx.ServerErrorDetail)
+//line views.html:550
+		qw422016.N().S(`</pre>
+    `)
+//line views.html:551
+	}
+//line views.html:551
+	qw422016.N().S(`
     <a class="notfound__home" href="/">← Home</a>
   </main>
 </div>
 `)
-//line views.html:552
+//line views.html:555
 	if footerRef.Kind != ContentRefNone {
-//line views.html:552
+//line views.html:555
 		qw422016.N().S(`
   `)
-//line views.html:553
+//line views.html:556
 		footerNote := ctx.resolveNoteRef(footerRef)
 
-//line views.html:553
+//line views.html:556
 		qw422016.N().S(`
   `)
-//line views.html:554
+//line views.html:557
 		if footerNote != nil {
-//line views.html:554
+//line views.html:557
 			qw422016.N().S(`
     `)
-//line views.html:555
+//line views.html:558
 			StreamSiteFooter(qw422016, ctx, footerNote)
-//line views.html:555
+//line views.html:558
 			qw422016.N().S(`
   `)
-//line views.html:556
+//line views.html:559
 		}
-//line views.html:556
+//line views.html:559
 		qw422016.N().S(`
 `)
-//line views.html:557
+//line views.html:560
 	}
-//line views.html:557
+//line views.html:560
 	qw422016.N().S(`
 `)
-//line views.html:558
+//line views.html:561
 }
 
-//line views.html:558
-func WriteServerError(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:558
+//line views.html:561
+func writeserverErrorBody(qq422016 qtio422016.Writer, ctx *Ctx) {
+//line views.html:561
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:558
-	StreamServerError(qw422016, ctx)
-//line views.html:558
+//line views.html:561
+	streamserverErrorBody(qw422016, ctx)
+//line views.html:561
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:558
+//line views.html:561
 }
 
-//line views.html:558
-func ServerError(ctx *Ctx) string {
-//line views.html:558
+//line views.html:561
+func serverErrorBody(ctx *Ctx) string {
+//line views.html:561
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:558
-	WriteServerError(qb422016, ctx)
-//line views.html:558
+//line views.html:561
+	writeserverErrorBody(qb422016, ctx)
+//line views.html:561
 	qs422016 := string(qb422016.B)
-//line views.html:558
+//line views.html:561
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:558
+//line views.html:561
 	return qs422016
-//line views.html:558
+//line views.html:561
 }
 
-//line views.html:560
+//line views.html:563
 func StreamUnsupportedFile(qw422016 *qt422016.Writer, ctx *Ctx) {
-//line views.html:560
+//line views.html:563
 	qw422016.N().S(`
 <main class="layout__main">
   <article class="content">
     <div class="content__body">
       `)
-//line views.html:564
+//line views.html:567
 	if ctx.UnsupportedFileExt == ".canvas" {
-//line views.html:564
+//line views.html:567
 		qw422016.N().S(`
       <p>Canvas files are not supported yet.</p>
       `)
-//line views.html:566
+//line views.html:569
 	} else if ctx.UnsupportedFileExt == ".excalidraw" {
-//line views.html:566
+//line views.html:569
 		qw422016.N().S(`
       <p>Excalidraw files are not supported yet.</p>
       `)
-//line views.html:568
+//line views.html:571
 	} else {
-//line views.html:568
+//line views.html:571
 		qw422016.N().S(`
       <p>Bases are not supported yet.</p>
       `)
-//line views.html:570
+//line views.html:573
 	}
-//line views.html:570
+//line views.html:573
 	qw422016.N().S(`
     </div>
   </article>
 </main>
 `)
-//line views.html:574
+//line views.html:577
 }
 
-//line views.html:574
+//line views.html:577
 func WriteUnsupportedFile(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:574
+//line views.html:577
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:574
+//line views.html:577
 	StreamUnsupportedFile(qw422016, ctx)
-//line views.html:574
+//line views.html:577
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:574
+//line views.html:577
 }
 
-//line views.html:574
+//line views.html:577
 func UnsupportedFile(ctx *Ctx) string {
-//line views.html:574
+//line views.html:577
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:574
+//line views.html:577
 	WriteUnsupportedFile(qb422016, ctx)
-//line views.html:574
+//line views.html:577
 	qs422016 := string(qb422016.B)
-//line views.html:574
+//line views.html:577
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:574
+//line views.html:577
 	return qs422016
-//line views.html:574
+//line views.html:577
 }
 
-//line views.html:576
+//line views.html:579
 func StreamOnboarding(qw422016 *qt422016.Writer, ctx *Ctx) {
-//line views.html:576
+//line views.html:579
 	qw422016.N().S(`
 <div class="onboarding" data-onboarding>
   `)
-//line views.html:578
+//line views.html:581
 	if ctx.UserToken.IsAdmin() {
-//line views.html:578
+//line views.html:581
 		qw422016.N().S(`
   <h3>Welcome!</h3>
   <p>
@@ -2555,53 +2570,53 @@ func StreamOnboarding(qw422016 *qt422016.Writer, ctx *Ctx) {
     </a>
   </p>
   `)
-//line views.html:594
+//line views.html:597
 	} else {
-//line views.html:594
+//line views.html:597
 		qw422016.N().S(`
   <h3>`)
-//line views.html:595
+//line views.html:598
 		qw422016.E().S(ctx.T("onboarding_title"))
-//line views.html:595
+//line views.html:598
 		qw422016.N().S(`</h3>
   <p>`)
-//line views.html:596
+//line views.html:599
 		qw422016.E().S(ctx.T("onboarding_subtitle"))
-//line views.html:596
+//line views.html:599
 		qw422016.N().S(`</p>
   `)
-//line views.html:597
+//line views.html:600
 	}
-//line views.html:597
+//line views.html:600
 	qw422016.N().S(`
   <div mol_view_root="$trip2g_user_space"></div>
 </div>
 `)
-//line views.html:600
+//line views.html:603
 }
 
-//line views.html:600
+//line views.html:603
 func WriteOnboarding(qq422016 qtio422016.Writer, ctx *Ctx) {
-//line views.html:600
+//line views.html:603
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:600
+//line views.html:603
 	StreamOnboarding(qw422016, ctx)
-//line views.html:600
+//line views.html:603
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:600
+//line views.html:603
 }
 
-//line views.html:600
+//line views.html:603
 func Onboarding(ctx *Ctx) string {
-//line views.html:600
+//line views.html:603
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:600
+//line views.html:603
 	WriteOnboarding(qb422016, ctx)
-//line views.html:600
+//line views.html:603
 	qs422016 := string(qb422016.B)
-//line views.html:600
+//line views.html:603
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:600
+//line views.html:603
 	return qs422016
-//line views.html:600
+//line views.html:603
 }

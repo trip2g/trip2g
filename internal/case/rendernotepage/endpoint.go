@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html"
 	"net/http"
 	"reflect"
 	"strings"
@@ -434,66 +433,12 @@ func renderLayout(
 // the source line) so they can debug; everyone else gets a clean generic 500
 // page. In both cases the status is 500 and no partial layout output is written.
 func writeLayoutRenderError(ctx *fasthttp.RequestCtx, env Env, resp *Response, layoutName, errMsg string) {
-	ctx.ResetBody()
-	ctx.SetStatusCode(http.StatusInternalServerError)
-	ctx.SetContentType("text/html; charset=utf-8")
+	isAdmin := resp != nil && resp.UserToken.IsAdmin()
 
-	if resp != nil && resp.UserToken.IsAdmin() {
-		writeAdminLayoutError(ctx, layoutName, errMsg)
-		return
-	}
-	writePublicServerError(ctx, env)
-}
-
-// writeAdminLayoutError writes a minimal self-contained error page exposing the
-// Jet error text to admins. The error text may contain template internals; that
-// is acceptable here because this page is only served to admins.
-func writeAdminLayoutError(ctx *fasthttp.RequestCtx, layoutName, errMsg string) {
-	var b strings.Builder
-	b.WriteString(`<!doctype html><html lang="en"><head><meta charset="utf-8">`)
-	b.WriteString(`<meta name="viewport" content="width=device-width, initial-scale=1">`)
-	b.WriteString(`<title>Layout render error</title></head>`)
-	b.WriteString(`<body style="font-family:system-ui,sans-serif;max-width:900px;margin:40px auto;padding:0 16px;color:#1a1a1a">`)
-	b.WriteString(`<h1 style="color:#c00">Layout render error</h1>`)
-	b.WriteString(`<p>Layout <code>`)
-	b.WriteString(html.EscapeString(layoutName))
-	b.WriteString(`</code> failed to render.</p>`)
-	b.WriteString(`<pre style="background:#fee;border:1px solid #c00;border-radius:4px;padding:16px;overflow-x:auto;white-space:pre-wrap">`)
-	b.WriteString(html.EscapeString(errMsg))
-	b.WriteString(`</pre>`)
-	b.WriteString(`<p style="color:#888">This detail is visible to admins only.</p>`)
-	b.WriteString(`</body></html>`)
-	_, _ = ctx.WriteString(b.String())
-}
-
-// writePublicServerError renders the generic 500 page via the default template,
-// mirroring render404 so it inherits the site header/footer and styling. It
-// exposes no internal error details.
-func writePublicServerError(ctx *fasthttp.RequestCtx, env Env) {
-	injections := map[string][]db.HtmlInjection{}
-	if active, injErr := env.ActiveHTMLInjections(ctx); injErr == nil {
-		for _, inj := range active {
-			injections[inj.Placement] = append(injections[inj.Placement], inj)
-		}
-	}
-
-	uiLang := langdetect.DetectPreferred(
-		string(ctx.Request.Header.Cookie(langCookieName)),
-		string(ctx.Request.Header.Peek("Accept-Language")),
-	)
-
-	dtCtx := &defaulttemplate.Ctx{
-		Title:           "Server error",
-		JSURLs:          env.UserJSURLs(),
-		LocaleHashes:    env.UserLocaleHashes(),
-		CSSURLs:         env.UserCSSURLs(),
-		DevMode:         devModeString(env.IsDevMode()),
-		HTMLInjections:  injections,
-		UILang:          uiLang,
-		ServerErrorMode: true,
-	}
-
-	defaulttemplate.WriteRender(ctx, dtCtx)
+	defaulttemplate.WriteServerError(ctx, env, defaulttemplate.ServerErrorParams{
+		Admin:  isAdmin,
+		Detail: fmt.Sprintf("Layout %q failed to render.\n\n%s", layoutName, errMsg),
+	})
 }
 
 // devModeString renders the boolean dev-mode flag as the "true"/"false" string

@@ -2,7 +2,6 @@ package rendernotepage
 
 import (
 	"context"
-	"html"
 	"net/http"
 	"strings"
 	"testing"
@@ -18,8 +17,8 @@ import (
 )
 
 // serverErrEnv is a minimal Env stub exposing only the methods
-// writePublicServerError touches. Embedding the interface satisfies the full
-// Env contract; any unstubbed method panics if called (none should be).
+// defaulttemplate.WriteServerError touches. Embedding the interface satisfies
+// the full Env contract; any unstubbed method panics if called (none should be).
 type serverErrEnv struct {
 	Env
 }
@@ -61,7 +60,9 @@ func TestWriteLayoutRenderError(t *testing.T) {
 			require.NotContains(t, body, `<video poster="`, "partial layout output must not leak")
 
 			if tt.wantErrText {
-				require.Contains(t, body, html.EscapeString(errMsg), "admin must see the (escaped) error text")
+				// The detail is rendered through quicktemplate's own HTML escaping
+				// (which quotes as &quot;, unlike html.EscapeString's &#34;).
+				require.Contains(t, body, strings.ReplaceAll(errMsg, `"`, "&quot;"), "admin must see the (escaped) error text")
 				require.Contains(t, body, "coalesce", "admin must see the failing identifier")
 				require.Contains(t, body, layoutName)
 			} else {
@@ -136,14 +137,4 @@ func TestRenderLayoutExecuteFailure(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestWriteAdminLayoutErrorEscapesErrorText(t *testing.T) {
-	ctx := &fasthttp.RequestCtx{}
-	writeAdminLayoutError(ctx, "x", `boom <script>alert(1)</script>`)
-
-	body := string(ctx.Response.Body())
-	require.NotContains(t, body, "<script>alert(1)</script>", "error text must be HTML-escaped")
-	require.Contains(t, body, "&lt;script&gt;", "error text must be HTML-escaped")
-	require.True(t, strings.HasPrefix(body, "<!doctype html>"))
 }
