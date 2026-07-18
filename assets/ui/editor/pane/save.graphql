@@ -1,0 +1,15 @@
+mutation ($input: PushNotesInput!) {
+	pushNotes(input: $input) {
+		__typename
+		... on ErrorPayload {
+			message
+		}
+		... on PushNotesPayload {
+			updated {
+				path
+				url
+				id
+			}
+		}
+	}
+}

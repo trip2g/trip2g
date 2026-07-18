@@ -1,62 +1,4 @@
 namespace $.$$ {
-	// Viewer role (admin gate) + the authoritative DOM-index → source-line
-	// mapping extracted server-side from the AST. Re-fetched after mutations
-	// (updateNotes reloads NoteViews synchronously, so the refetch is fresh).
-	const tasklist_request = $trip2g_graphql_request(/* GraphQL */ `
-		query NoteTaskList($input: NoteInput!) {
-			viewer {
-				role
-			}
-			note(input: $input) {
-				versionId
-				taskList {
-					index
-					line
-					checked
-					text
-				}
-			}
-		}
-	`)
-
-	const content_request = $trip2g_graphql_request(/* GraphQL */ `
-		query TaskListNoteContent($filter: NotePathsFilter) {
-			notePaths(filter: $filter) {
-				id
-				content
-				latestContentHash
-				latestNoteView {
-					versionId
-				}
-			}
-		}
-	`)
-
-	const save_mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation TaskListToggle($input: UpdateNotesInput!) {
-			updateNotes(input: $input) {
-				__typename
-				... on UpdateNotesSuccessPayload {
-					updated {
-						path
-						versionId
-					}
-				}
-				... on UpdateNotesHashMismatchPayload {
-					path
-					actualHash
-				}
-				... on UpdateNotesPatchNotFoundPayload {
-					path
-					find
-				}
-				... on ErrorPayload {
-					message
-				}
-			}
-		}
-	`)
-
 	type TaskItem = {
 		index: number
 		line: number
@@ -104,9 +46,12 @@ namespace $.$$ {
 			return el.dataset.path
 		}
 
+		// Viewer role (admin gate) + the authoritative DOM-index → source-line
+		// mapping extracted server-side from the AST. Re-fetched after mutations
+		// (updateNotes reloads NoteViews synchronously, so the refetch is fresh).
 		@$mol_mem
 		snapshot() {
-			return tasklist_request({
+			return $trip2g_user_tasklist_data({
 				input: { pathId: this.path_id(), referer: this.$.$mol_dom_context.location.pathname },
 			})
 		}
@@ -189,7 +134,7 @@ namespace $.$$ {
 		save(item: TaskItem, next_checked: boolean) {
 			const path = this.note_path()
 
-			const res = content_request({ filter: { paths: [path] } })
+			const res = $trip2g_user_tasklist_content({ filter: { paths: [path] } })
 			const row = res.notePaths[0]
 			const content: string | undefined = row?.content
 			if (content == null) throw new Error('Note content unavailable')
@@ -222,7 +167,7 @@ namespace $.$$ {
 				change = { upsert: { path, content: lines.join('\n'), expectedHash: expected_hash } }
 			}
 
-			const result = save_mutate({ input: { changes: [change] } })
+			const result = $trip2g_user_tasklist_save({ input: { changes: [change] } })
 			const payload = result.updateNotes
 
 			switch (payload.__typename) {

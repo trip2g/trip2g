@@ -1,0 +1,11 @@
+query ($input: SearchInput!) {
+	search(input: $input) {
+		nodes {
+			highlightedTitle
+			highlightedContent
+			id: url
+			score
+			matchOrigin
+		}
+	}
+}

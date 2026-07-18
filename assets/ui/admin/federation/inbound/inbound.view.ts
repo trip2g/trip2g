@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminCreateInboundFederationSecret($input: CreateInboundFederationSecretInput!) {
-			admin {
-				data: createInboundFederationSecret(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreateInboundFederationSecretPayload {
-						id
-						kid
-						secretHex
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_federation_inbound extends $.$trip2g_admin_federation_inbound {
 		override body() {
 			if (this.secret_hex() !== '') {
@@ -27,7 +9,7 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const res = mutate({
+			const res = $trip2g_admin_federation_inbound_create({
 				input: {
 					kid: this.kid(),
 					description: this.description() || null,

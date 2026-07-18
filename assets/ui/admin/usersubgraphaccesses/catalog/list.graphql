@@ -1,0 +1,19 @@
+query {
+	admin {
+		data: allUserSubgraphAccesses {
+			nodes {
+				__typename
+				id
+				createdAt
+				expiresAt
+				subgraph {
+					name
+				}
+				user {
+					id
+					email
+				}
+			}
+		}
+	}
+}

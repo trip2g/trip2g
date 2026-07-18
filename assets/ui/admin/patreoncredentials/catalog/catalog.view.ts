@@ -1,25 +1,5 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminPatreonCredentials($filter: AdminPatreonCredentialsFilterInput) {
-			admin {
-				allPatreonCredentials(filter: $filter) {
-					nodes {
-						id
-						state
-						creatorAccessToken
-						createdAt
-						syncedAt
-						createdBy {
-							id
-							email
-						}
-					}
-				}
-			}
-		}
-	`)
-
-	const state = $trip2g_graphql_patreon_credentials_state_enum
+	const state = PatreonCredentialsStateEnum
 
 	export class $trip2g_admin_patreoncredentials_catalog extends $.$trip2g_admin_patreoncredentials_catalog {
 		@$mol_mem
@@ -27,9 +7,9 @@ namespace $.$$ {
 			const filter = this.$.$mol_state_arg.value( 'filter' ) || 'all'
 			switch( filter ) {
 				case 'active':
-					return state.Active
+					return state.ACTIVE
 				case 'deleted':
-					return state.Deleted
+					return state.DELETED
 				default:
 					return null
 			}
@@ -38,7 +18,7 @@ namespace $.$$ {
 		@$mol_mem
 		data( reset?: null ) {
 			const filter = this.filter_state()
-			const res = request({
+			const res = $trip2g_admin_patreoncredentials_catalog_list({
 				filter: filter ? { state: filter } : null
 			})
 

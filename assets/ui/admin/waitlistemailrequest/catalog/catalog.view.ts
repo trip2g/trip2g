@@ -1,26 +1,11 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminWaitListEmailRequests {
-			admin {
-				allWaitListEmailRequests {
-					nodes {
-						email
-						createdAt
-						ip
-						notePath
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_waitlistemailrequest_catalog extends $.$trip2g_admin_waitlistemailrequest_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_waitlistemailrequest_catalog_list()
 
 			// Use email as unique identifier since it's the primary key
-			return new Map( res.admin.allWaitListEmailRequests.nodes.map( (node: any) => [node.email, node] ) )
+			return new Map( res.admin.allWaitListEmailRequests.nodes.map( node => [node.email, node] as const ) )
 		}
 
 		override rows() {
@@ -28,7 +13,9 @@ namespace $.$$ {
 		}
 
 		row( email: any ) {
-			return this.data().get( email )
+			const row = this.data().get( email )
+			if( !row ) throw new Error( 'WaitListEmailRequest not found' )
+			return row
 		}
 
 		row_email( email: any ): string {

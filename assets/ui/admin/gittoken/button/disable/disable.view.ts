@@ -1,28 +1,11 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation DisableGitToken($input: DisableGitTokenInput!) {
-			admin {
-				data: disableGitToken(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on DisableGitTokenPayload {
-						gitToken {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
 	export class $trip2g_admin_gittoken_button_disable extends $.$trip2g_admin_gittoken_button_disable {
 		override handle_click() {
 			if (this.id() === 0) {
 				throw new Error('Git token ID is not set')
 			}
 
-			const res = mutate({
+			const res = $trip2g_admin_gittoken_button_disable_disable({
 				input: {
 					id: this.id()
 				},

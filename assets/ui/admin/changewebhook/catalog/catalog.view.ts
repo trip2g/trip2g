@@ -1,29 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminChangeWebhooks {
-			admin {
-				allChangeWebhooks {
-					nodes {
-						id
-						url
-						enabled
-						description
-						onCreate
-						onUpdate
-						onRemove
-						lastDeliveryAt
-						lastDeliveryStatus
-						createdAt
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_changewebhook_catalog extends $.$trip2g_admin_changewebhook_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_changewebhook_catalog_list()
 			return $trip2g_graphql_make_map( res.admin.allChangeWebhooks.nodes )
 		}
 

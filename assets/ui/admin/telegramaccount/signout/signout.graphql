@@ -1,0 +1,14 @@
+mutation ($input: AdminSignOutTelegramAccountInput!) {
+	admin {
+		data: signOutTelegramAccount(input: $input) {
+			... on AdminSignOutTelegramAccountPayload {
+				success
+				__typename
+			}
+
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

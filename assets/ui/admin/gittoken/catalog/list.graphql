@@ -1,0 +1,22 @@
+query {
+	admin {
+		allGitTokens {
+			nodes {
+				id
+				createdAt
+				description
+				canPull
+				canPush
+				createdBy {
+					id
+					email
+				}
+				disabledAt
+				disabledBy {
+					id
+					email
+				}
+			}
+		}
+	}
+}

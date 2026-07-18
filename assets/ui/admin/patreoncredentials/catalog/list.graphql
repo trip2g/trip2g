@@ -1,0 +1,17 @@
+query ($filter: AdminPatreonCredentialsFilterInput) {
+	admin {
+		allPatreonCredentials(filter: $filter) {
+			nodes {
+				id
+				state
+				creatorAccessToken
+				createdAt
+				syncedAt
+				createdBy {
+					id
+					email
+				}
+			}
+		}
+	}
+}

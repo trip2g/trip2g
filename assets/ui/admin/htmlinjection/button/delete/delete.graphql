@@ -1,0 +1,13 @@
+mutation ($input: DeleteHtmlInjectionInput!) {
+	admin {
+		data: deleteHtmlInjection(input: $input) {
+			__typename
+			... on DeleteHtmlInjectionPayload {
+				deletedId
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

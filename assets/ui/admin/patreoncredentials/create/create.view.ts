@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminCreatePatreonCreds($input: CreatePatreonCredentialsInput!) {
-			admin {
-				payload: createPatreonCredentials(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreatePatreonCredentialsPayload {
-						patreonCredentials {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_patreoncredentials_create extends $.$trip2g_admin_patreoncredentials_create {
 		override body() {
 			if( this.credentials_id_string() !== '' ) {
@@ -40,7 +22,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_patreoncredentials_create_create({
 				input: {
 					creatorAccessToken: this.token()
 				},

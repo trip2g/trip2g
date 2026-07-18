@@ -1,0 +1,13 @@
+mutation ($input: DeleteNotFoundIgnoredPatternInput!) {
+	admin {
+		payload: deleteNotFoundIgnoredPattern(input: $input) {
+			__typename
+			... on DeleteNotFoundIgnoredPatternPayload {
+				deletedId
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

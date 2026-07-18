@@ -1,0 +1,16 @@
+mutation ($input: StartBackgroundQueueInput!) {
+	admin {
+		payload: startBackgroundQueue(input: $input) {
+			__typename
+			... on StartBackgroundQueuePayload {
+				queues {
+					id
+					stopped
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

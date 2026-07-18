@@ -1,0 +1,18 @@
+query {
+	admin {
+		allRedirects {
+			nodes {
+				id
+				createdAt
+				pattern
+				ignoreCase
+				isRegex
+				target
+				createdBy {
+					id
+					email
+				}
+			}
+		}
+	}
+}

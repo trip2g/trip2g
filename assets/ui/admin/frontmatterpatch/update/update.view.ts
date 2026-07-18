@@ -1,47 +1,8 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(
-		`
-			query AdminUpdateDataFrontmatterPatch($id: Int64!) {
-				admin {
-					frontmatterPatch(id: $id) {
-						id
-						createdAt
-						description
-						includePatterns
-						excludePatterns
-						jsonnet
-						priority
-						enabled
-					}
-				}
-			}
-		`
-	)
-
-	const submit_request = $trip2g_graphql_request(
-		`
-			mutation AdminUpdateFrontmatterPatch($input: UpdateFrontmatterPatchInput!) {
-				admin {
-					data: updateFrontmatterPatch(input: $input) {
-						__typename
-						... on UpdateFrontmatterPatchPayload {
-							frontmatterPatch {
-								id
-							}
-						}
-						... on ErrorPayload {
-							message
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_frontmatterpatch_update extends $.$trip2g_admin_frontmatterpatch_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = data_request({
+			const res = $trip2g_admin_frontmatterpatch_update_data({
 				id: this.frontmatterpatch_id()
 			})
 
@@ -164,7 +125,7 @@ namespace $.$$ {
 			const includePatterns = this.include_patterns()
 			const excludePatterns = this.exclude_patterns()
 
-			const res = submit_request({
+			const res = $trip2g_admin_frontmatterpatch_update_save({
 				input: {
 					id: this.frontmatterpatch_id(),
 					description: this.description(),
@@ -176,12 +137,12 @@ namespace $.$$ {
 				},
 			})
 
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.message)
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.result(res.admin.payload.message)
 				return
 			}
 
-			if (res.admin.data.__typename === 'UpdateFrontmatterPatchPayload') {
+			if (res.admin.payload.__typename === 'UpdateFrontmatterPatchPayload') {
 				this.result('Frontmatter Patch updated successfully')
 				// Navigate back to show page
 				this.$.$mol_state_arg.value('action', '')

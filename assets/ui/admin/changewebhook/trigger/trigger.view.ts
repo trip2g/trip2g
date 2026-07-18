@@ -1,35 +1,8 @@
 namespace $.$$ {
-	const notePathsQuery = $trip2g_graphql_request(/* GraphQL */`
-		query AllNotePaths {
-			notePaths {
-				id
-				value
-			}
-		}
-	`)
-
-	const triggerMutation = $trip2g_graphql_request(/* GraphQL */`
-		mutation TriggerChangeWebhook($input: TriggerChangeWebhookInput!) {
-			admin {
-				payload: triggerChangeWebhook(input: $input) {
-					__typename
-					... on TriggerChangeWebhookPayload {
-						matchedCount
-						ignoredCount
-						deliveryId
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_changewebhook_trigger extends $.$trip2g_admin_changewebhook_trigger {
 		@$mol_mem
 		note_paths(reset?: null) {
-			const res = notePathsQuery()
+			const res = $trip2g_admin_changewebhook_trigger_note_paths()
 			return res.notePaths
 		}
 
@@ -59,7 +32,7 @@ namespace $.$$ {
 			}
 
 			try {
-				const res = triggerMutation({
+				const res = $trip2g_admin_changewebhook_trigger_trigger({
 					input: {
 						webhookId: this.changewebhook_id().toString(),
 						pathIds: pathIds

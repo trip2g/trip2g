@@ -1,0 +1,14 @@
+query ($id: Int64!) {
+	admin {
+		htmlInjection(id: $id) {
+			id
+			createdAt
+			activeFrom
+			activeTo
+			description
+			position
+			placement
+			content
+		}
+	}
+}

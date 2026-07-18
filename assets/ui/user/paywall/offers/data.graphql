@@ -1,0 +1,20 @@
+query ($filter: ViewerOffersFilter!) {
+	viewer {
+		offers(filter: $filter) {
+			__typename
+			... on ActiveOffers {
+				nodes {
+					id
+					priceUSD
+					subgraphs {
+						name
+					}
+				}
+			}
+			... on SubgraphWaitList {
+				tgBotUrl
+				emailAllowed
+			}
+		}
+	}
+}

@@ -1,0 +1,14 @@
+query ($filter: AdminLatestNoteViewsFilter) {
+	admin {
+		allLatestNoteViews(filter: $filter) {
+			nodes {
+				id
+				path
+				warnings {
+					level
+					message
+				}
+			}
+		}
+	}
+}

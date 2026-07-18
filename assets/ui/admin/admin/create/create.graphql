@@ -1,0 +1,15 @@
+mutation ($input: CreateAdminInput!) {
+	admin {
+		data: createAdmin(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateAdminPayload {
+				admin {
+					id
+				}
+			}
+		}
+	}
+}

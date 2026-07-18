@@ -1,12 +1,4 @@
 namespace $.$$ {
-	const paths_request = $trip2g_graphql_request(/* GraphQL */ `
-		query EditorNotePaths {
-			notePaths {
-				value
-			}
-		}
-	`)
-
 	function basename(path: string): string {
 		return path.split('/').at(-1) ?? path
 	}
@@ -14,7 +6,7 @@ namespace $.$$ {
 	export class $trip2g_editor_navigator extends $.$trip2g_editor_navigator {
 		@$mol_mem
 		override paths(): string[] {
-			const res = paths_request()
+			const res = $trip2g_editor_navigator_list()
 			return res.notePaths.map(p => p.value)
 		}
 

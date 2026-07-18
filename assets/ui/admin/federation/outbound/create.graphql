@@ -1,0 +1,14 @@
+mutation ($input: CreateOutboundFederationSecretInput!) {
+	admin {
+		data: createOutboundFederationSecret(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateOutboundFederationSecretPayload {
+				id
+				kid
+			}
+		}
+	}
+}

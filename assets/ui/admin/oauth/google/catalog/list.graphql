@@ -1,0 +1,13 @@
+query {
+	admin {
+		allGoogleOAuthCredentials {
+			nodes {
+				id
+				name
+				clientId
+				active
+				createdAt
+			}
+		}
+	}
+}

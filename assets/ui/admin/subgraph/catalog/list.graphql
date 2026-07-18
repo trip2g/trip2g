@@ -1,0 +1,13 @@
+query {
+	admin {
+		allSubgraphs {
+			nodes {
+				__typename
+				id
+				name
+				color
+				createdAt
+			}
+		}
+	}
+}

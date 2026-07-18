@@ -1,0 +1,9 @@
+query {
+	viewer {
+		user {
+			favoriteNotes {
+				pathId
+			}
+		}
+	}
+}

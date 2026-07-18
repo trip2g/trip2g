@@ -1,0 +1,9 @@
+query {
+	viewer {
+		activePurchases {
+			id
+			status
+			successful
+		}
+	}
+}

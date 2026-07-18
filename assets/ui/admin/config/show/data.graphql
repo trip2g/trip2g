@@ -1,0 +1,43 @@
+query ($id: String!) {
+	admin {
+		configValue(id: $id) {
+			__typename
+			id
+			description
+			updatedAt
+			... on AdminConfigStringValue {
+				stringValue: value
+				history {
+					id
+					value
+					createdAt
+					createdBy {
+						email
+					}
+				}
+			}
+			... on AdminConfigBoolValue {
+				boolValue: value
+				boolHistory: history {
+					id
+					value
+					createdAt
+					createdBy {
+						email
+					}
+				}
+			}
+			... on AdminConfigIntValue {
+				intValue: value
+				intHistory: history {
+					id
+					value
+					createdAt
+					createdBy {
+						email
+					}
+				}
+			}
+		}
+	}
+}

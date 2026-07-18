@@ -1,0 +1,15 @@
+mutation ($input: UpdateUserSubgraphAccessInput!) {
+	admin {
+		payload: updateUserSubgraphAccess(input: $input) {
+			__typename
+			... on UpdateUserSubgraphAccessPayload {
+				userSubgraphAccess {
+					expiresAt
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

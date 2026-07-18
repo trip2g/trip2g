@@ -1,0 +1,17 @@
+mutation ($input: SetConfigStringValueInput!) {
+	admin {
+		setConfigStringValue(input: $input) {
+			__typename
+			... on SetConfigStringValueSuccess {
+				configValue {
+					id
+					value
+					updatedAt
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

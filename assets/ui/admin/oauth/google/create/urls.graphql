@@ -1,0 +1,6 @@
+query ($input: OAuthUrlInput!) {
+	publicUrl
+	googleAuthUrl(input: $input) {
+		callbackUrl
+	}
+}

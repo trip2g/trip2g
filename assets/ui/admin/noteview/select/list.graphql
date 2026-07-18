@@ -1,0 +1,11 @@
+query {
+	admin {
+		allLatestNoteViews {
+			nodes {
+				versionId
+				path
+				title
+			}
+		}
+	}
+}

@@ -1,83 +1,4 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminShowChangeWebhook($id: Int64!) {
-			admin {
-				changeWebhookDeliveries(filter: { webhookId: $id, limit: 20 }) {
-					nodes {
-						id
-						status
-						responseStatus
-						attempt
-						durationMs
-						createdAt
-						completedAt
-					}
-				}
-			}
-		}
-	`)
-
-	const webhookQuery = $trip2g_graphql_request(/* GraphQL */`
-		query AdminGetChangeWebhook($id: Int64!) {
-			admin {
-				changeWebhook(id: $id) {
-					id
-					url
-					enabled
-					description
-					instruction
-					hasSecret
-					passApiKey
-					includeContent
-					maxDepth
-					timeoutSeconds
-					maxRetries
-					onCreate
-					onUpdate
-					onRemove
-					includePatterns
-					excludePatterns
-					readPatterns
-					writePatterns
-					createdAt
-					secretPrefix
-				}
-			}
-		}
-	`)
-
-	const deleteMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminChangeWebhookDeleteMutation($input: ChangeWebhookDeleteInput!) {
-			admin {
-				payload: changeWebhookDelete(input: $input) {
-					__typename
-					... on ChangeWebhookDeletePayload {
-						deletedId
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
-	const regenerateMutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminChangeWebhookRegenerateSecretMutation($input: ChangeWebhookRegenerateSecretInput!) {
-			admin {
-				payload: changeWebhookRegenerateSecret(input: $input) {
-					__typename
-					... on ChangeWebhookRegenerateSecretPayload {
-						secret
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_changewebhook_show extends $.$trip2g_admin_changewebhook_show {
 		action() {
 			return this.$.$mol_state_arg.value('action') || 'view'
@@ -85,7 +6,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data(reset?: null) {
-			const res = webhookQuery({ id: this.changewebhook_id() })
+			const res = $trip2g_admin_changewebhook_show_data({ id: this.changewebhook_id() })
 			const wh = res.admin.changeWebhook
 			if( !wh ) throw new Error( 'Webhook not found' )
 			return wh
@@ -93,7 +14,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		deliveries(reset?: null) {
-			const res = request({ id: this.changewebhook_id() })
+			const res = $trip2g_admin_changewebhook_show_deliveries({ id: this.changewebhook_id() })
 			return res.admin.changeWebhookDeliveries.nodes
 		}
 
@@ -167,7 +88,7 @@ namespace $.$$ {
 		}
 
 		delete() {
-			const res = deleteMutate({ input: { id: this.changewebhook_id() } })
+			const res = $trip2g_admin_changewebhook_show_delete({ input: { id: this.changewebhook_id() } })
 
 			if( res.admin.payload.__typename === 'ErrorPayload' ) {
 				this.delete_result( res.admin.payload.message )
@@ -184,7 +105,7 @@ namespace $.$$ {
 		}
 
 		regenerate_secret() {
-			const res = regenerateMutate({ input: { id: this.changewebhook_id() } })
+			const res = $trip2g_admin_changewebhook_show_regenerate_secret({ input: { id: this.changewebhook_id() } })
 
 			if( res.admin.payload.__typename === 'ErrorPayload' ) {
 				this.secret_result( res.admin.payload.message )

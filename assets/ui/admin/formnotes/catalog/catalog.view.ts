@@ -1,23 +1,9 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminFormNotes {
-			admin {
-				formNotes {
-					id
-					path
-					pathId
-					submitCount
-					lastSubmitAt
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_formnotes_catalog extends $.$trip2g_admin_formnotes_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
-			return $trip2g_graphql_make_map( res.admin.formNotes as any[] )
+			const res = $trip2g_admin_formnotes_catalog_list()
+			return $trip2g_graphql_make_map( res.admin.formNotes )
 		}
 
 		@$mol_mem

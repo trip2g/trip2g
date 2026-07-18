@@ -1,0 +1,11 @@
+mutation ($input: CreateEmailWaitListRequestInput!) {
+	createEmailWaitListRequest(input: $input) {
+		__typename
+		... on ErrorPayload {
+			message
+		}
+		... on CreateEmailWaitListRequestPayload {
+			success
+		}
+	}
+}

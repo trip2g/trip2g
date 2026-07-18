@@ -1,0 +1,20 @@
+query ($filter: AdminTgBotChatsFilterInput!) {
+	admin {
+		tgBotChats(filter: $filter) {
+			nodes {
+				id
+				chatType
+				chatTitle
+				addedAt
+				removedAt
+				memberCount
+				publishTags {
+					id
+				}
+				publishInstantTags {
+					id
+				}
+			}
+		}
+	}
+}

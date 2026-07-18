@@ -1,29 +1,13 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminWaitListTgBotRequests {
-			admin {
-				allWaitListTgBotRequests {
-					nodes {
-						chatId
-						createdAt
-						notePathId
-						notePath
-						botName
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_waitlisttgbotrequest_catalog extends $.$trip2g_admin_waitlisttgbotrequest_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_waitlisttgbotrequest_catalog_list()
 
 			// Create unique key from chatId and botName combination
-			return new Map( res.admin.allWaitListTgBotRequests.nodes.map( (node: any) => {
+			return new Map( res.admin.allWaitListTgBotRequests.nodes.map( node => {
 				const key = `${node.chatId}_${node.botName}`
-				return [key, node]
+				return [key, node] as const
 			}))
 		}
 
@@ -32,7 +16,9 @@ namespace $.$$ {
 		}
 
 		row( key: any ) {
-			return this.data().get( key )
+			const row = this.data().get( key )
+			if( !row ) throw new Error( 'WaitListTgBotRequest not found' )
+			return row
 		}
 
 		row_chat_id( key: any ): string {

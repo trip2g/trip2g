@@ -1,41 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminTelegramAccountUpdate($id: Int64!) {
-			admin {
-				telegramAccount(id: $id) {
-					id
-					phone
-					displayName
-					isPremium
-					enabled
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminUpdateTelegramAccountMutation($input: AdminUpdateTelegramAccountInput!) {
-			admin {
-				payload: updateTelegramAccount(input: $input) {
-					__typename
-					... on AdminUpdateTelegramAccountPayload {
-						account {
-							id
-							enabled
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_telegramaccount_update extends $.$trip2g_admin_telegramaccount_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request({ id: this.account_id() })
+			const res = $trip2g_admin_telegramaccount_update_data({ id: this.account_id() })
 
 			if (!res.admin.telegramAccount) {
 				throw new Error('Telegram Account not found')
@@ -67,7 +34,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_telegramaccount_update_save({
 				input: {
 					id: this.account_id(),
 					displayName: this.display_name(),

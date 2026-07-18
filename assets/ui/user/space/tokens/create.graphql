@@ -1,0 +1,20 @@
+mutation ($input: CreateUserTokenInput!) {
+	createUserToken(input: $input) {
+		__typename
+		... on CreateUserTokenPayload {
+			plaintextToken
+			token {
+				id
+				name
+				tokenPrefix
+				scope
+				createdAt
+				lastUsedAt
+				expiresAt
+			}
+		}
+		... on ErrorPayload {
+			message
+		}
+	}
+}

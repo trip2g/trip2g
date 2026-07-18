@@ -1,47 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */`
-		query AdminShowCronWebhookForUpdate($id: Int64!) {
-			admin {
-				cronWebhook(id: $id) {
-					id
-					url
-					cronSchedule
-					enabled
-					description
-					instruction
-					passApiKey
-					maxDepth
-					timeoutSeconds
-					maxRetries
-					readPatterns
-					writePatterns
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminUpdateCronWebhookMutation($input: UpdateCronWebhookInput!) {
-			admin {
-				payload: updateCronWebhook(input: $input) {
-					__typename
-					... on UpdateCronWebhookPayload {
-						cronWebhook {
-							id
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_cronwebhook_update extends $.$trip2g_admin_cronwebhook_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request({ id: this.cronwebhook_id() })
+			const res = $trip2g_admin_cronwebhook_update_data({ id: this.cronwebhook_id() })
 			const cw = res.admin.cronWebhook
 			if( !cw ) throw new Error( 'Cron Webhook not found' )
 			return cw
@@ -88,7 +49,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_cronwebhook_update_save({
 				input: {
 					id: this.cronwebhook_id(),
 					url: this.url(),

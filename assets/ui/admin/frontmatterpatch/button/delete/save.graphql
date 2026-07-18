@@ -1,0 +1,13 @@
+mutation ($input: DeleteFrontmatterPatchInput!) {
+	admin {
+		payload: deleteFrontmatterPatch(input: $input) {
+			__typename
+			... on DeleteFrontmatterPatchPayload {
+				deletedId
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

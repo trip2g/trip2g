@@ -1,0 +1,13 @@
+mutation ($input: RevokeUserTokenInput!) {
+	revokeUserToken(input: $input) {
+		__typename
+		... on RevokeUserTokenPayload {
+			token {
+				id
+			}
+		}
+		... on ErrorPayload {
+			message
+		}
+	}
+}

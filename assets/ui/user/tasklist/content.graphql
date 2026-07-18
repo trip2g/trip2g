@@ -1,0 +1,10 @@
+query ($filter: NotePathsFilter) {
+	notePaths(filter: $filter) {
+		id
+		content
+		latestContentHash
+		latestNoteView {
+			versionId
+		}
+	}
+}

@@ -1,0 +1,15 @@
+query {
+	viewer {
+		user {
+			tokens {
+				id
+				name
+				tokenPrefix
+				scope
+				createdAt
+				lastUsedAt
+				expiresAt
+			}
+		}
+	}
+}

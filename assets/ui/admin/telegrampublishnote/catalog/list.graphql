@@ -1,0 +1,17 @@
+query ($filter: AdminTelegramPublishNotesFilter!) {
+	admin {
+		allTelegramPublishNotes(filter: $filter) {
+			nodes {
+				id
+				publishAt
+				secondsUntilPublish
+				publishedAt
+				status
+				errorCount
+				noteView {
+					title
+				}
+			}
+		}
+	}
+}

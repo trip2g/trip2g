@@ -1,0 +1,36 @@
+query ($id: Int64!) {
+	admin {
+		patreonCredentials(id: $id) {
+			createdAt
+			creatorAccessToken
+			state
+
+			createdBy {
+				email
+			}
+
+			tiers {
+				nodes {
+					id
+					missedAt
+					title
+					amountCents
+
+					subgraphs {
+						id
+					}
+				}
+			}
+
+			members {
+				nodes {
+					email
+					status
+					currentTier {
+						title
+					}
+				}
+			}
+		}
+	}
+}

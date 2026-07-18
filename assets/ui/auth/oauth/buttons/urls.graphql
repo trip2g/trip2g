@@ -1,0 +1,11 @@
+query ($input: OAuthUrlInput!) {
+	googleAuthUrl(input: $input) {
+		authUrl
+	}
+	githubAuthUrl(input: $input) {
+		authUrl
+	}
+	oidcAuthUrl(input: $input) {
+		authUrl
+	}
+}

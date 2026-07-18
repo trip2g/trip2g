@@ -1,0 +1,15 @@
+mutation ($input: CreateGitHubOAuthCredentialsInput!) {
+	admin {
+		data: createGitHubOAuthCredentials(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateGitHubOAuthCredentialsPayload {
+				credentials {
+					id
+				}
+			}
+		}
+	}
+}

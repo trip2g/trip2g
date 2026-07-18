@@ -1,0 +1,15 @@
+mutation ($input: DeletePatreonCredentialsInput!) {
+	admin {
+		payload: deletePatreonCredentials(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on DeletePatreonCredentialsPayload {
+				patreonCredentials {
+					id
+				}
+			}
+		}
+	}
+}

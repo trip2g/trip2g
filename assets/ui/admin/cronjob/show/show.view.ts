@@ -1,18 +1,4 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminCronJobShow($id: Int64!) {
-			admin {
-				cronJob(id: $id) {
-					id
-					name
-					enabled
-					expression
-					lastExecAt
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_cronjob_show extends $.$trip2g_admin_cronjob_show {
 		action() {
 			return this.$.$mol_state_arg.value( 'action' ) || 'view'
@@ -28,7 +14,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		cronjob_data( reset?: null ) {
-			const res = request({
+			const res = $trip2g_admin_cronjob_show_data({
 				id: this.cronjob_id()
 			})
 

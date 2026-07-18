@@ -1,0 +1,16 @@
+mutation ($input: UnbanUserInput!) {
+	admin {
+		payload: unbanUser(input: $input) {
+			... on UnbanUserPayload {
+				user {
+					id
+					__typename
+				}
+			}
+
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

@@ -1,0 +1,9 @@
+query {
+	admin {
+		healthChecks {
+			id
+			status
+			description
+		}
+	}
+}

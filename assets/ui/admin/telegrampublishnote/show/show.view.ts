@@ -1,38 +1,8 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminTelegramPublishNote($id: Int64!) {
-			admin {
-				telegramPublishNote(id: $id) {
-					id
-					createdAt
-					publishAt
-					secondsUntilPublish
-					publishedAt
-					status
-					lastError
-					tags {
-						label
-					}
-					chats {
-						chatTitle
-						chatType
-					}
-					noteView {
-						title
-					}
-					post {
-						content
-						warnings
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_telegrampublishnote_show extends $.$trip2g_admin_telegrampublishnote_show {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request( { id: this.telegrampublishnote_id() } ).admin.telegramPublishNote
+			const res = $trip2g_admin_telegrampublishnote_show_show( { id: this.telegrampublishnote_id() } ).admin.telegramPublishNote
 			if (!res) throw new Error('not found')
 			return res
 		}

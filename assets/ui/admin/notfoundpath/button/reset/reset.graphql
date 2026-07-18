@@ -1,0 +1,15 @@
+mutation ($input: ResetNotFoundPathInput!) {
+	admin {
+		data: resetNotFoundPath(input: $input) {
+			__typename
+			... on ResetNotFoundPathPayload {
+				notFoundPath {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

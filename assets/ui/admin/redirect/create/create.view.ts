@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */`
-		mutation AdminCreateRedirectMutation($input: CreateRedirectInput!) {
-			admin {
-				payload: createRedirect(input: $input) {
-					__typename
-					... on CreateRedirectPayload {
-						redirect {
-							id
-						}
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_redirect_create extends $.$trip2g_admin_redirect_create {
 		override body() {
 			if( this.redirect_id_string() !== '' ) {
@@ -53,7 +35,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = mutate({
+			const res = $trip2g_admin_redirect_create_create({
 				input: {
 					pattern: this.pattern(),
 					target: this.target(),

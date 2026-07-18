@@ -1,0 +1,15 @@
+mutation ($input: MakeReleaseLiveInput!) {
+	admin {
+		payload: makeReleaseLive(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on MakeReleaseLivePayload {
+				release {
+					id
+				}
+			}
+		}
+	}
+}

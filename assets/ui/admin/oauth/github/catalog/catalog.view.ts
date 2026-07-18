@@ -1,24 +1,8 @@
 namespace $.$$ {
-	const list_query = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminGitHubOAuthCredentials {
-			admin {
-				allGitHubOAuthCredentials {
-					nodes {
-						id
-						name
-						clientId
-						active
-						createdAt
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_oauth_github_catalog extends $.$trip2g_admin_oauth_github_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			return $trip2g_graphql_make_map( list_query().admin.allGitHubOAuthCredentials.nodes )
+			return $trip2g_graphql_make_map( $trip2g_admin_oauth_github_catalog_list().admin.allGitHubOAuthCredentials.nodes )
 		}
 
 		@$mol_mem

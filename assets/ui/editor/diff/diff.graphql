@@ -1,0 +1,11 @@
+query ($filter: NoteVersionDiffFilter!) {
+	admin {
+		noteVersionDiff(filter: $filter) {
+			unified
+			word
+			addedLines
+			removedLines
+			changedWords
+		}
+	}
+}

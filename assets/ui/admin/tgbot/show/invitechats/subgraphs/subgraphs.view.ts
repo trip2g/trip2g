@@ -1,43 +1,14 @@
 namespace $.$$ {
-	const request = $trip2g_graphql_request(/* GraphQL */ `
-		query AdminTgbotShowInviteChatsSubgraphs {
-			admin {
-				allSubgraphs {
-					nodes {
-						id
-						name
-					}
-				}
-			}
-		}
-	`)
-
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminTgbotShowInviteChatsSubgraphsSave($input: SetTgChatSubgraphInvitesInput!) {
-			admin {
-				payload: setTgChatSubgraphInvites(input: $input) {
-					__typename
-					... on SetTgChatSubgraphInvitesPayload {
-						success
-					}
-					... on ErrorPayload {
-						message
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_tgbot_show_invitechats_subgraphs extends $.$trip2g_admin_tgbot_show_invitechats_subgraphs {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = request()
+			const res = $trip2g_admin_tgbot_show_invitechats_subgraphs_list()
 
 			return res.admin.allSubgraphs.nodes
 		}
 
 		save( subgraph_ids: number[] ) {
-			const res = mutate({
+			const res = $trip2g_admin_tgbot_show_invitechats_subgraphs_save({
 				input: {
 					chatId: this.chat_id(),
 					subgraphIds: subgraph_ids,

@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation SetApiKeyMcpAdminTools($input: SetApiKeyMcpAdminToolsInput!) {
-			admin {
-				data: setApiKeyMcpAdminTools(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on SetApiKeyMcpAdminToolsPayload {
-						apiKey {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
-
 	export class $trip2g_admin_apikey_button_mcpadmintools extends $.$trip2g_admin_apikey_button_mcpadmintools {
 		override label() {
 			return this.enabled_state() ? 'Disable Admin GraphQL' : 'Enable Admin GraphQL'
@@ -27,7 +9,7 @@ namespace $.$$ {
 				throw new Error('API key ID is not set')
 			}
 
-			const res = mutate({
+			const res = $trip2g_admin_apikey_button_mcpadmintools_mcpadmintools({
 				input: {
 					id: this.id(),
 					enabled: !this.enabled_state(),

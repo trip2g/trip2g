@@ -1,0 +1,24 @@
+query ($input: ParseMarkdownInput!) {
+	parseMarkdown(input: $input) {
+		... on ErrorPayload {
+			message
+		}
+		... on ParseMarkdownPayload {
+			blocks {
+				__typename
+
+				... on MarkdownCodeBlock {
+					index
+					language
+					content
+				}
+
+				... on MarkdownProseBlock {
+					index
+					content
+					html
+				}
+			}
+		}
+	}
+}

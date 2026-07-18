@@ -1,28 +1,4 @@
 namespace $.$$ {
-	const data_request = $trip2g_graphql_request(
-		`
-			query FrontmatterPatch($id: Int64!) {
-				admin {
-					frontmatterPatch(id: $id) {
-						id
-						includePatterns
-						excludePatterns
-						jsonnet
-						priority
-						description
-						enabled
-						createdAt
-						updatedAt
-						createdBy {
-							id
-							email
-						}
-					}
-				}
-			}
-		`
-	)
-
 	export class $trip2g_admin_frontmatterpatch_show extends $.$trip2g_admin_frontmatterpatch_show {
 		action() {
 			return this.$.$mol_state_arg.value( 'action' ) || 'view'
@@ -30,7 +6,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data( reset?: null ) {
-			const res = data_request({
+			const res = $trip2g_admin_frontmatterpatch_show_data({
 				id: this.frontmatterpatch_id()
 			})
 

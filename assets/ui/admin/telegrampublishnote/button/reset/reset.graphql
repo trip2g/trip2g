@@ -1,0 +1,15 @@
+mutation ($input: ResetTelegramPublishNoteInput!) {
+	admin {
+		payload: resetTelegramPublishNote(input: $input) {
+			__typename
+			... on ResetTelegramPublishNotePayload {
+				publishNote {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

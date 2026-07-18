@@ -1,0 +1,14 @@
+query ($id: Int64!) {
+	admin {
+		frontmatterPatch(id: $id) {
+			id
+			createdAt
+			description
+			includePatterns
+			excludePatterns
+			jsonnet
+			priority
+			enabled
+		}
+	}
+}

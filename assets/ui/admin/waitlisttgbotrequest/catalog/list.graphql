@@ -1,0 +1,13 @@
+query {
+	admin {
+		allWaitListTgBotRequests {
+			nodes {
+				chatId
+				createdAt
+				notePathId
+				notePath
+				botName
+			}
+		}
+	}
+}

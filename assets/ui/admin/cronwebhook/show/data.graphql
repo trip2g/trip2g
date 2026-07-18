@@ -1,0 +1,22 @@
+query ($id: Int64!) {
+	admin {
+		cronWebhook(id: $id) {
+			id
+			url
+			cronSchedule
+			enabled
+			description
+			instruction
+			hasSecret
+			passApiKey
+			maxDepth
+			timeoutSeconds
+			maxRetries
+			readPatterns
+			writePatterns
+			nextRunAt
+			createdAt
+			secretPrefix
+		}
+	}
+}

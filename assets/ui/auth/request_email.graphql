@@ -1,0 +1,16 @@
+mutation ($input: RequestEmailSignInCodeInput!) {
+	data: requestEmailSignInCode(input: $input) {
+		... on ErrorPayload {
+			__typename
+			message
+		}
+		... on RequestEmailSignInCodePayload {
+			__typename
+			success
+		}
+		... on RequestCaptchaPayload {
+			__typename
+			siteKey
+		}
+	}
+}

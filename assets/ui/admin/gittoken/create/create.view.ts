@@ -1,22 +1,4 @@
 namespace $.$$ {
-	const mutate = $trip2g_graphql_request(/* GraphQL */ `
-		mutation AdminCreateGitToken($input: CreateGitTokenInput!) {
-			admin {
-				data: createGitToken(input: $input) {
-					__typename
-					... on ErrorPayload {
-						message
-					}
-					... on CreateGitTokenPayload {
-						value
-						gitToken {
-							id
-						}
-					}
-				}
-			}
-		}
-	`)
 	export class $trip2g_admin_gittoken_create extends $.$trip2g_admin_gittoken_create {
 		override body() {
 			if (this.git_token() !== '') {
@@ -27,7 +9,7 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const res = mutate({
+			const res = $trip2g_admin_gittoken_create_create({
 				input: {
 					description: this.description(),
 					canPull: this.can_pull(),

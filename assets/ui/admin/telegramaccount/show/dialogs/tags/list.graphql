@@ -1,0 +1,10 @@
+query {
+	admin {
+		allTelegramPublishTags {
+			nodes {
+				id
+				label
+			}
+		}
+	}
+}
