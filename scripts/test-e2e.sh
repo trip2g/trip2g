@@ -552,6 +552,15 @@ if [ "${ENABLE_TG}" = "1" ]; then
   go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step1 check
 fi
 
+# Run render-all smoke test (admin routes + fault emulation)
+echo ""
+echo "🧪 Running render-all smoke test (admin routes + fault emulation)..."
+npx playwright test e2e/renderall.spec.js || {
+  echo -e "${RED}✗ Render-all E2E tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ Render-all E2E tests passed${NC}"
+
 # Run bidirectional federation E2E tests
 echo ""
 echo "🔗 Running bidirectional federation E2E tests..."

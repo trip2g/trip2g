@@ -2,6 +2,7 @@ namespace $.$$ {
 	export class $trip2g_admin_healthchecks extends $.$trip2g_admin_healthchecks {
 		@$mol_mem
 		data() {
+			if (this.$.$mol_state_arg.value('test_fail')) throw new Error('test_fail: emulated healthchecks failure')
 			const res = $trip2g_admin_healthchecks_list()
 			return $trip2g_graphql_make_map(res.admin.healthChecks);
 		}

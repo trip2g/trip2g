@@ -2,6 +2,7 @@ namespace $.$$ {
 	export class $trip2g_admin_cronjob_catalog extends $.$trip2g_admin_cronjob_catalog {
 		@$mol_mem
 		data( reset?: null ) {
+			if( this.$.$mol_state_arg.value( 'test_fail' ) ) throw new Error( 'test_fail: emulated cronjob catalog failure' )
 			const res = $trip2g_admin_cronjob_catalog_list()
 
 			return $trip2g_graphql_make_map( res.admin.allCronJobs.nodes )
