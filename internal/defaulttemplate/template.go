@@ -83,6 +83,7 @@ type Ctx struct {
 
 	OnboardingMode     bool
 	NotFoundMode       bool
+	ServerErrorMode    bool   // generic 500 page when a custom layout fails to render
 	UnsupportedFileExt string // non-empty for .canvas / .base files not yet rendered
 	PaywallError       *PaywallError
 	SigninWallError    *SigninWallError

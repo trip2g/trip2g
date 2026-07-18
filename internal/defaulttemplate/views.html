@@ -89,6 +89,8 @@ window.__trip2g_settings = {
   {%= Onboarding(ctx) %}
 {% elseif ctx.NotFoundMode %}
   {%= NotFound(ctx) %}
+{% elseif ctx.ServerErrorMode %}
+  {%= ServerError(ctx) %}
 {% elseif ctx.UnsupportedFileExt != "" %}
   {%= UnsupportedFile(ctx) %}
 {% else %}
@@ -517,6 +519,33 @@ window.__trip2g_settings = {
   <main class="notfound">
     <div class="notfound__code">404</div>
     <p class="notfound__message">Page not found</p>
+    <a class="notfound__home" href="/">← Home</a>
+  </main>
+</div>
+{% if footerRef.Kind != ContentRefNone %}
+  {% code footerNote := ctx.resolveNoteRef(footerRef) %}
+  {% if footerNote != nil %}
+    {%= SiteFooter(ctx, footerNote) %}
+  {% endif %}
+{% endif %}
+{% endfunc %}
+
+{% func ServerError(ctx *Ctx) %}
+{% code
+  headerRef := ctx.HeaderRef()
+  footerRef := ctx.FooterRef()
+%}
+{% code var headerNote *templateviews.Note %}
+{% if headerRef.Kind != ContentRefNone %}
+  {% code headerNote = ctx.resolveNoteRef(headerRef) %}
+{% endif %}
+{% if headerNote != nil %}
+  {%= SiteHeader(ctx, headerNote, false, false) %}
+{% endif %}
+<div class="layout layout--no-sidebars">
+  <main class="notfound">
+    <div class="notfound__code">500</div>
+    <p class="notfound__message">Something went wrong</p>
     <a class="notfound__home" href="/">← Home</a>
   </main>
 </div>
