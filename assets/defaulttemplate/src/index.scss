@@ -112,7 +112,7 @@ body {
 .site-header__nav {
   flex: 1;
 
-  nav ul {
+  ul {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem 1.5rem;
@@ -121,7 +121,7 @@ body {
     margin: 0;
   }
 
-  nav a {
+  a {
     text-decoration: none;
     color: var(--pico-contrast);
     font-size: 0.9375rem;
@@ -345,7 +345,7 @@ body {
 
 // Override PicoCSS nav centering inside sidebars
 .layout__sidebar {
-  nav ul, nav ol {
+  nav ul {
     justify-content: flex-start;
     align-items: flex-start;
   }
@@ -458,11 +458,6 @@ body {
     color: var(--pico-primary);
     text-decoration: underline;
   }
-
-  &.active, &[aria-current] {
-    color: var(--pico-primary-hover);
-    font-weight: 600;
-  }
 }
 
 .widget__toc {
@@ -478,7 +473,8 @@ body {
            calc(var(--pico-nav-element-spacing-horizontal) * 0.5);
   border-left: var(--pico-border-width) solid transparent;
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
   color: var(--pico-color);
   transition: border-color var(--pico-transition), color var(--pico-transition);
 
@@ -509,13 +505,13 @@ body {
 }
 
 .content__title {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
   margin-bottom: var(--pico-spacing);
 }
 
 .content__body {
-  // Fluid typography: 1rem (mobile) → 1.0125rem (desktop, -10%)
+  // Fluid typography: 0.9rem (mobile) → 1.0125rem (desktop, -10%)
   font-size: clamp(0.9rem, 0.81rem + 0.225vw, 1.0125rem);
   line-height: 1.75;
 
@@ -530,6 +526,9 @@ body {
       scroll-margin-top: 5.5rem;
     }
   }
+
+  h2 { --pico-font-size: 1.5rem; }
+  h3 { --pico-font-size: 1.25rem; }
 }
 
 // Sidebar nav rendered from _sidebar.md (### headings + ul lists)
@@ -817,10 +816,6 @@ body {
     &:hover {
       opacity: 1;
     }
-  }
-
-  &__title {
-    @apply text-2xl font-bold;
   }
 }
 

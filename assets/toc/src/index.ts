@@ -30,6 +30,7 @@ function initTOC() {
     const a = document.createElement('a');
     a.href = '#' + item.ID;
     a.textContent = item.Text;
+    a.className = 'toc__link';
     a.style.setProperty('--data-level', String(item.Level));
     a.dataset.level = String(item.Level);
     links.set(item.ID, a);
