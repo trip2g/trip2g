@@ -336,24 +336,32 @@ window.__trip2g_settings = {
 {% func Magazine(ctx *Ctx) %}
 {% code items := ctx.MagazineItems() %}
 {% if len(items) > 0 %}
+{% code
+  featuredEnd := 0
+  for featuredEnd < len(items) && items[featuredEnd].Size == MagazineItemFeatured {
+    featuredEnd++
+  }
+  gridEnd := featuredEnd
+  for gridEnd < len(items) && items[gridEnd].Size == MagazineItemSmall {
+    gridEnd++
+  }
+%}
 <div class="magazine">
-  {%= MagazineCard(ctx, items[0], "") %}
+  {% for _, item := range items[:featuredEnd] %}
+  {%= MagazineCard(ctx, item, "") %}
+  {% endfor %}
 
-  {% if len(items) > 1 %}
-  {% code
-    gridEnd := len(items)
-    if gridEnd > 5 { gridEnd = 5 }
-  %}
-  <div class="magazine__grid">
-    {% for _, item := range items[1:gridEnd] %}
+  {% if gridEnd > featuredEnd %}
+  <div class="magazine__grid" style="--magazine-grid-cols: {%d ctx.MagazineGridColumns() %}">
+    {% for _, item := range items[featuredEnd:gridEnd] %}
     {%= MagazineCard(ctx, item, "magazine-item--grid") %}
     {% endfor %}
   </div>
   {% endif %}
 
-  {% if len(items) > 5 %}
+  {% if len(items) > gridEnd %}
   <div class="magazine__list">
-    {% for _, item := range items[5:] %}
+    {% for _, item := range items[gridEnd:] %}
     {%= MagazineCard(ctx, item, "") %}
     {% endfor %}
   </div>

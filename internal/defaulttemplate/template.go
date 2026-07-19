@@ -415,6 +415,33 @@ func (ctx *Ctx) MagazineExcludeProperty() string {
 	return ctx.Note.M().GetString("magazine_exclude_property", "")
 }
 
+// MagazineFeaturedCount returns how many top items render as large featured cards.
+// Defaults to 1 (current behavior).
+func (ctx *Ctx) MagazineFeaturedCount() int {
+	if ctx.Note == nil {
+		return 1
+	}
+	return ctx.Note.M().GetInt("magazine_featured", 1)
+}
+
+// MagazineGridCount returns how many items after the featured tier render in the
+// medium card grid. Defaults to 4 (current behavior).
+func (ctx *Ctx) MagazineGridCount() int {
+	if ctx.Note == nil {
+		return 4
+	}
+	return ctx.Note.M().GetInt("magazine_grid", 4)
+}
+
+// MagazineGridColumns returns the column count for the grid tier.
+// Defaults to 2 (current behavior).
+func (ctx *Ctx) MagazineGridColumns() int {
+	if ctx.Note == nil {
+		return 2
+	}
+	return ctx.Note.M().GetInt("magazine_grid_columns", 2)
+}
+
 // resolveLayoutSection finds the best matching layout section file for the given section type.
 // Returns nil if no layout section matches the current note.
 func (ctx *Ctx) resolveLayoutSection(section string) *model.LayoutSectionEntry {

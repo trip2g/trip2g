@@ -198,3 +198,81 @@ func TestMagazineExcludeProperty_CombinedWithIncludeProperty(t *testing.T) {
 		require.NotEqual(t, "Post 2 Telegram", item.Note.Title())
 	}
 }
+
+func TestMagazineTierCounts(t *testing.T) {
+	tests := []struct {
+		name         string
+		total        int
+		featured     int
+		grid         int
+		wantFeatured int
+		wantGrid     int
+		wantList     int
+	}{
+		{"defaults, 10 items", 10, 1, 4, 1, 4, 5},
+		{"plain list, both zero", 10, 0, 0, 0, 0, 10},
+		{"no featured, grid only", 10, 0, 8, 0, 8, 2},
+		{"featured only, no grid", 10, 2, 0, 2, 0, 8},
+		{"counts exceed total, clamp gracefully", 3, 5, 5, 3, 0, 0},
+		{"featured exceeds total, grid still clamps", 5, 10, 3, 5, 0, 0},
+		{"negative featured treated as zero", 10, -1, 4, 0, 4, 6},
+		{"negative grid treated as zero", 10, 1, -1, 1, 0, 9},
+		{"zero total", 0, 1, 4, 0, 0, 0},
+		{"all featured", 5, 5, 4, 5, 0, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotFeatured, gotGrid, gotList := magazineTierCounts(tt.total, tt.featured, tt.grid)
+			require.Equal(t, tt.wantFeatured, gotFeatured, "featured count")
+			require.Equal(t, tt.wantGrid, gotGrid, "grid count")
+			require.Equal(t, tt.wantList, gotList, "list count")
+			require.Equal(t, tt.total, gotFeatured+gotGrid+gotList, "counts must sum to total")
+			require.GreaterOrEqual(t, gotFeatured, 0)
+			require.GreaterOrEqual(t, gotGrid, 0)
+			require.GreaterOrEqual(t, gotList, 0)
+		})
+	}
+}
+
+func TestMagazineItems_CustomTierCounts(t *testing.T) {
+	nvs := createMagazineTestNVS()
+	indexNote := nvs.ByPath("index.md")
+	indexNote.Unwrap().RawMeta["magazine_featured"] = 0
+	indexNote.Unwrap().RawMeta["magazine_grid"] = 0
+
+	ctx := &Ctx{
+		Note:  indexNote,
+		Notes: nvs,
+	}
+
+	items := ctx.MagazineItems()
+	require.Len(t, items, 5)
+	for _, item := range items {
+		require.Equal(t, MagazineItemList, item.Size, "everything should fall into the list tier")
+	}
+}
+
+func TestMagazineFeaturedCount_Default(t *testing.T) {
+	ctx := &Ctx{}
+	require.Equal(t, 1, ctx.MagazineFeaturedCount())
+}
+
+func TestMagazineGridCount_Default(t *testing.T) {
+	ctx := &Ctx{}
+	require.Equal(t, 4, ctx.MagazineGridCount())
+}
+
+func TestMagazineGridColumns_Default(t *testing.T) {
+	ctx := &Ctx{}
+	require.Equal(t, 2, ctx.MagazineGridColumns())
+}
+
+func TestMagazineFeaturedCount_ReturnsValue(t *testing.T) {
+	nvs := createMagazineTestNVS()
+	indexNote := nvs.ByPath("index.md")
+	indexNote.Unwrap().RawMeta["magazine_featured"] = 3
+
+	ctx := &Ctx{Note: indexNote}
+	require.Equal(t, 3, ctx.MagazineFeaturedCount())
+}
