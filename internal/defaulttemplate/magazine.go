@@ -26,6 +26,8 @@ type MagazineItem struct {
 // (sorted by its value desc); remaining notes follow sorted by created_at desc.
 // Filtering: if magazine_include_property is set, only notes with that property are included.
 // Excludes the current note.
+// Sizing: the first magazine_featured items are MagazineItemFeatured, the next
+// magazine_grid items are MagazineItemSmall, everything after that is MagazineItemList.
 func (ctx *Ctx) MagazineItems() []MagazineItem {
 	if ctx.Notes == nil {
 		return nil
@@ -49,7 +51,7 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 
 	all := q.All()
 
-	var items []MagazineItem
+	var notes []*templateviews.Note
 	for _, note := range all {
 		if ctx.Note != nil && note.Path() == ctx.Note.Path() {
 			continue
@@ -69,16 +71,41 @@ func (ctx *Ctx) MagazineItems() []MagazineItem {
 		if excludeProp != "" && note.M().Get(excludeProp) != nil {
 			continue
 		}
+		notes = append(notes, note)
+	}
+
+	featuredCount, gridCount, _ := magazineTierCounts(len(notes), ctx.MagazineFeaturedCount(), ctx.MagazineGridCount())
+
+	items := make([]MagazineItem, len(notes))
+	for i, note := range notes {
 		size := MagazineItemList
-		if len(items) == 0 {
+		switch {
+		case i < featuredCount:
 			size = MagazineItemFeatured
-		} else if len(items) < 5 {
+		case i < featuredCount+gridCount:
 			size = MagazineItemSmall
 		}
-		items = append(items, MagazineItem{
-			Note: note,
-			Size: size,
-		})
+		items[i] = MagazineItem{Note: note, Size: size}
 	}
 	return items
+}
+
+// magazineTierCounts clamps the requested featured/grid tier sizes to the available
+// item total. Negative inputs are treated as 0. Returns the featured, grid, and list
+// tier sizes, which always sum to total.
+func magazineTierCounts(total, featured, grid int) (int, int, int) {
+	if featured < 0 {
+		featured = 0
+	}
+	if grid < 0 {
+		grid = 0
+	}
+	if featured > total {
+		featured = total
+	}
+	remaining := total - featured
+	if grid > remaining {
+		grid = remaining
+	}
+	return featured, grid, remaining - grid
 }

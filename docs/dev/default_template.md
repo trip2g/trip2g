@@ -146,13 +146,24 @@ A note opts into full-width rendering with `wide: true` in its frontmatter. The 
 
 ## Magazine
 
-The magazine layout displays multiple notes in three tiers:
+The magazine displays notes in three tiers: featured (large card), grid (medium cards), list (minimal rows). Tune the tier sizes with three flat frontmatter keys on the note that declares the magazine. Flat, because Obsidian's property editor handles nested YAML poorly.
 
-| Tier | Indices | Visual | Use Case |
-|------|---------|--------|----------|
-| Featured | 0 | Large card, full-width | Top/hero item |
-| Grid | 1–4 | Smaller cards, auto-fill grid | Secondary items |
-| List | 5+ | Minimal cards, vertical list | Extended browsing |
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `magazine_featured` | `1` | How many top items render as large featured cards |
+| `magazine_grid` | `4` | How many items after that render in the medium grid |
+| `magazine_grid_columns` | `2` | Column count for the grid tier |
+
+The model: take the ordered item list, consume `magazine_featured` for the featured tier, then `magazine_grid` for the grid tier. Everything left over falls into the list tier. No sentinel values needed; "remainder goes to list" covers every mode.
+
+| `magazine_featured` | `magazine_grid` | Result |
+|---|---|---|
+| `1` (default) | `4` (default) | Original look: 1 hero + 4-card grid + list |
+| `0` | `0` | Plain list, every item small |
+| `0` | `8` | No hero, 8-card grid, rest list |
+| `3` | `0` | 3 featured cards, rest list, no grid |
+
+Counts exceeding the available items clamp gracefully, with no error. For example, `magazine_featured: 100` on a 5-item magazine just makes all 5 featured.
 
 ### Activating Magazine
 
@@ -170,7 +181,12 @@ Or make a note the index without explicit `content` (automatic magazine for `_in
 |---------|---------|---------|
 | `magazine_sort_property` | — | Frontmatter key for sorting. Notes with this property come first (desc), then the rest by date desc. |
 | `magazine_include_property` | — | Only include notes that have this frontmatter key set. |
+| `magazine_exclude_property` | — | Exclude notes that have this frontmatter key set. |
 | `magazine_include_files` | `"**/*.md"` | Glob pattern for notes to include |
+| `magazine_exclude_files` | — | Glob pattern for notes to exclude |
+| `magazine_featured` | `1` | Featured tier size (see above) |
+| `magazine_grid` | `4` | Grid tier size (see above) |
+| `magazine_grid_columns` | `2` | Grid tier column count |
 
 ### Example
 
@@ -181,6 +197,9 @@ content:
   - magazine
 magazine_sort_property: priority
 magazine_include_files: "posts/**/*.md"
+magazine_featured: 0
+magazine_grid: 6
+magazine_grid_columns: 3
 ---
 ```
 
@@ -192,7 +211,7 @@ priority: 100
 ---
 ```
 
-The magazine will load all notes matching `posts/**/*.md`, sort by `priority` descending, and display the highest-priority notes as featured/grid/list.
+The magazine will load all notes matching `posts/**/*.md`, sort by `priority` descending, then render as no hero, a 6-item 3-column grid, and the rest as a list.
 
 ### Image Extraction
 
@@ -294,8 +313,8 @@ The default template uses **PicoCSS** v2.1.1 as the base stylesheet, with custom
 | `.content__title` | Article `<h1>` |
 | `.content__body` | Article content |
 | `.magazine` | Magazine container |
-| `.magazine__grid` | 4-column grid tier (indices 1–4) |
-| `.magazine__list` | List tier (indices 5+) |
+| `.magazine__grid` | Grid tier; column count via `--magazine-grid-cols` (set from `magazine_grid_columns`) |
+| `.magazine__list` | List tier |
 | `.card` | Magazine card |
 | `.card--featured` | Featured tier card |
 | `.card--small` | Grid tier card |
@@ -401,7 +420,12 @@ All frontmatter keys supported in notes:
 | `content` | `[type, ...]` | `[selfcontent]` | Content blocks to render |
 | `magazine_sort_property` | `string` | — | Sort key for magazine (property-first, then date) |
 | `magazine_include_property` | `string` | — | Only include notes with this property set |
+| `magazine_exclude_property` | `string` | — | Exclude notes with this property set |
 | `magazine_include_files` | `string` | `"**/*.md"` | Glob for magazine notes |
+| `magazine_exclude_files` | `string` | — | Glob to exclude from magazine notes |
+| `magazine_featured` | `int` | `1` | Featured tier size |
+| `magazine_grid` | `int` | `4` | Grid tier size |
+| `magazine_grid_columns` | `int` | `2` | Grid tier column count |
 | `title` | `string` | — | Page title (required) |
 | `description` | `string` | — | SEO meta description |
 | `free` | `bool` | `false` | Accessible without paywall |
@@ -421,7 +445,7 @@ For `left_sidebar` and `right_sidebar`:
 For `content`:
 
 - `"selfcontent"` or `"self"` — This note's article
-- `"magazine"` — Magazine layout (see `magazine_sort_property`, `magazine_include_property`, `magazine_include_files`)
+- `"magazine"` — Magazine layout (see `magazine_featured`, `magazine_grid`, `magazine_grid_columns`, `magazine_sort_property`, `magazine_include_property`, `magazine_include_files`)
 - `"[[Title]]"` — Embed note by title
 - `"path/to/file.md"` — Embed note by file path
 
@@ -447,6 +471,12 @@ func (ctx *Ctx) MagazineSortProperty() string
 func (ctx *Ctx) MagazineIncludeProperty() string
 // MagazineIncludeFiles — glob pattern; default "**/*.md"
 func (ctx *Ctx) MagazineIncludeFiles() string
+// MagazineFeaturedCount — featured tier size; default 1
+func (ctx *Ctx) MagazineFeaturedCount() int
+// MagazineGridCount — grid tier size; default 4
+func (ctx *Ctx) MagazineGridCount() int
+// MagazineGridColumns — grid tier column count; default 2
+func (ctx *Ctx) MagazineGridColumns() int
 
 // MagazineItems returns sorted magazine items with visual tiers.
 func (ctx *Ctx) MagazineItems() []MagazineItem
@@ -459,19 +489,18 @@ The `MagazineItem` struct represents a single card in the magazine:
 ```go
 type MagazineItemSize int
 const (
-    MagazineItemFeatured  // index 0
-    MagazineItemSmall     // index 1-4
-    MagazineItemList      // index 5+
+    MagazineItemFeatured  // first magazine_featured items
+    MagazineItemSmall     // next magazine_grid items
+    MagazineItemList      // everything after that
 )
 
 type MagazineItem struct {
-    Note     *templateviews.Note
-    Size     MagazineItemSize
-    ImageURL string
+    Note *templateviews.Note
+    Size MagazineItemSize
 }
 ```
 
-Size is determined automatically based on the item's index in the sorted list.
+Size is determined by consuming `magazine_featured` items for the featured tier, then `magazine_grid` items for the grid tier; the remainder is the list tier. Counts clamp to the available item total.
 
 ## Internationalization
 
