@@ -864,6 +864,19 @@ body {
     text-decoration: none;
     &:hover { text-decoration: underline; }
   }
+
+  &__detail {
+    text-align: left;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    padding: 1rem;
+    border: 1px solid var(--pico-del-color);
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-card-background-color);
+    color: var(--pico-color);
+    font-size: 0.8125rem;
+  }
 }
 
 // --- Hamburger button (mobile only) ---

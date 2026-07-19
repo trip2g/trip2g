@@ -1,6 +1,7 @@
 package rendernotepage
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -365,18 +366,16 @@ func renderLayout(
 		return false, nil
 	}
 
-	// Recover from template panics (e.g., type conversion errors in Jet)
+	// Recover from template panics (e.g., type conversion errors in Jet). Jet
+	// itself converts most runtime failures to a returned error, but non-Jet
+	// panics can still reach here; serve the same clean error page (any partial
+	// output stays trapped in the local buffer).
 	defer func() {
 		if r := recover(); r != nil {
 			env.Logger().Error("template panic", "layout", layoutName, "error", r)
-			if resp.UserToken.IsAdmin() {
-				_, _ = fmt.Fprintf(ctx, "Template error: %v", r)
-				processed = true
-				err = nil
-			} else {
-				processed = false
-				err = fmt.Errorf("template panic: %v", r)
-			}
+			writeLayoutRenderError(ctx, env, resp, layoutName, fmt.Sprintf("%v", r))
+			processed = true
+			err = nil
 		}
 	}()
 
@@ -414,16 +413,41 @@ func renderLayout(
 	// version author (gated on currentUser.IsAdmin()).
 	injectLastEditedByResolver(env, resp)
 
-	viewErr := layout.View.Execute(ctx, vars, resp)
+	// Render into a buffer so a mid-render failure never leaks partial output
+	// (Jet writes everything up to the failing expression before it returns the
+	// error). Only flush the buffer to the response when the render succeeds.
+	var buf bytes.Buffer
+	viewErr := layout.View.Execute(&buf, vars, resp)
 	if viewErr != nil {
-		if resp.UserToken.IsAdmin() {
-			_, _ = ctx.WriteString(viewErr.Error())
-			return true, nil
-		}
-		return false, fmt.Errorf("failed to execute view: %w", viewErr)
+		env.Logger().Error("layout execute failed", "layout", layoutName, "error", viewErr)
+		writeLayoutRenderError(ctx, env, resp, layoutName, viewErr.Error())
+		return true, nil
 	}
 
+	ctx.SetBody(buf.Bytes())
 	return true, nil
+}
+
+// writeLayoutRenderError serves the response when a custom layout fails to
+// render. Admins get the raw error text (layout id + Jet message, which carries
+// the source line) so they can debug; everyone else gets a clean generic 500
+// page. In both cases the status is 500 and no partial layout output is written.
+func writeLayoutRenderError(ctx *fasthttp.RequestCtx, env Env, resp *Response, layoutName, errMsg string) {
+	isAdmin := resp != nil && resp.UserToken.IsAdmin()
+
+	defaulttemplate.WriteServerError(ctx, env, defaulttemplate.ServerErrorParams{
+		Admin:  isAdmin,
+		Detail: fmt.Sprintf("Layout %q failed to render.\n\n%s", layoutName, errMsg),
+	})
+}
+
+// devModeString renders the boolean dev-mode flag as the "true"/"false" string
+// the default template expects.
+func devModeString(dev bool) string {
+	if dev {
+		return "true"
+	}
+	return "false"
 }
 
 // injectLastEditedByResolver wires the admin-only "who pushed this version"
@@ -593,16 +617,13 @@ func buildDefaultTemplateCtx(
 	jsURLs := layoutParams.JSURLs
 	cssURLs := layoutParams.CSSURLs
 	inlineCSS := ""
-	devMode := "false"
+	devMode := devModeString(env.IsDevMode())
 
 	if len(jsURLs) == 0 {
 		jsURLs = env.UserJSURLs()
 	}
 	if len(cssURLs) == 0 {
 		inlineCSS = env.UserInlineCSS()
-	}
-	if env.IsDevMode() {
-		devMode = "true"
 	}
 
 	// toc.js handles both TOC scrollspy and sidebar active-link highlighting;

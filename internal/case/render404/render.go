@@ -1,12 +1,9 @@
 package render404
 
 import (
-	"net/http"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/renderlayout"
-	"trip2g/internal/db"
 	"trip2g/internal/defaulttemplate"
-	"trip2g/internal/langdetect"
 	"trip2g/internal/usertoken"
 )
 
@@ -24,8 +21,6 @@ type Env interface {
 
 func Handle(req *appreq.Request) (interface{}, error) {
 	ctx := req.Req
-	ctx.SetStatusCode(http.StatusNotFound)
-	ctx.SetContentType("text/html; charset=utf-8")
 
 	env, ok := req.Env.(Env)
 	if !ok {
@@ -39,37 +34,6 @@ func Handle(req *appreq.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	jsURLs := env.UserJSURLs()
-	cssURLs := env.UserCSSURLs()
-	localeHashes := env.UserLocaleHashes()
-	devMode := "false"
-	if env.IsDevMode() {
-		devMode = "true"
-	}
-	injections := map[string][]db.HtmlInjection{}
-	if active, injErr := env.ActiveHTMLInjections(ctx); injErr == nil {
-		for _, inj := range active {
-			injections[inj.Placement] = append(injections[inj.Placement], inj)
-		}
-	}
-
-	uiLang := langdetect.DetectPreferred(
-		string(req.Req.Request.Header.Cookie("trip2g_lang")),
-		string(req.Req.Request.Header.Peek("Accept-Language")),
-	)
-
-	dtCtx := &defaulttemplate.Ctx{
-		Title:          "Page not found",
-		JSURLs:         jsURLs,
-		LocaleHashes:   localeHashes,
-		CSSURLs:        cssURLs,
-		DevMode:        devMode,
-		HTMLInjections: injections,
-		UILang:         uiLang,
-		UserToken:      token,
-		NotFoundMode:   true,
-	}
-
-	defaulttemplate.WriteRender(ctx, dtCtx)
+	defaulttemplate.WriteNotFound(ctx, env, token)
 	return nil, nil
 }
