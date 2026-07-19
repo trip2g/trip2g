@@ -417,7 +417,7 @@
       const tMs = USE_AUDIO ? audioEl.currentTime * 1000 : (t - playT0) * SPEED;
       const ct = Math.min(tMs, total);
       reconcile(ct);
-      graphFlashG.style.opacity = (ct / total).toFixed(3); // background graph fades in with progress
+      graphFlashG.style.opacity = (ct / total * 0.6).toFixed(3); // background graph fades in with progress (max 60%)
       const ended = USE_AUDIO ? audioEl.ended : tMs >= total;
       hero.classList.toggle(`${BLOCK}--done`, ended);
       if (ended) {
