@@ -320,13 +320,29 @@ flowchart TD
 
 ### Magazine layout
 
-The magazine displays related notes as cards in a three-tier visual hierarchy:
+The magazine displays related notes as cards in a three-tier visual hierarchy: featured (large, full-width), grid (medium cards), and list (minimal rows). Tune the tiers with three flat frontmatter keys, set on the page that hosts the magazine:
 
-| Tier | Position | Cards | Style |
-|------|----------|-------|-------|
-| Featured | First | 1 | Large, full-width |
-| Grid | 2nd–5th | 4 | Medium, 4-column grid |
-| List | 6th+ | Unlimited | Minimal, vertical list |
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `magazine_featured` | `1` | How many top notes become large featured cards |
+| `magazine_grid` | `4` | How many notes after that go into the medium grid |
+| `magazine_grid_columns` | `2` | Number of columns in the grid |
+
+The model is simple: notes are consumed in order. First `magazine_featured` of them become featured cards, then the next `magazine_grid` become grid cards, and everything left over becomes the list. There are no special "unlimited" values to remember; setting a count to `0` skips that tier.
+
+```yaml
+magazine_featured: 0
+magazine_grid: 0
+```
+A plain list: every note the same small size.
+
+```yaml
+magazine_featured: 0
+magazine_grid: 8
+```
+No hero card, 8 notes in the grid, the rest as a list.
+
+Counts larger than the number of available notes are simply capped, with no error.
 
 Activate the magazine on an index or category page:
 
@@ -341,6 +357,30 @@ magazine_sort_property: priority
 ```
 
 #### Magazine properties
+
+**`magazine_featured`** — How many top notes render as large featured cards
+
+```yaml
+magazine_featured: 2
+```
+
+Default: `1`. Set to `0` for no featured card.
+
+**`magazine_grid`** — How many notes after the featured tier render in the medium grid
+
+```yaml
+magazine_grid: 6
+```
+
+Default: `4`. Set to `0` to skip the grid tier.
+
+**`magazine_grid_columns`** — Number of columns in the grid tier
+
+```yaml
+magazine_grid_columns: 3
+```
+
+Default: `2`.
 
 **`magazine_include_files`** — Glob pattern for which notes to include
 

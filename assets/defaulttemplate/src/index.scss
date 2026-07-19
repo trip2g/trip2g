@@ -575,7 +575,7 @@ body {
 
 .magazine__grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(var(--magazine-grid-cols, 2), 1fr);
   gap: calc(var(--pico-spacing) * 2);
 }
 
