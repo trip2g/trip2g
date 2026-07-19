@@ -184,13 +184,10 @@
 .@did .hh-frame.is-active .hh-frame-label { fill: var(--fg); }
 .@did .hh-frame.is-dim .hh-frame-box { opacity: 0.28; }
 .@did .hh-frame.is-dim .hh-frame-label { opacity: 0.42; }
-/* finale flash: graph silhouettes bloom across the hero for ~0.5s */
-.@did .hh-graphflash { opacity: 0; pointer-events: none; transition: opacity 0.8s ease; }
-.@did .hh-graphflash.is-flash { animation: hh-graphflash 2400ms ease-out 1 forwards; }
+/* background graph mesh — opacity is driven by playback progress in JS */
+.@did .hh-graphflash { opacity: 0; pointer-events: none; transition: opacity 0.6s ease; }
 .@did .hh-gf-edge { stroke: var(--accent); stroke-width: 1; opacity: 0.5; }
 .@did .hh-gf-node { fill: var(--accent); opacity: 0.85; }
-/* bloom bright, then settle to ~50% as a persistent background mesh */
-@keyframes hh-graphflash { 0% { opacity: 0; } 12% { opacity: 0.5; } 55% { opacity: 0.25; } 100% { opacity: 0.25; } }
 .@did .hh-snap, .@did .hh-snap * { transition: none !important; }
 /* poster: dimmed final diagram behind the play button */
 .@did .hh-poster .hh-node { opacity: 0.15; transform: none; }

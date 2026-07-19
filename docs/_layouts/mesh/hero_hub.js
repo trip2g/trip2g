@@ -338,7 +338,6 @@
       const bid = BEATS[ci].id;
       currentNodeId = (INPUTS.includes(bid) || OUTPUTS.includes(bid)) ? bid : "core";
       if (!seek && bid === "realtime") realtimePulse();
-      if (!seek && bid === "cta") graphFlash(); // finale: graph silhouettes bloom across the hero
       lastCaption = ci;
     }
     lastT = tMs;
@@ -376,7 +375,7 @@
     for (const el of Object.values(frameEls)) el.classList.remove("is-on", "is-active", "is-dim");
     for (const l of Object.values(linkEls)) { l.base.classList.remove("is-on"); l.flow.classList.remove("is-on"); }
     mdLine.classList.remove("is-on");
-    graphFlashG.classList.remove("is-flash");
+    graphFlashG.style.opacity = 0;
     particles.length = 0; rings.length = 0;
     for (const k of Object.keys(emitters)) delete emitters[k];
     smoothE = 0; activated = false; endedAt = 0; lastT = -1; lastCaption = -1; currentNodeId = "core";
@@ -418,6 +417,7 @@
       const tMs = USE_AUDIO ? audioEl.currentTime * 1000 : (t - playT0) * SPEED;
       const ct = Math.min(tMs, total);
       reconcile(ct);
+      graphFlashG.style.opacity = (ct / total).toFixed(3); // background graph fades in with progress
       const ended = USE_AUDIO ? audioEl.ended : tMs >= total;
       hero.classList.toggle(`${BLOCK}--done`, ended);
       if (ended) {
@@ -445,7 +445,7 @@
     for (const e of Object.values(emitters)) {
       if (t >= e.next) { e.spawn(); e.next = t + e.every * (0.7 + Math.random() * 0.6) / (0.7 + smoothE * 1.6); }
     }
-    if (graphFlashG.classList.contains("is-flash")) animateGraph(t); // float + pseudo-3D sway
+    if (activated) animateGraph(t); // float + pseudo-3D sway (visibility scales with progress)
 
     while (fxG.firstChild) fxG.removeChild(fxG.firstChild);
     // halo breathes around the node the voice is describing (not always the hub)
