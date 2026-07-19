@@ -1,0 +1,230 @@
+{{ block _style_@lid() }}
+.@did {
+  position: relative;
+  min-height: calc(100svh - 41px); /* 41px = mesh-bar height, keeps CTAs above the fold */
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--rule);
+  overflow: hidden;
+}
+.@did--record { min-height: 100svh; } /* bar is hidden in record mode */
+.@did__eyebrow {
+  position: absolute; top: 22px; left: 40px; z-index: 2;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.@did__eyebrow::before { content: "// "; color: var(--accent); }
+.@did__stage { flex: 1; min-height: 0; display: flex; align-items: center; }
+.@did__stage svg { width: 100%; height: 100%; display: block; }
+.@did__caption {
+  display: none; /* subtitles removed — the animation speaks for itself */
+  position: absolute; left: 0; right: 0; bottom: 150px; z-index: 2;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+}
+.@did__caption.is-on { opacity: 1; }
+.@did__caption::before { content: "// "; color: var(--accent); }
+.@did__ctas {
+  position: absolute; left: 0; right: 0; bottom: 32px; z-index: 2;
+  display: flex; justify-content: center; flex-wrap: wrap;
+}
+/* custom dark player = the animation timeline (drag the bar to seek the diagram) */
+.@did__player {
+  position: absolute; left: 50%; bottom: 96px; z-index: 3;
+  transform: translateX(-50%);
+  width: min(520px, 84%);
+  display: flex; align-items: center; gap: 12px;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+}
+.@did--playing .@did__player, .@did--done .@did__player { opacity: 0.85; pointer-events: auto; }
+.@did--playing .@did__player:hover, .@did--done .@did__player:hover { opacity: 1; }
+.@did--record .@did__player { display: none; }
+.@did__pp {
+  flex: none; width: 30px; height: 30px;
+  background: none; border: 1px solid var(--fg); color: var(--fg);
+  font-family: var(--mono); font-size: 10px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.@did__pp:hover { border-color: var(--accent); color: var(--accent); }
+.@did__seek {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 3px; background: var(--rule); border-radius: 2px; cursor: pointer;
+}
+.@did__seek::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; border-radius: 50%; background: var(--accent); cursor: pointer;
+}
+.@did__seek::-moz-range-thumb { width: 12px; height: 12px; border: none; border-radius: 50%; background: var(--accent); cursor: pointer; }
+.@did__time {
+  flex: none; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+  color: var(--muted); min-width: 78px; text-align: right;
+}
+/* finale: ripple the primary CTA for ~5s as the closing beat */
+.@did--done .@did__cta.mesh_button--primary { position: relative; }
+.@did--done .@did__cta.mesh_button--primary::after {
+  content: ""; position: absolute; inset: -3px;
+  border: 1px solid var(--accent); pointer-events: none;
+  transform-origin: center;
+  animation: hh-cta-ripple 1.25s ease-out 4;
+}
+@keyframes hh-cta-ripple {
+  from { opacity: 0.7; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.35); }
+}
+.@did__play {
+  position: absolute; left: 50%; top: 50%; z-index: 3;
+  transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 18px 30px;
+  background: color-mix(in oklab, var(--bg) 82%, transparent);
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.3s ease;
+}
+.@did__play:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.@did__play-tri {
+  width: 0; height: 0;
+  border-left: 11px solid currentColor;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+}
+.@did__replay {
+  position: absolute; right: 14px; bottom: 12px; z-index: 3;
+  background: none; border: none; padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  cursor: pointer;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease, color 0.15s ease;
+}
+.@did__replay:hover { color: var(--accent); }
+.@did--playing .@did__play, .@did--done .@did__play, .@did--reduced .@did__play { opacity: 0; pointer-events: none; }
+.@did--done .@did__replay { opacity: 0.55; pointer-events: auto; }
+.@did--record .@did__eyebrow, .@did--record .@did__ctas { display: none; }
+
+/* svg internals (generated by hero_hub.js) */
+.@did .hh-node {
+  opacity: 0;
+  transform-box: fill-box; transform-origin: center;
+  transform: translateY(8px) scale(0.92);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.25, 1.15);
+}
+.@did .hh-node.is-on { opacity: 1; transform: none; }
+.@did .hh-card { fill: var(--bg); stroke: var(--fg); stroke-width: 1; }
+.@did .hh-card-shadow { fill: rgba(0, 0, 0, 0.18); }
+.@did .hh-kind { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; fill: var(--muted-2); }
+.@did .hh-label { font-family: var(--sans); font-size: 16px; font-weight: 700; letter-spacing: -0.005em; fill: var(--fg); }
+.@did .hh-sub { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; fill: var(--muted-2); }
+.@did .hh-node--hub .hh-card { fill: var(--accent); stroke: var(--accent); }
+.@did .hh-node--hub .hh-kind { fill: color-mix(in oklab, var(--bg) 66%, transparent); }
+.@did .hh-node--hub .hh-label { font-size: 22px; fill: var(--bg); }
+.@did .hh-node--hub .hh-sub { fill: color-mix(in oklab, var(--bg) 72%, transparent); }
+.@did .hh-link {
+  fill: none; stroke: var(--fg); stroke-width: 1; opacity: 0.3;
+  stroke-dasharray: var(--hh-len);
+  stroke-dashoffset: var(--hh-len);
+  transition: stroke-dashoffset 1s ease;
+}
+.@did .hh-link.is-on { stroke-dashoffset: 0; }
+.@did .hh-flow {
+  fill: none; stroke: var(--muted-2); stroke-width: 1;
+  stroke-dasharray: 5 7;
+  opacity: 0;
+  transition: opacity 0.8s ease 0.35s;
+  animation: hh-dashflow 1.6s linear infinite;
+}
+.@did .hh-flow.is-on { opacity: 0.45; }
+@keyframes hh-dashflow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -24; } }
+.@did .hh-token { font-family: var(--mono); font-size: 13px; fill: var(--muted); }
+.@did .hh-token--md { fill: var(--accent); }
+.@did .hh-md-badge { font-family: var(--sans); font-size: 14px; font-weight: 700; fill: var(--accent); }
+/* clickable cells → doc pages */
+.@did .hh-node-link { cursor: pointer; }
+.@did .hh-node-link:hover .hh-card { stroke: var(--accent); stroke-width: 1.5; }
+.@did .hh-node-link:hover .hh-node--input .hh-label,
+.@did .hh-node-link:hover .hh-node--output .hh-label { fill: var(--accent); }
+/* finale: nested grey ownership frames around the core */
+.@did .hh-frame {
+  opacity: 0;
+  transform-box: fill-box; transform-origin: center;
+  transform: scale(0.82);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.25, 1.1);
+}
+.@did .hh-frame.is-on { opacity: 1; transform: none; }
+.@did .hh-frame-box {
+  fill: none; stroke: var(--muted-2); stroke-width: 1;
+  stroke-dasharray: 3 6; opacity: 0.55;
+  transition: opacity 0.6s ease, stroke 0.6s ease;
+}
+.@did .hh-frame-label {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+  text-transform: uppercase; fill: var(--muted);
+  transition: opacity 0.6s ease, fill 0.6s ease;
+}
+/* current outermost scope reads bright; each inner one shades to a back layer as the next appears */
+.@did .hh-frame.is-active .hh-frame-box { opacity: 0.85; stroke: var(--muted); }
+.@did .hh-frame.is-active .hh-frame-label { fill: var(--fg); }
+.@did .hh-frame.is-dim .hh-frame-box { opacity: 0.28; }
+.@did .hh-frame.is-dim .hh-frame-label { opacity: 0.42; }
+/* finale flash: graph silhouettes bloom across the hero for ~0.5s */
+.@did .hh-graphflash { opacity: 0; pointer-events: none; transition: opacity 0.8s ease; }
+.@did .hh-graphflash.is-flash { animation: hh-graphflash 2400ms ease-out 1 forwards; }
+.@did .hh-gf-edge { stroke: var(--accent); stroke-width: 1; opacity: 0.5; }
+.@did .hh-gf-node { fill: var(--accent); opacity: 0.85; }
+/* bloom bright, then settle to ~50% as a persistent background mesh */
+@keyframes hh-graphflash { 0% { opacity: 0; } 12% { opacity: 0.5; } 55% { opacity: 0.25; } 100% { opacity: 0.25; } }
+.@did .hh-snap, .@did .hh-snap * { transition: none !important; }
+/* poster: dimmed final diagram behind the play button */
+.@did .hh-poster .hh-node { opacity: 0.15; transform: none; }
+.@did .hh-poster .hh-link { stroke-dashoffset: 0; opacity: 0.1; transition: none; }
+.@did .hh-poster .hh-flow { opacity: 0; animation: none; }
+
+@media (max-width: 900px) {
+  .@did { min-height: 74svh; }
+  .@did__eyebrow { left: 20px; top: 16px; }
+  .@did__caption { font-size: 10px; bottom: 138px; padding: 0 16px; }
+}
+{{ end }}
+
+{{ block @lid(lang="en", eyebrow="markdown in · everything out", play_label="run the flow", replay_label="[ replay ]", start_label="start →", start_href="/en/user/getting_started", docs_label="explore the docs →") }}
+<section class="@did" id="hero-hub">
+  <div class="@did__eyebrow">{{ eyebrow }}</div>
+  <div class="@did__stage" id="hero-hub-stage"></div>
+  <div class="@did__caption" id="hero-hub-caption" aria-live="polite"></div>
+  <button class="@did__play" id="hero-hub-play" type="button" aria-label="{{ play_label }}">
+    <span class="@did__play-tri"></span>{{ play_label }}
+  </button>
+  <button class="@did__replay" id="hero-hub-replay" type="button">{{ replay_label }}</button>
+  <div class="@did__ctas">
+    {{yield mesh_button(label=docs_label, href="/"+lang+"/user", variant="primary", modifier="@did__cta")}}
+    {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="@did__cta")}}
+  </div>
+  {{ vo := map("en", asset("hero_vo_en.mp3"), "ru", asset("hero_vo_ru.mp3")) }}
+  {{ voenv := map("en", asset("hero_vo_en.env.json"), "ru", asset("hero_vo_ru.env.json")) }}
+  <audio id="hero-hub-audio" preload="auto" data-lang="{{ lang }}" src="{{ coalesce(vo[lang], vo["en"]) }}" data-env="{{ coalesce(voenv[lang], voenv["en"]) }}"></audio>
+  <div class="@did__player" id="hero-hub-player">
+    <button class="@did__pp" id="hero-hub-pp" type="button" aria-label="play / pause">▶</button>
+    <input class="@did__seek" id="hero-hub-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="seek">
+    <span class="@did__time" id="hero-hub-time">0:00 / 0:00</span>
+  </div>
+  <script defer src="{{ asset("hero_hub.js") }}"></script>
+</section>
+{{ end }}
