@@ -13,7 +13,7 @@ func TestRequestParams(t *testing.T) {
 	req := tgrich.Request{
 		ChatID: -1004487679938,
 		RichMessage: tgrich.InputRichMessage{
-			Blocks:              []tgrich.Block{tgrich.Heading(1, tgrich.RichText{Text: "Title"}, "title")},
+			Blocks:              []tgrich.Block{tgrich.Heading(1, tgrich.RichText{Text: "Title"})},
 			SkipEntityDetection: true,
 		},
 	}
@@ -110,9 +110,11 @@ func TestDecodeSendResult(t *testing.T) {
 }
 
 func TestDecodeSendResultKeepsTheEchoedBlocks(t *testing.T) {
+	// The echo comes back in the wire union: a bare string, an array for a
+	// concatenation, and a typed object for a mark.
 	raw := `{"message_id":42,"rich_message":{"blocks":[
 		{"type":"heading","text":"Title","size":1},
-		{"type":"paragraph","text":{"children":[{"text":"a","bold":true},{"text":"b"}]}}
+		{"type":"paragraph","text":[{"type":"bold","text":"a"},"b"]}
 	]}}`
 
 	res, err := tgrich.DecodeSendResult(json.RawMessage(raw))
@@ -137,20 +139,23 @@ func TestMeasure(t *testing.T) {
 		{
 			name:   "one plain paragraph is one block and one run",
 			blocks: []tgrich.Block{para("hello")},
-			want:   tgrich.Stats{Blocks: 1, Runs: 1, TextUnits: 5},
+			want:   tgrich.Stats{Blocks: 1, TextUnits: 5},
 		},
 		{
-			name: "each formatted child is its own run",
+			// Only the marked children count: the server merges adjacent plain
+			// runs, so counting those would report loss on almost every message.
+			name: "only formatted children count as runs",
 			blocks: []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Children: []tgrich.RichText{
 				{Text: "a", Bold: true},
 				{Text: "b"},
 				{Text: "c", Italic: true},
 			}})},
-			want: tgrich.Stats{Blocks: 1, Runs: 3, TextUnits: 3},
+			want: tgrich.Stats{Blocks: 1, FormattedRuns: 2, TextUnits: 3},
 		},
 		{
-			name:   "code text counts, and the block counts once",
-			blocks: []tgrich.Block{tgrich.Code("x := 1", "go")},
+			// The code rides in the block's text, so it is a run like any other.
+			name:   "pre text counts, and the block counts once",
+			blocks: []tgrich.Block{tgrich.Pre("x := 1", "go")},
 			want:   tgrich.Stats{Blocks: 1, TextUnits: 6},
 		},
 		{
@@ -159,33 +164,32 @@ func TestMeasure(t *testing.T) {
 				{Blocks: []tgrich.Block{para("a")}},
 				{Blocks: []tgrich.Block{para("b")}},
 			}}},
-			want: tgrich.Stats{Blocks: 3, Runs: 2, TextUnits: 2},
+			want: tgrich.Stats{Blocks: 3, TextUnits: 2},
 		},
 		{
-			name: "nested blocks and titles are reached",
+			name: "nested blocks and summaries are reached",
 			blocks: []tgrich.Block{{
-				Type:   tgrich.BlockCollapsible,
-				Title:  &tgrich.RichText{Text: "more"},
-				Blocks: []tgrich.Block{para("inside")},
+				Type:    tgrich.BlockDetails,
+				Summary: &tgrich.RichText{Text: "more"},
+				Blocks:  []tgrich.Block{para("inside")},
 			}},
-			want: tgrich.Stats{Blocks: 2, Runs: 2, TextUnits: 10},
+			want: tgrich.Stats{Blocks: 2, TextUnits: 10},
 		},
 		{
 			name: "table cells count",
 			blocks: []tgrich.Block{{
-				Type:    tgrich.BlockTable,
-				Columns: []tgrich.TableColumn{{}, {}},
-				Rows: []tgrich.TableRow{{Header: true, Cells: []tgrich.TableCell{
-					{Text: tgrich.RichText{Text: "ab"}},
-					{Text: tgrich.RichText{Text: "cd"}},
-				}}},
+				Type: tgrich.BlockTable,
+				Cells: [][]tgrich.TableCell{{
+					{Text: tgrich.RichText{Text: "ab"}, IsHeader: true},
+					{Text: tgrich.RichText{Text: "cd"}, IsHeader: true},
+				}},
 			}},
-			want: tgrich.Stats{Blocks: 1, Runs: 2, TextUnits: 4},
+			want: tgrich.Stats{Blocks: 1, TextUnits: 4},
 		},
 		{
 			name:   "an astral rune is two text units",
 			blocks: []tgrich.Block{para("😀")},
-			want:   tgrich.Stats{Blocks: 1, Runs: 1, TextUnits: 2},
+			want:   tgrich.Stats{Blocks: 1, TextUnits: 2},
 		},
 	}
 
@@ -200,7 +204,7 @@ func TestMeasure(t *testing.T) {
 // Comparing what came back against what went out is the only way to notice.
 func TestVerifyEcho(t *testing.T) {
 	sent := []tgrich.Block{
-		tgrich.Heading(1, tgrich.RichText{Text: "Title"}, ""),
+		tgrich.Heading(1, tgrich.RichText{Text: "Title"}),
 		para("hello"),
 		para("world"),
 	}
@@ -227,7 +231,7 @@ func TestVerifyEcho(t *testing.T) {
 		{
 			name: "truncated text in a kept block",
 			echo: []tgrich.Block{
-				tgrich.Heading(1, tgrich.RichText{Text: "Title"}, ""),
+				tgrich.Heading(1, tgrich.RichText{Text: "Title"}),
 				para("hello"),
 				para("wor"),
 			},
@@ -236,7 +240,7 @@ func TestVerifyEcho(t *testing.T) {
 		{
 			name: "dropped runs",
 			echo: []tgrich.Block{
-				tgrich.Heading(1, tgrich.RichText{Text: "Title"}, ""),
+				tgrich.Heading(1, tgrich.RichText{Text: "Title"}),
 				para("hello"),
 				tgrich.Paragraph(tgrich.RichText{Children: []tgrich.RichText{{Text: "world"}}}),
 			},

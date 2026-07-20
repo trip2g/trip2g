@@ -27,29 +27,44 @@ func TestRichTextMarshal(t *testing.T) {
 		{
 			name: "bold run",
 			text: tgrich.RichText{Text: "hi", Bold: true},
-			want: `{"text":"hi","bold":true}`,
+			want: `{"type":"bold","text":"hi"}`,
 		},
 		{
-			name: "every mark at once",
+			// Marks nest rather than combine, innermost first, in a fixed order
+			// so the same value always produces the same bytes.
+			name: "every mark at once nests outwards",
 			text: tgrich.RichText{
 				Text: "x", Bold: true, Italic: true, Underline: true,
 				Strike: true, Marked: true, Code: true,
 			},
-			want: `{"text":"x","bold":true,"italic":true,"underline":true,` +
-				`"strike":true,"marked":true,"code":true}`,
+			want: `{"type":"bold","text":{"type":"italic","text":{"type":"underline",` +
+				`"text":{"type":"strikethrough","text":{"type":"marked",` +
+				`"text":{"type":"code","text":"x"}}}}}}`,
 		},
 		{
 			name: "link run",
 			text: tgrich.RichText{Text: "site", URL: "https://example.com"},
-			want: `{"text":"site","url":"https://example.com"}`,
+			want: `{"type":"url","text":"site","url":"https://example.com"}`,
 		},
 		{
-			name: "children concatenation drops the empty text field",
+			// A mark wraps the link, not the other way round.
+			name: "bold link",
+			text: tgrich.RichText{Text: "site", URL: "https://example.com", Bold: true},
+			want: `{"type":"bold","text":{"type":"url","text":"site","url":"https://example.com"}}`,
+		},
+		{
+			name: "children concatenate as a bare array",
 			text: tgrich.RichText{Children: []tgrich.RichText{
 				{Text: "a"},
 				{Text: "b", Bold: true},
 			}},
-			want: `{"children":["a",{"text":"b","bold":true}]}`,
+			want: `["a",{"type":"bold","text":"b"}]`,
+		},
+		{
+			// An anchor is a target and carries no text of its own.
+			name: "anchor",
+			text: tgrich.RichText{Anchor: "section"},
+			want: `{"type":"anchor","name":"section"}`,
 		},
 	}
 
@@ -71,14 +86,11 @@ func TestBlockMarshal(t *testing.T) {
 		want  string
 	}{
 		{
+			// There is no anchor field: measured, the server echoes back neither
+			// anchor, name nor id on a heading.
 			name:  "heading keeps the flat text/size shape",
-			block: tgrich.Heading(2, tgrich.RichText{Text: "Title"}, "title"),
-			want:  `{"type":"heading","text":"Title","size":2,"anchor":"title"}`,
-		},
-		{
-			name:  "heading without an anchor omits it",
-			block: tgrich.Heading(1, tgrich.RichText{Text: "Title"}, ""),
-			want:  `{"type":"heading","text":"Title","size":1}`,
+			block: tgrich.Heading(2, tgrich.RichText{Text: "Title"}),
+			want:  `{"type":"heading","text":"Title","size":2}`,
 		},
 		{
 			name:  "paragraph",
@@ -96,15 +108,14 @@ func TestBlockMarshal(t *testing.T) {
 			want: `{"type":"list","items":[{"blocks":[{"type":"paragraph","text":"todo"}],"checked":true}]}`,
 		},
 		{
-			name: "ordered list carries ordered and start",
+			// A list carries no ordering: measured, every spelling of it is
+			// ignored and the server labels every item with a bullet.
+			name: "list carries only its items",
 			block: tgrich.Block{
-				Type:    tgrich.BlockList,
-				Ordered: true,
-				Start:   3,
-				Items:   []tgrich.ListItem{{Blocks: []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "a"})}}},
+				Type:  tgrich.BlockList,
+				Items: []tgrich.ListItem{{Blocks: []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "a"})}}},
 			},
-			want: `{"type":"list","ordered":true,"start":3,` +
-				`"items":[{"blocks":[{"type":"paragraph","text":"a"}]}]}`,
+			want: `{"type":"list","items":[{"blocks":[{"type":"paragraph","text":"a"}]}]}`,
 		},
 		{
 			name: "quote nests blocks",
@@ -112,41 +123,57 @@ func TestBlockMarshal(t *testing.T) {
 				Type:   tgrich.BlockQuote,
 				Blocks: []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "quoted"})},
 			},
-			want: `{"type":"quote","blocks":[{"type":"paragraph","text":"quoted"}]}`,
+			want: `{"type":"blockquote","blocks":[{"type":"paragraph","text":"quoted"}]}`,
 		},
 		{
-			name: "collapsed collapsible carries title and fold state",
+			// Collapsed is the default, so a folded section sends no fold field
+			// at all; is_open is the only spelling that expands one.
+			name: "collapsed details carries a summary and no fold field",
 			block: tgrich.Block{
-				Type:      tgrich.BlockCollapsible,
-				Title:     &tgrich.RichText{Text: "Note"},
-				Collapsed: true,
-				Blocks:    []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "body"})},
+				Type:    tgrich.BlockDetails,
+				Summary: &tgrich.RichText{Text: "Note"},
+				Blocks:  []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "body"})},
 			},
-			want: `{"type":"collapsible","title":"Note","collapsed":true,` +
+			want: `{"type":"details","summary":"Note",` +
 				`"blocks":[{"type":"paragraph","text":"body"}]}`,
 		},
 		{
-			name:  "code with a language",
-			block: tgrich.Code("fmt.Println()", "go"),
-			want:  `{"type":"code","code":"fmt.Println()","language":"go"}`,
-		},
-		{
-			name:  "code without a language omits it",
-			block: tgrich.Code("x", ""),
-			want:  `{"type":"code","code":"x"}`,
-		},
-		{
-			name: "table with per-column alignment",
+			name: "expanded details carries is_open",
 			block: tgrich.Block{
-				Type:    tgrich.BlockTable,
-				Columns: []tgrich.TableColumn{{Align: tgrich.AlignLeft}, {Align: tgrich.AlignRight}, {}},
-				Rows: []tgrich.TableRow{
-					{Header: true, Cells: []tgrich.TableCell{{Text: tgrich.RichText{Text: "a"}}}},
-					{Cells: []tgrich.TableCell{{Text: tgrich.RichText{Text: "1"}}}},
+				Type:    tgrich.BlockDetails,
+				Summary: &tgrich.RichText{Text: "Note"},
+				IsOpen:  true,
+				Blocks:  []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "body"})},
+			},
+			want: `{"type":"details","summary":"Note","is_open":true,` +
+				`"blocks":[{"type":"paragraph","text":"body"}]}`,
+		},
+		{
+			// The code rides in text, not in a field of its own.
+			name:  "pre with a language",
+			block: tgrich.Pre("fmt.Println()", "go"),
+			want:  `{"type":"pre","text":"fmt.Println()","language":"go"}`,
+		},
+		{
+			name:  "pre without a language omits it",
+			block: tgrich.Pre("x", ""),
+			want:  `{"type":"pre","text":"x"}`,
+		},
+		{
+			// Cells are a row-major grid on the block itself. There is no column
+			// descriptor, so alignment is per cell, and the header row is marked
+			// by is_header on its cells rather than by a flag on the row.
+			name: "table is a row-major cell grid",
+			block: tgrich.Block{
+				Type: tgrich.BlockTable,
+				Cells: [][]tgrich.TableCell{
+					{{Text: tgrich.RichText{Text: "a"}, IsHeader: true, Align: tgrich.AlignLeft}},
+					{{Text: tgrich.RichText{Text: "1"}, Align: tgrich.AlignLeft}},
 				},
 			},
-			want: `{"type":"table","columns":[{"align":"left"},{"align":"right"},{}],` +
-				`"rows":[{"header":true,"cells":[{"text":"a"}]},{"cells":[{"text":"1"}]}]}`,
+			want: `{"type":"table","cells":[` +
+				`[{"text":"a","is_header":true,"align":"left"}],` +
+				`[{"text":"1","align":"left"}]]}`,
 		},
 		{
 			name:  "divider carries nothing but its type",
@@ -166,9 +193,9 @@ func TestBlockMarshal(t *testing.T) {
 			block: tgrich.Block{
 				Type:    tgrich.BlockVideo,
 				Video:   &tgrich.Media{URL: "https://example.com/a.mp4"},
-				Caption: &tgrich.Caption{Text: tgrich.RichText{Text: "cap"}},
+				Caption: &tgrich.RichText{Text: "cap"},
 			},
-			want: `{"type":"video","video":{"url":"https://example.com/a.mp4"},"caption":{"text":"cap"}}`,
+			want: `{"type":"video","video":{"url":"https://example.com/a.mp4"},"caption":"cap"}`,
 		},
 	}
 

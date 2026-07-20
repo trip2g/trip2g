@@ -171,15 +171,13 @@ func TestInputRichMessageValidateLimits(t *testing.T) {
 }
 
 func tableWithCols(n int) tgrich.Block {
-	cols := make([]tgrich.TableColumn, n)
 	cells := make([]tgrich.TableCell, n)
-	for i := range cols {
-		cells[i] = tgrich.TableCell{Text: tgrich.RichText{Text: "c"}}
+	for i := range cells {
+		cells[i] = tgrich.TableCell{Text: tgrich.RichText{Text: "c"}, IsHeader: true}
 	}
 	return tgrich.Block{
-		Type:    tgrich.BlockTable,
-		Columns: cols,
-		Rows:    []tgrich.TableRow{{Header: true, Cells: cells}},
+		Type:  tgrich.BlockTable,
+		Cells: [][]tgrich.TableCell{cells},
 	}
 }
 
@@ -275,8 +273,8 @@ func TestBlockValidateVariants(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:  "heading with size and anchor",
-			block: tgrich.Heading(2, text, "intro"),
+			name:  "heading with a size",
+			block: tgrich.Heading(2, text),
 		},
 		{
 			name:    "heading without size",
@@ -308,8 +306,8 @@ func TestBlockValidateVariants(t *testing.T) {
 			wantErr: tgrich.ErrBlockMissingField,
 		},
 		{
-			name:    "paragraph carrying code",
-			block:   tgrich.Block{Type: tgrich.BlockParagraph, Text: &text, Code: "x := 1"},
+			name:    "paragraph carrying a language",
+			block:   tgrich.Block{Type: tgrich.BlockParagraph, Text: &text, Language: "go"},
 			wantErr: tgrich.ErrBlockForbiddenField,
 		},
 		{
@@ -324,7 +322,7 @@ func TestBlockValidateVariants(t *testing.T) {
 		},
 		{
 			name:  "list with items",
-			block: tgrich.Block{Type: tgrich.BlockList, Ordered: true, Start: 3, Items: []tgrich.ListItem{{Blocks: body}}},
+			block: tgrich.Block{Type: tgrich.BlockList, Items: []tgrich.ListItem{{Blocks: body}}},
 		},
 		{
 			name:    "list without items",
@@ -332,40 +330,41 @@ func TestBlockValidateVariants(t *testing.T) {
 			wantErr: tgrich.ErrBlockMissingField,
 		},
 		{
-			name:  "quote with a title",
-			block: tgrich.Block{Type: tgrich.BlockQuote, Title: &text, Blocks: body},
+			name:  "blockquote",
+			block: tgrich.Block{Type: tgrich.BlockQuote, Blocks: body},
 		},
 		{
-			name:    "quote without body blocks",
-			block:   tgrich.Block{Type: tgrich.BlockQuote, Title: &text},
+			name:    "blockquote without body blocks",
+			block:   tgrich.Block{Type: tgrich.BlockQuote},
 			wantErr: tgrich.ErrBlockMissingField,
 		},
 		{
-			name:    "quote claiming to be collapsed",
-			block:   tgrich.Block{Type: tgrich.BlockQuote, Blocks: body, Collapsed: true},
+			// A blockquote has nowhere to put a summary; only details does.
+			name:    "blockquote carrying a summary",
+			block:   tgrich.Block{Type: tgrich.BlockQuote, Blocks: body, Summary: &text},
 			wantErr: tgrich.ErrBlockForbiddenField,
 		},
 		{
-			name:  "collapsible",
-			block: tgrich.Block{Type: tgrich.BlockCollapsible, Title: &text, Blocks: body, Collapsed: true},
+			name:  "details",
+			block: tgrich.Block{Type: tgrich.BlockDetails, Summary: &text, Blocks: body, IsOpen: true},
 		},
 		{
-			name:    "collapsible without body blocks",
-			block:   tgrich.Block{Type: tgrich.BlockCollapsible, Title: &text},
+			name:    "details without body blocks",
+			block:   tgrich.Block{Type: tgrich.BlockDetails, Summary: &text},
 			wantErr: tgrich.ErrBlockMissingField,
 		},
 		{
-			name:  "code with a language",
-			block: tgrich.Code("x := 1", "go"),
+			name:  "pre with a language",
+			block: tgrich.Pre("x := 1", "go"),
 		},
 		{
-			name:    "code without code",
-			block:   tgrich.Code("", "go"),
+			name:    "pre without code",
+			block:   tgrich.Pre("", "go"),
 			wantErr: tgrich.ErrBlockMissingField,
 		},
 		{
-			name:    "code carrying text",
-			block:   tgrich.Block{Type: tgrich.BlockCode, Code: "x := 1", Text: &text},
+			name:    "pre carrying a summary",
+			block:   tgrich.Block{Type: tgrich.BlockPre, Text: &text, Summary: &text},
 			wantErr: tgrich.ErrBlockForbiddenField,
 		},
 		{
@@ -373,8 +372,8 @@ func TestBlockValidateVariants(t *testing.T) {
 			block: tableWithCols(2),
 		},
 		{
-			name:    "table without rows",
-			block:   tgrich.Block{Type: tgrich.BlockTable, Columns: []tgrich.TableColumn{{Align: tgrich.AlignLeft}}},
+			name:    "table without cells",
+			block:   tgrich.Block{Type: tgrich.BlockTable},
 			wantErr: tgrich.ErrBlockMissingField,
 		},
 		{
@@ -388,7 +387,7 @@ func TestBlockValidateVariants(t *testing.T) {
 		},
 		{
 			name:  "photo by url with a caption",
-			block: tgrich.Block{Type: tgrich.BlockPhoto, Photo: photo, Caption: &tgrich.Caption{Text: text}},
+			block: tgrich.Block{Type: tgrich.BlockPhoto, Photo: photo, Caption: &text},
 		},
 		{
 			name:  "photo by file id",
@@ -457,7 +456,7 @@ func TestValidateReachesNestedBlocks(t *testing.T) {
 		},
 		{
 			name:  "inside a collapsible",
-			block: tgrich.Block{Type: tgrich.BlockCollapsible, Blocks: []tgrich.Block{bad}},
+			block: tgrich.Block{Type: tgrich.BlockDetails, Blocks: []tgrich.Block{bad}},
 		},
 		{
 			name:  "inside a list item",
@@ -528,20 +527,19 @@ func TestValidateRichTextLinks(t *testing.T) {
 		}{
 			{"paragraph text", func(t tgrich.RichText) tgrich.Block { return tgrich.Paragraph(t) }},
 			{"collapsible title", func(t tgrich.RichText) tgrich.Block {
-				return tgrich.Block{Type: tgrich.BlockCollapsible, Title: &t, Blocks: []tgrich.Block{para("x")}}
+				return tgrich.Block{Type: tgrich.BlockDetails, Summary: &t, Blocks: []tgrich.Block{para("x")}}
 			}},
 			{"photo caption", func(t tgrich.RichText) tgrich.Block {
 				return tgrich.Block{
 					Type:    tgrich.BlockPhoto,
 					Photo:   &tgrich.Media{URL: "https://e.com/a.png"},
-					Caption: &tgrich.Caption{Text: t},
+					Caption: &t,
 				}
 			}},
 			{"table cell", func(t tgrich.RichText) tgrich.Block {
 				return tgrich.Block{
-					Type:    tgrich.BlockTable,
-					Columns: []tgrich.TableColumn{{}},
-					Rows:    []tgrich.TableRow{{Cells: []tgrich.TableCell{{Text: t}}}},
+					Type:  tgrich.BlockTable,
+					Cells: [][]tgrich.TableCell{{{Text: t}}},
 				}
 			}},
 		} {

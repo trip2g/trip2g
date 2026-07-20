@@ -90,7 +90,7 @@ func TestRichModeOnProducesBlocks(t *testing.T) {
 		tgrich.BlockHeading,
 		tgrich.BlockParagraph,
 		tgrich.BlockTable,
-		tgrich.BlockCollapsible,
+		tgrich.BlockDetails,
 		tgrich.BlockList,
 	}, blockTypes(post.RichBlocks))
 

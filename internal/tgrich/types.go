@@ -24,17 +24,21 @@ import (
 // single edit.
 type BlockType string
 
+// Measured against a live bot, July 2026. The names below marked "measured"
+// were accepted by the server; the earlier guesses they replace ("code",
+// "quote", "collapsible") were all rejected with
+// `can't parse InputRichBlock: type "..." is unsupported`.
 const (
-	BlockHeading     BlockType = "heading"
-	BlockParagraph   BlockType = "paragraph"
-	BlockList        BlockType = "list"
-	BlockQuote       BlockType = "quote"
-	BlockCollapsible BlockType = "collapsible"
-	BlockCode        BlockType = "code"
-	BlockTable       BlockType = "table"
-	BlockDivider     BlockType = "divider" // unprobed
-	BlockPhoto       BlockType = "photo"
-	BlockVideo       BlockType = "video"
+	BlockHeading   BlockType = "heading"   // measured
+	BlockParagraph BlockType = "paragraph" // measured
+	BlockList      BlockType = "list"      // measured
+	BlockQuote     BlockType = "blockquote"
+	BlockDetails   BlockType = "details" // measured; the collapsible section
+	BlockPre       BlockType = "pre"     // measured; the fenced code block
+	BlockTable     BlockType = "table"   // measured
+	BlockDivider   BlockType = "divider" // unprobed
+	BlockPhoto     BlockType = "photo"   // unprobed
+	BlockVideo     BlockType = "video"   // unprobed
 )
 
 // Align is a table column alignment. An empty value means "server default".
@@ -59,30 +63,62 @@ type RichText struct {
 	Strike    bool
 	Marked    bool
 	Code      bool
-	// URL makes this node a link. Anchors are ordinary URLs with a fragment.
-	URL      string
+	// URL makes this node a link.
+	URL string
+	// Anchor makes this node an in-message anchor target, and nothing else:
+	// the server echoes an anchor node back with its name and no text, so a
+	// node carrying one renders no content of its own.
+	Anchor   string
 	Children []RichText
 }
 
-// richTextJSON is the object form of RichText. Keep it beside RichText: the
-// bare-string shortcut in MarshalJSON is the only other place the wire form of
-// formatted text is decided.
-type richTextJSON struct {
-	Text      string     `json:"text,omitempty"`
-	Bold      bool       `json:"bold,omitempty"`
-	Italic    bool       `json:"italic,omitempty"`
-	Underline bool       `json:"underline,omitempty"`
-	Strike    bool       `json:"strike,omitempty"`
-	Marked    bool       `json:"marked,omitempty"`
-	Code      bool       `json:"code,omitempty"`
-	URL       string     `json:"url,omitempty"`
-	Children  []RichText `json:"children,omitempty"`
+// Rich text is a tagged union on the wire, exactly like a block, and this is
+// the single most error-prone part of the format: a text object without a
+// "type" is parsed as a *block* and rejected with the block's own error
+// message, `can't parse InputRichBlock: Can't find field "type"`, which points
+// at entirely the wrong place.
+//
+// Measured forms:
+//
+//	"plain"                                    a bare string
+//	["a", {...}, "b"]                          concatenation, as a JSON array
+//	{"type":"bold","text":<rich text>}         a mark, nesting through `text`
+//	{"type":"url","text":<rich text>,"url":…}  a link
+//	{"type":"anchor","name":"…"}               an anchor target, and nothing else
+//
+// Marks nest rather than combine: bold italic is a bold wrapping an italic.
+const (
+	textTypeURL    = "url"
+	textTypeAnchor = "anchor"
+)
+
+// textMarks lists the mark node types in the order they wrap, innermost first.
+// The order is fixed so the same RichText always produces the same bytes: a
+// canonical payload hash is worthless if the encoding wanders.
+var textMarks = []struct {
+	name string
+	on   func(RichText) bool
+}{
+	{"code", func(t RichText) bool { return t.Code }},
+	{"marked", func(t RichText) bool { return t.Marked }},
+	{"strikethrough", func(t RichText) bool { return t.Strike }},
+	{"underline", func(t RichText) bool { return t.Underline }},
+	{"italic", func(t RichText) bool { return t.Italic }},
+	{"bold", func(t RichText) bool { return t.Bold }},
 }
 
 // IsPlain reports whether the node carries text and nothing else.
 func (t RichText) IsPlain() bool {
 	return !t.Bold && !t.Italic && !t.Underline && !t.Strike && !t.Marked &&
-		!t.Code && t.URL == "" && len(t.Children) == 0
+		!t.Code && t.URL == "" && t.Anchor == "" && len(t.Children) == 0
+}
+
+// IsFormatted reports whether the node itself carries a mark or a link. A node
+// that only holds children is not formatted: it is a concatenation, and the
+// server is free to flatten it.
+func (t RichText) IsFormatted() bool {
+	return t.Bold || t.Italic || t.Underline || t.Strike || t.Marked ||
+		t.Code || t.URL != ""
 }
 
 // IsEmpty reports whether the node would render nothing at all.
@@ -91,33 +127,101 @@ func (t RichText) IsEmpty() bool {
 }
 
 func (t RichText) MarshalJSON() ([]byte, error) {
-	if t.IsPlain() {
-		return json.Marshal(t.Text) //nolint:wrapcheck // pure encoding
+	return json.Marshal(t.wire()) //nolint:wrapcheck // pure encoding
+}
+
+// wire builds the union form: the content first, then the link, then the marks
+// wrapping outwards.
+func (t RichText) wire() any {
+	if t.Anchor != "" {
+		return map[string]any{"type": textTypeAnchor, "name": t.Anchor}
 	}
 
-	return json.Marshal(richTextJSON{
-		Text: t.Text, Bold: t.Bold, Italic: t.Italic, Underline: t.Underline,
-		Strike: t.Strike, Marked: t.Marked, Code: t.Code, URL: t.URL, Children: t.Children,
-	}) //nolint:wrapcheck // pure encoding
+	var node any = t.Text
+
+	if len(t.Children) > 0 {
+		parts := make([]any, 0, len(t.Children)+1)
+		if t.Text != "" {
+			parts = append(parts, t.Text)
+		}
+		for _, child := range t.Children {
+			parts = append(parts, child.wire())
+		}
+
+		node = parts
+		if len(parts) == 1 {
+			node = parts[0]
+		}
+	}
+
+	if t.URL != "" {
+		node = map[string]any{"type": textTypeURL, "text": node, "url": t.URL}
+	}
+
+	for _, mark := range textMarks {
+		if mark.on(t) {
+			node = map[string]any{"type": mark.name, "text": node}
+		}
+	}
+
+	return node
+}
+
+// richTextWire is the object form, used only for decoding the server's echo.
+type richTextWire struct {
+	Type string   `json:"type"`
+	Text RichText `json:"text"`
+	URL  string   `json:"url"`
+	Name string   `json:"name"`
 }
 
 func (t *RichText) UnmarshalJSON(data []byte) error {
-	if bytes.HasPrefix(bytes.TrimLeft(data, " \t\r\n"), []byte(`"`)) {
+	trimmed := bytes.TrimLeft(data, " \t\r\n")
+
+	switch {
+	case bytes.HasPrefix(trimmed, []byte(`"`)):
 		*t = RichText{}
 		return json.Unmarshal(data, &t.Text) //nolint:wrapcheck // pure decoding
+
+	case bytes.HasPrefix(trimmed, []byte(`[`)):
+		*t = RichText{}
+		return json.Unmarshal(data, &t.Children) //nolint:wrapcheck // pure decoding
 	}
 
-	var obj richTextJSON
+	var obj richTextWire
 	if err := json.Unmarshal(data, &obj); err != nil {
 		return err //nolint:wrapcheck // pure decoding
 	}
 
-	*t = RichText{
-		Text: obj.Text, Bold: obj.Bold, Italic: obj.Italic, Underline: obj.Underline,
-		Strike: obj.Strike, Marked: obj.Marked, Code: obj.Code, URL: obj.URL, Children: obj.Children,
-	}
+	*t = obj.Text
+	t.applyWireType(obj)
 
 	return nil
+}
+
+// applyWireType folds one wire node's own type back onto the decoded child.
+// The child already carries any marks below it, so a nested pair decodes into
+// a single node with both marks set — which is the shape the converter emits
+// and therefore the shape the echo comparison must see.
+func (t *RichText) applyWireType(obj richTextWire) {
+	switch obj.Type {
+	case textTypeURL:
+		t.URL = obj.URL
+	case textTypeAnchor:
+		*t = RichText{Anchor: obj.Name}
+	case "code":
+		t.Code = true
+	case "marked":
+		t.Marked = true
+	case "strikethrough":
+		t.Strike = true
+	case "underline":
+		t.Underline = true
+	case "italic":
+		t.Italic = true
+	case "bold":
+		t.Bold = true
+	}
 }
 
 // PlainText returns the visible text of the node and its children.
@@ -148,23 +252,27 @@ type Caption struct {
 	Text RichText `json:"text"`
 }
 
-// TableColumn describes one column. An empty Align leaves it to the server.
-type TableColumn struct {
-	Align Align `json:"align,omitempty"`
-}
-
+// TableCell is one cell. Measured: cells are a flat row-major grid on the block
+// itself (`cells: [[cell, cell], ...]`), not rows carrying their own cell list.
+// A row object with a `cells` field is rejected outright.
+//
+// IsHeader is the header marker — `header` is silently ignored, `is_header` is
+// echoed back and switches the server's default alignment to centre. Align and
+// VAlign are always echoed, defaulted to left/middle when omitted.
 type TableCell struct {
-	Text RichText `json:"text,omitempty"`
-}
-
-type TableRow struct {
-	Header bool        `json:"header,omitempty"`
-	Cells  []TableCell `json:"cells"`
+	Text     RichText `json:"text,omitempty"`
+	IsHeader bool     `json:"is_header,omitempty"`
+	Align    Align    `json:"align,omitempty"`
 }
 
 // ListItem is one entry of a list block. Checked is nil for a plain item and
 // set for a task-list checkbox. List items do not count towards the block
 // limit (measured: a 501-item list is one block).
+//
+// There is no ordered-list support on this path. Measured: `ordered`, `start`,
+// `style`, `is_ordered`, `list_type` and `numbered` are all silently ignored,
+// a per-item `label` is overwritten, and every item comes back labelled "•".
+// An ordered list therefore renders as bullets.
 type ListItem struct {
 	Blocks  []Block `json:"blocks,omitempty"`
 	Checked *bool   `json:"checked,omitempty"`
@@ -175,40 +283,43 @@ type ListItem struct {
 type Block struct {
 	Type BlockType `json:"type"`
 
-	// heading, paragraph
+	// heading, paragraph, pre
 	Text *RichText `json:"text,omitempty"`
 	// heading: level 1..6
 	Size int `json:"size,omitempty"`
-	// heading: anchor target for in-message links
-	Anchor string `json:"anchor,omitempty"`
 
 	// list
-	Ordered bool       `json:"ordered,omitempty"`
-	Start   int        `json:"start,omitempty"`
-	Items   []ListItem `json:"items,omitempty"`
+	Items []ListItem `json:"items,omitempty"`
 
-	// quote, collapsible
-	Title     *RichText `json:"title,omitempty"`
-	Collapsed bool      `json:"collapsed,omitempty"`
-	Blocks    []Block   `json:"blocks,omitempty"`
+	// details: the always-visible summary line
+	Summary *RichText `json:"summary,omitempty"`
+	// details: fold state. Measured: `is_open` is the only spelling the server
+	// echoes; open, collapsed, expanded, folded, is_collapsed, default_open and
+	// closed are all accepted and silently ignored. Absent means collapsed, so
+	// this field is the expanded case and never the other way round.
+	IsOpen bool `json:"is_open,omitempty"`
+	// blockquote, details
+	Blocks []Block `json:"blocks,omitempty"`
 
-	// code
-	Code     string `json:"code,omitempty"`
+	// pre: the language tag. The code itself rides in Text.
 	Language string `json:"language,omitempty"`
 
-	// table
-	Columns []TableColumn `json:"columns,omitempty"`
-	Rows    []TableRow    `json:"rows,omitempty"`
+	// table: row-major, header row included
+	Cells [][]TableCell `json:"cells,omitempty"`
 
 	// photo, video
-	Photo   *Media   `json:"photo,omitempty"`
-	Video   *Media   `json:"video,omitempty"`
-	Caption *Caption `json:"caption,omitempty"`
+	Photo   *Media    `json:"photo,omitempty"`
+	Video   *Media    `json:"video,omitempty"`
+	Caption *RichText `json:"caption,omitempty"`
 }
 
-// Heading builds a heading block. Anchor may be empty.
-func Heading(size int, text RichText, anchor string) Block {
-	return Block{Type: BlockHeading, Text: &text, Size: size, Anchor: anchor}
+// Heading builds a heading block.
+//
+// There is no anchor. Measured: `anchor`, `name` and `id` are all accepted and
+// none is echoed back, so in-message anchor targets are not reachable from the
+// bot path — and with them the table-of-contents answer to the visible fold.
+func Heading(size int, text RichText) Block {
+	return Block{Type: BlockHeading, Text: &text, Size: size}
 }
 
 // Paragraph builds a paragraph block.
@@ -216,9 +327,10 @@ func Paragraph(text RichText) Block {
 	return Block{Type: BlockParagraph, Text: &text}
 }
 
-// Code builds a fenced code block. Language may be empty.
-func Code(code, language string) Block {
-	return Block{Type: BlockCode, Code: code, Language: language}
+// Pre builds a fenced code block. Language may be empty.
+func Pre(code, language string) Block {
+	text := RichText{Text: code}
+	return Block{Type: BlockPre, Text: &text, Language: language}
 }
 
 // InputRichMessage carries exactly one content source. The server does not

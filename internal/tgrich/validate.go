@@ -70,17 +70,12 @@ type blockField uint32
 const (
 	fieldText blockField = 1 << iota
 	fieldSize
-	fieldAnchor
-	fieldOrdered
-	fieldStart
 	fieldItems
-	fieldTitle
-	fieldCollapsed
+	fieldSummary
+	fieldIsOpen
 	fieldBlocks
-	fieldCode
 	fieldLanguage
-	fieldColumns
-	fieldRows
+	fieldCells
 	fieldPhoto
 	fieldVideo
 	fieldCaption
@@ -93,17 +88,12 @@ var fieldNames = []struct {
 }{
 	{fieldText, "text"},
 	{fieldSize, "size"},
-	{fieldAnchor, "anchor"},
-	{fieldOrdered, "ordered"},
-	{fieldStart, "start"},
 	{fieldItems, "items"},
-	{fieldTitle, "title"},
-	{fieldCollapsed, "collapsed"},
+	{fieldSummary, "summary"},
+	{fieldIsOpen, "is_open"},
 	{fieldBlocks, "blocks"},
-	{fieldCode, "code"},
 	{fieldLanguage, "language"},
-	{fieldColumns, "columns"},
-	{fieldRows, "rows"},
+	{fieldCells, "cells"},
 	{fieldPhoto, "photo"},
 	{fieldVideo, "video"},
 	{fieldCaption, "caption"},
@@ -118,7 +108,7 @@ type blockSpec struct {
 
 var blockSpecs = map[BlockType]blockSpec{
 	BlockHeading: {
-		allowed:  fieldText | fieldSize | fieldAnchor,
+		allowed:  fieldText | fieldSize,
 		required: fieldText | fieldSize,
 	},
 	BlockParagraph: {
@@ -126,24 +116,24 @@ var blockSpecs = map[BlockType]blockSpec{
 		required: fieldText,
 	},
 	BlockList: {
-		allowed:  fieldOrdered | fieldStart | fieldItems,
+		allowed:  fieldItems,
 		required: fieldItems,
 	},
 	BlockQuote: {
-		allowed:  fieldTitle | fieldBlocks,
+		allowed:  fieldBlocks,
 		required: fieldBlocks,
 	},
-	BlockCollapsible: {
-		allowed:  fieldTitle | fieldCollapsed | fieldBlocks,
+	BlockDetails: {
+		allowed:  fieldSummary | fieldIsOpen | fieldBlocks,
 		required: fieldBlocks,
 	},
-	BlockCode: {
-		allowed:  fieldCode | fieldLanguage,
-		required: fieldCode,
+	BlockPre: {
+		allowed:  fieldText | fieldLanguage,
+		required: fieldText,
 	},
 	BlockTable: {
-		allowed:  fieldColumns | fieldRows,
-		required: fieldRows,
+		allowed:  fieldCells,
+		required: fieldCells,
 	},
 	BlockDivider: {},
 	BlockPhoto: {
@@ -166,19 +156,17 @@ func (b Block) present() blockField {
 		on    bool
 		field blockField
 	}{
-		{b.Text != nil, fieldText},
+		// A text node that renders nothing is not a text field: the server
+		// answers RICH_MESSAGE_EMPTY for a block whose only content is empty,
+		// so treating it as present would pass validation and fail on the wire.
+		{b.Text != nil && !b.Text.IsEmpty(), fieldText},
 		{b.Size != 0, fieldSize},
-		{b.Anchor != "", fieldAnchor},
-		{b.Ordered, fieldOrdered},
-		{b.Start != 0, fieldStart},
 		{len(b.Items) > 0, fieldItems},
-		{b.Title != nil, fieldTitle},
-		{b.Collapsed, fieldCollapsed},
+		{b.Summary != nil, fieldSummary},
+		{b.IsOpen, fieldIsOpen},
 		{len(b.Blocks) > 0, fieldBlocks},
-		{b.Code != "", fieldCode},
 		{b.Language != "", fieldLanguage},
-		{len(b.Columns) > 0, fieldColumns},
-		{len(b.Rows) > 0, fieldRows},
+		{len(b.Cells) > 0, fieldCells},
 		{b.Photo != nil, fieldPhoto},
 		{b.Video != nil, fieldVideo},
 		{b.Caption != nil, fieldCaption},
@@ -240,7 +228,7 @@ func (b Block) validateMedia() error {
 }
 
 func (b Block) validateText() error {
-	for _, text := range []*RichText{b.Text, b.Title} {
+	for _, text := range []*RichText{b.Text, b.Summary, b.Caption} {
 		if text == nil {
 			continue
 		}
@@ -249,14 +237,8 @@ func (b Block) validateText() error {
 		}
 	}
 
-	if b.Caption != nil {
-		if err := b.Caption.Text.validate(); err != nil {
-			return err
-		}
-	}
-
-	for _, row := range b.Rows {
-		for _, cell := range row.Cells {
+	for _, row := range b.Cells {
+		for _, cell := range row {
 			if err := cell.Text.validate(); err != nil {
 				return err
 			}
@@ -342,26 +324,18 @@ func (s *blockStats) walk(blocks []Block, depth int) error {
 		}
 
 		s.count(block.Text)
-		s.count(block.Title)
-		s.textUnits += utf16Len(block.Code)
-
-		if block.Caption != nil {
-			s.textUnits += utf16Len(block.Caption.Text.PlainText())
-		}
+		s.count(block.Summary)
+		s.count(block.Caption)
 
 		if block.Type == BlockPhoto || block.Type == BlockVideo {
 			s.media++
 		}
 
-		if len(block.Columns) > s.limits.MaxTableCols {
-			return fmt.Errorf("%w: %d > %d", ErrTooManyTableCols, len(block.Columns), s.limits.MaxTableCols)
-		}
-
-		for _, row := range block.Rows {
-			if len(row.Cells) > s.limits.MaxTableCols {
-				return fmt.Errorf("%w: %d > %d", ErrTooManyTableCols, len(row.Cells), s.limits.MaxTableCols)
+		for _, row := range block.Cells {
+			if len(row) > s.limits.MaxTableCols {
+				return fmt.Errorf("%w: %d > %d", ErrTooManyTableCols, len(row), s.limits.MaxTableCols)
 			}
-			for _, cell := range row.Cells {
+			for _, cell := range row {
 				s.textUnits += utf16Len(cell.Text.PlainText())
 			}
 		}

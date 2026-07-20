@@ -154,10 +154,10 @@ func (c *RichConverter) block(n ast.Node) []tgrich.Block {
 		return []tgrich.Block{{Type: tgrich.BlockQuote, Blocks: c.blocks(node)}}
 
 	case *ast.FencedCodeBlock:
-		return []tgrich.Block{tgrich.Code(codeText(node, c.src), string(node.Language(c.src)))}
+		return []tgrich.Block{tgrich.Pre(codeText(node, c.src), string(node.Language(c.src)))}
 
 	case *ast.CodeBlock:
-		return []tgrich.Block{tgrich.Code(codeText(node, c.src), "")}
+		return []tgrich.Block{tgrich.Pre(codeText(node, c.src), "")}
 
 	case *extast.Table:
 		return []tgrich.Block{c.table(node)}
@@ -175,20 +175,23 @@ func (c *RichConverter) block(n ast.Node) []tgrich.Block {
 	}
 }
 
+// heading converts a heading, keeping its level.
+//
+// The loader's stamped id is recorded in the result's anchor set but is not
+// sent: measured, the server accepts `anchor`, `name` and `id` on a heading and
+// echoes none of them back, so there is no in-message anchor target to link to.
+// Anchors stay in the result because a future table of contents still needs to
+// know which ids exist before it can decide it cannot use them.
 func (c *RichConverter) heading(node *ast.Heading) []tgrich.Block {
-	// Reuse the id the loader stamped on the node; never recompute it, the
-	// generated ids are transliterated, normalised and de-duplicated already.
-	var anchor string
 	if raw, ok := node.AttributeString("id"); ok {
 		if id, isBytes := raw.([]byte); isBytes {
-			anchor = string(id)
-			c.res.Anchors[anchor] = struct{}{}
+			c.res.Anchors[string(id)] = struct{}{}
 		}
 	}
 
 	text, _ := c.inline(node)
 
-	return []tgrich.Block{tgrich.Heading(node.Level, text, anchor)}
+	return []tgrich.Block{tgrich.Heading(node.Level, text)}
 }
 
 // paragraph converts a paragraph or list-item text block. Media alone on its
@@ -229,7 +232,7 @@ func (c *RichConverter) mediaBlock(m mediaRef) (tgrich.Block, bool) {
 	}
 
 	if alt := stripSizeSuffix(m.alt); alt != "" {
-		block.Caption = &tgrich.Caption{Text: tgrich.RichText{Text: alt}}
+		block.Caption = &tgrich.RichText{Text: alt}
 	}
 
 	return block, true
@@ -249,11 +252,11 @@ func (c *RichConverter) mediaURL(dest string) (string, bool) {
 	return c.assetResolver(dest)
 }
 
+// list converts a list. Ordering is deliberately not carried: measured, every
+// spelling of it is ignored and the server labels every item "•", so an ordered
+// list renders as bullets and claiming otherwise in the type would be a lie.
 func (c *RichConverter) list(node *ast.List) tgrich.Block {
-	block := tgrich.Block{Type: tgrich.BlockList, Ordered: node.IsOrdered()}
-	if node.IsOrdered() && node.Start > 1 {
-		block.Start = node.Start
-	}
+	block := tgrich.Block{Type: tgrich.BlockList}
 
 	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
 		item, ok := child.(*ast.ListItem)
@@ -289,7 +292,9 @@ func (c *RichConverter) itemCheckbox(item *ast.ListItem) *bool {
 }
 
 // callout maps an Obsidian callout. A foldable callout is the native source of
-// a collapsible block; a plain one keeps its title on an ordinary quote.
+// a details block, and its fold state carries across directly. A plain callout
+// has nowhere to put its title — a blockquote takes only blocks — so it becomes
+// a details block that is open by default, which keeps the title visible.
 func (c *RichConverter) callout(node *callout.Node) tgrich.Block {
 	title := node.Title
 	if title == "" {
@@ -297,42 +302,56 @@ func (c *RichConverter) callout(node *callout.Node) tgrich.Block {
 	}
 
 	block := tgrich.Block{
-		Type:   tgrich.BlockQuote,
-		Title:  &tgrich.RichText{Text: title},
-		Blocks: c.blocks(node),
+		Type:    tgrich.BlockDetails,
+		Summary: &tgrich.RichText{Text: title},
+		Blocks:  c.blocks(node),
+		IsOpen:  true,
 	}
 
 	if node.Foldable {
-		block.Type = tgrich.BlockCollapsible
-		block.Collapsed = !node.Expanded
+		block.IsOpen = node.Expanded
 	}
 
 	return block
 }
 
+// table converts a GFM table into the row-major cell grid the server takes.
+// Alignment is per cell here, not per column: the wire form has no column
+// descriptor at all, so the column's alignment is stamped onto each of its
+// cells.
 func (c *RichConverter) table(node *extast.Table) tgrich.Block {
 	block := tgrich.Block{Type: tgrich.BlockTable}
-
-	for _, alignment := range node.Alignments {
-		block.Columns = append(block.Columns, tgrich.TableColumn{Align: alignOf(alignment)})
-	}
 
 	for row := node.FirstChild(); row != nil; row = row.NextSibling() {
 		_, header := row.(*extast.TableHeader)
 
-		out := tgrich.TableRow{Header: header}
+		var out []tgrich.TableCell
 		for cell := row.FirstChild(); cell != nil; cell = cell.NextSibling() {
 			text, media := c.inline(cell)
 			for _, m := range media {
 				c.loss(LossInlineMedia, m.node, m.dest)
 			}
-			out.Cells = append(out.Cells, tgrich.TableCell{Text: text})
+
+			out = append(out, tgrich.TableCell{
+				Text:     text,
+				IsHeader: header,
+				Align:    columnAlign(node, len(out)),
+			})
 		}
 
-		block.Rows = append(block.Rows, out)
+		block.Cells = append(block.Cells, out)
 	}
 
 	return block
+}
+
+// columnAlign returns the alignment declared for a column index, if any.
+func columnAlign(node *extast.Table, column int) tgrich.Align {
+	if column >= len(node.Alignments) {
+		return ""
+	}
+
+	return alignOf(node.Alignments[column])
 }
 
 func alignOf(a extast.Alignment) tgrich.Align {
@@ -363,16 +382,15 @@ func visibleLength(blocks []tgrich.Block) int {
 		if block.Text != nil {
 			total += utf16Len(block.Text.PlainText())
 		}
-		if block.Title != nil {
-			total += utf16Len(block.Title.PlainText())
+		if block.Summary != nil {
+			total += utf16Len(block.Summary.PlainText())
 		}
 		if block.Caption != nil {
-			total += utf16Len(block.Caption.Text.PlainText())
+			total += utf16Len(block.Caption.PlainText())
 		}
-		total += utf16Len(block.Code)
 
-		for _, row := range block.Rows {
-			for _, cell := range row.Cells {
+		for _, row := range block.Cells {
+			for _, cell := range row {
 				total += utf16Len(cell.Text.PlainText())
 			}
 		}

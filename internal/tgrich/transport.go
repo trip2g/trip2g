@@ -71,10 +71,17 @@ func DecodeSendResult(raw json.RawMessage) (SendResult, error) {
 // Stats summarises a block tree. Blocks counts every block in the tree, not
 // only the top-level ones the block limit applies to: the point here is
 // detecting loss anywhere, not enforcing a limit.
+//
+// FormattedRuns counts only the runs carrying a mark or a link, never plain
+// text. Measured: the server merges adjacent plain runs, so `["a","b"]` comes
+// back as `"ab"` — counting those would report loss on every message that
+// submitted a run of unformatted spans, which is most of them. A *formatted*
+// run that disappears is real loss, and is exactly the documented failure mode
+// past the run-cost ceiling.
 type Stats struct {
-	Blocks    int
-	Runs      int
-	TextUnits int
+	Blocks        int
+	FormattedRuns int
+	TextUnits     int
 }
 
 func Measure(blocks []Block) Stats {
@@ -89,16 +96,12 @@ func (s *Stats) add(blocks []Block) {
 		s.Blocks++
 
 		s.addText(block.Text)
-		s.addText(block.Title)
-		s.TextUnits += utf16Len(block.Code)
+		s.addText(block.Summary)
+		s.addText(block.Caption)
 
-		if block.Caption != nil {
-			s.addText(&block.Caption.Text)
-		}
-
-		for _, row := range block.Rows {
-			for _, cell := range row.Cells {
-				s.addText(&cell.Text)
+		for _, row := range block.Cells {
+			for i := range row {
+				s.addText(&row[i].Text)
 			}
 		}
 
@@ -114,10 +117,11 @@ func (s *Stats) addText(text *RichText) {
 		return
 	}
 
-	if text.Text != "" {
-		s.Runs++
-		s.TextUnits += utf16Len(text.Text)
+	if text.IsFormatted() {
+		s.FormattedRuns++
 	}
+
+	s.TextUnits += utf16Len(text.Text)
 
 	for i := range text.Children {
 		s.addText(&text.Children[i])
@@ -137,11 +141,11 @@ func VerifyEcho(sent, echoed []Block) error {
 
 	want, got := Measure(sent), Measure(echoed)
 
-	if got.Blocks < want.Blocks || got.Runs < want.Runs || got.TextUnits < want.TextUnits {
-		return fmt.Errorf("%w: sent %d blocks/%d runs/%d text units, got back %d/%d/%d",
+	if got.Blocks < want.Blocks || got.FormattedRuns < want.FormattedRuns || got.TextUnits < want.TextUnits {
+		return fmt.Errorf("%w: sent %d blocks/%d formatted runs/%d text units, got back %d/%d/%d",
 			ErrContentDiscarded,
-			want.Blocks, want.Runs, want.TextUnits,
-			got.Blocks, got.Runs, got.TextUnits)
+			want.Blocks, want.FormattedRuns, want.TextUnits,
+			got.Blocks, got.FormattedRuns, got.TextUnits)
 	}
 
 	return nil

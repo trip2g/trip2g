@@ -50,11 +50,12 @@ func TestRichHeadings(t *testing.T) {
 		require.Equal(t, tgrich.BlockHeading, res.Blocks[i].Type)
 		require.Equal(t, i+1, res.Blocks[i].Size)
 		require.Equal(t, want, res.Blocks[i].Text.PlainText())
-		require.NotEmpty(t, res.Blocks[i].Anchor, "heading %d must keep its generated id", i+1)
 	}
 
-	require.Contains(t, res.Anchors, res.Blocks[0].Anchor)
+	// The generated ids are recorded but never sent: measured, the server
+	// echoes back no anchor field on a heading under any spelling.
 	require.Len(t, res.Anchors, 6)
+	require.Contains(t, res.Anchors, "one")
 }
 
 func TestRichParagraphInlineRuns(t *testing.T) {
@@ -161,18 +162,19 @@ func TestRichLists(t *testing.T) {
 
 		list := res.Blocks[0]
 		require.Equal(t, tgrich.BlockList, list.Type)
-		require.False(t, list.Ordered)
 		require.Len(t, list.Items, 2)
 		require.Nil(t, list.Items[0].Checked)
 		require.Equal(t, plain("one"), list.Items[0].Blocks[0].Text)
 	})
 
-	t.Run("ordered keeps start", func(t *testing.T) {
+	// Ordering is not carried: measured, the server ignores every spelling of
+	// it and labels every item with a bullet, so an ordered list renders as
+	// bullets and the block says so rather than pretending otherwise.
+	t.Run("ordered list keeps its items but loses its numbering", func(t *testing.T) {
 		res := convertRich(t, "3. three\n4. four")
 
 		list := res.Blocks[0]
-		require.True(t, list.Ordered)
-		require.Equal(t, 3, list.Start)
+		require.Equal(t, tgrich.BlockList, list.Type)
 		require.Len(t, list.Items, 2)
 	})
 
@@ -218,45 +220,45 @@ func TestRichBlockquote(t *testing.T) {
 
 	quote := res.Blocks[0]
 	require.Equal(t, tgrich.BlockQuote, quote.Type)
-	require.Nil(t, quote.Title)
+	require.Nil(t, quote.Summary)
 	require.Len(t, quote.Blocks, 2)
 	require.Equal(t, plain("quoted"), quote.Blocks[0].Text)
 	require.Equal(t, plain("more"), quote.Blocks[1].Text)
 }
 
 func TestRichCallouts(t *testing.T) {
+	// Every callout becomes a details block: a blockquote takes only blocks,
+	// so it has nowhere to put the callout's title. A non-foldable callout is
+	// therefore an open details block, which keeps the title on screen.
 	tests := []struct {
-		name          string
-		markdown      string
-		wantType      tgrich.BlockType
-		wantTitle     string
-		wantCollapsed bool
+		name        string
+		markdown    string
+		wantSummary string
+		wantOpen    bool
 	}{
 		{
-			name:      "plain callout is a titled quote",
-			markdown:  "> [!note]\n> body",
-			wantType:  tgrich.BlockQuote,
-			wantTitle: "Note",
+			name:        "plain callout is an open details block",
+			markdown:    "> [!note]\n> body",
+			wantSummary: "Note",
+			wantOpen:    true,
 		},
 		{
-			name:      "custom title wins over the type",
-			markdown:  "> [!warning] Careful\n> body",
-			wantType:  tgrich.BlockQuote,
-			wantTitle: "Careful",
+			name:        "custom title wins over the type",
+			markdown:    "> [!warning] Careful\n> body",
+			wantSummary: "Careful",
+			wantOpen:    true,
 		},
 		{
-			name:          "foldable callout collapses",
-			markdown:      "> [!tip]- Hidden\n> body",
-			wantType:      tgrich.BlockCollapsible,
-			wantTitle:     "Hidden",
-			wantCollapsed: true,
+			name:        "foldable callout collapses",
+			markdown:    "> [!tip]- Hidden\n> body",
+			wantSummary: "Hidden",
+			wantOpen:    false,
 		},
 		{
-			name:          "foldable-expanded callout stays open",
-			markdown:      "> [!tip]+ Shown\n> body",
-			wantType:      tgrich.BlockCollapsible,
-			wantTitle:     "Shown",
-			wantCollapsed: false,
+			name:        "foldable-expanded callout stays open",
+			markdown:    "> [!tip]+ Shown\n> body",
+			wantSummary: "Shown",
+			wantOpen:    true,
 		},
 	}
 
@@ -268,10 +270,10 @@ func TestRichCallouts(t *testing.T) {
 			require.Len(t, res.Blocks, 1)
 
 			block := res.Blocks[0]
-			require.Equal(t, tt.wantType, block.Type)
-			require.Equal(t, tt.wantCollapsed, block.Collapsed)
-			require.NotNil(t, block.Title)
-			require.Equal(t, tt.wantTitle, block.Title.PlainText())
+			require.Equal(t, tgrich.BlockDetails, block.Type)
+			require.Equal(t, tt.wantOpen, block.IsOpen)
+			require.NotNil(t, block.Summary)
+			require.Equal(t, tt.wantSummary, block.Summary.PlainText())
 			require.Len(t, block.Blocks, 1)
 			require.Equal(t, plain("body"), block.Blocks[0].Text)
 		})
@@ -284,25 +286,26 @@ func TestRichTable(t *testing.T) {
 	require.Empty(t, res.Losses)
 	require.Len(t, res.Blocks, 1)
 
+	// Alignment is per cell: the wire form has no column descriptor at all, so
+	// the column's alignment is stamped onto each of its cells.
 	table := res.Blocks[0]
 	require.Equal(t, tgrich.BlockTable, table.Type)
-	require.Equal(t, []tgrich.TableColumn{
-		{Align: tgrich.AlignLeft},
-		{Align: tgrich.AlignRight},
-		{Align: tgrich.AlignCenter},
-	}, table.Columns)
+	require.Len(t, table.Cells, 2)
 
-	require.Len(t, table.Rows, 2)
-	require.True(t, table.Rows[0].Header)
-	require.False(t, table.Rows[1].Header)
-	require.Equal(t, "a", table.Rows[0].Cells[0].Text.PlainText())
-	require.Equal(t, "3", table.Rows[1].Cells[2].Text.PlainText())
+	require.Equal(t, []tgrich.Align{tgrich.AlignLeft, tgrich.AlignRight, tgrich.AlignCenter},
+		[]tgrich.Align{table.Cells[0][0].Align, table.Cells[0][1].Align, table.Cells[0][2].Align})
+
+	require.True(t, table.Cells[0][0].IsHeader)
+	require.False(t, table.Cells[1][0].IsHeader)
+	require.Equal(t, "a", table.Cells[0][0].Text.PlainText())
+	require.Equal(t, "3", table.Cells[1][2].Text.PlainText())
 }
 
 func TestRichTableWithoutExplicitAlignment(t *testing.T) {
 	res := convertRich(t, "| a |\n|---|\n| 1 |")
 
-	require.Equal(t, []tgrich.TableColumn{{}}, res.Blocks[0].Columns)
+	// No declared alignment leaves the field empty and the server defaults it.
+	require.Equal(t, tgrich.Align(""), res.Blocks[0].Cells[0][0].Align)
 }
 
 func TestRichFencedCode(t *testing.T) {
@@ -311,17 +314,17 @@ func TestRichFencedCode(t *testing.T) {
 
 		require.Empty(t, res.Losses)
 		require.Len(t, res.Blocks, 1)
-		require.Equal(t, tgrich.BlockCode, res.Blocks[0].Type)
+		require.Equal(t, tgrich.BlockPre, res.Blocks[0].Type)
 		require.Equal(t, "go", res.Blocks[0].Language)
 		// Telegram collapses a literal tab to one space, so expand before send.
-		require.Equal(t, "func x() {\n    return\n}", res.Blocks[0].Code)
+		require.Equal(t, "func x() {\n    return\n}", res.Blocks[0].Text.PlainText())
 	})
 
 	t.Run("without a language", func(t *testing.T) {
 		res := convertRich(t, "```\nplain\n```")
 
 		require.Empty(t, res.Blocks[0].Language)
-		require.Equal(t, "plain", res.Blocks[0].Code)
+		require.Equal(t, "plain", res.Blocks[0].Text.PlainText())
 	})
 }
 
@@ -341,7 +344,7 @@ func TestRichImages(t *testing.T) {
 		require.Len(t, res.Blocks, 1)
 		require.Equal(t, tgrich.BlockPhoto, res.Blocks[0].Type)
 		require.Equal(t, "https://example.com/a.png", res.Blocks[0].Photo.URL)
-		require.Equal(t, "alt", res.Blocks[0].Caption.Text.PlainText())
+		require.Equal(t, "alt", res.Blocks[0].Caption.PlainText())
 	})
 
 	t.Run("image with no alt has no caption", func(t *testing.T) {

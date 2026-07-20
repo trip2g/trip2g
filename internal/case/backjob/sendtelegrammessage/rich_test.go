@@ -21,7 +21,7 @@ func richParams() model.TelegramSendPostParams {
 		Post: model.TelegramPost{
 			Content: "<b>classic fallback</b>",
 			RichBlocks: []tgrich.Block{
-				tgrich.Heading(2, tgrich.RichText{Text: "Title"}, "title"),
+				tgrich.Heading(2, tgrich.RichText{Text: "Title"}),
 				tgrich.Paragraph(tgrich.RichText{Text: "Body"}),
 			},
 		},
