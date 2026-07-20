@@ -20,6 +20,13 @@ const (
 	lineStart
 )
 
+// The only raw HTML tags the converters understand: <u> has no markdown
+// spelling, so it is passed through rather than reported as a loss.
+const (
+	tagUnderlineOpen  = "<u>"
+	tagUnderlineClose = "</u>"
+)
+
 type ConverterResult struct {
 	Warnings []string
 	Content  string
@@ -127,7 +134,7 @@ func (c *CommonConverter) Process(nv *model.NoteView) ConverterResult {
 		case *ast.RawHTML:
 			if entering {
 				tag := string(node.Segments.Value(src))
-				if tag == "<u>" || tag == "</u>" {
+				if tag == tagUnderlineOpen || tag == tagUnderlineClose {
 					buf.WriteString("__")
 				} else {
 					msg := fmt.Sprintf("raw html tag is not supported: %s", tag)

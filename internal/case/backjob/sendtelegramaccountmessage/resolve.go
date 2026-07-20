@@ -96,6 +96,62 @@ func failSend(ctx context.Context, env Env, params model.TelegramAccountSendPost
 	return fmt.Errorf("failed to send via account: %w", sendErr)
 }
 
+// send picks the transport for one post and sends it. Rich comes first because
+// it is not a variation on the classic branches: it carries its own block tree
+// and its own limits, so neither the truncated content nor the media count
+// applies to it.
+func send(
+	ctx context.Context,
+	env Env,
+	client *tgtd.Client,
+	sessionData []byte,
+	account db.TelegramAccount,
+	params model.TelegramAccountSendPostParams,
+	content string,
+) (*tgtd.SendMessageResult, error) {
+	post := params.Post
+
+	if post.IsRich() {
+		messageID, err := sendRich(ctx, env, client, sessionData, account, params)
+		if err != nil {
+			return nil, err
+		}
+
+		return &tgtd.SendMessageResult{MessageID: messageID}, nil
+	}
+
+	switch len(post.Media) {
+	case 0:
+		return client.SendMessage(ctx, sessionData, tgtd.SendMessageParams{
+			ChatID:    params.TelegramChatID,
+			Message:   content,
+			NoWebpage: post.DisableWebPagePreview,
+		})
+	case 1:
+		mediaURL := post.Media[0]
+		if tgtd.IsVideoURL(mediaURL) {
+			return client.SendVideo(ctx, sessionData, tgtd.SendVideoParams{
+				ChatID:   params.TelegramChatID,
+				VideoURL: mediaURL,
+				Caption:  content,
+			})
+		}
+
+		return client.SendPhoto(ctx, sessionData, tgtd.SendPhotoParams{
+			ChatID:   params.TelegramChatID,
+			PhotoURL: mediaURL,
+			Caption:  content,
+		})
+	default:
+		// 2-10 media files.
+		return client.SendMediaGroup(ctx, sessionData, tgtd.SendMediaGroupParams{
+			ChatID:    params.TelegramChatID,
+			MediaURLs: post.Media,
+			Caption:   content,
+		})
+	}
+}
+
 func resolve(ctx context.Context, env Env, params model.TelegramAccountSendPostParams) error {
 	// Check if message already exists before sending to avoid duplicate messages
 	exists, err := env.CheckTelegramPublishSentAccountMessageExists(ctx, db.CheckTelegramPublishSentAccountMessageExistsParams{
@@ -159,50 +215,7 @@ func resolve(ctx context.Context, env Env, params model.TelegramAccountSendPostP
 	// Create tgtd client and send message
 	client := tgtd.NewClient(env, account.ID, int(account.ApiID), account.ApiHash)
 
-	var result *tgtd.SendMessageResult
-	var sendErr error
-
-	switch {
-	case post.IsRich():
-		// Rich carries its own block tree and its own limits; none of the
-		// classic truncation or media branches apply to it.
-		var messageID int64
-		messageID, sendErr = sendRich(ctx, env, client, sessionData, account, params)
-		if sendErr == nil {
-			result = &tgtd.SendMessageResult{MessageID: messageID}
-		}
-	case mediaCount == 0:
-		// Send as text message
-		result, sendErr = client.SendMessage(ctx, sessionData, tgtd.SendMessageParams{
-			ChatID:    params.TelegramChatID,
-			Message:   content,
-			NoWebpage: post.DisableWebPagePreview,
-		})
-	case mediaCount == 1:
-		// Send as single photo or video
-		mediaURL := post.Media[0]
-		if tgtd.IsVideoURL(mediaURL) {
-			result, sendErr = client.SendVideo(ctx, sessionData, tgtd.SendVideoParams{
-				ChatID:   params.TelegramChatID,
-				VideoURL: mediaURL,
-				Caption:  content,
-			})
-		} else {
-			result, sendErr = client.SendPhoto(ctx, sessionData, tgtd.SendPhotoParams{
-				ChatID:   params.TelegramChatID,
-				PhotoURL: mediaURL,
-				Caption:  content,
-			})
-		}
-	default:
-		// Send as media group (2-10 media files)
-		result, sendErr = client.SendMediaGroup(ctx, sessionData, tgtd.SendMediaGroupParams{
-			ChatID:    params.TelegramChatID,
-			MediaURLs: post.Media,
-			Caption:   content,
-		})
-	}
-
+	result, sendErr := send(ctx, env, client, sessionData, account, params, content)
 	if sendErr != nil {
 		return failSend(ctx, env, params, sendErr)
 	}

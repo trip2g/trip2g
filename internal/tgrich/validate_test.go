@@ -525,7 +525,7 @@ func TestValidateRichTextLinks(t *testing.T) {
 			name  string
 			build func(tgrich.RichText) tgrich.Block
 		}{
-			{"paragraph text", func(t tgrich.RichText) tgrich.Block { return tgrich.Paragraph(t) }},
+			{"paragraph text", tgrich.Paragraph},
 			{"collapsible title", func(t tgrich.RichText) tgrich.Block {
 				return tgrich.Block{Type: tgrich.BlockDetails, Summary: &t, Blocks: []tgrich.Block{para("x")}}
 			}},

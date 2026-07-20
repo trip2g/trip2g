@@ -55,7 +55,6 @@ func (b *inlineBuilder) children(n ast.Node, style inlineStyle) {
 	}
 }
 
-//nolint:cyclop,gocyclo // flat per-node dispatch, like the classic converters
 func (b *inlineBuilder) node(n ast.Node, style inlineStyle) {
 	switch node := n.(type) {
 	case *ast.Text:
@@ -194,9 +193,9 @@ func (b *inlineBuilder) wikilink(node *wikilink.Node, style inlineStyle) {
 // nowhere for a tag to go.
 func (b *inlineBuilder) rawHTML(node *ast.RawHTML) {
 	switch tag := string(node.Segments.Value(b.c.src)); tag {
-	case "<u>":
+	case tagUnderlineOpen:
 		b.underline = true
-	case "</u>":
+	case tagUnderlineClose:
 		b.underline = false
 	default:
 		b.c.loss(LossRawHTML, node, tag)

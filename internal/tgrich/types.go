@@ -95,7 +95,7 @@ const (
 // textMarks lists the mark node types in the order they wrap, innermost first.
 // The order is fixed so the same RichText always produces the same bytes: a
 // canonical payload hash is worthless if the encoding wanders.
-var textMarks = []struct {
+var textMarks = []struct { //nolint:gochecknoglobals // read-only lookup table of mark node types
 	name string
 	on   func(RichText) bool
 }{

@@ -2,7 +2,6 @@ package tgrich_test
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 	"trip2g/internal/tgrich"
 
@@ -266,7 +265,7 @@ func TestVerifyEchoNamesWhatWasLost(t *testing.T) {
 	err := tgrich.VerifyEcho(sent, []tgrich.Block{para("hello")})
 
 	require.ErrorIs(t, err, tgrich.ErrContentDiscarded)
-	require.True(t, strings.Contains(err.Error(), "blocks"), "error should name the counts: %v", err)
+	require.Contains(t, err.Error(), "blocks", "error should name the counts: %v", err)
 }
 
 func TestEditRequestParams(t *testing.T) {

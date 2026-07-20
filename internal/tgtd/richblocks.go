@@ -157,12 +157,14 @@ func table(block tgrich.Block) tg.PageBlockClass {
 				out.SetHeader(true)
 			}
 
-			// Left is the absence of both flags, so it needs no case.
+			// PageTableCell carries only align_center and align_right, so left
+			// — and the empty "server default" — is the absence of both flags.
 			switch cell.Align {
 			case tgrich.AlignCenter:
 				out.SetAlignCenter(true)
 			case tgrich.AlignRight:
 				out.SetAlignRight(true)
+			case tgrich.AlignLeft:
 			}
 
 			cells = append(cells, out)
@@ -190,7 +192,7 @@ func blockText(text *tgrich.RichText) tg.RichTextClass {
 // richTextMarks lists the mark wrappers innermost first, matching the order
 // tgrich.RichText marshals to JSON. The order is fixed so that the same input
 // always produces the same tree on both transports.
-var richTextMarks = []struct {
+var richTextMarks = []struct { //nolint:gochecknoglobals // read-only lookup table of mark wrappers
 	on   func(tgrich.RichText) bool
 	wrap func(tg.RichTextClass) tg.RichTextClass
 }{

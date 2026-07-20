@@ -135,7 +135,6 @@ func (c *RichConverter) blocks(parent ast.Node) []tgrich.Block {
 	return out
 }
 
-//nolint:cyclop // flat per-node dispatch, like the classic converters
 func (c *RichConverter) block(n ast.Node) []tgrich.Block {
 	switch node := n.(type) {
 	case *ast.Heading:

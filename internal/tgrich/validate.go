@@ -82,7 +82,7 @@ const (
 )
 
 // fieldNames is ordered by bit so an error can name the offending field.
-var fieldNames = []struct {
+var fieldNames = []struct { //nolint:gochecknoglobals // read-only lookup table of block field names
 	field blockField
 	name  string
 }{
@@ -106,6 +106,7 @@ type blockSpec struct {
 	required blockField
 }
 
+//nolint:gochecknoglobals // read-only lookup table of per-variant block specs
 var blockSpecs = map[BlockType]blockSpec{
 	BlockHeading: {
 		allowed:  fieldText | fieldSize,
@@ -147,8 +148,6 @@ var blockSpecs = map[BlockType]blockSpec{
 }
 
 // present returns the set of fields the block actually carries.
-//
-//nolint:cyclop // one flat branch per field
 func (b Block) present() blockField {
 	var set blockField
 
@@ -312,7 +311,6 @@ type blockStats struct {
 	media     int
 }
 
-//nolint:cyclop // flat per-variant accounting
 func (s *blockStats) walk(blocks []Block, depth int) error {
 	if len(blocks) > 0 && depth > s.limits.MaxDepth {
 		return fmt.Errorf("%w: %d > %d", ErrTooDeep, depth, s.limits.MaxDepth)
