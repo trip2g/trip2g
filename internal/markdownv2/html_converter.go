@@ -6,8 +6,11 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"trip2g/internal/mdloader/callout"
 	"trip2g/internal/mdloader/highlight"
 	"trip2g/internal/model"
+	"unicode"
+	"unicode/utf8"
 
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 	"github.com/yuin/goldmark/ast"
@@ -204,6 +207,9 @@ func (c *HTMLConverter) renderNode(n ast.Node, src []byte, entering bool, res *C
 	case *ast.Blockquote:
 		c.renderBlockquote(n, entering)
 
+	case *callout.Node:
+		c.renderCallout(node, entering)
+
 	case *ast.Link:
 		if entering {
 			c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(string(node.Destination))))
@@ -284,10 +290,58 @@ func (c *HTMLConverter) renderBlockquote(n ast.Node, entering bool) {
 
 	// Blockquote ending with || means Telegram expandable quote
 	if inner, ok := strings.CutSuffix(content, "||"); ok {
-		c.Write(fmt.Sprintf(`<blockquote expandable>%s</blockquote>`, inner))
+		c.writeQuote(inner, true)
+	} else {
+		c.writeQuote(content, false)
+	}
+}
+
+// renderCallout renders an Obsidian callout as a blockquote with a bold title
+// line, collecting the body in its own buffer like renderBlockquote does.
+// A collapsed callout (`[!type]-`) maps to an expandable quote: Telegram shows
+// its first line — the title — and hides the body behind an expand control.
+func (c *HTMLConverter) renderCallout(node *callout.Node, entering bool) {
+	if entering {
+		// The parser builds a fresh node, so HasBlankPreviousLines is always
+		// false here; separate from preceding content by what was written.
+		if cur := c.currentBuffer(); cur != "" && !strings.HasSuffix(cur, "\n\n") {
+			c.Write("\n\n")
+		}
+		c.pushBuffer()
+		return
+	}
+
+	body := strings.TrimSpace(c.popBuffer())
+
+	title := node.Title
+	if title == "" {
+		title = capitalize(node.CalloutType)
+	}
+
+	content := fmt.Sprintf("<b>%s</b>", html.EscapeString(title))
+	if body != "" {
+		content += "\n" + body
+	}
+
+	c.writeQuote(content, node.Foldable && !node.Expanded)
+}
+
+// writeQuote wraps content into a Telegram blockquote, expandable or not.
+func (c *HTMLConverter) writeQuote(content string, expandable bool) {
+	if expandable {
+		c.Write(fmt.Sprintf(`<blockquote expandable>%s</blockquote>`, content))
 	} else {
 		c.Write(fmt.Sprintf(`<blockquote>%s</blockquote>`, content))
 	}
+}
+
+// capitalize upper-cases the first rune of s, matching the web callout renderer.
+func capitalize(s string) string {
+	if s == "" {
+		return s
+	}
+	r, size := utf8.DecodeRuneInString(s)
+	return string(unicode.ToUpper(r)) + s[size:]
 }
 
 // renderCustomEmoji renders a Telegram custom emoji, or warns on an unsupported
