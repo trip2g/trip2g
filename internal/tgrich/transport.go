@@ -13,6 +13,13 @@ import (
 // MakeRequest that Send and Request already call underneath takes it directly.
 const Method = "sendRichMessage"
 
+// EditMethod is how an already-posted rich message is changed. There is no
+// editRichMessage: the ordinary editMessageText takes a rich_message instead of
+// a text, and that substitution is the whole difference. Sending it the classic
+// way — text plus parse_mode — replaces the block tree with a flat string and
+// cannot be undone.
+const EditMethod = "editMessageText"
+
 // ErrContentDiscarded reports that the server kept less than it was given.
 var ErrContentDiscarded = errors.New("telegram discarded part of the rich message")
 
@@ -35,6 +42,22 @@ func (r Request) Params() (map[string]string, error) {
 	}
 
 	return params, nil
+}
+
+// Params renders the edit as flat form parameters, the same way Request does.
+// It carries no text, no caption and no parse mode on purpose: any of them
+// would be the classic edit this type exists to avoid.
+func (r EditRequest) Params() (map[string]string, error) {
+	message, err := json.Marshal(r.RichMessage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal rich message: %w", err)
+	}
+
+	return map[string]string{
+		"chat_id":      strconv.FormatInt(r.ChatID, 10),
+		"message_id":   strconv.FormatInt(r.MessageID, 10),
+		"rich_message": string(message),
+	}, nil
 }
 
 // SendResult is what the server returned. Blocks is the echoed block tree when

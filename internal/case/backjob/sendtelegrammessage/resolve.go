@@ -99,9 +99,11 @@ func resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) 
 
 	post := params.Post
 
-	// Determine post type based on media count
+	// Determine post type. Rich outranks media count: a rich post carries its
+	// media inside the block tree, and the stored type is what the update path
+	// dispatches on later.
 	mediaCount := len(post.Media)
-	postType = db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
+	postType = db.TelegramPublishSentMessagePostTypeFor(post.IsRich(), mediaCount)
 
 	// Truncate content to telegram limits
 	maxLength := 4096

@@ -354,3 +354,12 @@ type Request struct {
 	RichMessage         InputRichMessage `json:"rich_message"`
 	DisableNotification bool             `json:"disable_notification,omitempty"`
 }
+
+// EditRequest is the `editMessageText` request body for a message that is rich.
+// It replaces the whole block list, which is also why media inside a rich post
+// cannot be edited piecemeal.
+type EditRequest struct {
+	ChatID      int64            `json:"chat_id"`
+	MessageID   int64            `json:"message_id"`
+	RichMessage InputRichMessage `json:"rich_message"`
+}

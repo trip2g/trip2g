@@ -346,6 +346,27 @@ func (io *HandlerIO) SendRichMessage(_ context.Context, req tgrich.Request) (tgr
 	return tgrich.DecodeSendResult(resp.Result)
 }
 
+// EditRichMessage replaces the block tree of an already-posted rich message.
+// The response is the same Message object sendRichMessage returns, so it
+// decodes with the same helper.
+func (io *HandlerIO) EditRichMessage(_ context.Context, req tgrich.EditRequest) (tgrich.SendResult, error) {
+	params, err := req.Params()
+	if err != nil {
+		return tgrich.SendResult{}, err
+	}
+
+	resp, err := io.bot.MakeRequest(tgrich.EditMethod, params)
+	if err != nil {
+		return tgrich.SendResult{}, fmt.Errorf("%s: %w", tgrich.EditMethod, err)
+	}
+
+	if !resp.Ok {
+		return tgrich.SendResult{}, fmt.Errorf("telegram API error: %s", resp.Description)
+	}
+
+	return tgrich.DecodeSendResult(resp.Result)
+}
+
 // SendPhoto uploads a photo from disk with an HTML caption, injecting business_connection_id.
 func (io *HandlerIO) SendPhoto(_ context.Context, chatID int64, bcID, mediaPath, caption, markup string) (int, error) {
 	p := tgbotapi.Params{

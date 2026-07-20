@@ -75,6 +75,10 @@ func TestResolve_Rich_SendsRichMessage(t *testing.T) {
 	require.Len(t, inserts, 1)
 	require.Equal(t, int64(999), inserts[0].Arg.MessageID)
 	require.NotEmpty(t, inserts[0].Arg.ContentHash)
+
+	// The row must say it is rich. Without this the update path reads it as
+	// classic and rewrites the message as plain text on the next note edit.
+	require.Equal(t, db.TelegramPublishSentMessagePostTypeRich, inserts[0].Arg.PostType)
 }
 
 // Local validation must run before the request leaves: several server-side

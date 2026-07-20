@@ -268,3 +268,40 @@ func TestVerifyEchoNamesWhatWasLost(t *testing.T) {
 	require.ErrorIs(t, err, tgrich.ErrContentDiscarded)
 	require.True(t, strings.Contains(err.Error(), "blocks"), "error should name the counts: %v", err)
 }
+
+func TestEditRequestParams(t *testing.T) {
+	req := tgrich.EditRequest{
+		ChatID:    -1004487679938,
+		MessageID: 104,
+		RichMessage: tgrich.InputRichMessage{
+			Blocks:              []tgrich.Block{tgrich.Heading(1, tgrich.RichText{Text: "Title"})},
+			SkipEntityDetection: true,
+		},
+	}
+
+	params, err := req.Params()
+	require.NoError(t, err)
+
+	require.Equal(t, "-1004487679938", params["chat_id"])
+	require.Equal(t, "104", params["message_id"])
+
+	// The edit must never carry text or a parse mode: that is exactly the
+	// payload that flattens a rich message into a plain one.
+	require.NotContains(t, params, "text")
+	require.NotContains(t, params, "parse_mode")
+	require.NotContains(t, params, "caption")
+
+	var msg struct {
+		Blocks              []tgrich.Block `json:"blocks"`
+		SkipEntityDetection bool           `json:"skip_entity_detection"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(params["rich_message"]), &msg))
+	require.True(t, msg.SkipEntityDetection)
+	require.Len(t, msg.Blocks, 1)
+}
+
+// The edit goes through editMessageText carrying rich_message, not through a
+// method of its own.
+func TestEditMethodIsEditMessageText(t *testing.T) {
+	require.Equal(t, "editMessageText", tgrich.EditMethod)
+}

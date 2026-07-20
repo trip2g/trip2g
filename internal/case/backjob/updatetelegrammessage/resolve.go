@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/telegram"
+	"trip2g/internal/tgrich"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -22,6 +23,7 @@ type Env interface {
 	GetTelegramPublishSentMessageContentHash(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error)
 	GetTelegramPublishSentMessagePostType(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error)
 	SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
+	EditTelegramRichMessage(ctx context.Context, chatID int64, req tgrich.EditRequest) (tgrich.SendResult, error)
 	UpdateTelegramPublishSentMessageContent(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error
 	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 }
@@ -77,9 +79,28 @@ func resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams
 		return fmt.Errorf("failed to get current post type: %w", err)
 	}
 
-	// Determine new post type based on current media
+	// Determine new post type based on current media. Rich must be classified
+	// before media count is consulted, otherwise a rich post reads as 'text' and
+	// looks like it changed type on every single edit.
 	mediaCount := len(post.Media)
-	newPostType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
+	newPostType := db.TelegramPublishSentMessagePostTypeFor(post.IsRich(), mediaCount)
+
+	isRich := currentPostType == db.TelegramPublishSentMessagePostTypeRich
+
+	// A rich message cannot be edited by either classic branch below: one
+	// flattens the block tree into a plain string, the other targets a caption it
+	// does not have. Both are irreversible, so once the note stops producing
+	// blocks the published message is left exactly as it is.
+	if isRich && newPostType != db.TelegramPublishSentMessagePostTypeRich {
+		logger.Warn("refusing to rewrite a rich post as a classic one, leaving it untouched",
+			"new_type", newPostType,
+			"note_path_id", params.NotePathID,
+			"chat_id", params.DBChatID,
+			"message_id", params.MessageID,
+		)
+
+		return nil
+	}
 
 	// Check if post type changed - if so, add warning and use original type
 	postTypeChanged := currentPostType != newPostType
@@ -131,12 +152,15 @@ func resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams
 
 	// Edit the message in Telegram based on current (saved) post type
 	var editErr error
-	if currentPostType == db.TelegramPublishSentMessagePostTypeText {
+	switch {
+	case isRich:
+		editErr = editRich(ctx, env, params)
+	case currentPostType == db.TelegramPublishSentMessagePostTypeText:
 		// Edit text for text message
 		editMsg := tgbotapi.NewEditMessageText(params.TelegramChatID, int(params.MessageID), content)
 		editMsg.ParseMode = "HTML"
 		editErr = env.SendTelegramRequest(ctx, params.DBChatID, editMsg)
-	} else {
+	default:
 		// Edit caption for photo or media_group
 		editMsg := tgbotapi.NewEditMessageCaption(params.TelegramChatID, int(params.MessageID), content)
 		editMsg.ParseMode = "HTML"

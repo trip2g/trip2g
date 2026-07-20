@@ -344,6 +344,38 @@ func (a *app) SendTelegramRichMessage(ctx context.Context, chatID int64, req tgr
 	return res, nil
 }
 
+// EditTelegramRichMessage replaces the blocks of a posted rich message. It
+// exists because the classic edit path cannot touch one: editMessageText with a
+// text and a parse mode flattens the block tree irreversibly, and
+// editMessageCaption targets a caption a rich message does not have.
+func (a *app) EditTelegramRichMessage(ctx context.Context, chatID int64, req tgrich.EditRequest) (tgrich.SendResult, error) {
+	a.log.Debug("editing telegram rich message",
+		"chat_id", chatID, "message_id", req.MessageID, "blocks", len(req.RichMessage.Blocks))
+
+	chat, err := a.TgBotChat(ctx, chatID)
+	if err != nil {
+		return tgrich.SendResult{}, fmt.Errorf("failed to get Telegram chat: %w", err)
+	}
+
+	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
+
+	if handlerIO == nil {
+		return tgrich.SendResult{}, fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
+	}
+
+	res, err := handlerIO.EditRichMessage(ctx, req)
+	if err != nil {
+		return tgrich.SendResult{}, fmt.Errorf("failed to edit Telegram rich message: %w", err)
+	}
+
+	if echoErr := tgrich.VerifyEcho(req.RichMessage.Blocks, res.Blocks); echoErr != nil {
+		a.log.Error("telegram rich message came back short after edit",
+			"chat_id", chatID, "message_id", req.MessageID, "error", echoErr.Error())
+	}
+
+	return res, nil
+}
+
 func (a *app) SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 	a.log.Debug("sending telegram request", "chat_id", chatID, "msg", msg)
 
