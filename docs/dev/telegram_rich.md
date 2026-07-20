@@ -31,6 +31,36 @@ state, anchors and footnotes, collage and slideshow, math in four notations.
 only ordinary emoji appear on screen. Not channel-specific — a byte-identical payload collapses the same
 way in a private chat.
 
+## The account path: works, but requires Premium
+
+Measured directly, not inferred. There is **no `sendRichMessage` in MTProto** — rich is a new optional field
+`rich_message:flags.23?InputRichMessage` on the ordinary `messages.sendMessage#fef48f62` (same field on
+`messages.editMessage` and `saveDraft`). Bots and users make the *same call*. Read from tdesktop's `api.tl`
+(LAYER 228), byte-identical in TDLib's `telegram_api.tl`, and confirmed a third time by Telethon 1.44.0,
+which exposes `rich_message` directly on `SendMessageRequest`. Telegram Desktop sends it from a plain user
+session (`ApiWrap::sendRichMessage`, `apiwrap.cpp:4393`).
+
+The block tree is Instant View's existing `PageBlock`/`RichText`, extended — so much of it is already in gotd
+at layer 222. Input shape: `InputRichMessage(blocks, rtl, noautolink, photos, documents, users)`.
+
+| Sender | Premium | Result |
+|---|---|---|
+| Bot | not required | works, channels included |
+| User account | no | `400 RICH_MESSAGE_UNSUPPORTED` |
+| User account | yes | works: saved messages, channel, and `send_as = channel` |
+
+**The gate is Premium, enforced server-side**, and the entitlement follows the *sending user*, not the
+posting identity: a non-Premium account is refused even writing to itself, while a Premium account succeeds
+posting under the channel's identity. TDLib's "for bots only" annotation on the markdown/HTML source
+variants is a comment, not a mechanism — `RichMessage.cpp:90` takes a `bool is_bot` and never reads it.
+
+Two consequences for design. First, **capability is checkable before scheduling**: `help.getAppConfig`
+returns `rich_message_posting` (`disabled` → `premium` since July 2026) and the account's own `premium` flag
+is available — both reachable through calls that already exist in `internal/tgtd/client.go`. That turns
+"account channels cannot do rich" into a precise per-account preflight with an honest error message.
+Second, media differs: MTProto takes pre-uploaded `InputPhoto`/`InputDocument`, not the HTTPS URLs the Bot
+API ingests server-side.
+
 ## Limits
 
 | Limit | Value | Notes |
@@ -42,6 +72,12 @@ way in a private chat.
 | Formatted-run cost | ~35000 units | **Silently truncates** past it, see below |
 
 A rich message with 50 media is **one** message for rate-limit purposes, where album-plus-text costs several.
+
+**The server advertises these limits — read them, do not hardcode them.** `help.getAppConfig` returns
+`rich_message_length_limit` 32768, `rich_message_max_blocks` 500, `rich_message_max_media` 50,
+`rich_message_max_depth` 16, `rich_message_max_table_cols` 20. They match the probed values exactly, and the
+last two were never probed at all — the server is the better source. `GetAppConfig` already exists in
+`internal/tgtd/client.go`.
 
 ### The visible fold
 
@@ -125,10 +161,15 @@ Wrinkle: `tgbotapi.Chattable` cannot be implemented from outside the package (`p
 unexported), so a rich send cannot drop into the existing `SendTelegramMessage(ctx, chatID, Chattable)`
 signature. It needs its own `Env` method.
 
-**gotd/td drops out of this project.** The six-layer upgrade (222 → 227+) is not a prerequisite for rich
-messages. gotd stays for what it already does — publishing through user accounts, channel import — and note
-that view statistics (`MessagesGetMessagesViews`, `StatsGetBroadcastStats`) exist only there; the Bot API
-exposes no view counts at all.
+**gotd/td is not a prerequisite for the bot path**, and the upgrade is far cheaper than first estimated.
+An earlier draft called it "six layers of breaking churn across ~1800 lines, XL, its own project". Measured
+instead of guessed — the repo was built against gotd v0.161.0 (layer 228) in a scratch copy — it is
+**4 compile errors in 3 files, all in `internal/tgtd`**: `telegram.Options.Logger` became a `gotd/log`
+interface (2 sites) and `tg.PollAnswer` became `tg.PollAnswerClass` (2 sites). The other gotd-importing
+packages compile clean. Rich types first appear in v0.150.0 (layer 227).
+
+gotd also remains the only route to view statistics (`MessagesGetMessagesViews`,
+`StatsGetBroadcastStats`) — the Bot API exposes no view counts at all.
 
 **Emit `blocks[]`, not markdown.** Both produce byte-identical output on the same document, but they fail in
 opposite directions: markdown fails silently (paragraph splits, dropped captions, `#tag` promotion), while
@@ -169,13 +210,8 @@ Obsidian.
 
 - The exact fold threshold and what it counts. One measurement, one client.
 - Old-client fallback. Telegram Web showed a hard "not supported" card in June 2026; nothing newer.
-- Whether the user-account path can send rich at all. TDLib marks the markdown/HTML source variants
-  "for bots only" and does not mark the blocks variant, so a session serializing blocks by hand might work.
-  Untested, and it needs the gotd upgrade first.
 - Incoming rich messages via `getUpdates`/webhook — completely untested, and directly relevant to the
   inbox agent. Note `Message.text` is empty for a rich message, so any text-based readback sees nothing.
-- Premium gating for human accounts (the composer shipped in Desktop 7.0; TDLib carries a
-  `premiumFeatureRichMessages` constant).
 
 ## Known latent bug
 
