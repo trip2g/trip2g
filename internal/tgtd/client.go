@@ -35,6 +35,7 @@ import (
 
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+	"trip2g/internal/tgrich"
 )
 
 const (
@@ -374,6 +375,27 @@ type SendMessageParams struct {
 	NoWebpage bool
 }
 
+// SendRichMessageParams contains parameters for sending a rich message.
+//
+// Blocks is the shared block IR; it is mapped to MTProto's page-block tree by
+// ToPageBlocks. There is no MTProto sendRichMessage: rich is an optional field
+// on the ordinary messages.sendMessage, so bots and user accounts make the same
+// call and the entitlement is checked server-side against the sending user.
+type SendRichMessageParams struct {
+	ChatID    int64
+	Blocks    []tgrich.Block
+	NoWebpage bool
+}
+
+// SendRichMessageResult reports the sent message and how many top-level blocks
+// the server echoed back.
+type SendRichMessageResult struct {
+	MessageID int64
+	// EchoedBlocks is the top-level block count on the message the server
+	// returned, or -1 when the response carried no message to inspect.
+	EchoedBlocks int
+}
+
 // SendPhotoParams contains parameters for sending a photo.
 type SendPhotoParams struct {
 	ChatID   int64
@@ -475,6 +497,126 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 	}
 
 	return result, nil
+}
+
+// SendRichMessage sends a rich message through the user account.
+//
+// Premium is a server-side precondition: a non-Premium account is refused with
+// RICH_MESSAGE_UNSUPPORTED by the call itself. The caller is expected to have
+// checked tgrich.AccountCapability first, so that the reason reaches the admin
+// instead of a wire error — this method does not repeat that check, it only
+// reports what the server said.
+func (c *Client) SendRichMessage(
+	ctx context.Context,
+	sessionData []byte,
+	params SendRichMessageParams,
+) (*SendRichMessageResult, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
+	blocks, err := ToPageBlocks(params.Blocks)
+	if err != nil {
+		return nil, fmt.Errorf("failed to map rich blocks: %w", err)
+	}
+
+	if len(blocks) == 0 {
+		return nil, errors.New("rich message must be non-empty")
+	}
+
+	storage := &session.StorageMemory{}
+	err = storage.StoreSession(ctx, sessionData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load session: %w", err)
+	}
+
+	client := telegram.NewClient(c.apiID, c.apiHash, c.telegramOpts(storage))
+
+	var result *SendRichMessageResult
+
+	err = client.Run(ctx, func(ctx context.Context) error {
+		api := client.API()
+
+		peer, peerErr := c.resolvePeer(ctx, api, params.ChatID)
+		if peerErr != nil {
+			return fmt.Errorf("failed to resolve peer: %w", peerErr)
+		}
+
+		req := &tg.MessagesSendMessageRequest{
+			Peer:      peer,
+			NoWebpage: params.NoWebpage,
+			RandomID:  rand.Int64(), //nolint:gosec // G404: RandomID is for message deduplication, not security
+		}
+		// The blocks carry the whole message, so Message stays empty: a rich
+		// message reports an empty text, and sending both would duplicate it.
+		req.SetRichMessage(&tg.InputRichMessage{
+			Blocks: blocks,
+			// Auto-detection is broader than the classic parse modes: `$USD`
+			// becomes a cashtag and any bare 16-digit run a bank card number.
+			Noautolink: true,
+		})
+
+		updates, sendErr := api.MessagesSendMessage(ctx, req)
+		if sendErr != nil {
+			return fmt.Errorf("failed to send rich message: %w", sendErr)
+		}
+
+		messageID, extractErr := extractMessageID(updates)
+		if extractErr != nil {
+			return fmt.Errorf("failed to extract message ID: %w", extractErr)
+		}
+
+		result = &SendRichMessageResult{
+			MessageID:    messageID,
+			EchoedBlocks: extractRichBlockCount(updates),
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// extractRichBlockCount reports the top-level block count of the message the
+// server echoed back, or -1 when the updates carried no message to inspect.
+//
+// Content can be discarded silently — measured on the bot path, where a payload
+// comes back with fewer runs than it went out with and no error at all. This is
+// the account-path equivalent of tgrich.VerifyEcho, and a weaker one: it counts
+// top-level blocks only, because comparing the tree would need a full reverse
+// mapping. A dropped block is caught; a thinned-out block is not.
+func extractRichBlockCount(updates tg.UpdatesClass) int {
+	u, ok := updates.(*tg.Updates)
+	if !ok {
+		return -1
+	}
+
+	for _, update := range u.Updates {
+		var msg tg.MessageClass
+
+		switch typed := update.(type) {
+		case *tg.UpdateNewMessage:
+			msg = typed.Message
+		case *tg.UpdateNewChannelMessage:
+			msg = typed.Message
+		default:
+			continue
+		}
+
+		full, isFull := msg.(*tg.Message)
+		if !isFull {
+			continue
+		}
+
+		if rich, hasRich := full.GetRichMessage(); hasRich {
+			return len(rich.Blocks)
+		}
+	}
+
+	return -1
 }
 
 // SendPhoto sends a photo to a chat with HTML formatted caption.

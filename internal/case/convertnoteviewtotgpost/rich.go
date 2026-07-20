@@ -1,6 +1,7 @@
 package convertnoteviewtotgpost
 
 import (
+	"context"
 	"fmt"
 	"trip2g/internal/markdownv2"
 	"trip2g/internal/model"
@@ -16,6 +17,8 @@ import (
 // set, and shipping `auto` before that predicate exists would flip a note's
 // format for reasons nobody chose.
 func applyRich(
+	ctx context.Context,
+	env Env,
 	post *model.TelegramPost,
 	source model.TelegramPostSource,
 	resolveLink markdownv2.LinkResolver,
@@ -31,16 +34,23 @@ func applyRich(
 		return
 	}
 
-	// Rich is a bot-path capability. sendRichMessage has no MTProto equivalent
-	// this codebase can reach, and the account path is a different transport
-	// entirely, so an account destination is reported rather than silently
-	// downgraded. A warning and not an error on purpose: writing
+	// An account destination reaches rich through MTProto, where it is gated on
+	// the sending account holding Premium — enforced server-side by the call
+	// itself. Checking here means the note never gets scheduled against an
+	// account that cannot post it, and the admin reads the precondition instead
+	// of a RICH_MESSAGE_UNSUPPORTED that names nothing.
+	//
+	// A warning and not an error on purpose: writing
 	// telegram_publish_notes.last_error here would block every other
 	// destination of the same note, because that column is note-wide.
 	if source.ChatID == 0 {
-		post.Warnings = append(post.Warnings,
-			"telegram_rich: on is not supported for an account destination, sending classic instead")
-		return
+		capability := env.TelegramAccountRichCapability(ctx, source.AccountID)
+		if !capability.Allowed {
+			post.Warnings = append(post.Warnings,
+				fmt.Sprintf("telegram_rich: on cannot be sent from this account: %s, sending classic instead",
+					capability.Reason))
+			return
+		}
 	}
 
 	// The classic pass already counted this note's links. Counting them again

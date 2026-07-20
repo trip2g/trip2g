@@ -71,6 +71,31 @@ func Resolve(ctx context.Context, env Env, params model.TelegramAccountSendPostP
 	return err
 }
 
+// failSend records a send failure on the note and returns it wrapped.
+//
+// last_error both surfaces in the admin and removes the note from scheduling —
+// both publish queues filter on `last_error is null` — which is the right
+// outcome for a failure that will not fix itself by being retried.
+func failSend(ctx context.Context, env Env, params model.TelegramAccountSendPostParams, sendErr error) error {
+	errMsg := sendErr.Error()
+
+	env.Logger().Warn("telegram account send failed",
+		"note_path_id", params.NotePathID,
+		"account_id", params.AccountID,
+		"error", errMsg,
+	)
+
+	setErr := env.SetTelegramPublishNoteLastError(ctx, db.SetTelegramPublishNoteLastErrorParams{
+		LastError:  &errMsg,
+		NotePathID: params.NotePathID,
+	})
+	if setErr != nil {
+		env.Logger().Error("failed to set last_error", "error", setErr)
+	}
+
+	return fmt.Errorf("failed to send via account: %w", sendErr)
+}
+
 func resolve(ctx context.Context, env Env, params model.TelegramAccountSendPostParams) error {
 	// Check if message already exists before sending to avoid duplicate messages
 	exists, err := env.CheckTelegramPublishSentAccountMessageExists(ctx, db.CheckTelegramPublishSentAccountMessageExistsParams{
@@ -98,17 +123,31 @@ func resolve(ctx context.Context, env Env, params model.TelegramAccountSendPostP
 		return fmt.Errorf("failed to get telegram account: %w", err)
 	}
 
+	post := params.Post
+
+	// Rich is gated on the account holding Premium, enforced server-side by the
+	// send call itself. Checking before the session is opened means the admin
+	// reads the precondition instead of RICH_MESSAGE_UNSUPPORTED, and costs no
+	// connection for a send that cannot succeed.
+	if post.IsRich() {
+		capability := richCapability(account)
+		if !capability.Allowed {
+			return failSend(ctx, env, params, fmt.Errorf("cannot send a rich message: %s", capability.Reason))
+		}
+	}
+
 	// Decrypt session data
 	sessionData, err := env.DecryptData(account.SessionData)
 	if err != nil {
 		return fmt.Errorf("failed to decrypt session data: %w", err)
 	}
 
-	post := params.Post
-
-	// Determine post type based on media count
+	// A rich post is stored as 'rich' regardless of media: it carries its media
+	// inside the block tree, and the stored type is what the edit path
+	// dispatches on later — a rich post typed 'text' would let a classic edit
+	// flatten it.
 	mediaCount := len(post.Media)
-	postType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
+	postType := db.TelegramPublishSentMessagePostTypeFor(post.IsRich(), mediaCount)
 
 	// Truncate content to telegram limits
 	maxLength := 4096
@@ -123,15 +162,23 @@ func resolve(ctx context.Context, env Env, params model.TelegramAccountSendPostP
 	var result *tgtd.SendMessageResult
 	var sendErr error
 
-	switch mediaCount {
-	case 0:
+	switch {
+	case post.IsRich():
+		// Rich carries its own block tree and its own limits; none of the
+		// classic truncation or media branches apply to it.
+		var messageID int64
+		messageID, sendErr = sendRich(ctx, env, client, sessionData, account, params)
+		if sendErr == nil {
+			result = &tgtd.SendMessageResult{MessageID: messageID}
+		}
+	case mediaCount == 0:
 		// Send as text message
 		result, sendErr = client.SendMessage(ctx, sessionData, tgtd.SendMessageParams{
 			ChatID:    params.TelegramChatID,
 			Message:   content,
 			NoWebpage: post.DisableWebPagePreview,
 		})
-	case 1:
+	case mediaCount == 1:
 		// Send as single photo or video
 		mediaURL := post.Media[0]
 		if tgtd.IsVideoURL(mediaURL) {
@@ -157,21 +204,7 @@ func resolve(ctx context.Context, env Env, params model.TelegramAccountSendPostP
 	}
 
 	if sendErr != nil {
-		// Store error message
-		errMsg := sendErr.Error()
-		env.Logger().Warn("telegram account send failed",
-			"note_path_id", params.NotePathID,
-			"account_id", params.AccountID,
-			"error", errMsg,
-		)
-		setErr := env.SetTelegramPublishNoteLastError(ctx, db.SetTelegramPublishNoteLastErrorParams{
-			LastError:  &errMsg,
-			NotePathID: params.NotePathID,
-		})
-		if setErr != nil {
-			env.Logger().Error("failed to set last_error", "error", setErr)
-		}
-		return fmt.Errorf("failed to send via account: %w", sendErr)
+		return failSend(ctx, env, params, sendErr)
 	}
 
 	// Calculate content hash

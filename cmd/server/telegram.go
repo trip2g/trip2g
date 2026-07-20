@@ -190,6 +190,29 @@ func (a *app) TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) 
 	return defaultLimit
 }
 
+// TelegramAccountRichCapability reports whether a user account may post rich
+// messages, from the account's stored app_config and premium flag.
+//
+// Premium is a server-side precondition: a non-Premium account is refused by
+// the send call itself with RICH_MESSAGE_UNSUPPORTED. Resolving it here lets the
+// publish path decide before scheduling, so the admin reads the reason rather
+// than a wire error. Both inputs are refreshed by the refreshtelegramaccounts
+// cronjob; an unreadable account falls back to a refusal, which is the safe
+// direction — the send would have failed anyway.
+func (a *app) TelegramAccountRichCapability(ctx context.Context, accountID int64) tgrich.Capability {
+	account, err := a.GetTelegramAccountByID(ctx, accountID)
+	if err != nil {
+		return tgrich.Capability{Reason: tgrich.ReasonNeedsPremium}
+	}
+
+	var config map[string]interface{}
+	if jsonErr := json.Unmarshal([]byte(account.AppConfig), &config); jsonErr != nil {
+		config = nil
+	}
+
+	return tgrich.AccountCapability(config, account.IsPremium == 1)
+}
+
 func mapAuthState(state tgtd.AuthState) appmodel.TelegramAuthState {
 	switch state {
 	case tgtd.AuthStateWaitingForCode:

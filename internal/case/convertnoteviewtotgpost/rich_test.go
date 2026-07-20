@@ -160,10 +160,15 @@ func TestRichModeDoesNotDoubleCountLinks(t *testing.T) {
 	require.Equal(t, classicPost.UnresolvedLinkCount, richPost.UnresolvedLinkCount)
 }
 
-// Rich is a bot-path capability. An account destination must not silently send
-// a classic post as if the author had not asked for rich.
-func TestRichModeOnAccountDestinationWarns(t *testing.T) {
+// An account without the capability must not silently send a classic post as if
+// the author had never asked for rich, and the warning has to name the
+// precondition — Premium is checked server-side, so an unchecked send would come
+// back as RICH_MESSAGE_UNSUPPORTED and lose the reason.
+func TestRichModeOnAccountWithoutCapabilityWarns(t *testing.T) {
 	nvs := loadRichNote(t, "telegram_rich: on\n")
+
+	env := richEnv(nvs)
+	env.richCapability = tgrich.Capability{Reason: tgrich.ReasonNeedsPremium}
 
 	source := model.TelegramPostSource{
 		NoteView:       nvs.Map["/main"],
@@ -171,9 +176,30 @@ func TestRichModeOnAccountDestinationWarns(t *testing.T) {
 		TelegramChatID: -1001234567890,
 	}
 
-	post, err := convertnoteviewtotgpost.Resolve(context.Background(), richEnv(nvs), source)
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
 	require.NoError(t, err)
 
 	require.False(t, post.IsRich())
-	requireWarning(t, post.Warnings, "account")
+	requireWarning(t, post.Warnings, "Premium")
+}
+
+// A Premium account reaches rich through MTProto, so the blocks must be built
+// for an account destination exactly as they are for a bot one.
+func TestRichModeOnAccountWithCapabilityBuildsBlocks(t *testing.T) {
+	nvs := loadRichNote(t, "telegram_rich: on\n")
+
+	env := richEnv(nvs)
+	env.richCapability = tgrich.Capability{Allowed: true}
+
+	source := model.TelegramPostSource{
+		NoteView:       nvs.Map["/main"],
+		AccountID:      7,
+		TelegramChatID: -1001234567890,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	require.True(t, post.IsRich())
+	require.NotEmpty(t, post.RichBlocks)
 }

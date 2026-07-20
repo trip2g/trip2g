@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/markdownv2"
 	"trip2g/internal/model"
 	"trip2g/internal/telegram"
+	"trip2g/internal/tgrich"
 )
 
 // ErrAssetsNotReadyError indicates that media assets are not yet uploaded.
@@ -40,6 +41,7 @@ type Env interface {
 	PublicURL() string
 	Now() time.Time
 	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
+	TelegramAccountRichCapability(ctx context.Context, accountID int64) tgrich.Capability
 }
 
 //nolint:gocognit,funlen,gocyclo,cyclop // complex conversion logic
@@ -216,7 +218,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	}
 	post.Media = mediaURLs
 
-	applyRich(&post, source, resolveLink, publicURL)
+	applyRich(ctx, env, &post, source, resolveLink, publicURL)
 
 	// A rich post carries its own limits and its own media, inside the block
 	// tree and in document order. The classic caption/length accounting below
