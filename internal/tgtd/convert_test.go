@@ -235,10 +235,10 @@ func TestConvert_Poll(t *testing.T) {
 				Question: tg.TextWithEntities{
 					Text: "What is the capital of France?",
 				},
-				Answers: []tg.PollAnswer{
-					{Text: tg.TextWithEntities{Text: "London"}, Option: []byte("0")},
-					{Text: tg.TextWithEntities{Text: "Paris"}, Option: []byte("1")},
-					{Text: tg.TextWithEntities{Text: "Berlin"}, Option: []byte("2")},
+				Answers: []tg.PollAnswerClass{
+					&tg.PollAnswer{Text: tg.TextWithEntities{Text: "London"}, Option: []byte("0")},
+					&tg.PollAnswer{Text: tg.TextWithEntities{Text: "Paris"}, Option: []byte("1")},
+					&tg.PollAnswer{Text: tg.TextWithEntities{Text: "Berlin"}, Option: []byte("2")},
 				},
 			},
 			Results: tg.PollResults{
@@ -335,10 +335,10 @@ func TestConvert_PollWithText(t *testing.T) {
 				Question: tg.TextWithEntities{
 					Text: "2 + 2 = ?",
 				},
-				Answers: []tg.PollAnswer{
-					{Text: tg.TextWithEntities{Text: "3"}, Option: []byte("a")},
-					{Text: tg.TextWithEntities{Text: "4"}, Option: []byte("b")},
-					{Text: tg.TextWithEntities{Text: "5"}, Option: []byte("c")},
+				Answers: []tg.PollAnswerClass{
+					&tg.PollAnswer{Text: tg.TextWithEntities{Text: "3"}, Option: []byte("a")},
+					&tg.PollAnswer{Text: tg.TextWithEntities{Text: "4"}, Option: []byte("b")},
+					&tg.PollAnswer{Text: tg.TextWithEntities{Text: "5"}, Option: []byte("c")},
 				},
 			},
 			Results: tg.PollResults{
