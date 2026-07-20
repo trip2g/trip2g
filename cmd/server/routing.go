@@ -112,7 +112,7 @@ func (a *app) RequestIP(ctx context.Context) string {
 // pluginOrigins are the origins the Obsidian plugin runs under. Desktop uses
 // app://obsidian.md; mobile is a Capacitor app, so iOS reports
 // capacitor://localhost and Android reports http://localhost.
-var pluginOrigins = map[string]bool{
+var pluginOrigins = map[string]bool{ //nolint:gochecknoglobals // read-only lookup table of allowed origins
 	"http://localhost:9081": true,
 	"app://obsidian.md":     true,
 	"capacitor://localhost": true,
