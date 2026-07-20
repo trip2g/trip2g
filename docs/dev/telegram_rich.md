@@ -4,6 +4,56 @@ Findings from research and live probing, July 2026. Everything below marked **me
 Bot API calls against a throwaway bot; everything marked **seen** was confirmed by opening the client.
 Documented-but-unprobed claims are marked as such — the docs were wrong often enough to matter.
 
+## Status — 20 July 2026
+
+Branch `feat/tgrich-account` carries the whole feature. **Both senders publish rich posts through the real
+pipeline**, verified on the devstand by reading the blocks back off Telegram rather than trusting our own code:
+
+| | State | Evidence |
+|---|---|---|
+| Bot path | works | `demo rich` message 107, 19 blocks, `post_type = 'rich'` |
+| Account path (MTProto) | works, Premium required | `demo rich` message 116, 19 blocks, sent from account 1 |
+| Edit safety | a rich post can no longer be flattened | message 109 survived two ordinary note edits with all 19 blocks |
+| `gotd/td` | v0.161.0, layer 228 | account `dialogs` byte-identical before and after the bump |
+
+A note opts in with `telegram_rich: on` in its frontmatter. `auto` deliberately means classic in V1 — the
+classic converter only emits string warnings, which mix conversion loss with length and policy warnings and
+so cannot be trusted as a predicate. `off` is classic.
+
+### What is deliberately not built
+
+- **Media in a rich post — the biggest gap, and it is a regression risk, not a missing extra.** The classic
+  path sends images as an album. On the bot path the asset resolver is wired
+  (`convertnoteviewtotgpost/rich.go`, via `NoteView.AssetReplaces`) but **has never been exercised**: no rich
+  post with media has been published. An asset with no `AssetReplaces` entry becomes `LossUnresolvedMedia`
+  and the image silently disappears. On the account path `ToPageBlocks` returns `ErrRichMediaUnsupported` and
+  refuses the whole post — MTProto references media by id out of `InputRichMessage.Photos`/`.Documents` and
+  does not ingest URLs, so it needs an upload step first. **Until this is closed, `telegram_rich: on` is a
+  downgrade for any note with images.** Measure the bot path before building anything: it may already work.
+- **e2e coverage.** `cmd/tge2e` cannot see rich messages: `extractNoteID` matches `^id: ` against message
+  text, which is null for a rich post, and `MessageSnapshot` records only text/entities/media, so two
+  structurally different rich posts snapshot identically. Adding a rich fixture without fixing this yields a
+  test that passes while proving nothing. Now that gotd is on layer 228 the reader can see `rich_message`
+  natively; before the bump the only route was forwarding a message through the bot to read it back.
+- **Message splitting.** Nothing splits messages today; 32768 characters raises the ceiling roughly eightfold
+  but a longer note still truncates. Needs durable multi-part identity first — the current idempotency key is
+  `(note_path_id, chat_id)` with no part number, so a retry after part one either duplicates or drops.
+- **Per-chat opt-in.** `tg_bot_chats.rich_messages_enabled` would add a kill switch. Frontmatter alone means
+  any author can opt in on any bot chat.
+- **Automatic table of contents.** Anchors are measured to defeat the *Show more* fold and heading IDs already
+  exist, but inserting a TOC changes the author's post layout, which is a product decision.
+
+### Next steps, in the order they are worth doing
+
+1. **Publish a rich note with two or three images through the bot on the devstand.** Cheap, and it decides
+   whether bot-side media is a test away or real work.
+2. **Account-side media**: upload each asset via `uploader`, collect `InputPhoto`/`InputDocument` into the
+   `InputRichMessage` slices, rewrite the block tree to carry the ids. Cache the ids per asset — a rich edit
+   replaces the block tree rather than patching it, so an edit without replay loses the media.
+3. **Make `cmd/tge2e` rich-aware**: note identity that does not depend on message text, and a snapshot that
+   records the block-type sequence so a rich→plain regression fails.
+4. Then splitting, the per-chat switch, and the TOC, in whatever order product wants.
+
 ## What it is
 
 `sendRichMessage`, Bot API 10.1 (11 June 2026), with a typed `blocks` representation added in 10.2
