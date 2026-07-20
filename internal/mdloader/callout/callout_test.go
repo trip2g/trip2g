@@ -3,6 +3,7 @@ package callout_test
 import (
 	"bytes"
 	"testing"
+	"unicode/utf8"
 
 	"trip2g/internal/mdloader/callout"
 
@@ -123,6 +124,14 @@ func TestCaseInsensitiveType(t *testing.T) {
 	require.Contains(t, html, `class="callout callout--note"`)
 	// Default title capitalizes the lowercased type.
 	require.Contains(t, html, "Note")
+}
+
+func TestNonASCIITypeTitle(t *testing.T) {
+	html := render(t, "> [!заметка]\n> body\n")
+
+	// Default title capitalizes the first rune, not the first byte.
+	require.Contains(t, html, "Заметка")
+	require.True(t, utf8.ValidString(html))
 }
 
 func TestMultiLineBody(t *testing.T) {
