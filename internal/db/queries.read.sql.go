@@ -5459,6 +5459,82 @@ func (q *Queries) ListOIDCCredentials(ctx context.Context) ([]OidcCredential, er
 	return items, nil
 }
 
+const listScheduledTelegramAccountPublishNoteIDs = `-- name: ListScheduledTelegramAccountPublishNoteIDs :many
+select distinct n.note_path_id
+  from telegram_publish_notes n
+  join note_paths p on n.note_path_id = p.id
+  -- the note must be tagged with at least one account chat
+  join telegram_publish_note_tags nt on n.note_path_id = nt.note_path_id
+  join telegram_publish_account_chats ac on nt.tag_id = ac.tag_id
+  join telegram_accounts a on ac.account_id = a.id
+  where p.hidden_by is null
+   and publish_at <= datetime('now')
+   and published_at is null
+   and last_error is null
+   and a.enabled = 1
+ order by n.publish_at, n.note_path_id
+`
+
+func (q *Queries) ListScheduledTelegramAccountPublishNoteIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listScheduledTelegramAccountPublishNoteIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var note_path_id int64
+		if err := rows.Scan(&note_path_id); err != nil {
+			return nil, err
+		}
+		items = append(items, note_path_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listScheduledTelegramPublishNoteIDs = `-- name: ListScheduledTelegramPublishNoteIDs :many
+select n.note_path_id
+  from telegram_publish_notes n
+  join note_paths p on n.note_path_id = p.id
+  -- the note must be tagged with at least one bot chat
+  join telegram_publish_note_tags nt on n.note_path_id = nt.note_path_id
+  join telegram_publish_chats pc on nt.tag_id = pc.tag_id
+  where p.hidden_by is null
+   and publish_at <= datetime('now')
+   and published_at is null
+   and last_error is null
+ order by n.publish_at, n.note_path_id
+`
+
+func (q *Queries) ListScheduledTelegramPublishNoteIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listScheduledTelegramPublishNoteIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var note_path_id int64
+		if err := rows.Scan(&note_path_id); err != nil {
+			return nil, err
+		}
+		items = append(items, note_path_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSecretKeys = `-- name: ListSecretKeys :many
 select key from secrets where key like ? order by key
 `
@@ -5476,82 +5552,6 @@ func (q *Queries) ListSecretKeys(ctx context.Context, key string) ([]string, err
 			return nil, err
 		}
 		items = append(items, key)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listSheduledTelegarmAccountPublishNoteIDs = `-- name: ListSheduledTelegarmAccountPublishNoteIDs :many
-select distinct n.note_path_id
-  from telegram_publish_notes n
-  join note_paths p on n.note_path_id = p.id
-  -- the note must be tagged with at least one account chat
-  join telegram_publish_note_tags nt on n.note_path_id = nt.note_path_id
-  join telegram_publish_account_chats ac on nt.tag_id = ac.tag_id
-  join telegram_accounts a on ac.account_id = a.id
-  where p.hidden_by is null
-   and publish_at <= datetime('now')
-   and published_at is null
-   and last_error is null
-   and a.enabled = 1
- order by n.publish_at, n.note_path_id
-`
-
-func (q *Queries) ListSheduledTelegarmAccountPublishNoteIDs(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listSheduledTelegarmAccountPublishNoteIDs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int64
-	for rows.Next() {
-		var note_path_id int64
-		if err := rows.Scan(&note_path_id); err != nil {
-			return nil, err
-		}
-		items = append(items, note_path_id)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listSheduledTelegarmPublishNoteIDs = `-- name: ListSheduledTelegarmPublishNoteIDs :many
-select n.note_path_id
-  from telegram_publish_notes n
-  join note_paths p on n.note_path_id = p.id
-  -- the note must be tagged with at least one bot chat
-  join telegram_publish_note_tags nt on n.note_path_id = nt.note_path_id
-  join telegram_publish_chats pc on nt.tag_id = pc.tag_id
-  where p.hidden_by is null
-   and publish_at <= datetime('now')
-   and published_at is null
-   and last_error is null
- order by n.publish_at, n.note_path_id
-`
-
-func (q *Queries) ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listSheduledTelegarmPublishNoteIDs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int64
-	for rows.Next() {
-		var note_path_id int64
-		if err := rows.Scan(&note_path_id); err != nil {
-			return nil, err
-		}
-		items = append(items, note_path_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

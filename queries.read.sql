@@ -959,7 +959,7 @@ select t.*
  where nt.note_path_id = ?
  order by t.label;
 
--- name: ListSheduledTelegarmPublishNoteIDs :many
+-- name: ListScheduledTelegramPublishNoteIDs :many
 select n.note_path_id
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
@@ -972,7 +972,7 @@ select n.note_path_id
    and last_error is null
  order by n.publish_at, n.note_path_id;
 
--- name: ListSheduledTelegarmAccountPublishNoteIDs :many
+-- name: ListScheduledTelegramAccountPublishNoteIDs :many
 select distinct n.note_path_id
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
