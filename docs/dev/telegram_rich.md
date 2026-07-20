@@ -61,6 +61,29 @@ posting identity: a non-Premium account is refused even writing to itself, while
 posting under the channel's identity. TDLib's "for bots only" annotation on the markdown/HTML source
 variants is a comment, not a mechanism — `RichMessage.cpp:90` takes a `bool is_bot` and never reads it.
 
+### Built and measured, July 2026
+
+The account path is implemented and posted a real note through a Premium account session
+(`internal/tgtd/richblocks.go`, `Client.SendRichMessage`). Three things were confirmed live and were not
+knowable from the docs:
+
+- **`rich_message_posting` is exactly `premium`**, read from a live `help.getAppConfig` on the devstand
+  account, alongside all five limit keys at the values recorded below. The key names in this document are
+  correct as written.
+- **`PageBlockTable.Title` is required, not optional.** It is not a flag field, so a nil title fails to
+  encode client-side and takes the whole message with it — surfacing as
+  `unable to encode pageBlockTable#bf4dea82: field title is nil`, which names a field index rather than a
+  block. Any `RichTextClass` field outside the flags needs an explicit `TextEmpty`. The cheap guard is a
+  test that encodes a document exercising every block type; nothing else reads those fields.
+- **The account path keys on the MTProto channel id**, not the Bot API form:
+  `telegram_publish_account_chats.telegram_chat_id` must hold `4487679938`, not `-1004487679938`.
+  `findChatInputPeer` compares against `tg.Channel.ID` directly.
+
+Verified independently by forwarding the posted message with a bot that administers the channel and reading
+`rich_message.blocks` off the Bot API response: 19 top-level blocks, headings at their original levels, a
+4×3 table with per-cell `is_header`, a collapsed `details`, and `pre` with its language tag. `Message.text`
+is null, as documented.
+
 Two consequences for design. First, **capability is checkable before scheduling**: `help.getAppConfig`
 returns `rich_message_posting` (`disabled` → `premium` since July 2026) and the account's own `premium` flag
 is available — both reachable through calls that already exist in `internal/tgtd/client.go`. That turns
