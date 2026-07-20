@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 
+	gotdlog "github.com/gotd/log"
+	"github.com/gotd/log/logzap"
 	"github.com/gotd/td/clock"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
@@ -49,9 +51,9 @@ const (
 	extM4V  = ".m4v"
 )
 
-// createGotdLogger creates a zap logger for gotd based on log level.
-// Returns nil if logLevel is not "debug".
-func createGotdLogger(logLevel string) *zap.Logger {
+// createGotdLogger creates a logger for gotd based on log level.
+// Returns nil if logLevel is not "debug"; gotd then falls back to a no-op logger.
+func createGotdLogger(logLevel string) gotdlog.Logger {
 	if logLevel != "debug" {
 		return nil
 	}
@@ -62,7 +64,7 @@ func createGotdLogger(logLevel string) *zap.Logger {
 	if err != nil {
 		return nil
 	}
-	return logger
+	return logzap.New(logger)
 }
 
 // ClientEnv provides dependencies for Client.
