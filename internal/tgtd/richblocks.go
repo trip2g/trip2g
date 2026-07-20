@@ -171,7 +171,10 @@ func table(block tgrich.Block) tg.PageBlockClass {
 		rows = append(rows, tg.PageTableRow{Cells: cells})
 	}
 
-	return &tg.PageBlockTable{Rows: rows}
+	// Title is not a flag field: a nil one fails to encode outright, taking the
+	// whole message with it. Our tables carry no caption, so it is explicitly
+	// empty rather than absent.
+	return &tg.PageBlockTable{Rows: rows, Title: &tg.TextEmpty{}}
 }
 
 // blockText maps a block's optional text field, which is absent on the block

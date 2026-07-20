@@ -5,6 +5,7 @@ import (
 	"trip2g/internal/tgrich"
 	"trip2g/internal/tgtd"
 
+	"github.com/gotd/td/bin"
 	"github.com/gotd/td/tg"
 	"github.com/stretchr/testify/require"
 )
@@ -291,4 +292,53 @@ func TestToRichText(t *testing.T) {
 			require.Equal(t, tt.want, tgtd.ToRichText(tt.in))
 		})
 	}
+}
+
+// Every RichTextClass field on a page block is required, not optional: a nil
+// one fails to encode and takes the whole message with it, and the failure
+// surfaces only at send time as an opaque codec error naming a field index.
+// This walks a document exercising every block type and asserts the tree
+// encodes, which is the only check that covers fields nothing else reads.
+func TestToPageBlocksEncodes(t *testing.T) {
+	checked := true
+
+	blocks := []tgrich.Block{
+		tgrich.Heading(1, tgrich.RichText{Text: "Title"}),
+		tgrich.Paragraph(tgrich.RichText{Text: "body", Bold: true}),
+		tgrich.Pre("code", "go"),
+		{Type: tgrich.BlockDivider},
+		{
+			Type:   tgrich.BlockQuote,
+			Blocks: []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "quoted"})},
+		},
+		{
+			Type:    tgrich.BlockDetails,
+			Summary: &tgrich.RichText{Text: "Summary"},
+			Blocks:  []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "hidden"})},
+		},
+		{
+			Type: tgrich.BlockList,
+			Items: []tgrich.ListItem{
+				{Blocks: []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "one"})}},
+				{Blocks: []tgrich.Block{tgrich.Paragraph(tgrich.RichText{Text: "two"})}, Checked: &checked},
+			},
+		},
+		{
+			Type: tgrich.BlockTable,
+			Cells: [][]tgrich.TableCell{
+				{{Text: tgrich.RichText{Text: "h"}, IsHeader: true, Align: tgrich.AlignCenter}},
+				{{Text: tgrich.RichText{Text: "c"}}},
+			},
+		},
+	}
+
+	mapped, err := tgtd.ToPageBlocks(blocks)
+	require.NoError(t, err)
+	require.Len(t, mapped, len(blocks))
+
+	message := &tg.InputRichMessage{Blocks: mapped}
+
+	buf := &bin.Buffer{}
+	require.NoError(t, message.Encode(buf), "the whole block tree must encode")
+	require.NotEmpty(t, buf.Buf)
 }
