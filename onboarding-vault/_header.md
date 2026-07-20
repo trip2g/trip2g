@@ -1,1 +1,3 @@
 - [[_index|Home]]
+- [[simple_layout|Custom layout]]
+- [Feed](/feed.xml)

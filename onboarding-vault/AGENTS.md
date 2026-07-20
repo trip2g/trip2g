@@ -6,6 +6,8 @@ subgraph: private
 
 Publishing platform: Obsidian vault → website. Sync via Obsidian plugin, CLI, or Git.
 
+The human-facing tour of this vault is in `_start/` (`publish-a-note`, `telegram`, `ai-agents`, `on-your-phone`, `what-else`). Those notes and the demo notes at the vault root (`robots.md`, `feed.md`, `simple_layout.md`) are examples — the owner may delete them at any time; do not treat them as load-bearing.
+
 ## Quick start (for an agent)
 
 - **Publish / first sync:** run `node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder .` from the vault root — every note becomes a page; `_index.md` is the homepage.
@@ -18,10 +20,22 @@ Publishing platform: Obsidian vault → website. Sync via Obsidian plugin, CLI, 
 - **Hidden notes:** any path component starting with `_` (e.g. `_index.md`, `_layouts/`, `drafts/_wip.md`) is a system/hidden note — excluded from listings and search, but still reachable directly when you have access.
 - **Access is closed by default:** a new note is gated behind the paywall (subscriber-only) — on a fresh site with no subscribers, only you (owner/admin) see it. To open it up, either add `free: true` to its frontmatter, or put it in a subgraph and set that subgraph's access to **public** (vs. subscription-only or admin-only) via `subgraphs:` in frontmatter.
 - **Templating engine:** pages are fully customizable via Jet-based layouts under `_layouts/` — see [Custom layouts](#custom-layouts).
+- **Frontmatter you will set most often:** `free: true` (public), `title:`, `description:` (SEO/social), `slug:` (custom URL), `subgraphs:` (section + access).
 - **Rich content:** **Mermaid** diagrams, **datachart** (charts from CSV), and an **RSS** feed are rendered automatically.
 - **Admin via MCP:** manage the whole site (notes, subgraphs, keys, settings) by calling admin GraphQL through `my-trip2g-instance` — see [Enable admin GraphQL](#enable-admin-graphql).
 
 Look up any of these on `trip2g-docs-public-hub` (`search` for "subgraphs", "mermaid", "datachart", "rss", "routes") — see [Platform docs](#platform-docs), already wired in and usable right now, no setup needed.
+
+## Telegram publishing
+
+A note becomes a Telegram post through frontmatter — no separate content:
+
+```yaml
+telegram_publish_at: 2026-08-01T09:00   # Obsidian type "Date & time", not "Date"
+telegram_publish_tags: [My channel]     # must be a list; matched against channels in admin
+```
+
+Times use the site timezone (admin → Settings). Tags configured as **Instant Tags** on a bot publish on sync instead of waiting. Re-syncing an edited note edits the post in place; renaming the note creates a *second* post, so reset before renaming. Status lives in `{{publicUrl}}/admin` → Telegram posts. Details: search `trip2g-docs-public-hub` for **Telegram publishing**.
 
 ## Custom layouts
 

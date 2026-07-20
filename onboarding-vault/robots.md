@@ -7,6 +7,6 @@ search: false
 User-agent: *
 Disallow:
 
-# Replace with your site's absolute URL once you configure PublicURL:
-# Sitemap: https://yourdomain.com/sitemap.xml
-Sitemap: /sitemap.xml
+# Crawlers want an absolute Sitemap URL. Replace this with your own domain
+# once you have pointed one at the site.
+Sitemap: {{publicUrl}}/sitemap.xml

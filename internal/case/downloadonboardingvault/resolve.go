@@ -37,7 +37,6 @@ const indexMDPath = oldPrefix + "_index.md"
 const mcpJSONPath = oldPrefix + ".mcp.json"
 const codexJSONPath = oldPrefix + "codex.json"
 const antigravityJSONPath = oldPrefix + "antigravity-mcp-config.json"
-const agentsMDPath = oldPrefix + "AGENTS.md"
 
 type pluginData struct {
 	SyncDirs             []syncDir `json:"syncDirs"`
@@ -293,8 +292,9 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL, n
 			continue
 		}
 
-		// Replace {{publicUrl}} placeholder in select markdown files.
-		if file.Name == indexMDPath || file.Name == agentsMDPath {
+		// Replace {{publicUrl}} placeholder in every markdown note, so any vault
+		// note can link back to the instance it was downloaded from.
+		if strings.HasSuffix(file.Name, ".md") {
 			content, readErr := readZipFileContent(file)
 			if readErr != nil {
 				return nil, fmt.Errorf("failed to read %s: %w", file.Name, readErr)
