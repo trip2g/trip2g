@@ -1020,6 +1020,8 @@ body {
     gap: 0.5rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
+    // Match the type accent: inherited muted grey is unreadable on the tinted background.
+    color: var(--callout-color, #888);
   }
 
   &__icon {
