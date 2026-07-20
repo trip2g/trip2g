@@ -343,6 +343,191 @@ title: "Test"
 	}
 }
 
+// A blockquote ending with || is a Telegram expandable quote. Callouts share the
+// same emit path, so this pins the existing behaviour.
+func TestHTMLBlockquoteExpandable(t *testing.T) {
+	tests := []struct {
+		name     string
+		markdown string
+		expected string
+	}{
+		{
+			name:     "multiline quote ending with ||",
+			markdown: "> spoiler quote\n> hidden||",
+			expected: "<blockquote expandable>spoiler quote\nhidden</blockquote>",
+		},
+		{
+			name:     "single line quote ending with ||",
+			markdown: "> hidden||",
+			expected: "<blockquote expandable>hidden</blockquote>",
+		},
+		{
+			name:     "quote without || stays plain",
+			markdown: "> visible",
+			expected: "<blockquote>visible</blockquote>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mdOptions := mdloader.Options{
+				Sources: []mdloader.SourceFile{{
+					Content: []byte(`---
+free: true
+title: "Test"
+---
+` + tt.markdown),
+				}},
+				Log:     &logger.TestLogger{},
+				Version: "latest",
+			}
+
+			nvs, err := mdloader.Load(mdOptions)
+			require.NoError(t, err)
+
+			convertor := markdownv2.HTMLConverter{}
+			res := convertor.Process(nvs.List[0])
+
+			require.Empty(t, res.Warnings)
+			require.Equal(t, tt.expected, res.Content)
+		})
+	}
+}
+
+// Obsidian callouts become Telegram blockquotes with a bold title line.
+// The fold marker decides expandability: `-` (collapsed) -> <blockquote expandable>,
+// `+` and no marker -> plain <blockquote>.
+// Regression: callouts used to be dropped entirely, body included, with an
+// "unexpected markdown node: Callout" warning — hence require.Empty on warnings.
+func TestHTMLCallout(t *testing.T) {
+	tests := []struct {
+		name     string
+		markdown string
+		expected string
+	}{
+		{
+			name:     "callout with custom title",
+			markdown: "> [!note] My Title\n> body line",
+			expected: "<blockquote><b>My Title</b>\nbody line</blockquote>",
+		},
+		{
+			name:     "non-ascii type capitalizes by rune, not byte",
+			markdown: "> [!заметка]\n> body line",
+			expected: "<blockquote><b>Заметка</b>\nbody line</blockquote>",
+		},
+		{
+			name:     "callout without title falls back to capitalized type",
+			markdown: "> [!warning]\n> body line",
+			expected: "<blockquote><b>Warning</b>\nbody line</blockquote>",
+		},
+		{
+			name:     "collapsed callout is expandable",
+			markdown: "> [!tip]- Collapsed\n> hidden body",
+			expected: "<blockquote expandable><b>Collapsed</b>\nhidden body</blockquote>",
+		},
+		{
+			name:     "collapsed callout without title",
+			markdown: "> [!warning]-\n> hidden body",
+			expected: "<blockquote expandable><b>Warning</b>\nhidden body</blockquote>",
+		},
+		{
+			name:     "expanded callout is a plain quote",
+			markdown: "> [!tip]+ Expanded\n> shown body",
+			expected: "<blockquote><b>Expanded</b>\nshown body</blockquote>",
+		},
+		{
+			name:     "uppercase type keeps the title verbatim",
+			markdown: "> [!NOTE] Upper\n> b",
+			expected: "<blockquote><b>Upper</b>\nb</blockquote>",
+		},
+		{
+			name:     "inline formatting in body survives",
+			markdown: "> [!note] Inline\n> some **bold**, a [link](https://example.com) and `code`",
+			expected: "<blockquote><b>Inline</b>\nsome <b>bold</b>, a <a href=\"https://example.com\">link</a> and <code>code</code></blockquote>",
+		},
+		{
+			name:     "multiple paragraphs in body",
+			markdown: "> [!note] T\n> p1\n>\n> p2",
+			expected: "<blockquote><b>T</b>\np1\n\np2</blockquote>",
+		},
+		{
+			name:     "list in body",
+			markdown: "> [!note] T\n> steps:\n> - one\n> - two",
+			expected: "<blockquote><b>T</b>\nsteps:\n- one\n- two</blockquote>",
+		},
+		{
+			name:     "code block in body",
+			markdown: "> [!note] T\n> ```\n> x\n> ```",
+			expected: "<blockquote><b>T</b>\n<pre>x</pre></blockquote>",
+		},
+		{
+			name:     "nested blockquote in body",
+			markdown: "> [!note] T\n> > inner",
+			expected: "<blockquote><b>T</b>\n<blockquote>inner</blockquote></blockquote>",
+		},
+		{
+			name:     "callout between paragraphs",
+			markdown: "before\n\n> [!note] T\n> body\n\nafter",
+			expected: "before\n\n<blockquote><b>T</b>\nbody</blockquote>\n\nafter",
+		},
+		{
+			name:     "callout right after a paragraph keeps a blank line separator",
+			markdown: "before\n> [!note] T\n> body",
+			expected: "before\n\n<blockquote><b>T</b>\nbody</blockquote>",
+		},
+		{
+			name:     "empty callout renders the title only",
+			markdown: "> [!note]",
+			expected: "<blockquote><b>Note</b></blockquote>",
+		},
+		{
+			name:     "unknown type with title",
+			markdown: "> [!gallery] Photo Wall\n> body",
+			expected: "<blockquote><b>Photo Wall</b>\nbody</blockquote>",
+		},
+		{
+			name:     "unknown type without title",
+			markdown: "> [!gallery]\n> body",
+			expected: "<blockquote><b>Gallery</b>\nbody</blockquote>",
+		},
+		{
+			name:     "title is html-escaped",
+			markdown: "> [!note] Title with <b>&</b>\n> body",
+			expected: "<blockquote><b>Title with &lt;b&gt;&amp;&lt;/b&gt;</b>\nbody</blockquote>",
+		},
+		{
+			name:     "plain blockquote is not a callout",
+			markdown: "> plain quote\n> not a callout",
+			expected: "<blockquote>plain quote\nnot a callout</blockquote>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mdOptions := mdloader.Options{
+				Sources: []mdloader.SourceFile{{
+					Content: []byte(`---
+free: true
+title: "Test"
+---
+` + tt.markdown),
+				}},
+				Log:     &logger.TestLogger{},
+				Version: "latest",
+			}
+
+			nvs, err := mdloader.Load(mdOptions)
+			require.NoError(t, err)
+
+			convertor := markdownv2.HTMLConverter{}
+			res := convertor.Process(nvs.List[0])
+
+			require.Empty(t, res.Warnings, "callout must not warn as an unexpected node")
+			require.Equal(t, tt.expected, res.Content)
+		})
+	}
+}
+
 func TestHTMLWikilinks(t *testing.T) {
 	tests := []struct {
 		name         string
