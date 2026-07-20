@@ -49,6 +49,13 @@ at layer 222. Input shape: `InputRichMessage(blocks, rtl, noautolink, photos, do
 | User account | no | `400 RICH_MESSAGE_UNSUPPORTED` |
 | User account | yes | works: saved messages, channel, and `send_as = channel` |
 
+**The bot in that first row was created by the account in the second.** Both rows were measured in the same
+session: `thailand_unknown` (id `7828312136`), non-Premium, was refused `RICH_MESSAGE_UNSUPPORTED` writing a
+rich message to its own saved messages, and the bot it owns sent ~40 of them into a channel without a single
+refusal. The entitlement is attached to the sending identity at send time and to nothing else — not to the
+owner, not to the account that provisioned the bot. An owner therefore cannot post a rich message as himself
+while his own bot posts them freely.
+
 **The gate is Premium, enforced server-side**, and the entitlement follows the *sending user*, not the
 posting identity: a non-Premium account is refused even writing to itself, while a Premium account succeeds
 posting under the channel's identity. TDLib's "for bots only" annotation on the markdown/HTML source
@@ -149,6 +156,57 @@ Worth knowing, because a reviewer reading the docs will reach the wrong conclusi
 - `sendRichMessage` silently ignores every unknown top-level parameter, so you cannot probe it for supported
   parameters by looking for errors. Only observable effects in the response count.
 - The wire discriminator for a heading is `"heading"`, not the reference type name `RichBlockSectionHeading`.
+
+## The block contract, measured
+
+Probed field by field in July 2026 against the live bot, after a first implementation built from the
+documented names was rejected outright. Everything below is echoed back by the server.
+
+| Construct | Type | Fields |
+|---|---|---|
+| Heading | `heading` | `text`, `size` 1–6 |
+| Paragraph | `paragraph` | `text` |
+| Fenced code | `pre` | `text` carries the code, `language` |
+| Quote | `blockquote` | `blocks` |
+| Collapsible | `details` | `summary`, `blocks`, `is_open` |
+| Table | `table` | `cells` — row-major, `caption` |
+| List | `list` | `items`, each `{blocks, checked}` |
+
+Three names in the earlier draft were wrong and rejected with
+`can't parse InputRichBlock: type "…" is unsupported`: `code` is `pre`, `quote` is `blockquote`, and
+`collapsible` is `details`. Fold state is `is_open` — `open`, `collapsed`, `expanded`, `folded`,
+`is_collapsed`, `default_open` and `closed` are all accepted and silently ignored, and absent means
+collapsed.
+
+**A table is not rows of cells.** `cells` sits on the block as a row-major grid, `[[cell, cell], …]`. There is
+no column descriptor at all, so alignment is per cell; a row object carrying its own `cells` is rejected. The
+header marker is `is_header` on the cell — `header` is ignored — and it switches the server's default
+alignment to centre.
+
+**Rich text is a tagged union too, and this is the trap.** A text object without a `type` is parsed as a
+*block*, and the error names the block: `can't parse InputRichBlock: Can't find field "type"`, pointing at
+entirely the wrong part of the payload. The forms are a bare string for plain text, a JSON array for
+concatenation, `{"type":"bold","text":…}` for a mark nesting through `text`, `{"type":"url","text":…,"url":…}`
+for a link, and `{"type":"anchor","name":…}` for an anchor target. Marks nest rather than combine, and the
+strikethrough mark is `strikethrough`, not `strike`.
+
+**Anchors exist, but not where the earlier draft looked for them.** A heading takes no `anchor`, `name` or
+`id` — all three are accepted and none is echoed. An anchor is a rich-text node of its own, and it carries a
+name and no text. The table-of-contents answer to the visible fold is therefore still reachable, but it is
+built from anchor nodes placed in text, not from a field on the heading.
+
+**Ordered lists do not survive.** `ordered`, `start`, `style`, `is_ordered`, `list_type` and `numbered` are
+all ignored, and a per-item `label` is overwritten: every item comes back labelled `•`. A numbered list
+renders as bullets.
+
+### The echo check needs to count the right thing
+
+The server merges adjacent plain runs — `["a","b"]` comes back as `"ab"` — so a raw run count drops on almost
+every message that submitted a run of unformatted spans, with nothing lost. Comparing it reports truncation
+that did not happen: the first real post came back 83 runs against 65 with byte-identical text length.
+Compare **blocks, formatted runs and text units**, where a formatted run is one carrying a mark or a link.
+That is immune to the merge and still catches the documented failure, which is formatted runs disappearing
+past the run-cost ceiling.
 
 ## What trip2g would build
 
