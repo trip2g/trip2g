@@ -1,0 +1,42 @@
+$trip2g_admin_onboardingvault $mol_page
+	title @ \Onboarding Vault
+	note @ \Builds an Obsidian vault archive with a freshly issued API key inside. Unpack it and open the folder in Obsidian.
+	close_icon null $mol_view
+	tools / <= close_icon
+	body /
+		<= Note $mol_paragraph
+			title <= note
+		<= NameField $mol_form_field
+			name @ \Vault name
+			Content <= NameControl $mol_string
+				hint @ \Defaults to the instance domain
+				value? <=> vault_name? \
+		<= AdminToolsCheck $mol_check_box
+			checked? <=> admin_tools? false
+			title @ \Admin tools
+		<= AdminToolsNote $mol_paragraph
+			title @ \With this on, the key can also drive the admin panel over GraphQL — what you want for an agent, and what you do not want for a plain Obsidian vault.
+		<= Download $mol_link
+			uri <= download_uri \
+			theme \$mol_theme_base
+			sub /
+				<= Download_icon $mol_icon_download
+				<= Download_title @ \New onboarding vault
+		<= Warning $mol_view
+			sub /
+				<= WarningHead $mol_paragraph
+					title @ \Keep the archive private
+				<= WarningKey $mol_paragraph
+					title @ \Every download generates a new secret API key and bakes it into the archive.
+				<= WarningContent $mol_paragraph
+					title @ \That key grants access to all content on this instance.
+				<= WarningAdmin $mol_paragraph
+					title @ \With Admin tools enabled it can additionally manage the whole admin panel.
+		<= Automation $mol_view
+			sub /
+				<= AutomationHead $mol_paragraph
+					title @ \Automation
+				<= AutomationUri $mol_paragraph
+					title \/_system/onboarding-vault?name=my-vault&enable_admin_graphql
+				<= AutomationNote $mol_paragraph
+					title @ \Both parameters are optional. Request this URL with an admin session to script vault generation.

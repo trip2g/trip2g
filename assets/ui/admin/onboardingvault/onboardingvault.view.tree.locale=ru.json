@@ -1,0 +1,15 @@
+{
+	"$trip2g_admin_onboardingvault_title": "Стартовый волт",
+	"$trip2g_admin_onboardingvault_note": "Собирает архив волта Obsidian со свежим API-ключом внутри. Распакуйте и откройте папку в Obsidian.",
+	"$trip2g_admin_onboardingvault_NameField_name": "Имя волта",
+	"$trip2g_admin_onboardingvault_NameControl_hint": "По умолчанию — домен инстанса",
+	"$trip2g_admin_onboardingvault_AdminToolsCheck_title": "Админские инструменты",
+	"$trip2g_admin_onboardingvault_AdminToolsNote_title": "С этой опцией ключ умеет управлять админкой через GraphQL — это нужно агенту и не нужно обычному волту Obsidian.",
+	"$trip2g_admin_onboardingvault_Download_title": "Новый стартовый волт",
+	"$trip2g_admin_onboardingvault_WarningHead_title": "Не передавайте архив никому",
+	"$trip2g_admin_onboardingvault_WarningKey_title": "Каждая загрузка создаёт новый секретный API-ключ и вшивает его в архив.",
+	"$trip2g_admin_onboardingvault_WarningContent_title": "Этот ключ даёт доступ ко всему контенту инстанса.",
+	"$trip2g_admin_onboardingvault_WarningAdmin_title": "С включёнными админскими инструментами он ещё и управляет всей админкой.",
+	"$trip2g_admin_onboardingvault_AutomationHead_title": "Автоматизация",
+	"$trip2g_admin_onboardingvault_AutomationNote_title": "Оба параметра необязательны. Запросите этот URL с админской сессией, чтобы генерировать волты скриптом."
+}
