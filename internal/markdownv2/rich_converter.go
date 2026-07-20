@@ -44,11 +44,15 @@ const (
 )
 
 // RichLoss is one unrepresentable node. Node is the AST node kind; Detail is
-// the destination, target or identifier when there is one.
+// the destination, target or identifier when there is one; Alt is the text the
+// author wrote in the node's alt slot, which is what a reader would have seen.
+// A loss set that reports only an opaque identifier cannot tell anyone what
+// went missing.
 type RichLoss struct {
 	Kind   LossKind
 	Node   string
 	Detail string
+	Alt    string
 }
 
 // RichConverterResult is the outcome of one note conversion.
@@ -109,6 +113,16 @@ func (c *RichConverter) loss(kind LossKind, node ast.Node, detail string) {
 		Kind:   kind,
 		Node:   node.Kind().String(),
 		Detail: detail,
+	})
+}
+
+// lossWithAlt records a loss that had visible alt text worth reporting.
+func (c *RichConverter) lossWithAlt(kind LossKind, node ast.Node, detail, alt string) {
+	c.res.Losses = append(c.res.Losses, RichLoss{
+		Kind:   kind,
+		Node:   node.Kind().String(),
+		Detail: detail,
+		Alt:    alt,
 	})
 }
 
@@ -222,8 +236,11 @@ func (c *RichConverter) mediaBlock(m mediaRef) (tgrich.Block, bool) {
 }
 
 // mediaURL turns a destination into something Telegram can fetch server-side.
+// Only https passes through untouched: that is the only scheme documented and
+// the only one measured. Anything else is the asset resolver's problem, and a
+// loss if it has no answer.
 func (c *RichConverter) mediaURL(dest string) (string, bool) {
-	if strings.HasPrefix(dest, "https://") || strings.HasPrefix(dest, "http://") {
+	if strings.HasPrefix(dest, "https://") {
 		return dest, true
 	}
 	if c.assetResolver == nil {

@@ -357,6 +357,18 @@ func TestRichImages(t *testing.T) {
 		require.Equal(t, "https://example.com/a.mp4", res.Blocks[0].Video.URL)
 	})
 
+	// Only https was documented and measured. An http URL must not be passed
+	// through as if it were fetchable; it goes to the asset resolver like any
+	// other unusable destination, and is a loss when nothing resolves it.
+	t.Run("an http image is not a usable media source", func(t *testing.T) {
+		res := convertRich(t, "![](http://example.com/a.png)")
+
+		require.Empty(t, res.Blocks)
+		require.Equal(t, []markdownv2.RichLoss{
+			{Kind: markdownv2.LossUnresolvedMedia, Node: "Enclave", Detail: "http://example.com/a.png"},
+		}, res.Losses)
+	})
+
 	t.Run("a local asset needs an app-layer URL and is a typed loss", func(t *testing.T) {
 		res := convertRich(t, "![](assets/a.png)")
 
@@ -396,8 +408,10 @@ func TestRichImages(t *testing.T) {
 func TestRichCustomEmojiIsATypedLoss(t *testing.T) {
 	res := convertRich(t, "hi ![🔥](https://ce.trip2g.com/5460736117236048513.webp) there")
 
+	// The alt text is what the reader lost. Without it the loss set can report
+	// that an emoji went missing but not which one.
 	require.Equal(t, []markdownv2.RichLoss{
-		{Kind: markdownv2.LossCustomEmoji, Node: "Enclave", Detail: "5460736117236048513"},
+		{Kind: markdownv2.LossCustomEmoji, Node: "Enclave", Detail: "5460736117236048513", Alt: "🔥"},
 	}, res.Losses)
 
 	require.Len(t, res.Blocks, 1)

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"trip2g/internal/logger"
+	"trip2g/internal/tgrich"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -318,6 +319,31 @@ func (io *HandlerIO) SendMessage(_ context.Context, chatID int64, bcID, text, ma
 		return 0, fmt.Errorf("sendMessage: %w", err)
 	}
 	return extractRawMessageID(resp.Result), nil
+}
+
+// SendRichMessage sends a typed rich message via raw MakeRequest.
+//
+// tgbotapi cannot express this one: Chattable's params() and method() are
+// unexported, so the request cannot be built from outside the package. It needs
+// no library support either — MakeRequest is what Send and Request already call
+// underneath, and it returns the same *tgbotapi.Error, so rate-limit handling
+// is inherited unchanged.
+func (io *HandlerIO) SendRichMessage(_ context.Context, req tgrich.Request) (tgrich.SendResult, error) {
+	params, err := req.Params()
+	if err != nil {
+		return tgrich.SendResult{}, err
+	}
+
+	resp, err := io.bot.MakeRequest(tgrich.Method, params)
+	if err != nil {
+		return tgrich.SendResult{}, fmt.Errorf("%s: %w", tgrich.Method, err)
+	}
+
+	if !resp.Ok {
+		return tgrich.SendResult{}, fmt.Errorf("telegram API error: %s", resp.Description)
+	}
+
+	return tgrich.DecodeSendResult(resp.Result)
 }
 
 // SendPhoto uploads a photo from disk with an HTML caption, injecting business_connection_id.

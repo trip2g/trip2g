@@ -142,7 +142,9 @@ func (b *inlineBuilder) write(text string, style inlineStyle) {
 // slot is rejected outright with RICH_MESSAGE_EMOJI_INVALID.
 func (b *inlineBuilder) mediaNode(n ast.Node, dest, alt string) {
 	if emojiID := extractCustomEmojiID(dest); emojiID != "" {
-		b.c.loss(LossCustomEmoji, n, emojiID)
+		// Carry the alt text: it is the only human-readable trace of what the
+		// reader lost, and the id alone cannot be reported to anyone usefully.
+		b.c.lossWithAlt(LossCustomEmoji, n, emojiID, alt)
 		return
 	}
 
