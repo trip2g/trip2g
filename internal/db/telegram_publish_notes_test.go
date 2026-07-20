@@ -137,7 +137,7 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 	})
 
 	t.Run("ListScheduledTelegramPublishNoteIDs_critical_bug_test", func(t *testing.T) {
-		noteIDs, err = queries.ListSheduledTelegarmPublishNoteIDs(ctx)
+		noteIDs, err = queries.ListScheduledTelegramPublishNoteIDs(ctx)
 		require.NoError(t, err)
 
 		// Should ONLY return path1 (publish_at has passed - ready to send)

@@ -13,12 +13,12 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 
 	// Bot publishing
-	ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error)
+	ListScheduledTelegramPublishNoteIDs(ctx context.Context) ([]int64, error)
 	EnqueueSendTelegramPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 	EnqueueUpdateTelegramPost(ctx context.Context, notePathID int64) error
 
 	// Account publishing
-	ListSheduledTelegarmAccountPublishNoteIDs(ctx context.Context) ([]int64, error)
+	ListScheduledTelegramAccountPublishNoteIDs(ctx context.Context) ([]int64, error)
 	EnqueueSendTelegramAccountPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 	EnqueueUpdateTelegramAccountPost(ctx context.Context, notePathID int64) error
 }
@@ -64,7 +64,7 @@ func enqueueBotJobs(ctx context.Context, env Env) ([]ResultPost, error) {
 	return enqueueJobs(ctx, env, jobConfig{
 		logPrefix:     "sendscheduledtelegrampublishposts:bot:",
 		postType:      "bot",
-		listIDs:       env.ListSheduledTelegarmPublishNoteIDs,
+		listIDs:       env.ListScheduledTelegramPublishNoteIDs,
 		enqueueSend:   env.EnqueueSendTelegramPost,
 		enqueueUpdate: env.EnqueueUpdateTelegramPost,
 	})
@@ -74,7 +74,7 @@ func enqueueAccountJobs(ctx context.Context, env Env) ([]ResultPost, error) {
 	return enqueueJobs(ctx, env, jobConfig{
 		logPrefix:     "sendscheduledtelegrampublishposts:account:",
 		postType:      "account",
-		listIDs:       env.ListSheduledTelegarmAccountPublishNoteIDs,
+		listIDs:       env.ListScheduledTelegramAccountPublishNoteIDs,
 		enqueueSend:   env.EnqueueSendTelegramAccountPost,
 		enqueueUpdate: env.EnqueueUpdateTelegramAccountPost,
 	})
