@@ -403,6 +403,18 @@ func TestRichImages(t *testing.T) {
 			{Kind: markdownv2.LossInlineMedia, Node: "Enclave", Detail: "https://example.com/a.png"},
 		}, res.Losses)
 	})
+
+	// Images on consecutive lines are one paragraph joined by a softbreak, which
+	// is how Obsidian writes a gallery. Every image is an inline-media loss, and
+	// what remains is the softbreak alone: a paragraph of pure whitespace. The
+	// server echoes such a block back verbatim, so it costs a block against the
+	// message limit and renders as a blank gap. Drop it.
+	t.Run("a paragraph left holding only whitespace is not emitted", func(t *testing.T) {
+		res := convertRich(t, "![](https://example.com/a.png)\n![](https://example.com/b.png)")
+
+		require.Empty(t, res.Blocks)
+		require.Len(t, res.Losses, 2)
+	})
 }
 
 // Custom emoji do not survive a rich message: the server resolves the id and

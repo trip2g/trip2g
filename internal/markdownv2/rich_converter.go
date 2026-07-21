@@ -211,11 +211,31 @@ func (c *RichConverter) paragraph(n ast.Node) []tgrich.Block {
 		c.loss(LossInlineMedia, m.node, m.dest)
 	}
 
-	if text.IsEmpty() {
+	if isBlank(text) {
 		return nil
 	}
 
 	return []tgrich.Block{tgrich.Paragraph(text)}
+}
+
+// isBlank reports whether a text tree would render nothing visible. IsEmpty is
+// not enough here: media on consecutive lines is one paragraph, and once every
+// image has been taken out as an inline-media loss what remains is the
+// softbreak between them. The server echoes that whitespace-only paragraph back
+// verbatim, so it costs a block against the message limit and shows up as a
+// blank gap.
+func isBlank(t tgrich.RichText) bool {
+	if strings.TrimSpace(t.Text) != "" || t.Anchor != "" {
+		return false
+	}
+
+	for _, child := range t.Children {
+		if !isBlank(child) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (c *RichConverter) mediaBlock(m mediaRef) (tgrich.Block, bool) {
