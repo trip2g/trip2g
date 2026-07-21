@@ -109,9 +109,19 @@ func (a *app) RequestIP(ctx context.Context) string {
 	return ip.String()
 }
 
+// pluginOrigins are the origins the Obsidian plugin runs under. Desktop uses
+// app://obsidian.md; mobile is a Capacitor app, so iOS reports
+// capacitor://localhost and Android reports http://localhost.
+var pluginOrigins = map[string]bool{ //nolint:gochecknoglobals // read-only lookup table of allowed origins
+	"http://localhost:9081": true,
+	"app://obsidian.md":     true,
+	"capacitor://localhost": true,
+	"http://localhost":      true,
+}
+
 func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
 	origin := string(ctx.Request.Header.Peek("Origin"))
-	if origin == "http://localhost:9081" || origin == "app://obsidian.md" {
+	if pluginOrigins[origin] {
 		ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
 		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 		ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Cookie, X-API-Key, X-Plugin-Version")
