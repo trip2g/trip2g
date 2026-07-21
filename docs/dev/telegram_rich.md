@@ -22,14 +22,9 @@ so cannot be trusted as a predicate. `off` is classic.
 
 ### What is deliberately not built
 
-- **Media in a rich post — the biggest gap, and it is a regression risk, not a missing extra.** The classic
-  path sends images as an album. On the bot path the asset resolver is wired
-  (`convertnoteviewtotgpost/rich.go`, via `NoteView.AssetReplaces`) but **has never been exercised**: no rich
-  post with media has been published. An asset with no `AssetReplaces` entry becomes `LossUnresolvedMedia`
-  and the image silently disappears. On the account path `ToPageBlocks` returns `ErrRichMediaUnsupported` and
-  refuses the whole post — MTProto references media by id out of `InputRichMessage.Photos`/`.Documents` and
-  does not ingest URLs, so it needs an upload step first. **Until this is closed, `telegram_rich: on` is a
-  downgrade for any note with images.** Measure the bot path before building anything: it may already work.
+- **Media in a rich post — the biggest gap, and a regression risk rather than a missing extra.** See the
+  section below; it was measured rather than guessed. **`telegram_rich: on` is a downgrade for any note with
+  images until it is closed.**
 - **e2e coverage.** `cmd/tge2e` cannot see rich messages: `extractNoteID` matches `^id: ` against message
   text, which is null for a rich post, and `MessageSnapshot` records only text/entities/media, so two
   structurally different rich posts snapshot identically. Adding a rich fixture without fixing this yields a
@@ -53,6 +48,57 @@ so cannot be trusted as a predicate. `off` is classic.
 3. **Make `cmd/tge2e` rich-aware**: note identity that does not depend on message text, and a snapshot that
    records the block-type sequence so a rich→plain regression fails.
 4. Then splitting, the per-chat switch, and the TOC, in whatever order product wants.
+
+### Media: measured, and three defects deep
+
+Probed on the devstand by publishing real notes and reading the blocks back off Telegram. The bot path needs
+code, not just a test. **Three stacked defects, each alone enough to lose every image.**
+
+**1. Obsidian embed syntax never becomes media.** `internal/markdownv2/rich_inline.go` records
+`LossEmbeddedWikiLink` for any `node.Embed` **unconditionally**, without first asking whether
+`AssetReplaces` resolves the target. `![[image.png]]` is what every real vault note uses — all the demo notes
+do. Standard `![alt](path.png)` works correctly through the resolver. Measured: a note with three images and
+a note with a video both arrived with **zero media blocks**, paragraphs only.
+
+**2. The media wire format is wrong.** `internal/tgrich/types.go` marks `BlockPhoto`/`BlockVideo`
+`// unprobed`, and they are. Measured against the live API:
+
+```
+sent    {"type":"photo","photo":{"url":U},"caption":"alt"}
+wanted  {"type":"photo","photo":{"type":"photo","media":U},"caption":{"text":…}}
+```
+
+`Media` must be the standard InputMedia `{type, media}` rather than `{url, file_id}`, and `Block.Caption`
+must be the `Caption` struct — **which already exists in that same file as dead code, carrying a comment
+that documents the correct shape** — rather than `*RichText`, which marshals to a bare string and is
+rejected with `RichBlockCaption must be an object`. The symptom is the misleading
+`can't parse InputRichBlock: Can't find field "type"`.
+
+**3. Responses carrying media cannot be decoded — the structural one.** `DecodeSendResult` parses the echoed
+reply into the *same* `Block` type used for the request, but Telegram returns `photo` as an array of
+PhotoSize: `cannot unmarshal array into Go struct field Block.rich_message.blocks.photo`. So even with the
+wire format fixed, every photo-bearing send fails at decode. `Block` conflates the input and output shapes
+and has to be split.
+
+**The path does work once the shape is right.** Sending the corrected payload by hand produced a post with
+two photos and a video in document order, with real `file_id`s, size variants, duration, mime type and
+thumbnail, and captions as `{"text":…}`.
+
+Measured and correct today: inline media records `LossInlineMedia`, drops the media and keeps the text; a
+missing `AssetReplaces` entry records `LossUnresolvedMedia` and emits no block.
+
+One sharp edge left deliberately alone: with `PublicURL` empty, `AbsoluteURL` returns a *relative* URL and
+the resolver still reports success, so an unusable block is built and fails at send with
+`media must carry exactly one of an https url or a file id`. Making the resolver reject instead would turn a
+loud failure into a silently missing image, which is worse.
+
+**Estimate.** Bot side ≈1.5–2 days: the wire format is an hour now that it is specified exactly, splitting
+input from output block types is about half a day, and the embed-to-media work is half a day to a day
+because it needs a product call separating an asset embed from a note transclusion. Account side is
+multi-day and not started — MTProto wants pre-uploaded `InputPhoto`/`InputDocument`, so it needs an upload
+and caching pipeline, and the edit path must replay cached ids because a rich edit replaces the block tree
+rather than patching it. It refuses loudly today (`internal/tgtd/richblocks.go`, `ErrRichMediaUnsupported`),
+never dropping media silently.
 
 ## What it is
 
