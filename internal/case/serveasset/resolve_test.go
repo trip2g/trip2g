@@ -415,3 +415,39 @@ func TestHandle_SharedHashDifferentFileName_PrivateRowNotLeakedViaPublicSibling(
 	require.Equal(t, http.StatusUnauthorized, ctx.Response.StatusCode(),
 		"a private row must not inherit publicness from a same-hash sibling row")
 }
+
+// indexEnv is the assetindex.Env half of the wiring, so the test below runs the
+// real index rather than a canned Ownership.
+type indexEnv struct{ nvs *model.NoteViews }
+
+func (e *indexEnv) LiveNoteViews() *model.NoteViews { return e.nvs }
+func (e *indexEnv) Layouts() *model.Layouts         { return nil }
+func (e *indexEnv) AssetIndexGeneration() uint64    { return 1 }
+
+// TestHandle_SiteLogoInHeaderNote_AnonymousGets200 is the end-to-end pin for
+// the production 401 on the site logo: docs/_header.md is a system note, so
+// gating asset publicness on listability (IsPubliclyReadable) made every
+// anonymous visitor fail to load the logo that every page embeds. Wires the
+// real assetindex so a regression in either half is caught here.
+func TestHandle_SiteLogoInHeaderNote_AnonymousGets200(t *testing.T) {
+	logo := db.NoteAsset{ID: 9, FileName: "logo.svg", Sha256Hash: testHash, Size: int64(len(testBody))}
+	header := &model.NoteView{
+		Path: "_header.md",
+		Free: true,
+		AssetReplaces: map[string]*model.NoteAssetReplace{
+			"logo.svg": {ID: 9, Hash: testHash, FileName: "logo.svg"},
+		},
+	}
+	idx := assetindex.New(&indexEnv{nvs: &model.NoteViews{List: []*model.NoteView{header}}})
+
+	env := newEnv(envOpts{rows: []db.NoteAsset{logo}})
+	env.AssetOwnershipFunc = idx.AssetOwnership
+
+	ctx, handled := doRequest(t, env, reqOpts{path: model.NoteAssetURLPath(testHash, "logo.svg")})
+
+	require.True(t, handled)
+	require.Equal(t, http.StatusOK, ctx.Response.StatusCode())
+	require.Equal(t, "public, max-age=31536000, immutable", string(ctx.Response.Header.Peek("Cache-Control")))
+	require.Equal(t, testBody, body(ctx))
+	require.Empty(t, env.CanReadNoteCalls(), "chrome assets must not need a session")
+}

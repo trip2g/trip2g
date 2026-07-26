@@ -1503,15 +1503,43 @@ func (n *NoteView) IsSystem() bool {
 	return len(p) > 0 && p[0] == '_' || strings.Contains(p, "/_")
 }
 
-// IsPubliclyReadable reports whether a note may be exposed through an
-// unauthenticated endpoint. Such endpoints (RSS, template feeds) have no user
-// context, so they must honor the same static gates as anonymous page rendering
-// rather than relying on Free alone.
-func (n *NoteView) IsPubliclyReadable() bool {
+// IsSiteChrome reports whether the note is site chrome — the _header/_footer
+// notes the page template wraps every note in (see defaulttemplate.HeaderRef).
+// Chrome renders for anonymous visitors regardless of its own `free` flag or
+// subgraph gates — even the sign-in wall page is wrapped in it — so the markup
+// it contributes, and the assets in it (e.g. the site logo), are public by
+// construction. Matched by name in any folder, mirroring how chrome
+// is resolved per language/section (docs/_header.md, docs/ru/_header.md).
+// A note wired as chrome under some other name is not matched here; it has to
+// carry free: true for its assets to be treated as public.
+func (n *NoteView) IsSiteChrome() bool {
+	if n == nil {
+		return false
+	}
+	base := filepath.ToSlash(n.Path)
+	if i := strings.LastIndexByte(base, '/'); i >= 0 {
+		base = base[i+1:]
+	}
+	base = strings.TrimSuffix(base, ".md")
+	return base == "_header" || base == "_footer"
+}
+
+// IsAnonymouslyReadable reports whether the note's content may reach a
+// requester with no session — the same static gates anonymous page rendering
+// applies (canreadnote falls back to Free for a nil token; .html files are
+// never user content; a require_signin subgraph stops guests at the sign-in
+// wall).
+//
+// System notes pass this gate. They are never served as their own page, but
+// their rendered content ships inside public pages as chrome (_header,
+// _footer) or transclusion, so the bytes behind them — assets included — are
+// already anonymous-visible. Being *listed* by an unauthenticated endpoint is
+// a stricter question; use IsPubliclyReadable for that.
+func (n *NoteView) IsAnonymouslyReadable() bool {
 	if n == nil || !n.Free {
 		return false
 	}
-	if strings.HasSuffix(n.Path, ".html") || n.IsSystem() {
+	if strings.HasSuffix(n.Path, ".html") {
 		return false
 	}
 	for _, subgraph := range n.Subgraphs {
@@ -1520,4 +1548,13 @@ func (n *NoteView) IsPubliclyReadable() bool {
 		}
 	}
 	return true
+}
+
+// IsPubliclyReadable reports whether a note may be exposed as an item through
+// an unauthenticated endpoint. Such endpoints (RSS, template feeds) have no
+// user context, so they must honor the same static gates as anonymous page
+// rendering rather than relying on Free alone, plus one more: system notes are
+// hidden from every listing.
+func (n *NoteView) IsPubliclyReadable() bool {
+	return n.IsAnonymouslyReadable() && !n.IsSystem()
 }

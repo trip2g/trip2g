@@ -807,6 +807,62 @@ func TestNoteView_IsSystem(t *testing.T) {
 	}
 }
 
+func TestNoteView_IsSiteChrome(t *testing.T) {
+	cases := []struct {
+		path   string
+		expect bool
+	}{
+		{"_header.md", true},
+		{"_footer.md", true},
+		{"ru/_header.md", true},
+		{"docs/ru/_footer.md", true},
+		{"_layouts/_header.html", false}, // a layout, not a chrome note
+		{"_index.md", false},
+		{"_header_old.md", false},
+		{"header.md", false},
+		{"docs/note.md", false},
+	}
+
+	for _, c := range cases {
+		n := &NoteView{Path: c.path}
+		require.Equal(t, c.expect, n.IsSiteChrome(), "path: %s", c.path)
+	}
+
+	require.False(t, (*NoteView)(nil).IsSiteChrome())
+}
+
+// TestNoteView_IsAnonymouslyReadableVsPubliclyReadable pins the split the
+// asset route depends on: a free system note's content reaches anonymous
+// visitors (it renders as chrome inside public pages) even though it must
+// never appear as an item in a listing.
+func TestNoteView_IsAnonymouslyReadableVsPubliclyReadable(t *testing.T) {
+	header := &NoteView{Path: "_header.md", Free: true}
+	require.True(t, header.IsAnonymouslyReadable())
+	require.False(t, header.IsPubliclyReadable(), "system notes stay out of listings")
+
+	post := &NoteView{Path: "post.md", Free: true}
+	require.True(t, post.IsAnonymouslyReadable())
+	require.True(t, post.IsPubliclyReadable())
+
+	paid := &NoteView{Path: "post.md"}
+	require.False(t, paid.IsAnonymouslyReadable())
+	require.False(t, paid.IsPubliclyReadable())
+
+	tmpl := &NoteView{Path: "_layouts/base.html", Free: true}
+	require.False(t, tmpl.IsAnonymouslyReadable(), ".html files are never user content")
+
+	walled := &NoteView{
+		Path:      "post.md",
+		Free:      true,
+		Subgraphs: map[string]*NoteSubgraph{"members": {RequireSignin: true}},
+	}
+	require.False(t, walled.IsAnonymouslyReadable())
+	require.False(t, walled.IsPubliclyReadable())
+
+	require.False(t, (*NoteView)(nil).IsAnonymouslyReadable())
+	require.False(t, (*NoteView)(nil).IsPubliclyReadable(), "nil must not panic through IsSystem")
+}
+
 func TestResolveFullURL(t *testing.T) {
 	const publicURL = "https://main.example.com"
 
