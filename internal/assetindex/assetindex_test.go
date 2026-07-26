@@ -77,6 +77,55 @@ func TestAssetOwnership_SharedAssetPublicIfAnyOwnerIsFree(t *testing.T) {
 	require.Len(t, own.Notes, 2)
 }
 
+// TestAssetOwnership_FreeSystemNoteIsPublic pins the fix for a 401 on the site
+// logo: system notes are hidden from listings but their content renders inside
+// public pages, so publicness must follow anonymous readability, not
+// listability.
+func TestAssetOwnership_FreeSystemNoteIsPublic(t *testing.T) {
+	idx := assetindex.New(&testEnv{nvs: views(noteWithAsset("_header.md", "img.png", true))})
+
+	own, ok := idx.AssetOwnership("h1", "img.png")
+	require.True(t, ok)
+	require.True(t, own.Public, "a free system note must make its assets anonymously servable")
+}
+
+// TestAssetOwnership_ChromeNoteIsPublicWithoutFree covers chrome that carries
+// no frontmatter at all (the shipped onboarding vault's _header.md): the page
+// template renders _header/_footer for anonymous visitors without consulting
+// `free`, so their assets are in public HTML regardless.
+func TestAssetOwnership_ChromeNoteIsPublicWithoutFree(t *testing.T) {
+	idx := assetindex.New(&testEnv{nvs: views(noteWithAsset("ru/_header.md", "img.png", false))})
+
+	own, ok := idx.AssetOwnership("h1", "img.png")
+	require.True(t, ok)
+	require.True(t, own.Public, "chrome renders anonymously, so its assets must be servable")
+}
+
+// TestAssetOwnership_PaidSystemNoteStaysPrivate keeps the widening bounded: a
+// system note that is neither free nor chrome must not leak its assets.
+func TestAssetOwnership_PaidSystemNoteStaysPrivate(t *testing.T) {
+	idx := assetindex.New(&testEnv{nvs: views(noteWithAsset("_mcp_instructions.md", "img.png", false))})
+
+	own, ok := idx.AssetOwnership("h1", "img.png")
+	require.True(t, ok)
+	require.False(t, own.Public, "a paid system note must keep its assets private")
+}
+
+// TestAssetOwnership_SigninWalledChromeIsStillPublic documents the one place
+// the chrome carve-out outranks a gate that stops content notes: the sign-in
+// wall page is itself wrapped in site chrome, so a guest who is refused the
+// note still receives the header markup — and must be able to load the logo
+// in it. Gating here would only produce a broken image on the wall page.
+func TestAssetOwnership_SigninWalledChromeIsStillPublic(t *testing.T) {
+	note := noteWithAsset("_footer.md", "img.png", true)
+	note.Subgraphs = map[string]*model.NoteSubgraph{"members": {RequireSignin: true}}
+	idx := assetindex.New(&testEnv{nvs: views(note)})
+
+	own, ok := idx.AssetOwnership("h1", "img.png")
+	require.True(t, ok)
+	require.True(t, own.Public)
+}
+
 func TestAssetOwnership_LayoutAssetIsPublic(t *testing.T) {
 	env := &testEnv{
 		nvs: views(),
