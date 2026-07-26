@@ -47,7 +47,8 @@ type Key struct {
 // Ownership describes who may read an asset.
 type Ownership struct {
 	// Public is true when the asset is reachable anonymously: referenced by a
-	// layout or by at least one publicly readable note.
+	// layout, by site chrome, or by at least one note that is anonymously
+	// readable (see publiclyServable).
 	Public bool
 	// Notes are the live notes referencing this exact (hash, fileName); a
 	// signed-in user may read the asset if they can read at least one of them.
@@ -111,7 +112,7 @@ func build(env Env) map[Key]*Ownership {
 				k := Key{Hash: ar.Hash, FileName: ar.FileName}
 				e := entry(k)
 				e.Notes = append(e.Notes, nv)
-				if nv.IsPubliclyReadable() {
+				if publiclyServable(nv) {
 					e.Public = true
 				}
 			}
@@ -128,4 +129,20 @@ func build(env Env) map[Key]*Ownership {
 	}
 
 	return byKey
+}
+
+// publiclyServable reports whether nv referencing an asset is enough to serve
+// that asset anonymously.
+//
+// The question is "can this note's bytes reach a requester with no session",
+// not "may this note be listed" — those diverge for system notes, which are
+// hidden from every listing yet render their content into public pages. The
+// site logo lives in _header.md: gating on listability (IsPubliclyReadable)
+// answered 401 for the very asset every anonymous page embeds.
+//
+// Chrome counts even when it is not free: the template renders _header and
+// _footer for anonymous visitors without consulting their `free` flag, so
+// their assets are in public HTML either way.
+func publiclyServable(nv *model.NoteView) bool {
+	return nv.IsAnonymouslyReadable() || nv.IsSiteChrome()
 }
