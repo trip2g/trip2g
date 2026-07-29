@@ -1789,6 +1789,23 @@ __name(resolveAssetUrl, "resolveAssetUrl");
 
 // src/sync/resolve.ts
 import * as path from "path";
+function pickByBasename(paths, name) {
+  const wanted = name.toLowerCase();
+  let best = null;
+  let bestDepth = 0;
+  for (const filePath of paths) {
+    if (path.posix.basename(filePath).toLowerCase() !== wanted) {
+      continue;
+    }
+    const depth = filePath.split("/").length;
+    if (best === null || depth < bestDepth || depth === bestDepth && filePath < best) {
+      best = filePath;
+      bestDepth = depth;
+    }
+  }
+  return best;
+}
+__name(pickByBasename, "pickByBasename");
 function resolveAssetPath(env, assetPath, notePath) {
   if (assetPath.startsWith("./")) {
     const noteDir2 = path.dirname(notePath);
@@ -1824,6 +1841,10 @@ function resolveAssetPath(env, assetPath, notePath) {
     if (env.fileExistsSync(relativePath)) {
       return relativePath;
     }
+  }
+  const vaultFiles = env.listVaultFiles?.();
+  if (vaultFiles) {
+    return pickByBasename(vaultFiles, assetPath);
   }
   return null;
 }
@@ -2405,6 +2426,8 @@ function stateFileNameForApiUrl(apiUrl) {
 __name(stateFileNameForApiUrl, "stateFileNameForApiUrl");
 var NodeEnv = class {
   constructor(options) {
+    /** Every vault file, rebuilt on each getLocalFiles() walk. Used for global wikilink resolution. */
+    this.vaultFiles = null;
     this.pushBatchSize = 100;
     this.folder = path2.resolve(options.folder);
     this.prefix = options.prefix ? options.prefix.replace(/\/$/, "") : "";
@@ -2460,7 +2483,15 @@ var NodeEnv = class {
   }
   // ============ ClassifyEnv ============
   async getLocalFiles() {
+    return this.walkVault().notes;
+  }
+  listVaultFiles() {
+    return this.vaultFiles ?? this.walkVault().all;
+  }
+  /** Walk the vault once, collecting syncable notes and every file path. */
+  walkVault() {
     const files = [];
+    const vaultFiles = [];
     const walk = /* @__PURE__ */ __name((dir) => {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
@@ -2471,10 +2502,11 @@ var NodeEnv = class {
         if (entry.isDirectory()) {
           walk(fullPath);
         } else if (entry.isFile()) {
+          const relPath = path2.relative(this.folder, fullPath);
+          vaultFiles.push(relPath.split(path2.sep).join("/"));
           const ext = path2.extname(entry.name).toLowerCase();
           if (ext === ".md" || ext === ".html" || ext === ".canvas" || ext === ".base" || ext === ".excalidraw" || entry.name.endsWith(".html.json")) {
             const stat4 = fs.statSync(fullPath);
-            const relPath = path2.relative(this.folder, fullPath);
             files.push({
               // Use remote path with prefix for sync comparison
               path: this.toRemotePath(relPath),
@@ -2485,7 +2517,8 @@ var NodeEnv = class {
       }
     }, "walk");
     walk(this.folder);
-    return files;
+    this.vaultFiles = vaultFiles;
+    return { notes: files, all: vaultFiles };
   }
   async getServerHashes() {
     try {
@@ -3317,7 +3350,7 @@ async function executePushes(env, pushes, syncState) {
     }
   }
   if (updates.length === 0) {
-    return { count: 0, errors, pushedNotes: [], urls: [] };
+    return { count: 0, errors, pushedNotes: [], urls: [], warnings: [] };
   }
   const updatePaths = new Set(updates.map((u) => u.path));
   const batchSize = env.pushBatchSize || 100;
