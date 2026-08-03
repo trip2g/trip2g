@@ -31,15 +31,36 @@ func TestDeriveMetaDescription(t *testing.T) {
 	})
 
 	t.Run("strips html and collapses whitespace", func(t *testing.T) {
-		note := &model.NoteView{PartialRenderer: introPartialRenderer{
+		note := &model.NoteView{Free: true, PartialRenderer: introPartialRenderer{
 			intro: model.NoteViewSection{ContentHTML: "<p>Hello   <strong>world</strong>\nagain</p>"},
 		}}
 		require.Equal(t, "Hello world again", deriveMetaDescription(note))
 	})
 
+	// The derived description reaches the <head> of the paywall / sign-in wall
+	// pages too, so a note that is not anonymous-visible must never be summarized
+	// from its body.
+	t.Run("non-free note yields nothing", func(t *testing.T) {
+		note := &model.NoteView{PartialRenderer: introPartialRenderer{
+			intro: model.NoteViewSection{ContentHTML: "<p>Paid content</p>"},
+		}}
+		require.Empty(t, deriveMetaDescription(note))
+	})
+
+	t.Run("require_signin subgraph yields nothing", func(t *testing.T) {
+		note := &model.NoteView{
+			Free:      true,
+			Subgraphs: map[string]*model.NoteSubgraph{"members": {RequireSignin: true}},
+			PartialRenderer: introPartialRenderer{
+				intro: model.NoteViewSection{ContentHTML: "<p>Members only</p>"},
+			},
+		}
+		require.Empty(t, deriveMetaDescription(note))
+	})
+
 	t.Run("truncates to about 155 chars with ellipsis on word boundary", func(t *testing.T) {
 		long := strings.Repeat("word ", 60) // 300 chars
-		note := &model.NoteView{PartialRenderer: introPartialRenderer{
+		note := &model.NoteView{Free: true, PartialRenderer: introPartialRenderer{
 			intro: model.NoteViewSection{ContentHTML: "<p>" + long + "</p>"},
 		}}
 		got := deriveMetaDescription(note)

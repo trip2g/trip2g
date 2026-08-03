@@ -14,8 +14,15 @@ const metaDescriptionMaxLen = 155
 // deriveMetaDescription builds a fallback SEO meta description from a note's
 // first paragraph when it declares no explicit description:. Returns "" when
 // nothing usable can be extracted.
+//
+// Only a note whose body is already anonymous-visible may be summarized this
+// way: the description lands in the <head> of every render, including the
+// paywall and sign-in wall pages, which are served before access is granted.
+// A closed note therefore gets a description only from explicit frontmatter —
+// no explicit description means no description, and nothing but the title
+// (shown on the wall by design) leaves the note.
 func deriveMetaDescription(note *model.NoteView) string {
-	if note == nil || note.PartialRenderer == nil {
+	if note == nil || note.PartialRenderer == nil || !note.IsAnonymouslyReadable() {
 		return ""
 	}
 	intro := note.PartialRenderer.Introduce()
