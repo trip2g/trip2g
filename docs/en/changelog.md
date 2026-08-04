@@ -10,11 +10,11 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
-### Open a note on the site from Obsidian mobile (plugin v0.10.0)
+### Obsidian on the phone: open a note on the site, and close the warnings view (plugin v0.11.0)
 
-- **What.** The note's `...` menu now has **Open on site** and **Copy site link**, and there's a new **Open published URL in browser** command. Both appear only for notes that are actually published.
-- **Why.** On the phone there was no way to reach a note's page: the published-URL indicator lives in the status bar, which Obsidian mobile doesn't show, so the only route was the "Copy published URL" command.
-- **How.** Update the plugin to 0.10.0, then tap `...` on a note → **Open on site**. For one-tap access, pin **Open published URL in browser** in Obsidian's Settings → Toolbar (mobile).
+- **What.** The note's `...` menu now has **Open on site** and **Copy site link** (only for notes that are actually published), plus a new **Open published URL in browser** command. The sync warnings view got a **Close** button, and its toolbar buttons are large enough to hit with a thumb.
+- **Why.** Neither was reachable on mobile. The published-URL indicator lives in the status bar, which Obsidian mobile doesn't show, so the only route to a note's page was the "Copy published URL" command; and dismissing the warnings tab meant a detour through the tab switcher.
+- **How.** Update the plugin to 0.11.0, then tap `...` on a note → **Open on site**. For one-tap access, pin **Open published URL in browser** in Obsidian's Settings → Toolbar (mobile).
 
 ### Frontmatter key index
 

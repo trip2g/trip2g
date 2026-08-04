@@ -1,7 +1,7 @@
 {
 	"id": "trip2g",
 	"name": "trip2g sync",
-	"version": "0.10.0",
+	"version": "0.11.0",
 	"minAppVersion": "0.15.0",
 	"description": "Upload your notes to trip2g system.",
 	"author": "Alexey Yurchenko",

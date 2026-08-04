@@ -548,3 +548,9 @@ img[src*="ce.trip2g.com"] {
 	cursor: pointer;
 	border-radius: 4px;
 }
+
+/* A 12px/2px button is a fiddly tap target on a phone. */
+.is-mobile .trip2g-warnings-action-btn {
+	font-size: 14px;
+	padding: 8px 14px;
+}
