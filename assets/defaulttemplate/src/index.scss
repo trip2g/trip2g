@@ -68,6 +68,13 @@ body {
   background: var(--pico-background-color) !important;
 }
 
+// Pico renders inline code as inline-block, and its shrink-to-fit width ignores
+// `overflow-wrap: break-word`. A long unbreakable token (URL, path) then widens
+// the page instead of wrapping. `anywhere` also shrinks the min-content width.
+:not(pre) > code {
+  overflow-wrap: anywhere;
+}
+
 
 // --- Site header ---
 
