@@ -39,55 +39,33 @@ func warnLines(t *testing.T, ws []model.NoteWarning, kind string) []string {
 	return out
 }
 
-func TestScanSelfLiteral_DidInCSSAndJS(t *testing.T) {
-	// bar.html style: @did placeholders are fine, but a hardcoded mesh-bar class
-	// (here in a JS querySelector string) is the drift to catch.
+func TestScanSelfLiteral_DidNotFlagged(t *testing.T) {
+	// The @did check is gone: a dash id is just a word, and layouts named after an
+	// HTML element (rss, table, main) matched their own tags. A hardcoded BEM class
+	// no longer warns — @lid is the only self-literal still tracked.
 	src := "line1\n" +
 		`.@did__nav { color: red; }` + "\n" +
-		`document.querySelector('.mesh-bar__nav')` + "\n"
+		`document.querySelector('.mesh-bar__nav')` + "\n" +
+		`a .mesh-bar { }` + "\n" +
+		`b .mesh-bar--mod { }` + "\n"
 	ws := scanSelfLiteral(src, "/mesh/bar")
-	require.Len(t, ws, 1)
-	require.Contains(t, ws[0].Message, "line 3")
-	require.Contains(t, ws[0].Message, `literal "mesh-bar"`)
-	require.Contains(t, ws[0].Message, "this file's @did")
-	require.Equal(t, model.NoteWarningWarning, ws[0].Level)
+	require.Empty(t, ws)
 }
 
-func TestScanSelfLiteral_EscapedPlaceholderNotFlagged(t *testing.T) {
-	// @@did is an escape that stays literal "@did" in the raw source, so it never
-	// matches the expanded "mesh-bar". Even when the expanded literal appears on the
-	// SAME line elsewhere, only the true literal is flagged.
-	src := `<div class="@did__x @@did">` + "\n" +
-		`<div class="@did__y mesh-bar__z @@did">` + "\n"
-	ws := scanSelfLiteral(src, "/mesh/bar")
-	// Only line 2 has a real literal (mesh-bar__z); the @@did escapes are ignored.
-	require.Len(t, ws, 1)
-	require.Contains(t, ws[0].Message, "line 2")
+func TestScanSelfLiteral_XMLRootElementNotFlagged(t *testing.T) {
+	// The onboarding vault's _layouts/rss.html: <rss> is the RSS 2.0 root element,
+	// not a reference to the layout's own name.
+	src := `<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">` + "\n" +
+		`</rss>` + "\n"
+	ws := scanSelfLiteral(src, "/rss.html")
+	require.Empty(t, ws)
 }
 
 func TestScanSelfLiteral_OtherComponentNotFlagged(t *testing.T) {
 	// index.html composing other components by their expanded names is correct.
-	src := `{{ yield mesh_bar() }}` + "\n" +
-		`<div class="mesh-bar__nav"></div>` + "\n"
+	src := `{{ yield mesh_bar() }}` + "\n"
 	ws := scanSelfLiteral(src, "/mesh/index")
 	require.Empty(t, ws)
-}
-
-func TestScanSelfLiteral_DidWordBoundary(t *testing.T) {
-	// mesh-bar must not match inside mesh-barometer.
-	src := `.mesh-barometer { x: 1 }` + "\n"
-	ws := scanSelfLiteral(src, "/mesh/bar")
-	require.Empty(t, ws)
-}
-
-func TestScanSelfLiteral_DidBoundaryVariants(t *testing.T) {
-	src := `a .mesh-bar { }` + "\n" + // whitespace after
-		`b .mesh-bar__el { }` + "\n" + // __ suffix
-		`c .mesh-bar--mod { }` + "\n" + // -- suffix
-		`d "mesh-bar"` + "\n" + // quote after
-		`e mesh-bar` + "\n" // end of line
-	ws := scanSelfLiteral(src, "/mesh/bar")
-	require.Len(t, warnLines(t, ws, "@did"), 5)
 }
 
 func TestScanSelfLiteral_LidCallForms(t *testing.T) {
@@ -109,49 +87,23 @@ func TestScanSelfLiteral_LidWordBoundary(t *testing.T) {
 
 func TestScanSelfLiteral_DedupePerLine(t *testing.T) {
 	// Two literals on one line collapse to a single warning for that line/kind.
-	src := `<a class="mesh-bar__x mesh-bar__y">` + "\n"
+	src := `{{ block mesh_bar() }}{{ yield mesh_bar() }}` + "\n"
 	ws := scanSelfLiteral(src, "/mesh/bar")
 	require.Len(t, ws, 1)
 }
 
 func TestScanSelfLiteral_HTMLCommentNotFlagged(t *testing.T) {
-	// English prose inside an HTML comment is not an identifier reference.
-	src := `<!-- Mount point for the React kanban app -->` + "\n"
+	// Usage documented in a comment is prose, not a real call site.
+	src := `<!-- Render with {{ yield kanban() }} from any note. -->` + "\n"
 	ws := scanSelfLiteral(src, "/kanban")
 	require.Empty(t, ws)
 }
 
-func TestScanSelfLiteral_AbsoluteURLNotFlagged(t *testing.T) {
-	// kanban.js is the fixed release-asset name of a separate upstream repo;
-	// it must not be flagged as if it should track this layout's own name.
-	src := `<script src="https://github.com/trip2g/kanban_template/releases/latest/download/kanban.js"></script>` + "\n"
+func TestScanSelfLiteral_RealViolationStillCaughtNearComments(t *testing.T) {
+	src := `<!-- Render with {{ yield kanban() }} from any note. -->` + "\n" +
+		`{{ block kanban() }}` + "\n"
 	ws := scanSelfLiteral(src, "/kanban")
-	require.Empty(t, ws)
-}
-
-func TestScanSelfLiteral_RealViolationStillCaughtNearCommentsAndURLs(t *testing.T) {
-	src := `<!-- Mount point for the React kanban app -->` + "\n" +
-		`document.querySelector('.kanban__nav')` + "\n" +
-		`.kanban { color: red; }` + "\n"
-	ws := scanSelfLiteral(src, "/kanban")
-	require.Len(t, warnLines(t, ws, "@did"), 2)
-}
-
-func TestScanSelfLiteral_BEMCompoundStillNotFlagged(t *testing.T) {
-	// "kanban-header-right" — single dash, not a BEM boundary — must stay clean.
-	src := `.kanban-header-right { display: flex; }` + "\n"
-	ws := scanSelfLiteral(src, "/kanban")
-	require.Empty(t, ws)
-}
-
-func TestScanSelfLiteral_URLCarveOutScopedToToken(t *testing.T) {
-	// The URL carve-out must apply to the URL token only, not blank out the
-	// whole line: a real violation sharing a line with a URL is still caught.
-	src := `<script src="https://github.com/trip2g/kanban_template/releases/latest/download/kanban.js"></script><div class="kanban"></div>` + "\n"
-	ws := scanSelfLiteral(src, "/kanban")
-	require.Len(t, ws, 1)
-	require.Contains(t, ws[0].Message, "line 1")
-	require.Contains(t, ws[0].Message, "this file's @did")
+	require.Len(t, warnLines(t, ws, "@lid"), 1)
 }
 
 func TestScanSelfLiteral_Clean(t *testing.T) {
@@ -166,14 +118,14 @@ func TestLoad_SurfacesSelfLiteralWarning(t *testing.T) {
 	sources := []model.LayoutSourceFile{{
 		ID:      "/mesh/bar",
 		Path:    "_layouts/mesh/bar.html",
-		Content: `{{ block @lid() }}<div class="mesh-bar__nav"></div>{{ end }}`,
+		Content: `{{ block mesh_bar() }}<div class="@did__nav"></div>{{ end }}`,
 	}}
 	env := &testEnv{logger: &logger.TestLogger{}}
 	layouts, err := Load(env, sources, Options{})
 	require.NoError(t, err)
 	got := layouts.Map["/mesh/bar"].Warnings
 	require.NotEmpty(t, got)
-	require.Contains(t, got[0].Message, `literal "mesh-bar"`)
+	require.Contains(t, got[0].Message, `literal "mesh_bar"`)
 }
 
 func TestLoadPreview_SelfLiteralWarning(t *testing.T) {
@@ -184,13 +136,13 @@ func TestLoadPreview_SelfLiteralWarning(t *testing.T) {
 	main := model.LayoutSourceFile{
 		ID:      "/mesh/bar",
 		Path:    "_layouts/mesh/bar.html",
-		Content: `{{ block @lid() }}<div class="mesh-bar__nav"></div>{{ end }}`,
+		Content: `{{ block mesh_bar() }}<div class="@did__nav"></div>{{ end }}`,
 	}
 	_, warnings := layouts.LoadPreview(main, nil)
 
 	var found bool
 	for _, w := range warnings {
-		if strings.Contains(w, `literal "mesh-bar"`) {
+		if strings.Contains(w, `literal "mesh_bar"`) {
 			found = true
 		}
 	}
