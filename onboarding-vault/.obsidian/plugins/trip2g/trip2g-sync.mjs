@@ -1918,6 +1918,11 @@ var en = {
   urlCopied: "URL copied",
   urlCopyFailed: "Failed to copy URL",
   urlOpenFailed: "Failed to open URL",
+  // Published URL actions (command palette, note "..." menu)
+  openOnSite: "Open on site",
+  copySiteLink: "Copy site link",
+  noFileOpen: "No file open",
+  notPublishedYet: "File not published yet",
   // Auto-sync status bar (autoSyncOnSave)
   autoStatusSynced: /* @__PURE__ */ __name((time) => `\u2713 synced ${time}`, "autoStatusSynced"),
   autoStatusPending: /* @__PURE__ */ __name((count) => count > 1 ? `\u25CF ${count} pending\u2026` : `\u25CF pending\u2026`, "autoStatusPending"),
@@ -2056,6 +2061,11 @@ var ru = {
   urlCopied: "URL \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D",
   urlCopyFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C URL",
   urlOpenFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C URL",
+  // Published URL actions (command palette, note "..." menu)
+  openOnSite: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043D\u0430 \u0441\u0430\u0439\u0442\u0435",
+  copySiteLink: "\u0421\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u0441\u0430\u0439\u0442",
+  noFileOpen: "\u041D\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430",
+  notPublishedYet: "\u0424\u0430\u0439\u043B \u0435\u0449\u0451 \u043D\u0435 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D",
   // Auto-sync status bar (autoSyncOnSave)
   autoStatusSynced: /* @__PURE__ */ __name((time) => `\u2713 \u0441\u0438\u043D\u0445\u0440. ${time}`, "autoStatusSynced"),
   autoStatusPending: /* @__PURE__ */ __name((count) => count > 1 ? `\u25CF ${count} \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438\u2026` : `\u25CF \u043E\u0436\u0438\u0434\u0430\u043D\u0438\u0435\u2026`, "autoStatusPending"),
