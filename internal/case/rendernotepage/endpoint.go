@@ -134,6 +134,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			// Sign-in wall: render auth form instead of content
 			layoutParams.MetaRobots = "noindex, nofollow"
 			ctx.Response.Header.Set("Cache-Control", "no-store")
+			ctx.SetStatusCode(wallStatusCode(resp))
 
 			dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
 			dtCtx.SigninWallError = &defaulttemplate.SigninWallError{
@@ -146,6 +147,8 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		var paywallErr *PaywallError
 		if errors.As(err, &paywallErr) {
 			layoutParams.MetaRobots = "noindex, nofollow"
+			ctx.Response.Header.Set("Cache-Control", "no-store")
+			ctx.SetStatusCode(wallStatusCode(resp))
 
 			dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
 			dtCtx.PaywallError = &defaulttemplate.PaywallError{
@@ -242,6 +245,18 @@ func handleContentTypeNote(ctx *fasthttp.RequestCtx, env Env, resp *Response, la
 	}
 	ctx.SetBodyString(mdchunk.StripFrontmatter(string(resp.Note.Content)))
 	return true, nil
+}
+
+// wallStatusCode maps a sign-in wall / paywall render onto the HTTP status that
+// describes it, so a client learns the note was withheld without parsing the
+// HTML: 401 while nobody is signed in, 403 once a signed-in viewer is simply
+// not entitled to this note. The wall page is served as the response body in
+// both cases.
+func wallStatusCode(resp *Response) int {
+	if resp == nil || resp.UserToken == nil {
+		return http.StatusUnauthorized
+	}
+	return http.StatusForbidden
 }
 
 func unsupportedFileExt(path string) string {
