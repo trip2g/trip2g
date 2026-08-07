@@ -18,6 +18,7 @@ import (
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/telegram"
 	"trip2g/internal/tgbots"
+	"trip2g/internal/tgrich"
 	"trip2g/internal/tgtd"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -189,6 +190,29 @@ func (a *app) TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) 
 	return defaultLimit
 }
 
+// TelegramAccountRichCapability reports whether a user account may post rich
+// messages, from the account's stored app_config and premium flag.
+//
+// Premium is a server-side precondition: a non-Premium account is refused by
+// the send call itself with RICH_MESSAGE_UNSUPPORTED. Resolving it here lets the
+// publish path decide before scheduling, so the admin reads the reason rather
+// than a wire error. Both inputs are refreshed by the refreshtelegramaccounts
+// cronjob; an unreadable account falls back to a refusal, which is the safe
+// direction — the send would have failed anyway.
+func (a *app) TelegramAccountRichCapability(ctx context.Context, accountID int64) tgrich.Capability {
+	account, err := a.GetTelegramAccountByID(ctx, accountID)
+	if err != nil {
+		return tgrich.Capability{Reason: tgrich.ReasonNeedsPremium}
+	}
+
+	var config map[string]interface{}
+	if jsonErr := json.Unmarshal([]byte(account.AppConfig), &config); jsonErr != nil {
+		config = nil
+	}
+
+	return tgrich.AccountCapability(config, account.IsPremium == 1)
+}
+
 func mapAuthState(state tgtd.AuthState) appmodel.TelegramAuthState {
 	switch state {
 	case tgtd.AuthStateWaitingForCode:
@@ -305,6 +329,74 @@ func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotap
 	}
 
 	return int64(res.MessageID), nil
+}
+
+// SendTelegramRichMessage sends a rich message to the chat identified by its
+// database id. It is a separate method from SendTelegramMessage rather than a
+// case of it because a rich message is not a tgbotapi.Chattable and never can
+// be, so there is no signature the two could share.
+//
+// The echo check is not optional: past a run-cost ceiling the server drops
+// content and still answers ok:true. A mismatch is logged rather than returned
+// as an error — the message is already posted by then, and failing here would
+// mark the note unpublished and post it a second time on retry.
+func (a *app) SendTelegramRichMessage(ctx context.Context, chatID int64, req tgrich.Request) (tgrich.SendResult, error) {
+	a.log.Debug("sending telegram rich message", "chat_id", chatID, "blocks", len(req.RichMessage.Blocks))
+
+	chat, err := a.TgBotChat(ctx, chatID)
+	if err != nil {
+		return tgrich.SendResult{}, fmt.Errorf("failed to get Telegram chat: %w", err)
+	}
+
+	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
+
+	if handlerIO == nil {
+		return tgrich.SendResult{}, fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
+	}
+
+	res, err := handlerIO.SendRichMessage(ctx, req)
+	if err != nil {
+		return tgrich.SendResult{}, fmt.Errorf("failed to send Telegram rich message: %w", err)
+	}
+
+	if echoErr := tgrich.VerifyEcho(req.RichMessage.Blocks, res.Blocks); echoErr != nil {
+		a.log.Error("telegram rich message came back short",
+			"chat_id", chatID, "message_id", res.MessageID, "error", echoErr.Error())
+	}
+
+	return res, nil
+}
+
+// EditTelegramRichMessage replaces the blocks of a posted rich message. It
+// exists because the classic edit path cannot touch one: editMessageText with a
+// text and a parse mode flattens the block tree irreversibly, and
+// editMessageCaption targets a caption a rich message does not have.
+func (a *app) EditTelegramRichMessage(ctx context.Context, chatID int64, req tgrich.EditRequest) (tgrich.SendResult, error) {
+	a.log.Debug("editing telegram rich message",
+		"chat_id", chatID, "message_id", req.MessageID, "blocks", len(req.RichMessage.Blocks))
+
+	chat, err := a.TgBotChat(ctx, chatID)
+	if err != nil {
+		return tgrich.SendResult{}, fmt.Errorf("failed to get Telegram chat: %w", err)
+	}
+
+	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
+
+	if handlerIO == nil {
+		return tgrich.SendResult{}, fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
+	}
+
+	res, err := handlerIO.EditRichMessage(ctx, req)
+	if err != nil {
+		return tgrich.SendResult{}, fmt.Errorf("failed to edit Telegram rich message: %w", err)
+	}
+
+	if echoErr := tgrich.VerifyEcho(req.RichMessage.Blocks, res.Blocks); echoErr != nil {
+		a.log.Error("telegram rich message came back short after edit",
+			"chat_id", chatID, "message_id", req.MessageID, "error", echoErr.Error())
+	}
+
+	return res, nil
 }
 
 func (a *app) SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {

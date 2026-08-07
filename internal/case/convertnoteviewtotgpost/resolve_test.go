@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
+	"trip2g/internal/tgrich"
 
 	"github.com/stretchr/testify/require"
 )
@@ -19,6 +20,13 @@ type testEnv struct {
 	sentMsgs  []db.ListTelegramPublishSentMessagesByChatIDRow
 	publicURL string
 	now       time.Time
+	// richCapability is the account's rich-message capability; the zero value
+	// is a refusal, so a test opts in explicitly.
+	richCapability tgrich.Capability
+}
+
+func (e *testEnv) TelegramAccountRichCapability(ctx context.Context, accountID int64) tgrich.Capability {
+	return e.richCapability
 }
 
 func (e *testEnv) LatestNoteViews() *model.NoteViews {

@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/markdownv2"
 	"trip2g/internal/model"
 	"trip2g/internal/telegram"
+	"trip2g/internal/tgrich"
 )
 
 // ErrAssetsNotReadyError indicates that media assets are not yet uploaded.
@@ -40,6 +41,7 @@ type Env interface {
 	PublicURL() string
 	Now() time.Time
 	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
+	TelegramAccountRichCapability(ctx context.Context, accountID int64) tgrich.Capability
 }
 
 //nolint:gocognit,funlen,gocyclo,cyclop // complex conversion logic
@@ -132,8 +134,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 	post := model.TelegramPost{}
 
-	tr := markdownv2.HTMLConverter{}
-	tr.SetLinkResolver(func(target string) (*markdownv2.LinkResolverResult, error) {
+	resolveLink := func(target string) (*markdownv2.LinkResolverResult, error) {
 		post.LinkCount++
 
 		// Try to resolve target using ResolvedLinks (since AST is no longer mutated)
@@ -200,7 +201,10 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 		}
 
 		return nil, fmt.Errorf("note not published: %s", target)
-	})
+	}
+
+	tr := markdownv2.HTMLConverter{}
+	tr.SetLinkResolver(resolveLink)
 
 	res := tr.Process(source.NoteView)
 
@@ -213,6 +217,15 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 		return nil, err
 	}
 	post.Media = mediaURLs
+
+	applyRich(ctx, env, &post, source, resolveLink, publicURL)
+
+	// A rich post carries its own limits and its own media, inside the block
+	// tree and in document order. The classic caption/length accounting below
+	// would only produce warnings about a message that is never sent.
+	if post.IsRich() {
+		return &post, nil
+	}
 
 	// Validate content length limits
 	// Telegram limits: 4096 chars for text-only messages, 1024 chars for photo captions (4096 for premium)

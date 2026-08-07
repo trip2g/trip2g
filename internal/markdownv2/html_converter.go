@@ -232,7 +232,7 @@ func (c *HTMLConverter) renderNode(n ast.Node, src []byte, entering bool, res *C
 	case *ast.RawHTML:
 		if entering {
 			tag := string(node.Segments.Value(src))
-			if tag == "<u>" || tag == "</u>" {
+			if tag == tagUnderlineOpen || tag == tagUnderlineClose {
 				c.Write(tag)
 			} else {
 				res.Warnings = append(res.Warnings, fmt.Sprintf("raw html tag is not supported: %s", tag))
@@ -385,7 +385,7 @@ func (c *HTMLConverter) renderWikilink(node *wikilink.Node, entering bool, res *
 	if !entering {
 		if !c.skipClosingTag[node] {
 			if c.isUnpublishedLink[node] {
-				c.Write("</u>")
+				c.Write(tagUnderlineClose)
 			} else {
 				c.Write("</a>")
 			}

@@ -1,6 +1,9 @@
 package model
 
-import "strings"
+import (
+	"strings"
+	"trip2g/internal/tgrich"
+)
 
 type TelegramPost struct {
 	MessageID  *int64 `json:"message_id,omitempty"`
@@ -12,6 +15,12 @@ type TelegramPost struct {
 	Media   []string `json:"media"`
 	Content string   `json:"content"`
 
+	// RichBlocks carries the typed block tree when the note asked for
+	// telegram_rich: on against a bot destination. Non-empty selects the
+	// sendRichMessage transport; Content is still populated, because the
+	// sent-message row stores it and the classic update path still reads it.
+	RichBlocks []tgrich.Block `json:"rich_blocks,omitempty"`
+
 	Warnings []string `json:"warnings"`
 
 	LinkCount           int64 `json:"link_count"`
@@ -19,6 +28,11 @@ type TelegramPost struct {
 	ExternalLinkCount   int64 `json:"external_link_count"`
 
 	DisableWebPagePreview bool `json:"disable_web_page_preview"`
+}
+
+// IsRich reports whether this post is delivered as a rich message.
+func (p TelegramPost) IsRich() bool {
+	return len(p.RichBlocks) > 0
 }
 
 // TelegramPostLink represents a link to a published Telegram post.

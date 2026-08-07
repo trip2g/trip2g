@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/telegram"
+	"trip2g/internal/tgrich"
 	"trip2g/internal/tgtd"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -24,6 +25,7 @@ const parseMode = "HTML"
 
 type Env interface {
 	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
+	SendTelegramRichMessage(ctx context.Context, chatID int64, req tgrich.Request) (tgrich.SendResult, error)
 	InsertTelegramPublishSentMessage(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error
 	CheckTelegramPublishSentMessageExists(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error)
 	LatestNoteViews() *model.NoteViews
@@ -97,9 +99,11 @@ func resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) 
 
 	post := params.Post
 
-	// Determine post type based on media count
+	// Determine post type. Rich outranks media count: a rich post carries its
+	// media inside the block tree, and the stored type is what the update path
+	// dispatches on later.
 	mediaCount := len(post.Media)
-	postType = db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
+	postType = db.TelegramPublishSentMessagePostTypeFor(post.IsRich(), mediaCount)
 
 	// Truncate content to telegram limits
 	maxLength := 4096
@@ -108,8 +112,12 @@ func resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) 
 	}
 	content := telegram.TruncateContent(post.Content, maxLength)
 
-	switch mediaCount {
-	case 0:
+	switch {
+	case post.IsRich():
+		// Rich carries its own block tree and its own limits; none of the
+		// classic truncation or media branches apply to it.
+		messageID, err = sendRich(ctx, env, params)
+	case mediaCount == 0:
 		// Send as text message
 		msg := tgbotapi.NewMessage(params.TelegramChatID, content)
 		msg.ParseMode = parseMode
@@ -117,7 +125,7 @@ func resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) 
 		msg.DisableWebPagePreview = post.DisableWebPagePreview
 
 		messageID, err = env.SendTelegramMessage(ctx, params.DBChatID, msg)
-	case 1:
+	case mediaCount == 1:
 		// Send as single photo (can be edited later)
 		paramsCopy := params
 		paramsCopy.Post.Content = content

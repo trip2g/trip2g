@@ -85,9 +85,24 @@ func resolve(ctx context.Context, env Env, params model.TelegramAccountUpdatePos
 		return fmt.Errorf("failed to get current post type: %w", err)
 	}
 
+	// Every edit branch below is a classic one, and each of them destroys a rich
+	// message: they replace the block tree with a flat string or address a
+	// caption it does not have. The account path cannot create a rich message
+	// today — sendRichMessage has no MTProto equivalent — so this refuses rather
+	// than guesses, and stays correct on the day it can.
+	//
+	// Both directions are refused: editing a stored rich post would flatten it,
+	// and letting a rich post in would write post_type 'rich' onto a row whose
+	// message was just edited classically, which is the same corruption one step
+	// later.
+	if currentPostType == db.TelegramPublishSentMessagePostTypeRich || post.IsRich() {
+		return fmt.Errorf("cannot edit a rich post through the account path: message %d in chat %d stays as published",
+			params.MessageID, params.TelegramChatID)
+	}
+
 	// Determine new post type
 	mediaCount := len(post.Media)
-	newPostType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
+	newPostType := db.TelegramPublishSentMessagePostTypeFor(post.IsRich(), mediaCount)
 
 	// Check if post type changed
 	// Supported transitions: text→photo (add media)

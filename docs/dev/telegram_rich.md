@@ -4,6 +4,102 @@ Findings from research and live probing, July 2026. Everything below marked **me
 Bot API calls against a throwaway bot; everything marked **seen** was confirmed by opening the client.
 Documented-but-unprobed claims are marked as such — the docs were wrong often enough to matter.
 
+## Status — 20 July 2026
+
+Branch `feat/tgrich-account` carries the whole feature. **Both senders publish rich posts through the real
+pipeline**, verified on the devstand by reading the blocks back off Telegram rather than trusting our own code:
+
+| | State | Evidence |
+|---|---|---|
+| Bot path | works | `demo rich` message 107, 19 blocks, `post_type = 'rich'` |
+| Account path (MTProto) | works, Premium required | `demo rich` message 116, 19 blocks, sent from account 1 |
+| Edit safety | a rich post can no longer be flattened | message 109 survived two ordinary note edits with all 19 blocks |
+| `gotd/td` | v0.161.0, layer 228 | account `dialogs` byte-identical before and after the bump |
+
+A note opts in with `telegram_rich: on` in its frontmatter. `auto` deliberately means classic in V1 — the
+classic converter only emits string warnings, which mix conversion loss with length and policy warnings and
+so cannot be trusted as a predicate. `off` is classic.
+
+### What is deliberately not built
+
+- **Media in a rich post — the biggest gap, and a regression risk rather than a missing extra.** See the
+  section below; it was measured rather than guessed. **`telegram_rich: on` is a downgrade for any note with
+  images until it is closed.**
+- **e2e coverage.** `cmd/tge2e` cannot see rich messages: `extractNoteID` matches `^id: ` against message
+  text, which is null for a rich post, and `MessageSnapshot` records only text/entities/media, so two
+  structurally different rich posts snapshot identically. Adding a rich fixture without fixing this yields a
+  test that passes while proving nothing. Now that gotd is on layer 228 the reader can see `rich_message`
+  natively; before the bump the only route was forwarding a message through the bot to read it back.
+- **Message splitting.** Nothing splits messages today; 32768 characters raises the ceiling roughly eightfold
+  but a longer note still truncates. Needs durable multi-part identity first — the current idempotency key is
+  `(note_path_id, chat_id)` with no part number, so a retry after part one either duplicates or drops.
+- **Per-chat opt-in.** `tg_bot_chats.rich_messages_enabled` would add a kill switch. Frontmatter alone means
+  any author can opt in on any bot chat.
+- **Automatic table of contents.** Anchors are measured to defeat the *Show more* fold and heading IDs already
+  exist, but inserting a TOC changes the author's post layout, which is a product decision.
+
+### Next steps, in the order they are worth doing
+
+1. **Publish a rich note with two or three images through the bot on the devstand.** Cheap, and it decides
+   whether bot-side media is a test away or real work.
+2. **Account-side media**: upload each asset via `uploader`, collect `InputPhoto`/`InputDocument` into the
+   `InputRichMessage` slices, rewrite the block tree to carry the ids. Cache the ids per asset — a rich edit
+   replaces the block tree rather than patching it, so an edit without replay loses the media.
+3. **Make `cmd/tge2e` rich-aware**: note identity that does not depend on message text, and a snapshot that
+   records the block-type sequence so a rich→plain regression fails.
+4. Then splitting, the per-chat switch, and the TOC, in whatever order product wants.
+
+### Media: measured, and three defects deep
+
+Probed on the devstand by publishing real notes and reading the blocks back off Telegram. The bot path needs
+code, not just a test. **Three stacked defects, each alone enough to lose every image.**
+
+**1. Obsidian embed syntax never becomes media.** `internal/markdownv2/rich_inline.go` records
+`LossEmbeddedWikiLink` for any `node.Embed` **unconditionally**, without first asking whether
+`AssetReplaces` resolves the target. `![[image.png]]` is what every real vault note uses — all the demo notes
+do. Standard `![alt](path.png)` works correctly through the resolver. Measured: a note with three images and
+a note with a video both arrived with **zero media blocks**, paragraphs only.
+
+**2. The media wire format is wrong.** `internal/tgrich/types.go` marks `BlockPhoto`/`BlockVideo`
+`// unprobed`, and they are. Measured against the live API:
+
+```
+sent    {"type":"photo","photo":{"url":U},"caption":"alt"}
+wanted  {"type":"photo","photo":{"type":"photo","media":U},"caption":{"text":…}}
+```
+
+`Media` must be the standard InputMedia `{type, media}` rather than `{url, file_id}`, and `Block.Caption`
+must be the `Caption` struct — **which already exists in that same file as dead code, carrying a comment
+that documents the correct shape** — rather than `*RichText`, which marshals to a bare string and is
+rejected with `RichBlockCaption must be an object`. The symptom is the misleading
+`can't parse InputRichBlock: Can't find field "type"`.
+
+**3. Responses carrying media cannot be decoded — the structural one.** `DecodeSendResult` parses the echoed
+reply into the *same* `Block` type used for the request, but Telegram returns `photo` as an array of
+PhotoSize: `cannot unmarshal array into Go struct field Block.rich_message.blocks.photo`. So even with the
+wire format fixed, every photo-bearing send fails at decode. `Block` conflates the input and output shapes
+and has to be split.
+
+**The path does work once the shape is right.** Sending the corrected payload by hand produced a post with
+two photos and a video in document order, with real `file_id`s, size variants, duration, mime type and
+thumbnail, and captions as `{"text":…}`.
+
+Measured and correct today: inline media records `LossInlineMedia`, drops the media and keeps the text; a
+missing `AssetReplaces` entry records `LossUnresolvedMedia` and emits no block.
+
+One sharp edge left deliberately alone: with `PublicURL` empty, `AbsoluteURL` returns a *relative* URL and
+the resolver still reports success, so an unusable block is built and fails at send with
+`media must carry exactly one of an https url or a file id`. Making the resolver reject instead would turn a
+loud failure into a silently missing image, which is worse.
+
+**Estimate.** Bot side ≈1.5–2 days: the wire format is an hour now that it is specified exactly, splitting
+input from output block types is about half a day, and the embed-to-media work is half a day to a day
+because it needs a product call separating an asset embed from a note transclusion. Account side is
+multi-day and not started — MTProto wants pre-uploaded `InputPhoto`/`InputDocument`, so it needs an upload
+and caching pipeline, and the edit path must replay cached ids because a rich edit replaces the block tree
+rather than patching it. It refuses loudly today (`internal/tgtd/richblocks.go`, `ErrRichMediaUnsupported`),
+never dropping media silently.
+
 ## What it is
 
 `sendRichMessage`, Bot API 10.1 (11 June 2026), with a typed `blocks` representation added in 10.2
@@ -49,10 +145,40 @@ at layer 222. Input shape: `InputRichMessage(blocks, rtl, noautolink, photos, do
 | User account | no | `400 RICH_MESSAGE_UNSUPPORTED` |
 | User account | yes | works: saved messages, channel, and `send_as = channel` |
 
+**The bot in that first row was created by the account in the second.** Both rows were measured in the same
+session: `thailand_unknown` (id `7828312136`), non-Premium, was refused `RICH_MESSAGE_UNSUPPORTED` writing a
+rich message to its own saved messages, and the bot it owns sent ~40 of them into a channel without a single
+refusal. The entitlement is attached to the sending identity at send time and to nothing else — not to the
+owner, not to the account that provisioned the bot. An owner therefore cannot post a rich message as himself
+while his own bot posts them freely.
+
 **The gate is Premium, enforced server-side**, and the entitlement follows the *sending user*, not the
 posting identity: a non-Premium account is refused even writing to itself, while a Premium account succeeds
 posting under the channel's identity. TDLib's "for bots only" annotation on the markdown/HTML source
 variants is a comment, not a mechanism — `RichMessage.cpp:90` takes a `bool is_bot` and never reads it.
+
+### Built and measured, July 2026
+
+The account path is implemented and posted a real note through a Premium account session
+(`internal/tgtd/richblocks.go`, `Client.SendRichMessage`). Three things were confirmed live and were not
+knowable from the docs:
+
+- **`rich_message_posting` is exactly `premium`**, read from a live `help.getAppConfig` on the devstand
+  account, alongside all five limit keys at the values recorded below. The key names in this document are
+  correct as written.
+- **`PageBlockTable.Title` is required, not optional.** It is not a flag field, so a nil title fails to
+  encode client-side and takes the whole message with it — surfacing as
+  `unable to encode pageBlockTable#bf4dea82: field title is nil`, which names a field index rather than a
+  block. Any `RichTextClass` field outside the flags needs an explicit `TextEmpty`. The cheap guard is a
+  test that encodes a document exercising every block type; nothing else reads those fields.
+- **The account path keys on the MTProto channel id**, not the Bot API form:
+  `telegram_publish_account_chats.telegram_chat_id` must hold `4487679938`, not `-1004487679938`.
+  `findChatInputPeer` compares against `tg.Channel.ID` directly.
+
+Verified independently by forwarding the posted message with a bot that administers the channel and reading
+`rich_message.blocks` off the Bot API response: 19 top-level blocks, headings at their original levels, a
+4×3 table with per-cell `is_header`, a collapsed `details`, and `pre` with its language tag. `Message.text`
+is null, as documented.
 
 Two consequences for design. First, **capability is checkable before scheduling**: `help.getAppConfig`
 returns `rich_message_posting` (`disabled` → `premium` since July 2026) and the account's own `premium` flag
@@ -149,6 +275,57 @@ Worth knowing, because a reviewer reading the docs will reach the wrong conclusi
 - `sendRichMessage` silently ignores every unknown top-level parameter, so you cannot probe it for supported
   parameters by looking for errors. Only observable effects in the response count.
 - The wire discriminator for a heading is `"heading"`, not the reference type name `RichBlockSectionHeading`.
+
+## The block contract, measured
+
+Probed field by field in July 2026 against the live bot, after a first implementation built from the
+documented names was rejected outright. Everything below is echoed back by the server.
+
+| Construct | Type | Fields |
+|---|---|---|
+| Heading | `heading` | `text`, `size` 1–6 |
+| Paragraph | `paragraph` | `text` |
+| Fenced code | `pre` | `text` carries the code, `language` |
+| Quote | `blockquote` | `blocks` |
+| Collapsible | `details` | `summary`, `blocks`, `is_open` |
+| Table | `table` | `cells` — row-major, `caption` |
+| List | `list` | `items`, each `{blocks, checked}` |
+
+Three names in the earlier draft were wrong and rejected with
+`can't parse InputRichBlock: type "…" is unsupported`: `code` is `pre`, `quote` is `blockquote`, and
+`collapsible` is `details`. Fold state is `is_open` — `open`, `collapsed`, `expanded`, `folded`,
+`is_collapsed`, `default_open` and `closed` are all accepted and silently ignored, and absent means
+collapsed.
+
+**A table is not rows of cells.** `cells` sits on the block as a row-major grid, `[[cell, cell], …]`. There is
+no column descriptor at all, so alignment is per cell; a row object carrying its own `cells` is rejected. The
+header marker is `is_header` on the cell — `header` is ignored — and it switches the server's default
+alignment to centre.
+
+**Rich text is a tagged union too, and this is the trap.** A text object without a `type` is parsed as a
+*block*, and the error names the block: `can't parse InputRichBlock: Can't find field "type"`, pointing at
+entirely the wrong part of the payload. The forms are a bare string for plain text, a JSON array for
+concatenation, `{"type":"bold","text":…}` for a mark nesting through `text`, `{"type":"url","text":…,"url":…}`
+for a link, and `{"type":"anchor","name":…}` for an anchor target. Marks nest rather than combine, and the
+strikethrough mark is `strikethrough`, not `strike`.
+
+**Anchors exist, but not where the earlier draft looked for them.** A heading takes no `anchor`, `name` or
+`id` — all three are accepted and none is echoed. An anchor is a rich-text node of its own, and it carries a
+name and no text. The table-of-contents answer to the visible fold is therefore still reachable, but it is
+built from anchor nodes placed in text, not from a field on the heading.
+
+**Ordered lists do not survive.** `ordered`, `start`, `style`, `is_ordered`, `list_type` and `numbered` are
+all ignored, and a per-item `label` is overwritten: every item comes back labelled `•`. A numbered list
+renders as bullets.
+
+### The echo check needs to count the right thing
+
+The server merges adjacent plain runs — `["a","b"]` comes back as `"ab"` — so a raw run count drops on almost
+every message that submitted a run of unformatted spans, with nothing lost. Comparing it reports truncation
+that did not happen: the first real post came back 83 runs against 65 with byte-identical text length.
+Compare **blocks, formatted runs and text units**, where a formatted run is one carrying a mark or a link.
+That is immune to the merge and still catches the documented failure, which is formatted runs disappearing
+past the run-cost ceiling.
 
 ## What trip2g would build
 

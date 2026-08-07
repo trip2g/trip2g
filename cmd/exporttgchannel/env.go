@@ -9,6 +9,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	gotdlog "github.com/gotd/log"
+	"github.com/gotd/log/logzap"
 	tdclock "github.com/gotd/td/clock"
 
 	"trip2g/internal/db"
@@ -34,15 +36,19 @@ func (s sysTicker) C() <-chan time.Time   { return s.t.C }
 func (s sysTicker) Stop()                 { s.t.Stop() }
 func (s sysTicker) Reset(d time.Duration) { s.t.Reset(d) }
 
-func buildLogger(debug bool) *zap.Logger {
+// buildLogger returns nil when debug is off; gotd then falls back to a no-op logger.
+func buildLogger(debug bool) gotdlog.Logger {
 	if !debug {
 		return nil
 	}
 	cfg := zap.NewDevelopmentConfig()
 	cfg.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
 	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
-	l, _ := cfg.Build()
-	return l
+	l, err := cfg.Build()
+	if err != nil {
+		return nil
+	}
+	return logzap.New(l)
 }
 
 // cliEnv implements tgtd.ClientEnv for standalone use.

@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/backjob/updatetelegrammessage"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+	"trip2g/internal/tgrich"
 )
 
 // Ensure, that EnvMock does implement updatetelegrammessage.Env.
@@ -22,6 +23,9 @@ var _ updatetelegrammessage.Env = &EnvMock{}
 //
 //		// make and configure a mocked updatetelegrammessage.Env
 //		mockedEnv := &EnvMock{
+//			EditTelegramRichMessageFunc: func(ctx context.Context, chatID int64, req tgrich.EditRequest) (tgrich.SendResult, error) {
+//				panic("mock out the EditTelegramRichMessage method")
+//			},
 //			GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 //				panic("mock out the GetTelegramPublishSentMessageContentHash method")
 //			},
@@ -47,6 +51,9 @@ var _ updatetelegrammessage.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// EditTelegramRichMessageFunc mocks the EditTelegramRichMessage method.
+	EditTelegramRichMessageFunc func(ctx context.Context, chatID int64, req tgrich.EditRequest) (tgrich.SendResult, error)
+
 	// GetTelegramPublishSentMessageContentHashFunc mocks the GetTelegramPublishSentMessageContentHash method.
 	GetTelegramPublishSentMessageContentHashFunc func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error)
 
@@ -67,6 +74,15 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// EditTelegramRichMessage holds details about calls to the EditTelegramRichMessage method.
+		EditTelegramRichMessage []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ChatID is the chatID argument value.
+			ChatID int64
+			// Req is the req argument value.
+			Req tgrich.EditRequest
+		}
 		// GetTelegramPublishSentMessageContentHash holds details about calls to the GetTelegramPublishSentMessageContentHash method.
 		GetTelegramPublishSentMessageContentHash []struct {
 			// Ctx is the ctx argument value.
@@ -108,12 +124,53 @@ type EnvMock struct {
 			Arg db.UpdateTelegramPublishSentMessageContentParams
 		}
 	}
+	lockEditTelegramRichMessage                  sync.RWMutex
 	lockGetTelegramPublishSentMessageContentHash sync.RWMutex
 	lockGetTelegramPublishSentMessagePostType    sync.RWMutex
 	lockLogger                                   sync.RWMutex
 	lockSendTelegramRequest                      sync.RWMutex
 	lockTelegramCaptionLengthLimit               sync.RWMutex
 	lockUpdateTelegramPublishSentMessageContent  sync.RWMutex
+}
+
+// EditTelegramRichMessage calls EditTelegramRichMessageFunc.
+func (mock *EnvMock) EditTelegramRichMessage(ctx context.Context, chatID int64, req tgrich.EditRequest) (tgrich.SendResult, error) {
+	if mock.EditTelegramRichMessageFunc == nil {
+		panic("EnvMock.EditTelegramRichMessageFunc: method is nil but Env.EditTelegramRichMessage was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		ChatID int64
+		Req    tgrich.EditRequest
+	}{
+		Ctx:    ctx,
+		ChatID: chatID,
+		Req:    req,
+	}
+	mock.lockEditTelegramRichMessage.Lock()
+	mock.calls.EditTelegramRichMessage = append(mock.calls.EditTelegramRichMessage, callInfo)
+	mock.lockEditTelegramRichMessage.Unlock()
+	return mock.EditTelegramRichMessageFunc(ctx, chatID, req)
+}
+
+// EditTelegramRichMessageCalls gets all the calls that were made to EditTelegramRichMessage.
+// Check the length with:
+//
+//	len(mockedEnv.EditTelegramRichMessageCalls())
+func (mock *EnvMock) EditTelegramRichMessageCalls() []struct {
+	Ctx    context.Context
+	ChatID int64
+	Req    tgrich.EditRequest
+} {
+	var calls []struct {
+		Ctx    context.Context
+		ChatID int64
+		Req    tgrich.EditRequest
+	}
+	mock.lockEditTelegramRichMessage.RLock()
+	calls = mock.calls.EditTelegramRichMessage
+	mock.lockEditTelegramRichMessage.RUnlock()
+	return calls
 }
 
 // GetTelegramPublishSentMessageContentHash calls GetTelegramPublishSentMessageContentHashFunc.

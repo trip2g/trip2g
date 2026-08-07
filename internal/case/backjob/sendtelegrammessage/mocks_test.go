@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/tgrich"
 )
 
 // Ensure, that EnvMock does implement sendtelegrammessage.Env.
@@ -40,6 +41,9 @@ var _ sendtelegrammessage.Env = &EnvMock{}
 //			},
 //			SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 //				panic("mock out the SendTelegramMessage method")
+//			},
+//			SendTelegramRichMessageFunc: func(ctx context.Context, chatID int64, req tgrich.Request) (tgrich.SendResult, error) {
+//				panic("mock out the SendTelegramRichMessage method")
 //			},
 //			SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
 //				panic("mock out the SetTelegramPublishNoteLastError method")
@@ -74,6 +78,9 @@ type EnvMock struct {
 
 	// SendTelegramMessageFunc mocks the SendTelegramMessage method.
 	SendTelegramMessageFunc func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
+
+	// SendTelegramRichMessageFunc mocks the SendTelegramRichMessage method.
+	SendTelegramRichMessageFunc func(ctx context.Context, chatID int64, req tgrich.Request) (tgrich.SendResult, error)
 
 	// SetTelegramPublishNoteLastErrorFunc mocks the SetTelegramPublishNoteLastError method.
 	SetTelegramPublishNoteLastErrorFunc func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error
@@ -122,6 +129,15 @@ type EnvMock struct {
 			// Msg is the msg argument value.
 			Msg tgbotapi.Chattable
 		}
+		// SendTelegramRichMessage holds details about calls to the SendTelegramRichMessage method.
+		SendTelegramRichMessage []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ChatID is the chatID argument value.
+			ChatID int64
+			// Req is the req argument value.
+			Req tgrich.Request
+		}
 		// SetTelegramPublishNoteLastError holds details about calls to the SetTelegramPublishNoteLastError method.
 		SetTelegramPublishNoteLastError []struct {
 			// Ctx is the ctx argument value.
@@ -150,6 +166,7 @@ type EnvMock struct {
 	lockLatestNoteViews                       sync.RWMutex
 	lockLogger                                sync.RWMutex
 	lockSendTelegramMessage                   sync.RWMutex
+	lockSendTelegramRichMessage               sync.RWMutex
 	lockSetTelegramPublishNoteLastError       sync.RWMutex
 	lockTelegramCaptionLengthLimit            sync.RWMutex
 	lockUpdateTelegramPublishPost             sync.RWMutex
@@ -354,6 +371,46 @@ func (mock *EnvMock) SendTelegramMessageCalls() []struct {
 	mock.lockSendTelegramMessage.RLock()
 	calls = mock.calls.SendTelegramMessage
 	mock.lockSendTelegramMessage.RUnlock()
+	return calls
+}
+
+// SendTelegramRichMessage calls SendTelegramRichMessageFunc.
+func (mock *EnvMock) SendTelegramRichMessage(ctx context.Context, chatID int64, req tgrich.Request) (tgrich.SendResult, error) {
+	if mock.SendTelegramRichMessageFunc == nil {
+		panic("EnvMock.SendTelegramRichMessageFunc: method is nil but Env.SendTelegramRichMessage was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		ChatID int64
+		Req    tgrich.Request
+	}{
+		Ctx:    ctx,
+		ChatID: chatID,
+		Req:    req,
+	}
+	mock.lockSendTelegramRichMessage.Lock()
+	mock.calls.SendTelegramRichMessage = append(mock.calls.SendTelegramRichMessage, callInfo)
+	mock.lockSendTelegramRichMessage.Unlock()
+	return mock.SendTelegramRichMessageFunc(ctx, chatID, req)
+}
+
+// SendTelegramRichMessageCalls gets all the calls that were made to SendTelegramRichMessage.
+// Check the length with:
+//
+//	len(mockedEnv.SendTelegramRichMessageCalls())
+func (mock *EnvMock) SendTelegramRichMessageCalls() []struct {
+	Ctx    context.Context
+	ChatID int64
+	Req    tgrich.Request
+} {
+	var calls []struct {
+		Ctx    context.Context
+		ChatID int64
+		Req    tgrich.Request
+	}
+	mock.lockSendTelegramRichMessage.RLock()
+	calls = mock.calls.SendTelegramRichMessage
+	mock.lockSendTelegramRichMessage.RUnlock()
 	return calls
 }
 
