@@ -103,6 +103,25 @@ log_section() {
     echo -e "${YELLOW}════════════════════════════════════════════════════════════${NC}"
 }
 
+# docs/demo intentionally ships _layouts/broken-layout.html with a Jet parse
+# error, rendered by broken_layout_test.md to prove layout errors surface to
+# admins rather than silently breaking a page. Since #260 the CLI exits
+# non-zero on any CRITICAL warning, which aborts this suite on its very first
+# sync. That one fixture is tolerated here; a CRITICAL from anything else still
+# fails the run.
+EXPECTED_CRITICAL_PATHS='broken_layout_test.md _layouts/broken-layout.html'
+
+# Reads CLI output on stdin. Succeeds only when at least one CRITICAL was
+# reported and every one of them belongs to an expected fixture path.
+only_expected_criticals() {
+    sed 's/\x1b\[[0-9;]*m//g' | awk -v expected="$EXPECTED_CRITICAL_PATHS" '
+        BEGIN { split(expected, e, " "); for (i in e) ok[e[i]] = 1 }
+        /^  [^ ]/ { path = $0; sub(/^  /, "", path) }
+        /^    \[CRITICAL\]/ { seen++; if (!(path in ok)) unexpected++ }
+        END { exit (seen > 0 && unexpected == 0) ? 0 : 1 }
+    '
+}
+
 # Compare or update golden snapshot for a sync-updates file
 assert_sync_snapshot() {
     local out_file="$1"
@@ -139,8 +158,13 @@ sync_vault() {
 
     log_info "Syncing $(basename $vault)... (→ $out_file)"
     cd "$OBSIDIAN_SYNC_DIR"
-    local sync_exit=0
-    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args 2>&1 || sync_exit=$?
+    local sync_exit=0 output
+    output=$(npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args 2>&1) || sync_exit=$?
+    printf '%s\n' "$output"
+    if [ "$sync_exit" -ne 0 ] && printf '%s\n' "$output" | only_expected_criticals; then
+        log_info "Tolerated expected CRITICAL from the deliberately broken demo layout"
+        sync_exit=0
+    fi
     assert_sync_snapshot "$out_file"
     return $sync_exit
 }
@@ -153,8 +177,11 @@ sync_vault_quiet() {
     local out_file="$SYNC_UPDATES_DIR/$(printf '%02d' $SYNC_STEP)-$(basename $vault).json"
 
     cd "$OBSIDIAN_SYNC_DIR"
-    local sync_exit=0
-    npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args > /dev/null 2>&1 || sync_exit=$?
+    local sync_exit=0 output
+    output=$(npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args 2>&1) || sync_exit=$?
+    if [ "$sync_exit" -ne 0 ] && printf '%s\n' "$output" | only_expected_criticals; then
+        sync_exit=0
+    fi
     assert_sync_snapshot "$out_file"
     return $sync_exit
 }
