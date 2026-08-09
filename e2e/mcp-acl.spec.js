@@ -37,7 +37,7 @@ const APP_URL = process.env.APP_URL || 'http://localhost:20081';
 const MCP_URL = `${APP_URL}/_system/mcp`;
 
 async function mcpCall(request, url, method, params = {}, auth = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' };
   let targetUrl = url;
 
   if (auth.bearer) headers['Authorization'] = `Bearer ${auth.bearer}`;

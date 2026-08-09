@@ -7,9 +7,44 @@ Model Context Protocol (MCP) сервер для интеграции замет
 ```
 POST /_system/mcp
 Content-Type: application/json
+Accept: application/json, text/event-stream
 ```
 
 JSON-RPC 2.0 протокол.
+
+## Транспорт
+
+Транспорт — официальный Go MCP SDK (`github.com/modelcontextprotocol/go-sdk`),
+Streamable HTTP в stateless-режиме с JSON-ответами. SDK владеет протоколом:
+разбором JSON-RPC, диспетчеризацией, реестром инструментов и согласованием
+версии протокола. Наш код в `internal/case/mcp` отвечает за аутентификацию,
+метрики, лимит глубины федерации и сами инструменты.
+
+Заголовок `Accept` обязателен и должен содержать **оба** типа —
+`application/json` и `text/event-stream`. Запрос без него получает `400`. Это
+требование спецификации Streamable HTTP; настоящие MCP-клиенты его посылают,
+но curl-примеры и собственные интеграции нужно обновить.
+
+Точный формат ответов зафиксирован в
+`internal/case/mcp/testdata/endpoint_golden.txt`. Перезаписать:
+
+```bash
+go test ./internal/case/mcp -run TestEndpointGolden -update-golden
+```
+
+### Отличия от прежней самописной реализации
+
+| Запрос | Было | Стало |
+|--------|------|-------|
+| Без `Accept` | работал | `400` |
+| `notifications/initialized` | `200` + `{"result":{}}` | `202`, пустое тело |
+| `initialize` без `protocolVersion` | всегда `2024-11-05` | согласование → `2025-11-25` |
+| `capabilities` | `{"tools":{}}` | `{"logging":{},"tools":{"listChanged":true}}` |
+| `resources/list` | `-32601` | пустой список (SDK его реализует) |
+| `tools/list` | порядок объявления | по имени, плюс поля `ttlMs`/`cacheScope` |
+
+Имена, описания и схемы инструментов не изменились — они и есть контракт для
+агентов.
 
 ## Tools
 

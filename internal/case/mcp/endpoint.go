@@ -373,7 +373,9 @@ func (*GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	body := strings.ReplaceAll(`This is an MCP POST endpoint (Model Context Protocol, Streamable HTTP).
 
-Send POST requests with a JSON-RPC 2.0 body.
+Send POST requests with a JSON-RPC 2.0 body and these headers:
+  Content-Type: application/json
+  Accept: application/json, text/event-stream
 
 Public access: no token required for open knowledge bases.
 

@@ -276,12 +276,14 @@ note_html(pid=42, toc_path=["Глава 1", "Введение"])
 ```bash
 curl https://yoursite.com/_system/mcp/tools/call \
   -H "Authorization: Bearer t2g_…" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"method":"search","params":{"query":"дизайн"}}'
 ```
 
 **Параметр в URL:**
 ```bash
 curl 'https://yoursite.com/_system/mcp/tools/call?token=t2g_…' \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"method":"search","params":{"query":"дизайн"}}'
 ```
 

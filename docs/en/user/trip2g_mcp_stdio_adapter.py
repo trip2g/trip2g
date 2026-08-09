@@ -61,7 +61,7 @@ def upstream(name, arguments):
         "jsonrpc": "2.0", "id": 1, "method": "tools/call",
         "params": {"name": name, "arguments": arguments},
     }).encode()
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    headers = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream"}
     if TOKEN:
         headers["Authorization"] = "Bearer " + TOKEN
     req = urllib.request.Request(UPSTREAM, data=payload, headers=headers, method="POST")

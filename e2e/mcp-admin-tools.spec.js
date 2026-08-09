@@ -52,6 +52,7 @@ async function mcpCallWithAPIKey(request, apiKey, method, params = {}) {
   const res = await request.post(MCP_URL, {
     headers: {
       'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
       'X-API-Key': apiKey,
     },
     data: { jsonrpc: '2.0', id: 1, method, params },
@@ -85,7 +86,7 @@ async function findApiKeyId(request, baseURL, cookie, plaintextValue) {
 
     // Check if the MCP endpoint using plaintextValue now sees admin tools.
     const mcpRes = await request.post(`${baseURL}/_system/mcp`, {
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': plaintextValue },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream', 'X-API-Key': plaintextValue },
       data: { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} },
     });
     const mcpBody = await mcpRes.json();
@@ -313,7 +314,7 @@ test.describe.serial('MCP API Key admin tools', () => {
   test('no X-API-Key: tools/list does NOT show admin tools', async ({ request }) => {
     // Anonymous request (no X-API-Key, no Bearer) — admin tools must be hidden.
     const res = await request.post(MCP_URL, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
       data: { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} },
     });
     expect(res.ok()).toBeTruthy();

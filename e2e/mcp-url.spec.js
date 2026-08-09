@@ -20,6 +20,7 @@ async function mcpCall(request, method, params = {}, token) {
   const res = await request.post(MCP_URL, {
     headers: {
       'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
       Authorization: `Bearer ${token}`,
     },
     data: { jsonrpc: '2.0', id: 1, method, params },
