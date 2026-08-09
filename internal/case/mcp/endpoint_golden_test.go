@@ -23,7 +23,6 @@ import (
 	"trip2g/internal/metrics"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/ptr"
-	"trip2g/internal/usertoken"
 
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
@@ -143,9 +142,6 @@ var (
 	plainKey = apiKey("plain-key") //nolint:gochecknoglobals // test fixture
 )
 
-// acceptHeader is what the MCP Streamable HTTP spec requires clients to send.
-const acceptHeader = "application/json, text/event-stream"
-
 func TestEndpointGolden(t *testing.T) {
 	var out bytes.Buffer
 	for _, c := range goldenCases() {
@@ -186,7 +182,7 @@ func runGoldenCase(t *testing.T, c goldenCase) (int, string, string) {
 		fasthttpCtx.Request.Header.Set(k, v)
 	}
 
-	req := goldenRequest(fasthttpCtx, goldenEnv())
+	req := newMCPRequest(fasthttpCtx, goldenEnv())
 	defer appreq.Release(req)
 
 	_, err := (&mcp.Endpoint{}).Handle(req)
@@ -195,23 +191,6 @@ func runGoldenCase(t *testing.T, c goldenCase) (int, string, string) {
 	return fasthttpCtx.Response.StatusCode(),
 		string(fasthttpCtx.Response.Header.ContentType()),
 		normalizeGolden(fasthttpCtx.Response.Body())
-}
-
-// goldenTokenManager uses a cookie name no test request carries, so token
-// extraction always misses and the matrix runs as an anonymous client unless a
-// case sets an auth header explicitly.
-var goldenTokenManager = usertoken.NewManager(usertoken.Config{ //nolint:gochecknoglobals // test package global
-	CookieName: "__golden_test_cookie__",
-	Secret:     "test-secret-32-bytes-long-filler!",
-})
-
-func goldenRequest(fasthttpCtx *fasthttp.RequestCtx, env interface{}) *appreq.Request {
-	req := appreq.Acquire()
-	req.Env = env
-	req.Req = fasthttpCtx
-	req.TokenManager = goldenTokenManager
-	req.StoreInContext()
-	return req
 }
 
 // latencyRe blanks the wall-clock latency federation results carry, which is

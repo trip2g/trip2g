@@ -9,6 +9,7 @@ import (
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/fedinstr"
+	"trip2g/internal/metrics"
 	appmodel "trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
@@ -25,15 +26,20 @@ func fedInstrNoteViews() *appmodel.NoteViews {
 	return nvs
 }
 
-func callFederatedInstructions(env mcp.Env, args string) mcp.Response {
+func federatedInstructionsRequest(args string) mcp.Request {
 	params := mcp.CallToolParams{Name: "federated_instructions", Arguments: json.RawMessage(args)}
 	paramsJSON, _ := json.Marshal(params)
-	return mcp.ResolveForTest(context.Background(), env, mcp.Request{
+	return mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
 		ID:      1,
-	})
+	}
+}
+
+func callFederatedInstructions(t *testing.T, env mcp.Env, args string) mcp.Response {
+	t.Helper()
+	return callMCP(t, env, federatedInstructionsRequest(args))
 }
 
 func TestFederatedInstructionsDirectPeer(t *testing.T) {
@@ -47,6 +53,7 @@ func TestFederatedInstructionsDirectPeer(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:     func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
@@ -57,7 +64,7 @@ func TestFederatedInstructionsDirectPeer(t *testing.T) {
 		StoreFederatedInstructionsFunc:  cache.StoreFederatedInstructions,
 	}
 
-	resp := callFederatedInstructions(env, `{"kb_id":"bob"}`)
+	resp := callFederatedInstructions(t, env, `{"kb_id":"bob"}`)
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
 	require.Equal(t, "bob's guidance", result.Content[0].Text)
@@ -76,6 +83,7 @@ func TestFederatedInstructionsNestedForwards(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:     func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
@@ -87,7 +95,7 @@ func TestFederatedInstructionsNestedForwards(t *testing.T) {
 		StoreFederatedInstructionsFunc:  cache.StoreFederatedInstructions,
 	}
 
-	resp := callFederatedInstructions(env, `{"kb_id":"bob/nietzsche"}`)
+	resp := callFederatedInstructions(t, env, `{"kb_id":"bob/nietzsche"}`)
 	require.Nil(t, resp.Error)
 	require.Equal(t, "nietzsche", gotKBID, "rest of the path must forward to the next hop")
 	result := resp.Result.(mcp.CallToolResult)
@@ -99,6 +107,7 @@ func TestFederatedInstructionsRespectsMaxDepth(t *testing.T) {
 	cache := fedinstr.New()
 	federation := &federationMock{} // must never be called: depth is rejected up front
 	env := &EnvMock{
+		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc:            func(context.Context, string) (appmodel.Federation, error) { return federation, nil },
@@ -108,7 +117,7 @@ func TestFederatedInstructionsRespectsMaxDepth(t *testing.T) {
 	}
 
 	// bob/nietzsche/deep = 3 segments > max depth 2.
-	resp := callFederatedInstructions(env, `{"kb_id":"bob/nietzsche/deep"}`)
+	resp := callFederatedInstructions(t, env, `{"kb_id":"bob/nietzsche/deep"}`)
 	require.NotNil(t, resp.Error)
 	require.Equal(t, mcp.ErrCodeInternal, resp.Error.Code)
 }
@@ -126,6 +135,7 @@ func TestFederatedInstructionsCacheHitSkipsForward(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc:            func(context.Context, string) (appmodel.Federation, error) { return federation, nil },
@@ -133,9 +143,9 @@ func TestFederatedInstructionsCacheHitSkipsForward(t *testing.T) {
 		StoreFederatedInstructionsFunc:  cache.StoreFederatedInstructions,
 	}
 
-	first := callFederatedInstructions(env, `{"kb_id":"bob"}`)
+	first := callFederatedInstructions(t, env, `{"kb_id":"bob"}`)
 	require.Nil(t, first.Error)
-	second := callFederatedInstructions(env, `{"kb_id":"bob"}`)
+	second := callFederatedInstructions(t, env, `{"kb_id":"bob"}`)
 	require.Nil(t, second.Error)
 
 	require.Equal(t, int32(1), atomic.LoadInt32(&calls), "second call must be served from cache")
@@ -153,6 +163,7 @@ func TestFederatedInstructionsCacheConcurrent(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc:            func(context.Context, string) (appmodel.Federation, error) { return federation, nil },
@@ -160,32 +171,39 @@ func TestFederatedInstructionsCacheConcurrent(t *testing.T) {
 		StoreFederatedInstructionsFunc:  cache.StoreFederatedInstructions,
 	}
 
+	// The calls run concurrently but are only inspected once the goroutines
+	// have joined: testify's FailNow is unsafe off the test goroutine.
 	var wg sync.WaitGroup
-	var failures int32
-	for range 20 {
+	bodies := make([][]byte, 20)
+	errs := make([]error, 20)
+	for i := range bodies {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if callFederatedInstructions(env, `{"kb_id":"bob"}`).Error != nil {
-				atomic.AddInt32(&failures, 1)
-			}
+			bodies[i], errs[i] = rawMCPCall(env, federatedInstructionsRequest(`{"kb_id":"bob"}`))
 		}()
 	}
 	wg.Wait()
-	require.Zero(t, atomic.LoadInt32(&failures), "no concurrent call should error")
+
+	for i := range bodies {
+		require.NoError(t, errs[i])
+		resp := decodeMCPResponse(t, federatedInstructionsRequest(`{"kb_id":"bob"}`), bodies[i])
+		require.Nil(t, resp.Error, "no concurrent call should error")
+	}
 }
 
 func TestFederatedInstructionsUnknownKBID(t *testing.T) {
 	nvs := fedInstrNoteViews()
 	cache := fedinstr.New()
 	env := &EnvMock{
+		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 		CachedFederatedInstructionsFunc: cache.CachedFederatedInstructions,
 		StoreFederatedInstructionsFunc:  cache.StoreFederatedInstructions,
 	}
 
-	resp := callFederatedInstructions(env, `{"kb_id":"ghost"}`)
+	resp := callFederatedInstructions(t, env, `{"kb_id":"ghost"}`)
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
 	payload := decodePayload[mcp.FederationStatusPayload](t, result)
@@ -193,8 +211,8 @@ func TestFederatedInstructionsUnknownKBID(t *testing.T) {
 }
 
 func TestFederatedInstructionsRequiresKBID(t *testing.T) {
-	env := &EnvMock{}
-	resp := callFederatedInstructions(env, `{}`)
+	env := &EnvMock{MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
+	resp := callFederatedInstructions(t, env, `{}`)
 	require.NotNil(t, resp.Error)
 	require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
 }

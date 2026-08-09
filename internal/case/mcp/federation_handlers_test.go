@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"trip2g/internal/case/mcp"
+	"trip2g/internal/metrics"
 	appmodel "trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
@@ -107,6 +108,7 @@ func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return nvs
 		},
@@ -124,7 +126,7 @@ func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
 		Arguments: json.RawMessage(`{"query":"status","kb_id":"bob"}`),
 	}
 	paramsJSON, _ := json.Marshal(params)
-	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
+	resp := callMCP(t, env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -163,6 +165,7 @@ func TestFederatedNoteHTMLToleratesStringPID(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return nvs
 		},
@@ -179,7 +182,7 @@ func TestFederatedNoteHTMLToleratesStringPID(t *testing.T) {
 		Arguments: json.RawMessage(`{"kb_id":"nietzsche","path":"concepts/volya-k-vlasti.md","pid":"p36:c2"}`),
 	}
 	paramsJSON, _ := json.Marshal(params)
-	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
+	resp := callMCP(t, env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -215,6 +218,7 @@ func TestFederatedNoteHTMLForwardsMatchIDOnly(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return nvs
 		},
@@ -231,7 +235,7 @@ func TestFederatedNoteHTMLForwardsMatchIDOnly(t *testing.T) {
 		Arguments: json.RawMessage(`{"kb_id":"nietzsche","match_id":"p12:c0","note_id":""}`),
 	}
 	paramsJSON, _ := json.Marshal(params)
-	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
+	resp := callMCP(t, env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -264,6 +268,7 @@ func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return nvs
 		},
@@ -282,7 +287,7 @@ func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {
 		Arguments: json.RawMessage(`{"query":"status","kb_id":"bob/deep"}`),
 	}
 	paramsJSON, _ := json.Marshal(params)
-	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
+	resp := callMCP(t, env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -315,6 +320,7 @@ func TestFederatedExpandUsesMockedFederationClient(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
 			return true, nil
@@ -330,7 +336,7 @@ func TestFederatedExpandUsesMockedFederationClient(t *testing.T) {
 		Arguments: json.RawMessage(`{"kb_id":"bob","pid":42,"toc_path":["Setup"]}`),
 	}
 	paramsJSON, _ := json.Marshal(params)
-	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
+	resp := callMCP(t, env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
