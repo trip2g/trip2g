@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -48,70 +49,99 @@ type goldenCase struct {
 	noAccept bool              // omit the Accept header a spec-compliant client sends
 }
 
+// rpc builds a JSON-RPC request body; call builds a tools/call one. They keep
+// the case table readable at a glance — the interesting part of each case is
+// the arguments, not the envelope around them.
+func rpc(id int, method, params string) string {
+	if params == "" {
+		return fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":%q}`, id, method)
+	}
+	return fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":%q,"params":%s}`, id, method, params)
+}
+
+func call(id int, tool, args string) string {
+	return rpc(id, "tools/call", fmt.Sprintf(`{"name":%q,"arguments":%s}`, tool, args))
+}
+
 func goldenCases() []goldenCase {
+	const clientInit = `{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"golden","version":"1"}}`
+
 	return []goldenCase{
-		{name: "initialize", body: `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"golden","version":"1"}}}`},
-		{name: "initialize_no_params", body: `{"jsonrpc":"2.0","id":1,"method":"initialize"}`},
-		{name: "initialize_method_override", body: `{"jsonrpc":"2.0","id":1,"method":"initialize"}`, query: "method=guide"},
-		{name: "initialize_method_override_unknown", body: `{"jsonrpc":"2.0","id":1,"method":"initialize"}`, query: "method=nope"},
-		{name: "initialize_method_override_private", body: `{"jsonrpc":"2.0","id":1,"method":"initialize"}`, query: "method=private-tool"},
+		{name: "initialize", body: rpc(1, "initialize", clientInit)},
+		{name: "initialize_no_params", body: rpc(1, "initialize", "")},
+		{name: "initialize_method_override", body: rpc(1, "initialize", ""), query: "method=guide"},
+		{name: "initialize_method_override_unknown", body: rpc(1, "initialize", ""), query: "method=nope"},
+		{name: "initialize_method_override_private", body: rpc(1, "initialize", ""), query: "method=private-tool"},
 		{name: "notifications_initialized", body: `{"jsonrpc":"2.0","id":null,"method":"notifications/initialized"}`},
 
-		{name: "tools_list_anonymous", body: `{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`},
-		{name: "tools_list_admin_api_key", body: `{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`, headers: map[string]string{"X-API-Key": "admin-key"}},
-		{name: "tools_list_plain_api_key", body: `{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`, headers: map[string]string{"X-API-Key": "plain-key"}},
+		{name: "tools_list_anonymous", body: rpc(2, "tools/list", "{}")},
+		{name: "tools_list_admin_api_key", body: rpc(2, "tools/list", "{}"), headers: adminKey},
+		{name: "tools_list_plain_api_key", body: rpc(2, "tools/list", "{}"), headers: plainKey},
 
-		{name: "call_search", body: `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search","arguments":{"query":"alpha"}}}`},
-		{name: "call_search_limits", body: `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search","arguments":{"query":"alpha","limit":99,"detail_limit":1}}}`},
-		{name: "call_search_missing_query", body: `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search","arguments":{}}}`},
-		{name: "call_search_wrong_arg_type", body: `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search","arguments":{"query":42}}}`},
+		{name: "call_search", body: call(3, "search", `{"query":"alpha"}`)},
+		{name: "call_search_limits", body: call(3, "search", `{"query":"alpha","limit":99,"detail_limit":1}`)},
+		{name: "call_search_missing_query", body: call(3, "search", `{}`)},
+		{name: "call_search_wrong_arg_type", body: call(3, "search", `{"query":42}`)},
 
-		{name: "call_note_html_by_path", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{"path":"doc.md"}}}`},
-		{name: "call_note_html_by_pid_number", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{"pid":10}}}`},
-		{name: "call_note_html_by_pid_string", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{"pid":"10"}}}`},
-		{name: "call_note_html_chunk_ref_in_pid", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{"pid":"p10:c2"}}}`},
-		{name: "call_note_html_toc_path", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{"path":"doc.md","toc_path":["Beta"]}}}`},
-		{name: "call_note_html_toc_path_miss", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{"path":"doc.md","toc_path":["Nope"]}}}`},
-		{name: "call_note_html_no_selector", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{}}}`},
-		{name: "call_note_html_not_found", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{"path":"missing.md"}}}`},
-		{name: "call_note_html_private", body: `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"note_html","arguments":{"path":"private.md"}}}`},
+		{name: "call_note_html_by_path", body: call(4, "note_html", `{"path":"doc.md"}`)},
+		{name: "call_note_html_by_pid_number", body: call(4, "note_html", `{"pid":10}`)},
+		{name: "call_note_html_by_pid_string", body: call(4, "note_html", `{"pid":"10"}`)},
+		{name: "call_note_html_chunk_ref_in_pid", body: call(4, "note_html", `{"pid":"p10:c2"}`)},
+		{name: "call_note_html_toc_path", body: call(4, "note_html", `{"path":"doc.md","toc_path":["Beta"]}`)},
+		{name: "call_note_html_toc_path_miss", body: call(4, "note_html", `{"path":"doc.md","toc_path":["Nope"]}`)},
+		{name: "call_note_html_no_selector", body: call(4, "note_html", `{}`)},
+		{name: "call_note_html_not_found", body: call(4, "note_html", `{"path":"missing.md"}`)},
+		{name: "call_note_html_private", body: call(4, "note_html", `{"path":"private.md"}`)},
 
-		{name: "call_expand_root", body: `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"expand","arguments":{"path":"doc.md"}}}`},
-		{name: "call_expand_section", body: `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"expand","arguments":{"path":"doc.md","toc_path":["Beta"]}}}`},
-		{name: "call_expand_no_selector", body: `{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"expand","arguments":{}}}`},
+		{name: "call_expand_root", body: call(5, "expand", `{"path":"doc.md"}`)},
+		{name: "call_expand_section", body: call(5, "expand", `{"path":"doc.md","toc_path":["Beta"]}`)},
+		{name: "call_expand_no_selector", body: call(5, "expand", `{}`)},
 
-		{name: "call_federated_search", body: `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"federated_search","arguments":{"query":"alpha"}}}`},
-		{name: "call_federated_search_by_kb", body: `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"federated_search","arguments":{"query":"alpha","kb_id":"peer"}}}`},
-		{name: "call_federated_search_unknown_kb", body: `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"federated_search","arguments":{"query":"alpha","kb_id":"ghost"}}}`},
-		{name: "call_federated_instructions", body: `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"federated_instructions","arguments":{"kb_id":"peer"}}}`},
+		{name: "call_federated_search", body: call(6, "federated_search", `{"query":"alpha"}`)},
+		{name: "call_federated_search_by_kb", body: call(6, "federated_search", `{"query":"alpha","kb_id":"peer"}`)},
+		{name: "call_federated_search_unknown_kb", body: call(6, "federated_search", `{"query":"alpha","kb_id":"ghost"}`)},
+		{name: "call_federated_instructions", body: call(6, "federated_instructions", `{"kb_id":"peer"}`)},
 
-		{name: "call_graphql_request_unauthorized", body: `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"graphql_request","arguments":{"query":"{admin{__typename}}"}}}`},
-		{name: "call_graphql_introspection_unauthorized", body: `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"graphql_introspection","arguments":{"pattern":"Note"}}}`},
-		{name: "call_graphql_request_admin", body: `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"graphql_request","arguments":{"query":"{admin{__typename}}"}}}`, headers: map[string]string{"X-API-Key": "admin-key"}},
+		{name: "call_graphql_request_unauthorized", body: call(7, "graphql_request", gqlArgs)},
+		{name: "call_graphql_introspection_unauthorized", body: call(7, "graphql_introspection", `{"pattern":"Note"}`)},
+		{name: "call_graphql_request_admin", body: call(7, "graphql_request", gqlArgs), headers: adminKey},
 
-		{name: "call_dynamic_tool", body: `{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"code-review","arguments":{}}}`},
-		{name: "call_dynamic_tool_private", body: `{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"private-tool","arguments":{}}}`},
-		{name: "call_unknown_tool", body: `{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"does-not-exist","arguments":{}}}`},
-		{name: "call_missing_params", body: `{"jsonrpc":"2.0","id":8,"method":"tools/call"}`},
+		{name: "call_dynamic_tool", body: call(8, "code-review", `{}`)},
+		{name: "call_dynamic_tool_private", body: call(8, "private-tool", `{}`)},
+		{name: "call_unknown_tool", body: call(8, "does-not-exist", `{}`)},
+		{name: "call_missing_params", body: rpc(8, "tools/call", "")},
 
-		{name: "unknown_method", body: `{"jsonrpc":"2.0","id":9,"method":"resources/list","params":{}}`},
-		{name: "unimplemented_method", body: `{"jsonrpc":"2.0","id":9,"method":"totally/unknown","params":{}}`},
+		{name: "unknown_method", body: rpc(9, "resources/list", "{}")},
+		{name: "unimplemented_method", body: rpc(9, "totally/unknown", "{}")},
 		{name: "bad_jsonrpc_version", body: `{"jsonrpc":"1.0","id":9,"method":"tools/list","params":{}}`},
 		{name: "parse_error", body: `{not json`},
 		{name: "string_id", body: `{"jsonrpc":"2.0","id":"abc","method":"tools/list","params":{}}`},
 
-		{name: "federation_depth_ok", body: `{"jsonrpc":"2.0","id":10,"method":"tools/list","params":{}}`, headers: map[string]string{"X-MCP-Federation-Depth": "2"}},
-		{name: "federation_depth_exceeded", body: `{"jsonrpc":"2.0","id":10,"method":"tools/list","params":{}}`, headers: map[string]string{"X-MCP-Federation-Depth": "9"}},
-		{name: "federation_depth_malformed", body: `{"jsonrpc":"2.0","id":10,"method":"tools/list","params":{}}`, headers: map[string]string{"X-MCP-Federation-Depth": "abc"}},
+		{name: "federation_depth_ok", body: rpc(10, "tools/list", "{}"), headers: depth("2")},
+		{name: "federation_depth_exceeded", body: rpc(10, "tools/list", "{}"), headers: depth("9")},
+		{name: "federation_depth_malformed", body: rpc(10, "tools/list", "{}"), headers: depth("abc")},
 
-		{name: "bad_api_key", body: `{"jsonrpc":"2.0","id":11,"method":"tools/list","params":{}}`, headers: map[string]string{"X-API-Key": "nope"}},
-		{name: "malformed_bearer", body: `{"jsonrpc":"2.0","id":11,"method":"tools/list","params":{}}`, headers: map[string]string{"Authorization": "Basic zzz"}},
+		{name: "bad_api_key", body: rpc(11, "tools/list", "{}"), headers: apiKey("nope")},
+		{name: "malformed_bearer", body: rpc(11, "tools/list", "{}"), headers: map[string]string{"Authorization": "Basic zzz"}},
 
 		// Streamable HTTP requires clients to accept both media types; a client
 		// that omits Accept is rejected by the transport before dispatch.
-		{name: "missing_accept_header", body: `{"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}`, noAccept: true},
+		{name: "missing_accept_header", body: rpc(12, "tools/list", "{}"), noAccept: true},
 	}
 }
+
+const gqlArgs = `{"query":"{admin{__typename}}"}`
+
+func apiKey(value string) map[string]string { return map[string]string{"X-API-Key": value} }
+
+func depth(value string) map[string]string {
+	return map[string]string{"X-MCP-Federation-Depth": value}
+}
+
+var (
+	adminKey = apiKey("admin-key") //nolint:gochecknoglobals // test fixture
+	plainKey = apiKey("plain-key") //nolint:gochecknoglobals // test fixture
+)
 
 // acceptHeader is what the MCP Streamable HTTP spec requires clients to send.
 const acceptHeader = "application/json, text/event-stream"
@@ -186,7 +216,7 @@ func goldenRequest(fasthttpCtx *fasthttp.RequestCtx, env interface{}) *appreq.Re
 
 // latencyRe blanks the wall-clock latency federation results carry, which is
 // the only nondeterministic field in the matrix.
-var latencyRe = regexp.MustCompile(`"latency":\s*"[^"]*"`) //nolint:gochecknoglobals // compiled once for tests
+var latencyRe = regexp.MustCompile(`"latency":\s*"[^"]*"`)
 
 func normalizeGolden(body []byte) string {
 	if len(bytes.TrimSpace(body)) == 0 {
@@ -218,10 +248,14 @@ func (goldenFedClient) FederatedInstructions(context.Context, appmodel.Federatio
 	return goldenFedResult("peer federated instructions"), nil
 }
 
+const goldenPeerPayload = `{"query":"alpha","results":[{"title":"Peer Note","note_id":1,` +
+	`"note_path":"peer.md","href":"/peer","url":"https://peer.example/peer",` +
+	`"kind":"note","score":1}]}`
+
 func goldenFedResult(text string) appmodel.FederationResult {
 	return appmodel.FederationResult{
 		Content:           []appmodel.FederationContent{{Type: "text", Text: text}},
-		StructuredContent: json.RawMessage(`{"query":"alpha","results":[{"title":"Peer Note","note_id":1,"note_path":"peer.md","href":"/peer","url":"https://peer.example/peer","kind":"note","score":1}]}`),
+		StructuredContent: json.RawMessage(goldenPeerPayload),
 	}
 }
 
@@ -338,7 +372,7 @@ func goldenEnv() *EnvMock {
 			case "plain-key":
 				return &db.ApiKey{CreatedBy: 43}, nil
 			default:
-				return nil, fmt.Errorf("api key not found")
+				return nil, errors.New("api key not found")
 			}
 		},
 		GraphQLRequestFunc: func(context.Context, string, map[string]any) ([]byte, error) {

@@ -489,7 +489,7 @@ type toolHandler func(ctx context.Context, env Env, id any, argsRaw json.RawMess
 // builtinToolHandlers maps a tool name to its implementation. The set is wider
 // than what tools/list advertises: authorization is enforced per tool (either
 // here or inside the handler), while listing is filtered separately.
-func builtinToolHandlers() map[string]toolHandler { //nolint:gocognit // flat dispatch table
+func builtinToolHandlers() map[string]toolHandler {
 	return map[string]toolHandler{
 		"search":                    handleSearch,
 		"similar":                   handleSimilar,
