@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	appmodel "trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
@@ -19,10 +20,9 @@ type Env interface {
 }
 
 func TestResolve(t *testing.T) {
-	ctx := context.Background()
-
 	t.Run("initialize returns server info", func(t *testing.T) {
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -36,9 +36,10 @@ func TestResolve(t *testing.T) {
 			JSONRPC: "2.0",
 			Method:  "initialize",
 			ID:      1,
+			Params:  json.RawMessage(`{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
 		}
 
-		resp := mcp.Resolve(ctx, env, req)
+		resp := callMCP(t, env, req)
 
 		require.Equal(t, "2.0", resp.JSONRPC)
 		require.Equal(t, 1, resp.ID)
@@ -46,8 +47,10 @@ func TestResolve(t *testing.T) {
 		require.NotNil(t, resp.Result)
 
 		result := resp.Result.(map[string]any)
+		// The protocol version is negotiated: a client asking for 2024-11-05 keeps it.
 		require.Equal(t, "2024-11-05", result["protocolVersion"])
 		require.Equal(t, "trip2g-mcp", result["serverInfo"].(map[string]any)["name"])
+		require.NotNil(t, result["capabilities"].(map[string]any)["tools"], "tools capability must stay advertised")
 	})
 
 	t.Run("initialize includes instructions from note", func(t *testing.T) {
@@ -57,6 +60,7 @@ func TestResolve(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -75,7 +79,7 @@ func TestResolve(t *testing.T) {
 			ID:      2,
 		}
 
-		resp := mcp.Resolve(ctx, env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(map[string]any)
@@ -108,6 +112,7 @@ soul_profile:
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -126,7 +131,7 @@ soul_profile:
 			ID:      8,
 		}
 
-		resp := mcp.Resolve(ctx, env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(map[string]any)
@@ -139,6 +144,7 @@ soul_profile:
 
 	t.Run("tools/list returns static tools", func(t *testing.T) {
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -156,7 +162,7 @@ soul_profile:
 			ID:      3,
 		}
 
-		resp := mcp.Resolve(ctx, env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 
@@ -167,7 +173,8 @@ soul_profile:
 		for _, tool := range result.Tools {
 			toolNames = append(toolNames, tool.Name)
 		}
-		require.Equal(t, []string{
+		// The transport lists tools in name order, so compare as a set.
+		require.ElementsMatch(t, []string{
 			"search",
 			"similar",
 			"note_html",
@@ -188,6 +195,7 @@ soul_profile:
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -208,7 +216,7 @@ soul_profile:
 			ID:      4,
 		}
 
-		resp := mcp.Resolve(ctx, env, req)
+		resp := callMCP(t, env, req)
 
 		result := resp.Result.(mcp.ListToolsResult)
 
@@ -220,7 +228,12 @@ soul_profile:
 		require.Contains(t, toolNames, "code-review")
 
 		// Dynamic tool carries description and empty schema
-		dynTool := result.Tools[9]
+		var dynTool mcp.Tool
+		for _, tool := range result.Tools {
+			if tool.Name == "code-review" {
+				dynTool = tool
+			}
+		}
 		require.Equal(t, "code-review", dynTool.Name)
 		require.Equal(t, "Detailed code review", dynTool.Description)
 	})
@@ -242,6 +255,7 @@ soul_profile:
 			Content:        []byte("RU instructions"),
 		}
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{List: []*appmodel.NoteView{en, ru}, PathMap: map[string]*appmodel.NoteView{}}
@@ -251,7 +265,7 @@ soul_profile:
 			FederationMaxDepthFunc:      func() int { return 3 },
 		}
 
-		resp := mcp.Resolve(ctx, env, mcp.Request{JSONRPC: "2.0", Method: "tools/list", ID: 6})
+		resp := callMCP(t, env, mcp.Request{JSONRPC: "2.0", Method: "tools/list", ID: 6})
 		result := resp.Result.(mcp.ListToolsResult)
 
 		count := 0
@@ -267,7 +281,7 @@ soul_profile:
 	})
 
 	t.Run("method not found returns error", func(t *testing.T) {
-		env := &EnvMock{}
+		env := &EnvMock{MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
 
 		req := mcp.Request{
 			JSONRPC: "2.0",
@@ -275,7 +289,7 @@ soul_profile:
 			ID:      5,
 		}
 
-		resp := mcp.Resolve(ctx, env, req)
+		resp := callMCP(t, env, req)
 
 		require.NotNil(t, resp.Error)
 		require.Equal(t, mcp.ErrCodeMethodNotFound, resp.Error.Code)
@@ -284,6 +298,7 @@ soul_profile:
 
 	t.Run("invalid call params returns error", func(t *testing.T) {
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -293,8 +308,10 @@ soul_profile:
 			},
 		}
 
-		// Invalid JSON for params
-		invalidParams := json.RawMessage(`{"invalid`)
+		// Valid JSON, wrong shape: params must be an object. A body with
+		// syntactically broken params is a parse error (-32700) instead, which
+		// the endpoint rejects before dispatch.
+		invalidParams := json.RawMessage(`"not-an-object"`)
 
 		req := mcp.Request{
 			JSONRPC: "2.0",
@@ -303,25 +320,27 @@ soul_profile:
 			ID:      6,
 		}
 
-		resp := mcp.Resolve(ctx, env, req)
+		resp := callMCP(t, env, req)
 
 		require.NotNil(t, resp.Error)
 		require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
 	})
 
-	t.Run("notifications/initialized returns empty success", func(t *testing.T) {
-		env := &EnvMock{}
+	// A notification carries no id and gets no JSON-RPC response at all: the
+	// transport answers 202 Accepted with an empty body, per the MCP spec.
+	t.Run("notifications/initialized returns no response body", func(t *testing.T) {
+		env := &EnvMock{MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
 
+		// A notification carries no id, so none is sent here.
 		req := mcp.Request{
 			JSONRPC: "2.0",
 			Method:  "notifications/initialized",
-			ID:      7,
 		}
 
-		resp := mcp.Resolve(ctx, env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
-		require.Equal(t, "2.0", resp.JSONRPC)
+		require.Empty(t, resp.JSONRPC)
 	})
 }
 
@@ -334,6 +353,7 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
@@ -375,7 +395,7 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 		ID:      1,
 	}
 
-	resp := mcp.Resolve(context.Background(), env, req)
+	resp := callMCP(t, env, req)
 
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
@@ -383,7 +403,7 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 	require.Contains(t, result.Content[0].Text, "Книга 06")
 	require.NotNil(t, result.StructuredContent)
 
-	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	payload := decodePayload[mcp.SearchResultPayload](t, result)
 	require.Equal(t, "обида", payload.Query)
 	require.Len(t, payload.Results, 1)
 	require.Equal(t, "Книга 06", payload.Results[0].Title)
@@ -412,6 +432,7 @@ func TestExpandReturnsDirectChildren(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return &appmodel.NoteViews{
@@ -430,13 +451,13 @@ func TestExpandReturnsDirectChildren(t *testing.T) {
 	call := func(args string) mcp.ExpandPayload {
 		params := mcp.CallToolParams{Name: "expand", Arguments: json.RawMessage(args)}
 		paramsJSON, _ := json.Marshal(params)
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1,
 		})
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
 		require.NotEmpty(t, result.Content)
-		return result.StructuredContent.(mcp.ExpandPayload)
+		return decodePayload[mcp.ExpandPayload](t, result)
 	}
 
 	// Top level: two level-1 sections, both with children.
@@ -468,6 +489,7 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
@@ -509,11 +531,11 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 		ID:      1,
 	}
 
-	resp := mcp.Resolve(context.Background(), env, req)
+	resp := callMCP(t, env, req)
 
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
-	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	payload := decodePayload[mcp.SearchResultPayload](t, result)
 	require.Len(t, payload.Results, 1)
 	require.Equal(t, "federation_kb", payload.Results[0].Kind)
 	require.NotNil(t, payload.Results[0].Federation)
@@ -539,6 +561,7 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
@@ -578,11 +601,11 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 		ID:      1,
 	}
 
-	resp := mcp.Resolve(context.Background(), env, req)
+	resp := callMCP(t, env, req)
 
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
-	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	payload := decodePayload[mcp.SearchResultPayload](t, result)
 	require.Len(t, payload.Results, 1)
 	require.Equal(t, "Local", payload.Results[0].Title)
 }
@@ -604,6 +627,7 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
@@ -636,7 +660,7 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 		Arguments: json.RawMessage(`{"query":"team status"}`),
 	}
 	paramsJSON, _ := json.Marshal(params)
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := callMCP(t, env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -647,13 +671,14 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 	result := resp.Result.(mcp.CallToolResult)
 	require.NotContains(t, result.Content[0].Text, "Internal Notes")
 	require.Contains(t, result.Content[0].Text, "Team Status")
-	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	payload := decodePayload[mcp.SearchResultPayload](t, result)
 	require.Len(t, payload.Results, 1)
 	require.Equal(t, "Team Status", payload.Results[0].Title)
 }
 
 func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
 	env := &EnvMock{
+		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:      func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LatestNoteViewsFunc: appmodel.NewNoteViews,
 		LoggerFunc: func() logger.Logger {
@@ -676,12 +701,12 @@ func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
 		ID:      1,
 	}
 
-	resp := mcp.Resolve(context.Background(), env, req)
+	resp := callMCP(t, env, req)
 
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
 	require.False(t, result.IsError)
-	payload := result.StructuredContent.(mcp.FederationStatusPayload)
+	payload := decodePayload[mcp.FederationStatusPayload](t, result)
 	require.Equal(t, "federation_not_configured", payload.Status)
 	require.Contains(t, result.Content[0].Text, "Federation is not configured")
 }
@@ -708,6 +733,7 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
@@ -748,7 +774,7 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 		ID:      1,
 	}
 
-	resp := mcp.Resolve(context.Background(), env, req)
+	resp := callMCP(t, env, req)
 
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
@@ -756,7 +782,7 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 	require.NotContains(t, result.Content[0].Text, "Critic report")
 	require.NotContains(t, result.Content[0].Text, "Draft")
 
-	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	payload := decodePayload[mcp.SearchResultPayload](t, result)
 	require.Len(t, payload.Results, 1)
 }
 
@@ -769,6 +795,7 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
@@ -812,13 +839,13 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 		ID:      1,
 	}
 
-	resp := mcp.Resolve(context.Background(), env, req)
+	resp := callMCP(t, env, req)
 
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
 	require.NotNil(t, result.StructuredContent)
 
-	payload := result.StructuredContent.(mcp.SearchResultPayload)
+	payload := decodePayload[mcp.SearchResultPayload](t, result)
 	require.Len(t, payload.Results, 1)
 	require.Equal(t, "https://customdomain.test/custom-path", payload.Results[0].URL)
 	// Href is always the permalink path, URL is the full domain-aware URL
@@ -827,6 +854,7 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 
 func noteHTMLEnv(note *appmodel.NoteView) *EnvMock {
 	return &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			noteViews := appmodel.NewNoteViews()
@@ -850,6 +878,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -879,7 +908,7 @@ func TestHandleNoteHtml(t *testing.T) {
 			ID:      1,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
@@ -897,6 +926,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
@@ -924,7 +954,7 @@ func TestHandleNoteHtml(t *testing.T) {
 			ID:      2,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
@@ -940,6 +970,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
@@ -986,7 +1017,7 @@ func TestHandleNoteHtml(t *testing.T) {
 			ID:      3,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
@@ -1008,6 +1039,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
@@ -1037,7 +1069,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 30,
 		})
 
@@ -1065,7 +1097,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 31,
 		})
 
@@ -1092,7 +1124,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 32,
 		})
 
@@ -1114,6 +1146,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
@@ -1134,7 +1167,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 4,
 		})
 
@@ -1158,6 +1191,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
@@ -1182,7 +1216,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 5,
 		})
 
@@ -1204,6 +1238,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
@@ -1227,7 +1262,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 6,
 		})
 
@@ -1255,7 +1290,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 8,
 		})
 
@@ -1280,7 +1315,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 9,
 		})
 
@@ -1305,7 +1340,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 10,
 		})
 
@@ -1330,7 +1365,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 11,
 		})
 
@@ -1351,6 +1386,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
@@ -1371,7 +1407,7 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 		paramsJSON, _ := json.Marshal(params)
 
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 7,
 		})
 
@@ -1383,6 +1419,7 @@ func TestHandleNoteHtml(t *testing.T) {
 
 	t.Run("returns error for non-existent note", func(t *testing.T) {
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -1410,7 +1447,7 @@ func TestHandleNoteHtml(t *testing.T) {
 			ID:      2,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.NotNil(t, resp.Error)
 		require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)
@@ -1441,6 +1478,7 @@ func TestSimilarAcceptsPIDAndReturnsStructuredContent(t *testing.T) {
 	noteViews.List = []*appmodel.NoteView{sourceNote, similarNote}
 
 	env := &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		FeaturesFunc: func() features.Features {
 			return features.Features{
@@ -1479,14 +1517,14 @@ func TestSimilarAcceptsPIDAndReturnsStructuredContent(t *testing.T) {
 		ID:      1,
 	}
 
-	resp := mcp.Resolve(context.Background(), env, req)
+	resp := callMCP(t, env, req)
 
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
 	require.Contains(t, result.Content[0].Text, "Книга 07")
 	require.Contains(t, result.Content[0].Text, "https://markavrelii.2pub.me/knigi/kniga_07")
 
-	payload := result.StructuredContent.(mcp.SimilarResultPayload)
+	payload := decodePayload[mcp.SimilarResultPayload](t, result)
 	require.Equal(t, int64(32), payload.Source.NoteID)
 	require.Equal(t, "Книги/Книга 06.md", payload.Source.NotePath)
 	require.Len(t, payload.Results, 1)
@@ -1505,6 +1543,7 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -1532,7 +1571,7 @@ func TestStripFrontmatter(t *testing.T) {
 			ID:      1,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
@@ -1546,6 +1585,7 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -1573,7 +1613,7 @@ func TestStripFrontmatter(t *testing.T) {
 			ID:      2,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
@@ -1587,6 +1627,7 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -1614,7 +1655,7 @@ func TestStripFrontmatter(t *testing.T) {
 			ID:      3,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
@@ -1629,6 +1670,7 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -1656,7 +1698,7 @@ func TestStripFrontmatter(t *testing.T) {
 			ID:      4,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
@@ -1668,6 +1710,7 @@ func TestStripFrontmatter(t *testing.T) {
 func TestHandleSimilarLimitValidation(t *testing.T) {
 	t.Run("uses default when limit is zero", func(t *testing.T) {
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -1711,7 +1754,7 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 			ID:      1,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		// Test passes if no error - default limit should be used
@@ -1719,6 +1762,7 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 
 	t.Run("caps limit at maximum", func(t *testing.T) {
 		env := &EnvMock{
+			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
@@ -1762,7 +1806,7 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 			ID:      2,
 		}
 
-		resp := mcp.Resolve(context.Background(), env, req)
+		resp := callMCP(t, env, req)
 
 		require.Nil(t, resp.Error)
 		// Test passes if no error - limit should be capped
@@ -1783,6 +1827,7 @@ func makeSearchNote(pathID int64, path, title string) *appmodel.NoteView {
 func makeSearchEnv(t *testing.T, results []appmodel.SearchResult) *EnvMock {
 	t.Helper()
 	return &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return results, nil
@@ -1808,12 +1853,12 @@ func searchCall(t *testing.T, env *EnvMock, argsJSON string) mcp.SearchResultPay
 		Arguments: json.RawMessage(argsJSON),
 	}
 	paramsJSON, _ := json.Marshal(params)
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := callMCP(t, env, mcp.Request{
 		JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1,
 	})
 	require.Nil(t, resp.Error, "unexpected error: %v", resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
-	return result.StructuredContent.(mcp.SearchResultPayload)
+	return decodePayload[mcp.SearchResultPayload](t, result)
 }
 
 // makeNResults builds N search results with distinct notes.
@@ -1908,7 +1953,7 @@ func TestSearchLimitAndDetailLimit(t *testing.T) {
 			Arguments: json.RawMessage(`{"query":"test","limit":4,"detail_limit":2}`),
 		}
 		paramsJSON, _ := json.Marshal(params)
-		resp := mcp.Resolve(context.Background(), env, mcp.Request{
+		resp := callMCP(t, env, mcp.Request{
 			JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1,
 		})
 		require.Nil(t, resp.Error)

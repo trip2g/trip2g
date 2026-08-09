@@ -40,6 +40,8 @@ func buildMCPFasthttpCtx(body []byte, authHeader string) *fasthttp.RequestCtx {
 	ctx.Request.Header.SetMethod("POST")
 	ctx.Request.SetRequestURI("/_system/mcp")
 	ctx.Request.Header.SetContentType("application/json")
+	// Streamable HTTP requires clients to accept both media types.
+	ctx.Request.Header.Set("Accept", "application/json, text/event-stream")
 	ctx.Request.SetBody(body)
 	if authHeader != "" {
 		ctx.Request.Header.Set("Authorization", authHeader)

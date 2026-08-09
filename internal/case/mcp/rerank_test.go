@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/metrics"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/openai"
 )
@@ -71,6 +72,7 @@ func searchRerankEnv(t *testing.T, feats features.Features, embURL string) *EnvM
 	noteB := &appmodel.NoteView{Path: "b.md", PathID: 2, Title: "B", Permalink: "/b"}
 
 	return &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: noteA, URL: noteA.Permalink, Score: 2.0, HighlightedContent: []string{"alpha"}},
@@ -111,7 +113,7 @@ func rerankSearchCall(t *testing.T, env *EnvMock) mcp.SearchResultPayload {
 	}
 	paramsJSON, err := json.Marshal(params)
 	require.NoError(t, err)
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := callMCP(t, env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -120,7 +122,7 @@ func rerankSearchCall(t *testing.T, env *EnvMock) mcp.SearchResultPayload {
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
 	require.False(t, result.IsError, "content: %v", result.Content)
-	return result.StructuredContent.(mcp.SearchResultPayload)
+	return decodePayload[mcp.SearchResultPayload](t, result)
 }
 
 func TestSearchAppliesRerankerWhenConfigured(t *testing.T) {

@@ -28,7 +28,7 @@ const NOTE_HREF = '/article_with_toc';
 /** Send a JSON-RPC 2.0 request to the MCP endpoint and return result. */
 async function mcpCall(request, method, params = {}) {
   const res = await request.post(MCP_URL, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
     data: { jsonrpc: '2.0', id: 1, method, params },
   });
   expect(res.ok(), `MCP ${method} HTTP ${res.status()}`).toBeTruthy();
@@ -128,7 +128,7 @@ test.describe('MCP TOC', () => {
     // A pointer miss must never silently dump the full note (token-economy
     // correctness): the server returns an invalid-params error with a nudge.
     const res = await apiContext.post(MCP_URL, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
       data: {
         jsonrpc: '2.0',
         id: 1,

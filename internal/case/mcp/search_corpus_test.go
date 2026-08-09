@@ -37,6 +37,7 @@ func corpusEnv() *EnvMock {
 	live := &appmodel.NoteView{Path: "published.md", PathID: 2, Title: "Published", Permalink: "/published"}
 
 	return &EnvMock{
+		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
 		SearchLatestNotesFunc: func(string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: latest, URL: latest.Permalink, Score: 1,
@@ -64,9 +65,7 @@ func searchPayload(t *testing.T, resp mcp.Response) mcp.SearchResultPayload {
 	require.Nil(t, resp.Error)
 	result, ok := resp.Result.(mcp.CallToolResult)
 	require.True(t, ok)
-	payload, ok := result.StructuredContent.(mcp.SearchResultPayload)
-	require.True(t, ok)
-	return payload
+	return decodePayload[mcp.SearchResultPayload](t, result)
 }
 
 // Anonymous MCP clients must search the LIVE corpus, like anonymous site
@@ -74,7 +73,7 @@ func searchPayload(t *testing.T, resp mcp.Response) mcp.SearchResultPayload {
 func TestSearchAnonymousUsesLiveCorpus(t *testing.T) {
 	env := corpusEnv()
 
-	resp := mcp.Resolve(context.Background(), env, searchToolCall(t))
+	resp := callMCP(t, env, searchToolCall(t))
 	payload := searchPayload(t, resp)
 
 	require.Len(t, payload.Results, 1)
@@ -94,7 +93,7 @@ func TestSearchAnonymousWithShowDraftVersionsUsesLatestCorpus(t *testing.T) {
 		return appmodel.SiteConfig{ShowDraftVersions: true}
 	}
 
-	resp := mcp.Resolve(context.Background(), env, searchToolCall(t))
+	resp := callMCP(t, env, searchToolCall(t))
 	payload := searchPayload(t, resp)
 
 	require.Len(t, payload.Results, 1)
@@ -160,7 +159,7 @@ func TestSearchSkipsDimMismatchedChunks(t *testing.T) {
 		}
 	}
 
-	resp := mcp.Resolve(context.Background(), env, searchToolCall(t))
+	resp := callMCP(t, env, searchToolCall(t))
 	payload := searchPayload(t, resp)
 	require.Empty(t, payload.Results,
 		"dim-mismatched chunks must not surface as vector candidates")
@@ -208,7 +207,7 @@ func TestSearchRankingMatchesSiteSearch(t *testing.T) {
 	env.LiveNoteChunksFunc = func() []appmodel.NoteChunk { return chunks }
 
 	mcpOrder := func() []string {
-		resp := mcp.Resolve(context.Background(), env, searchToolCall(t))
+		resp := callMCP(t, env, searchToolCall(t))
 		payload := searchPayload(t, resp)
 		var order []string
 		for _, r := range payload.Results {

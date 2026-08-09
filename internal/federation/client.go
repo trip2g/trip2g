@@ -161,6 +161,9 @@ func (c *Client) postJSON(ctx context.Context, url string, body []byte, headers 
 	req.SetRequestURI(url)
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType("application/json")
+	// MCP Streamable HTTP requires clients to accept both media types; a peer
+	// rejects the request outright without this.
+	req.Header.Set("Accept", "application/json, text/event-stream")
 	req.Header.Set("User-Agent", userAgent)
 	req.SetBody(body)
 

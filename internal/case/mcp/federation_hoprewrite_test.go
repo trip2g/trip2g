@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"trip2g/internal/case/mcp"
+	"trip2g/internal/metrics"
 	appmodel "trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
@@ -22,6 +23,7 @@ func singlePeerEnv(kbID string, fed *federationMock) *EnvMock {
 	nvs := appmodel.NewNoteViews()
 	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(note)}
 	return &EnvMock{
+		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc: func(context.Context, *appmodel.NoteView) (bool, error) {
 			return true, nil

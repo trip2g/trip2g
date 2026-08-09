@@ -244,12 +244,14 @@ Two formats work:
 ```bash
 curl https://yoursite.com/_system/mcp/tools/call \
   -H "Authorization: Bearer t2g_…" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"method":"search","params":{"query":"design"}}'
 ```
 
 **Query parameter:**
 ```bash
 curl 'https://yoursite.com/_system/mcp/tools/call?token=t2g_…' \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"method":"search","params":{"query":"design"}}'
 ```
 
@@ -275,6 +277,7 @@ API keys (the same keys used by the Obsidian sync plugin) are accepted by the MC
 curl https://yoursite.com/_system/mcp \
   -H "X-API-Key: <your-api-key>" \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
 
