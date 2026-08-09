@@ -107,25 +107,3 @@ func typedResult(method string, body []byte) any {
 		return result
 	}
 }
-
-// ContextWithAPIKeyAuthForTest marks ctx as authenticated by an API key,
-// optionally carrying the admin-tools grant.
-func ContextWithAPIKeyAuthForTest(ctx context.Context, adminTools bool) context.Context {
-	return contextWithMCPAPIKeyAuth(ctx, adminTools)
-}
-
-// ContextWithFederationAuthForTest marks ctx as an authenticated federation
-// peer scoped to the given subgraphs.
-func ContextWithFederationAuthForTest(ctx context.Context, kid string, allowedSubgraphs []string) context.Context {
-	return contextWithFederationAuth(ctx, kid, allowedSubgraphs)
-}
-
-// ContextWithFederationDepthForTest stamps the inbound hop depth onto ctx.
-func ContextWithFederationDepthForTest(ctx context.Context, depth int) context.Context {
-	return contextWithFederationDepth(ctx, depth)
-}
-
-// BuiltinToolsForTest returns the tools tools/list advertises for this caller.
-func BuiltinToolsForTest(ctx context.Context, env Env) []Tool {
-	return builtinTools(ctx, env)
-}

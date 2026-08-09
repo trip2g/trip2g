@@ -483,36 +483,6 @@ func dynamicTools(ctx context.Context, env Env) []Tool {
 	return tools
 }
 
-// dynamicTool returns the note-registered tool called name, if the caller may
-// read the note backing it. Used to register just the tool a tools/call names,
-// instead of walking the whole corpus on every call.
-func dynamicTool(ctx context.Context, env Env, name string) (Tool, bool) {
-	if name == "" || reservedMCPTools[name] {
-		return Tool{}, false
-	}
-	for _, note := range env.LatestNoteViews().List {
-		if note.MCPMethod != name {
-			continue
-		}
-		// Stop at the first note claiming the method whether or not it is
-		// readable, exactly as handleDynamicMethod does.
-		ok, err := canReadMCPNote(ctx, env, note)
-		if err != nil || !ok {
-			return Tool{}, false
-		}
-		desc := note.MCPDescription
-		if desc == "" {
-			desc = note.Title
-		}
-		return Tool{
-			Name:        name,
-			Description: desc,
-			InputSchema: &InputSchema{Type: "object", Properties: map[string]Property{}},
-		}, true
-	}
-	return Tool{}, false
-}
-
 // toolHandler is the shape shared by every built-in tool implementation.
 type toolHandler func(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response
 
