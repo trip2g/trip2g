@@ -103,13 +103,18 @@ log_section() {
     echo -e "${YELLOW}════════════════════════════════════════════════════════════${NC}"
 }
 
-# docs/demo intentionally ships _layouts/broken-layout.html with a Jet parse
-# error, rendered by broken_layout_test.md to prove layout errors surface to
-# admins rather than silently breaking a page. Since #260 the CLI exits
-# non-zero on any CRITICAL warning, which aborts this suite on its very first
-# sync. That one fixture is tolerated here; a CRITICAL from anything else still
-# fails the run.
-EXPECTED_CRITICAL_PATHS='broken_layout_test.md _layouts/broken-layout.html'
+# docs/demo ships _layouts/broken-layout.html with a deliberate Jet parse error.
+# It has to stay in the vault: e2e/vault.spec.js asserts both the guest fallback
+# and the admin "Layout Error: broken-layout" message. The server reports layout
+# warnings for the whole knowledge base rather than just the files being pushed,
+# so once that layout is on the server EVERY later sync reports it — even a
+# one-file push from an unrelated directory. Since #260 the CLI exits non-zero
+# on any CRITICAL, so that one fixture is tolerated below and nothing else is.
+#
+# Only layouts are listed: CRITICAL is produced solely by the layout loader, and
+# layouts never register as notes, so broken_layout_test.md itself can never own
+# one.
+EXPECTED_CRITICAL_PATHS='_layouts/broken-layout.html'
 
 # Reads CLI output on stdin. Succeeds only when at least one CRITICAL was
 # reported and every one of them belongs to an expected fixture path.
@@ -120,6 +125,21 @@ only_expected_criticals() {
         /^    \[CRITICAL\]/ { seen++; if (!(path in ok)) unexpected++ }
         END { exit (seen > 0 && unexpected == 0) ? 0 : 1 }
     '
+}
+
+# Every sync in this script goes through here. Runs the CLI, prints its output
+# and returns its exit code — except when the only CRITICAL warnings are the
+# expected fixture. Calling cmd.ts directly bypasses that and reintroduces the
+# abort, so don't.
+run_sync_cli() {
+    local output exit_code=0
+    output=$(npx tsx src/sync/cli/cmd.ts "$@" 2>&1) || exit_code=$?
+    printf '%s\n' "$output"
+    if [ "$exit_code" -ne 0 ] && printf '%s\n' "$output" | only_expected_criticals; then
+        log_info "Tolerated expected CRITICAL from the deliberately broken demo layout"
+        exit_code=0
+    fi
+    return $exit_code
 }
 
 # Compare or update golden snapshot for a sync-updates file
@@ -158,13 +178,8 @@ sync_vault() {
 
     log_info "Syncing $(basename $vault)... (→ $out_file)"
     cd "$OBSIDIAN_SYNC_DIR"
-    local sync_exit=0 output
-    output=$(npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args 2>&1) || sync_exit=$?
-    printf '%s\n' "$output"
-    if [ "$sync_exit" -ne 0 ] && printf '%s\n' "$output" | only_expected_criticals; then
-        log_info "Tolerated expected CRITICAL from the deliberately broken demo layout"
-        sync_exit=0
-    fi
+    local sync_exit=0
+    run_sync_cli --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args || sync_exit=$?
     assert_sync_snapshot "$out_file"
     return $sync_exit
 }
@@ -177,11 +192,8 @@ sync_vault_quiet() {
     local out_file="$SYNC_UPDATES_DIR/$(printf '%02d' $SYNC_STEP)-$(basename $vault).json"
 
     cd "$OBSIDIAN_SYNC_DIR"
-    local sync_exit=0 output
-    output=$(npx tsx src/sync/cli/cmd.ts --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args 2>&1) || sync_exit=$?
-    if [ "$sync_exit" -ne 0 ] && printf '%s\n' "$output" | only_expected_criticals; then
-        sync_exit=0
-    fi
+    local sync_exit=0
+    run_sync_cli --folder "$vault" --api-key "$API_KEY" --api-url "$ENDPOINT" --two-way --updated-output "$out_file" $extra_args > /dev/null || sync_exit=$?
     assert_sync_snapshot "$out_file"
     return $sync_exit
 }
@@ -682,7 +694,7 @@ EOF
     # Sync vault1 WITHOUT --two-way flag
     log_info "Syncing vault1 in one-way mode (no --two-way)..."
     cd "$OBSIDIAN_SYNC_DIR"
-    npx tsx src/sync/cli/cmd.ts --folder "$VAULT1" --api-key "$API_KEY" --api-url "$ENDPOINT" 2>&1
+    run_sync_cli --folder "$VAULT1" --api-key "$API_KEY" --api-url "$ENDPOINT"
 
     # In one-way mode, vault1 should NOT pull from server
     assert_file_not_exists "$VAULT1/one_way_test.md" "One-way sync does not pull files"
@@ -759,7 +771,7 @@ EOF
     # Sync with prefix "cli_meta" - file will be uploaded as cli_meta/cli_test.md
     log_info "Syncing with prefix cli_meta and --meta title=FromCLI --meta free=true..."
     cd "$OBSIDIAN_SYNC_DIR"
-    npx tsx src/sync/cli/cmd.ts \
+    run_sync_cli \
         "$CLI_TEST_DIR" cli_meta \
         --api-key "$API_KEY" \
         --api-url "$ENDPOINT" \
@@ -831,8 +843,8 @@ EOF
     cd "$OBSIDIAN_SYNC_DIR"
 
     # 1. Publish WITHOUT --exclude → note goes live.
-    npx tsx src/sync/cli/cmd.ts --folder "$VAULT0" --api-key "$API_KEY" --api-url "$ENDPOINT" \
-        --updated-output "$pub_json" > /dev/null 2>&1
+    run_sync_cli --folder "$VAULT0" --api-key "$API_KEY" --api-url "$ENDPOINT" \
+        --updated-output "$pub_json" > /dev/null
 
     local url
     url=$(jq -r '.[] | select(.path == "excluded_file.md") | .url' "$pub_json" 2>/dev/null | head -1)
@@ -853,8 +865,8 @@ EOF
     fi
 
     # 2. Re-sync WITH --exclude → excluded path is hidden on the server.
-    npx tsx src/sync/cli/cmd.ts --folder "$VAULT0" --api-key "$API_KEY" --api-url "$ENDPOINT" \
-        --exclude excluded_file.md > /dev/null 2>&1
+    run_sync_cli --folder "$VAULT0" --api-key "$API_KEY" --api-url "$ENDPOINT" \
+        --exclude excluded_file.md > /dev/null
 
     local code_after
     code_after=$(curl -s -o /dev/null -w "%{http_code}" "$url")
