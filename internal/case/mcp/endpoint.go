@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +14,13 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
+)
+
+const (
+	mcpEndpointPath = "/_system/mcp"
+	// streamableAcceptHeader is what the MCP Streamable HTTP spec requires
+	// clients to send; the transport rejects a request without both types.
+	streamableAcceptHeader = "application/json, text/event-stream"
 )
 
 type Endpoint struct{}
@@ -86,55 +94,82 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	resolveCtx = ContextWithMetrics(resolveCtx, m)
 
+	// ?method= selects which note supplies the initialize instructions.
+	rpcReq.MethodOverride = string(req.Req.Request.URI().QueryArgs().Peek("method"))
+
+	// The client's own request is forwarded, so the transport applies its real
+	// content negotiation rather than anything reconstructed here.
+	httpReq := &http.Request{}
+	err = fasthttpadaptor.ConvertRequest(req.Req, httpReq, true)
+	if err != nil {
+		return nil, err
+	}
+
+	answer := serveJSONRPC(resolveCtx, env, rpcReq, httpReq)
+
+	req.Req.SetStatusCode(answer.status)
+	if answer.contentType != "" {
+		req.Req.SetContentType(answer.contentType)
+	}
+	req.Req.SetBody(answer.body)
+
+	recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, decodeResponse(answer.body), time.Since(start).Seconds())
+	return nil, nil
+}
+
+// rpcAnswer is one fully-formed HTTP response from the MCP transport.
+type rpcAnswer struct {
+	status      int
+	contentType string
+	body        []byte
+}
+
+// serveJSONRPC is the single implementation behind both entry points: Resolve,
+// the use-case API, and Endpoint.Handle, the HTTP adapter over it. Everything
+// between an authenticated context and a finished response lives here, so the
+// two entry points cannot drift apart.
+//
+// httpReq carries the message to the transport. Endpoint.Handle passes the
+// client's real request; Resolve synthesises a spec-compliant one.
+func serveJSONRPC(ctx context.Context, env Env, rpcReq Request, httpReq *http.Request) rpcAnswer {
 	// Only initialize surfaces the instructions, and resolving them scans the
 	// whole corpus — so every other method skips that work, as it always has.
 	instructions := ""
 	if rpcReq.Method == MCPMethodInitialize {
-		// ?method= selects which note supplies them.
-		methodOverride := string(req.Req.Request.URI().QueryArgs().Peek("method"))
-		resolved, instrErr := initializeInstructions(resolveCtx, env, methodOverride)
+		resolved, instrErr := initializeInstructions(ctx, env, rpcReq.MethodOverride)
 		if instrErr != nil {
-			resp := Response{JSONRPC: "2.0", ID: rpcReq.ID, Error: instrErr}
-			recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, resp, time.Since(start).Seconds())
-			return writeJSONResponse(req, resp)
+			return jsonAnswer(Response{JSONRPC: "2.0", ID: rpcReq.ID, Error: instrErr})
 		}
 		instructions = resolved
 	}
 
 	if errResp := checkToolCallParams(rpcReq); errResp != nil {
-		recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, *errResp, time.Since(start).Seconds())
-		return writeJSONResponse(req, *errResp)
+		return jsonAnswer(*errResp)
 	}
-	normalizeParams(req, rpcReq)
+	setNormalizedBody(httpReq, rpcReq)
 
-	body, err := serveSDK(req, resolveCtx, env, instructions, toolScope(rpcReq))
-	if err != nil {
-		return nil, err
+	rec := serveMessage(ctx, env, instructions, toolScope(rpcReq), httpReq)
+
+	if restored, ok := restoreUnhandledMethod(rec.body, rpcReq); ok {
+		return jsonAnswer(restored)
 	}
-	body = restoreUnhandledMethod(req, body, rpcReq)
-	body = restoreMethodNotFound(req, body, rpcReq)
+	if restored, ok := restoreMethodNotFound(rec.body, rpcReq); ok {
+		return jsonAnswer(restored)
+	}
 
-	recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, decodeResponse(body), time.Since(start).Seconds())
-	return nil, nil
+	// An empty content type is left alone: the transport omits it on the
+	// bodiless 202 it answers notifications with.
+	return rpcAnswer{status: rec.status, contentType: rec.header.Get("Content-Type"), body: rec.body}
 }
 
-// serveSDK runs the request through the official MCP Streamable HTTP transport
-// and copies the result back onto the fasthttp response.
-func serveSDK(req *appreq.Request, ctx context.Context, env Env, instructions, scope string) ([]byte, error) {
-	httpReq := &http.Request{}
-	err := fasthttpadaptor.ConvertRequest(req.Req, httpReq, true)
+// jsonAnswer renders a JSON-RPC response this package produced itself, rather
+// than one that came back from the transport.
+func jsonAnswer(resp Response) rpcAnswer {
+	body, err := json.Marshal(resp)
 	if err != nil {
-		return nil, err
+		return rpcAnswer{status: http.StatusInternalServerError, contentType: "application/json"}
 	}
-
-	rec := serveMessage(ctx, env, instructions, scope, httpReq)
-
-	req.Req.SetStatusCode(rec.status)
-	if contentType := rec.header.Get("Content-Type"); contentType != "" {
-		req.Req.SetContentType(contentType)
-	}
-	req.Req.SetBody(rec.body)
-	return rec.body, nil
+	return rpcAnswer{status: http.StatusOK, contentType: "application/json", body: body}
 }
 
 // serveMessage runs one HTTP request through the official Streamable HTTP
@@ -174,12 +209,12 @@ func (r *responseRecorder) WriteHeader(status int) {
 	r.status = status
 }
 
-// normalizeParams substitutes an empty params object on initialize. The SDK
+// setNormalizedBody substitutes an empty params object on initialize. The SDK
 // rejects a params-less initialize with an HTTP 400, but this endpoint has
 // always accepted it bare — `{"jsonrpc":"2.0","id":1,"method":"initialize"}` is
 // what the ?method= docs tell agents to probe with — so the answer stays a
 // JSON-RPC response.
-func normalizeParams(req *appreq.Request, rpcReq Request) {
+func setNormalizedBody(httpReq *http.Request, rpcReq Request) {
 	if len(rpcReq.Params) > 0 || rpcReq.Method != MCPMethodInitialize {
 		return
 	}
@@ -188,7 +223,8 @@ func normalizeParams(req *appreq.Request, rpcReq Request) {
 	if err != nil {
 		return
 	}
-	req.Req.Request.SetBody(body)
+	httpReq.Body = io.NopCloser(bytes.NewReader(body))
+	httpReq.ContentLength = int64(len(body))
 }
 
 // scopeCapabilities registers tool names only. initialize has to advertise the
@@ -236,24 +272,19 @@ func checkToolCallParams(rpcReq Request) *Response {
 // Clients — and the note-tool ACL path, where an unreadable mcp_method note is
 // simply never registered — depend on the name being the tool's, not the
 // transport method's.
-func restoreMethodNotFound(req *appreq.Request, body []byte, rpcReq Request) []byte {
+func restoreMethodNotFound(body []byte, rpcReq Request) (Response, bool) {
 	var resp Response
 	if json.Unmarshal(body, &resp) != nil || resp.Error == nil {
-		return body
+		return Response{}, false
 	}
 
 	restored := methodNotFoundMessage(resp.Error, rpcReq)
 	if restored == resp.Error.Message {
-		return body
+		return Response{}, false
 	}
 
 	resp.Error.Message = restored
-	patched, err := json.Marshal(resp)
-	if err != nil {
-		return body
-	}
-	req.Req.SetBody(patched)
-	return patched
+	return resp, true
 }
 
 // restoreUnhandledMethod turns the transport's plain-text 400 for a method it
@@ -261,20 +292,11 @@ func restoreMethodNotFound(req *appreq.Request, body []byte, rpcReq Request) []b
 // has always answered. A JSON-RPC caller gets a JSON-RPC answer; which methods
 // exist is still decided entirely by the SDK, so anything it grows support for
 // keeps working without changes here.
-func restoreUnhandledMethod(req *appreq.Request, body []byte, rpcReq Request) []byte {
+func restoreUnhandledMethod(body []byte, rpcReq Request) (Response, bool) {
 	if !bytes.HasPrefix(body, []byte("JSON RPC not handled:")) {
-		return body
+		return Response{}, false
 	}
-
-	resp := errorResponse(rpcReq.ID, ErrCodeMethodNotFound, "Method not found: "+rpcReq.Method)
-	patched, err := json.Marshal(resp)
-	if err != nil {
-		return body
-	}
-	req.Req.SetStatusCode(http.StatusOK)
-	req.Req.SetContentType("application/json")
-	req.Req.SetBody(patched)
-	return patched
+	return errorResponse(rpcReq.ID, ErrCodeMethodNotFound, "Method not found: "+rpcReq.Method), true
 }
 
 // methodNotFoundMessage returns the message a -32601 should carry: the tool's
@@ -357,7 +379,7 @@ func writeJSONResponse(req *appreq.Request, resp Response) (interface{}, error) 
 }
 
 func (*Endpoint) Path() string {
-	return "/_system/mcp"
+	return mcpEndpointPath
 }
 
 func (*Endpoint) Method() string {
@@ -426,7 +448,7 @@ Docs: https://trip2g.com/en/user/mcp
 }
 
 func (*GetEndpoint) Path() string {
-	return "/_system/mcp"
+	return mcpEndpointPath
 }
 
 func (*GetEndpoint) Method() string {
