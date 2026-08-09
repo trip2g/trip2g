@@ -108,69 +108,44 @@ func structuredToolResult(text string, structured any) CallToolResult {
 	}
 }
 
-func Resolve(ctx context.Context, env Env, req Request) Response {
-	switch req.Method {
-	case MCPMethodInitialize:
-		return handleInitialize(ctx, env, req.ID, req.MethodOverride)
-	case "notifications/initialized":
-		// Client notification, no response needed
-		return Response{JSONRPC: "2.0", ID: req.ID, Result: map[string]any{}}
-	case mcpMethodToolsList:
-		return handleToolsList(ctx, env, req.ID)
-	case mcpMethodToolsCall:
-		return handleToolsCall(ctx, env, req)
-	default:
-		return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: "+req.Method)
-	}
-}
-
-func handleInitialize(ctx context.Context, env Env, id any, methodOverride string) Response {
-	result := map[string]any{
-		"protocolVersion": "2024-11-05",
-		"capabilities": map[string]any{
-			"tools": map[string]any{},
-		},
-		"serverInfo": map[string]any{
-			"name":    "trip2g-mcp",
-			"version": "1.0.0",
-		},
-	}
-
+// initializeInstructions resolves the server instructions an initialize result
+// carries: the content of the note whose mcp_method matches the target, with
+// frontmatter stripped. methodOverride comes from ?method= and selects a note
+// other than the default `initialize` one.
+//
+// A non-nil *Error means the request must fail outright rather than be served
+// without instructions — that only happens for an explicit override naming a
+// note that is missing or unreadable. A missing default initialize note is not
+// an error, it just yields "".
+func initializeInstructions(ctx context.Context, env Env, methodOverride string) (string, *Error) {
 	target := methodOverride
 	if target == "" {
 		target = MCPMethodInitialize
 	}
 
+	instructions := ""
 	for _, note := range env.LatestNoteViews().List {
 		if note.MCPMethod != target {
 			continue
 		}
 		ok, err := canReadMCPNote(ctx, env, note)
 		if err != nil {
-			return errorResponse(id, ErrCodeInternal, "Instructions access check failed: "+err.Error())
+			return "", &Error{Code: ErrCodeInternal, Message: "Instructions access check failed: " + err.Error()}
 		}
 		if !ok {
-			// Note exists but user cannot read it.
-			// For explicit ?method= overrides this is an error; for default initialize it is a silent skip.
-			if methodOverride != "" {
-				return errorResponse(id, ErrCodeMethodNotFound, "Method not found: "+target)
-			}
+			// The note exists but the caller cannot read it. For an explicit
+			// ?method= override that is an error; for default initialize it is
+			// a silent skip.
 			break
 		}
-		content := string(note.Content)
-		content = stripFrontmatter(content)
-		result["instructions"] = content
+		instructions = stripFrontmatter(string(note.Content))
 		break
 	}
 
-	// Explicit ?method= with no matching (or inaccessible) note is an error
-	if methodOverride != "" {
-		if _, hasInstructions := result["instructions"]; !hasInstructions {
-			return errorResponse(id, ErrCodeMethodNotFound, "Method not found: "+methodOverride)
-		}
+	if methodOverride != "" && instructions == "" {
+		return "", &Error{Code: ErrCodeMethodNotFound, Message: "Method not found: " + methodOverride}
 	}
-
-	return successResponse(id, result)
+	return instructions, nil
 }
 
 var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable set of built-in tool names
@@ -189,7 +164,19 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 	MCPMethodInitialize:         true,
 }
 
-func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:funlen // flat declarative list of built-in tool schemas
+// defaultKBIDNote describes kb_id for tool metadata built outside a listing,
+// where the federation depth is not part of the message.
+const defaultKBIDNote = "Target knowledge base id"
+
+// builtinTools returns the tools advertised by tools/list for this request.
+// Registration (registerTools) is deliberately wider: a few tools are callable
+// but unlisted, so the two sets are computed separately.
+func builtinTools(ctx context.Context, env Env) []Tool {
+	return append(staticTools(ctx, env), dynamicTools(ctx, env)...)
+}
+
+// staticTools returns the compiled-in tools, without walking the note corpus.
+func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat declarative list of built-in tool schemas
 	maxDepth := env.FederationMaxDepth()
 	nestedKBIDNote := fmt.Sprintf(
 		"Target knowledge base id; nested bases use '/' "+
@@ -448,11 +435,25 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 		},
 	}
 
-	// Append dynamic tools from notes with mcp_method (excluding reserved names).
-	// Several notes can share an mcp_method (e.g. localized en/ru instruction
-	// notes) — the call side (handleDynamicMethod) resolves to the first note in
-	// path-sorted order, so tools/list must list each method once, keeping that
-	// same first note. Otherwise tools/list returns duplicate tool names.
+	if env.FederatedGraphQLEnabled() {
+		tools = append(tools, federatedGraphQLTool(nestedKBIDNote))
+	}
+
+	if mcpAdminToolsEnabled(ctx) {
+		tools = append(tools, adminGraphQLTools()...)
+	}
+
+	return tools
+}
+
+// dynamicTools lists the tools notes register through mcp_method frontmatter.
+//
+// Several notes can share an mcp_method (e.g. localized en/ru instruction
+// notes) — handleDynamicMethod resolves to the first note in path-sorted order,
+// so each method is listed once, keeping that same first note. Otherwise
+// tools/list would return duplicate tool names.
+func dynamicTools(ctx context.Context, env Env) []Tool {
+	var tools []Tool
 	seenMCPMethods := make(map[string]bool)
 	for _, note := range env.LatestNoteViews().List {
 		if note.MCPMethod == "" || reservedMCPTools[note.MCPMethod] {
@@ -479,28 +480,99 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 			InputSchema: &InputSchema{Type: "object", Properties: map[string]Property{}},
 		})
 	}
+	return tools
+}
 
-	if env.FederatedGraphQLEnabled() {
-		tools = append(tools, Tool{
-			Name:        "federated_graphql_request",
-			Description: "Forwards a read-only GraphQL query to a federation peer KB. Scoped to the caller's allowed subgraphs.",
-			InputSchema: &InputSchema{
-				Type: "object",
-				Properties: map[string]Property{
-					"kb_id": {
-						Type:        "string",
-						Description: nestedKBIDNote,
-					},
-					"query":     {Type: "string", Description: "Read-only GraphQL query string"},
-					"variables": {Type: "object", Description: "Optional variables map"},
-				},
-				Required: []string{"kb_id", "query"},
-			},
-		})
+// dynamicTool returns the note-registered tool called name, if the caller may
+// read the note backing it. Used to register just the tool a tools/call names,
+// instead of walking the whole corpus on every call.
+func dynamicTool(ctx context.Context, env Env, name string) (Tool, bool) {
+	if name == "" || reservedMCPTools[name] {
+		return Tool{}, false
 	}
+	for _, note := range env.LatestNoteViews().List {
+		if note.MCPMethod != name {
+			continue
+		}
+		// Stop at the first note claiming the method whether or not it is
+		// readable, exactly as handleDynamicMethod does.
+		ok, err := canReadMCPNote(ctx, env, note)
+		if err != nil || !ok {
+			return Tool{}, false
+		}
+		desc := note.MCPDescription
+		if desc == "" {
+			desc = note.Title
+		}
+		return Tool{
+			Name:        name,
+			Description: desc,
+			InputSchema: &InputSchema{Type: "object", Properties: map[string]Property{}},
+		}, true
+	}
+	return Tool{}, false
+}
 
-	if mcpAdminToolsEnabled(ctx) {
-		tools = append(tools, Tool{
+// toolHandler is the shape shared by every built-in tool implementation.
+type toolHandler func(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response
+
+// builtinToolHandlers maps a tool name to its implementation. The set is wider
+// than what tools/list advertises: authorization is enforced per tool (either
+// here or inside the handler), while listing is filtered separately.
+func builtinToolHandlers() map[string]toolHandler { //nolint:gocognit // flat dispatch table
+	return map[string]toolHandler{
+		"search":                    handleSearch,
+		"similar":                   handleSimilar,
+		"note_html":                 handleNoteHTML,
+		"expand":                    handleExpand,
+		"federated_search":          handleFederatedSearch,
+		"federated_similar":         handleFederatedSimilar,
+		"federated_note_html":       handleFederatedNoteHTML,
+		"federated_expand":          handleFederatedExpand,
+		"federated_instructions":    handleFederatedInstructions,
+		"federated_graphql_request": handleFederatedGraphQLRequest,
+		"graphql_introspection": func(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+			if !mcpAdminToolsEnabled(ctx) {
+				return errorResponse(id, ErrCodeMethodNotFound, "Method not found: graphql_introspection")
+			}
+			return handleGraphQLIntrospection(ctx, env, id, argsRaw)
+		},
+		// graphql_request serves two callers: a federation peer gets a
+		// subgraph-scoped executor, an admin API key gets the full one.
+		"graphql_request": func(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
+			if fedAuth, ok := federationAuthFromContext(ctx); ok {
+				if !env.FederatedGraphQLEnabled() {
+					return errorResponse(id, ErrCodeMethodNotFound, "Method not found: graphql_request")
+				}
+				return handleGraphQLRequestScoped(ctx, env, id, argsRaw, fedAuth.AllowedSubgraphs)
+			}
+			if !mcpAdminToolsEnabled(ctx) {
+				return errorResponse(id, ErrCodeMethodNotFound, "Method not found: graphql_request")
+			}
+			return handleGraphQLRequest(ctx, env, id, argsRaw)
+		},
+	}
+}
+
+func federatedGraphQLTool(nestedKBIDNote string) Tool {
+	return Tool{
+		Name:        "federated_graphql_request",
+		Description: "Forwards a read-only GraphQL query to a federation peer KB. Scoped to the caller's allowed subgraphs.",
+		InputSchema: &InputSchema{
+			Type: "object",
+			Properties: map[string]Property{
+				"kb_id":     {Type: "string", Description: nestedKBIDNote},
+				"query":     {Type: "string", Description: "Read-only GraphQL query string"},
+				"variables": {Type: "object", Description: "Optional variables map"},
+			},
+			Required: []string{"kb_id", "query"},
+		},
+	}
+}
+
+func adminGraphQLTools() []Tool {
+	return []Tool{
+		{
 			Name:        "graphql_introspection",
 			Description: "Inspect the GraphQL schema. Returns types and operations matching the pattern (regexp), plus all types they reference. Use this to discover available mutations and queries before calling graphql_request.",
 			InputSchema: &InputSchema{
@@ -510,7 +582,8 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 				},
 				Required: []string{"pattern"},
 			},
-		}, Tool{
+		},
+		{
 			Name:        "graphql_request",
 			Description: "Execute a GraphQL query or mutation as admin. Use graphql_introspection first to find the right operation.",
 			InputSchema: &InputSchema{
@@ -521,58 +594,7 @@ func handleToolsList(ctx context.Context, env Env, id any) Response { //nolint:f
 				},
 				Required: []string{"query"},
 			},
-		})
-	}
-
-	return successResponse(id, ListToolsResult{Tools: tools})
-}
-
-func handleToolsCall(ctx context.Context, env Env, req Request) Response {
-	var params CallToolParams
-	err := json.Unmarshal(req.Params, &params)
-	if err != nil {
-		return errorResponse(req.ID, ErrCodeInvalidParams, "Invalid params: "+err.Error())
-	}
-
-	switch params.Name {
-	case "search":
-		return handleSearch(ctx, env, req.ID, params.Arguments)
-	case "similar":
-		return handleSimilar(ctx, env, req.ID, params.Arguments)
-	case "note_html":
-		return handleNoteHTML(ctx, env, req.ID, params.Arguments)
-	case "expand":
-		return handleExpand(ctx, env, req.ID, params.Arguments)
-	case "federated_search":
-		return handleFederatedSearch(ctx, env, req.ID, params.Arguments)
-	case "federated_similar":
-		return handleFederatedSimilar(ctx, env, req.ID, params.Arguments)
-	case "federated_note_html":
-		return handleFederatedNoteHTML(ctx, env, req.ID, params.Arguments)
-	case "federated_expand":
-		return handleFederatedExpand(ctx, env, req.ID, params.Arguments)
-	case "federated_instructions":
-		return handleFederatedInstructions(ctx, env, req.ID, params.Arguments)
-	case "graphql_introspection":
-		if !mcpAdminToolsEnabled(ctx) {
-			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_introspection")
-		}
-		return handleGraphQLIntrospection(ctx, env, req.ID, params.Arguments)
-	case "federated_graphql_request":
-		return handleFederatedGraphQLRequest(ctx, env, req.ID, params.Arguments)
-	case "graphql_request":
-		if fedAuth, ok := federationAuthFromContext(ctx); ok {
-			if !env.FederatedGraphQLEnabled() {
-				return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_request")
-			}
-			return handleGraphQLRequestScoped(ctx, env, req.ID, params.Arguments, fedAuth.AllowedSubgraphs)
-		}
-		if !mcpAdminToolsEnabled(ctx) {
-			return errorResponse(req.ID, ErrCodeMethodNotFound, "Method not found: graphql_request")
-		}
-		return handleGraphQLRequest(ctx, env, req.ID, params.Arguments)
-	default:
-		return handleDynamicMethod(ctx, env, req.ID, params.Name)
+		},
 	}
 }
 

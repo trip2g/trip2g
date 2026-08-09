@@ -51,7 +51,7 @@ func TestFederatedGraphQLRequest_ToolsListHiddenWhenFlagOff(t *testing.T) {
 		panic("unexpected FederationClient call")
 	})
 
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/list",
 		ID:      1,
@@ -72,7 +72,7 @@ func TestFederatedGraphQLRequest_ToolsListVisibleWhenFlagOn(t *testing.T) {
 		panic("unexpected FederationClient call")
 	})
 
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/list",
 		ID:      1,
@@ -117,7 +117,7 @@ func TestGraphQLRequest_FedAuthFlagOff_MethodNotFound(t *testing.T) {
 	// directly via the mcp_test package trick: use the unexported path through internal test.
 	// Instead, test the flag-off path via the admin dispatch: without admin ctx AND without fed ctx,
 	// graphql_request must also return MethodNotFound.
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -156,7 +156,7 @@ func TestFederatedGraphQLRequest_SenderForwardsViaClient(t *testing.T) {
 	}
 	paramsJSON, _ := json.Marshal(params)
 
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,

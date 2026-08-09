@@ -57,7 +57,7 @@ func callFederatedSearch(t *testing.T, env *EnvMock, arguments string) mcp.CallT
 	}
 	paramsJSON, err := json.Marshal(params)
 	require.NoError(t, err)
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -71,9 +71,7 @@ func callFederatedSearch(t *testing.T, env *EnvMock, arguments string) mcp.CallT
 
 func fanoutPayload(t *testing.T, result mcp.CallToolResult) mcp.FederatedCallPayload {
 	t.Helper()
-	payload, ok := result.StructuredContent.(mcp.FederatedCallPayload)
-	require.True(t, ok, "expected FederatedCallPayload, got %T", result.StructuredContent)
-	return payload
+	return decodePayload[mcp.FederatedCallPayload](t, result)
 }
 
 func TestFederatedSearchBlindFanoutCapsPeersAndReportsSkipped(t *testing.T) {

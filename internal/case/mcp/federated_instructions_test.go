@@ -28,7 +28,7 @@ func fedInstrNoteViews() *appmodel.NoteViews {
 func callFederatedInstructions(env mcp.Env, args string) mcp.Response {
 	params := mcp.CallToolParams{Name: "federated_instructions", Arguments: json.RawMessage(args)}
 	paramsJSON, _ := json.Marshal(params)
-	return mcp.Resolve(context.Background(), env, mcp.Request{
+	return mcp.ResolveForTest(context.Background(), env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -188,7 +188,7 @@ func TestFederatedInstructionsUnknownKBID(t *testing.T) {
 	resp := callFederatedInstructions(env, `{"kb_id":"ghost"}`)
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
-	payload := result.StructuredContent.(mcp.FederationStatusPayload)
+	payload := decodePayload[mcp.FederationStatusPayload](t, result)
 	require.Equal(t, "federation_not_configured", payload.Status)
 }
 

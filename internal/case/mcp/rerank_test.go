@@ -111,7 +111,7 @@ func rerankSearchCall(t *testing.T, env *EnvMock) mcp.SearchResultPayload {
 	}
 	paramsJSON, err := json.Marshal(params)
 	require.NoError(t, err)
-	resp := mcp.Resolve(context.Background(), env, mcp.Request{
+	resp := mcp.ResolveForTest(context.Background(), env, mcp.Request{
 		JSONRPC: "2.0",
 		Method:  "tools/call",
 		Params:  paramsJSON,
@@ -120,7 +120,7 @@ func rerankSearchCall(t *testing.T, env *EnvMock) mcp.SearchResultPayload {
 	require.Nil(t, resp.Error)
 	result := resp.Result.(mcp.CallToolResult)
 	require.False(t, result.IsError, "content: %v", result.Content)
-	return result.StructuredContent.(mcp.SearchResultPayload)
+	return decodePayload[mcp.SearchResultPayload](t, result)
 }
 
 func TestSearchAppliesRerankerWhenConfigured(t *testing.T) {

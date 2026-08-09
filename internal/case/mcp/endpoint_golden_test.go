@@ -22,6 +22,7 @@ import (
 	"trip2g/internal/metrics"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/ptr"
+	"trip2g/internal/usertoken"
 
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
@@ -40,10 +41,11 @@ const goldenPath = "testdata/endpoint_golden.txt"
 
 // goldenCase is one request pushed through the real endpoint.
 type goldenCase struct {
-	name    string
-	body    string
-	query   string            // raw query string, without '?'
-	headers map[string]string // extra request headers
+	name     string
+	body     string
+	query    string            // raw query string, without '?'
+	headers  map[string]string // extra request headers
+	noAccept bool              // omit the Accept header a spec-compliant client sends
 }
 
 func goldenCases() []goldenCase {
@@ -93,6 +95,7 @@ func goldenCases() []goldenCase {
 		{name: "call_missing_params", body: `{"jsonrpc":"2.0","id":8,"method":"tools/call"}`},
 
 		{name: "unknown_method", body: `{"jsonrpc":"2.0","id":9,"method":"resources/list","params":{}}`},
+		{name: "unimplemented_method", body: `{"jsonrpc":"2.0","id":9,"method":"totally/unknown","params":{}}`},
 		{name: "bad_jsonrpc_version", body: `{"jsonrpc":"1.0","id":9,"method":"tools/list","params":{}}`},
 		{name: "parse_error", body: `{not json`},
 		{name: "string_id", body: `{"jsonrpc":"2.0","id":"abc","method":"tools/list","params":{}}`},
@@ -103,8 +106,15 @@ func goldenCases() []goldenCase {
 
 		{name: "bad_api_key", body: `{"jsonrpc":"2.0","id":11,"method":"tools/list","params":{}}`, headers: map[string]string{"X-API-Key": "nope"}},
 		{name: "malformed_bearer", body: `{"jsonrpc":"2.0","id":11,"method":"tools/list","params":{}}`, headers: map[string]string{"Authorization": "Basic zzz"}},
+
+		// Streamable HTTP requires clients to accept both media types; a client
+		// that omits Accept is rejected by the transport before dispatch.
+		{name: "missing_accept_header", body: `{"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}`, noAccept: true},
 	}
 }
+
+// acceptHeader is what the MCP Streamable HTTP spec requires clients to send.
+const acceptHeader = "application/json, text/event-stream"
 
 func TestEndpointGolden(t *testing.T) {
 	var out bytes.Buffer
@@ -138,12 +148,15 @@ func runGoldenCase(t *testing.T, c goldenCase) (int, string, string) {
 	}
 	fasthttpCtx.Request.SetRequestURI(uri)
 	fasthttpCtx.Request.Header.SetContentType("application/json")
+	if !c.noAccept {
+		fasthttpCtx.Request.Header.Set("Accept", acceptHeader)
+	}
 	fasthttpCtx.Request.SetBodyString(c.body)
 	for k, v := range c.headers {
 		fasthttpCtx.Request.Header.Set(k, v)
 	}
 
-	req := wiredRequest(fasthttpCtx, goldenEnv(), nil)
+	req := goldenRequest(fasthttpCtx, goldenEnv())
 	defer appreq.Release(req)
 
 	_, err := (&mcp.Endpoint{}).Handle(req)
@@ -152,6 +165,23 @@ func runGoldenCase(t *testing.T, c goldenCase) (int, string, string) {
 	return fasthttpCtx.Response.StatusCode(),
 		string(fasthttpCtx.Response.Header.ContentType()),
 		normalizeGolden(fasthttpCtx.Response.Body())
+}
+
+// goldenTokenManager uses a cookie name no test request carries, so token
+// extraction always misses and the matrix runs as an anonymous client unless a
+// case sets an auth header explicitly.
+var goldenTokenManager = usertoken.NewManager(usertoken.Config{ //nolint:gochecknoglobals // test package global
+	CookieName: "__golden_test_cookie__",
+	Secret:     "test-secret-32-bytes-long-filler!",
+})
+
+func goldenRequest(fasthttpCtx *fasthttp.RequestCtx, env interface{}) *appreq.Request {
+	req := appreq.Acquire()
+	req.Env = env
+	req.Req = fasthttpCtx
+	req.TokenManager = goldenTokenManager
+	req.StoreInContext()
+	return req
 }
 
 // latencyRe blanks the wall-clock latency federation results carry, which is

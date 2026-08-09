@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -9,6 +10,9 @@ import (
 	"time"
 
 	"trip2g/internal/appreq"
+
+	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
 type Endpoint struct{}
@@ -17,7 +21,9 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	env := req.Env.(Env)
 	start := time.Now()
 
-	// Parse JSON-RPC request
+	// The body is parsed here as well as by the SDK: auth failures, the hop-depth
+	// limit and the ?method= override all have to answer with the request's own
+	// JSON-RPC id before the transport ever sees the message.
 	var rpcReq Request
 	err := json.Unmarshal(req.Req.PostBody(), &rpcReq)
 	if err != nil {
@@ -27,7 +33,6 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	m := env.MCPMetrics()
 
-	// Validate JSON-RPC version
 	if rpcReq.JSONRPC != "2.0" {
 		resp := errorResponse(rpcReq.ID, ErrCodeInvalidRequest, "Invalid JSON-RPC version")
 		recordRejectedRequest(m, rpcReq, authAnonymous, time.Since(start).Seconds())
@@ -79,12 +84,226 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		resolveCtx = newCtx
 	}
 
-	// Handle request
-	rpcReq.MethodOverride = string(req.Req.Request.URI().QueryArgs().Peek("method"))
 	resolveCtx = ContextWithMetrics(resolveCtx, m)
-	resp := Resolve(resolveCtx, env, rpcReq)
-	recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, resp, time.Since(start).Seconds())
-	return writeJSONResponse(req, resp)
+
+	// Only initialize surfaces the instructions, and resolving them scans the
+	// whole corpus — so every other method skips that work, as it always has.
+	instructions := ""
+	if rpcReq.Method == MCPMethodInitialize {
+		// ?method= selects which note supplies them.
+		methodOverride := string(req.Req.Request.URI().QueryArgs().Peek("method"))
+		resolved, instrErr := initializeInstructions(resolveCtx, env, methodOverride)
+		if instrErr != nil {
+			resp := Response{JSONRPC: "2.0", ID: rpcReq.ID, Error: instrErr}
+			recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, resp, time.Since(start).Seconds())
+			return writeJSONResponse(req, resp)
+		}
+		instructions = resolved
+	}
+
+	if errResp := checkToolCallParams(rpcReq); errResp != nil {
+		recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, *errResp, time.Since(start).Seconds())
+		return writeJSONResponse(req, *errResp)
+	}
+	normalizeParams(req, rpcReq)
+
+	body, err := serveSDK(req, resolveCtx, env, instructions, toolScope(rpcReq))
+	if err != nil {
+		return nil, err
+	}
+	body = restoreUnhandledMethod(req, body, rpcReq)
+	body = restoreMethodNotFound(req, body, rpcReq)
+
+	recordRequestMetrics(resolveCtx, m, rpcReq, userToken != nil, decodeResponse(body), time.Since(start).Seconds())
+	return nil, nil
+}
+
+// serveSDK runs the request through the official MCP Streamable HTTP transport
+// and copies the result back onto the fasthttp response.
+func serveSDK(req *appreq.Request, ctx context.Context, env Env, instructions, scope string) ([]byte, error) {
+	httpReq := &http.Request{}
+	err := fasthttpadaptor.ConvertRequest(req.Req, httpReq, true)
+	if err != nil {
+		return nil, err
+	}
+
+	rec := serveMessage(ctx, env, instructions, scope, httpReq)
+
+	req.Req.SetStatusCode(rec.status)
+	if contentType := rec.header.Get("Content-Type"); contentType != "" {
+		req.Req.SetContentType(contentType)
+	}
+	req.Req.SetBody(rec.body)
+	return rec.body, nil
+}
+
+// serveMessage runs one HTTP request through the official Streamable HTTP
+// transport against a server built for this caller.
+func serveMessage(ctx context.Context, env Env, instructions, scope string, httpReq *http.Request) *responseRecorder {
+	handler := mcpsdk.NewStreamableHTTPHandler(
+		func(*http.Request) *mcpsdk.Server { return buildServer(ctx, env, instructions, scope) },
+		&mcpsdk.StreamableHTTPOptions{Stateless: true, JSONResponse: true},
+	)
+
+	rec := &responseRecorder{header: http.Header{}, status: http.StatusOK}
+	handler.ServeHTTP(rec, httpReq.WithContext(ctx))
+	return rec
+}
+
+// responseRecorder is the minimal http.ResponseWriter needed to hand the SDK's
+// net/http response back to fasthttp.
+type responseRecorder struct {
+	header http.Header
+	body   []byte
+	status int
+	wrote  bool
+}
+
+func (r *responseRecorder) Header() http.Header { return r.header }
+
+func (r *responseRecorder) Write(p []byte) (int, error) {
+	r.body = append(r.body, p...)
+	return len(p), nil
+}
+
+func (r *responseRecorder) WriteHeader(status int) {
+	if r.wrote {
+		return
+	}
+	r.wrote = true
+	r.status = status
+}
+
+// normalizeParams substitutes an empty params object on initialize. The SDK
+// rejects a params-less initialize with an HTTP 400, but this endpoint has
+// always accepted it bare — `{"jsonrpc":"2.0","id":1,"method":"initialize"}` is
+// what the ?method= docs tell agents to probe with — so the answer stays a
+// JSON-RPC response.
+func normalizeParams(req *appreq.Request, rpcReq Request) {
+	if len(rpcReq.Params) > 0 || rpcReq.Method != MCPMethodInitialize {
+		return
+	}
+	rpcReq.Params = json.RawMessage(`{}`)
+	body, err := json.Marshal(rpcReq)
+	if err != nil {
+		return
+	}
+	req.Req.Request.SetBody(body)
+}
+
+// scopeCapabilities registers tool names only. initialize has to advertise the
+// tools capability — the SDK omits it entirely when nothing is registered — but
+// it never surfaces tool descriptions or schemas, so the descriptive catalog is
+// not built for it.
+const scopeCapabilities = "\x00capabilities"
+
+// toolScope names the only tool a request can dispatch, so the server is built
+// with just that one registered. tools/list needs the full catalog and gets an
+// empty scope.
+func toolScope(rpcReq Request) string {
+	if rpcReq.Method == mcpMethodToolsList {
+		return ""
+	}
+	if rpcReq.Method != mcpMethodToolsCall {
+		return scopeCapabilities
+	}
+	var params CallToolParams
+	if json.Unmarshal(rpcReq.Params, &params) != nil {
+		return ""
+	}
+	return params.Name
+}
+
+// checkToolCallParams reproduces the params validation tools/call did when this
+// handler owned the dispatch: without a decodable params object the caller gets
+// invalid-params, not the transport's unknown-tool answer.
+func checkToolCallParams(rpcReq Request) *Response {
+	if rpcReq.Method != mcpMethodToolsCall {
+		return nil
+	}
+	var params CallToolParams
+	err := json.Unmarshal(rpcReq.Params, &params)
+	if err != nil {
+		resp := errorResponse(rpcReq.ID, ErrCodeInvalidParams, "Invalid params: "+err.Error())
+		return &resp
+	}
+	return nil
+}
+
+// restoreMethodNotFound undoes an SDK quirk: jsonrpc2 matches errors by code
+// alone (WireError.Is ignores the message), so every -32601 a tool handler
+// returns comes back out as the generic `method not found: "tools/call"`.
+// Clients — and the note-tool ACL path, where an unreadable mcp_method note is
+// simply never registered — depend on the name being the tool's, not the
+// transport method's.
+func restoreMethodNotFound(req *appreq.Request, body []byte, rpcReq Request) []byte {
+	var resp Response
+	if json.Unmarshal(body, &resp) != nil || resp.Error == nil {
+		return body
+	}
+
+	restored := methodNotFoundMessage(resp.Error, rpcReq)
+	if restored == resp.Error.Message {
+		return body
+	}
+
+	resp.Error.Message = restored
+	patched, err := json.Marshal(resp)
+	if err != nil {
+		return body
+	}
+	req.Req.SetBody(patched)
+	return patched
+}
+
+// restoreUnhandledMethod turns the transport's plain-text 400 for a method it
+// does not implement back into a JSON-RPC error at 200, the way this endpoint
+// has always answered. A JSON-RPC caller gets a JSON-RPC answer; which methods
+// exist is still decided entirely by the SDK, so anything it grows support for
+// keeps working without changes here.
+func restoreUnhandledMethod(req *appreq.Request, body []byte, rpcReq Request) []byte {
+	if !bytes.HasPrefix(body, []byte("JSON RPC not handled:")) {
+		return body
+	}
+
+	resp := errorResponse(rpcReq.ID, ErrCodeMethodNotFound, "Method not found: "+rpcReq.Method)
+	patched, err := json.Marshal(resp)
+	if err != nil {
+		return body
+	}
+	req.Req.SetStatusCode(http.StatusOK)
+	req.Req.SetContentType("application/json")
+	req.Req.SetBody(patched)
+	return patched
+}
+
+// methodNotFoundMessage returns the message a -32601 should carry: the tool's
+// own name for a tools/call, the JSON-RPC method otherwise. Anything that is
+// not the SDK's generic rewrite is returned unchanged.
+func methodNotFoundMessage(rpcErr *Error, rpcReq Request) string {
+	if rpcErr.Code != ErrCodeMethodNotFound || !strings.HasPrefix(rpcErr.Message, "method not found: ") {
+		return rpcErr.Message
+	}
+
+	name := rpcReq.Method
+	if rpcReq.Method == mcpMethodToolsCall {
+		var params CallToolParams
+		if json.Unmarshal(rpcReq.Params, &params) != nil || params.Name == "" {
+			return rpcErr.Message
+		}
+		name = params.Name
+	}
+	return "Method not found: " + name
+}
+
+// decodeResponse re-reads the transport's own output so request metrics keep
+// classifying results the way they did when this handler owned the dispatch.
+func decodeResponse(body []byte) Response {
+	var resp Response
+	if json.Unmarshal(body, &resp) != nil {
+		return Response{}
+	}
+	return resp
 }
 
 // authenticateAnonymousRequest resolves API-key or federation-JWT auth when no
