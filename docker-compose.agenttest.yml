@@ -1,0 +1,49 @@
+name: trip2g_agenttest
+
+# Minimal stack for e2e/agenttest/run.sh: a single app instance, nothing else.
+# Deliberately not docker-compose.test.yml — the agent test needs a clean
+# instance with no seeded notes, and none of the replicas, peers, MinIO, Dex,
+# fleet or the 2.3 GB embedding model. Vector search stays off; MCP `search`
+# falls back to full-text retrieval, which is what this test needs.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-agenttest-app
+    ports:
+      - "20181:20181"
+      - "20182:20182"
+    environment:
+      - LISTEN_ADDR=0.0.0.0:20181
+      - INTERNAL_LISTEN_ADDR=:20182
+      - DB_FILE=/data/data.sqlite3
+      # Local filesystem storage — the agent test needs no MinIO.
+      - STORAGE_BACKEND=local
+      - STORAGE_LOCAL_DIR=/data/storage
+      - DEV=true # sign in code 111111
+      - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_SIGN_IN_CODES=true # no SMTP in this stack
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      - PUBLIC_URL=http://localhost:20181
+      - JWT_SECRET=agenttest-secret-key-do-not-use-in-production
+      - USER_TOKEN_COOKIE_NAME=trip2g_agenttest
+      - MAIL_FROM=agenttest@example.com
+    volumes:
+      # A named volume, not a bind mount: the container writes /data as root, and
+      # a root-owned tmp/agenttest/data in the repo breaks `go build ./...`.
+      # `docker compose down -v` disposes of it with the stack.
+      - agenttest-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:20182/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  agenttest-data:
