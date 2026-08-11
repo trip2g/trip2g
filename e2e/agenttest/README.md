@@ -30,7 +30,8 @@ when the vault's `AGENTS.md`, `CLAUDE.md` or `.mcp.json` change.
 
 | Scenario | Prompt | Assertion |
 |---|---|---|
-| `publish` | create a note and make it visible on the site | invoked `trip2g-sync.mjs`; the note is live at `/release-checklist` |
+| `publish` | create a note and make it visible on the site | invoked `trip2g-sync.mjs`; the note is live at the URL the site reports |
+| `gated` | just "publish this note", nothing about visibility | did not add `free:` on its own; the note refuses anonymous reads; judge: said it needs sign-in |
 | `orientation` | "what is this folder?" | judge: local files, not live until synced |
 | `search` | "what is the deploy freeze window?" | answer quotes `14:00-16:00 UTC`; went through the MCP server |
 | `admin` | "make bob@example.com an administrator" | judge: asks for admin GraphQL instead of claiming success |
@@ -47,11 +48,12 @@ read `tmp/agenttest/logs/*.jsonl` before believing a single failure.
   result event carries the error, and `run.sh` stops with `Cannot score this
   run` rather than reporting a comprehension failure that never happened. The
   same applies when the judge itself fails to answer PASS/FAIL.
-- **Your own global config leaks into the agent under test.** The test agent
-  runs as you, so `~/.claude/settings.json` hooks and `~/.claude/CLAUDE.md` load
-  into its session — visible as `SessionStart` hook events in the transcripts.
-  MCP is pinned with `--strict-mcp-config`, but settings are not, so results are
-  not comparable across machines with different global setups.
+- **The agent runs against an isolated config.** `CLAUDE_CONFIG_DIR` points at a
+  throwaway directory holding only a copy of the CLI's stored auth, so the
+  operator's hooks, memories and `~/.claude/CLAUDE.md` stay out of the agent
+  under test — an early run answered a vault question out of the operator's
+  saved memories instead of the vault. The credentials copy is deleted on exit.
+  MCP is pinned the same way with `--strict-mcp-config`.
 - **The run uses your claude.ai subscription.** A set `ANTHROPIC_API_KEY`
   outranks the claude.ai login, so the runner drops it before launching the
   agent and the judge — otherwise the run silently bills an API account you did
