@@ -18,6 +18,7 @@ import (
 	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
+	"trip2g/internal/case/admin/createhatlink"
 	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createinboundfederationsecret"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
@@ -296,6 +297,7 @@ type Env interface {
 	createoffer.Env
 	createuser.Env
 	createadmin.Env
+	createhatlink.Env
 	createusersubgraphaccess.Env
 	deleteadmin.Env
 	updateoffer.Env

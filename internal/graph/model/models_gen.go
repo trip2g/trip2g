@@ -126,6 +126,10 @@ type CreateGoogleOAuthCredentialsOrErrorPayload interface {
 	IsCreateGoogleOAuthCredentialsOrErrorPayload()
 }
 
+type CreateHatLinkOrErrorPayload interface {
+	IsCreateHatLinkOrErrorPayload()
+}
+
 type CreateHTMLInjectionOrErrorPayload interface {
 	IsCreateHTMLInjectionOrErrorPayload()
 }
@@ -1244,6 +1248,19 @@ type CreateGoogleOAuthCredentialsPayload struct {
 
 func (CreateGoogleOAuthCredentialsPayload) IsCreateGoogleOAuthCredentialsOrErrorPayload() {}
 
+type CreateHatLinkInput struct {
+	Email            string `json:"email"`
+	AdminEnter       *bool  `json:"adminEnter,omitempty"`
+	ExpiresInMinutes *int32 `json:"expiresInMinutes,omitempty"`
+}
+
+type CreateHatLinkPayload struct {
+	URL       string    `json:"url"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
+func (CreateHatLinkPayload) IsCreateHatLinkOrErrorPayload() {}
+
 type CreateHTMLInjectionInput struct {
 	Description string     `json:"description"`
 	Position    int32      `json:"position"`
@@ -1649,6 +1666,8 @@ func (ErrorPayload) IsBanUserOrErrorPayload() {}
 func (ErrorPayload) IsCreateAdminOrErrorPayload() {}
 
 func (ErrorPayload) IsDeleteAdminOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateHatLinkOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateAPIKeyOrErrorPayload() {}
 

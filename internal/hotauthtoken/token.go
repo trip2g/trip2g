@@ -48,8 +48,14 @@ func NewManager(config Config) *Manager {
 }
 
 func (m *Manager) NewToken(data model.HotAuthToken) (string, error) {
+	return m.NewTokenWithTTL(data, m.config.ExpiresIn)
+}
+
+// NewTokenWithTTL mints a token that expires after ttl instead of the
+// manager's configured lifetime. Callers are responsible for capping ttl.
+func (m *Manager) NewTokenWithTTL(data model.HotAuthToken, ttl time.Duration) (string, error) {
 	now := time.Now()
-	exp := now.Add(m.config.ExpiresIn)
+	exp := now.Add(ttl)
 
 	claims := fullData{
 		HotAuthToken: data,

@@ -118,6 +118,30 @@ token = generate_hot_auth_token('admin@example.com', is_admin=True)
 
 ---
 
+## Генерация ссылки через админский GraphQL
+
+`createHatLink` в `AdminMutation` выдаёт ту же ссылку, что и CLI `trip2g-server login-link`, но без доступа к шеллу сервера.
+
+```graphql
+mutation {
+  admin {
+    createHatLink(input: { email: "owner@example.com", adminEnter: true, expiresInMinutes: 5 }) {
+      ... on CreateHatLinkPayload { url expiresAt }
+      ... on ErrorPayload { message byFields { name value } }
+    }
+  }
+}
+```
+
+Ограничения:
+
+- только админ (`CurrentAdminUserToken`); API-ключ доходит до `admin` только с `enable_mcp_admin_tools`
+- `expiresInMinutes` — от 1 до 60, по умолчанию 5
+- email валидируется
+- каждый вызов пишется в audit log (кто, для кого, `adminEnter`, TTL) — без самой ссылки и токена
+
+Реализация: `internal/case/admin/createhatlink/`.
+
 ## Отправка токена в Trip2G
 
 ### HTML форма с auto-submit

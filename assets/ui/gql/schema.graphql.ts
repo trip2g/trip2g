@@ -598,6 +598,7 @@ export type AdminMutation = {
   createGitHubOAuthCredentials: CreateGitHubOAuthCredentialsOrErrorPayload;
   createGitToken: CreateGitTokenOrErrorPayload;
   createGoogleOAuthCredentials: CreateGoogleOAuthCredentialsOrErrorPayload;
+  createHatLink: CreateHatLinkOrErrorPayload;
   createHtmlInjection: CreateHtmlInjectionOrErrorPayload;
   createInboundFederationSecret: CreateInboundFederationSecretOrErrorPayload;
   createNotFoundIgnoredPattern: CreateNotFoundIgnoredPatternOrErrorPayload;
@@ -765,6 +766,11 @@ export type AdminMutationcreateGitTokenArgs = {
 
 export type AdminMutationcreateGoogleOAuthCredentialsArgs = {
   input: CreateGoogleOAuthCredentialsInput;
+};
+
+
+export type AdminMutationcreateHatLinkArgs = {
+  input: CreateHatLinkInput;
 };
 
 
@@ -2295,6 +2301,20 @@ export type CreateGoogleOAuthCredentialsOrErrorPayload = CreateGoogleOAuthCreden
 export type CreateGoogleOAuthCredentialsPayload = {
   __typename?: 'CreateGoogleOAuthCredentialsPayload';
   credentials: AdminGoogleOAuthCredentials;
+};
+
+export type CreateHatLinkInput = {
+  adminEnter?: InputMaybe<Scalars['Boolean']['input']>;
+  email: Scalars['String']['input'];
+  expiresInMinutes?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type CreateHatLinkOrErrorPayload = CreateHatLinkPayload | ErrorPayload;
+
+export type CreateHatLinkPayload = {
+  __typename?: 'CreateHatLinkPayload';
+  expiresAt: Scalars['Time']['output'];
+  url: Scalars['String']['output'];
 };
 
 export type CreateHtmlInjectionInput = {

@@ -2255,6 +2255,25 @@ type DeleteAdminPayload {
 union DeleteAdminOrErrorPayload = DeleteAdminPayload | ErrorPayload
 
 #
+# createHatLink
+#
+
+input CreateHatLinkInput {
+  email: String!
+  # Land as admin instead of a plain signed-in user. Defaults to false.
+  adminEnter: Boolean
+  # Link lifetime, 1..60 minutes. Defaults to 5.
+  expiresInMinutes: Int
+}
+
+type CreateHatLinkPayload {
+  url: String!
+  expiresAt: Time!
+}
+
+union CreateHatLinkOrErrorPayload = CreateHatLinkPayload | ErrorPayload
+
+#
 # createApiKey
 #
 
@@ -3199,6 +3218,8 @@ type AdminMutation {
 
   createAdmin(input: CreateAdminInput!): CreateAdminOrErrorPayload!
   deleteAdmin(input: DeleteAdminInput!): DeleteAdminOrErrorPayload!
+
+  createHatLink(input: CreateHatLinkInput!): CreateHatLinkOrErrorPayload!
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
