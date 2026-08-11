@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"time"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/getboostyuser"
@@ -104,6 +105,10 @@ func (a *app) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error
 
 func (a *app) GenerateHotAuthToken(_ context.Context, data model.HotAuthToken) (string, error) {
 	return a.hotAuthTokenManager.NewToken(data)
+}
+
+func (a *app) GenerateHotAuthTokenWithTTL(_ context.Context, data model.HotAuthToken, ttl time.Duration) (string, error) {
+	return a.hotAuthTokenManager.NewTokenWithTTL(data, ttl)
 }
 
 func (a *app) ParseHotAuthToken(_ context.Context, token string) (*model.HotAuthToken, error) {

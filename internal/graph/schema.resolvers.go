@@ -31,6 +31,7 @@ import (
 	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
+	"trip2g/internal/case/admin/createhatlink"
 	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createinboundfederationsecret"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
@@ -886,6 +887,11 @@ func (r *adminMutationResolver) CreateAdmin(ctx context.Context, obj *appmodel.A
 // DeleteAdmin is the resolver for the deleteAdmin field.
 func (r *adminMutationResolver) DeleteAdmin(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteAdminInput) (model.DeleteAdminOrErrorPayload, error) {
 	return deleteadmin.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateHatLink is the resolver for the createHatLink field.
+func (r *adminMutationResolver) CreateHatLink(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateHatLinkInput) (model.CreateHatLinkOrErrorPayload, error) {
+	return createhatlink.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateAPIKey is the resolver for the createApiKey field.

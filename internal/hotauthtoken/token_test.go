@@ -37,3 +37,21 @@ func TestParseToken_WrongSecret_Rejected(t *testing.T) {
 	_, err = verifier.ParseToken(token)
 	require.Error(t, err)
 }
+
+// TestNewTokenWithTTL_OverridesConfiguredLifetime covers the admin createHatLink
+// path, which caps the link lifetime per request instead of using the manager's
+// configured ExpiresIn.
+func TestNewTokenWithTTL_OverridesConfiguredLifetime(t *testing.T) {
+	manager := hotauthtoken.NewManager(hotauthtoken.Config{Secret: "test-secret", ExpiresIn: time.Hour})
+
+	expired, err := manager.NewTokenWithTTL(model.HotAuthToken{Email: "owner@example.com"}, -time.Minute)
+	require.NoError(t, err)
+	_, err = manager.ParseToken(expired)
+	require.Error(t, err)
+
+	live, err := manager.NewTokenWithTTL(model.HotAuthToken{Email: "owner@example.com"}, 30*time.Minute)
+	require.NoError(t, err)
+	got, err := manager.ParseToken(live)
+	require.NoError(t, err)
+	require.Equal(t, "owner@example.com", got.Email)
+}
