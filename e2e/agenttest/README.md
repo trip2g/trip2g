@@ -52,8 +52,10 @@ read `tmp/agenttest/logs/*.jsonl` before believing a single failure.
   into its session — visible as `SessionStart` hook events in the transcripts.
   MCP is pinned with `--strict-mcp-config`, but settings are not, so results are
   not comparable across machines with different global setups.
-- `ANTHROPIC_API_KEY` in your environment takes precedence over a claude.ai
-  login, so the run is billed to whichever of the two the CLI picks.
+- **The run uses your claude.ai subscription.** A set `ANTHROPIC_API_KEY`
+  outranks the claude.ai login, so the runner drops it before launching the
+  agent and the judge — otherwise the run silently bills an API account you did
+  not choose. Pass `--use-api-key` to keep it and bill the API account instead.
 
 ## Notes
 

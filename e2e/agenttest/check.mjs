@@ -75,7 +75,12 @@ function judge(transcript, criterion, model) {
     'Reply with exactly PASS or FAIL on the first line, then one short sentence of justification.',
   ].join('\n');
 
-  const res = spawnSync('claude', ['-p', prompt, '--model', model], { encoding: 'utf8' });
+  // Same rule as run.sh: a set ANTHROPIC_API_KEY outranks the claude.ai login,
+  // so the judge would bill an API account the operator did not choose.
+  const env = { ...process.env };
+  if (process.env.AGENTTEST_USE_API_KEY !== '1') delete env.ANTHROPIC_API_KEY;
+
+  const res = spawnSync('claude', ['-p', prompt, '--model', model], { encoding: 'utf8', env });
   const out = (res.stdout || '').trim();
 
   // Distinguish "the judge could not run" from "the judge said FAIL" — only the
