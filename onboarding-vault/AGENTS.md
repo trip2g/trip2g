@@ -156,4 +156,37 @@ Managing the site (subgraphs, keys, settings) requires **"Execute admin GraphQL"
 Or manually: `{{publicUrl}}/admin` → Integrations → API Keys → your key → Enable Admin GraphQL
 
 After enabling, an introspection tool becomes available in `my-trip2g-instance`.
-Use `trip2g-docs-public-hub` for query examples or run introspection directly.
+
+## Calling GraphQL from the shell
+
+The bundled CLI sends queries for you — same credentials, no `curl`, no flags:
+
+```bash
+node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql '{publicUrl}'
+node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql '<query>' '<variables json>'
+```
+
+**Start by asking the schema what exists** instead of guessing field names:
+
+```bash
+node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql --introspect                 # Query, Mutation, AdminQuery, AdminMutation
+node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql --introspect AdminMutation    # one type, as SDL
+```
+
+Admin operations live under the `admin` field, never on `Mutation` directly. Add a user, then make that user an admin:
+
+```bash
+CLI=.obsidian/plugins/trip2g/trip2g-sync.mjs
+
+node $CLI graphql 'mutation($i:CreateUserInput!){admin{createUser(input:$i){
+  __typename ... on CreateUserPayload{user{id email}} ... on ErrorPayload{message}}}}' \
+  '{"i":{"email":"bob@example.com"}}'
+
+node $CLI graphql 'mutation($i:CreateAdminInput!){admin{createAdmin(input:$i){
+  __typename ... on ErrorPayload{message}}}}' \
+  '{"i":{"userId":2}}'
+```
+
+Ask for `__typename` and the `ErrorPayload` branch on every mutation — that is how a validation error reaches you instead of looking like an empty success. A non-zero exit means the call failed: the messages go to stderr, and any partial data still goes to stdout.
+
+Without **Execute admin GraphQL** on your key these return an authorization error — that is the signal to ask the user to enable it, not to retry.

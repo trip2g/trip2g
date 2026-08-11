@@ -2980,6 +2980,98 @@ ${content}`;
   }
 };
 
+// src/sync/cli/graphql-cmd.ts
+var ROOT_TYPES = ["Query", "Mutation", "AdminQuery", "AdminMutation"];
+var TYPE_REF = `
+fragment TypeRef on __Type {
+  kind name
+  ofType { kind name ofType { kind name ofType { kind name } } }
+}`;
+function renderType(type) {
+  if (!type) return "?";
+  if (type.kind === "NON_NULL") return `${renderType(type.ofType)}!`;
+  if (type.kind === "LIST") return `[${renderType(type.ofType)}]`;
+  return type.name ?? "?";
+}
+__name(renderType, "renderType");
+function renderField(field) {
+  const args = (field.args ?? []).map((a) => `${a.name}: ${renderType(a.type)}`).join(", ");
+  return `  ${field.name}${args ? `(${args})` : ""}: ${renderType(field.type)}`;
+}
+__name(renderField, "renderField");
+async function runGraphQLCommand(opts) {
+  if (!opts.query) {
+    return {
+      stdout: "",
+      stderr: "usage: trip2g-sync.mjs graphql '<query>' ['<variables json>']",
+      exitCode: 2
+    };
+  }
+  let variables;
+  if (opts.variablesJSON) {
+    try {
+      variables = JSON.parse(opts.variablesJSON);
+    } catch (err) {
+      return { stdout: "", stderr: `invalid variables JSON: ${String(err)}`, exitCode: 2 };
+    }
+  }
+  let response;
+  try {
+    response = await opts.transport({ query: opts.query, variables });
+  } catch (err) {
+    return { stdout: "", stderr: String(err), exitCode: 1 };
+  }
+  if (response.errors?.length) {
+    return {
+      stdout: response.data ? JSON.stringify(response.data, null, 2) : "",
+      stderr: response.errors.map((e) => e.message).join("\n"),
+      exitCode: 1
+    };
+  }
+  return { stdout: JSON.stringify(response.data ?? null, null, 2), stderr: "", exitCode: 0 };
+}
+__name(runGraphQLCommand, "runGraphQLCommand");
+async function runIntrospectCommand(opts) {
+  const names = opts.typeName ? [opts.typeName] : ROOT_TYPES;
+  const sections = [];
+  const missing = [];
+  for (const name of names) {
+    let response;
+    try {
+      response = await opts.transport({
+        query: `query($name: String!) { __type(name: $name) { name fields { name args { name type { ...TypeRef } } type { ...TypeRef } } } }${TYPE_REF}`,
+        variables: { name }
+      });
+    } catch (err) {
+      return { stdout: sections.join("\n\n"), stderr: String(err), exitCode: 1 };
+    }
+    if (response.errors?.length) {
+      return {
+        stdout: sections.join("\n\n"),
+        stderr: response.errors.map((e) => e.message).join("\n"),
+        exitCode: 1
+      };
+    }
+    const type = response.data?.__type;
+    if (!type) {
+      missing.push(name);
+      continue;
+    }
+    const fields = (type.fields ?? []).map(renderField).join("\n");
+    sections.push(`type ${type.name} {
+${fields}
+}`);
+  }
+  if (!sections.length) {
+    return { stdout: "", stderr: `unknown type(s): ${missing.join(", ")}`, exitCode: 1 };
+  }
+  const note = missing.length ? `
+
+# not found: ${missing.join(", ")}` : "";
+  return { stdout: `${sections.join("\n\n")}${note}`, stderr: "", exitCode: 0 };
+}
+__name(runIntrospectCommand, "runIntrospectCommand");
+
 // src/sync/classify.ts
 function classifyFile(localHash, remoteHash, lastSyncedHash) {
   if (localHash === null && remoteHash === null) {
@@ -4565,6 +4657,15 @@ Options:
   -n, --dry-run            Show what would be done without making changes
   -h, --help               Show this help
 
+Subcommands:
+  warnings                 Print note warnings as JSON
+  graphql '<query>' ['<variables json>']
+                           Run a GraphQL query against the configured instance.
+                           Credentials come from data.json, so no flags are needed.
+  graphql --introspect ['<TypeName>']
+                           List the fields of a type as SDL. Without a name,
+                           covers Query, Mutation, AdminQuery and AdminMutation.
+
 Environment Variables:
   TRIP2G_ENDPOINT    GraphQL endpoint URL
   TRIP2G_API_KEY     API key for authentication
@@ -4613,9 +4714,30 @@ async function cmdWarnings() {
   console.log(JSON.stringify(result, null, 2));
 }
 __name(cmdWarnings, "cmdWarnings");
+async function cmdGraphQL() {
+  const dataJson = readDataJson();
+  const apiUrl = process.env.TRIP2G_ENDPOINT || process.env.ENDPOINT || dataJson.apiUrl || "http://localhost:8081/_system/graphql";
+  const apiKey = process.env.TRIP2G_API_KEY || process.env.API_KEY || dataJson.apiKey || "";
+  if (!apiKey) {
+    console.error("\u274C TRIP2G_API_KEY or API_KEY required");
+    process.exit(1);
+  }
+  const client = new GraphQLClient(apiUrl, { headers: { "X-API-Key": apiKey } });
+  const transport = /* @__PURE__ */ __name(async ({ query, variables }) => ({ data: await client.request({ document: query, variables }) }), "transport");
+  const [, , , first, second] = process.argv;
+  const result = first === "--introspect" ? await runIntrospectCommand({ typeName: second, transport }) : await runGraphQLCommand({ query: first, variablesJSON: second, transport });
+  if (result.stdout) console.log(result.stdout);
+  if (result.stderr) console.error(result.stderr);
+  if (result.exitCode !== 0) process.exit(result.exitCode);
+}
+__name(cmdGraphQL, "cmdGraphQL");
 async function main() {
   if (process.argv[2] === "warnings") {
     await cmdWarnings();
+    return;
+  }
+  if (process.argv[2] === "graphql") {
+    await cmdGraphQL();
     return;
   }
   const args = parseArgs();
