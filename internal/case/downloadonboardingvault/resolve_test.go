@@ -34,6 +34,7 @@ func testVaultZip() []byte {
 
 	files := []struct{ name, content string }{
 		{oldPrefix + "_index.md", "# Welcome\n\n{{publicUrl}}\n"},
+		{oldPrefix + "AGENTS.md", "# Agent context\n\n{{publicUrl}}/_system/git\n"},
 		{oldPrefix + ".obsidian/app.json", "{}"},
 	}
 
@@ -115,6 +116,39 @@ func TestResolve_IndexMDContainsPublicURL(t *testing.T) {
 	require.NotEmpty(t, indexContent, "_index.md should exist in zip")
 	require.Contains(t, indexContent, "https://example.com", "_index.md should contain publicURL")
 	require.NotContains(t, indexContent, "{{publicUrl}}", "_index.md should not contain placeholder")
+}
+
+// AGENTS.md is the agent's only entry point into the vault: it must ship and
+// point at the real instance.
+func TestResolve_AgentsMDContainsPublicURL(t *testing.T) {
+	env := &mockEnv{publicURL: "https://example.com"}
+
+	zipData, err := Resolve(context.Background(), env, 1, false, "example.com")
+	require.NoError(t, err)
+
+	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	require.NoError(t, err)
+
+	var agentsContent string
+	for _, file := range reader.File {
+		if file.Name != "example.com/AGENTS.md" {
+			continue
+		}
+
+		rc, openErr := file.Open()
+		require.NoError(t, openErr)
+
+		content, readErr := io.ReadAll(rc)
+		rc.Close()
+		require.NoError(t, readErr)
+
+		agentsContent = string(content)
+		break
+	}
+
+	require.NotEmpty(t, agentsContent, "AGENTS.md should exist in zip")
+	require.Contains(t, agentsContent, "https://example.com")
+	require.NotContains(t, agentsContent, "{{publicUrl}}")
 }
 
 func TestResolve_EnableAdminGraphQL(t *testing.T) {

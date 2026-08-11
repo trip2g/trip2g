@@ -30,14 +30,16 @@ vault_dir = repo_root / "onboarding-vault"
 out_zip   = vault_dir / "vault.zip"
 
 EXCLUDE = {
-    vault_dir / "embed.go",
     vault_dir / "generate.sh",
     vault_dir / "vault.zip",
     vault_dir / ".obsidian" / "workspace.json",
     # data.json contains real credentials — never bundle
     vault_dir / ".obsidian" / "plugins" / "trip2g" / "data.json",
-    vault_dir / "AGENTS.md",
 }
+
+# Directories that may appear inside the vault while working on the repo but
+# are not vault content.
+EXCLUDE_DIRS = {".omc", ".git", "node_modules"}
 
 FIXED_DATE = (2024, 1, 1, 0, 0, 0)
 
@@ -45,7 +47,11 @@ entries = sorted(vault_dir.rglob("*"))
 
 with zipfile.ZipFile(out_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
     for path in entries:
-        if path in EXCLUDE:
+        # Go sources (embed.go, embed_dev.go, tests) are build machinery and
+        # must not land in the user's Obsidian vault.
+        if path in EXCLUDE or path.suffix == ".go":
+            continue
+        if EXCLUDE_DIRS & set(path.relative_to(vault_dir).parts):
             continue
         rel = path.relative_to(repo_root)
         hidden = 0x02 if path.name.startswith(".") else 0   # FILE_ATTRIBUTE_HIDDEN for dotfiles (Windows)

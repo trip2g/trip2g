@@ -8,7 +8,7 @@ Publishing platform: Obsidian vault → website. Sync via Obsidian plugin, CLI, 
 
 ## Quick start (for an agent)
 
-- **Publish / first sync:** run `node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder .` from the vault root — every note becomes a page; `_index.md` is the homepage.
+- **Publish / first sync:** run `node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder .` from the vault root — no flags or credentials needed, they are read from `.obsidian/plugins/trip2g/data.json`. Every note becomes a page; `_index.md` is the homepage.
 - **Edit content:** notes are plain Markdown files in this folder; edit them, then sync.
 - **Manage the site:** call admin GraphQL / search via the `my-trip2g-instance` MCP server (`.mcp.json`).
 
