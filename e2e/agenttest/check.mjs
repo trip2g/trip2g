@@ -7,7 +7,8 @@
 // Usage:
 //   node check.mjs tools <transcript.jsonl>
 //   node check.mjs final <transcript.jsonl>
-//   node check.mjs assert-tool <transcript.jsonl> <regex>      # tool name or its input
+//   node check.mjs assert-tool <transcript.jsonl> <regex>        # tool NAME
+//   node check.mjs assert-tool-input <transcript.jsonl> <regex>  # any tool's arguments
 //   node check.mjs assert-no-tool <transcript.jsonl> <regex>
 //   node check.mjs assert-final <transcript.jsonl> <regex>
 //   node check.mjs judge <transcript.jsonl> <criterion> [model]
@@ -56,9 +57,17 @@ function readTranscript(file) {
   return { toolUses, finalText, runError };
 }
 
-function matchesTool({ toolUses }, pattern) {
+// Name and input are matched separately on purpose. Matching a name pattern
+// against the input JSON produces false positives — a ToolSearch call whose
+// argument mentions "mcp__" is not the agent using an MCP server.
+function matchesToolName({ toolUses }, pattern) {
   const re = new RegExp(pattern, 'i');
-  return toolUses.some((t) => re.test(t.name) || re.test(t.input));
+  return toolUses.some((t) => re.test(t.name));
+}
+
+function matchesToolInput({ toolUses }, pattern) {
+  const re = new RegExp(pattern, 'i');
+  return toolUses.some((t) => re.test(t.input));
 }
 
 function judge(transcript, criterion, model) {
@@ -128,14 +137,21 @@ switch (command) {
   }
 
   case 'assert-tool': {
-    const ok = matchesTool(transcript, arg);
-    console.log(ok ? `ok: used ${arg}` : `MISS: never used ${arg}`);
+    const ok = matchesToolName(transcript, arg);
+    const used = [...new Set(transcript.toolUses.map((t) => t.name))].join(', ') || '(none)';
+    console.log(ok ? `ok: called ${arg}` : `MISS: never called ${arg} — called: ${used}`);
+    process.exit(ok ? 0 : 1);
+  }
+
+  case 'assert-tool-input': {
+    const ok = matchesToolInput(transcript, arg);
+    console.log(ok ? `ok: passed ${arg} to a tool` : `MISS: no tool call mentioned ${arg}`);
     process.exit(ok ? 0 : 1);
   }
 
   case 'assert-no-tool': {
-    const ok = !matchesTool(transcript, arg);
-    console.log(ok ? `ok: avoided ${arg}` : `UNEXPECTED: used ${arg}`);
+    const ok = !matchesToolName(transcript, arg);
+    console.log(ok ? `ok: avoided ${arg}` : `UNEXPECTED: called ${arg}`);
     process.exit(ok ? 0 : 1);
   }
 
