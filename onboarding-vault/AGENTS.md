@@ -4,11 +4,17 @@ subgraph: private
 
 # Agent context
 
-Publishing platform: Obsidian vault → website. Sync via Obsidian plugin, CLI, or Git.
+## Where you are
+
+This folder is a **local Obsidian vault** — plain Markdown files on disk — paired with a live trip2g site at {{publicUrl}}. The files here are what you edit; the site is what readers see. Three things follow from that:
+
+- **Nothing is live until you sync.** Editing a file changes nothing on the site; publishing is an explicit step — see [Sync](#sync). The same files are also open in Obsidian on the user's machine, so treat them as shared state.
+- **Synced notes become searchable.** Published notes are indexed for vector search (RAG) through the `my-trip2g-instance` MCP server — `search` → `note_html`. A note you never synced does not exist for it.
+- **Managing the site needs the user's consent.** Admin GraphQL is off by default. If a task requires it (subgraphs, API keys, settings), ask the user to enable it — see [Enable admin GraphQL](#enable-admin-graphql). Check whether you already have it by looking for the introspection tool on `my-trip2g-instance`; don't assume.
 
 ## Quick start (for an agent)
 
-- **Publish / first sync:** run `node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder .` from the vault root — every note becomes a page; `_index.md` is the homepage.
+- **Publish / first sync:** run `node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder .` from the vault root — no flags or credentials needed, they are read from `.obsidian/plugins/trip2g/data.json`. Every note becomes a page; `_index.md` is the homepage.
 - **Edit content:** notes are plain Markdown files in this folder; edit them, then sync.
 - **Manage the site:** call admin GraphQL / search via the `my-trip2g-instance` MCP server (`.mcp.json`).
 
@@ -143,7 +149,7 @@ Full guide: search `trip2g-docs-public-hub` for **Git Access**.
 
 ## Enable admin GraphQL
 
-To manage the site via agent, enable **"Execute admin GraphQL"** for your API key:
+Managing the site (subgraphs, keys, settings) requires **"Execute admin GraphQL"** on the API key. It is off unless the user turned it on at download time — an agent cannot grant it to itself, so ask the user to open the link below:
 
 [Open API key settings]({{publicUrl}}/admin#!nav=integrations/integrations_nav=apikeys/id=key1) → Enable Admin GraphQL
 
