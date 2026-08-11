@@ -2981,24 +2981,21 @@ ${content}`;
 };
 
 // src/sync/cli/graphql-cmd.ts
-var ROOT_TYPES = ["Query", "Mutation", "AdminQuery", "AdminMutation"];
-var TYPE_REF = `
-fragment TypeRef on __Type {
-  kind name
-  ofType { kind name ofType { kind name ofType { kind name } } }
-}`;
-function renderType(type) {
-  if (!type) return "?";
-  if (type.kind === "NON_NULL") return `${renderType(type.ofType)}!`;
-  if (type.kind === "LIST") return `[${renderType(type.ofType)}]`;
-  return type.name ?? "?";
+function toGraphQLResponse(raw) {
+  if (raw.error) return { errors: [{ message: raw.error.message }] };
+  const structured = raw.result?.structuredContent;
+  if (structured && typeof structured === "object") return structured;
+  const text = raw.result?.content?.[0]?.text;
+  if (typeof text === "string") {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { data: text };
+    }
+  }
+  return { errors: [{ message: "MCP returned neither structured content nor text" }] };
 }
-__name(renderType, "renderType");
-function renderField(field) {
-  const args = (field.args ?? []).map((a) => `${a.name}: ${renderType(a.type)}`).join(", ");
-  return `  ${field.name}${args ? `(${args})` : ""}: ${renderType(field.type)}`;
-}
-__name(renderField, "renderField");
+__name(toGraphQLResponse, "toGraphQLResponse");
 async function runGraphQLCommand(opts) {
   if (!opts.query) {
     return {
@@ -3017,7 +3014,11 @@ async function runGraphQLCommand(opts) {
   }
   let response;
   try {
-    response = await opts.transport({ query: opts.query, variables });
+    const raw = await opts.transport({
+      tool: "graphql_request",
+      args: variables ? { query: opts.query, variables } : { query: opts.query }
+    });
+    response = toGraphQLResponse(raw);
   } catch (err) {
     return { stdout: "", stderr: String(err), exitCode: 1 };
   }
@@ -3032,43 +3033,29 @@ async function runGraphQLCommand(opts) {
 }
 __name(runGraphQLCommand, "runGraphQLCommand");
 async function runIntrospectCommand(opts) {
-  const names = opts.typeName ? [opts.typeName] : ROOT_TYPES;
-  const sections = [];
-  const missing = [];
-  for (const name of names) {
-    let response;
-    try {
-      response = await opts.transport({
-        query: `query($name: String!) { __type(name: $name) { name fields { name args { name type { ...TypeRef } } type { ...TypeRef } } } }${TYPE_REF}`,
-        variables: { name }
-      });
-    } catch (err) {
-      return { stdout: sections.join("\n\n"), stderr: String(err), exitCode: 1 };
-    }
-    if (response.errors?.length) {
-      return {
-        stdout: sections.join("\n\n"),
-        stderr: response.errors.map((e) => e.message).join("\n"),
-        exitCode: 1
-      };
-    }
-    const type = response.data?.__type;
-    if (!type) {
-      missing.push(name);
-      continue;
-    }
-    const fields = (type.fields ?? []).map(renderField).join("\n");
-    sections.push(`type ${type.name} {
-${fields}
-}`);
+  if (!opts.pattern) {
+    return {
+      stdout: "",
+      stderr: "usage: trip2g-sync.mjs graphql --introspect '<pattern>'   (e.g. AdminMutation, CreateUser)",
+      exitCode: 2
+    };
   }
-  if (!sections.length) {
-    return { stdout: "", stderr: `unknown type(s): ${missing.join(", ")}`, exitCode: 1 };
+  let raw;
+  try {
+    raw = await opts.transport({ tool: "graphql_introspection", args: { pattern: opts.pattern } });
+  } catch (err) {
+    return { stdout: "", stderr: String(err), exitCode: 1 };
   }
-  const note = missing.length ? `
-
-# not found: ${missing.join(", ")}` : "";
-  return { stdout: `${sections.join("\n\n")}${note}`, stderr: "", exitCode: 0 };
+  if (raw.error) return { stdout: "", stderr: raw.error.message, exitCode: 1 };
+  const text = raw.result?.content?.[0]?.text;
+  if (typeof text !== "string") {
+    return { stdout: "", stderr: "introspection returned no content", exitCode: 1 };
+  }
+  try {
+    return { stdout: JSON.stringify(JSON.parse(text), null, 2), stderr: "", exitCode: 0 };
+  } catch {
+    return { stdout: text, stderr: "", exitCode: 0 };
+  }
 }
 __name(runIntrospectCommand, "runIntrospectCommand");
 
@@ -4660,11 +4647,12 @@ Options:
 Subcommands:
   warnings                 Print note warnings as JSON
   graphql '<query>' ['<variables json>']
-                           Run a GraphQL query against the configured instance.
-                           Credentials come from data.json, so no flags are needed.
-  graphql --introspect ['<TypeName>']
-                           List the fields of a type as SDL. Without a name,
-                           covers Query, Mutation, AdminQuery and AdminMutation.
+                           Run a GraphQL query through the MCP lane, where an
+                           API key carries its admin rights. Credentials come
+                           from data.json, so no flags are needed.
+  graphql --introspect '<pattern>'
+                           Show schema types matching the pattern, with their
+                           fields and input fields (e.g. AdminMutation, CreateUser).
 
 Environment Variables:
   TRIP2G_ENDPOINT    GraphQL endpoint URL
@@ -4722,10 +4710,31 @@ async function cmdGraphQL() {
     console.error("\u274C TRIP2G_API_KEY or API_KEY required");
     process.exit(1);
   }
-  const client = new GraphQLClient(apiUrl, { headers: { "X-API-Key": apiKey } });
-  const transport = /* @__PURE__ */ __name(async ({ query, variables }) => ({ data: await client.request({ document: query, variables }) }), "transport");
+  const mcpUrl = apiUrl.replace(/\/_system\/graphql\/?$/, "") + "/_system/mcp";
+  const transport = /* @__PURE__ */ __name(async ({ tool, args }) => {
+    const response = await fetch(mcpUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+        "X-API-Key": apiKey
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: tool, arguments: args }
+      })
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`HTTP ${response.status}: ${response.statusText}${body ? `
+${body}` : ""}`);
+    }
+    return response.json();
+  }, "transport");
   const [, , , first, second] = process.argv;
-  const result = first === "--introspect" ? await runIntrospectCommand({ typeName: second, transport }) : await runGraphQLCommand({ query: first, variablesJSON: second, transport });
+  const result = first === "--introspect" ? await runIntrospectCommand({ pattern: second, transport }) : await runGraphQLCommand({ query: first, variablesJSON: second, transport });
   if (result.stdout) console.log(result.stdout);
   if (result.stderr) console.error(result.stderr);
   if (result.exitCode !== 0) process.exit(result.exitCode);

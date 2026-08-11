@@ -159,18 +159,18 @@ After enabling, an introspection tool becomes available in `my-trip2g-instance`.
 
 ## Calling GraphQL from the shell
 
-The bundled CLI sends queries for you — same credentials, no `curl`, no flags:
+The bundled CLI sends queries for you — same credentials, no `curl`, no flags. It calls through this instance's MCP server, which is where your API key carries its admin rights:
 
 ```bash
 node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql '{publicUrl}'
 node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql '<query>' '<variables json>'
 ```
 
-**Start by asking the schema what exists** instead of guessing field names:
+**Start by asking the schema what exists** instead of guessing field names. `--introspect` takes a name pattern and returns the matching types with their fields and, for inputs, the exact arguments to pass:
 
 ```bash
-node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql --introspect                 # Query, Mutation, AdminQuery, AdminMutation
-node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql --introspect AdminMutation    # one type, as SDL
+node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql --introspect AdminMutation
+node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql --introspect CreateAdminInput
 ```
 
 Admin operations live under the `admin` field, never on `Mutation` directly. Add a user, then make that user an admin:
