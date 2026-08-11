@@ -20,9 +20,12 @@ when the vault's `AGENTS.md`, `CLAUDE.md` or `.mcp.json` change.
    no vector search, no seeded notes.
 2. Signs in as the owner and downloads the vault through the real
    `/_system/onboarding-vault` endpoint, so a packaging regression fails the test.
-3. Downloads a **second** vault and uses it to publish `deploy-policy.md`. That
-   fact then exists only on the server — the agent's own vault does not contain
-   it, so it cannot be answered by grepping local files.
+3. Downloads a **second** vault (with `enable_admin_graphql`) and uses it to
+   publish `deploy-policy.md`. That fact then exists only on the server — the
+   agent's own vault does not contain it, so it cannot be answered by grepping
+   local files. The harness queries the site through that vault's own
+   `trip2g-sync.mjs graphql`, so the helper agents are told to use is exercised
+   by the test rather than trusted.
 4. Runs each scenario with `claude -p --output-format stream-json` inside the
    unpacked vault, then asserts over the transcript.
 
