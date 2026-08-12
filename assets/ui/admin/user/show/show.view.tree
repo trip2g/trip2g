@@ -2,6 +2,10 @@ $trip2g_admin_user_show $mol_page
 	user_id? 0
 	title \User
 	close_icon null $mol_view
+	HatLinkButton $mol_button_minor
+		title \Sign-in link
+		enabled <= hat_link_allowed true
+		click? <=> hat_link_generate? null
 	CreateAdminLink $mol_link
 		arg *
 			nav \system
@@ -11,6 +15,7 @@ $trip2g_admin_user_show $mol_page
 		title \Make Admin
 	tools /
 		<= CreateAdminLink
+		<= HatLinkButton
 		<= EditLink $mol_link
 			arg * action \update
 			title \Edit
@@ -35,5 +40,7 @@ $trip2g_admin_user_show $mol_page
 						title \Created At
 						Content <= CreatedAt $trip2g_admin_cell
 							content <= user_created_at \
+					<= HatLink $trip2g_admin_user_hatlink
+						user_email <= user_hat_email \
 	body /
 		<= UserView

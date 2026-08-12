@@ -1,0 +1,31 @@
+$trip2g_admin_user_hatlink $mol_view
+	user_email \
+	hat_url? \
+	hat_expires_at? \
+	generate_allowed true
+	generate? null
+	style *
+		flexDirection \column
+	sub /
+		<= Link $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= Url_labeler $mol_labeler
+					title \Sign-in link
+					Content <= Url $trip2g_admin_cell
+						content <= hat_url \
+				<= ExpiresAt_labeler $mol_labeler
+					title \Expires At
+					Content <= ExpiresAt $trip2g_admin_cell
+						content <= hat_expires_at \
+				<= Buttons $mol_row
+					sub /
+						<= Copy $mol_button_copy
+							title \Copy
+							text <= hat_url \
+						<= Hide $mol_button_minor
+							title \Hide
+							click? <=> hide? null
+		<= Result $mol_status
+			message <= result? \

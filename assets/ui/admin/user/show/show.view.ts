@@ -43,9 +43,21 @@ namespace $.$$ {
 			return this.data().email || '-'
 		}
 
+		override user_hat_email(): string {
+			return this.data().email || ''
+		}
+
+		override hat_link_allowed(): boolean {
+			return this.HatLink().generate_allowed()
+		}
+
+		override hat_link_generate() {
+			this.HatLink().generate()
+		}
+
 		override user_created_at(): string {
 			const m = new $mol_time_moment( this.data().createdAt )
-			return m.toString( 'YYYY-MM-DD HH:mm:ss' )
+			return m.toString( 'YYYY-MM-DD hh:mm:ss' )
 		}
 	}
 }
