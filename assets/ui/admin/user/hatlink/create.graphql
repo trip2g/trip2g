@@ -1,0 +1,14 @@
+mutation ($input: CreateHatLinkInput!) {
+	admin {
+		data: createHatLink(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateHatLinkPayload {
+				url
+				expiresAt
+			}
+		}
+	}
+}
