@@ -1,8 +1,9 @@
 namespace $.$$ {
 	export class $trip2g_admin_user_hatlink extends $.$trip2g_admin_user_hatlink {
+		// The trigger button lives in the page tools, so the body shows only the result.
 		override sub() {
 			if (this.hat_url() === '') {
-				return [this.Generate(), this.Result()]
+				return [this.Result()]
 			}
 
 			return [this.Link(), this.Result()]

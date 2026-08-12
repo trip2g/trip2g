@@ -2,13 +2,11 @@ $trip2g_admin_user_hatlink $mol_view
 	user_email \
 	hat_url? \
 	hat_expires_at? \
+	generate_allowed true
+	generate? null
 	style *
 		flexDirection \column
 	sub /
-		<= Generate $mol_button_major
-			title \Sign-in link
-			enabled <= generate_allowed true
-			click? <=> generate? null
 		<= Link $mol_view
 			style *
 				flexDirection \column
