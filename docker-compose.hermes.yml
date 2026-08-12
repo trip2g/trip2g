@@ -1,0 +1,144 @@
+name: trip2g_hermesfleet
+
+# Stack for e2e/hermesfleet/run.sh: prove cmd/fleet can run on a Hermes agent.
+#
+#   vault → app → change webhook → fleet → hermesllm → hermes → ChatGPT/Codex
+#
+# hermes speaks an OpenAI-compatible API but ignores `tools` and never returns
+# `tool_calls`, so fleet cannot talk to it directly; hermesllm is the bridge.
+#
+# HERMES_API_KEY and HERMESLLM_API_KEY are generated per run by run.sh and
+# interpolated here, so nothing long-lived is committed. They are plain
+# `${VAR}`, not `${VAR:?}`: `down -v` must work without them, or the hermes
+# volume (which holds real OAuth tokens) could not be removed after the run.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trip2g-hermesfleet-app
+    ports:
+      - "20281:20281"
+      - "20282:20282"
+    environment:
+      - LISTEN_ADDR=0.0.0.0:20281
+      - INTERNAL_LISTEN_ADDR=:20282
+      - DB_FILE=/data/data.sqlite3
+      - STORAGE_BACKEND=local
+      - STORAGE_LOCAL_DIR=/data/storage
+      - DEV=true # sign in code 111111
+      - MAX_ACTIVE_SIGNIN_CODES=999
+      - LOG_SIGN_IN_CODES=true # no SMTP in this stack
+      - LOG_LEVEL=info
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+      - PUBLIC_URL=http://localhost:20281
+      - JWT_SECRET=hermesfleet-secret-key-do-not-use-in-production
+      - USER_TOKEN_COOKIE_NAME=trip2g_hermesfleet
+      - MAIL_FROM=hermesfleet@example.com
+    volumes:
+      # A named volume, not a bind mount: the container writes /data as root, and
+      # a root-owned directory in the repo breaks `go build ./...`.
+      - app-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:20282/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # Hermes agent. Its entrypoint is s6; `gateway run` starts the agent gateway
+  # plus the OpenAI-compatible platform API (enabled by API_SERVER_KEY).
+  # /opt/data holds auth.json + config.yaml, seeded by run.sh before `up`.
+  hermes:
+    image: nousresearch/hermes-agent:v2026.7.7
+    container_name: trip2g-hermesfleet-hermes
+    command: ["gateway", "run"]
+    ports:
+      - "28642:8642" # host-published for debugging only; fleet reaches it in-network
+    environment:
+      - HERMES_HOME=/opt/data
+      - API_SERVER_KEY=${HERMES_API_KEY}
+      - API_SERVER_HOST=0.0.0.0
+      - API_SERVER_PORT=8642
+    volumes:
+      - hermes-data:/opt/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8642/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 60s # cold start is 20-40s
+
+  # OpenAI-compatible bridge: takes fleet's chat-completions request with `tools`,
+  # drives hermes, and returns the result as `tool_calls` fleet can execute.
+  hermesllm:
+    build:
+      context: .
+      dockerfile: Dockerfile.hermesllm
+    container_name: trip2g-hermesfleet-hermesllm
+    depends_on:
+      hermes:
+        condition: service_healthy
+    ports:
+      - "29096:8088"
+    environment:
+      - HERMESLLM_ADDR=0.0.0.0:8088
+      - HERMESLLM_HERMES_URL=http://hermes:8642
+      - HERMESLLM_HERMES_KEY=${HERMES_API_KEY}
+      - HERMESLLM_API_KEY=${HERMESLLM_API_KEY}
+      - HERMESLLM_MODEL=hermes-agent
+      - HERMESLLM_TIMEOUT=300s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8088/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  # Fleet agent host. JWT_SECRET must match the app's so HAT auth works, and
+  # CALLBACK_URL uses the compose service name so the app can reach it.
+  fleet:
+    build:
+      context: .
+      dockerfile: Dockerfile.fleet
+    container_name: trip2g-hermesfleet-fleet
+    depends_on:
+      app:
+        condition: service_healthy
+      hermesllm:
+        condition: service_healthy
+    ports:
+      - "29095:9090"
+    environment:
+      - TRIP2G_FLEET_FLEET_ID=hermes
+      - TRIP2G_FLEET_LISTEN=:9090
+      - TRIP2G_FLEET_CALLBACK_URL=http://fleet:9090
+      - TRIP2G_FLEET_TRIP2G_URL=http://app:20281
+      - TRIP2G_FLEET_JWT_SECRET=hermesfleet-secret-key-do-not-use-in-production
+      - TRIP2G_FLEET_ADMIN_EMAIL=fleet@local
+      - TRIP2G_FLEET_FLEET_SECRET=hermesfleet-secret
+      - TRIP2G_FLEET_LLM_BASE_URL=http://hermesllm:8088/v1
+      - TRIP2G_FLEET_LLM_API_KEY=${HERMESLLM_API_KEY}
+      - TRIP2G_FLEET_DEFAULT_MODEL=hermes-agent
+      - TRIP2G_FLEET_AGENTS_FOLDER=roles/
+      - TRIP2G_FLEET_POLL_SECONDS=3
+      # Hermes prepends a large fixed system prompt, so one turn costs ~15k
+      # prompt tokens; the ceiling is sized for that, not for a raw model.
+      - TRIP2G_FLEET_TOKEN_CEILING=500000
+      - TRIP2G_FLEET_STEP_CEILING=25
+      - TRIP2G_FLEET_OFFERED_TOOLS=read_note,write_note
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  app-data:
+  hermes-data:
+    # Fixed name so run.sh can seed auth.json/config.yaml into it before `up`.
+    name: trip2g-hermesfleet-hermes-data
