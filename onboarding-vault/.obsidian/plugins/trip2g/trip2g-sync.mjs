@@ -2554,17 +2554,17 @@ var NodeEnv = class {
     this.vaultFiles = vaultFiles;
     return { notes: files, all: vaultFiles };
   }
+  // Errors are not caught here. An empty list is a meaningful answer — a server
+  // holding no notes — so returning one for a request that never arrived makes
+  // a failure indistinguishable from an empty vault, and classification then
+  // reports every local note as deleted upstream. Letting it throw reaches
+  // main()'s handler, which prints the reason and exits non-zero.
   async getServerHashes() {
-    try {
-      const result = await this.sdk.FetchServerHashes();
-      return result.notePaths.filter((np) => this.matchesPrefix(np.path)).map((np) => ({
-        path: np.path,
-        hash: np.hash
-      }));
-    } catch (e) {
-      console.error(`\u274C Failed to fetch server hashes: ${e}`);
-      return [];
-    }
+    const result = await this.sdk.FetchServerHashes();
+    return result.notePaths.filter((np) => this.matchesPrefix(np.path)).map((np) => ({
+      path: np.path,
+      hash: np.hash
+    }));
   }
   getSyncState() {
     return this.syncState;
