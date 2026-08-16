@@ -36,7 +36,7 @@ func (e *Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	err := Resolve(req.Req, req.Env.(Env), token)
+	redirect, err := Resolve(req.Req, req.Env.(Env), token)
 	if err != nil {
 		req.Req.SetStatusCode(http.StatusUnauthorized)
 		req.Req.SetBodyString(fmt.Sprintf("authentication failed: %v", err))
@@ -44,7 +44,7 @@ func (e *Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	req.Req.SetStatusCode(http.StatusFound)
-	req.Req.Response.Header.Set("Location", "/")
+	req.Req.Response.Header.Set("Location", location(redirect, "/"))
 	return nil, nil
 }
 
@@ -71,7 +71,7 @@ func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	err := Resolve(req.Req, req.Env.(Env), token)
+	redirect, err := Resolve(req.Req, req.Env.(Env), token)
 	if err != nil {
 		req.Req.SetStatusCode(http.StatusUnauthorized)
 		req.Req.SetBodyString(fmt.Sprintf("authentication failed: %v", err))
@@ -79,50 +79,66 @@ func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	req.Req.SetStatusCode(http.StatusFound)
-	req.Req.Response.Header.Set("Location", "/admin")
+	req.Req.Response.Header.Set("Location", location(redirect, "/admin"))
 	return nil, nil
 }
 
-func Resolve(ctx context.Context, env Env, token string) error {
-	// Parse and validate JWT token.
-	hotAuthToken, err := env.ParseHotAuthToken(ctx, token)
-	if err != nil {
-		return fmt.Errorf("failed to parse token: %w", err)
+// The redirect rides the signed token, so it cannot be steered by whoever opens
+// the link; a link that names none keeps the endpoint's own default.
+func location(redirect, fallback string) string {
+	if redirect == "" {
+		return fallback
 	}
 
-	// Get or create user.
+	return redirect
+}
+
+// Resolve signs the token's subject in and reports where to send the browser;
+// an empty redirect leaves the caller's own default.
+//
+// Only a provisioning token creates the user or touches roles. An ordinary
+// sign-in link is a way in for someone who already exists, so an unknown
+// address is refused rather than silently becoming an account.
+func Resolve(ctx context.Context, env Env, token string) (string, error) {
+	hotAuthToken, err := env.ParseHotAuthToken(ctx, token)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse token: %w", err)
+	}
+
 	user, err := env.UserByEmail(ctx, hotAuthToken.Email)
 	if err != nil {
-		if db.IsNoFound(err) {
-			// User doesn't exist, create new user.
-			params := db.InsertUserWithEmailParams{
-				Email:      hotAuthToken.Email,
-				CreatedVia: "hot_auth_token",
-			}
-			user, err = env.InsertUserWithEmail(ctx, params)
-			if err != nil {
-				return fmt.Errorf("failed to create user: %w", err)
-			}
-		} else {
-			return fmt.Errorf("failed to get user: %w", err)
+		if !db.IsNoFound(err) {
+			return "", fmt.Errorf("failed to get user: %w", err)
+		}
+
+		if !hotAuthToken.AdminEnter {
+			return "", fmt.Errorf("no user with email %s", hotAuthToken.Email)
+		}
+
+		params := db.InsertUserWithEmailParams{
+			Email:      hotAuthToken.Email,
+			CreatedVia: "hot_auth_token",
+		}
+
+		user, err = env.InsertUserWithEmail(ctx, params)
+		if err != nil {
+			return "", fmt.Errorf("failed to create user: %w", err)
 		}
 	}
 
-	// If AdminEnter flag is set, ensure user is admin.
 	if hotAuthToken.AdminEnter {
 		err = ensureUserIsAdmin(ctx, env, user.ID)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	// Create session and set cookie.
 	_, err = env.SetupUserToken(ctx, user.ID)
 	if err != nil {
-		return fmt.Errorf("failed to create session: %w", err)
+		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 
-	return nil
+	return hotAuthToken.Redirect, nil
 }
 
 func ensureUserIsAdmin(ctx context.Context, env Env, userID int64) error {

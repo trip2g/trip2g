@@ -2304,9 +2304,9 @@ export type CreateGoogleOAuthCredentialsPayload = {
 };
 
 export type CreateHatLinkInput = {
-  adminEnter?: InputMaybe<Scalars['Boolean']['input']>;
   email: Scalars['String']['input'];
   expiresInMinutes?: InputMaybe<Scalars['Int']['input']>;
+  redirectUrl?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateHatLinkOrErrorPayload = CreateHatLinkPayload | ErrorPayload;

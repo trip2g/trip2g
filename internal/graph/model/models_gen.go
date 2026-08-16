@@ -1249,9 +1249,9 @@ type CreateGoogleOAuthCredentialsPayload struct {
 func (CreateGoogleOAuthCredentialsPayload) IsCreateGoogleOAuthCredentialsOrErrorPayload() {}
 
 type CreateHatLinkInput struct {
-	Email            string `json:"email"`
-	AdminEnter       *bool  `json:"adminEnter,omitempty"`
-	ExpiresInMinutes *int32 `json:"expiresInMinutes,omitempty"`
+	Email            string  `json:"email"`
+	RedirectURL      *string `json:"redirectUrl,omitempty"`
+	ExpiresInMinutes *int32  `json:"expiresInMinutes,omitempty"`
 }
 
 type CreateHatLinkPayload struct {

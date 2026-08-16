@@ -68,30 +68,46 @@ func TestResolve(t *testing.T) {
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
 				require.Len(t, mockEnv.GenerateHotAuthTokenWithTTLCalls(), 1)
-				require.Equal(t, appmodel.HotAuthToken{Email: "owner@example.com"},
+				require.Equal(t, appmodel.HotAuthToken{Email: "owner@example.com", Redirect: "/"},
 					mockEnv.GenerateHotAuthTokenWithTTLCalls()[0].Data)
 			},
 		},
 		{
-			name:    "adminEnter true is carried into the token",
+			name:    "the link never provisions, whoever asks for it",
 			env:     newEnv(),
-			input:   model.CreateHatLinkInput{Email: "owner@example.com", AdminEnter: ptr(true)},
+			input:   model.CreateHatLinkInput{Email: "owner@example.com"},
 			want:    &model.CreateHatLinkPayload{URL: "https://example.com/_system/hat?token=jwt-token"},
 			wantTTL: 5 * time.Minute,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, appmodel.HotAuthToken{Email: "owner@example.com", AdminEnter: true},
+				require.False(t, mockEnv.GenerateHotAuthTokenWithTTLCalls()[0].Data.AdminEnter,
+					"the admin API minted a token that creates a user and grants admin")
+			},
+		},
+		{
+			name:    "a redirect is carried into the token",
+			env:     newEnv(),
+			input:   model.CreateHatLinkInput{Email: "owner@example.com", RedirectURL: ptr("/admin/users")},
+			want:    &model.CreateHatLinkPayload{URL: "https://example.com/_system/hat?token=jwt-token"},
+			wantTTL: 5 * time.Minute,
+			afterCallback: func(t *testing.T, mockEnv *envMock) {
+				require.Equal(t, appmodel.HotAuthToken{Email: "owner@example.com", Redirect: "/admin/users"},
 					mockEnv.GenerateHotAuthTokenWithTTLCalls()[0].Data)
 			},
 		},
 		{
-			name:    "adminEnter false keeps the user non-admin",
-			env:     newEnv(),
-			input:   model.CreateHatLinkInput{Email: "owner@example.com", AdminEnter: ptr(false)},
-			want:    &model.CreateHatLinkPayload{URL: "https://example.com/_system/hat?token=jwt-token"},
-			wantTTL: 5 * time.Minute,
-			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, appmodel.HotAuthToken{Email: "owner@example.com", AdminEnter: false},
-					mockEnv.GenerateHotAuthTokenWithTTLCalls()[0].Data)
+			name:  "an off-site redirect is a validation error",
+			env:   newEnv(),
+			input: model.CreateHatLinkInput{Email: "owner@example.com", RedirectURL: ptr("//evil.example.com/")},
+			want: &model.ErrorPayload{
+				ByFields: []model.FieldMessage{{Name: "redirectUrl", Value: "must be a path on this site, starting with a single /"}},
+			},
+		},
+		{
+			name:  "an absolute redirect is a validation error",
+			env:   newEnv(),
+			input: model.CreateHatLinkInput{Email: "owner@example.com", RedirectURL: ptr("https://evil.example.com/")},
+			want: &model.ErrorPayload{
+				ByFields: []model.FieldMessage{{Name: "redirectUrl", Value: "must be a path on this site, starting with a single /"}},
 			},
 		},
 		{
@@ -234,8 +250,8 @@ func TestResolve_AuditsWithoutLeakingTheLink(t *testing.T) {
 	env.AuditLoggerFunc = func() logger.Logger { return recorder }
 
 	got, err := createhatlink.Resolve(context.Background(), env, model.CreateHatLinkInput{
-		Email:      "owner@example.com",
-		AdminEnter: ptr(true),
+		Email:       "owner@example.com",
+		RedirectURL: ptr("/admin/users"),
 	})
 	require.NoError(t, err)
 	require.IsType(t, &model.CreateHatLinkPayload{}, got)
@@ -246,7 +262,7 @@ func TestResolve_AuditsWithoutLeakingTheLink(t *testing.T) {
 	require.NotContains(t, entry.args, "https://example.com/_system/hat?token=jwt-token")
 	require.Contains(t, entry.args, "owner@example.com")
 	require.Contains(t, entry.args, 42)
-	require.Contains(t, entry.args, true)
+	require.Contains(t, entry.args, "/admin/users")
 }
 
 type logEntry struct {

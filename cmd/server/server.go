@@ -85,7 +85,7 @@ func (a *app) startServer() { //nolint:gocognit // server startup wiring
 		// in the address bar. A bad/expired token is logged and falls through so
 		// it never breaks the return page.
 		if hatAuthToken := string(ctx.QueryArgs().Peek("hat")); hatAuthToken != "" {
-			if hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken); hatErr != nil {
+			if _, hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken); hatErr != nil {
 				a.log.Warn("failed to resolve hot auth token", "error", hatErr)
 			} else if parsedURL, parseErr := url.Parse(string(ctx.Request.Header.RequestURI())); parseErr != nil {
 				a.log.Warn("failed to parse URL after hat sign-in", "error", parseErr)

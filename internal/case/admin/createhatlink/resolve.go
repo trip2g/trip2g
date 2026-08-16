@@ -47,6 +47,13 @@ func validateRequest(r *Input) *model.ErrorPayload {
 		return model.NewFieldError("expiresInMinutes", fmt.Sprintf("must be between 1 and %d", maxExpiryMinutes))
 	}
 
+	// A path on this site and nothing else. "//host" is a scheme-relative URL a
+	// browser follows off-site, so the link would sign someone in here and land
+	// them somewhere we do not control.
+	if r.RedirectURL != nil && (!strings.HasPrefix(*r.RedirectURL, "/") || strings.HasPrefix(*r.RedirectURL, "//")) {
+		return model.NewFieldError("redirectUrl", "must be a path on this site, starting with a single /")
+	}
+
 	return nil
 }
 
@@ -72,11 +79,18 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 	expiresIn := time.Duration(minutes) * time.Minute
 
-	adminEnter := input.AdminEnter != nil && *input.AdminEnter
+	redirect := "/"
+	if input.RedirectURL != nil {
+		redirect = *input.RedirectURL
+	}
 
+	// No AdminEnter here on purpose: this link is a way in for someone who
+	// already exists, and provisioning belongs to the callers that hold the JWT
+	// secret. An admin who wants a new admin creates the user and grants the
+	// role, both of which are their own operations with their own audit entries.
 	hatToken, err := env.GenerateHotAuthTokenWithTTL(ctx, appmodel.HotAuthToken{
-		Email:      input.Email,
-		AdminEnter: adminEnter,
+		Email:    input.Email,
+		Redirect: redirect,
 	}, expiresIn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to mint hot auth token: %w", err)
@@ -86,7 +100,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	env.AuditLogger().Info("create hat link",
 		"actorUserID", token.ID,
 		"email", input.Email,
-		"adminEnter", adminEnter,
+		"redirectUrl", redirect,
 		"expiresInMinutes", minutes,
 	)
 
