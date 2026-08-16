@@ -3428,8 +3428,8 @@ union DeleteAdminOrErrorPayload = DeleteAdminPayload | ErrorPayload
 
 input CreateHatLinkInput {
   email: String!
-  # Land as admin instead of a plain signed-in user. Defaults to false.
-  adminEnter: Boolean
+  # Where the link lands. A path on this site, defaults to /.
+  redirectUrl: String
   # Link lifetime, 1..60 minutes. Defaults to 5.
   expiresInMinutes: Int
 }
@@ -47291,7 +47291,7 @@ func (ec *executionContext) unmarshalInputCreateHatLinkInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"email", "adminEnter", "expiresInMinutes"}
+	fieldsInOrder := [...]string{"email", "redirectUrl", "expiresInMinutes"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -47305,13 +47305,13 @@ func (ec *executionContext) unmarshalInputCreateHatLinkInput(ctx context.Context
 				return it, err
 			}
 			it.Email = data
-		case "adminEnter":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("adminEnter"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+		case "redirectUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.AdminEnter = data
+			it.RedirectURL = data
 		case "expiresInMinutes":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresInMinutes"))
 			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)

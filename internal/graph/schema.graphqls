@@ -2260,8 +2260,8 @@ union DeleteAdminOrErrorPayload = DeleteAdminPayload | ErrorPayload
 
 input CreateHatLinkInput {
   email: String!
-  # Land as admin instead of a plain signed-in user. Defaults to false.
-  adminEnter: Boolean
+  # Where the link lands. A path on this site, defaults to /.
+  redirectUrl: String
   # Link lifetime, 1..60 minutes. Defaults to 5.
   expiresInMinutes: Int
 }

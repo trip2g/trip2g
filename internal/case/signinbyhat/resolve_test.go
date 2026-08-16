@@ -68,7 +68,7 @@ func TestResolve_InvalidToken(t *testing.T) {
 		parseErr: errors.New("invalid signature"),
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "bad-token")
+	_, err := signinbyhat.Resolve(context.Background(), env, "bad-token")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to parse token")
 }
@@ -84,7 +84,7 @@ func TestResolve_ExistingUser_NotAdmin(t *testing.T) {
 		userErr: nil,
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	_, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
 	require.NoError(t, err)
 }
 
@@ -99,24 +99,24 @@ func TestResolve_ExistingUser_AlreadyAdmin(t *testing.T) {
 		admin: db.Admin{UserID: 456},
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	_, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
 	require.NoError(t, err)
 }
 
-func TestResolve_NewUser_NotAdmin(t *testing.T) {
+func TestResolve_UnknownUser_WithoutAdminEnter_IsRefused(t *testing.T) {
 	email := "newuser@example.com"
 	env := &mockEnv{
 		hotAuthToken: &model.HotAuthToken{
 			Email:      email,
 			AdminEnter: false,
 		},
-		userErr:    sql.ErrNoRows,
-		createUser: db.User{ID: 999, Email: &email},
+		userErr: sql.ErrNoRows,
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "valid-token")
-	require.NoError(t, err)
-	require.Equal(t, email, *env.createUser.Email)
+	_, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no user with email")
+	require.Nil(t, env.createUser.Email, "an ordinary sign-in link created an account")
 }
 
 func TestResolve_NewUser_MakeAdmin(t *testing.T) {
@@ -132,7 +132,7 @@ func TestResolve_NewUser_MakeAdmin(t *testing.T) {
 		createAdmin: db.Admin{UserID: 111},
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	_, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
 	require.NoError(t, err)
 	require.Equal(t, email, *env.createUser.Email)
 	require.Equal(t, int64(111), env.createAdmin.UserID)
@@ -150,7 +150,7 @@ func TestResolve_ExistingUser_UpgradeToAdmin(t *testing.T) {
 		createAdmin: db.Admin{UserID: 333},
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	_, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
 	require.NoError(t, err)
 	require.Equal(t, int64(333), env.createAdmin.UserID)
 }
@@ -159,13 +159,13 @@ func TestResolve_CreateUserFails(t *testing.T) {
 	env := &mockEnv{
 		hotAuthToken: &model.HotAuthToken{
 			Email:      "newuser@example.com",
-			AdminEnter: false,
+			AdminEnter: true,
 		},
 		userErr:       sql.ErrNoRows,
 		createUserErr: errors.New("database error"),
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	_, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create user")
 }
@@ -182,7 +182,7 @@ func TestResolve_MakeAdminFails(t *testing.T) {
 		createAdminErr: errors.New("admin insert failed"),
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	_, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to make user admin")
 }
@@ -198,7 +198,31 @@ func TestResolve_SetupTokenFails(t *testing.T) {
 		setupTokenErr: errors.New("cookie error"),
 	}
 
-	err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	_, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create session")
+}
+
+func TestResolve_ReturnsTheRedirectTheTokenCarries(t *testing.T) {
+	email := "user@example.com"
+	env := &mockEnv{
+		hotAuthToken: &model.HotAuthToken{Email: email, Redirect: "/admin/users"},
+		user:         db.User{ID: 777, Email: &email},
+	}
+
+	redirect, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	require.NoError(t, err)
+	require.Equal(t, "/admin/users", redirect)
+}
+
+func TestResolve_ReturnsNoRedirectWhenTheTokenNamesNone(t *testing.T) {
+	email := "user@example.com"
+	env := &mockEnv{
+		hotAuthToken: &model.HotAuthToken{Email: email},
+		user:         db.User{ID: 888, Email: &email},
+	}
+
+	redirect, err := signinbyhat.Resolve(context.Background(), env, "valid-token")
+	require.NoError(t, err)
+	require.Empty(t, redirect)
 }
