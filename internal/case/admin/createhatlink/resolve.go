@@ -36,8 +36,12 @@ type Input = model.CreateHatLinkInput
 type Payload = model.CreateHatLinkOrErrorPayload
 
 func validateRequest(r *Input) *model.ErrorPayload {
+	// EmailFormat, not Email: is.Email resolves the domain's MX record, so this
+	// resolver blocks on DNS and refuses a well-formed address whose domain
+	// accepts no mail. Nothing is ever mailed here — the minted URL is handed
+	// to its holder — so the address has to be well-formed, not deliverable.
 	errPayload := model.NewOzzoError(ozzo.ValidateStruct(r,
-		ozzo.Field(&r.Email, ozzo.Required, is.Email),
+		ozzo.Field(&r.Email, ozzo.Required, is.EmailFormat),
 	))
 	if errPayload != nil {
 		return errPayload

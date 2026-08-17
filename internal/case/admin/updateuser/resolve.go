@@ -22,10 +22,13 @@ type Env interface {
 type Input = model.UpdateUserInput
 type Payload = model.UpdateUserOrErrorPayload
 
+// EmailFormat, not Email: is.Email resolves the domain's MX record. Nothing is
+// mailed from here — an admin is correcting an address — so the check would only
+// make the mutation depend on DNS and refuse a domain that accepts no mail.
 func validateRequest(r *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(r,
 		ozzo.Field(&r.ID, ozzo.Required),
-		ozzo.Field(&r.Email, ozzo.When(r.Email != nil, is.Email)),
+		ozzo.Field(&r.Email, ozzo.When(r.Email != nil, is.EmailFormat)),
 	))
 }
 

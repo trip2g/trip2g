@@ -118,6 +118,13 @@ func TestResolve(t *testing.T) {
 			wantTTL: 60 * time.Minute,
 		},
 		{
+			name:    "an address whose domain accepts no mail is minted anyway",
+			env:     newEnv(),
+			input:   model.CreateHatLinkInput{Email: "owner@local.invalid"},
+			want:    &model.CreateHatLinkPayload{URL: "https://example.com/_system/hat?token=jwt-token"},
+			wantTTL: 5 * time.Minute,
+		},
+		{
 			name:  "invalid email is a validation error",
 			env:   newEnv(),
 			input: model.CreateHatLinkInput{Email: "not-an-email"},

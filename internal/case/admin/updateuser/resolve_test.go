@@ -190,6 +190,37 @@ func TestResolve(t *testing.T) {
 			},
 		},
 		{
+			name: "an address whose domain accepts no mail is stored anyway",
+			env: &envMock{
+				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1, Role: "admin"}, nil
+				},
+				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
+					return db.User{ID: id, Email: ptr.To("old@example.com")}, nil
+				},
+				UserByEmailFunc: func(ctx context.Context, lower string) (db.User, error) {
+					return db.User{}, sql.ErrNoRows
+				},
+				UpdateUserFunc: func(ctx context.Context, arg db.UpdateUserParams) (db.User, error) {
+					return db.User{ID: arg.ID, Email: arg.Email}, nil
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				input: model.UpdateUserInput{
+					ID:    123,
+					Email: ptr.To("owner-legacy@local.invalid"),
+				},
+			},
+			want: &model.UpdateUserPayload{
+				User: &db.User{
+					ID:    123,
+					Email: ptr.To("owner-legacy@local.invalid"),
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "validation error - invalid email",
 			env: &envMock{
 				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
