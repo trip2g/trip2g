@@ -65,6 +65,7 @@ type UserToken @goModel(model: "trip2g/internal/db.UserToken") {
 type CreateUserTokenPayload {
   plaintextToken: String!
   token: UserToken!
+  instructions: String!
 }
 
 type RevokeUserTokenPayload {
@@ -2180,6 +2181,16 @@ type UpdateUserSubgraphAccessPayload {
 union UpdateUserSubgraphAccessOrErrorPayload = UpdateUserSubgraphAccessPayload | ErrorPayload
 
 #
+# adminCreateUserToken
+#
+
+input AdminCreateUserTokenInput {
+  userId: Int64!
+  name: String!
+  expiresInDays: Int
+}
+
+#
 # createUserSubgraphAccess
 #
 
@@ -3220,6 +3231,7 @@ type AdminMutation {
   deleteAdmin(input: DeleteAdminInput!): DeleteAdminOrErrorPayload!
 
   createHatLink(input: CreateHatLinkInput!): CreateHatLinkOrErrorPayload!
+  adminCreateUserToken(input: AdminCreateUserTokenInput!): CreateUserTokenOrErrorPayload!
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!

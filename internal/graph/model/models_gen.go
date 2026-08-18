@@ -668,6 +668,12 @@ func (this AdminConfigStringValue) GetDescription() *string  { return this.Descr
 func (this AdminConfigStringValue) GetUpdatedAt() *time.Time { return this.UpdatedAt }
 func (this AdminConfigStringValue) GetUpdatedBy() *db.User   { return this.UpdatedBy }
 
+type AdminCreateUserTokenInput struct {
+	UserID        int64  `json:"userId"`
+	Name          string `json:"name"`
+	ExpiresInDays *int32 `json:"expiresInDays,omitempty"`
+}
+
 type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }
@@ -1434,6 +1440,7 @@ type CreateUserTokenInput struct {
 type CreateUserTokenPayload struct {
 	PlaintextToken string        `json:"plaintextToken"`
 	Token          *db.UserToken `json:"token"`
+	Instructions   string        `json:"instructions"`
 }
 
 func (CreateUserTokenPayload) IsCreateUserTokenOrErrorPayload() {}

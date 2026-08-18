@@ -377,6 +377,7 @@ type AdminMutationResolver interface {
 	CreateAdmin(ctx context.Context, obj *model1.AdminMutation, input model.CreateAdminInput) (model.CreateAdminOrErrorPayload, error)
 	DeleteAdmin(ctx context.Context, obj *model1.AdminMutation, input model.DeleteAdminInput) (model.DeleteAdminOrErrorPayload, error)
 	CreateHatLink(ctx context.Context, obj *model1.AdminMutation, input model.CreateHatLinkInput) (model.CreateHatLinkOrErrorPayload, error)
+	AdminCreateUserToken(ctx context.Context, obj *model1.AdminMutation, input model.AdminCreateUserTokenInput) (model.CreateUserTokenOrErrorPayload, error)
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
 	DisableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error)
 	EnableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.EnableAPIKeyInput) (model.EnableAPIKeyOrErrorPayload, error)
@@ -915,6 +916,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminCancelTelegramAccountAuthInput,
 		ec.unmarshalInputAdminChangeWebhookDeliveriesFilterInput,
 		ec.unmarshalInputAdminCompleteTelegramAccountAuthInput,
+		ec.unmarshalInputAdminCreateUserTokenInput,
 		ec.unmarshalInputAdminCronWebhookDeliveriesFilterInput,
 		ec.unmarshalInputAdminFormSubmitsDateFilter,
 		ec.unmarshalInputAdminFormSubmitsFilterInput,
@@ -1233,6 +1235,7 @@ type UserToken @goModel(model: "trip2g/internal/db.UserToken") {
 type CreateUserTokenPayload {
   plaintextToken: String!
   token: UserToken!
+  instructions: String!
 }
 
 type RevokeUserTokenPayload {
@@ -3348,6 +3351,16 @@ type UpdateUserSubgraphAccessPayload {
 union UpdateUserSubgraphAccessOrErrorPayload = UpdateUserSubgraphAccessPayload | ErrorPayload
 
 #
+# adminCreateUserToken
+#
+
+input AdminCreateUserTokenInput {
+  userId: Int64!
+  name: String!
+  expiresInDays: Int
+}
+
+#
 # createUserSubgraphAccess
 #
 
@@ -4388,6 +4401,7 @@ type AdminMutation {
   deleteAdmin(input: DeleteAdminInput!): DeleteAdminOrErrorPayload!
 
   createHatLink(input: CreateHatLinkInput!): CreateHatLinkOrErrorPayload!
+  adminCreateUserToken(input: AdminCreateUserTokenInput!): CreateUserTokenOrErrorPayload!
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
@@ -4963,6 +4977,17 @@ func (ec *executionContext) field_AdminMutation_addFederationSecretSubgraph_args
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAddFederationSecretSubgraphInput2trip2gᚋinternalᚋgraphᚋmodelᚐAddFederationSecretSubgraphInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_adminCreateUserToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAdminCreateUserTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCreateUserTokenInput)
 	if err != nil {
 		return nil, err
 	}
@@ -15633,6 +15658,47 @@ func (ec *executionContext) fieldContext_AdminMutation_createHatLink(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_createHatLink_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_adminCreateUserToken(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_adminCreateUserToken,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().AdminCreateUserToken(ctx, obj, fc.Args["input"].(model.AdminCreateUserTokenInput))
+		},
+		nil,
+		ec.marshalNCreateUserTokenOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateUserTokenOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_adminCreateUserToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateUserTokenOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_adminCreateUserToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -32183,6 +32249,35 @@ func (ec *executionContext) fieldContext_CreateUserTokenPayload_token(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateUserTokenPayload_instructions(ctx context.Context, field graphql.CollectedField, obj *model.CreateUserTokenPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateUserTokenPayload_instructions,
+		func(ctx context.Context) (any, error) {
+			return obj.Instructions, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateUserTokenPayload_instructions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateUserTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DeactivateGitHubOAuthPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.DeactivateGitHubOAuthPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -34554,6 +34649,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_deleteAdmin(ctx, field)
 			case "createHatLink":
 				return ec.fieldContext_AdminMutation_createHatLink(ctx, field)
+			case "adminCreateUserToken":
+				return ec.fieldContext_AdminMutation_adminCreateUserToken(ctx, field)
 			case "createApiKey":
 				return ec.fieldContext_AdminMutation_createApiKey(ctx, field)
 			case "disableApiKey":
@@ -45770,6 +45867,47 @@ func (ec *executionContext) unmarshalInputAdminCompleteTelegramAccountAuthInput(
 				return it, err
 			}
 			it.Password = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdminCreateUserTokenInput(ctx context.Context, obj any) (model.AdminCreateUserTokenInput, error) {
+	var it model.AdminCreateUserTokenInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"userId", "name", "expiresInDays"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "expiresInDays":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresInDays"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpiresInDays = data
 		}
 	}
 
@@ -60064,6 +60202,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "adminCreateUserToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_adminCreateUserToken(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createApiKey":
 			field := field
 
@@ -72639,6 +72813,11 @@ func (ec *executionContext) _CreateUserTokenPayload(ctx context.Context, sel ast
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "instructions":
+			out.Values[i] = ec._CreateUserTokenPayload_instructions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -82057,6 +82236,11 @@ func (ec *executionContext) marshalNAdminConfigValue2ᚕtrip2gᚋinternalᚋgrap
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNAdminCreateUserTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCreateUserTokenInput(ctx context.Context, v any) (model.AdminCreateUserTokenInput, error) {
+	res, err := ec.unmarshalInputAdminCreateUserTokenInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNAdminCronJob2trip2gᚋinternalᚋdbᚐCronJob(ctx context.Context, sel ast.SelectionSet, v db.CronJob) graphql.Marshaler {

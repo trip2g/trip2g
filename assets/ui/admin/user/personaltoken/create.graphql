@@ -1,0 +1,18 @@
+mutation ($input: AdminCreateUserTokenInput!) {
+	admin {
+		data: adminCreateUserToken(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on CreateUserTokenPayload {
+				plaintextToken
+				instructions
+				token {
+					name
+					expiresAt
+				}
+			}
+		}
+	}
+}

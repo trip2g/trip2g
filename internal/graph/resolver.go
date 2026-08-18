@@ -31,6 +31,7 @@ import (
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/createusersubgraphaccess"
+	admincreateusertoken "trip2g/internal/case/admin/createusertoken"
 	"trip2g/internal/case/admin/createwebhook"
 	"trip2g/internal/case/admin/deactivategithuboauth"
 	"trip2g/internal/case/admin/deactivategoogleoauth"
@@ -266,6 +267,7 @@ type Env interface {
 	createpaymentlink.Env
 	createemailwaitlistrequest.Env
 	createusertoken.Env
+	admincreateusertoken.Env
 	revokeusertoken.Env
 	toggleuserfavoritenote.Env
 	pushnotes.Env

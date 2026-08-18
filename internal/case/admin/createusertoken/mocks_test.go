@@ -6,8 +6,10 @@ package createusertoken_test
 import (
 	"context"
 	"sync"
-	"trip2g/internal/case/createusertoken"
+	"trip2g/internal/case/admin/createusertoken"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
+	"trip2g/internal/usertoken"
 )
 
 // Ensure, that EnvMock does implement createusertoken.Env.
@@ -20,8 +22,14 @@ var _ createusertoken.Env = &EnvMock{}
 //
 //		// make and configure a mocked createusertoken.Env
 //		mockedEnv := &EnvMock{
+//			AuditLoggerFunc: func() logger.Logger {
+//				panic("mock out the AuditLogger method")
+//			},
 //			CountActiveUserTokensByUserIDFunc: func(ctx context.Context, userID int64) (int64, error) {
 //				panic("mock out the CountActiveUserTokensByUserID method")
+//			},
+//			CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+//				panic("mock out the CurrentAdminUserToken method")
 //			},
 //			GenerateUniqIDFunc: func() string {
 //				panic("mock out the GenerateUniqID method")
@@ -32,6 +40,9 @@ var _ createusertoken.Env = &EnvMock{}
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
 //			},
+//			UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
+//				panic("mock out the UserByID method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires createusertoken.Env
@@ -39,8 +50,14 @@ var _ createusertoken.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// AuditLoggerFunc mocks the AuditLogger method.
+	AuditLoggerFunc func() logger.Logger
+
 	// CountActiveUserTokensByUserIDFunc mocks the CountActiveUserTokensByUserID method.
 	CountActiveUserTokensByUserIDFunc func(ctx context.Context, userID int64) (int64, error)
+
+	// CurrentAdminUserTokenFunc mocks the CurrentAdminUserToken method.
+	CurrentAdminUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
 	// GenerateUniqIDFunc mocks the GenerateUniqID method.
 	GenerateUniqIDFunc func() string
@@ -51,14 +68,25 @@ type EnvMock struct {
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
 
+	// UserByIDFunc mocks the UserByID method.
+	UserByIDFunc func(ctx context.Context, id int64) (db.User, error)
+
 	// calls tracks calls to the methods.
 	calls struct {
+		// AuditLogger holds details about calls to the AuditLogger method.
+		AuditLogger []struct {
+		}
 		// CountActiveUserTokensByUserID holds details about calls to the CountActiveUserTokensByUserID method.
 		CountActiveUserTokensByUserID []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// UserID is the userID argument value.
 			UserID int64
+		}
+		// CurrentAdminUserToken holds details about calls to the CurrentAdminUserToken method.
+		CurrentAdminUserToken []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 		// GenerateUniqID holds details about calls to the GenerateUniqID method.
 		GenerateUniqID []struct {
@@ -73,11 +101,48 @@ type EnvMock struct {
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
+		// UserByID holds details about calls to the UserByID method.
+		UserByID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 	}
+	lockAuditLogger                   sync.RWMutex
 	lockCountActiveUserTokensByUserID sync.RWMutex
+	lockCurrentAdminUserToken         sync.RWMutex
 	lockGenerateUniqID                sync.RWMutex
 	lockInsertUserToken               sync.RWMutex
 	lockPublicURL                     sync.RWMutex
+	lockUserByID                      sync.RWMutex
+}
+
+// AuditLogger calls AuditLoggerFunc.
+func (mock *EnvMock) AuditLogger() logger.Logger {
+	if mock.AuditLoggerFunc == nil {
+		panic("EnvMock.AuditLoggerFunc: method is nil but Env.AuditLogger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockAuditLogger.Lock()
+	mock.calls.AuditLogger = append(mock.calls.AuditLogger, callInfo)
+	mock.lockAuditLogger.Unlock()
+	return mock.AuditLoggerFunc()
+}
+
+// AuditLoggerCalls gets all the calls that were made to AuditLogger.
+// Check the length with:
+//
+//	len(mockedEnv.AuditLoggerCalls())
+func (mock *EnvMock) AuditLoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockAuditLogger.RLock()
+	calls = mock.calls.AuditLogger
+	mock.lockAuditLogger.RUnlock()
+	return calls
 }
 
 // CountActiveUserTokensByUserID calls CountActiveUserTokensByUserIDFunc.
@@ -113,6 +178,38 @@ func (mock *EnvMock) CountActiveUserTokensByUserIDCalls() []struct {
 	mock.lockCountActiveUserTokensByUserID.RLock()
 	calls = mock.calls.CountActiveUserTokensByUserID
 	mock.lockCountActiveUserTokensByUserID.RUnlock()
+	return calls
+}
+
+// CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
+func (mock *EnvMock) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error) {
+	if mock.CurrentAdminUserTokenFunc == nil {
+		panic("EnvMock.CurrentAdminUserTokenFunc: method is nil but Env.CurrentAdminUserToken was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockCurrentAdminUserToken.Lock()
+	mock.calls.CurrentAdminUserToken = append(mock.calls.CurrentAdminUserToken, callInfo)
+	mock.lockCurrentAdminUserToken.Unlock()
+	return mock.CurrentAdminUserTokenFunc(ctx)
+}
+
+// CurrentAdminUserTokenCalls gets all the calls that were made to CurrentAdminUserToken.
+// Check the length with:
+//
+//	len(mockedEnv.CurrentAdminUserTokenCalls())
+func (mock *EnvMock) CurrentAdminUserTokenCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockCurrentAdminUserToken.RLock()
+	calls = mock.calls.CurrentAdminUserToken
+	mock.lockCurrentAdminUserToken.RUnlock()
 	return calls
 }
 
@@ -203,5 +300,41 @@ func (mock *EnvMock) PublicURLCalls() []struct {
 	mock.lockPublicURL.RLock()
 	calls = mock.calls.PublicURL
 	mock.lockPublicURL.RUnlock()
+	return calls
+}
+
+// UserByID calls UserByIDFunc.
+func (mock *EnvMock) UserByID(ctx context.Context, id int64) (db.User, error) {
+	if mock.UserByIDFunc == nil {
+		panic("EnvMock.UserByIDFunc: method is nil but Env.UserByID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockUserByID.Lock()
+	mock.calls.UserByID = append(mock.calls.UserByID, callInfo)
+	mock.lockUserByID.Unlock()
+	return mock.UserByIDFunc(ctx, id)
+}
+
+// UserByIDCalls gets all the calls that were made to UserByID.
+// Check the length with:
+//
+//	len(mockedEnv.UserByIDCalls())
+func (mock *EnvMock) UserByIDCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockUserByID.RLock()
+	calls = mock.calls.UserByID
+	mock.lockUserByID.RUnlock()
 	return calls
 }

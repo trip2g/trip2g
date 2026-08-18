@@ -6,6 +6,10 @@ $trip2g_admin_user_show $mol_page
 		title \Sign-in link
 		enabled <= hat_link_allowed true
 		click? <=> hat_link_generate? null
+	PersonalTokenButton $mol_button_minor
+		title \Personal token
+		enabled <= personal_token_allowed true
+		click? <=> personal_token_generate? null
 	CreateAdminLink $mol_link
 		arg *
 			nav \system
@@ -16,6 +20,7 @@ $trip2g_admin_user_show $mol_page
 	tools /
 		<= CreateAdminLink
 		<= HatLinkButton
+		<= PersonalTokenButton
 		<= EditLink $mol_link
 			arg * action \update
 			title \Edit
@@ -42,5 +47,7 @@ $trip2g_admin_user_show $mol_page
 							content <= user_created_at \
 					<= HatLink $trip2g_admin_user_hatlink
 						user_email <= user_hat_email \
+					<= PersonalToken $trip2g_admin_user_personaltoken
+						user_id <= user_id
 	body /
 		<= UserView

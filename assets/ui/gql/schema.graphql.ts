@@ -324,6 +324,12 @@ export type AdminConfigValue = {
   updatedBy?: Maybe<AdminUser>;
 };
 
+export type AdminCreateUserTokenInput = {
+  expiresInDays?: InputMaybe<Scalars['Int']['input']>;
+  name: Scalars['String']['input'];
+  userId: Scalars['Int64']['input'];
+};
+
 export type AdminCronJob = {
   __typename?: 'AdminCronJob';
   enabled: Scalars['Boolean']['output'];
@@ -582,6 +588,7 @@ export type AdminLatestNoteViewsFilter = {
 export type AdminMutation = {
   __typename?: 'AdminMutation';
   addFederationSecretSubgraph: AddFederationSecretSubgraphOrErrorPayload;
+  adminCreateUserToken: CreateUserTokenOrErrorPayload;
   banUser: BanUserOrErrorPayload;
   cancelTelegramAccountAuth: AdminCancelTelegramAccountAuthOrErrorPayload;
   changeWebhookCreate: ChangeWebhookCreateOrErrorPayload;
@@ -686,6 +693,11 @@ export type AdminMutation = {
 
 export type AdminMutationaddFederationSecretSubgraphArgs = {
   input: AddFederationSecretSubgraphInput;
+};
+
+
+export type AdminMutationadminCreateUserTokenArgs = {
+  input: AdminCreateUserTokenInput;
 };
 
 
@@ -2504,6 +2516,7 @@ export type CreateUserTokenOrErrorPayload = CreateUserTokenPayload | ErrorPayloa
 
 export type CreateUserTokenPayload = {
   __typename?: 'CreateUserTokenPayload';
+  instructions: Scalars['String']['output'];
   plaintextToken: Scalars['String']['output'];
   token: UserToken;
 };

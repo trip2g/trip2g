@@ -44,6 +44,7 @@ import (
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/createusersubgraphaccess"
+	admincreateusertoken "trip2g/internal/case/admin/createusertoken"
 	"trip2g/internal/case/admin/createwebhook"
 	"trip2g/internal/case/admin/deactivategithuboauth"
 	"trip2g/internal/case/admin/deactivategoogleoauth"
@@ -892,6 +893,11 @@ func (r *adminMutationResolver) DeleteAdmin(ctx context.Context, obj *appmodel.A
 // CreateHatLink is the resolver for the createHatLink field.
 func (r *adminMutationResolver) CreateHatLink(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateHatLinkInput) (model.CreateHatLinkOrErrorPayload, error) {
 	return createhatlink.Resolve(ctx, r.env(ctx), input)
+}
+
+// AdminCreateUserToken is the resolver for the adminCreateUserToken field.
+func (r *adminMutationResolver) AdminCreateUserToken(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminCreateUserTokenInput) (model.CreateUserTokenOrErrorPayload, error) {
+	return admincreateusertoken.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateAPIKey is the resolver for the createApiKey field.
@@ -2735,26 +2741,21 @@ func (r *mutationResolver) GenerateTgAttachCode(ctx context.Context, input model
 
 // CreateUserToken is the resolver for the createUserToken field.
 func (r *mutationResolver) CreateUserToken(ctx context.Context, input model.CreateUserTokenInput) (model.CreateUserTokenOrErrorPayload, error) {
-	ucInput := createusertoken.Input{Name: input.Name}
-	if input.ExpiresInDays != nil {
-		d := time.Duration(*input.ExpiresInDays) * 24 * time.Hour
-		ucInput.ExpiresIn = &d
-	}
-	result, err := createusertoken.Resolve(ctx, r.env(ctx), ucInput)
+	req, err := appreq.FromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch p := result.(type) {
-	case *createusertoken.SuccessPayload:
-		return &model.CreateUserTokenPayload{
-			PlaintextToken: p.PlaintextToken,
-			Token:          &p.Token,
-		}, nil
-	case *createusertoken.ErrorPayload:
-		return &model.ErrorPayload{Message: p.Message}, nil
-	default:
-		return nil, fmt.Errorf("unexpected payload type: %T", result)
+
+	userToken, err := req.UserToken()
+	if err != nil {
+		return nil, err
 	}
+
+	if userToken == nil {
+		return &model.ErrorPayload{Message: "unauthenticated"}, nil
+	}
+
+	return createusertoken.Resolve(ctx, r.env(ctx), int64(userToken.ID), input)
 }
 
 // RevokeUserToken is the resolver for the revokeUserToken field.
