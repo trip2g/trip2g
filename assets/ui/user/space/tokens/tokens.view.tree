@@ -17,7 +17,7 @@ $trip2g_user_space_tokens $mol_book2_catalog
 		token_created_at <= row_created_at* null
 		token_last_used_at <= row_last_used_at* null
 		token_expires_at <= row_expires_at* null
-		revoked? => row_revoked*?
+		revoked? <=> row_revoked*? null
 	menu_link_content* / <= TokenItem* $mol_view
 		sub /
 			<= Rows* $mol_row

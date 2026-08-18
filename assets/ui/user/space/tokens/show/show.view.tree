@@ -1,11 +1,10 @@
 $trip2g_user_space_tokens_show $mol_page
 	title <= token_name \
 	token_id \
-	revoked? null
 	tools /
 		<= Revoke $trip2g_user_space_tokens_buttons_revoke
 			token_id <= token_id \
-			revoked? => revoked?
+			revoked? <=> revoked? null
 	body /
 		<= Details $mol_view
 			style *

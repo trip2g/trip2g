@@ -4,7 +4,7 @@ $trip2g_admin_personaltoken_show $mol_page
 	tools /
 		<= Revoke $trip2g_admin_personaltoken_button_revoke
 			token_id <= token_id \
-			revoked? => revoked?
+			revoked? <=> revoked? null
 	body /
 		<= Details $mol_view
 			style *

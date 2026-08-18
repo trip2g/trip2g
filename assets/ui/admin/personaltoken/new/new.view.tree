@@ -27,7 +27,7 @@ $trip2g_admin_personaltoken_new $mol_page
 				<= UserId_field $mol_form_field
 					name \User ID
 					Content <= UserId_control $mol_number
-						value_number? <=> user_id_field? 0
+						value? <=> user_id_field? 0
 				<= Name_field $mol_form_field
 					name \Name
 					Content <= Name_control $mol_string
