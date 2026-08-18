@@ -1,5 +1,5 @@
 $trip2g_user_space_tokens $mol_page
-	title @ \Personal tokens
+	title @ \Tokens
 	tools /
 		<= AddLink $mol_link
 			arg *
@@ -16,12 +16,12 @@ $trip2g_user_space_tokens $mol_page
 					sub /
 						<= Row_content* $mol_row
 							sub /
-								<= Name* $mol_view
-									sub / <= row_name* \
+								<= Name_label* $mol_labeler
+									title @ \Name
+									content / <= row_name* \
 								<= Prefix_label* $mol_labeler
 									title @ \Prefix
-									Content <= Prefix* $mol_view
-										sub / <= row_prefix* \
+									content / <= row_prefix* \
 								<= Expires_label* $mol_labeler
 									title @ \Expires
 									Content <= Expires* $trip2g_table_cell_time

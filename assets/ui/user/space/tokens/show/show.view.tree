@@ -17,8 +17,7 @@ $trip2g_user_space_tokens_show $mol_page
 			sub /
 				<= Prefix_labeler $mol_labeler
 					title @ \Prefix
-					Content <= Prefix_value $mol_view
-						sub / <= token_prefix \
+					content / <= token_prefix \
 				<= Created_labeler $mol_labeler
 					title @ \Created
 					Content <= Created_value $trip2g_table_cell_time

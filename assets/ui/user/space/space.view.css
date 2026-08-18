@@ -45,3 +45,7 @@
 [trip2g_user_space_dialog]:not([open]) {
 	display: none; /* override mol styles */
 }
+
+[trip2g_user_space_content] [mol_page_head] {
+	padding-right: 3.5rem;
+}

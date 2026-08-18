@@ -51,6 +51,10 @@
 	"$trip2g_user_signinwall_Success_message_title": "Вы вошли. Перезагрузка...",
 	"$trip2g_user_space_AdminLink_hint": "Открыть Админ панель",
 	"$trip2g_user_space_Content_menu_title": "Личный кабинет",
+	"$trip2g_user_space_home_Email_labeler_title": "Почта",
+	"$trip2g_user_space_home_Favorites_labeler_title": "Избранные заметки",
+	"$trip2g_user_space_home_empty_message": "Пока пусто — звёздочка на заметке добавит её сюда.",
+	"$trip2g_user_space_home_title": "Мой аккаунт",
 	"$trip2g_user_space_subscriptions_Page_title": "Подписки",
 	"$trip2g_user_space_tokens_AddLink_title": "+ Новый токен",
 	"$trip2g_user_space_tokens_Expires_label_title": "Истекает",
@@ -78,5 +82,5 @@
 	"$trip2g_user_space_tokens_show_Prefix_labeler_title": "Префикс",
 	"$trip2g_user_space_tokens_show_Revoke_title": "Отозвать",
 	"$trip2g_user_space_tokens_show_Revoked_labeler_title": "Отозван",
-	"$trip2g_user_space_tokens_title": "Личные токены"
+	"$trip2g_user_space_tokens_title": "Токены"
 }
