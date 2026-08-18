@@ -1,7 +1,7 @@
 {
-	"$trip2g_user_space_tokens_menu_title": "Личные токены",
+	"$trip2g_user_space_tokens_title": "Личные токены",
 	"$trip2g_user_space_tokens_AddLink_title": "+ Новый токен",
-	"$trip2g_user_space_tokens_Empty_message": "Выберите токен или создайте новый.",
 	"$trip2g_user_space_tokens_Prefix_label_title": "Префикс",
-	"$trip2g_user_space_tokens_Expires_label_title": "Истекает"
+	"$trip2g_user_space_tokens_Expires_label_title": "Истекает",
+	"$trip2g_user_space_tokens_Revoked_label_title": "Отозван"
 }

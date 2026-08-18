@@ -6,22 +6,12 @@ namespace $.$$ {
 			if (!res.viewer.user) {
 				return $trip2g_graphql_make_map([])
 			}
+
 			return $trip2g_graphql_make_map(res.viewer.user.tokens)
 		}
 
-		@$mol_mem
-		override spreads(): any {
-			return {
-				add: this.AddForm(),
-				...this.data().mapKeys(key => this.Content(key)),
-			}
-		}
-
-		// "add" is a screen, not a token: it is reachable by the New link and has
-		// no place in the list of tokens the user holds.
-		@$mol_mem
-		override spread_ids_filtered() {
-			return this.spread_ids().filter(id => id !== 'add')
+		override token_rows() {
+			return this.data().map(key => this.Row(key))
 		}
 
 		row(id: any) {
@@ -40,23 +30,12 @@ namespace $.$$ {
 			return this.row(id).tokenPrefix
 		}
 
-		override row_created_at(id: any) {
-			return this.row(id).createdAt
-		}
-
-		override row_last_used_at(id: any) {
-			return this.row(id).lastUsedAt
-		}
-
 		override row_expires_at(id: any) {
 			return this.row(id).expiresAt
 		}
 
-		// The revoke button reports back through this, and the list reloads:
-		// a revoked token stays in the list, it just stops working.
-		override row_revoked(id: any, next?: any) {
-			this.data(null)
-			return next ?? null
+		override row_revoked_at(id: any) {
+			return this.row(id).revokedAt
 		}
 	}
 }

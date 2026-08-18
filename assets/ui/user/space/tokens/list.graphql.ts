@@ -4,7 +4,7 @@ namespace $ {
 export type trip2g_user_space_tokens_listQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type trip2g_user_space_tokens_listQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', user?: { __typename?: 'User', tokens: Array<{ __typename?: 'UserToken', id: string, name: string, tokenPrefix: string, scope: string, createdAt: any, lastUsedAt?: any | null, expiresAt?: any | null }> } | null } };
+export type trip2g_user_space_tokens_listQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', user?: { __typename?: 'User', tokens: Array<{ __typename?: 'UserToken', id: string, name: string, tokenPrefix: string, scope: string, createdAt: any, lastUsedAt?: any | null, expiresAt?: any | null, revokedAt?: any | null }> } | null } };
 
 
 export function $trip2g_user_space_tokens_list(opts?: { revalidate?: boolean }): trip2g_user_space_tokens_listQuery {
@@ -19,6 +19,7 @@ export function $trip2g_user_space_tokens_list(opts?: { revalidate?: boolean }):
         createdAt
         lastUsedAt
         expiresAt
+        revokedAt
       }
     }
   }

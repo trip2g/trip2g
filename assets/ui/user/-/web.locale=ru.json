@@ -53,9 +53,9 @@
 	"$trip2g_user_space_Content_menu_title": "Личный кабинет",
 	"$trip2g_user_space_subscriptions_Page_title": "Подписки",
 	"$trip2g_user_space_tokens_AddLink_title": "+ Новый токен",
-	"$trip2g_user_space_tokens_Empty_message": "Выберите токен или создайте новый.",
 	"$trip2g_user_space_tokens_Expires_label_title": "Истекает",
 	"$trip2g_user_space_tokens_Prefix_label_title": "Префикс",
+	"$trip2g_user_space_tokens_Revoked_label_title": "Отозван",
 	"$trip2g_user_space_tokens_buttons_revoke_title": "Отозвать",
 	"$trip2g_user_space_tokens_create_Copy_instructions_title": "Копировать инструкцию",
 	"$trip2g_user_space_tokens_create_Copy_token_title": "Копировать только токен",
@@ -71,10 +71,12 @@
 	"$trip2g_user_space_tokens_create_Submit_title": "Создать",
 	"$trip2g_user_space_tokens_create_name_required": "Укажите название токена",
 	"$trip2g_user_space_tokens_create_title": "Новый токен",
-	"$trip2g_user_space_tokens_menu_title": "Личные токены",
+	"$trip2g_user_space_tokens_show_BackLink_title": "Все токены",
 	"$trip2g_user_space_tokens_show_Created_labeler_title": "Создан",
 	"$trip2g_user_space_tokens_show_Expires_labeler_title": "Истекает",
 	"$trip2g_user_space_tokens_show_LastUsed_labeler_title": "Использован",
 	"$trip2g_user_space_tokens_show_Prefix_labeler_title": "Префикс",
-	"$trip2g_user_space_tokens_show_Revoke_title": "Отозвать"
+	"$trip2g_user_space_tokens_show_Revoke_title": "Отозвать",
+	"$trip2g_user_space_tokens_show_Revoked_labeler_title": "Отозван",
+	"$trip2g_user_space_tokens_title": "Личные токены"
 }

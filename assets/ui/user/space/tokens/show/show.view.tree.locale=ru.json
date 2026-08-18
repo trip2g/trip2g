@@ -3,5 +3,7 @@
 	"$trip2g_user_space_tokens_show_Prefix_labeler_title": "Префикс",
 	"$trip2g_user_space_tokens_show_Created_labeler_title": "Создан",
 	"$trip2g_user_space_tokens_show_LastUsed_labeler_title": "Использован",
-	"$trip2g_user_space_tokens_show_Expires_labeler_title": "Истекает"
+	"$trip2g_user_space_tokens_show_Expires_labeler_title": "Истекает",
+	"$trip2g_user_space_tokens_show_BackLink_title": "Все токены",
+	"$trip2g_user_space_tokens_show_Revoked_labeler_title": "Отозван"
 }

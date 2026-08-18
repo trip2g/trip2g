@@ -113,4 +113,14 @@ namespace $.$$ {
 			}
 		}
 	}
+
+	export class $trip2g_user_space_nav extends $.$trip2g_user_space_nav {
+		// A token's own screen and the new-token form are routes, not sections:
+		// they are reachable by link and by URL, and listing them in the menu
+		// beside "My account" would make two of the three entries transient.
+		@$mol_mem
+		override spread_ids_filtered() {
+			return this.spread_ids().filter(id => id !== 'token' && id !== 'token_new')
+		}
+	}
 }

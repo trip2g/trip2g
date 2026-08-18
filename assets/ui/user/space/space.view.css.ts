@@ -24,14 +24,6 @@ namespace $.$$ {
 			cursor: 'pointer',
 		},
 
-		Home: {
-			flexGrow: '1',
-		},
-
-		Email: {
-			padding: '0.5rem',
-		},
-
 		Content: {
 			minWidth: 0,
 			maxWidth: '100%',
@@ -40,6 +32,18 @@ namespace $.$$ {
 				flexBasis: '0',
 			}
 		}
+	})
+
+	// Home and Email live on the nav catalog now, and a style block only reaches
+	// the class that actually declares the element.
+	$mol_style_define( $trip2g_user_space_nav, {
+		Home: {
+			flexGrow: '1',
+		},
+
+		Email: {
+			padding: '0.5rem',
+		},
 	})
 
 	$mol_style_define( $trip2g_user_space_name, {

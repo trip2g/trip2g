@@ -1,35 +1,32 @@
-$trip2g_user_space_tokens $mol_book2_catalog
-	param \token
-	menu_title @ \Personal tokens
-	actions /
+$trip2g_user_space_tokens $mol_page
+	title @ \Personal tokens
+	tools /
 		<= AddLink $mol_link
-			arg * token \add
+			arg *
+				un \token_new
+				token_id null
 			title @ \+ New token
-	menu_tools /
-		<= AddLink
-	Empty $mol_status
-		message @ \Pick a token or create a new one.
-	AddForm $trip2g_user_space_tokens_create
-	Content* $trip2g_user_space_tokens_show
-		token_id <= row_id* \
-		token_name <= row_name* \
-		token_prefix <= row_prefix* \
-		token_created_at <= row_created_at* null
-		token_last_used_at <= row_last_used_at* null
-		token_expires_at <= row_expires_at* null
-		revoked? <=> row_revoked*? null
-	menu_link_content* / <= TokenItem* $mol_view
-		sub /
-			<= Rows* $mol_row
-				minimal_height 24
-				sub /
-					<= Name* $mol_view
-						sub / <= row_name* \
-					<= Prefix_label* $mol_labeler
-						title @ \Prefix
-						Content <= Prefix* $mol_view
-							sub / <= row_prefix* \
-					<= Expires_label* $mol_labeler
-						title @ \Expires
-						Content <= Expires* $trip2g_table_cell_time
-							value <= row_expires_at* null
+	body /
+		<= List $mol_list
+			rows <= token_rows /
+				<= Row*0 $mol_link
+					arg *
+						un \token
+						token_id <= row_id* \
+					sub /
+						<= Row_content* $mol_row
+							sub /
+								<= Name* $mol_view
+									sub / <= row_name* \
+								<= Prefix_label* $mol_labeler
+									title @ \Prefix
+									Content <= Prefix* $mol_view
+										sub / <= row_prefix* \
+								<= Expires_label* $mol_labeler
+									title @ \Expires
+									Content <= Expires* $trip2g_table_cell_time
+										value <= row_expires_at* null
+								<= Revoked_label* $mol_labeler
+									title @ \Revoked
+									Content <= Revoked* $trip2g_table_cell_time
+										value <= row_revoked_at* null

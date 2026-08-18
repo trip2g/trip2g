@@ -22,7 +22,9 @@ $trip2g_user_space_tokens_create $mol_page
 						title @ \Copy token only
 						text <= created \
 					<= Done $mol_link
-						arg * token null
+						arg *
+							un \tokens
+							token_id null
 						title @ \Done
 	body /
 		<= Form $mol_form

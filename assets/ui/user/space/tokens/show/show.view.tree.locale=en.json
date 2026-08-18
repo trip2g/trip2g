@@ -3,5 +3,7 @@
 	"$trip2g_user_space_tokens_show_Prefix_labeler_title": "Prefix",
 	"$trip2g_user_space_tokens_show_Created_labeler_title": "Created",
 	"$trip2g_user_space_tokens_show_LastUsed_labeler_title": "Last used",
-	"$trip2g_user_space_tokens_show_Expires_labeler_title": "Expires"
+	"$trip2g_user_space_tokens_show_Expires_labeler_title": "Expires",
+	"$trip2g_user_space_tokens_show_BackLink_title": "All tokens",
+	"$trip2g_user_space_tokens_show_Revoked_labeler_title": "Revoked"
 }
