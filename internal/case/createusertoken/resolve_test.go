@@ -59,7 +59,7 @@ func TestResolveMintsForTheUserItWasGiven(t *testing.T) {
 	require.Nil(t, payload.Token.ExpiresAt)
 }
 
-func TestResolveReturnsInstructionsCarryingThePublicURL(t *testing.T) {
+func TestResolveReturnsInstructionsThatAlreadyCarryTheToken(t *testing.T) {
 	ctx := context.Background()
 
 	env := baseEnv(t)
@@ -70,9 +70,8 @@ func TestResolveReturnsInstructionsCarryingThePublicURL(t *testing.T) {
 	payload, ok := result.(*model.CreateUserTokenPayload)
 	require.True(t, ok)
 	require.Contains(t, payload.Instructions, "https://example.com/_system/mcp")
-	require.NotContains(t, payload.Instructions, payload.PlaintextToken,
-		"instructions are shown next to the token, they must not embed it")
-	require.Contains(t, payload.Instructions, "Bearer")
+	require.Contains(t, payload.Instructions, "Bearer "+payload.PlaintextToken,
+		"the text is meant to work as-is, so the token is already in it")
 }
 
 func TestResolveTurnsExpiryDaysIntoATimestamp(t *testing.T) {

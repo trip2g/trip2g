@@ -3,6 +3,7 @@ mutation ($input: CreateUserTokenInput!) {
 		__typename
 		... on CreateUserTokenPayload {
 			plaintextToken
+			instructions
 			token {
 				id
 				name

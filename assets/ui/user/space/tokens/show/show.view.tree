@@ -1,0 +1,29 @@
+$trip2g_user_space_tokens_show $mol_page
+	title <= token_name \
+	token_id \
+	revoked? null
+	tools /
+		<= Revoke $mol_button_minor
+			title @ \Revoke
+			click? <=> revoke? null
+	body /
+		<= Details $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= Prefix_labeler $mol_labeler
+					title @ \Prefix
+					Content <= Prefix_value $mol_view
+						sub / <= token_prefix \
+				<= Created_labeler $mol_labeler
+					title @ \Created
+					Content <= Created_value $trip2g_table_cell_time
+						value <= token_created_at null
+				<= LastUsed_labeler $mol_labeler
+					title @ \Last used
+					Content <= LastUsed_value $trip2g_table_cell_time
+						value <= token_last_used_at null
+				<= Expires_labeler $mol_labeler
+					title @ \Expires
+					Content <= Expires_value $trip2g_table_cell_time
+						value <= token_expires_at null

@@ -12,16 +12,16 @@ import (
 
 const maxActiveTokens = 10
 
-// Instructions is handed to whoever receives the token. It is returned by the
-// mutation and shown in the admin panel so the same text reaches the holder
-// however the token was minted. Static on purpose: an editable prompt is a
-// separate feature, tracked as its own issue.
+// Instructions is handed to whoever receives the token, token included, so the
+// whole text is one copy away from working. That makes it a credential: it is
+// returned once, never stored, and never logged. Static on purpose — an
+// editable prompt is a separate feature.
 const Instructions = `You have been given read access to a trip2g knowledge base.
 
 Connect it as an MCP server over HTTP:
 
   URL:    %s/_system/mcp
-  Header: Authorization: Bearer <your token>
+  Header: Authorization: Bearer %s
 
 The token identifies you and carries exactly the subgraphs you were granted —
 nothing else is reachable with it. Answer from what you retrieve, and say so
@@ -75,7 +75,7 @@ func Resolve(ctx context.Context, env Env, userID int64, input Input) (Payload, 
 	payload := model.CreateUserTokenPayload{
 		PlaintextToken: plaintext,
 		Token:          &token,
-		Instructions:   fmt.Sprintf(Instructions, env.PublicURL()),
+		Instructions:   fmt.Sprintf(Instructions, env.PublicURL(), plaintext),
 	}
 
 	return &payload, nil

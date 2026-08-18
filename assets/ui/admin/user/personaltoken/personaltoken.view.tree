@@ -21,7 +21,7 @@ $trip2g_admin_user_personaltoken $mol_view
 					Content <= ExpiresAt $trip2g_admin_cell
 						content <= expires_at \
 				<= Instructions_labeler $mol_labeler
-					title \Instructions for the holder
+					title \Instructions for the holder (contain the token)
 					Content <= Instructions_value $mol_text
 						text <= instructions \
 				<= Buttons $mol_row
