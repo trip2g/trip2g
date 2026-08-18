@@ -1,0 +1,7 @@
+{
+	"$trip2g_admin_personaltoken_catalog_menu_title": "Личные токены",
+	"$trip2g_admin_personaltoken_catalog_Owner_title": "Владелец",
+	"$trip2g_admin_personaltoken_catalog_LastUsed_title": "Использован",
+	"$trip2g_admin_personaltoken_catalog_ExpiresAt_title": "Истекает",
+	"$trip2g_admin_personaltoken_catalog_RevokedAt_title": "Отозван"
+}

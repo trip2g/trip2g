@@ -1247,6 +1247,12 @@ set revoked_at = current_timestamp
 where id = ? and user_id = ? and revoked_at is null
 returning *;
 
+-- name: AdminRevokeUserToken :one
+update user_tokens
+set revoked_at = current_timestamp
+where id = ? and revoked_at is null
+returning *;
+
 -- name: UpdateUserTokenLastUsedAt :exec
 update user_tokens
 set last_used_at = current_timestamp

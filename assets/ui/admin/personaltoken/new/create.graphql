@@ -8,10 +8,6 @@ mutation ($input: AdminCreateUserTokenInput!) {
 			... on CreateUserTokenPayload {
 				plaintextToken
 				instructions
-				token {
-					name
-					expiresAt
-				}
 			}
 		}
 	}

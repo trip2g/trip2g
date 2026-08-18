@@ -78,6 +78,7 @@ import (
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/revokefederationsecret"
+	adminrevokeusertoken "trip2g/internal/case/admin/revokeusertoken"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
@@ -900,6 +901,11 @@ func (r *adminMutationResolver) AdminCreateUserToken(ctx context.Context, obj *a
 	return admincreateusertoken.Resolve(ctx, r.env(ctx), input)
 }
 
+// AdminRevokeUserToken is the resolver for the adminRevokeUserToken field.
+func (r *adminMutationResolver) AdminRevokeUserToken(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminRevokeUserTokenInput) (model.AdminRevokeUserTokenOrErrorPayload, error) {
+	return adminrevokeusertoken.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreateAPIKey is the resolver for the createApiKey field.
 func (r *adminMutationResolver) CreateAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error) {
 	return createapikey.Resolve(ctx, r.env(ctx), input)
@@ -1649,6 +1655,24 @@ func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *appmodel.
 // AllAPIKeys is the resolver for the allApiKeys field.
 func (r *adminQueryResolver) AllAPIKeys(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminAPIKeysConnection, error) {
 	return &model.AdminAPIKeysConnection{}, nil
+}
+
+// PersonalTokens is the resolver for the personalTokens field.
+func (r *adminQueryResolver) PersonalTokens(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminUserTokensFilterInput) (*model.AdminUserTokensConnection, error) {
+	return &model.AdminUserTokensConnection{UserID: filter.UserID}, nil
+}
+
+// PersonalToken is the resolver for the personalToken field.
+func (r *adminQueryResolver) PersonalToken(ctx context.Context, obj *appmodel.AdminQuery, id string) (*db.UserToken, error) {
+	token, err := r.env(ctx).UserTokenByID(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &token, nil
 }
 
 // AllGitTokens is the resolver for the allGitTokens field.
@@ -2524,6 +2548,21 @@ func (r *adminUserSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.
 // Nodes is the resolver for the nodes field.
 func (r *adminUserSubgraphAccessesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error) {
 	return r.env(ctx).ListAllUserSubgraphAccesses(ctx)
+}
+
+// User is the resolver for the user field.
+func (r *adminUserTokenResolver) User(ctx context.Context, obj *db.UserToken) (*db.User, error) {
+	user, err := r.env(ctx).UserByID(ctx, obj.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminUserTokensConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserTokensConnection) ([]db.UserToken, error) {
+	return r.env(ctx).ListUserTokensFiltered(ctx, obj.UserID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -3956,6 +3995,16 @@ func (r *Resolver) AdminUserSubgraphAccessesConnection() generated.AdminUserSubg
 	return &adminUserSubgraphAccessesConnectionResolver{r}
 }
 
+// AdminUserToken returns generated.AdminUserTokenResolver implementation.
+func (r *Resolver) AdminUserToken() generated.AdminUserTokenResolver {
+	return &adminUserTokenResolver{r}
+}
+
+// AdminUserTokensConnection returns generated.AdminUserTokensConnectionResolver implementation.
+func (r *Resolver) AdminUserTokensConnection() generated.AdminUserTokensConnectionResolver {
+	return &adminUserTokensConnectionResolver{r}
+}
+
 // AdminUsersConnection returns generated.AdminUsersConnectionResolver implementation.
 func (r *Resolver) AdminUsersConnection() generated.AdminUsersConnectionResolver {
 	return &adminUsersConnectionResolver{r}
@@ -4190,6 +4239,8 @@ type adminUserResolver struct{ *Resolver }
 type adminUserBansConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
+type adminUserTokenResolver struct{ *Resolver }
+type adminUserTokensConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type adminWaitListEmailRequestsConnectionResolver struct{ *Resolver }
 type adminWaitListTgBotRequestsConnectionResolver struct{ *Resolver }

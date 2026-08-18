@@ -42,6 +42,10 @@ type AdminImportTelegramAccountChannelOrErrorPayload interface {
 	IsAdminImportTelegramAccountChannelOrErrorPayload()
 }
 
+type AdminRevokeUserTokenOrErrorPayload interface {
+	IsAdminRevokeUserTokenOrErrorPayload()
+}
+
 type AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload interface {
 	IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload()
 }
@@ -863,6 +867,16 @@ type AdminReleasesConnection struct {
 	Nodes []db.Release `json:"nodes"`
 }
 
+type AdminRevokeUserTokenInput struct {
+	ID string `json:"id"`
+}
+
+type AdminRevokeUserTokenPayload struct {
+	Token *db.UserToken `json:"token"`
+}
+
+func (AdminRevokeUserTokenPayload) IsAdminRevokeUserTokenOrErrorPayload() {}
+
 type AdminSetTelegramAccountChatPublishInstantTagsInput struct {
 	AccountID      int64   `json:"accountId"`
 	TelegramChatID string  `json:"telegramChatId"`
@@ -995,6 +1009,15 @@ type AdminUserBansConnection struct {
 
 type AdminUserSubgraphAccessesConnection struct {
 	Nodes []db.UserSubgraphAccess `json:"nodes"`
+}
+
+type AdminUserTokensConnection struct {
+	Nodes  []db.UserToken `json:"nodes"`
+	UserID *int64         `json:"-"`
+}
+
+type AdminUserTokensFilterInput struct {
+	UserID *int64 `json:"userId,omitempty"`
 }
 
 type AdminUsersConnection struct {
@@ -1663,6 +1686,8 @@ func (ErrorPayload) IsSubmitFormOrErrorPayload() {}
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminRevokeUserTokenOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateUserSubgraphAccessOrErrorPayload() {}
 

@@ -48,6 +48,31 @@ func (q *WriteQueries) AdminCreateUserSubgraphAccess(ctx context.Context, arg Ad
 	return i, err
 }
 
+const adminRevokeUserToken = `-- name: AdminRevokeUserToken :one
+update user_tokens
+set revoked_at = current_timestamp
+where id = ? and revoked_at is null
+returning id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at
+`
+
+func (q *WriteQueries) AdminRevokeUserToken(ctx context.Context, id string) (UserToken, error) {
+	row := q.db.QueryRowContext(ctx, adminRevokeUserToken, id)
+	var i UserToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TokenHash,
+		&i.TokenPrefix,
+		&i.Scope,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
 const banUser = `-- name: BanUser :exec
 insert into user_bans (user_id, banned_by, reason)
 values (?, ?, ?)

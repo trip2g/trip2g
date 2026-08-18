@@ -1,0 +1,44 @@
+$trip2g_admin_personaltoken_show $mol_page
+	token_id \
+	title <= token_name \
+	tools /
+		<= Revoke $trip2g_admin_personaltoken_button_revoke
+			token_id <= token_id \
+			revoked? => revoked?
+	body /
+		<= Details $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= Id_labeler $mol_labeler
+					title \ID
+					Content <= Id $trip2g_admin_cell
+						content <= token_id \
+				<= Owner_labeler $mol_labeler
+					title \Owner
+					Content <= Owner $trip2g_admin_cell
+						content <= token_owner \
+				<= Prefix_labeler $mol_labeler
+					title \Prefix
+					Content <= Prefix $trip2g_admin_cell
+						content <= token_prefix \
+				<= Scope_labeler $mol_labeler
+					title \Scope
+					Content <= Scope $trip2g_admin_cell
+						content <= token_scope \
+				<= CreatedAt_labeler $mol_labeler
+					title \Created At
+					Content <= CreatedAt $trip2g_admin_cell
+						content <= token_created_at \
+				<= LastUsedAt_labeler $mol_labeler
+					title \Last Used At
+					Content <= LastUsedAt $trip2g_admin_cell
+						content <= token_last_used_at \
+				<= ExpiresAt_labeler $mol_labeler
+					title \Expires At
+					Content <= ExpiresAt $trip2g_admin_cell
+						content <= token_expires_at \
+				<= RevokedAt_labeler $mol_labeler
+					title \Revoked At
+					Content <= RevokedAt $trip2g_admin_cell
+						content <= token_revoked_at \

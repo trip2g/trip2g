@@ -128,6 +128,8 @@ type ResolverRoot interface {
 	AdminUserBansConnection() AdminUserBansConnectionResolver
 	AdminUserSubgraphAccess() AdminUserSubgraphAccessResolver
 	AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver
+	AdminUserToken() AdminUserTokenResolver
+	AdminUserTokensConnection() AdminUserTokensConnectionResolver
 	AdminUsersConnection() AdminUsersConnectionResolver
 	AdminWaitListEmailRequestsConnection() AdminWaitListEmailRequestsConnectionResolver
 	AdminWaitListTgBotRequestsConnection() AdminWaitListTgBotRequestsConnectionResolver
@@ -378,6 +380,7 @@ type AdminMutationResolver interface {
 	DeleteAdmin(ctx context.Context, obj *model1.AdminMutation, input model.DeleteAdminInput) (model.DeleteAdminOrErrorPayload, error)
 	CreateHatLink(ctx context.Context, obj *model1.AdminMutation, input model.CreateHatLinkInput) (model.CreateHatLinkOrErrorPayload, error)
 	AdminCreateUserToken(ctx context.Context, obj *model1.AdminMutation, input model.AdminCreateUserTokenInput) (model.CreateUserTokenOrErrorPayload, error)
+	AdminRevokeUserToken(ctx context.Context, obj *model1.AdminMutation, input model.AdminRevokeUserTokenInput) (model.AdminRevokeUserTokenOrErrorPayload, error)
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
 	DisableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error)
 	EnableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.EnableAPIKeyInput) (model.EnableAPIKeyOrErrorPayload, error)
@@ -527,6 +530,8 @@ type AdminQueryResolver interface {
 	RecentlyModifiedNoteViews(ctx context.Context, obj *model1.AdminQuery) ([]model1.NoteView, error)
 	AllUserUserBans(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserBansConnection, error)
 	AllAPIKeys(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAPIKeysConnection, error)
+	PersonalTokens(ctx context.Context, obj *model1.AdminQuery, filter model.AdminUserTokensFilterInput) (*model.AdminUserTokensConnection, error)
+	PersonalToken(ctx context.Context, obj *model1.AdminQuery, id string) (*db.UserToken, error)
 	AllGitTokens(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitTokensConnection, error)
 	AllReleases(ctx context.Context, obj *model1.AdminQuery) (*model.AdminReleasesConnection, error)
 	AllAdmins(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAdminsConnection, error)
@@ -703,6 +708,12 @@ type AdminUserSubgraphAccessResolver interface {
 }
 type AdminUserSubgraphAccessesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error)
+}
+type AdminUserTokenResolver interface {
+	User(ctx context.Context, obj *db.UserToken) (*db.User, error)
+}
+type AdminUserTokensConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminUserTokensConnection) ([]db.UserToken, error)
 }
 type AdminUsersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error)
@@ -924,6 +935,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminLatestNoteViewsFilter,
 		ec.unmarshalInputAdminNoteVersionHistoryFilter,
 		ec.unmarshalInputAdminPatreonCredentialsFilterInput,
+		ec.unmarshalInputAdminRevokeUserTokenInput,
 		ec.unmarshalInputAdminSetTelegramAccountChatPublishInstantTagsInput,
 		ec.unmarshalInputAdminSetTelegramAccountChatPublishTagsInput,
 		ec.unmarshalInputAdminSignOutTelegramAccountInput,
@@ -933,6 +945,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminTgChatMembersFilterInput,
 		ec.unmarshalInputAdminTgChatSubgraphAccessesFilterInput,
 		ec.unmarshalInputAdminUpdateTelegramAccountInput,
+		ec.unmarshalInputAdminUserTokensFilterInput,
 		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputChangeWebhookCreateInput,
@@ -1358,6 +1371,28 @@ type AdminLatestNoteViewsConnection @goExtraField(name: "Filter", type: "*trip2g
 
 type AdminUserBansConnection {
   nodes: [UserBan!]! @goField(forceResolver: true)
+}
+
+type AdminUserToken @goModel(model: "trip2g/internal/db.UserToken") {
+  id: ID!
+  userId: Int64!
+  name: String!
+  tokenPrefix: String!
+  scope: String!
+  createdAt: Time!
+  expiresAt: Time
+  lastUsedAt: Time
+  revokedAt: Time
+
+  user: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminUserTokensConnection @goExtraField(name: "UserID", type: "*int64") {
+  nodes: [AdminUserToken!]! @goField(forceResolver: true)
+}
+
+input AdminUserTokensFilterInput {
+  userId: Int64
 }
 
 type AdminApiKey @goModel(model: "trip2g/internal/db.ApiKey") {
@@ -2337,6 +2372,8 @@ type AdminQuery {
   recentlyModifiedNoteViews: [NoteView!]!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
+  personalTokens(filter: AdminUserTokensFilterInput!): AdminUserTokensConnection!
+  personalToken(id: ID!): AdminUserToken
   allGitTokens: AdminGitTokensConnection!
   allReleases: AdminReleasesConnection!
   allAdmins: AdminAdminsConnection!
@@ -3353,6 +3390,16 @@ union UpdateUserSubgraphAccessOrErrorPayload = UpdateUserSubgraphAccessPayload |
 #
 # adminCreateUserToken
 #
+
+input AdminRevokeUserTokenInput {
+  id: ID!
+}
+
+type AdminRevokeUserTokenPayload {
+  token: AdminUserToken!
+}
+
+union AdminRevokeUserTokenOrErrorPayload = AdminRevokeUserTokenPayload | ErrorPayload
 
 input AdminCreateUserTokenInput {
   userId: Int64!
@@ -4402,6 +4449,7 @@ type AdminMutation {
 
   createHatLink(input: CreateHatLinkInput!): CreateHatLinkOrErrorPayload!
   adminCreateUserToken(input: AdminCreateUserTokenInput!): CreateUserTokenOrErrorPayload!
+  adminRevokeUserToken(input: AdminRevokeUserTokenInput!): AdminRevokeUserTokenOrErrorPayload!
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
@@ -4988,6 +5036,17 @@ func (ec *executionContext) field_AdminMutation_adminCreateUserToken_args(ctx co
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAdminCreateUserTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCreateUserTokenInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_adminRevokeUserToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAdminRevokeUserTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminRevokeUserTokenInput)
 	if err != nil {
 		return nil, err
 	}
@@ -6367,6 +6426,28 @@ func (ec *executionContext) field_AdminQuery_patreonCredentials_args(ctx context
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_personalToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_personalTokens_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalNAdminUserTokensFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserTokensFilterInput)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -15705,6 +15786,47 @@ func (ec *executionContext) fieldContext_AdminMutation_adminCreateUserToken(ctx 
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_adminRevokeUserToken(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_adminRevokeUserToken,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().AdminRevokeUserToken(ctx, obj, fc.Args["input"].(model.AdminRevokeUserTokenInput))
+		},
+		nil,
+		ec.marshalNAdminRevokeUserTokenOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAdminRevokeUserTokenOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_adminRevokeUserToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AdminRevokeUserTokenOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_adminRevokeUserToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminMutation_createApiKey(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -22396,6 +22518,114 @@ func (ec *executionContext) fieldContext_AdminQuery_allApiKeys(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_personalTokens(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_personalTokens,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().PersonalTokens(ctx, obj, fc.Args["filter"].(model.AdminUserTokensFilterInput))
+		},
+		nil,
+		ec.marshalNAdminUserTokensConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserTokensConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_personalTokens(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminUserTokensConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUserTokensConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_personalTokens_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_personalToken(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_personalToken,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().PersonalToken(ctx, obj, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOAdminUserToken2ᚖtrip2gᚋinternalᚋdbᚐUserToken,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_personalToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUserToken_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_AdminUserToken_userId(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminUserToken_name(ctx, field)
+			case "tokenPrefix":
+				return ec.fieldContext_AdminUserToken_tokenPrefix(ctx, field)
+			case "scope":
+				return ec.fieldContext_AdminUserToken_scope(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUserToken_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_AdminUserToken_expiresAt(ctx, field)
+			case "lastUsedAt":
+				return ec.fieldContext_AdminUserToken_lastUsedAt(ctx, field)
+			case "revokedAt":
+				return ec.fieldContext_AdminUserToken_revokedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_AdminUserToken_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUserToken", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_personalToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_allGitTokens(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -26157,6 +26387,57 @@ func (ec *executionContext) fieldContext_AdminReleasesConnection_nodes(_ context
 				return ec.fieldContext_AdminRelease_isLive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminRelease", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRevokeUserTokenPayload_token(ctx context.Context, field graphql.CollectedField, obj *model.AdminRevokeUserTokenPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminRevokeUserTokenPayload_token,
+		func(ctx context.Context) (any, error) {
+			return obj.Token, nil
+		},
+		nil,
+		ec.marshalNAdminUserToken2ᚖtrip2gᚋinternalᚋdbᚐUserToken,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminRevokeUserTokenPayload_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRevokeUserTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUserToken_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_AdminUserToken_userId(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminUserToken_name(ctx, field)
+			case "tokenPrefix":
+				return ec.fieldContext_AdminUserToken_tokenPrefix(ctx, field)
+			case "scope":
+				return ec.fieldContext_AdminUserToken_scope(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUserToken_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_AdminUserToken_expiresAt(ctx, field)
+			case "lastUsedAt":
+				return ec.fieldContext_AdminUserToken_lastUsedAt(ctx, field)
+			case "revokedAt":
+				return ec.fieldContext_AdminUserToken_revokedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_AdminUserToken_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUserToken", field.Name)
 		},
 	}
 	return fc, nil
@@ -29924,6 +30205,359 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccessesConnection_nod
 				return ec.fieldContext_AdminUserSubgraphAccess_subgraph(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUserSubgraphAccess", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_id(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_userId(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_userId,
+		func(ctx context.Context) (any, error) {
+			return obj.UserID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_name(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_tokenPrefix(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_tokenPrefix,
+		func(ctx context.Context) (any, error) {
+			return obj.TokenPrefix, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_tokenPrefix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_scope(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_scope,
+		func(ctx context.Context) (any, error) {
+			return obj.Scope, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_scope(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_expiresAt(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_expiresAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ExpiresAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_lastUsedAt(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_lastUsedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastUsedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_lastUsedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_revokedAt(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_revokedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.RevokedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_revokedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserToken_user(ctx context.Context, field graphql.CollectedField, obj *db.UserToken) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserToken_user,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminUserToken().User(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserToken_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserToken",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			case "admin":
+				return ec.fieldContext_AdminUser_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserTokensConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminUserTokensConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserTokensConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminUserTokensConnection().Nodes(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminUserToken2ᚕtrip2gᚋinternalᚋdbᚐUserTokenᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserTokensConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserTokensConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUserToken_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_AdminUserToken_userId(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminUserToken_name(ctx, field)
+			case "tokenPrefix":
+				return ec.fieldContext_AdminUserToken_tokenPrefix(ctx, field)
+			case "scope":
+				return ec.fieldContext_AdminUserToken_scope(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUserToken_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_AdminUserToken_expiresAt(ctx, field)
+			case "lastUsedAt":
+				return ec.fieldContext_AdminUserToken_lastUsedAt(ctx, field)
+			case "revokedAt":
+				return ec.fieldContext_AdminUserToken_revokedAt(ctx, field)
+			case "user":
+				return ec.fieldContext_AdminUserToken_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUserToken", field.Name)
 		},
 	}
 	return fc, nil
@@ -34651,6 +35285,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createHatLink(ctx, field)
 			case "adminCreateUserToken":
 				return ec.fieldContext_AdminMutation_adminCreateUserToken(ctx, field)
+			case "adminRevokeUserToken":
+				return ec.fieldContext_AdminMutation_adminRevokeUserToken(ctx, field)
 			case "createApiKey":
 				return ec.fieldContext_AdminMutation_createApiKey(ctx, field)
 			case "disableApiKey":
@@ -37844,6 +38480,10 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allUserUserBans(ctx, field)
 			case "allApiKeys":
 				return ec.fieldContext_AdminQuery_allApiKeys(ctx, field)
+			case "personalTokens":
+				return ec.fieldContext_AdminQuery_personalTokens(ctx, field)
+			case "personalToken":
+				return ec.fieldContext_AdminQuery_personalToken(ctx, field)
 			case "allGitTokens":
 				return ec.fieldContext_AdminQuery_allGitTokens(ctx, field)
 			case "allReleases":
@@ -46201,6 +46841,33 @@ func (ec *executionContext) unmarshalInputAdminPatreonCredentialsFilterInput(ctx
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAdminRevokeUserTokenInput(ctx context.Context, obj any) (model.AdminRevokeUserTokenInput, error) {
+	var it model.AdminRevokeUserTokenInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdminSetTelegramAccountChatPublishInstantTagsInput(ctx context.Context, obj any) (model.AdminSetTelegramAccountChatPublishInstantTagsInput, error) {
 	var it model.AdminSetTelegramAccountChatPublishInstantTagsInput
 	asMap := map[string]any{}
@@ -46522,6 +47189,33 @@ func (ec *executionContext) unmarshalInputAdminUpdateTelegramAccountInput(ctx co
 				return it, err
 			}
 			it.Enabled = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdminUserTokensFilterInput(ctx context.Context, obj any) (model.AdminUserTokensFilterInput, error) {
+	var it model.AdminUserTokensFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"userId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
 		}
 	}
 
@@ -51381,6 +52075,29 @@ func (ec *executionContext) _AdminImportTelegramAccountChannelOrErrorPayload(ctx
 			return graphql.Null
 		}
 		return ec._AdminImportTelegramAccountChannelPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _AdminRevokeUserTokenOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.AdminRevokeUserTokenOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.AdminRevokeUserTokenPayload:
+		return ec._AdminRevokeUserTokenPayload(ctx, sel, &obj)
+	case *model.AdminRevokeUserTokenPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AdminRevokeUserTokenPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -60238,6 +60955,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "adminRevokeUserToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_adminRevokeUserToken(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createApiKey":
 			field := field
 
@@ -65368,6 +66121,75 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "personalTokens":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_personalTokens(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "personalToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_personalToken(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allGitTokens":
 			field := field
 
@@ -68178,6 +69000,45 @@ func (ec *executionContext) _AdminReleasesConnection(ctx context.Context, sel as
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminRevokeUserTokenPayloadImplementors = []string{"AdminRevokeUserTokenPayload", "AdminRevokeUserTokenOrErrorPayload"}
+
+func (ec *executionContext) _AdminRevokeUserTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.AdminRevokeUserTokenPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminRevokeUserTokenPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminRevokeUserTokenPayload")
+		case "token":
+			out.Values[i] = ec._AdminRevokeUserTokenPayload_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -71129,6 +71990,182 @@ func (ec *executionContext) _AdminUserSubgraphAccessesConnection(ctx context.Con
 	return out
 }
 
+var adminUserTokenImplementors = []string{"AdminUserToken"}
+
+func (ec *executionContext) _AdminUserToken(ctx context.Context, sel ast.SelectionSet, obj *db.UserToken) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminUserTokenImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminUserToken")
+		case "id":
+			out.Values[i] = ec._AdminUserToken_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "userId":
+			out.Values[i] = ec._AdminUserToken_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._AdminUserToken_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "tokenPrefix":
+			out.Values[i] = ec._AdminUserToken_tokenPrefix(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "scope":
+			out.Values[i] = ec._AdminUserToken_scope(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminUserToken_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "expiresAt":
+			out.Values[i] = ec._AdminUserToken_expiresAt(ctx, field, obj)
+		case "lastUsedAt":
+			out.Values[i] = ec._AdminUserToken_lastUsedAt(ctx, field, obj)
+		case "revokedAt":
+			out.Values[i] = ec._AdminUserToken_revokedAt(ctx, field, obj)
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminUserToken_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminUserTokensConnectionImplementors = []string{"AdminUserTokensConnection"}
+
+func (ec *executionContext) _AdminUserTokensConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminUserTokensConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminUserTokensConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminUserTokensConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminUserTokensConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminUsersConnectionImplementors = []string{"AdminUsersConnection"}
 
 func (ec *executionContext) _AdminUsersConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminUsersConnection) graphql.Marshaler {
@@ -73576,7 +74613,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -83922,6 +84959,21 @@ func (ec *executionContext) marshalNAdminReleasesConnection2ᚖtrip2gᚋinternal
 	return ec._AdminReleasesConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNAdminRevokeUserTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminRevokeUserTokenInput(ctx context.Context, v any) (model.AdminRevokeUserTokenInput, error) {
+	res, err := ec.unmarshalInputAdminRevokeUserTokenInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAdminRevokeUserTokenOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAdminRevokeUserTokenOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.AdminRevokeUserTokenOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminRevokeUserTokenOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNAdminSetTelegramAccountChatPublishInstantTagsInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminSetTelegramAccountChatPublishInstantTagsInput(ctx context.Context, v any) (model.AdminSetTelegramAccountChatPublishInstantTagsInput, error) {
 	res, err := ec.unmarshalInputAdminSetTelegramAccountChatPublishInstantTagsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -84840,6 +85892,83 @@ func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2ᚖtrip2
 		return graphql.Null
 	}
 	return ec._AdminUserSubgraphAccessesConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminUserToken2trip2gᚋinternalᚋdbᚐUserToken(ctx context.Context, sel ast.SelectionSet, v db.UserToken) graphql.Marshaler {
+	return ec._AdminUserToken(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminUserToken2ᚕtrip2gᚋinternalᚋdbᚐUserTokenᚄ(ctx context.Context, sel ast.SelectionSet, v []db.UserToken) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminUserToken2trip2gᚋinternalᚋdbᚐUserToken(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminUserToken2ᚖtrip2gᚋinternalᚋdbᚐUserToken(ctx context.Context, sel ast.SelectionSet, v *db.UserToken) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminUserToken(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminUserTokensConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserTokensConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminUserTokensConnection) graphql.Marshaler {
+	return ec._AdminUserTokensConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminUserTokensConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserTokensConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminUserTokensConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminUserTokensConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAdminUserTokensFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserTokensFilterInput(ctx context.Context, v any) (model.AdminUserTokensFilterInput, error) {
+	res, err := ec.unmarshalInputAdminUserTokensFilterInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNAdminUsersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUsersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminUsersConnection) graphql.Marshaler {
@@ -89186,6 +90315,13 @@ func (ec *executionContext) marshalOAdminUserSubgraphAccess2ᚖtrip2gᚋinternal
 		return graphql.Null
 	}
 	return ec._AdminUserSubgraphAccess(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminUserToken2ᚖtrip2gᚋinternalᚋdbᚐUserToken(ctx context.Context, sel ast.SelectionSet, v *db.UserToken) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminUserToken(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {

@@ -1,0 +1,20 @@
+query ($filter: AdminUserTokensFilterInput!) {
+	admin {
+		personalTokens(filter: $filter) {
+			nodes {
+				id
+				userId
+				name
+				tokenPrefix
+				createdAt
+				lastUsedAt
+				expiresAt
+				revokedAt
+				user {
+					id
+					email
+				}
+			}
+		}
+	}
+}

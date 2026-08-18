@@ -589,6 +589,7 @@ export type AdminMutation = {
   __typename?: 'AdminMutation';
   addFederationSecretSubgraph: AddFederationSecretSubgraphOrErrorPayload;
   adminCreateUserToken: CreateUserTokenOrErrorPayload;
+  adminRevokeUserToken: AdminRevokeUserTokenOrErrorPayload;
   banUser: BanUserOrErrorPayload;
   cancelTelegramAccountAuth: AdminCancelTelegramAccountAuthOrErrorPayload;
   changeWebhookCreate: ChangeWebhookCreateOrErrorPayload;
@@ -698,6 +699,11 @@ export type AdminMutationaddFederationSecretSubgraphArgs = {
 
 export type AdminMutationadminCreateUserTokenArgs = {
   input: AdminCreateUserTokenInput;
+};
+
+
+export type AdminMutationadminRevokeUserTokenArgs = {
+  input: AdminRevokeUserTokenInput;
 };
 
 
@@ -1438,6 +1444,8 @@ export type AdminQuery = {
   offer?: Maybe<AdminOffer>;
   oidcCredentials?: Maybe<AdminOIDCCredentials>;
   patreonCredentials?: Maybe<AdminPatreonCredentials>;
+  personalToken?: Maybe<AdminUserToken>;
+  personalTokens: AdminUserTokensConnection;
   purchase?: Maybe<AdminPurchase>;
   recentlyModifiedNoteViews: Array<NoteView>;
   redirect?: Maybe<AdminRedirect>;
@@ -1596,6 +1604,16 @@ export type AdminQuerypatreonCredentialsArgs = {
 };
 
 
+export type AdminQuerypersonalTokenArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type AdminQuerypersonalTokensArgs = {
+  filter: AdminUserTokensFilterInput;
+};
+
+
 export type AdminQuerypurchaseArgs = {
   id: Scalars['String']['input'];
 };
@@ -1685,6 +1703,17 @@ export type AdminRelease = {
 export type AdminReleasesConnection = {
   __typename?: 'AdminReleasesConnection';
   nodes: Array<AdminRelease>;
+};
+
+export type AdminRevokeUserTokenInput = {
+  id: Scalars['ID']['input'];
+};
+
+export type AdminRevokeUserTokenOrErrorPayload = AdminRevokeUserTokenPayload | ErrorPayload;
+
+export type AdminRevokeUserTokenPayload = {
+  __typename?: 'AdminRevokeUserTokenPayload';
+  token: AdminUserToken;
 };
 
 export type AdminSetTelegramAccountChatPublishInstantTagsInput = {
@@ -2007,6 +2036,29 @@ export type AdminUserSubgraphAccess = {
 export type AdminUserSubgraphAccessesConnection = {
   __typename?: 'AdminUserSubgraphAccessesConnection';
   nodes: Array<AdminUserSubgraphAccess>;
+};
+
+export type AdminUserToken = {
+  __typename?: 'AdminUserToken';
+  createdAt: Scalars['Time']['output'];
+  expiresAt?: Maybe<Scalars['Time']['output']>;
+  id: Scalars['ID']['output'];
+  lastUsedAt?: Maybe<Scalars['Time']['output']>;
+  name: Scalars['String']['output'];
+  revokedAt?: Maybe<Scalars['Time']['output']>;
+  scope: Scalars['String']['output'];
+  tokenPrefix: Scalars['String']['output'];
+  user: AdminUser;
+  userId: Scalars['Int64']['output'];
+};
+
+export type AdminUserTokensConnection = {
+  __typename?: 'AdminUserTokensConnection';
+  nodes: Array<AdminUserToken>;
+};
+
+export type AdminUserTokensFilterInput = {
+  userId?: InputMaybe<Scalars['Int64']['input']>;
 };
 
 export type AdminUsersConnection = {

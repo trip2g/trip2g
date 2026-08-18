@@ -1,0 +1,5 @@
+$trip2g_admin_personaltoken_button_revoke $mol_button_major
+	token_id \
+	revoked? null
+	title \Revoke
+	click?event <=> handle_click? null

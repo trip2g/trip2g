@@ -190,6 +190,28 @@ type AdminUserBansConnection {
   nodes: [UserBan!]! @goField(forceResolver: true)
 }
 
+type AdminUserToken @goModel(model: "trip2g/internal/db.UserToken") {
+  id: ID!
+  userId: Int64!
+  name: String!
+  tokenPrefix: String!
+  scope: String!
+  createdAt: Time!
+  expiresAt: Time
+  lastUsedAt: Time
+  revokedAt: Time
+
+  user: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminUserTokensConnection @goExtraField(name: "UserID", type: "*int64") {
+  nodes: [AdminUserToken!]! @goField(forceResolver: true)
+}
+
+input AdminUserTokensFilterInput {
+  userId: Int64
+}
+
 type AdminApiKey @goModel(model: "trip2g/internal/db.ApiKey") {
   id: Int64!
   createdAt: Time!
@@ -1167,6 +1189,8 @@ type AdminQuery {
   recentlyModifiedNoteViews: [NoteView!]!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
+  personalTokens(filter: AdminUserTokensFilterInput!): AdminUserTokensConnection!
+  personalToken(id: ID!): AdminUserToken
   allGitTokens: AdminGitTokensConnection!
   allReleases: AdminReleasesConnection!
   allAdmins: AdminAdminsConnection!
@@ -2183,6 +2207,16 @@ union UpdateUserSubgraphAccessOrErrorPayload = UpdateUserSubgraphAccessPayload |
 #
 # adminCreateUserToken
 #
+
+input AdminRevokeUserTokenInput {
+  id: ID!
+}
+
+type AdminRevokeUserTokenPayload {
+  token: AdminUserToken!
+}
+
+union AdminRevokeUserTokenOrErrorPayload = AdminRevokeUserTokenPayload | ErrorPayload
 
 input AdminCreateUserTokenInput {
   userId: Int64!
@@ -3232,6 +3266,7 @@ type AdminMutation {
 
   createHatLink(input: CreateHatLinkInput!): CreateHatLinkOrErrorPayload!
   adminCreateUserToken(input: AdminCreateUserTokenInput!): CreateUserTokenOrErrorPayload!
+  adminRevokeUserToken(input: AdminRevokeUserTokenInput!): AdminRevokeUserTokenOrErrorPayload!
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!

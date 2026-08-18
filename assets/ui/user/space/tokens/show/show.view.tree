@@ -3,9 +3,9 @@ $trip2g_user_space_tokens_show $mol_page
 	token_id \
 	revoked? null
 	tools /
-		<= Revoke $mol_button_minor
-			title @ \Revoke
-			click? <=> revoke? null
+		<= Revoke $trip2g_user_space_tokens_buttons_revoke
+			token_id <= token_id \
+			revoked? => revoked?
 	body /
 		<= Details $mol_view
 			style *

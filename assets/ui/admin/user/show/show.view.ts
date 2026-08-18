@@ -55,13 +55,6 @@ namespace $.$$ {
 			this.HatLink().generate()
 		}
 
-		override personal_token_allowed(): boolean {
-			return this.PersonalToken().generate_allowed()
-		}
-
-		override personal_token_generate() {
-			this.PersonalToken().generate()
-		}
 
 		override user_created_at(): string {
 			const m = new $mol_time_moment( this.data().createdAt )

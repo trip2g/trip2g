@@ -52,9 +52,11 @@ namespace $.$$ {
 			return this.row(id).expiresAt
 		}
 
-		override row_revoke(id: any) {
-			$trip2g_user_space_tokens_revoke({ input: { id: this.row(id).id } })
+		// The revoke button reports back through this, and the list reloads:
+		// a revoked token stays in the list, it just stops working.
+		override row_revoked(id: any, next?: any) {
 			this.data(null)
+			return next ?? null
 		}
 	}
 }

@@ -1,0 +1,35 @@
+$trip2g_admin_personaltoken_catalog $trip2g_admin_catalog
+	menu_title @ \Personal Tokens
+	user_id 0
+	actions /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+	param \id
+	Empty $mol_status
+	Content* $trip2g_admin_personaltoken_show
+		token_id <= row_id* \
+	AddForm $trip2g_admin_personaltoken_new
+		user_id <= user_id
+	menu_link_content* / <= TokenItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Name* $trip2g_admin_labeler_description
+						value <= row_name* \name
+					<= Prefix* $trip2g_admin_labeler_id
+						value <= row_prefix* \prefix
+					<= Owner* $trip2g_admin_labeler_email
+						title @ \Owner
+						value <= row_owner* \owner
+					<= LastUsed* $trip2g_admin_labeler_moment
+						title @ \Last Used
+						value <= row_last_used_at* \last_used_at
+					<= ExpiresAt* $trip2g_admin_labeler_moment
+						title @ \Expires At
+						value <= row_expires_at* \expires_at
+					<= RevokedAt* $trip2g_admin_labeler_moment
+						title @ \Revoked At
+						value <= row_revoked_at* \revoked_at

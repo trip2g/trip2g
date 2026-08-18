@@ -8,6 +8,8 @@ $trip2g_admin_menu_users $trip2g_admin_catalog
 			close_icon <= Spread_close
 		usersubgraphaccesses <= ListUsersSubgraphAccesses $trip2g_admin_usersubgraphaccesses_catalog
 			close_icon <= Spread_close
+		personaltokens <= ListPersonalTokens $trip2g_admin_personaltoken_catalog
+			close_icon <= Spread_close
 		waitlistemailrequests <= WaitListEmailRequests $trip2g_admin_waitlistemailrequest_catalog
 			close_icon <= Spread_close
 		waitlisttgbotrequests <= WaitListTgBotRequests $trip2g_admin_waitlisttgbotrequest_catalog
