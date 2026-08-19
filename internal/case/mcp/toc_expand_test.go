@@ -124,3 +124,30 @@ func TestExpandPreviewCountsRunesNotBytes(t *testing.T) {
 	require.Len(t, top, 1)
 	require.NotEmpty(t, top[0].Preview)
 }
+
+func TestSectionAnchorForTocPath(t *testing.T) {
+	note := noteWithLeadingH1()
+	url := func(*model.NoteView) string { return "https://kb.test/goethe" }
+
+	require.Equal(t, "https://kb.test/goethe#maxims",
+		sectionAnchorURL(note, []string{"Maxims"}, url))
+	require.Equal(t, "https://kb.test/goethe#art",
+		sectionAnchorURL(note, []string{"Maxims", "Art"}, url))
+
+	// No path, or a path that names no heading, means there is nothing to
+	// anchor to — the note's own URL already covers that.
+	require.Empty(t, sectionAnchorURL(note, nil, url))
+	require.Empty(t, sectionAnchorURL(note, []string{"Nope"}, url))
+}
+
+func TestSnippetBreadcrumbDropsTheTitleH1(t *testing.T) {
+	// search and expand have to agree on what a toc_path looks like: expand
+	// drops the title H1, so the breadcrumb walked out of the rendered HTML —
+	// where that H1 div still wraps everything — must drop it too.
+	note := noteWithLeadingH1()
+
+	require.Equal(t, []string{"Maxims"},
+		snippetTocPath(note, "maxims body", ""))
+	require.Equal(t, []string{"Reflections"},
+		snippetTocPath(note, "reflections body", ""))
+}
