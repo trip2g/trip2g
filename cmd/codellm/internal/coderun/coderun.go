@@ -390,8 +390,8 @@ func extractFirstFencedBlock(body string) (string, string) {
 }
 
 // buildChildEnv constructs the child process environment: a minimal base
-// (PATH + FLEET_INPUT) plus selected parent vars via the explicit-allowlist
-// (passthrough) and prefix-match mechanisms.
+// (PATH + FLEET_INPUT + the static toolbox paths) plus selected parent vars via
+// the explicit-allowlist (passthrough) and prefix-match mechanisms.
 //
 // Secret-scrub guarantee: only vars that are explicitly listed in passthrough
 // OR whose name starts with an entry in prefix are forwarded. No other parent
@@ -401,6 +401,7 @@ func buildChildEnv(inputFile string, passthrough, prefix []string) []string {
 		"PATH=" + os.Getenv("PATH"),
 		"FLEET_INPUT=" + inputFile,
 	}
+	env = append(env, toolboxEnv()...)
 	if len(passthrough) == 0 && len(prefix) == 0 {
 		return env
 	}
@@ -423,6 +424,39 @@ func buildChildEnv(inputFile string, passthrough, prefix []string) []string {
 				break
 			}
 		}
+	}
+	return env
+}
+
+// Toolbox paths baked into the runtime image (Dockerfile.codellm). Both sit
+// under /usr/lib because the sandbox grants that read-only and denies the rest
+// of the filesystem — notably /etc, where the system CA store normally lives.
+const (
+	toolboxNodeModules = "/usr/lib/node_modules"
+	toolboxCABundle    = "/usr/lib/ssl-certs/ca-bundle.crt"
+)
+
+// toolboxEnv points the interpreters at the packages and CA bundle installed in
+// the image: NODE_PATH so require() resolves the global node modules (ESM
+// imports ignore it, hence the CommonJS-only package list), and the SSL vars so
+// curl/git/openssl verify TLS without reading /etc.
+//
+// Each var is set only when its target exists, so a dev run outside the image
+// (make aircodellm) keeps the host defaults instead of being pointed at a
+// missing CA bundle, which would break TLS rather than fix it.
+//
+// These are static paths, not parent env, so the secret-scrub guarantee holds.
+func toolboxEnv() []string {
+	var env []string
+	if fi, err := os.Stat(toolboxNodeModules); err == nil && fi.IsDir() {
+		env = append(env, "NODE_PATH="+toolboxNodeModules)
+	}
+	if fi, err := os.Stat(toolboxCABundle); err == nil && !fi.IsDir() {
+		env = append(env,
+			"SSL_CERT_FILE="+toolboxCABundle,
+			"CURL_CA_BUNDLE="+toolboxCABundle,
+			"GIT_SSL_CAINFO="+toolboxCABundle,
+		)
 	}
 	return env
 }

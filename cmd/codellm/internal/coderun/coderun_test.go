@@ -193,7 +193,7 @@ func TestFenceLangToProgram(t *testing.T) {
 	require.Equal(t, "node", fenceLangToProgram("node"))
 	require.Equal(t, "node", fenceLangToProgram("js"))
 	require.Equal(t, "node", fenceLangToProgram("javascript"))
-	require.Equal(t, "ruby", fenceLangToProgram("ruby"))
+	require.Empty(t, fenceLangToProgram("ruby"))
 }
 
 func TestProgramBinary(t *testing.T) {
@@ -221,8 +221,8 @@ func TestInterpretersJSON_Load(t *testing.T) {
 	require.Equal(t, "python", prog)
 	prog = fenceLangToProgram("py")
 	require.Equal(t, "python", prog)
-	prog = fenceLangToProgram("ruby")
-	require.Equal(t, "ruby", prog)
+	prog = fenceLangToProgram("sh")
+	require.Equal(t, "bash", prog)
 	prog = fenceLangToProgram("haskell")
 	require.Empty(t, prog)
 }
