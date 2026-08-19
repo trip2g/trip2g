@@ -438,10 +438,20 @@ func TestFederatedSingleKBCallTimesOut(t *testing.T) {
 	nvs := appmodel.NewNoteViews()
 	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(kbNote)}
 
+	const peerSilence = 3 * time.Second
 	federation := &federationMock{
 		noteHTMLFunc: func(ctx context.Context, _ appmodel.MCPNoteHTMLParams) (appmodel.FederationResult, error) {
-			<-ctx.Done() // a peer that never answers
-			return appmodel.FederationResult{}, ctx.Err()
+			// A peer that accepts the call and sits on it. The upper bound only
+			// keeps the test from hanging when the hop is unbounded; the hop's
+			// own deadline is an order of magnitude shorter.
+			select {
+			case <-ctx.Done():
+				return appmodel.FederationResult{}, ctx.Err()
+			case <-time.After(peerSilence):
+				return appmodel.FederationResult{
+					Content: []appmodel.FederationContent{{Type: "text", Text: "too late"}},
+				}, nil
+			}
 		},
 	}
 	env := &EnvMock{
@@ -463,15 +473,9 @@ func TestFederatedSingleKBCallTimesOut(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	done := make(chan mcp.Response, 1)
-	go func() {
-		done <- callMCP(t, env, mcp.Request{JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1})
-	}()
+	start := time.Now()
+	resp := callMCP(t, env, mcp.Request{JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1})
 
-	select {
-	case resp := <-done:
-		require.NotNil(t, resp.Error, "an unanswered peer must surface as an error, not a result")
-	case <-time.After(5 * time.Second):
-		t.Fatal("federated_note_html did not return: the single-KB hop is unbounded")
-	}
+	require.NotNil(t, resp.Error, "an unanswered peer must surface as an error, not a result")
+	require.Less(t, time.Since(start), peerSilence, "the hop must give up on its own deadline")
 }

@@ -278,7 +278,7 @@ func TestSplitKeepsOverlapRuneAligned(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Vary the trailing byte count so the 200-byte window lands mid-rune
 			// in at least some of the runs.
-			for pad := 0; pad < 4; pad++ {
+			for pad := range 4 {
 				body := "## Alpha\n\n" + strings.Repeat(tt.word, 60) + strings.Repeat("x", pad) +
 					"\n\n## Beta\n\n" + strings.Repeat(tt.word, 60)
 				for _, c := range Split("Заметка", []byte(body)) {
