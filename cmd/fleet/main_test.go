@@ -17,16 +17,15 @@ import (
 
 func validConfig() fleet.Config {
 	return fleet.Config{
-		CallbackURL:  "https://fleet.example.com",
-		JWTSecret:    "jwt-secret",
-		AdminEmail:   "fleet@local",
-		FleetSecret:  "secret",
-		LLMAPIKey:    "llm-key",
-		FleetID:      "fleet1",
-		DefaultModel: "gpt-4o-mini",
-		TokenCeiling: 100000,
-		StepCeiling:  25,
-		OfferedTools: []string{"search", "read_note"},
+		CallbackURL:              "https://fleet.example.com",
+		Trip2gAdminPersonalToken: "t2g_owner",
+		FleetSecret:              "secret",
+		LLMAPIKey:                "llm-key",
+		FleetID:                  "fleet1",
+		DefaultModel:             "gpt-4o-mini",
+		TokenCeiling:             100000,
+		StepCeiling:              25,
+		OfferedTools:             []string{"search", "read_note"},
 	}
 }
 
@@ -50,9 +49,9 @@ func TestValidateConfig_RejectsMissingFields(t *testing.T) {
 			wantErr: "CallbackURL",
 		},
 		{
-			name:    "missing_jwt_secret",
-			mutate:  func(c *fleet.Config) { c.JWTSecret = "" },
-			wantErr: "JWTSecret",
+			name:    "missing_trip2g_admin_personal_token",
+			mutate:  func(c *fleet.Config) { c.Trip2gAdminPersonalToken = "" },
+			wantErr: "Trip2gAdminPersonalToken",
 		},
 		{
 			name:    "missing_fleet_secret",

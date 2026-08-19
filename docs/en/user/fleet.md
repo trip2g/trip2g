@@ -171,7 +171,7 @@ go build -o fleet ./cmd/fleet
 ./fleet \
   --trip2g-url https://your-hub.example \
   --callback-url http://fleet-host:9090 \
-  --jwt-secret  "<hub user-token secret>" \
+  --trip2g-admin-personal-token "<hub personal token>" \
   --fleet-secret "<any random seed>" \
   --llm-base-url https://openrouter.ai/api/v1 \
   --llm-api-key  "<key>" \
@@ -179,7 +179,9 @@ go build -o fleet ./cmd/fleet
   --allowed-programs python,bash
 ```
 
-Every flag has a `TRIP2G_FLEET_<FLAG>` environment variable equivalent. The `--jwt-secret` is the hub's user-token secret: fleet uses it to self-provision an admin identity, so no manual API-key ceremony. `--llm-base-url` takes any OpenAI-compatible endpoint, including a local model.
+Every flag has a `TRIP2G_FLEET_<FLAG>` environment variable equivalent. `--llm-base-url` takes any OpenAI-compatible endpoint, including a local model.
+
+The `--trip2g-admin-personal-token` is fleet's only credential on the hub: a [[en/user/mcp|personal token]] belonging to an admin. You do not mint it by hand — set `OWNER_PERSONAL_TOKEN_VALUE` on the hub to a `t2g_` value and it seeds the token for the owner at boot, then pass the same value to fleet. Fleet never holds the hub's signing secret, so the credential is one revocable row: revoke it in the admin UI and fleet stops within half a minute, without restarting the hub. A restart will not bring a revoked row back — restoring access means a new value.
 
 Two switches make roles cheap to develop:
 

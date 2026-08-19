@@ -108,6 +108,10 @@ services:
       - JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
       - USER_TOKEN_COOKIE_NAME=trip2g_e2e # avoid conflicts with dev cookies
 
+      # Seeded at boot as the owner's personal token; both fleets authenticate
+      # with this exact value (TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN).
+      - OWNER_PERSONAL_TOKEN_VALUE=t2g_e2efleetownertokene2efleetownertokene2efleetownertokene2efleet
+
       # Git API (DB-canonical mirror: gitapi owns a writable bare repo it
       # materializes from the DB; the testdata vault is mounted read-only).
       - GIT_API_REPO_PATH=/data/git
@@ -472,7 +476,7 @@ services:
 
   # Fleet agent host for the fleet e2e spec. Discovers roles/transcript-agent.md,
   # reconciles a change webhook, delivers to the llm-mock, writes segments/ back.
-  # JWT_SECRET must match the app's JWT_SECRET so HAT auth works.
+  # The admin personal token must be the value the app seeds for its owner.
   # CALLBACK_URL uses the compose service name so the app container can reach
   # the fleet container over the shared docker network.
   fleet:
@@ -494,8 +498,7 @@ services:
       - TRIP2G_FLEET_LISTEN=:9090
       - TRIP2G_FLEET_CALLBACK_URL=http://fleet:9090
       - TRIP2G_FLEET_TRIP2G_URL=http://app:20081
-      - TRIP2G_FLEET_JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
-      - TRIP2G_FLEET_ADMIN_EMAIL=fleet@local
+      - TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN=t2g_e2efleetownertokene2efleetownertokene2efleetownertokene2efleet
       - TRIP2G_FLEET_FLEET_SECRET=e2e-fleet-secret
       - TRIP2G_FLEET_LLM_BASE_URL=http://llm-mock:9091/v1
       - TRIP2G_FLEET_LLM_API_KEY=x
@@ -581,8 +584,7 @@ services:
       - TRIP2G_FLEET_LISTEN=:9090
       - TRIP2G_FLEET_CALLBACK_URL=http://fleet-code:9090
       - TRIP2G_FLEET_TRIP2G_URL=http://app:20081
-      - TRIP2G_FLEET_JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
-      - TRIP2G_FLEET_ADMIN_EMAIL=fleet@local
+      - TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN=t2g_e2efleetownertokene2efleetownertokene2efleetownertokene2efleet
       - TRIP2G_FLEET_FLEET_SECRET=e2ec-fleet-secret
       - TRIP2G_FLEET_LLM_BASE_URL=http://codellm:8082/v1
       - TRIP2G_FLEET_LLM_API_KEY=e2e-codellm-shared-key-0123456789abcdef

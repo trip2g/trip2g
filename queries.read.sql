@@ -1419,6 +1419,12 @@ where token_hash = ?
   and revoked_at is null
   and (expires_at is null or expires_at > datetime('now'));
 
+-- Unfiltered on purpose: the owner-token seeder must tell a revoked row apart
+-- from a missing one, because a revoked row is deliberate and stays revoked.
+-- name: UserTokenByHashAny :one
+select * from user_tokens
+where token_hash = ?;
+
 -- name: ListUserTokensByUserID :many
 select * from user_tokens
 where user_id = ?

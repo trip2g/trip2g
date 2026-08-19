@@ -1253,6 +1253,17 @@ set revoked_at = current_timestamp
 where id = ? and revoked_at is null
 returning *;
 
+-- Revokes the owner's seeded token rows except the one carrying keep_hash.
+-- An empty keep_hash keeps nothing, which is how the seeder turns the feature
+-- off; a non-empty one leaves the current value live and supersedes the rest.
+-- name: RevokeSupersededOwnerTokens :execrows
+update user_tokens
+set revoked_at = current_timestamp
+where user_id = ?
+  and name = ?
+  and token_hash != sqlc.arg(keep_hash)
+  and revoked_at is null;
+
 -- name: UpdateUserTokenLastUsedAt :exec
 update user_tokens
 set last_used_at = current_timestamp

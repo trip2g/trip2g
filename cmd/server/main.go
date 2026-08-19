@@ -549,6 +549,12 @@ func main() {
 		panic(err)
 	}
 
+	// the owner's seeded personal token, the credential a fleet host runs on (WRITE).
+	err = a.seedOwnerPersonalToken(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	// cron jobs (writes UpsertCronJob/DeleteCronJobByName + starts cron).
 	a.startJobWriters(ctx)
 
