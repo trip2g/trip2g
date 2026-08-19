@@ -4,9 +4,11 @@ import (
 	"errors"
 	"net/http"
 	"trip2g/internal/appreq"
+	"trip2g/internal/defaulttemplate"
 	"unsafe"
 
 	"github.com/mailru/easyjson"
+	"github.com/valyala/fasthttp"
 )
 
 //go:generate go run ./gencmd
@@ -100,6 +102,14 @@ func (router *Router) Handle(req *appreq.Request) (bool, error) {
 
 	respI, err := endpoint.Handle(req)
 	if err != nil {
+		if writeSystemMessage(ctx, err) {
+			// The request was answered, so the error must not travel up:
+			// cmd/server would replace the page with a 503. The cause is worth
+			// keeping, though — it is no longer in the response body.
+			router.env.Logger().Error("answered with a system message", "err", err, "path", path)
+			return true, nil
+		}
+
 		jsonErr, isJSONErr := err.(easyjson.Marshaler)
 		if isJSONErr {
 			ctx.SetStatusCode(http.StatusBadRequest)
@@ -141,6 +151,21 @@ func (router *Router) Handle(req *appreq.Request) (bool, error) {
 	ctx.SetBody(rawBytes)
 
 	return true, nil
+}
+
+// writeSystemMessage renders the plain "here is what happened" page for an
+// endpoint that asked for one, and reports whether it did. Endpoints whose
+// caller is a person in a browser return appreq.SystemMessageError instead of
+// letting a wrapped internal error become the response body.
+func writeSystemMessage(ctx *fasthttp.RequestCtx, err error) bool {
+	var sysErr *appreq.SystemMessageError
+	if !errors.As(err, &sysErr) {
+		return false
+	}
+
+	defaulttemplate.WriteSystemMessage(ctx, sysErr.Code, sysErr.Msg)
+
+	return true
 }
 
 // read https://github.com/valyala/fasthttp?tab=readme-ov-file#tricks-with-byte-buffers.

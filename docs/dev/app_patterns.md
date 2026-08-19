@@ -110,6 +110,27 @@ if err != nil {
 
 Use `model.NewOzzoError()` and `model.NewFieldError()` for validation errors.
 
+### HTTP endpoints a person opens in a browser
+
+An endpoint whose caller is a human (a sign-in link, a confirmation URL) returns
+`appreq.SystemMessageError` instead of writing the failure into the body. The
+router (`internal/router/router.go`) catches it via `errors.As`, logs the cause,
+and answers with a plain standalone page — `defaulttemplate.WriteSystemMessage`.
+
+```go
+return nil, &appreq.SystemMessageError{
+    Code: http.StatusUnauthorized,
+    Msg:  "hat_expired", // <msg>_title + <msg>_text in langs/*.toml
+    Err:  err,           // cause: logged, never shown
+}
+```
+
+The page is deliberately self-contained (own `<html>`, inline CSS, no scripts,
+no note chrome), because the requests that need it are the ones that never got
+far enough to have any of that. Copy lives in
+`internal/defaulttemplate/langs/{en,ru}.toml`; an unknown `Msg` falls back to
+`system_error`. Template: `internal/defaulttemplate/system.html`.
+
 ## Background Jobs (Cronjobs)
 
 Jobs implement `cronjobs.Job` interface. Each has `job.go` + `resolve.go`.

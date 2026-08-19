@@ -242,6 +242,26 @@ curl -X POST https://trip2g.example.com/_system/hat \
    ctx.Redirect("/", http.StatusFound)
    ```
 
+### Если ссылка не сработала
+
+Раньше эндпоинт отдавал текстом `authentication failed: failed to parse token:
+token is expired` — человек по ссылке из письма получал стек обёрнутых ошибок.
+Теперь оба эндпоинта (GET и POST) возвращают `appreq.SystemMessageError`, а
+роутер рисует по нему отдельную минимальную страницу
+(`defaulttemplate.WriteSystemMessage`, шаблон `internal/defaulttemplate/system.html`)
+на языке посетителя. Техническая причина уходит в лог — раньше она не логировалась
+вообще, только уезжала в тело ответа.
+
+| причина | ключ сообщения | что видит человек |
+|---|---|---|
+| токен протух (`hotauthtoken.ErrExpiredToken`) | `hat_expired` | ссылка устарела, попросите новую |
+| битая подпись, обрезанный JWT (`ErrInvalidLink`) | `hat_invalid` | ссылка не работает, возможно пришла не целиком |
+| нет юзера с таким email (`ErrUnknownUser`) | `hat_no_account` | аккаунта с этим адресом здесь нет |
+| всё остальное | `hat_failed` | не удалось войти, попробуйте позже |
+
+Тексты — `internal/defaulttemplate/langs/{en,ru}.toml`. `cmd/fleet` этот эндпоинт
+дёргает POST-ом и читает только куки со статусом, так что HTML в теле ему не мешает.
+
 ---
 
 ## Сценарии использования

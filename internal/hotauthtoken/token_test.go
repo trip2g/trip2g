@@ -27,6 +27,22 @@ func TestNewTokenParseToken_RoundTrip(t *testing.T) {
 	require.True(t, got.AdminEnter)
 }
 
+// A link that sat too long and a link that is broken deserve different answers,
+// so expiry has to be distinguishable from every other parse failure.
+func TestParseToken_ExpiredIsToldApartFromBroken(t *testing.T) {
+	manager := hotauthtoken.NewManager(hotauthtoken.Config{Secret: "test-secret", ExpiresIn: 5 * time.Minute})
+
+	expired, err := manager.NewTokenWithTTL(model.HotAuthToken{Email: "owner@example.com"}, -time.Hour)
+	require.NoError(t, err)
+
+	_, err = manager.ParseToken(expired)
+	require.ErrorIs(t, err, hotauthtoken.ErrExpiredToken)
+
+	_, err = manager.ParseToken("not-a-jwt-at-all")
+	require.Error(t, err)
+	require.NotErrorIs(t, err, hotauthtoken.ErrExpiredToken)
+}
+
 func TestParseToken_WrongSecret_Rejected(t *testing.T) {
 	minter := hotauthtoken.NewManager(hotauthtoken.Config{Secret: "secret-a", ExpiresIn: 5 * time.Minute})
 	verifier := hotauthtoken.NewManager(hotauthtoken.Config{Secret: "secret-b", ExpiresIn: 5 * time.Minute})

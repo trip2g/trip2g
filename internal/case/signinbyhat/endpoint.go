@@ -2,10 +2,12 @@ package signinbyhat
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"trip2g/internal/appreq"
 	"trip2g/internal/db"
+	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/model"
 )
 
@@ -17,6 +19,22 @@ type Env interface {
 	InsertAdmin(ctx context.Context, params db.InsertAdminParams) (db.Admin, error)
 	SetupUserToken(ctx context.Context, userID int64) (string, error)
 }
+
+// The situations a visitor can land in, named for the router to turn into a
+// page. Whoever opens one of these links is a person in a browser, so a wrapped
+// parser error is the wrong answer even when it is the accurate one.
+const (
+	msgLinkExpired  = "hat_expired"
+	msgLinkInvalid  = "hat_invalid"
+	msgNoAccount    = "hat_no_account"
+	msgSignInFailed = "hat_failed"
+)
+
+// ErrInvalidLink and ErrUnknownUser mark the failures a visitor can act on.
+var (
+	ErrInvalidLink = errors.New("failed to parse token")
+	ErrUnknownUser = errors.New("no user with email")
+)
 
 type Endpoint struct{}
 
@@ -31,16 +49,12 @@ func (e *Endpoint) Method() string {
 func (e *Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	token := string(req.Req.PostArgs().Peek("token"))
 	if token == "" {
-		req.Req.SetStatusCode(http.StatusBadRequest)
-		req.Req.SetBodyString("missing token")
-		return nil, nil
+		return nil, &appreq.SystemMessageError{Code: http.StatusBadRequest, Msg: msgLinkInvalid}
 	}
 
 	redirect, err := Resolve(req.Req, req.Env.(Env), token)
 	if err != nil {
-		req.Req.SetStatusCode(http.StatusUnauthorized)
-		req.Req.SetBodyString(fmt.Sprintf("authentication failed: %v", err))
-		return nil, nil
+		return nil, failure(err)
 	}
 
 	req.Req.SetStatusCode(http.StatusFound)
@@ -66,21 +80,34 @@ func (e *GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 	// string; accepted tradeoff for a 5-minute one-time bootstrap link.
 	token := string(req.Req.QueryArgs().Peek("token"))
 	if token == "" {
-		req.Req.SetStatusCode(http.StatusBadRequest)
-		req.Req.SetBodyString("missing token")
-		return nil, nil
+		return nil, &appreq.SystemMessageError{Code: http.StatusBadRequest, Msg: msgLinkInvalid}
 	}
 
 	redirect, err := Resolve(req.Req, req.Env.(Env), token)
 	if err != nil {
-		req.Req.SetStatusCode(http.StatusUnauthorized)
-		req.Req.SetBodyString(fmt.Sprintf("authentication failed: %v", err))
-		return nil, nil
+		return nil, failure(err)
 	}
 
 	req.Req.SetStatusCode(http.StatusFound)
 	req.Req.Response.Header.Set("Location", location(redirect, "/admin"))
 	return nil, nil
+}
+
+// failure keeps the mapping in one place. Anything unrecognised is our problem
+// rather than the visitor's, so it reads as a failure on our side.
+func failure(err error) error {
+	msg := msgSignInFailed
+
+	switch {
+	case errors.Is(err, hotauthtoken.ErrExpiredToken):
+		msg = msgLinkExpired
+	case errors.Is(err, ErrUnknownUser):
+		msg = msgNoAccount
+	case errors.Is(err, ErrInvalidLink):
+		msg = msgLinkInvalid
+	}
+
+	return &appreq.SystemMessageError{Code: http.StatusUnauthorized, Msg: msg, Err: err}
 }
 
 // The redirect rides the signed token, so it cannot be steered by whoever opens
@@ -102,7 +129,7 @@ func location(redirect, fallback string) string {
 func Resolve(ctx context.Context, env Env, token string) (string, error) {
 	hotAuthToken, err := env.ParseHotAuthToken(ctx, token)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse token: %w", err)
+		return "", fmt.Errorf("%w: %w", ErrInvalidLink, err)
 	}
 
 	user, err := env.UserByEmail(ctx, hotAuthToken.Email)
@@ -112,7 +139,7 @@ func Resolve(ctx context.Context, env Env, token string) (string, error) {
 		}
 
 		if !hotAuthToken.AdminEnter {
-			return "", fmt.Errorf("no user with email %s", hotAuthToken.Email)
+			return "", fmt.Errorf("%w %s", ErrUnknownUser, hotAuthToken.Email)
 		}
 
 		params := db.InsertUserWithEmailParams{

@@ -1,0 +1,43 @@
+Standalone page for system endpoints: no note chrome, no bundles, no scripts,
+so it renders even when the request never got far enough to have any of them.
+
+{% func SystemPage(m systemMessage) %}
+<!DOCTYPE html>
+<html lang="{%s m.Lang %}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{%s m.Title %}</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+main { max-width: 32rem; padding: 2rem 1.5rem; text-align: center; }
+h1 { margin: 0 0 0.75rem; font-size: 1.5rem; font-weight: 600; }
+p { margin: 0 0 1.5rem; font-size: 1rem; line-height: 1.5; opacity: 0.75; }
+a { color: #0172ad; font-size: 0.9375rem; text-decoration: none; }
+a:hover { text-decoration: underline; }
+@media (prefers-color-scheme: dark) {
+  body { background: #11191f; color: #e8ecef; }
+  a { color: #4bb8f0; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>{%s m.Title %}</h1>
+<p>{%s m.Text %}</p>
+<a href="/">{%s m.Home %}</a>
+</main>
+</body>
+</html>
+{% endfunc %}
