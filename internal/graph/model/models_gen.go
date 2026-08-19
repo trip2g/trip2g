@@ -294,6 +294,10 @@ type RegenerateCronWebhookSecretOrErrorPayload interface {
 	IsRegenerateCronWebhookSecretOrErrorPayload()
 }
 
+type RegenerateNoteEmbeddingsOrErrorPayload interface {
+	IsRegenerateNoteEmbeddingsOrErrorPayload()
+}
+
 type RemoveExpiredTgChatMembersOrErrorPayload interface {
 	IsRemoveExpiredTgChatMembersOrErrorPayload()
 }
@@ -1717,6 +1721,8 @@ func (ErrorPayload) IsCreateReleaseOrErrorPayload() {}
 
 func (ErrorPayload) IsMakeReleaseLiveOrErrorPayload() {}
 
+func (ErrorPayload) IsRegenerateNoteEmbeddingsOrErrorPayload() {}
+
 func (ErrorPayload) IsUpdateNoteGraphPositionsOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateOfferOrErrorPayload() {}
@@ -2193,6 +2199,22 @@ type RegenerateCronWebhookSecretPayload struct {
 }
 
 func (RegenerateCronWebhookSecretPayload) IsRegenerateCronWebhookSecretOrErrorPayload() {}
+
+type RegenerateNoteEmbeddingsInput struct {
+	// Enqueue every note regardless of whether its stored content hash still
+	// matches. Use after a change to chunking or embedding input that the hash
+	// does not cover — the per-chunk hashes still decide what is actually re-sent
+	// to the model, so unaffected chunks cost nothing.
+	Force *bool `json:"force,omitempty"`
+}
+
+type RegenerateNoteEmbeddingsPayload struct {
+	TotalNotes int32 `json:"totalNotes"`
+	Enqueued   int32 `json:"enqueued"`
+	UpToDate   int32 `json:"upToDate"`
+}
+
+func (RegenerateNoteEmbeddingsPayload) IsRegenerateNoteEmbeddingsOrErrorPayload() {}
 
 type RemoveExpiredTgChatMembersInput struct {
 	ChatID *int64 `json:"chatId,omitempty"`

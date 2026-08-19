@@ -28,6 +28,10 @@ var _ jwt.ClaimsValidator = (*fullData)(nil)
 
 var ErrInvalidToken = errors.New("invalid token")
 
+// ErrExpiredToken separates "the link sat around too long" from "the link is
+// broken", so callers can tell the visitor which of the two happened.
+var ErrExpiredToken = errors.New("token expired")
+
 // Optional: custom validation logic (e.g., prevent old tokens).
 func (c fullData) Validate() error {
 	return nil
@@ -75,6 +79,10 @@ func (m *Manager) ParseToken(tokenString string) (*model.HotAuthToken, error) {
 	}, jwt.WithLeeway(10*time.Second))
 
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, fmt.Errorf("%w: %w", ErrExpiredToken, err)
+		}
+
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 

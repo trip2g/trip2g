@@ -31,14 +31,27 @@ type Result struct {
 }
 
 func Resolve(ctx context.Context, env Env) (*Result, error) {
-	result, err := resolve(ctx, env)
+	return resolveAndRecord(ctx, env, false)
+}
+
+// ResolveForced enqueues every note regardless of its stored content hash. The
+// hash covers title, content and the model fingerprint, so a change to how a
+// note is split into chunks does not move it and the cron would report every
+// note as up to date forever. The per-chunk hashes still decide what is
+// actually re-embedded, so unaffected chunks cost nothing.
+func ResolveForced(ctx context.Context, env Env) (*Result, error) {
+	return resolveAndRecord(ctx, env, true)
+}
+
+func resolveAndRecord(ctx context.Context, env Env, force bool) (*Result, error) {
+	result, err := resolve(ctx, env, force)
 	if result != nil {
 		metrics.EmbeddingMetricsFromContext(ctx).RecordRegen(result.EnqueuedCount, result.UpToDateCount, len(result.Errors))
 	}
 	return result, err
 }
 
-func resolve(ctx context.Context, env Env) (*Result, error) {
+func resolve(ctx context.Context, env Env, force bool) (*Result, error) {
 	result := &Result{}
 
 	if !env.Features().VectorSearch.Enabled {
@@ -78,7 +91,7 @@ func resolve(ctx context.Context, env Env) (*Result, error) {
 		currentHash := generatenoteversionembedding.NoteContentHash(note.Title, note.Content, vsConfig)
 
 		existingHash, hasEmbedding := embeddingHashes[note.VersionID]
-		if hasEmbedding && bytesEqual(existingHash, currentHash) {
+		if !force && hasEmbedding && bytesEqual(existingHash, currentHash) {
 			result.UpToDateCount++
 			continue
 		}

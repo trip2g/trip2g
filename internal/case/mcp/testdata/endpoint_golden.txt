@@ -358,7 +358,7 @@ HTTP 200 application/json
         "name": "note_html"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -727,7 +727,7 @@ HTTP 200 application/json
         "name": "private-tool"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -1060,7 +1060,7 @@ HTTP 200 application/json
         "name": "private-tool"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -1125,7 +1125,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "Found 1 notes:\n\n1. Doc\n   doc.md\n   https://golden.test/doc\n   alpha body\n\n"
+        "text": "Found 2 notes:\n\n1. Doc\n   doc.md\n   https://golden.test/doc\n   alpha body\n\n2. Книга 10\n   aphorisms.md\n   https://golden.test/aphorisms\n   Замечай, чего требует твоя \u003cmark\u003eприрода\u003c/mark\u003e.\n\n"
       }
     ],
     "structuredContent": {
@@ -1143,6 +1143,25 @@ HTTP 200 application/json
             {
               "snippet": "alpha body",
               "context_words": 10
+            }
+          ]
+        },
+        {
+          "title": "Книга 10",
+          "note_id": 20,
+          "note_path": "aphorisms.md",
+          "href": "/aphorisms",
+          "url": "https://golden.test/aphorisms",
+          "kind": "note",
+          "score": 0.7,
+          "matches": [
+            {
+              "snippet": "Замечай, чего требует твоя \u003cmark\u003eприрода\u003c/mark\u003e.",
+              "context_words": 10,
+              "toc_path": [
+                "2"
+              ],
+              "section_url": "https://golden.test/aphorisms#two"
             }
           ]
         }
@@ -1160,7 +1179,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "Found 1 notes:\n\n1. Doc\n   doc.md\n   https://golden.test/doc\n   alpha body\n\n"
+        "text": "Found 2 notes:\n\n1. Doc\n   doc.md\n   https://golden.test/doc\n   alpha body\n\n2. Книга 10\n   aphorisms.md\n   https://golden.test/aphorisms\n\n"
       }
     ],
     "structuredContent": {
@@ -1180,6 +1199,15 @@ HTTP 200 application/json
               "context_words": 10
             }
           ]
+        },
+        {
+          "title": "Книга 10",
+          "note_id": 20,
+          "note_path": "aphorisms.md",
+          "href": "/aphorisms",
+          "url": "https://golden.test/aphorisms",
+          "kind": "note",
+          "score": 0.7
         }
       ]
     }
@@ -1978,7 +2006,7 @@ HTTP 200 application/json
         "name": "note_html"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -2305,7 +2333,7 @@ HTTP 200 application/json
         "name": "note_html"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -2643,7 +2671,7 @@ HTTP 200 application/json
         "name": "note_html"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
         "inputSchema": {
           "type": "object",
           "properties": {

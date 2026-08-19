@@ -1,0 +1,9 @@
+$trip2g_admin_noteview_button_reembed $mol_row
+	sub /
+		<= Button $mol_button_major
+			click? <=> reembed? null
+			sub /
+				<= Icon $mol_icon_refresh
+				<= Button_title @ \Re-embed all notes
+		<= Status $mol_view
+			sub / <= status? \

@@ -43,4 +43,23 @@
       });
     }, { passive: true });
   })();
+
+  // Heading anchors. The ids are already rendered by the markdown pipeline and
+  // the TOC widget already links to them; this only adds the affordance to copy
+  // one. Done in the DOM on purpose: emitting the anchor from the renderer would
+  // change the stored HTML of every note, which is also what MCP section reads
+  // and search breadcrumbs match against.
+  (function(){
+    var content = document.querySelector('.content__body');
+    if (!content) return;
+    content.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]').forEach(function(h){
+      var a = document.createElement('a');
+      a.className = 'heading-anchor';
+      a.href = '#' + h.id;
+      a.setAttribute('aria-hidden', 'true');
+      a.setAttribute('tabindex', '-1');
+      h.appendChild(a);
+    });
+  })();
+
 })();

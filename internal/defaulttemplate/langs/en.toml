@@ -33,3 +33,36 @@ other = "Read on"
 
 [tg_read]
 other = "Read in Telegram"
+
+[system_home]
+other = "← Home"
+
+[system_error_title]
+other = "Something went wrong"
+
+[system_error_text]
+other = "Try again in a minute. If it keeps happening, tell the site owner."
+
+[hat_expired_title]
+other = "This link has expired"
+
+[hat_expired_text]
+other = "Sign-in links only work for a few minutes. Ask for a new one — it takes a moment."
+
+[hat_invalid_title]
+other = "This link doesn't work"
+
+[hat_invalid_text]
+other = "It may have arrived incomplete. Copy the whole link again, or ask for a new one."
+
+[hat_no_account_title]
+other = "No account for this link"
+
+[hat_no_account_text]
+other = "There is no account with this email address here yet. Ask the site owner to invite you."
+
+[hat_failed_title]
+other = "Couldn't sign you in"
+
+[hat_failed_text]
+other = "Something went wrong on our side. Try the link again in a minute."
