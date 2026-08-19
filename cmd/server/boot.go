@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/case/backjob/updatetelegramaccountpost"
 	"trip2g/internal/case/backjob/updatetelegrammessage"
 	"trip2g/internal/case/backjob/updatetelegrampost"
+	"trip2g/internal/case/seedownertoken"
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
@@ -208,6 +209,22 @@ func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	}
 
 	a.log.Info("owner exists", "email", a.config.OwnerEmail)
+
+	return nil
+}
+
+// seedOwnerPersonalToken reconciles the owner's OWNER_PERSONAL_TOKEN_VALUE row.
+// Writer-only — runs in Block B, after the owner exists to own it.
+func (a *app) seedOwnerPersonalToken(ctx context.Context) error {
+	res, err := seedownertoken.Resolve(ctx, a, a.config.OwnerEmail, a.config.OwnerPersonalTokenValue)
+	if err != nil {
+		return err
+	}
+
+	a.log.Info("owner personal token",
+		"outcome", res.Outcome,
+		"revokedSuperseded", res.RevokedSuperseded,
+	)
 
 	return nil
 }

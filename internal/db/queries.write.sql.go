@@ -3215,6 +3215,32 @@ func (q *WriteQueries) RevokeFederationSecret(ctx context.Context, id int64) err
 	return err
 }
 
+const revokeSupersededOwnerTokens = `-- name: RevokeSupersededOwnerTokens :execrows
+update user_tokens
+set revoked_at = current_timestamp
+where user_id = ?
+  and name = ?
+  and token_hash != ?3
+  and revoked_at is null
+`
+
+type RevokeSupersededOwnerTokensParams struct {
+	UserID   int64  `json:"user_id"`
+	Name     string `json:"name"`
+	KeepHash string `json:"keep_hash"`
+}
+
+// Revokes the owner's seeded token rows except the one carrying keep_hash.
+// An empty keep_hash keeps nothing, which is how the seeder turns the feature
+// off; a non-empty one leaves the current value live and supersedes the rest.
+func (q *WriteQueries) RevokeSupersededOwnerTokens(ctx context.Context, arg RevokeSupersededOwnerTokensParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, revokeSupersededOwnerTokens, arg.UserID, arg.Name, arg.KeepHash)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
 update user_subgraph_accesses
    set revoke_id = ?

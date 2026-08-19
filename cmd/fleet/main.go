@@ -83,7 +83,7 @@ func run() error {
 	lg := zerologger.New(cli.cfg.LogLevel, false)
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
-	adminGQL := fleet.NewAdminGraphQLClient(cli.cfg.Trip2gBaseURL, cli.cfg.JWTSecret, cli.cfg.AdminEmail, httpClient)
+	adminGQL := fleet.NewAdminGraphQLClient(cli.cfg.Trip2gBaseURL, cli.cfg.Trip2gAdminPersonalToken, httpClient)
 	llm := agentruntime.NewOpenAILLM(cli.cfg.LLMAPIKey, cli.cfg.LLMBaseURL)
 
 	f := fleet.NewFleet(cli.cfg, httpClient, llm, execLLM(cli.cfg))
@@ -429,8 +429,8 @@ func validateConfig(cfg fleet.Config) error {
 	if cfg.CallbackURL == "" {
 		missing = append(missing, "CallbackURL (--callback-url / TRIP2G_FLEET_CALLBACK_URL)")
 	}
-	if cfg.JWTSecret == "" {
-		missing = append(missing, "JWTSecret (--jwt-secret / TRIP2G_FLEET_JWT_SECRET)")
+	if cfg.Trip2gAdminPersonalToken == "" {
+		missing = append(missing, "Trip2gAdminPersonalToken (--trip2g-admin-personal-token / TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN)")
 	}
 	if cfg.FleetSecret == "" {
 		missing = append(missing, "FleetSecret (--fleet-secret / TRIP2G_FLEET_FLEET_SECRET)")
@@ -536,12 +536,8 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"discover roles, print + flag their resolved config, then exit without registering webhooks")
 	fs.StringVar(&cli.cfg.FleetID, "fleet-id", "",
 		"REQUIRED fleet identity: partition key for role fleet_id + the /_fleet/<sha256(\"fleet:\"+id)>/webhook delivery path")
-	fs.StringVar(&cli.cfg.AdminAPIKey, "admin-api-key", "",
-		"DEPRECATED/unused: legacy full-admin X-Api-Key")
-	fs.StringVar(&cli.cfg.JWTSecret, "jwt-secret", "",
-		"shared user-token/JWT secret for minting admin HATs (required for daemon mode)")
-	fs.StringVar(&cli.cfg.AdminEmail, "admin-email", "fleet@local",
-		"admin email the fleet self-provisions via HAT")
+	fs.StringVar(&cli.cfg.Trip2gAdminPersonalToken, "trip2g-admin-personal-token", "",
+		"trip2g personal token (t2g_*) of an admin user; trip2g seeds it from OWNER_PERSONAL_TOKEN_VALUE (required for daemon mode)")
 	fs.StringVar(&cli.cfg.FleetSecret, "fleet-secret", "",
 		"HMAC seed for per-role secrets (required for daemon mode)")
 	fs.StringVar(&cli.cfg.LLMBaseURL, "llm-base-url", "",

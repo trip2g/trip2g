@@ -23,6 +23,7 @@ import (
 	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/patreonjobs"
+	"trip2g/internal/personaltoken"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/turnstile"
@@ -102,6 +103,11 @@ type Config struct {
 	// Additional application settings
 	PublicURL  string
 	OwnerEmail string
+
+	// OwnerPersonalTokenValue is the personal token a fleet host authenticates
+	// with. Set it and boot seeds the matching user_tokens row for the owner;
+	// empty turns the feature off and revokes what it seeded.
+	OwnerPersonalTokenValue string
 
 	NowpaymentsAPIKey string
 	NowpaymentsIPNKey string
@@ -335,6 +341,8 @@ func (c *Config) defineFlags() {
 	// Additional application settings
 	flag.StringVar(&c.PublicURL, "public-url", c.PublicURL, "Public URL for the application")
 	flag.StringVar(&c.OwnerEmail, "owner-email", c.OwnerEmail, "Owner email for the application")
+	flag.StringVar(&c.OwnerPersonalTokenValue, "owner-personal-token-value", c.OwnerPersonalTokenValue,
+		"Personal token (t2g_*) seeded for the owner at boot and handed to a fleet host; empty disables and revokes it")
 
 	flag.StringVar(&c.NowpaymentsAPIKey, "nowpayments-api-key", c.NowpaymentsAPIKey, "Nowpayments API key")
 	flag.StringVar(&c.NowpaymentsIPNKey, "nowpayments-ipn-key", c.NowpaymentsIPNKey, "Nowpayments IPN key")
@@ -689,6 +697,16 @@ func (c *Config) CronScheduleOverride(jobName string) string {
 	return os.Getenv(key)
 }
 
+// validateOwnerPersonalToken keeps boot from starting on a value the resolver
+// would never route: DisplayPrefix also reads the first 8 characters of it.
+func validateOwnerPersonalToken(value interface{}) error {
+	v, _ := value.(string)
+	if !personaltoken.IsPersonal(v) || len(v) < 8 {
+		return errors.New("must be a personal token: the t2g_ prefix and at least 8 characters")
+	}
+	return nil
+}
+
 func (c *Config) validate() error {
 	if !c.DevMode {
 		if c.UserToken.Secret == usertoken.DefaultConfig().Secret {
@@ -706,6 +724,11 @@ func (c *Config) validate() error {
 		ozzo.Field(&c.DatabaseFile, ozzo.Required),
 		ozzo.Field(&c.LogLevel, ozzo.Required, ozzo.In("debug", "info", "warn", "error")),
 		ozzo.Field(&c.AdminJSURL, ozzo.Required),
+
+		// A value without the t2g_ prefix never reaches the personal-token
+		// resolver, so the fleet would get a 401 with nothing explaining why.
+		ozzo.Field(&c.OwnerPersonalTokenValue, ozzo.When(c.OwnerPersonalTokenValue != "",
+			ozzo.By(validateOwnerPersonalToken))),
 
 		// URLs should be valid if provided
 		ozzo.Field(&c.PublicURL, ozzo.When(c.PublicURL != "", is.URL)),

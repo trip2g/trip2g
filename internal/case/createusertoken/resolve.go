@@ -49,6 +49,12 @@ func Resolve(ctx context.Context, env Env, userID int64, input Input) (Payload, 
 		return &model.ErrorPayload{Message: "token_limit_exceeded"}, nil
 	}
 
+	// The seeder owns that row and finds it by name; letting a person mint a
+	// second one under the same name would orphan the one the fleet is using.
+	if input.Name == personaltoken.ReservedOwnerTokenName {
+		return &model.ErrorPayload{Message: "reserved_name"}, nil
+	}
+
 	plaintext := personaltoken.Generate()
 	hash := personaltoken.Hash(plaintext)
 	prefix := personaltoken.DisplayPrefix(plaintext)

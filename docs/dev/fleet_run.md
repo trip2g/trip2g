@@ -17,41 +17,29 @@ event source.
    so the fleet's loopback callback URL is accepted when delivering webhooks).
 2. An LLM endpoint compatible with the OpenAI chat-completions API
    (e.g. OpenAI, Ollama, a local proxy).
-3. A full-admin API key with MCP admin tools enabled (see below).
+3. A personal token belonging to an admin, seeded by the instance (see below).
 4. Role notes under the `roles/` folder in trip2g (or whatever
    `--agents-folder` points at).
 
 ---
 
-## API key setup
+## Admin credential setup
 
-The fleet needs a full-admin API key with the MCP admin-tools lane enabled.
-Create one via GraphQL:
+The fleet's admin lane authenticates with a trip2g personal token (`t2g_*`)
+whose user is an admin. You do not mint it by hand: set
+`OWNER_PERSONAL_TOKEN_VALUE` on the instance and boot seeds the matching
+`user_tokens` row for the owner, under the reserved name
+`system: seeded by OWNER_PERSONAL_TOKEN_VALUE`.
 
-```graphql
-# Step 1: create the key — note value (plaintext) and apiKey.id.
-mutation {
-  admin {
-    createApiKey(input: { description: "fleet-local" }) {
-      ... on CreateApiKeyPayload { value apiKey { id } }
-      ... on ErrorPayload { message }
-    }
-  }
-}
-
-# Step 2: enable MCP admin tools on that key.
-mutation {
-  admin {
-    setApiKeyMcpAdminTools(input: { id: "<id-from-step-1>", enabled: true }) {
-      ... on SetApiKeyMcpAdminToolsPayload { apiKey { id } }
-      ... on ErrorPayload { message }
-    }
-  }
-}
+```sh
+# on the trip2g instance
+OWNER_PERSONAL_TOKEN_VALUE=t2g_$(openssl rand -hex 32)
 ```
 
-The value from step 1 is passed as `--admin-api-key`. The fleet uses this key
-for all read/write operations and for reconciling webhooks.
+Pass that same value to the fleet as `--trip2g-admin-personal-token`. Changing
+the value and restarting revokes the row the old one carried. Revoking the row
+in the admin UI stops the fleet within the resolver's 30-second cache, and a
+restart does not bring it back — the way back is a new value.
 
 ---
 
@@ -66,7 +54,7 @@ Required flags have no default and cause a startup error if absent.
 | `--listen` | `FLEET_LISTEN` | `:9090` | HTTP listen address for the delivery endpoint |
 | `--callback-url` | `FLEET_CALLBACK_URL` | — | **Required.** trip2g-reachable base URL of this fleet (no trailing slash). trip2g posts webhook deliveries here |
 | `--trip2g-url` | `TRIP2G_BASE_URL` | `http://localhost:8081` | Base URL the fleet uses to call trip2g's GraphQL / MCP endpoints |
-| `--admin-api-key` | `FLEET_ADMIN_API_KEY` | — | **Required.** Full-admin API key (X-Api-Key header) |
+| `--trip2g-admin-personal-token` | `TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN` | — | **Required.** Personal token (`t2g_*`) of an admin user; seeded by the instance from `OWNER_PERSONAL_TOKEN_VALUE` |
 | `--fleet-secret` | `FLEET_SECRET` | — | **Required.** HMAC seed; fleet derives a per-role secret from it to verify delivery signatures |
 | `--llm-base-url` | `FLEET_LLM_BASE_URL` | _(empty)_ | OpenAI-compatible base URL (e.g. `https://api.openai.com/v1`). Empty means the default OpenAI endpoint |
 | `--llm-api-key` | `FLEET_LLM_API_KEY` | — | **Required.** LLM provider key |
@@ -119,7 +107,7 @@ go run ./cmd/fleet \
   --listen          127.0.0.1:9099 \
   --callback-url    http://127.0.0.1:9099 \
   --trip2g-url      http://localhost:8081 \
-  --admin-api-key   <key-from-createApiKey> \
+  --trip2g-admin-personal-token $OWNER_PERSONAL_TOKEN_VALUE \
   --fleet-secret    $(openssl rand -hex 32) \
   --llm-base-url    https://api.openai.com/v1 \
   --llm-api-key     $OPENAI_API_KEY \

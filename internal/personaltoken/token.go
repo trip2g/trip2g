@@ -10,6 +10,12 @@ import (
 
 const Prefix = "t2g_"
 
+// ReservedOwnerTokenName marks the row the OWNER_PERSONAL_TOKEN_VALUE seeder
+// owns. Whoever finds it in the admin token list learns where it came from and
+// how to remove it. createUserToken refuses the name so nothing else can claim
+// the row and orphan the previous one.
+const ReservedOwnerTokenName = "system: seeded by OWNER_PERSONAL_TOKEN_VALUE" //nolint:gosec // a row label, not a credential
+
 const alphanum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 func Generate() string {
