@@ -7,22 +7,22 @@ namespace $.$$ {
 		},
 		Name_label: {
 			flex: {
-				basis: rem( 10 ),
+				basis: rem( 8 ),
 			},
 		},
 		Prefix_label: {
 			flex: {
-				basis: rem( 7 ),
+				basis: rem( 6 ),
 			},
 		},
 		Expires_label: {
 			flex: {
-				basis: rem( 8 ),
+				basis: rem( 7 ),
 			},
 		},
 		Revoked_label: {
 			flex: {
-				basis: rem( 8 ),
+				basis: rem( 7 ),
 			},
 		},
 	})
