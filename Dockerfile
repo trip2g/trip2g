@@ -1,9 +1,23 @@
 # Build frontend
 FROM node:25-bookworm-slim AS frontend
 
+# mam and its packages were unpinned: the builder resolves them from upstream
+# HEAD and pulls again on every start, so rebuilding the same commit could ship
+# a different frontend. Detached HEAD both fixes the revision and stops the pull
+# — mol/build/ensure/git/git.ts skips a package that is not on a branch.
+# To move: bump the SHA here, rebuild, and check the UI before deploying.
+ARG MAM_REV=d02777f535e59ae48c52e314b112b2b3fff7c35f
+ARG MOL_REV=7e252b5c3b6c3fd8e70d365555da8c4759baf1a7
+ARG NODE_REV=ea57f554020e88e79955c23faf7abc856f6a5949
+
 RUN apt update && \
   apt install -y git && \
-  git clone https://github.com/hyoo-ru/mam.git /mam
+  git clone https://github.com/hyoo-ru/mam.git /mam && \
+  git -C /mam checkout --quiet $MAM_REV && \
+  git clone https://github.com/hyoo-ru/mam_mol.git /mam/mol && \
+  git -C /mam/mol checkout --quiet $MOL_REV && \
+  git clone https://github.com/hyoo-ru/mam_node.git /mam/node && \
+  git -C /mam/node checkout --quiet $NODE_REV
 
 WORKDIR /mam
 
