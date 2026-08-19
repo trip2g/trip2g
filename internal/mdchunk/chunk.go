@@ -1,6 +1,9 @@
 package mdchunk
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 const (
 	// Sizing is in ESTIMATED TOKENS (see estimateTokens), not characters: at
@@ -77,7 +80,14 @@ func Split(title string, rawContent []byte) []Chunk { //nolint:gocognit // inher
 		}
 		last := current[len(current)-1]
 		if len(last) > chunkOverlap {
-			return last[len(last)-chunkOverlap:]
+			// The window is sized in bytes, so it can land inside a multibyte
+			// rune; walk forward to the next boundary, otherwise every chunk
+			// after the first starts with a broken rune.
+			start := len(last) - chunkOverlap
+			for start < len(last) && !utf8.RuneStart(last[start]) {
+				start++
+			}
+			return last[start:]
 		}
 		return last
 	}

@@ -3,6 +3,7 @@ package mdchunk
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestStripFrontmatter(t *testing.T) {
@@ -259,4 +260,36 @@ func firstLine(s string) string {
 		return s[:i]
 	}
 	return s
+}
+
+// TestSplitKeepsOverlapRuneAligned pins the overlap window to rune boundaries.
+// The tail of the previous block is prepended to the next chunk; slicing it by
+// byte offset cut a multibyte rune in half, so every affected chunk started with
+// U+FFFD (reported live as "�слепляет" and "� τίνων").
+func TestSplitKeepsOverlapRuneAligned(t *testing.T) {
+	tests := []struct {
+		name string
+		word string
+	}{
+		{"cyrillic", "ослепляет мысль "},
+		{"greek", "τίνων ἕνεκα "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Vary the trailing byte count so the 200-byte window lands mid-rune
+			// in at least some of the runs.
+			for pad := 0; pad < 4; pad++ {
+				body := "## Alpha\n\n" + strings.Repeat(tt.word, 60) + strings.Repeat("x", pad) +
+					"\n\n## Beta\n\n" + strings.Repeat(tt.word, 60)
+				for _, c := range Split("Заметка", []byte(body)) {
+					if !utf8.ValidString(c.Content) {
+						t.Errorf("pad=%d chunk %d is not valid UTF-8", pad, c.Index)
+					}
+					if strings.ContainsRune(c.Content, utf8.RuneError) {
+						t.Errorf("pad=%d chunk %d contains U+FFFD: %.20q", pad, c.Index, c.Content)
+					}
+				}
+			}
+		})
+	}
 }
