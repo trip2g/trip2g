@@ -50,9 +50,18 @@ test.describe('admin-minted sign-in link', () => {
     const link = await createHatLink(request, cookie, { email });
     expect(link.__typename).toBe('CreateHatLinkPayload');
 
-    const res = await request.get(link.url, { maxRedirects: 0 });
+    // The refusal page follows the visitor's language, so the request pins one.
+    const res = await request.get(link.url, {
+      maxRedirects: 0,
+      headers: { 'Accept-Language': 'en' },
+    });
     expect(res.status()).toBe(401);
-    expect(await res.text()).toContain('no user with email');
+
+    // The refusal reaches the visitor as their own situation, not as the
+    // wording of the error behind it.
+    const body = await res.text();
+    expect(body).toContain('No account for this link');
+    expect(body).not.toContain('no user with email');
 
     // Redeeming it twice must stay refused: a first exchange that quietly
     // created the account would make the second one succeed.
