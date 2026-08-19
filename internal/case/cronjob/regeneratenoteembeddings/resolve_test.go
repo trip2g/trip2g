@@ -57,6 +57,21 @@ func TestResolve(t *testing.T) {
 		require.Empty(t, env.EnqueueGenerateNoteVersionEmbeddingCalls())
 	})
 
+	t.Run("force enqueues a note the hash calls up to date", func(t *testing.T) {
+		// The content hash covers title, content and the model fingerprint — not
+		// how the note is split into chunks. After a chunker change every note
+		// looks up to date, so the repair lever has to ignore the hash.
+		cfg := features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall}
+		storedHash := generatenoteversionembedding.NoteContentHash(noteView.Title, noteView.Content, cfg)
+
+		env := newEnv(cfg, storedHash)
+		result, err := regeneratenoteembeddings.ResolveForced(ctx, env)
+		require.NoError(t, err)
+		require.Equal(t, 1, result.EnqueuedCount)
+		require.Equal(t, 0, result.UpToDateCount)
+		require.Len(t, env.EnqueueGenerateNoteVersionEmbeddingCalls(), 1)
+	})
+
 	t.Run("enqueues when embedding params change", func(t *testing.T) {
 		// The stored row was hashed under the old dimensions; after a config change
 		// the fingerprint differs, so the sweep must re-enqueue the note.

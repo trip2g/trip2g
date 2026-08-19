@@ -57,6 +57,7 @@ import (
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/markformsubmitprocessed"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
+	"trip2g/internal/case/admin/regeneratenoteembeddings"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/removefederationsecretsubgraph"
 	renderpreview "trip2g/internal/case/admin/renderpreview"
@@ -299,6 +300,7 @@ type Env interface {
 	disablegittoken.Env
 	createrelease.Env
 	makereleaselive.Env
+	regeneratenoteembeddings.Env
 	updatenotegraphpositions.Env
 	createoffer.Env
 	createuser.Env

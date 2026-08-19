@@ -70,6 +70,7 @@ import (
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/markformsubmitprocessed"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
+	"trip2g/internal/case/admin/regeneratenoteembeddings"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/removefederationsecretsubgraph"
 	"trip2g/internal/case/admin/renderpreview"
@@ -949,6 +950,11 @@ func (r *adminMutationResolver) MakeReleaseLive(ctx context.Context, obj *appmod
 // UpdateNoteGraphPositions is the resolver for the updateNoteGraphPositions field.
 func (r *adminMutationResolver) UpdateNoteGraphPositions(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateNoteGraphPositionsInput) (model.UpdateNoteGraphPositionsOrErrorPayload, error) {
 	return updatenotegraphpositions.Resolve(ctx, r.env(ctx), input)
+}
+
+// RegenerateNoteEmbeddings is the resolver for the regenerateNoteEmbeddings field.
+func (r *adminMutationResolver) RegenerateNoteEmbeddings(ctx context.Context, obj *appmodel.AdminMutation, input model.RegenerateNoteEmbeddingsInput) (model.RegenerateNoteEmbeddingsOrErrorPayload, error) {
+	return regeneratenoteembeddings.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateTgBot is the resolver for the createTgBot field.
