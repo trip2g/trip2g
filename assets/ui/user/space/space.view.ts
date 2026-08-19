@@ -105,12 +105,15 @@ namespace $.$$ {
 			window.location.reload()
 		}
 
+		// A dialog's backdrop is painted by the dialog element itself, so a click on
+		// it targets the dialog while a click on anything inside targets that child.
+		// Comparing the target is exact; comparing coordinates against the dialog's
+		// rect was not — a click raised by the keyboard carries 0,0, and Enter on a
+		// menu link read as a backdrop click and shut the account.
 		override close_click(e: MouseEvent) {
-			const r = this.modal_node().getBoundingClientRect()
+			if (e.target !== this.modal_node()) return
 
-			if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
-				this.modal_node().close()
-			}
+			this.modal_node().close()
 		}
 	}
 
