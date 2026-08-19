@@ -1,4 +1,5 @@
 {
 	"$trip2g_user_space_AdminLink_hint": "Open Admin Panel",
-	"$trip2g_user_space_Content_menu_title": "My account"
+	"$trip2g_user_space_nav_menu_title": "My account",
+	"$trip2g_user_space_nav_SignOut_title": "Sign Out"
 }

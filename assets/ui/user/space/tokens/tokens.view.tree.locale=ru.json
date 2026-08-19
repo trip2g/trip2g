@@ -1,5 +1,6 @@
 {
 	"$trip2g_user_space_tokens_title": "Токены",
+	"$trip2g_user_space_tokens_SignOut": "Выйти",
 	"$trip2g_user_space_tokens_AddLink_title": "+ Новый токен",
 	"$trip2g_user_space_tokens_Prefix_label_title": "Префикс",
 	"$trip2g_user_space_tokens_Expires_label_title": "Истекает",

@@ -14,16 +14,11 @@ namespace $.$$ {
 			return this.data()?.favoriteNotes ?? []
 		}
 
-		// An empty list reads as a broken page, so say what would fill it.
-		override favorites() {
+		override favorite_rows() {
 			if (this.notes().length === 0) {
-				return [this.Empty()]
+				return [this.EmptyFavorites()]
 			}
 
-			return [this.Favorites_list()]
-		}
-
-		override favorite_rows() {
 			return this.notes().map((_, index) => this.Favorite(index))
 		}
 

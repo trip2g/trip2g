@@ -65,20 +65,9 @@ $trip2g_user_space_nav $mol_book2_catalog
 	user_email \
 	signout? null
 	menu_foot /
-		<= Footer $mol_view
-			style *
-				flexDirection \column
-				alignItems \flex-start
-			sub /
-				<= Email $mol_view
-					style *
-						maxWidth \150px
-						overflow \hidden
-						whiteSpace \nowrap
-						textOverflow \ellipsis
-					sub / <= user_email
-				<= SignOut $mol_button_major
-					click? <=> signout?
+		<= SignOut $mol_button_major
+			title @ \Sign Out
+			click? <=> signout?
 	spreads *
 		home <= Home $trip2g_user_space_home
 		subscriptions <= Subscriptions $trip2g_user_space_subscriptions
