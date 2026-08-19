@@ -311,6 +311,13 @@ HTTP 200 application/json
         "name": "guide"
       },
       {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
+      },
+      {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
         "inputSchema": {
           "type": "object",
@@ -667,6 +674,13 @@ HTTP 200 application/json
         "name": "guide"
       },
       {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
+      },
+      {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
         "inputSchema": {
           "type": "object",
@@ -991,6 +1005,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
@@ -1910,6 +1931,13 @@ HTTP 200 application/json
         "name": "guide"
       },
       {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
+      },
+      {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
         "inputSchema": {
           "type": "object",
@@ -2228,6 +2256,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
@@ -2559,6 +2594,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",

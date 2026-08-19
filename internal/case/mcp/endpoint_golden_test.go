@@ -276,6 +276,16 @@ func goldenEnv() *EnvMock {
 			{Text: "2", Level: 2, ID: "two"},
 		},
 	}
+	// A tool note without the leading-underscore naming convention: the
+	// path-based system-note rule misses it, so it used to surface in search.
+	toolNote := &appmodel.NoteView{
+		Path:      "instructions.md",
+		PathID:    21,
+		Title:     "Instructions",
+		Permalink: "/instructions",
+		MCPMethod: "instructions",
+		Content:   []byte("---\nmcp_method: instructions\n---\n\nBase instructions."),
+	}
 	private := &appmodel.NoteView{
 		Path:      "private.md",
 		PathID:    11,
@@ -315,7 +325,7 @@ func goldenEnv() *EnvMock {
 		MCPFederationKBID:  "peer",
 	}
 
-	notes := []*appmodel.NoteView{doc, aphorisms, private, initNote, guide, codeReview, privateTool, peer}
+	notes := []*appmodel.NoteView{doc, aphorisms, toolNote, private, initNote, guide, codeReview, privateTool, peer}
 	views := appmodel.NewNoteViews()
 	views.List = notes
 	for _, n := range notes {
@@ -326,12 +336,20 @@ func goldenEnv() *EnvMock {
 	}
 	views.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(peer)}
 
-	searchHits := []appmodel.SearchResult{{
-		NoteView:           doc,
-		URL:                doc.Permalink,
-		Score:              0.9,
-		HighlightedContent: []string{"alpha body"},
-	}}
+	searchHits := []appmodel.SearchResult{
+		{
+			NoteView:           doc,
+			URL:                doc.Permalink,
+			Score:              0.9,
+			HighlightedContent: []string{"alpha body"},
+		},
+		{
+			NoteView:           toolNote,
+			URL:                toolNote.Permalink,
+			Score:              0.4,
+			HighlightedContent: []string{"Base instructions."},
+		},
+	}
 
 	return &EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return views },

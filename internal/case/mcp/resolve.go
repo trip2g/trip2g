@@ -311,6 +311,13 @@ func filterSearchResults(ctx context.Context, env Env, results []model.SearchRes
 		if r.NoteView.IsSystem() || r.NoteView.ExcludeSearch {
 			continue
 		}
+		// A note registered as a tool is server infrastructure: an agent gets
+		// its body from initialize or from calling the tool, so it is noise in
+		// results. The rule above only catches it when the vault happens to
+		// name it with a leading underscore.
+		if r.NoteView.MCPMethod != "" {
+			continue
+		}
 
 		ok, err := canReadMCPNote(ctx, env, r.NoteView)
 		if err != nil {
