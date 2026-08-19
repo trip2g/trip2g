@@ -64,3 +64,9 @@
 	margin: 0;
 	font: inherit;
 }
+
+/* $mol_button_typed центрирует содержимое, $mol_link выравнивание не задаёт
+   и прижимает строку к верху — рядом в одной панели они расходятся на 3px. */
+[trip2g_user_space_content] [mol_page_tools] > [mol_link] {
+	align-items: center;
+}
