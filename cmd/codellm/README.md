@@ -92,14 +92,55 @@ only. Consequences worth knowing when adding tools:
   binary has to go to `/usr/bin`; Python packages need
   `pip --target=/usr/lib/python3/dist-packages`, because Debian's pip otherwise
   defaults to `/usr/local/lib/python3.11/dist-packages` and ignores `--prefix`.
-- `/etc` is denied apart from `ld.so.cache`, so the system CA store is invisible.
-  The image copies the bundle to `/usr/lib/ssl-certs/ca-bundle.crt` and
-  `coderun` exports `SSL_CERT_FILE`, `CURL_CA_BUNDLE` and `GIT_SSL_CAINFO` when
-  that file exists. Python (certifi) and Node (CAs compiled in) do not depend on
-  it.
+- `/etc` is denied apart from a named handful of files, so the system CA store
+  is invisible. The image copies the bundle to `/usr/lib/ssl-certs/ca-bundle.crt`
+  and `coderun` exports `SSL_CERT_FILE`, `CURL_CA_BUNDLE` and `GIT_SSL_CAINFO`
+  when that file exists. Python (certifi) and Node (CAs compiled in) do not
+  depend on it.
+- `/usr/share/zoneinfo` is denied, so `coderun` sets an empty `PYTHONTZPATH` to
+  send `zoneinfo` to the `tzdata` package instead. Bash `TZ=...` does not work.
 - The network is in a private namespace unless `CODELLM_SANDBOX_NETWORK=true`.
+  That flag also adds `/etc/resolv.conf`, `/etc/hosts`, `/etc/nsswitch.conf`,
+  `/etc/services` and `/etc/gai.conf` to the allowlist — without them name
+  resolution fails and only raw IPs are reachable. `/etc/ssl/openssl.cnf` is
+  always granted: node aborts at startup without it, even for an offline block.
 - The child environment is scrubbed to the toolbox vars plus `PATH` and
   `FLEET_INPUT`; secrets reach a block only through `CODELLM_EXPOSE_ENV` /
   `CODELLM_EXPOSE_ENV_PREFIX`. Tools that authenticate from the environment need
   their var named there — `gh`, for one, is unauthenticated unless codellm runs
   with `CODELLM_EXPOSE_ENV=GH_TOKEN` and holds the value.
+
+### Running the enforcing sandbox under an orchestrator
+
+Docker's defaults do **not** allow `CODELLM_SANDBOX=native` — the run fails
+closed ("refusing to run unsandboxed") rather than degrading silently. The
+minimum grant, established by bisection:
+
+```hcl
+# Nomad job — docker driver
+config {
+  cap_add      = ["sys_admin"]              # PID + mount namespaces
+  security_opt = ["apparmor=unconfined"]    # docker-default denies remounting / private
+}
+```
+
+`privileged = true` also works but grants far more than needed. Docker's default
+seccomp profile needs no change. The Nomad **client** must permit the capability
+as well — `sys_admin` is not in the docker driver's default `allow_caps`:
+
+```hcl
+plugin "docker" {
+  config {
+    allow_caps = ["chown", "dac_override", "fowner", "fsetid", "kill", "mknod",
+                  "net_bind_service", "setfcap", "setgid", "setpcap", "setuid",
+                  "sys_chroot", "audit_write", "sys_admin"]
+  }
+}
+```
+
+Landlock is applied best-effort: on a kernel without it the path restrictions
+are silently weaker while namespaces still apply. Verify the host supports it
+(`grep landlock /sys/kernel/security/lsm`) rather than assuming.
+
+Verify a deployment with `scripts/test-codellm-sandbox.sh`, which checks both
+that the toolbox works and that the denials still hold.

@@ -434,6 +434,7 @@ func buildChildEnv(inputFile string, passthrough, prefix []string) []string {
 const (
 	toolboxNodeModules = "/usr/lib/node_modules"
 	toolboxCABundle    = "/usr/lib/ssl-certs/ca-bundle.crt"
+	toolboxTZData      = "/usr/lib/python3/dist-packages/tzdata"
 )
 
 // toolboxEnv points the interpreters at the packages and CA bundle installed in
@@ -457,6 +458,13 @@ func toolboxEnv() []string {
 			"CURL_CA_BUNDLE="+toolboxCABundle,
 			"GIT_SSL_CAINFO="+toolboxCABundle,
 		)
+	}
+	// An empty TZPATH sends zoneinfo straight to the tzdata package. Without it
+	// zoneinfo tries /usr/share/zoneinfo first, which the sandbox denies, and
+	// the resulting PermissionError is not a miss — so the fallback that would
+	// otherwise reach tzdata never runs.
+	if fi, err := os.Stat(toolboxTZData); err == nil && fi.IsDir() {
+		env = append(env, "PYTHONTZPATH=")
 	}
 	return env
 }

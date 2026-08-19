@@ -13,10 +13,16 @@
 #
 # Usage: ./scripts/test-codellm-sandbox.sh          # builds, then tests
 #        SKIP_BUILD=1 ./scripts/test-codellm-sandbox.sh
-#        CAPS=limited ./scripts/test-codellm-sandbox.sh   # SYS_ADMIN instead of --privileged
+#        CAPS=limited ./scripts/test-codellm-sandbox.sh   # minimal grant, not --privileged
 #
 # Run under sudo if your user is not in the docker group.
 # Exits non-zero on the first failed check.
+#
+# CAPS=limited is the minimum an orchestrator has to grant, established by
+# bisection: CAP_SYS_ADMIN for the PID/mount namespaces, and an unconfined
+# AppArmor profile because the stock docker-default profile denies the private
+# remount of /. Docker's default seccomp profile needs no change. With neither
+# granted the run fails closed — coderun refuses to execute unsandboxed.
 
 set -e
 
@@ -28,7 +34,7 @@ SENTINEL_VALUE=PARENT_SECRET_MUST_NOT_LEAK
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 
 if [ "${CAPS:-full}" = "limited" ]; then
-  PRIV=(--cap-add SYS_ADMIN --security-opt seccomp=unconfined --security-opt apparmor=unconfined)
+  PRIV=(--cap-add SYS_ADMIN --security-opt apparmor=unconfined)
 else
   PRIV=(--privileged)
 fi
