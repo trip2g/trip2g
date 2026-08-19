@@ -17,7 +17,7 @@ node cli/memcli/dist/memcli.js up --folder ./memory-vault
 
 **Что делает `up`:**
 
-1. Создаёт `./memory-vault/.trip2g-memory/` (режим 700, директория состояния) и генерирует случайный `JWT_SECRET` — при повторном запуске значение переиспользуется, поэтому `up` идемпотентен.
+1. Создаёт `./memory-vault/.trip2g-memory/` (режим 700, директория состояния) и генерирует случайные `JWT_SECRET` и `OWNER_PERSONAL_TOKEN_VALUE` — при повторном запуске значения переиспользуются, поэтому `up` идемпотентен.
 2. Запускает Docker-контейнер `trip2g-memory` с `STORAGE_BACKEND=local` — ассеты хранятся на диске, S3 и MinIO не нужны.
 3. Выпускает административный API-ключ через HAT (Hot Auth Token) — без адреса электронной почты и без флага `DEV=true`.
 4. Записывает ключ в `.obsidian/plugins/trip2g/data.json` внутри хранилища.
@@ -25,6 +25,8 @@ node cli/memcli/dist/memcli.js up --folder ./memory-vault
 6. Печатает: `memory live — web: http://localhost:24081  read/write .md in ./memory-vault`
 
 После запуска агент работает с папкой хранилища через обычные инструменты Write/Read/Grep. Специальный API памяти не нужен.
+
+`OWNER_PERSONAL_TOKEN_VALUE` — персональный токен владельца: сервер заводит по нему строку в `user_tokens` при старте, и именно с ним авторизуется хост [[ru/user/fleet|флита]] (`--trip2g-admin-personal-token`). Он нужен только если вы запускаете агентов; чтобы отрезать флит, не останавливая инстанс, отзовите строку в админке.
 
 **Предварительный просмотр без побочных эффектов:**
 

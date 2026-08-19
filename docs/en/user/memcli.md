@@ -17,7 +17,7 @@ node cli/memcli/dist/memcli.js up --folder ./memory-vault
 
 **What `up` does:**
 
-1. Creates `./memory-vault/.trip2g-memory/` (mode 700, state dir) and generates a random `JWT_SECRET` there — reused on subsequent runs, so `up` is idempotent.
+1. Creates `./memory-vault/.trip2g-memory/` (mode 700, state dir) and generates a random `JWT_SECRET` and `OWNER_PERSONAL_TOKEN_VALUE` there — reused on subsequent runs, so `up` is idempotent.
 2. Starts a Docker container named `trip2g-memory` with `STORAGE_BACKEND=local` — assets on disk, no S3 or MinIO.
 3. Mints an admin API key via HAT (Hot Auth Token) — no email address, no `DEV=true` flag needed.
 4. Writes the key to `.obsidian/plugins/trip2g/data.json` inside the vault.
@@ -25,6 +25,8 @@ node cli/memcli/dist/memcli.js up --folder ./memory-vault
 6. Prints: `memory live — web: http://localhost:24081  read/write .md in ./memory-vault`
 
 Once up, your agent uses its normal Write/Read/Grep tools on the vault folder. No special memory API needed.
+
+`OWNER_PERSONAL_TOKEN_VALUE` is the owner's personal token: the server seeds it as a `user_tokens` row on boot, and it is the credential a [[en/user/fleet|fleet]] host authenticates with (`--trip2g-admin-personal-token`). You need it only if you run agents; revoke the row in the admin UI to cut a fleet off without stopping the instance.
 
 **Preview without side effects:**
 

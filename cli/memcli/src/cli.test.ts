@@ -16,6 +16,7 @@ import {
   buildServerEnv,
   buildDataJson,
   buildDockerRunArgs,
+  generateOwnerPersonalToken,
   buildFeaturesJson,
   buildEmbedServerRunArgs,
   buildHubNote,
@@ -217,54 +218,55 @@ test('parseArgs: --host rejects non-loopback address', () => {
 const FORBIDDEN_KEYS = ['DEV', 'RESEND_API_KEY', 'SMTP_PASSWORD', 'GIT_API_REPO_PATH'];
 
 const TEST_ENC_KEY = crypto.randomBytes(16).toString('hex'); // 32 ASCII chars = 32 bytes
+const TEST_OWNER_TOKEN = 't2g_' + crypto.randomBytes(32).toString('hex');
 
 test('buildServerEnv: STORAGE_BACKEND is "local"', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.equal(env.STORAGE_BACKEND, 'local');
 });
 
 test('buildServerEnv: STORAGE_LOCAL_DIR is set', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.ok(env.STORAGE_LOCAL_DIR, 'STORAGE_LOCAL_DIR must be non-empty');
 });
 
 test('buildServerEnv: contains LISTEN_ADDR with correct port', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.ok(env.LISTEN_ADDR.includes('24081'), `LISTEN_ADDR should include port 24081, got: ${env.LISTEN_ADDR}`);
 });
 
 test('buildServerEnv: contains INTERNAL_LISTEN_ADDR with iport', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.ok(env.INTERNAL_LISTEN_ADDR.includes('24082'), `INTERNAL_LISTEN_ADDR should include 24082, got: ${env.INTERNAL_LISTEN_ADDR}`);
 });
 
 test('buildServerEnv: contains JWT_SECRET', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'hunter2', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'hunter2', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.equal(env.JWT_SECRET, 'hunter2');
 });
 
 test('buildServerEnv: contains OWNER_EMAIL', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'owner@test.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'owner@test.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.equal(env.OWNER_EMAIL, 'owner@test.com');
 });
 
 test('buildServerEnv: contains DB_FILE', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.ok(env.DB_FILE, 'DB_FILE must be non-empty');
 });
 
 test('buildServerEnv: contains PUBLIC_URL with correct port', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.ok(env.PUBLIC_URL.includes('24081'), `PUBLIC_URL should include port 24081, got: ${env.PUBLIC_URL}`);
 });
 
 test('buildServerEnv: contains DATA_ENCRYPTION_KEY matching the provided value', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.equal(env.DATA_ENCRYPTION_KEY, TEST_ENC_KEY, 'DATA_ENCRYPTION_KEY must match provided value');
 });
 
 test('buildServerEnv: DATA_ENCRYPTION_KEY is exactly 32 bytes (chars)', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.equal(
     Buffer.byteLength(env.DATA_ENCRYPTION_KEY, 'utf8'),
     32,
@@ -273,16 +275,34 @@ test('buildServerEnv: DATA_ENCRYPTION_KEY is exactly 32 bytes (chars)', () => {
 });
 
 test('buildServerEnv: DATA_ENCRYPTION_KEY is not the default placeholder', () => {
-  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY });
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
   assert.notEqual(env.DATA_ENCRYPTION_KEY, 'please-change-me-to-32-byte-key!', 'DATA_ENCRYPTION_KEY must not be the default value');
 });
 
 for (const key of FORBIDDEN_KEYS) {
   test(`buildServerEnv: does NOT contain ${key}`, () => {
-    const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY }) as unknown as Record<string, unknown>;
+    const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN }) as unknown as Record<string, unknown>;
     assert.equal(env[key], undefined, `${key} must not be present in server env`);
   });
 }
+
+test('buildServerEnv: contains OWNER_PERSONAL_TOKEN_VALUE matching the provided value', () => {
+  const env = buildServerEnv({ port: 24081, iport: 24082, email: 'a@b.com', secret: 'x', encryptionKey: TEST_ENC_KEY, ownerPersonalToken: TEST_OWNER_TOKEN });
+  assert.equal(env.OWNER_PERSONAL_TOKEN_VALUE, TEST_OWNER_TOKEN);
+});
+
+// The server refuses to boot on a value without the t2g_ prefix, and
+// DisplayPrefix reads its first 8 characters.
+test('generateOwnerPersonalToken: t2g_ prefix and personal-token length', () => {
+  const token = generateOwnerPersonalToken();
+  assert.ok(token.startsWith('t2g_'), `must carry the t2g_ prefix, got: ${token.slice(0, 8)}`);
+  assert.equal(token.length, 68, 't2g_ plus 64 characters, matching personaltoken.Generate()');
+  assert.match(token.slice(4), /^[a-zA-Z0-9]+$/, 'the body must be alphanumeric');
+});
+
+test('generateOwnerPersonalToken: a fresh value every call', () => {
+  assert.notEqual(generateOwnerPersonalToken(), generateOwnerPersonalToken());
+});
 
 // ---------------------------------------------------------------------------
 // buildDockerRunArgs
@@ -295,6 +315,7 @@ test('buildDockerRunArgs: binds to 127.0.0.1 (loopback only)', () => {
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir: '/tmp/state',
     image: 'ghcr.io/trip2g/trip2g:latest',
   });
@@ -309,6 +330,7 @@ test('buildDockerRunArgs: includes -d flag', () => {
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir: '/tmp/state',
     image: 'ghcr.io/trip2g/trip2g:latest',
   });
@@ -322,6 +344,7 @@ test('buildDockerRunArgs: includes --name trip2g-memory', () => {
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir: '/tmp/state',
     image: 'ghcr.io/trip2g/trip2g:latest',
   });
@@ -338,6 +361,7 @@ test('buildDockerRunArgs: image is last argument', () => {
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir: '/tmp/state',
     image,
   });
@@ -352,6 +376,7 @@ test('buildDockerRunArgs: volume mounts stateDir/data to /data', () => {
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir,
     image: 'trip2g:local',
   });
@@ -368,6 +393,7 @@ test('buildDockerRunArgs: does not include DEV=true in env args', () => {
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir: '/tmp/state',
     image: 'trip2g:local',
   });
@@ -384,6 +410,7 @@ test('buildDockerRunArgs: uses custom host for main port binding', () => {
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir: '/tmp/state',
     image: 'trip2g:local',
     host: '127.0.0.77',
@@ -401,6 +428,7 @@ test('buildDockerRunArgs: keeps 127.0.0.1 for internal port even with custom hos
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir: '/tmp/state',
     image: 'trip2g:local',
     host: '127.0.0.77',
@@ -422,6 +450,7 @@ test('buildDockerRunArgs: default host is 127.0.0.1 when omitted', () => {
     email: 'a@b.com',
     secret: 'x',
     encryptionKey: TEST_ENC_KEY,
+    ownerPersonalToken: TEST_OWNER_TOKEN,
     stateDir: '/tmp/state',
     image: 'trip2g:local',
   });
