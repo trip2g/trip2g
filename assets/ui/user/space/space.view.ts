@@ -53,9 +53,22 @@ namespace $.$$ {
 			}, 10)
 
 			if (opened !== undefined) {
-				const newVal = opened ? 'open' : null
-				this.$.$mol_state_arg.value(KEY, newVal)
-				return newVal
+				const arg = this.$.$mol_state_arg
+
+				if (opened) {
+					// This key has to stand to the LEFT of the catalog's un. link() keeps
+					// only the args preceding the one being changed, reading their order
+					// as nesting — so anything to the right of un is discarded when a menu
+					// link switches sections. An open account contains the catalog, not
+					// the other way round, and the address has to say so.
+					// A key's position comes from its first mention, its value from the
+					// last, so this puts it first whether or not it was already there.
+					arg.dict({ [KEY]: 'open', ...arg.dict() })
+				} else {
+					arg.value(KEY, null)
+				}
+
+				return opened ? 'open' : null
 			} else {
 				// need to mark that dependency
 				const stateOpened = this.$.$mol_state_arg.value(KEY) === 'open'
