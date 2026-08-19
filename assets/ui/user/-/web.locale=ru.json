@@ -56,7 +56,7 @@
 	"$trip2g_user_space_home_title": "Мой аккаунт",
 	"$trip2g_user_space_nav_SignOut_title": "Выйти",
 	"$trip2g_user_space_nav_menu_title": "Личный кабинет",
-	"$trip2g_user_space_subscriptions_Page_title": "Подписки",
+	"$trip2g_user_space_subscriptions_title": "Подписки",
 	"$trip2g_user_space_tokens_AddLink_title": "+ Новый токен",
 	"$trip2g_user_space_tokens_Expires_label_title": "Истекает",
 	"$trip2g_user_space_tokens_Prefix_label_title": "Префикс",
