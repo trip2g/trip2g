@@ -18,6 +18,23 @@ writes against what is actually installed instead of guessing.
 Interpreters are `python`, `node` and `bash` (`internal/coderun/interpreters.json`),
 gated at runtime by `CODELLM_ALLOWED_PROGRAMS`.
 
+That file also declares the env each interpreter needs to find its packages, so
+the paths baked into the image live next to the interpreter they belong to
+rather than in Go. An entry is applied only when its `if_exists` path is
+present, which is what keeps a dev run outside the image (`make aircodellm`)
+from being pointed at a bundle that is not there:
+
+```json
+{"name": "node", "cmd": ["node"], "ext": ".js",
+ "env": [{"name": "NODE_PATH", "value": "/usr/lib/node_modules",
+          "if_exists": "/usr/lib/node_modules"}]}
+```
+
+The top-level `env` array applies to every interpreter — the CA variables live
+there, since `curl`, `git`, node and python all need them. Change a path here
+and you must change `Dockerfile.codellm` to match, or the guard silently drops
+the variable; `TestInterpretersJSON_ShippedEnv` pins the pair together.
+
 ### Python
 
 Installed into `/usr/lib/python3/dist-packages`.
@@ -94,17 +111,18 @@ only. Consequences worth knowing when adding tools:
   defaults to `/usr/local/lib/python3.11/dist-packages` and ignores `--prefix`.
 - `/etc` is denied apart from a named handful of files, so the system CA store
   is invisible. The image copies the bundle to `/usr/lib/ssl-certs/ca-bundle.crt`
-  and `coderun` exports `SSL_CERT_FILE`, `CURL_CA_BUNDLE` and `GIT_SSL_CAINFO`
-  when that file exists. Python (certifi) and Node (CAs compiled in) do not
+  and the global `env` in `interpreters.json` exports `SSL_CERT_FILE`,
+  `CURL_CA_BUNDLE` and `GIT_SSL_CAINFO` when that file exists. Python (certifi) and Node (CAs compiled in) do not
   depend on it.
-- `/usr/share/zoneinfo` is denied, so `coderun` sets an empty `PYTHONTZPATH` to
-  send `zoneinfo` to the `tzdata` package instead. Bash `TZ=...` does not work.
+- `/usr/share/zoneinfo` is denied, so the python interpreter declares an empty
+  `PYTHONTZPATH` to send `zoneinfo` to the `tzdata` package instead. Bash
+  `TZ=...` does not work.
 - The network is in a private namespace unless `CODELLM_SANDBOX_NETWORK=true`.
   That flag also adds `/etc/resolv.conf`, `/etc/hosts`, `/etc/nsswitch.conf`,
   `/etc/services` and `/etc/gai.conf` to the allowlist — without them name
   resolution fails and only raw IPs are reachable. `/etc/ssl/openssl.cnf` is
   always granted: node aborts at startup without it, even for an offline block.
-- The child environment is scrubbed to the toolbox vars plus `PATH` and
+- The child environment is scrubbed to the declared env plus `PATH` and
   `FLEET_INPUT`; secrets reach a block only through `CODELLM_EXPOSE_ENV` /
   `CODELLM_EXPOSE_ENV_PREFIX`. Tools that authenticate from the environment need
   their var named there — `gh`, for one, is unauthenticated unless codellm runs

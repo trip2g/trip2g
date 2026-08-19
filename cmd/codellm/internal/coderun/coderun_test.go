@@ -2,6 +2,8 @@ package coderun
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -402,3 +404,59 @@ fi`
 
 // Tests in this file use t.Setenv which correctly restores values on cleanup.
 // The parent-env isolation under test is enforced by buildChildEnv in coderun.go.
+
+// TestResolveEnvVars_IfExistsGate covers the declarative env in interpreters.json:
+// an entry whose if_exists path is missing must be skipped, so a dev run outside
+// the runtime image is not pointed at a bundle that isn't there.
+func TestResolveEnvVars_IfExistsGate(t *testing.T) {
+	dir := t.TempDir()
+	present := filepath.Join(dir, "present")
+	require.NoError(t, os.WriteFile(present, []byte("x"), 0o600))
+
+	got := resolveEnvVars([]envVar{
+		{Name: "UNGUARDED", Value: "always"},
+		{Name: "GUARDED_OK", Value: "set", IfExists: present},
+		{Name: "GUARDED_MISSING", Value: "skipped", IfExists: filepath.Join(dir, "absent")},
+		{Name: "EMPTY_VALUE", Value: "", IfExists: present},
+		{Name: "", Value: "nameless"},
+	})
+
+	require.Equal(t, []string{"UNGUARDED=always", "GUARDED_OK=set", "EMPTY_VALUE="}, got)
+}
+
+// TestBuildRegistry_Env checks that global and per-interpreter env survive the
+// JSON round-trip, including an interpreter that declares none.
+func TestBuildRegistry_Env(t *testing.T) {
+	reg, err := buildRegistry([]byte(`{"env":[{"name":"GLOBAL","value":"g"}],
+	  "interpreters":[
+	    {"name":"node","cmd":["node"],"code_block_labels":["js"],"ext":".js",
+	     "env":[{"name":"NODE_PATH","value":"/usr/lib/node_modules"}]},
+	    {"name":"bash","cmd":["bash"],"code_block_labels":["sh"],"ext":".sh"}]}`))
+	require.NoError(t, err)
+	require.Equal(t, []envVar{{Name: "GLOBAL", Value: "g"}}, reg.env)
+	require.Equal(t, []envVar{{Name: "NODE_PATH", Value: "/usr/lib/node_modules"}}, reg.byName["node"].Env)
+	require.Empty(t, reg.byName["bash"].Env)
+}
+
+// TestInterpretersJSON_ShippedEnv pins the env the shipped interpreters.json
+// declares — these paths are created by Dockerfile.codellm, so a change to one
+// without the other silently drops packages or TLS trust.
+func TestInterpretersJSON_ShippedEnv(t *testing.T) {
+	reg, err := buildRegistry(defaultInterpretersJSON)
+	require.NoError(t, err)
+
+	names := make([]string, 0, len(reg.env))
+	for _, v := range reg.env {
+		names = append(names, v.Name)
+		require.Equal(t, "/usr/lib/ssl-certs/ca-bundle.crt", v.Value)
+		require.Equal(t, v.Value, v.IfExists, "CA vars must be gated on the bundle itself")
+	}
+	require.Equal(t, []string{"SSL_CERT_FILE", "CURL_CA_BUNDLE", "GIT_SSL_CAINFO"}, names)
+
+	require.Equal(t, []envVar{{
+		Name: "NODE_PATH", Value: "/usr/lib/node_modules", IfExists: "/usr/lib/node_modules",
+	}}, reg.byName["node"].Env)
+	require.Equal(t, []envVar{{
+		Name: "PYTHONTZPATH", Value: "", IfExists: "/usr/lib/python3/dist-packages/tzdata",
+	}}, reg.byName["python"].Env)
+}

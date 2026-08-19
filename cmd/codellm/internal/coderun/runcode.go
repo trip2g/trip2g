@@ -502,7 +502,7 @@ func buildBlockCmd(ctx context.Context, code, program string, in CodeInput) (bui
 		return builtBlock{}, fmt.Errorf("write input file: %w", wErr)
 	}
 
-	env := buildChildEnv(inputFile, in.EnvPassthrough, in.EnvPrefix)
+	env := buildChildEnv(inputFile, interp, in.EnvPassthrough, in.EnvPrefix)
 	fullArgv := append(append([]string{}, interp.Cmd...), codeFile)
 
 	blockCtx := ctx

@@ -1,5 +1,11 @@
-{"interpreters": [
-  {"name":"python","cmd":["python3"],"code_block_labels":["py","python","python3"],"ext":".py"},
-  {"name":"node","cmd":["node"],"code_block_labels":["js","javascript","node"],"ext":".js"},
+{"env": [
+  {"name":"SSL_CERT_FILE","value":"/usr/lib/ssl-certs/ca-bundle.crt","if_exists":"/usr/lib/ssl-certs/ca-bundle.crt"},
+  {"name":"CURL_CA_BUNDLE","value":"/usr/lib/ssl-certs/ca-bundle.crt","if_exists":"/usr/lib/ssl-certs/ca-bundle.crt"},
+  {"name":"GIT_SSL_CAINFO","value":"/usr/lib/ssl-certs/ca-bundle.crt","if_exists":"/usr/lib/ssl-certs/ca-bundle.crt"}
+], "interpreters": [
+  {"name":"python","cmd":["python3"],"code_block_labels":["py","python","python3"],"ext":".py",
+   "env":[{"name":"PYTHONTZPATH","value":"","if_exists":"/usr/lib/python3/dist-packages/tzdata"}]},
+  {"name":"node","cmd":["node"],"code_block_labels":["js","javascript","node"],"ext":".js",
+   "env":[{"name":"NODE_PATH","value":"/usr/lib/node_modules","if_exists":"/usr/lib/node_modules"}]},
   {"name":"bash","cmd":["bash"],"code_block_labels":["sh","bash"],"ext":".sh"}
 ]}
