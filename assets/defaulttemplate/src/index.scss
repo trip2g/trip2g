@@ -536,6 +536,35 @@ body {
 
   h2 { --pico-font-size: 1.5rem; }
   h3 { --pico-font-size: 1.25rem; }
+
+  // Link to a heading, injected into the DOM after load. The icon is drawn from
+  // CSS so the anchor holds no text: its content would otherwise land in the
+  // heading's text and leak into anything reading the rendered page.
+  .heading-anchor {
+    margin-left: 0.35em;
+    opacity: 0;
+    text-decoration: none;
+    transition: opacity 0.12s ease-in-out;
+
+    &::before {
+      content: "#";
+      color: var(--pico-muted-color);
+      font-weight: 400;
+    }
+
+    &:focus-visible {
+      opacity: 1;
+    }
+  }
+
+  h1:hover .heading-anchor,
+  h2:hover .heading-anchor,
+  h3:hover .heading-anchor,
+  h4:hover .heading-anchor,
+  h5:hover .heading-anchor,
+  h6:hover .heading-anchor {
+    opacity: 1;
+  }
 }
 
 // Sidebar nav rendered from _sidebar.md (### headings + ul lists)
