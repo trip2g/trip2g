@@ -7,6 +7,8 @@ $trip2g_user_space_tokens $mol_page
 				un \token_new
 				token_id null
 			title @ \+ New token
+	Empty $mol_view sub /
+		<= empty_message @ \You have no personal access tokens yet.
 	body /
 		<= List $mol_list
 			rows <= token_rows /

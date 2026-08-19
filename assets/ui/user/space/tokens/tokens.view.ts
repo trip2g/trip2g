@@ -11,6 +11,10 @@ namespace $.$$ {
 		}
 
 		override token_rows() {
+			if (this.data().size() === 0) {
+				return [this.Empty()]
+			}
+
 			return this.data().map(key => this.Row(key))
 		}
 

@@ -1,5 +1,7 @@
 $trip2g_user_space_subscriptions $mol_page
 	title @ \Subscriptions
+	Empty $mol_view sub /
+		<= empty_message @ \You have no active subscriptions yet.
 	body /
 		<= List $mol_list
 			rows <= rows /
