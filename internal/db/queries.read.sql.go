@@ -6539,6 +6539,46 @@ func (q *Queries) ListUserTokensByUserID(ctx context.Context, userID int64) ([]U
 	return items, nil
 }
 
+const listUserTokensFiltered = `-- name: ListUserTokensFiltered :many
+select id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at from user_tokens
+where (user_id = ?1 or ?1 is null)
+order by created_at desc
+`
+
+func (q *Queries) ListUserTokensFiltered(ctx context.Context, userID *int64) ([]UserToken, error) {
+	rows, err := q.db.QueryContext(ctx, listUserTokensFiltered, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserToken
+	for rows.Next() {
+		var i UserToken
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.TokenHash,
+			&i.TokenPrefix,
+			&i.Scope,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+			&i.LastUsedAt,
+			&i.RevokedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
 select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps from change_webhook_deliveries
 where webhook_id = ?
@@ -7949,6 +7989,29 @@ where token_hash = ?
 // ============================================
 func (q *Queries) UserTokenByHash(ctx context.Context, tokenHash string) (UserToken, error) {
 	row := q.db.QueryRowContext(ctx, userTokenByHash, tokenHash)
+	var i UserToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TokenHash,
+		&i.TokenPrefix,
+		&i.Scope,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const userTokenByID = `-- name: UserTokenByID :one
+select id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at from user_tokens
+where id = ?
+`
+
+func (q *Queries) UserTokenByID(ctx context.Context, id string) (UserToken, error) {
+	row := q.db.QueryRowContext(ctx, userTokenByID, id)
 	var i UserToken
 	err := row.Scan(
 		&i.ID,

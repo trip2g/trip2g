@@ -1424,6 +1424,15 @@ select * from user_tokens
 where user_id = ?
 order by created_at desc;
 
+-- name: ListUserTokensFiltered :many
+select * from user_tokens
+where (user_id = sqlc.narg(user_id) or sqlc.narg(user_id) is null)
+order by created_at desc;
+
+-- name: UserTokenByID :one
+select * from user_tokens
+where id = ?;
+
 -- name: CountActiveUserTokensByUserID :one
 select count(*) from user_tokens
 where user_id = ?

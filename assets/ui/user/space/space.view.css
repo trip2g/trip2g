@@ -45,3 +45,28 @@
 [trip2g_user_space_dialog]:not([open]) {
 	display: none; /* override mol styles */
 }
+
+[trip2g_user_space_content] [mol_page_head] {
+	padding-right: 3.5rem;
+}
+
+/* Pico со страницы-хоста лезет в семантические теги mol: article у $mol_page,
+   h1 у заголовков. Тот же нейтрализатор, что в editor/editor.view.css. */
+[trip2g_user_space_content] article {
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
+}
+
+[trip2g_user_space_content] :is(h1, h2, h3, h4, h5, h6) {
+	margin: 0;
+	font: inherit;
+}
+
+/* $mol_button_typed центрирует содержимое, $mol_link выравнивание не задаёт
+   и прижимает строку к верху — рядом в одной панели они расходятся на 3px. */
+[trip2g_user_space_content] [mol_page_tools] > [mol_link] {
+	align-items: center;
+}

@@ -1,0 +1,16 @@
+mutation ($input: AdminRevokeUserTokenInput!) {
+	admin {
+		data: adminRevokeUserToken(input: $input) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on AdminRevokeUserTokenPayload {
+				token {
+					id
+					revokedAt
+				}
+			}
+		}
+	}
+}

@@ -8,7 +8,6 @@ import (
 	"sync"
 	"trip2g/internal/case/createusertoken"
 	"trip2g/internal/db"
-	"trip2g/internal/usertoken"
 )
 
 // Ensure, that EnvMock does implement createusertoken.Env.
@@ -24,14 +23,14 @@ var _ createusertoken.Env = &EnvMock{}
 //			CountActiveUserTokensByUserIDFunc: func(ctx context.Context, userID int64) (int64, error) {
 //				panic("mock out the CountActiveUserTokensByUserID method")
 //			},
-//			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
-//				panic("mock out the CurrentUserToken method")
-//			},
 //			GenerateUniqIDFunc: func() string {
 //				panic("mock out the GenerateUniqID method")
 //			},
 //			InsertUserTokenFunc: func(ctx context.Context, arg db.InsertUserTokenParams) (db.UserToken, error) {
 //				panic("mock out the InsertUserToken method")
+//			},
+//			PublicURLFunc: func() string {
+//				panic("mock out the PublicURL method")
 //			},
 //		}
 //
@@ -43,14 +42,14 @@ type EnvMock struct {
 	// CountActiveUserTokensByUserIDFunc mocks the CountActiveUserTokensByUserID method.
 	CountActiveUserTokensByUserIDFunc func(ctx context.Context, userID int64) (int64, error)
 
-	// CurrentUserTokenFunc mocks the CurrentUserToken method.
-	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
-
 	// GenerateUniqIDFunc mocks the GenerateUniqID method.
 	GenerateUniqIDFunc func() string
 
 	// InsertUserTokenFunc mocks the InsertUserToken method.
 	InsertUserTokenFunc func(ctx context.Context, arg db.InsertUserTokenParams) (db.UserToken, error)
+
+	// PublicURLFunc mocks the PublicURL method.
+	PublicURLFunc func() string
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -60,11 +59,6 @@ type EnvMock struct {
 			Ctx context.Context
 			// UserID is the userID argument value.
 			UserID int64
-		}
-		// CurrentUserToken holds details about calls to the CurrentUserToken method.
-		CurrentUserToken []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
 		}
 		// GenerateUniqID holds details about calls to the GenerateUniqID method.
 		GenerateUniqID []struct {
@@ -76,11 +70,14 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertUserTokenParams
 		}
+		// PublicURL holds details about calls to the PublicURL method.
+		PublicURL []struct {
+		}
 	}
 	lockCountActiveUserTokensByUserID sync.RWMutex
-	lockCurrentUserToken              sync.RWMutex
 	lockGenerateUniqID                sync.RWMutex
 	lockInsertUserToken               sync.RWMutex
+	lockPublicURL                     sync.RWMutex
 }
 
 // CountActiveUserTokensByUserID calls CountActiveUserTokensByUserIDFunc.
@@ -116,38 +113,6 @@ func (mock *EnvMock) CountActiveUserTokensByUserIDCalls() []struct {
 	mock.lockCountActiveUserTokensByUserID.RLock()
 	calls = mock.calls.CountActiveUserTokensByUserID
 	mock.lockCountActiveUserTokensByUserID.RUnlock()
-	return calls
-}
-
-// CurrentUserToken calls CurrentUserTokenFunc.
-func (mock *EnvMock) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
-	if mock.CurrentUserTokenFunc == nil {
-		panic("EnvMock.CurrentUserTokenFunc: method is nil but Env.CurrentUserToken was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-	}{
-		Ctx: ctx,
-	}
-	mock.lockCurrentUserToken.Lock()
-	mock.calls.CurrentUserToken = append(mock.calls.CurrentUserToken, callInfo)
-	mock.lockCurrentUserToken.Unlock()
-	return mock.CurrentUserTokenFunc(ctx)
-}
-
-// CurrentUserTokenCalls gets all the calls that were made to CurrentUserToken.
-// Check the length with:
-//
-//	len(mockedEnv.CurrentUserTokenCalls())
-func (mock *EnvMock) CurrentUserTokenCalls() []struct {
-	Ctx context.Context
-} {
-	var calls []struct {
-		Ctx context.Context
-	}
-	mock.lockCurrentUserToken.RLock()
-	calls = mock.calls.CurrentUserToken
-	mock.lockCurrentUserToken.RUnlock()
 	return calls
 }
 
@@ -211,5 +176,32 @@ func (mock *EnvMock) InsertUserTokenCalls() []struct {
 	mock.lockInsertUserToken.RLock()
 	calls = mock.calls.InsertUserToken
 	mock.lockInsertUserToken.RUnlock()
+	return calls
+}
+
+// PublicURL calls PublicURLFunc.
+func (mock *EnvMock) PublicURL() string {
+	if mock.PublicURLFunc == nil {
+		panic("EnvMock.PublicURLFunc: method is nil but Env.PublicURL was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockPublicURL.Lock()
+	mock.calls.PublicURL = append(mock.calls.PublicURL, callInfo)
+	mock.lockPublicURL.Unlock()
+	return mock.PublicURLFunc()
+}
+
+// PublicURLCalls gets all the calls that were made to PublicURL.
+// Check the length with:
+//
+//	len(mockedEnv.PublicURLCalls())
+func (mock *EnvMock) PublicURLCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockPublicURL.RLock()
+	calls = mock.calls.PublicURL
+	mock.lockPublicURL.RUnlock()
 	return calls
 }

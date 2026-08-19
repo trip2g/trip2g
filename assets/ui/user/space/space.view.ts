@@ -53,9 +53,22 @@ namespace $.$$ {
 			}, 10)
 
 			if (opened !== undefined) {
-				const newVal = opened ? 'open' : null
-				this.$.$mol_state_arg.value(KEY, newVal)
-				return newVal
+				const arg = this.$.$mol_state_arg
+
+				if (opened) {
+					// This key has to stand to the LEFT of the catalog's un. link() keeps
+					// only the args preceding the one being changed, reading their order
+					// as nesting — so anything to the right of un is discarded when a menu
+					// link switches sections. An open account contains the catalog, not
+					// the other way round, and the address has to say so.
+					// A key's position comes from its first mention, its value from the
+					// last, so this puts it first whether or not it was already there.
+					arg.dict({ [KEY]: 'open', ...arg.dict() })
+				} else {
+					arg.value(KEY, null)
+				}
+
+				return opened ? 'open' : null
 			} else {
 				// need to mark that dependency
 				const stateOpened = this.$.$mol_state_arg.value(KEY) === 'open'
@@ -105,12 +118,33 @@ namespace $.$$ {
 			window.location.reload()
 		}
 
+		// A dialog's backdrop is painted by the dialog element itself, so a click on
+		// it targets the dialog while a click on anything inside targets that child.
+		// Comparing the target is exact; comparing coordinates against the dialog's
+		// rect was not — a click raised by the keyboard carries 0,0, and Enter on a
+		// menu link read as a backdrop click and shut the account.
 		override close_click(e: MouseEvent) {
-			const r = this.modal_node().getBoundingClientRect()
+			if (e.target !== this.modal_node()) return
 
-			if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
-				this.modal_node().close()
-			}
+			this.modal_node().close()
+		}
+	}
+
+	export class $trip2g_user_space_nav extends $.$trip2g_user_space_nav {
+		// $mol_book2_catalog asks for menu_title only when the spread is itself a
+		// book, so a plain page is listed under its own title. A page that wants
+		// a short label in the menu and a full one in the header declares both.
+		override spread_title(spread: string) {
+			const page = this.Spread(spread) as $mol_view & { menu_title?(): string }
+			return page.menu_title?.() || super.spread_title(spread)
+		}
+
+		// A token's own screen and the new-token form are routes, not sections:
+		// they are reachable by link and by URL, and listing them in the menu
+		// beside "My account" would make two of the three entries transient.
+		@$mol_mem
+		override spread_ids_filtered() {
+			return this.spread_ids().filter(id => id !== 'token' && id !== 'token_new')
 		}
 	}
 }

@@ -42,6 +42,10 @@ type AdminImportTelegramAccountChannelOrErrorPayload interface {
 	IsAdminImportTelegramAccountChannelOrErrorPayload()
 }
 
+type AdminRevokeUserTokenOrErrorPayload interface {
+	IsAdminRevokeUserTokenOrErrorPayload()
+}
+
 type AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload interface {
 	IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload()
 }
@@ -668,6 +672,12 @@ func (this AdminConfigStringValue) GetDescription() *string  { return this.Descr
 func (this AdminConfigStringValue) GetUpdatedAt() *time.Time { return this.UpdatedAt }
 func (this AdminConfigStringValue) GetUpdatedBy() *db.User   { return this.UpdatedBy }
 
+type AdminCreateUserTokenInput struct {
+	UserID        int64  `json:"userId"`
+	Name          string `json:"name"`
+	ExpiresInDays *int32 `json:"expiresInDays,omitempty"`
+}
+
 type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }
@@ -857,6 +867,16 @@ type AdminReleasesConnection struct {
 	Nodes []db.Release `json:"nodes"`
 }
 
+type AdminRevokeUserTokenInput struct {
+	ID string `json:"id"`
+}
+
+type AdminRevokeUserTokenPayload struct {
+	Token *db.UserToken `json:"token"`
+}
+
+func (AdminRevokeUserTokenPayload) IsAdminRevokeUserTokenOrErrorPayload() {}
+
 type AdminSetTelegramAccountChatPublishInstantTagsInput struct {
 	AccountID      int64   `json:"accountId"`
 	TelegramChatID string  `json:"telegramChatId"`
@@ -989,6 +1009,15 @@ type AdminUserBansConnection struct {
 
 type AdminUserSubgraphAccessesConnection struct {
 	Nodes []db.UserSubgraphAccess `json:"nodes"`
+}
+
+type AdminUserTokensConnection struct {
+	Nodes  []db.UserToken `json:"nodes"`
+	UserID *int64         `json:"-"`
+}
+
+type AdminUserTokensFilterInput struct {
+	UserID *int64 `json:"userId,omitempty"`
 }
 
 type AdminUsersConnection struct {
@@ -1434,6 +1463,7 @@ type CreateUserTokenInput struct {
 type CreateUserTokenPayload struct {
 	PlaintextToken string        `json:"plaintextToken"`
 	Token          *db.UserToken `json:"token"`
+	Instructions   string        `json:"instructions"`
 }
 
 func (CreateUserTokenPayload) IsCreateUserTokenOrErrorPayload() {}
@@ -1656,6 +1686,8 @@ func (ErrorPayload) IsSubmitFormOrErrorPayload() {}
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminRevokeUserTokenOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateUserSubgraphAccessOrErrorPayload() {}
 

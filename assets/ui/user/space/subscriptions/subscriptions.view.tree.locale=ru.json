@@ -1,3 +1,4 @@
 {
-	"$trip2g_user_space_subscriptions_Page_title": "Подписки"
+	"$trip2g_user_space_subscriptions_title": "Подписки",
+	"$trip2g_user_space_subscriptions_empty_message": "У вас пока нет активных подписок."
 }

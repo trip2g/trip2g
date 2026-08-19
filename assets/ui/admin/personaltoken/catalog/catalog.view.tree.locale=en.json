@@ -1,0 +1,7 @@
+{
+	"$trip2g_admin_personaltoken_catalog_menu_title": "Personal Tokens",
+	"$trip2g_admin_personaltoken_catalog_Owner_title": "Owner",
+	"$trip2g_admin_personaltoken_catalog_LastUsed_title": "Last Used",
+	"$trip2g_admin_personaltoken_catalog_ExpiresAt_title": "Expires At",
+	"$trip2g_admin_personaltoken_catalog_RevokedAt_title": "Revoked At"
+}

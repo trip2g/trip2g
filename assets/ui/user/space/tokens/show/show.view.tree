@@ -1,0 +1,36 @@
+$trip2g_user_space_tokens_show $mol_page
+	title <= token_name \
+	token_id \
+	tools /
+		<= BackLink $mol_link
+			arg *
+				un \tokens
+				token_id null
+			title @ \All tokens
+		<= Revoke $trip2g_user_space_tokens_buttons_revoke
+			token_id <= token_id \
+			revoked? <=> revoked? null
+	body /
+		<= Details $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= Prefix_labeler $mol_labeler
+					title @ \Prefix
+					content / <= token_prefix \
+				<= Created_labeler $mol_labeler
+					title @ \Created
+					Content <= Created_value $trip2g_table_cell_time
+						value <= token_created_at null
+				<= LastUsed_labeler $mol_labeler
+					title @ \Last used
+					Content <= LastUsed_value $trip2g_table_cell_time
+						value <= token_last_used_at null
+				<= Expires_labeler $mol_labeler
+					title @ \Expires
+					Content <= Expires_value $trip2g_table_cell_time
+						value <= token_expires_at null
+				<= Revoked_labeler $mol_labeler
+					title @ \Revoked
+					Content <= Revoked_value $trip2g_table_cell_time
+						value <= token_revoked_at null

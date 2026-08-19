@@ -31,6 +31,7 @@ import (
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/createusersubgraphaccess"
+	admincreateusertoken "trip2g/internal/case/admin/createusertoken"
 	"trip2g/internal/case/admin/createwebhook"
 	"trip2g/internal/case/admin/deactivategithuboauth"
 	"trip2g/internal/case/admin/deactivategoogleoauth"
@@ -64,6 +65,7 @@ import (
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/revokefederationsecret"
+	adminrevokeusertoken "trip2g/internal/case/admin/revokeusertoken"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
@@ -172,6 +174,8 @@ type Env interface {
 	ListActiveOffersBySubgraphNames(ctx context.Context, subgraphNames []string) ([]db.Offer, error)
 	ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]db.Subgraph, error)
 	ListAllAPIKeys(ctx context.Context) ([]db.ApiKey, error)
+	ListUserTokensFiltered(ctx context.Context, userID *int64) ([]db.UserToken, error)
+	UserTokenByID(ctx context.Context, id string) (db.UserToken, error)
 	ApiKeyByID(ctx context.Context, id int64) (db.ApiKey, error)
 	SetApiKeyMcpAdminTools(ctx context.Context, arg db.SetApiKeyMcpAdminToolsParams) error
 	ListAllGitTokens(ctx context.Context) ([]db.GitToken, error)
@@ -266,6 +270,8 @@ type Env interface {
 	createpaymentlink.Env
 	createemailwaitlistrequest.Env
 	createusertoken.Env
+	admincreateusertoken.Env
+	adminrevokeusertoken.Env
 	revokeusertoken.Env
 	toggleuserfavoritenote.Env
 	pushnotes.Env

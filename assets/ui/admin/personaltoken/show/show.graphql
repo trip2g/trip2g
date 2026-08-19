@@ -1,0 +1,19 @@
+query ($id: ID!) {
+	admin {
+		personalToken(id: $id) {
+			id
+			userId
+			name
+			tokenPrefix
+			scope
+			createdAt
+			lastUsedAt
+			expiresAt
+			revokedAt
+			user {
+				id
+				email
+			}
+		}
+	}
+}

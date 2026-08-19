@@ -1,4 +1,5 @@
 $trip2g_user_space $mol_view
+	user_email \
 	minimal_height 0
 	minimal_width 0
 	plugins /
@@ -54,22 +55,26 @@ $trip2g_user_space $mol_view
 					click <= close null
 					sub /
 						<= CloseIcon $mol_icon_close
-	Content $mol_book2_catalog
-		param \un
-		menu_title @ \My account
-		menu_foot /
-			<= Email $mol_view
-				sub / <= user_email
-			<= SignOut $mol_button_major
-				click? <=> signout?
-		spreads *
-			home <= Home $trip2g_user_space_home
-			subscriptions <= Subscriptions $trip2g_user_space_subscriptions
-			tokens <= Tokens $trip2g_user_space_tokens
+	Content $trip2g_user_space_nav
+		user_email <= user_email
+		signout? <=> signout?
 
-$trip2g_user_space_home $mol_view
-	sub /
-		\Content...
+$trip2g_user_space_nav $mol_book2_catalog
+	param \un
+	Spread_default <= Home
+	menu_title @ \My account
+	user_email \
+	signout? null
+	menu_foot /
+		<= SignOut $mol_button_major
+			title @ \Sign Out
+			click? <=> signout?
+	spreads *
+		home <= Home $trip2g_user_space_home
+		subscriptions <= Subscriptions $trip2g_user_space_subscriptions
+		tokens <= Tokens $trip2g_user_space_tokens
+		token_new <= TokenNew $trip2g_user_space_tokens_create
+		token <= TokenShow $trip2g_user_space_tokens_show
 
 $trip2g_user_space_name $mol_view
 	value \

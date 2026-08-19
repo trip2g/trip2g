@@ -1,0 +1,18 @@
+$trip2g_user_space_home $mol_page
+	title @ \My account
+	EmptyFavorites $mol_labeler
+		title @ \Favorites
+		content / <= empty_message @ \You have no favorite items yet.
+	body /
+		<= Details $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= Email_labeler $mol_labeler
+					title @ \Email
+					content / <= user_email \
+				<= Favorites_list $mol_list
+					rows <= favorite_rows /
+						<= Favorite*0 $mol_link
+							title <= favorite_title* \
+							uri <= favorite_uri* \

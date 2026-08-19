@@ -1,0 +1,50 @@
+$trip2g_user_space_tokens_create $mol_page
+	title @ \New token
+	created? \
+	name_required @ \Token name is required
+	instructions? \
+	Result_view $mol_view
+		style *
+			flexDirection \column
+		sub /
+			<= Note $mol_view
+				sub / @ \Copy it now — the token is shown once and never again.
+			<= Instructions_labeler $mol_labeler
+				title @ \Ready to hand over
+				Content <= Instructions_value $mol_text
+					text <= instructions \
+			<= Buttons $mol_row
+				sub /
+					<= Copy_instructions $mol_button_copy
+						title @ \Copy instructions
+						text <= instructions \
+					<= Copy_token $mol_button_copy
+						title @ \Copy token only
+						text <= created \
+					<= Done $mol_link
+						arg *
+							un \tokens
+							token_id null
+						title @ \Done
+	body /
+		<= Form $mol_form
+			body /
+				<= Name_field $mol_form_field
+					name @ \Token name
+					Content <= Name_control $mol_string
+						value? <=> name? \
+				<= Expiry_field $mol_form_field
+					name @ \Expires in
+					Content <= Expiry_control $mol_switch
+						value? <=> expiry? \90d
+						options *
+							30d @ \30 days
+							90d @ \90 days
+							1y @ \1 year
+							never @ \Never
+			buttons /
+				<= Submit $mol_button_major
+					title @ \Generate
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \
