@@ -61,6 +61,7 @@ $trip2g_user_space $mol_view
 
 $trip2g_user_space_nav $mol_book2_catalog
 	param \un
+	Spread_default <= Home
 	menu_title @ \My account
 	user_email \
 	signout? null
