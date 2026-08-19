@@ -7,7 +7,7 @@ namespace $.$$ {
 		},
 		Name_label: {
 			flex: {
-				basis: rem( 8 ),
+				basis: rem( 9 ),
 			},
 		},
 		Prefix_label: {
@@ -15,14 +15,9 @@ namespace $.$$ {
 				basis: rem( 6 ),
 			},
 		},
-		Expires_label: {
+		State_label: {
 			flex: {
-				basis: rem( 7 ),
-			},
-		},
-		Revoked_label: {
-			flex: {
-				basis: rem( 7 ),
+				basis: rem( 8 ),
 			},
 		},
 	})

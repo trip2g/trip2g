@@ -1,6 +1,8 @@
 $trip2g_user_space_tokens $mol_page
 	menu_title @ \Tokens
 	title @ \Personal access tokens
+	state_label_expires @ \Expires
+	state_label_revoked @ \Revoked
 	tools /
 		<= AddLink $mol_link
 			arg *
@@ -25,11 +27,7 @@ $trip2g_user_space_tokens $mol_page
 								<= Prefix_label* $mol_labeler
 									title @ \Prefix
 									content / <= row_prefix* \
-								<= Expires_label* $mol_labeler
-									title @ \Expires
-									Content <= Expires* $trip2g_table_cell_time
-										value <= row_expires_at* null
-								<= Revoked_label* $mol_labeler
-									title @ \Revoked
-									Content <= Revoked* $trip2g_table_cell_time
-										value <= row_revoked_at* null
+								<= State_label* $mol_labeler
+									title <= row_state_title* \
+									Content <= State* $trip2g_table_cell_time
+										value <= row_state_at* null

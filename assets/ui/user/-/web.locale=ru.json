@@ -59,9 +59,8 @@
 	"$trip2g_user_space_subscriptions_empty_message": "У вас пока нет активных подписок.",
 	"$trip2g_user_space_subscriptions_title": "Подписки",
 	"$trip2g_user_space_tokens_AddLink_title": "+ Новый токен",
-	"$trip2g_user_space_tokens_Expires_label_title": "Истекает",
+	"$trip2g_user_space_tokens_Name_label_title": "Название",
 	"$trip2g_user_space_tokens_Prefix_label_title": "Префикс",
-	"$trip2g_user_space_tokens_Revoked_label_title": "Отозван",
 	"$trip2g_user_space_tokens_buttons_revoke_title": "Отозвать",
 	"$trip2g_user_space_tokens_create_Copy_instructions_title": "Копировать инструкцию",
 	"$trip2g_user_space_tokens_create_Copy_token_title": "Копировать только токен",
@@ -86,5 +85,7 @@
 	"$trip2g_user_space_tokens_show_Prefix_labeler_title": "Префикс",
 	"$trip2g_user_space_tokens_show_Revoke_title": "Отозвать",
 	"$trip2g_user_space_tokens_show_Revoked_labeler_title": "Отозван",
+	"$trip2g_user_space_tokens_state_label_expires": "Истекает",
+	"$trip2g_user_space_tokens_state_label_revoked": "Отозван",
 	"$trip2g_user_space_tokens_title": "Личные токены доступа"
 }
