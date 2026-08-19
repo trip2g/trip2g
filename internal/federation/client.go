@@ -46,39 +46,39 @@ func NewClient(peer model.FederationPeer, http *fasthttp.Client, devMode bool) *
 	}
 }
 
-func (c *Client) Search(ctx context.Context, params model.FederationSearchParams) (model.FederationResult, error) {
+func (c *Client) Search(ctx context.Context, params model.MCPSearchParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "search", params)
 }
 
-func (c *Client) Similar(ctx context.Context, params model.FederationSimilarParams) (model.FederationResult, error) {
+func (c *Client) Similar(ctx context.Context, params model.MCPSimilarParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "similar", params)
 }
 
-func (c *Client) NoteHTML(ctx context.Context, params model.FederationNoteHTMLParams) (model.FederationResult, error) {
+func (c *Client) NoteHTML(ctx context.Context, params model.MCPNoteHTMLParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "note_html", params)
 }
 
-func (c *Client) FederatedSearch(ctx context.Context, params model.FederationSearchParams) (model.FederationResult, error) {
+func (c *Client) FederatedSearch(ctx context.Context, params model.MCPSearchParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "federated_search", params)
 }
 
-func (c *Client) FederatedSimilar(ctx context.Context, params model.FederationSimilarParams) (model.FederationResult, error) {
+func (c *Client) FederatedSimilar(ctx context.Context, params model.MCPSimilarParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "federated_similar", params)
 }
 
-func (c *Client) FederatedNoteHTML(ctx context.Context, params model.FederationNoteHTMLParams) (model.FederationResult, error) {
+func (c *Client) FederatedNoteHTML(ctx context.Context, params model.MCPNoteHTMLParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "federated_note_html", params)
 }
 
-func (c *Client) Expand(ctx context.Context, params model.FederationExpandParams) (model.FederationResult, error) {
+func (c *Client) Expand(ctx context.Context, params model.MCPExpandParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "expand", params)
 }
 
-func (c *Client) FederatedExpand(ctx context.Context, params model.FederationExpandParams) (model.FederationResult, error) {
+func (c *Client) FederatedExpand(ctx context.Context, params model.MCPExpandParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "federated_expand", params)
 }
 
-func (c *Client) GraphQLRequest(ctx context.Context, params model.FederationGraphQLParams) (model.FederationResult, error) {
+func (c *Client) GraphQLRequest(ctx context.Context, params model.MCPGraphQLParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "graphql_request", params)
 }
 
@@ -86,7 +86,7 @@ func (c *Client) Instructions(ctx context.Context) (model.FederationResult, erro
 	return c.callTool(ctx, "instructions", nil)
 }
 
-func (c *Client) FederatedInstructions(ctx context.Context, params model.FederationInstructionsParams) (model.FederationResult, error) {
+func (c *Client) FederatedInstructions(ctx context.Context, params model.MCPInstructionsParams) (model.FederationResult, error) {
 	return c.callTool(ctx, "federated_instructions", params)
 }
 

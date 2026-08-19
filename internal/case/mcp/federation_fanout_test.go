@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fanoutSearchFn = func(context.Context, appmodel.FederationSearchParams) (appmodel.FederationResult, error)
+type fanoutSearchFn = func(context.Context, appmodel.MCPSearchParams) (appmodel.FederationResult, error)
 
 // fanoutEnv builds an env with n federation KB notes (kb1..kbn, registration
 // order) whose clients answer Search via searchFunc, plus the fan-out knobs.
@@ -80,7 +80,7 @@ func TestFederatedSearchBlindFanoutCapsPeersAndReportsSkipped(t *testing.T) {
 	var mu sync.Mutex
 	queried := map[string]bool{}
 	env := fanoutEnv(5, 3, 5, time.Second, func(kbID string) fanoutSearchFn {
-		return func(_ context.Context, _ appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+		return func(_ context.Context, _ appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 			mu.Lock()
 			queried[kbID] = true
 			mu.Unlock()
@@ -110,7 +110,7 @@ func TestFederatedSearchBlindFanoutCapsPeersAndReportsSkipped(t *testing.T) {
 func TestFederatedSearchFanoutConcurrencyBounded(t *testing.T) {
 	var inflight, peak atomic.Int64
 	env := fanoutEnv(6, 10, 2, 5*time.Second, func(kbID string) fanoutSearchFn {
-		return func(_ context.Context, _ appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+		return func(_ context.Context, _ appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 			cur := inflight.Add(1)
 			for {
 				old := peak.Load()
@@ -136,7 +136,7 @@ func TestFederatedSearchHungPeerTimesOutOthersReturn(t *testing.T) {
 	hung := make(chan struct{})
 	t.Cleanup(func() { close(hung) })
 	env := fanoutEnv(3, 10, 5, 100*time.Millisecond, func(kbID string) fanoutSearchFn {
-		return func(_ context.Context, _ appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+		return func(_ context.Context, _ appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 			if kbID == "kb2" {
 				<-hung
 				return appmodel.FederationResult{}, context.Canceled
@@ -165,7 +165,7 @@ func TestFederatedSearchExplicitKBIDsIgnoreFanoutLimit(t *testing.T) {
 	var mu sync.Mutex
 	queried := map[string]bool{}
 	env := fanoutEnv(5, 2, 5, time.Second, func(kbID string) fanoutSearchFn {
-		return func(_ context.Context, _ appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+		return func(_ context.Context, _ appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 			mu.Lock()
 			queried[kbID] = true
 			mu.Unlock()

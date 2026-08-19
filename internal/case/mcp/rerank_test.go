@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,7 +73,8 @@ func searchRerankEnv(t *testing.T, feats features.Features, embURL string) *EnvM
 	noteB := &appmodel.NoteView{Path: "b.md", PathID: 2, Title: "B", Permalink: "/b"}
 
 	return &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: noteA, URL: noteA.Permalink, Score: 2.0, HighlightedContent: []string{"alpha"}},

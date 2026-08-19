@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/metrics"
@@ -15,10 +16,10 @@ import (
 // federationGraphQLMock extends federationMock with a working GraphQLRequest.
 type federationGraphQLMock struct {
 	federationMock
-	graphqlFunc func(ctx context.Context, params appmodel.FederationGraphQLParams) (appmodel.FederationResult, error)
+	graphqlFunc func(ctx context.Context, params appmodel.MCPGraphQLParams) (appmodel.FederationResult, error)
 }
 
-func (m *federationGraphQLMock) GraphQLRequest(ctx context.Context, params appmodel.FederationGraphQLParams) (appmodel.FederationResult, error) {
+func (m *federationGraphQLMock) GraphQLRequest(ctx context.Context, params appmodel.MCPGraphQLParams) (appmodel.FederationResult, error) {
 	if m.graphqlFunc == nil {
 		panic("unexpected GraphQLRequest call")
 	}
@@ -37,6 +38,7 @@ func buildFedGQLEnvMock(t *testing.T, federatedEnabled bool, clientFactory func(
 	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(kbNote)}
 
 	return &EnvMock{
+		FederatedFanoutTimeoutFunc:  func() time.Duration { return 2 * time.Second },
 		LatestNoteViewsFunc:         func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:             func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc:        clientFactory,
@@ -134,11 +136,11 @@ func TestGraphQLRequest_FedAuthFlagOff_MethodNotFound(t *testing.T) {
 // TestFederatedGraphQLRequest_SenderForwardsViaClient: flag on + valid query →
 // callFederatedSingleKB invoked, client.GraphQLRequest called with correct KBID/query/variables.
 func TestFederatedGraphQLRequest_SenderForwardsViaClient(t *testing.T) {
-	var gotParams appmodel.FederationGraphQLParams
+	var gotParams appmodel.MCPGraphQLParams
 	clientCalled := false
 
 	federation := &federationGraphQLMock{
-		graphqlFunc: func(_ context.Context, params appmodel.FederationGraphQLParams) (appmodel.FederationResult, error) {
+		graphqlFunc: func(_ context.Context, params appmodel.MCPGraphQLParams) (appmodel.FederationResult, error) {
 			clientCalled = true
 			gotParams = params
 			return appmodel.FederationResult{

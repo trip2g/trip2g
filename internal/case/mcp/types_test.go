@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"trip2g/internal/model"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,7 +50,7 @@ func TestSearchResultItemFederationJSON(t *testing.T) {
 }
 
 func TestFederatedArgumentsJSON(t *testing.T) {
-	search := FederatedSearchArguments{
+	search := model.MCPSearchParams{
 		Query: "design notes",
 		KBID:  "bob",
 		KBIDs: []string{"bob", "github"},
@@ -58,12 +60,12 @@ func TestFederatedArgumentsJSON(t *testing.T) {
 	require.NoError(t, err)
 	require.JSONEq(t, `{"query":"design notes","kb_id":"bob","kb_ids":["bob","github"]}`, string(data))
 
-	similar := FederatedSimilarArguments{KBID: "bob", PID: 10, Limit: 3}
+	similar := model.MCPSimilarParams{KBID: "bob", PID: model.PID{Value: 10}, Limit: 3}
 	data, err = json.Marshal(similar)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"kb_id":"bob","pid":10,"limit":3}`, string(data))
 
-	html := FederatedNoteHTMLArguments{KBID: "bob", MatchID: "m1"}
+	html := model.MCPNoteHTMLParams{KBID: "bob", MatchID: "m1"}
 	data, err = json.Marshal(html)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"kb_id":"bob","match_id":"m1"}`, string(data))

@@ -218,6 +218,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -302,6 +309,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
@@ -531,6 +545,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -651,6 +672,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
@@ -886,6 +914,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -970,6 +1005,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
@@ -1162,7 +1204,7 @@ HTTP 200 application/json
   "id": 3,
   "error": {
     "code": -32602,
-    "message": "Invalid search arguments: json: cannot unmarshal number into Go struct field SearchArguments.query of type string"
+    "message": "Invalid search arguments: json: cannot unmarshal number into Go struct field MCPSearchParams.query of type string"
   }
 }
 
@@ -1348,6 +1390,60 @@ HTTP 200 application/json
   }
 }
 
+### call_expand_leading_h1
+HTTP 200 application/json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Книга 10 — \"top level\", 2 subsection(s):\n- 1 — Душа моя, ужели ты никогда не будешь доброй и простой?\n- 2 — Замечай, чего требует твоя природа.\n"
+      }
+    ],
+    "structuredContent": {
+      "note_id": 20,
+      "note_path": "aphorisms.md",
+      "children": [
+        {
+          "title": "1",
+          "level": 2,
+          "path": [
+            "1"
+          ],
+          "has_children": false,
+          "preview": "Душа моя, ужели ты никогда не будешь доброй и простой?"
+        },
+        {
+          "title": "2",
+          "level": 2,
+          "path": [
+            "2"
+          ],
+          "has_children": false,
+          "preview": "Замечай, чего требует твоя природа."
+        }
+      ]
+    }
+  }
+}
+
+### call_note_html_h1_shortened_toc_path
+HTTP 200 application/json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "\u003ch2 id=\"one\"\u003e1\u003c/h2\u003e\u003cp\u003eДуша моя, ужели ты никогда не будешь доброй и простой?\u003c/p\u003e"
+      }
+    ]
+  }
+}
+
 ### call_federated_search
 HTTP 200 application/json
 {
@@ -1461,6 +1557,7 @@ HTTP 200 application/json
       "results": [
         {
           "title": "Peer Note",
+          "kb_id": "peer",
           "note_id": 1,
           "note_path": "peer.md",
           "href": "/peer",
@@ -1741,6 +1838,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -1825,6 +1929,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
@@ -2054,6 +2165,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -2138,6 +2256,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",
@@ -2378,6 +2503,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -2462,6 +2594,13 @@ HTTP 200 application/json
           "type": "object"
         },
         "name": "guide"
+      },
+      {
+        "description": "Instructions",
+        "inputSchema": {
+          "type": "object"
+        },
+        "name": "instructions"
       },
       {
         "description": "Read a note. Canonical calls, copying fields verbatim from a search result: search(query) -> note_html(path=<result.note_path>) reads the whole note; search(query) -> note_html(match_id=<match.match_id>) reads just the focused chunk around a hit (cheaper, targeted); expand(path=<result.note_path>, toc_path=[...]) -> note_html(path=<result.note_path>, toc_path=[...]) reads one exact section. Only pass pid/note_id if you already copied that exact integer from a result's note_id field — never invent one. path is a string like \"concepts/x.md\"; match_id is \"p<pid>:c<chunk>\"; a value like \":\" or \"/hub/goethe.md\" is a PATH, not a note_id.",

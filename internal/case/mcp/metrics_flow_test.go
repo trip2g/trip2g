@@ -92,7 +92,7 @@ func withFederationEnv(env *EnvMock) {
 	env.LatestNoteViewsFunc = func() *appmodel.NoteViews { return nvs }
 	env.FederationClientFunc = func(_ context.Context, _ string) (appmodel.Federation, error) {
 		return &federationMock{
-			searchFunc: func(_ context.Context, _ appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+			searchFunc: func(_ context.Context, _ appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 				return appmodel.FederationResult{Content: []appmodel.FederationContent{{Type: "text", Text: "remote"}}}, nil
 			},
 		}, nil

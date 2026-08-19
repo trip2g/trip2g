@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/fedinstr"
@@ -53,9 +54,10 @@ func TestFederatedInstructionsDirectPeer(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
-		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
-		CanReadNoteFunc:     func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
+		CanReadNoteFunc:            func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
 			require.Equal(t, "bob", kbID)
 			return federation, nil
@@ -75,7 +77,7 @@ func TestFederatedInstructionsNestedForwards(t *testing.T) {
 	cache := fedinstr.New()
 	var gotKBID string
 	federation := &federationMock{
-		federatedInstructionsFunc: func(_ context.Context, params appmodel.FederationInstructionsParams) (appmodel.FederationResult, error) {
+		federatedInstructionsFunc: func(_ context.Context, params appmodel.MCPInstructionsParams) (appmodel.FederationResult, error) {
 			gotKBID = params.KBID
 			return appmodel.FederationResult{
 				Content: []appmodel.FederationContent{{Type: "text", Text: "nietzsche's guidance"}},
@@ -83,9 +85,10 @@ func TestFederatedInstructionsNestedForwards(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
-		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
-		CanReadNoteFunc:     func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
+		CanReadNoteFunc:            func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 		FederationClientFunc: func(_ context.Context, kbID string) (appmodel.Federation, error) {
 			require.Equal(t, "bob", kbID)
 			return federation, nil
@@ -107,6 +110,7 @@ func TestFederatedInstructionsRespectsMaxDepth(t *testing.T) {
 	cache := fedinstr.New()
 	federation := &federationMock{} // must never be called: depth is rejected up front
 	env := &EnvMock{
+		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
@@ -135,6 +139,7 @@ func TestFederatedInstructionsCacheHitSkipsForward(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
@@ -163,6 +168,7 @@ func TestFederatedInstructionsCacheConcurrent(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
@@ -196,6 +202,7 @@ func TestFederatedInstructionsUnknownKBID(t *testing.T) {
 	nvs := fedInstrNoteViews()
 	cache := fedinstr.New()
 	env := &EnvMock{
+		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
@@ -211,7 +218,8 @@ func TestFederatedInstructionsUnknownKBID(t *testing.T) {
 }
 
 func TestFederatedInstructionsRequiresKBID(t *testing.T) {
-	env := &EnvMock{MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
+	env := &EnvMock{
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second }, MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
 	resp := callFederatedInstructions(t, env, `{}`)
 	require.NotNil(t, resp.Error)
 	require.Equal(t, mcp.ErrCodeInvalidParams, resp.Error.Code)

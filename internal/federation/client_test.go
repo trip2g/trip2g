@@ -50,17 +50,17 @@ func TestClientCallsSixFederationTools(t *testing.T) {
 		Depth:  1,
 	}, &fasthttp.Client{}, false)
 
-	_, err := client.Search(context.Background(), model.FederationSearchParams{Query: "q"})
+	_, err := client.Search(context.Background(), model.MCPSearchParams{Query: "q"})
 	require.NoError(t, err)
-	_, err = client.Similar(context.Background(), model.FederationSimilarParams{PID: 1})
+	_, err = client.Similar(context.Background(), model.MCPSimilarParams{PID: model.PID{Value: 1}})
 	require.NoError(t, err)
-	_, err = client.NoteHTML(context.Background(), model.FederationNoteHTMLParams{PID: 1})
+	_, err = client.NoteHTML(context.Background(), model.MCPNoteHTMLParams{PID: model.PID{Value: 1}})
 	require.NoError(t, err)
-	_, err = client.FederatedSearch(context.Background(), model.FederationSearchParams{Query: "q", KBID: "deep"})
+	_, err = client.FederatedSearch(context.Background(), model.MCPSearchParams{Query: "q", KBID: "deep"})
 	require.NoError(t, err)
-	_, err = client.FederatedSimilar(context.Background(), model.FederationSimilarParams{KBID: "deep", PID: 1})
+	_, err = client.FederatedSimilar(context.Background(), model.MCPSimilarParams{KBID: "deep", PID: model.PID{Value: 1}})
 	require.NoError(t, err)
-	result, err := client.FederatedNoteHTML(context.Background(), model.FederationNoteHTMLParams{KBID: "deep", PID: 1})
+	result, err := client.FederatedNoteHTML(context.Background(), model.MCPNoteHTMLParams{KBID: "deep", PID: model.PID{Value: 1}})
 	require.NoError(t, err)
 
 	require.Equal(t, []string{

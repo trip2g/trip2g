@@ -176,7 +176,7 @@ func TestPersonalTokenAdminSeesAllKBNotes(t *testing.T) {
 	env.FederationClientFunc = func(_ context.Context, kbID string) (appmodel.Federation, error) {
 		federationQueriedKBIDs = append(federationQueriedKBIDs, kbID)
 		return &federationMock{
-			searchFunc: func(_ context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+			searchFunc: func(_ context.Context, params appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 				return appmodel.FederationResult{Content: []appmodel.FederationContent{{Type: "text", Text: "ok"}}}, nil
 			},
 		}, nil
@@ -224,7 +224,7 @@ func TestPersonalTokenNonAdminKBNoteFiltered(t *testing.T) {
 	env.FederationClientFunc = func(_ context.Context, kbID string) (appmodel.Federation, error) {
 		queriedKBIDs = append(queriedKBIDs, kbID)
 		return &federationMock{
-			searchFunc: func(_ context.Context, _ appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+			searchFunc: func(_ context.Context, _ appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 				return appmodel.FederationResult{Content: []appmodel.FederationContent{{Type: "text", Text: "ok"}}}, nil
 			},
 		}, nil
@@ -356,7 +356,7 @@ func TestFederationPathDepthEarlyReject(t *testing.T) {
 		env.FederationMaxDepthFunc = func() int { return maxDepth }
 		env.FederationClientFunc = func(context.Context, string) (appmodel.Federation, error) {
 			*outboundCalls++
-			ok := func(context.Context, appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+			ok := func(context.Context, appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 				return appmodel.FederationResult{Content: []appmodel.FederationContent{{Type: "text", Text: "ok"}}}, nil
 			}
 			return &federationMock{searchFunc: ok, federatedSearchFunc: ok}, nil

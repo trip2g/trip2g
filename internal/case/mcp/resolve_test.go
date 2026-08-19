@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/features"
@@ -22,8 +23,9 @@ type Env interface {
 func TestResolve(t *testing.T) {
 	t.Run("initialize returns server info", func(t *testing.T) {
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{},
@@ -60,8 +62,9 @@ func TestResolve(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{note},
@@ -112,8 +115,9 @@ soul_profile:
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{note},
@@ -144,8 +148,9 @@ soul_profile:
 
 	t.Run("tools/list returns static tools", func(t *testing.T) {
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{},
@@ -195,8 +200,9 @@ soul_profile:
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{note},
@@ -255,8 +261,9 @@ soul_profile:
 			Content:        []byte("RU instructions"),
 		}
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{List: []*appmodel.NoteView{en, ru}, PathMap: map[string]*appmodel.NoteView{}}
 			},
@@ -281,7 +288,8 @@ soul_profile:
 	})
 
 	t.Run("method not found returns error", func(t *testing.T) {
-		env := &EnvMock{MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
+		env := &EnvMock{
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second }, MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
 
 		req := mcp.Request{
 			JSONRPC: "2.0",
@@ -298,8 +306,9 @@ soul_profile:
 
 	t.Run("invalid call params returns error", func(t *testing.T) {
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List:    []*appmodel.NoteView{},
@@ -329,7 +338,8 @@ soul_profile:
 	// A notification carries no id and gets no JSON-RPC response at all: the
 	// transport answers 202 Accepted with an empty body, per the MCP spec.
 	t.Run("notifications/initialized returns no response body", func(t *testing.T) {
-		env := &EnvMock{MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
+		env := &EnvMock{
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second }, MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
 
 		// A notification carries no id, so none is sent here.
 		req := mcp.Request{
@@ -353,8 +363,9 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
@@ -432,8 +443,9 @@ func TestExpandReturnsDirectChildren(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return &appmodel.NoteViews{
 				List:    []*appmodel.NoteView{note},
@@ -489,8 +501,9 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
@@ -561,8 +574,9 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: federationNote, URL: federationNote.Permalink, Score: 2},
@@ -627,8 +641,9 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: privateNote, URL: privateNote.Permalink, Score: 2},
@@ -678,9 +693,10 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 
 func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
 	env := &EnvMock{
-		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc:      func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
-		LatestNoteViewsFunc: appmodel.NewNoteViews,
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		LatestNoteViewsFunc:        appmodel.NewNoteViews,
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
 		},
@@ -733,8 +749,9 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: systemNote, URL: systemNote.Permalink, Score: 3},
@@ -795,8 +812,9 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 	}
 
 	env := &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: note,
@@ -854,8 +872,9 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 
 func noteHTMLEnv(note *appmodel.NoteView) *EnvMock {
 	return &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			noteViews := appmodel.NewNoteViews()
 			noteViews.RegisterNote(note)
@@ -878,8 +897,9 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					PathMap: map[string]*appmodel.NoteView{
@@ -926,8 +946,9 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -970,8 +991,9 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1039,8 +1061,9 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1146,8 +1169,9 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1191,8 +1215,9 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1238,8 +1263,9 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1386,8 +1412,9 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				noteViews := appmodel.NewNoteViews()
 				noteViews.RegisterNote(note)
@@ -1419,8 +1446,9 @@ func TestHandleNoteHtml(t *testing.T) {
 
 	t.Run("returns error for non-existent note", func(t *testing.T) {
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					PathMap: map[string]*appmodel.NoteView{},
@@ -1478,8 +1506,9 @@ func TestSimilarAcceptsPIDAndReturnsStructuredContent(t *testing.T) {
 	noteViews.List = []*appmodel.NoteView{sourceNote, similarNote}
 
 	env := &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		FeaturesFunc: func() features.Features {
 			return features.Features{
 				VectorSearch: features.VectorSearchConfig{Enabled: true},
@@ -1543,8 +1572,9 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List: []*appmodel.NoteView{note},
@@ -1585,8 +1615,9 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List: []*appmodel.NoteView{note},
@@ -1627,8 +1658,9 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List: []*appmodel.NoteView{note},
@@ -1670,8 +1702,9 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					List: []*appmodel.NoteView{note},
@@ -1710,8 +1743,9 @@ func TestStripFrontmatter(t *testing.T) {
 func TestHandleSimilarLimitValidation(t *testing.T) {
 	t.Run("uses default when limit is zero", func(t *testing.T) {
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					PathMap: map[string]*appmodel.NoteView{
@@ -1762,8 +1796,9 @@ func TestHandleSimilarLimitValidation(t *testing.T) {
 
 	t.Run("caps limit at maximum", func(t *testing.T) {
 		env := &EnvMock{
-			MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-			SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 				return &appmodel.NoteViews{
 					PathMap: map[string]*appmodel.NoteView{
@@ -1827,8 +1862,9 @@ func makeSearchNote(pathID int64, path, title string) *appmodel.NoteView {
 func makeSearchEnv(t *testing.T, results []appmodel.SearchResult) *EnvMock {
 	t.Helper()
 	return &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
-		SiteConfigFunc: func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return results, nil
 		},

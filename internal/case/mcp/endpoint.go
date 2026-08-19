@@ -401,10 +401,10 @@ Send POST requests with a JSON-RPC 2.0 body and these headers:
 
 Public access: no token required for open knowledge bases.
 
-Authentication (required for private/subscriber-only content):
-  Authorization: Bearer t2g_<your-token>
-  ?token=t2g_<your-token>
-  X-API-Key: <your-api-key>
+Authentication (required for private/subscriber-only content), any one of:
+  header       Authorization: Bearer t2g_<your-token>
+  query param  ?token=t2g_<your-token>
+  header       X-API-Key: <your-api-key>
 
 Get a personal token: your account → Tokens → Generate token.
 
@@ -431,11 +431,20 @@ Client config (Claude Desktop / Claude Code / Cursor / Copilot / Gemini CLI):
     }
   }
 
+Tools:
+  search, note_html, expand, similar — search this base and read it, whole notes
+    or one section at a time (toc_path), or one chunk (match_id).
+  federated_search, federated_note_html, federated_expand, federated_similar,
+    federated_instructions — the same against a connected peer base, addressed by
+    kb_id; nested bases are addressed <hub>/<base>.
+
 Extend MCP via note frontmatter:
   mcp_method: <name>    — expose a note as an MCP tool; the note's content becomes
                           the tool's response.
-  mcp_method: initialize — default method shown when an agent requests tool info.
-                           Override which note handles it via ?method=<note-path>.
+  mcp_method: initialize — the note whose content is returned in the instructions
+                           field of the initialize response. This does not
+                           override the JSON-RPC initialize method itself. Pick a
+                           different note with ?method=<note-path>.
 Read more in the docs.
 
 Docs: https://trip2g.com/en/user/mcp
