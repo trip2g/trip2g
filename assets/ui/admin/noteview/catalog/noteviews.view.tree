@@ -2,6 +2,8 @@ $trip2g_admin_noteview_catalog $trip2g_admin_catalog
 	menu_title @ \Note Views
 	menu_filter_enabled true
 	param \path
+	actions /
+		<= ReembedButton $trip2g_admin_noteview_button_reembed
 	Empty $mol_status
 	Content* $trip2g_admin_noteview_show
 		noteview_id <= row_id* \

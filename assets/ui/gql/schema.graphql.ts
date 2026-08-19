@@ -642,6 +642,7 @@ export type AdminMutation = {
   refreshBoostyData: RefreshBoostyDataOrErrorPayload;
   refreshPatreonData: RefreshPatreonDataOrErrorPayload;
   regenerateCronWebhookSecret: RegenerateCronWebhookSecretOrErrorPayload;
+  regenerateNoteEmbeddings: RegenerateNoteEmbeddingsOrErrorPayload;
   removeExpiredTgChatMembers: RemoveExpiredTgChatMembersOrErrorPayload;
   removeFederationSecretSubgraph: RemoveFederationSecretSubgraphOrErrorPayload;
   renderLayout: RenderLayoutPayload;
@@ -954,6 +955,11 @@ export type AdminMutationrefreshPatreonDataArgs = {
 
 export type AdminMutationregenerateCronWebhookSecretArgs = {
   input: RegenerateCronWebhookSecretInput;
+};
+
+
+export type AdminMutationregenerateNoteEmbeddingsArgs = {
+  input: RegenerateNoteEmbeddingsInput;
 };
 
 
@@ -3413,6 +3419,25 @@ export type RegenerateCronWebhookSecretPayload = {
   __typename?: 'RegenerateCronWebhookSecretPayload';
   cronWebhook: AdminCronWebhook;
   secret: Scalars['String']['output'];
+};
+
+export type RegenerateNoteEmbeddingsInput = {
+  /**
+   * Enqueue every note regardless of whether its stored content hash still
+   * matches. Use after a change to chunking or embedding input that the hash
+   * does not cover — the per-chunk hashes still decide what is actually re-sent
+   * to the model, so unaffected chunks cost nothing.
+   */
+  force?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type RegenerateNoteEmbeddingsOrErrorPayload = ErrorPayload | RegenerateNoteEmbeddingsPayload;
+
+export type RegenerateNoteEmbeddingsPayload = {
+  __typename?: 'RegenerateNoteEmbeddingsPayload';
+  enqueued: Scalars['Int']['output'];
+  totalNotes: Scalars['Int']['output'];
+  upToDate: Scalars['Int']['output'];
 };
 
 export type RemoveExpiredTgChatMembersInput = {

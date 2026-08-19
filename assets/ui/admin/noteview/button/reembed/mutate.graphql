@@ -1,0 +1,15 @@
+mutation ($input: RegenerateNoteEmbeddingsInput!) {
+	admin {
+		payload: regenerateNoteEmbeddings(input: $input) {
+			__typename
+			... on RegenerateNoteEmbeddingsPayload {
+				totalNotes
+				enqueued
+				upToDate
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}
