@@ -10,6 +10,7 @@ $trip2g_admin_auditlog_catalog $mol_page
 					sub <= row_content* /
 						<= CreatedAt* $trip2g_admin_labeler_moment
 							title @ \Time
+							format \DD.MM.YYYY hh:mm:ss
 							value <= row_created_at* \created_at
 						<= Row_level_labeler* $mol_labeler
 							title \Level

@@ -22,9 +22,10 @@ namespace $.$$ {
 			return this.row( email ).email
 		}
 
+		// $trip2g_admin_labeler_moment formats the value itself; formatting here
+		// too fed it a rendered date it could not parse back.
 		row_created_at( email: any ): string {
-			const timestamp = this.row( email ).createdAt
-			return new $mol_time_moment( timestamp ).toString( 'DD.MM.YYYY hh:mm:ss' )
+			return this.row( email ).createdAt
 		}
 
 		row_ip( email: any ): string {

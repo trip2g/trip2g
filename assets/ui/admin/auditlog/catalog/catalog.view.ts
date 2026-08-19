@@ -25,9 +25,10 @@ namespace $.$$ {
 			return this.row( id ).id
 		}
 
+		// $trip2g_admin_labeler_moment formats the value itself; formatting here
+		// too fed it a rendered date it could not parse back.
 		row_created_at( id: any ): string {
-			const timestamp = this.row( id ).createdAt
-			return new $mol_time_moment( timestamp ).toString( 'DD.MM.YYYY hh:mm:ss' )
+			return this.row( id ).createdAt
 		}
 
 		row_level( id: any ): string {

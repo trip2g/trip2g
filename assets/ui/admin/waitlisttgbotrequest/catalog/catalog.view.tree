@@ -17,6 +17,7 @@ $trip2g_admin_waitlisttgbotrequest_catalog $trip2g_admin_catalog
 								content <= row_bot_name* \bot_name
 						<= CreatedAt* $trip2g_admin_labeler_moment
 							title @ \Created At
+							format \DD.MM.YYYY hh:mm:ss
 							value <= row_created_at* \created_at
 						<= Row_note_path_labeler* $mol_labeler
 							title \Note Path
