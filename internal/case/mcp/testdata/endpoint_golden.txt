@@ -1369,6 +1369,60 @@ HTTP 200 application/json
   }
 }
 
+### call_expand_leading_h1
+HTTP 200 application/json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Книга 10 — \"top level\", 2 subsection(s):\n- 1 — Душа моя, ужели ты никогда не будешь доброй и простой?\n- 2 — Замечай, чего требует твоя природа.\n"
+      }
+    ],
+    "structuredContent": {
+      "note_id": 20,
+      "note_path": "aphorisms.md",
+      "children": [
+        {
+          "title": "1",
+          "level": 2,
+          "path": [
+            "1"
+          ],
+          "has_children": false,
+          "preview": "Душа моя, ужели ты никогда не будешь доброй и простой?"
+        },
+        {
+          "title": "2",
+          "level": 2,
+          "path": [
+            "2"
+          ],
+          "has_children": false,
+          "preview": "Замечай, чего требует твоя природа."
+        }
+      ]
+    }
+  }
+}
+
+### call_note_html_h1_shortened_toc_path
+HTTP 200 application/json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "\u003ch2 id=\"one\"\u003e1\u003c/h2\u003e\u003cp\u003eДуша моя, ужели ты никогда не будешь доброй и простой?\u003c/p\u003e"
+      }
+    ]
+  }
+}
+
 ### call_federated_search
 HTTP 200 application/json
 {

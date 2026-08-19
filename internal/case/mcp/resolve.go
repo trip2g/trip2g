@@ -748,7 +748,7 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 // topLevelSectionsNudge is the cheap (~30 token) expand-shaped hint returned on
 // a pointer miss instead of the full note.
 func topLevelSectionsNudge(note *model.NoteView) string {
-	children := tocChildren(note.Headings, nil)
+	children := tocChildren(note, nil)
 	if len(children) == 0 {
 		return "the note has no sections; call note_html without toc_path to read the whole note"
 	}
@@ -792,7 +792,7 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
 
-	children := tocChildren(note.Headings, args.TocPath)
+	children := tocChildren(note, args.TocPath)
 	payload := ExpandPayload{
 		NoteID:   note.PathID,
 		NotePath: note.Path,
@@ -821,7 +821,11 @@ func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode
 		if c.HasChildren {
 			marker = " (has subsections)"
 		}
-		fmt.Fprintf(&sb, "- %s%s\n", c.Title, marker)
+		preview := ""
+		if c.Preview != "" {
+			preview = " — " + c.Preview
+		}
+		fmt.Fprintf(&sb, "- %s%s%s\n", c.Title, marker, preview)
 	}
 	return sb.String()
 }

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -95,6 +96,8 @@ func goldenCases() []goldenCase {
 		{name: "call_expand_root", body: call(5, "expand", `{"path":"doc.md"}`)},
 		{name: "call_expand_section", body: call(5, "expand", `{"path":"doc.md","toc_path":["Beta"]}`)},
 		{name: "call_expand_no_selector", body: call(5, "expand", `{}`)},
+		{name: "call_expand_leading_h1", body: call(5, "expand", `{"path":"aphorisms.md"}`)},
+		{name: "call_note_html_h1_shortened_toc_path", body: call(5, "note_html", `{"path":"aphorisms.md","toc_path":["1"]}`)},
 
 		{name: "call_federated_search", body: call(6, "federated_search", `{"query":"alpha"}`)},
 		{name: "call_federated_search_by_kb", body: call(6, "federated_search", `{"query":"alpha","kb_id":"peer"}`)},
@@ -253,6 +256,26 @@ func goldenEnv() *EnvMock {
 			{Text: "Beta", Level: 2, ID: "beta"},
 		},
 	}
+	// Mirrors the real load pipeline for a note that opens with an H1: HasH1 is
+	// set, the H1 heads the Headings list, and its data-header div wraps the
+	// rest of the document. Aphoristic section titles pin the short-heading
+	// previews at the same time.
+	aphorisms := &appmodel.NoteView{
+		Path:      "aphorisms.md",
+		PathID:    20,
+		Title:     "Книга 10",
+		Permalink: "/aphorisms",
+		HasH1:     true,
+		HTML: template.HTML(`<div data-header="Книга 10" data-level="1"><h1 id="kniga">Книга 10</h1>` +
+			`<div data-header="1" data-level="2"><h2 id="one">1</h2><p>Душа моя, ужели ты никогда не будешь доброй и простой?</p></div>` +
+			`<div data-header="2" data-level="2"><h2 id="two">2</h2><p>Замечай, чего требует твоя природа.</p></div></div>`),
+		Content: []byte("# Книга 10\n\n## 1\n\nДуша моя.\n\n## 2\n\nЗамечай.\n"),
+		Headings: appmodel.NoteViewHeadings{
+			{Text: "Книга 10", Level: 1, ID: "kniga"},
+			{Text: "1", Level: 2, ID: "one"},
+			{Text: "2", Level: 2, ID: "two"},
+		},
+	}
 	private := &appmodel.NoteView{
 		Path:      "private.md",
 		PathID:    11,
@@ -292,7 +315,7 @@ func goldenEnv() *EnvMock {
 		MCPFederationKBID:  "peer",
 	}
 
-	notes := []*appmodel.NoteView{doc, private, initNote, guide, codeReview, privateTool, peer}
+	notes := []*appmodel.NoteView{doc, aphorisms, private, initNote, guide, codeReview, privateTool, peer}
 	views := appmodel.NewNoteViews()
 	views.List = notes
 	for _, n := range notes {

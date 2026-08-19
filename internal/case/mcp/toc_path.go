@@ -24,6 +24,25 @@ type TOCItem struct {
 
 const htmlDivElement = "div"
 
+// navigableHeadings drops the leading H1 when the note opens with one: that H1
+// is the note's title and the template renders it in place of its own, so
+// leaving it in the TOC costs an agent a whole expand call on a single node
+// that only repeats the title. A second or later H1 is a real section and stays.
+//
+// Levels are left exactly as parsed. Renumbering them would mean reslicing
+// note.Headings, whose backing array is shared by every other reader of the
+// note cache.
+func navigableHeadings(note *model.NoteView) model.NoteViewHeadings {
+	if note == nil {
+		return nil
+	}
+	h := note.Headings
+	if note.HasH1 && len(h) > 0 && h[0].Level == 1 {
+		return h[1:]
+	}
+	return h
+}
+
 // buildNoteTOC builds a flat TOC list with full hierarchical paths from NoteViewHeadings.
 // Handles repeated heading names by including the full ancestor chain in Path.
 func buildNoteTOC(headings model.NoteViewHeadings) []TOCItem {
@@ -513,8 +532,8 @@ func firstSectionPath(noteHTML string) []string {
 // An empty parentPath returns the top-level sections. Each child reports whether it
 // has children of its own, so an agent can walk the tree level by level (expand)
 // without loading the note's content or its full flat TOC.
-func tocChildren(headings model.NoteViewHeadings, parentPath []string) []TOCNode {
-	all := buildNoteTOC(headings)
+func tocChildren(note *model.NoteView, parentPath []string) []TOCNode {
+	all := buildNoteTOC(navigableHeadings(note))
 	out := make([]TOCNode, 0)
 	for _, item := range all {
 		if len(item.Path) != len(parentPath)+1 || !tocPathHasPrefix(item.Path, parentPath) {
@@ -527,7 +546,71 @@ func tocChildren(headings model.NoteViewHeadings, parentPath []string) []TOCNode
 			HasChildren: tocHasDirectChild(all, item.Path),
 		})
 	}
+	addSectionPreviews(note, out)
 	return out
+}
+
+// shortHeadingRunes is the length below which a heading carries no meaning of
+// its own. Corpora of aphorisms number their sections ("1", "2", ... "39"), so
+// the TOC an agent navigates by is structurally correct and semantically empty.
+// Counted in runes: "Книга 10" is 8 runes but 15 bytes, and a byte threshold
+// would skip a preview exactly where it is needed.
+const shortHeadingRunes = 15
+
+// previewRunes caps a section preview. Enough to tell two aphorisms apart,
+// short enough that a 39-node TOC stays cheap to read.
+const previewRunes = 90
+
+// addSectionPreviews fills Preview on the children whose titles are too short to
+// choose between, with the opening words of the section's own text.
+func addSectionPreviews(note *model.NoteView, children []TOCNode) {
+	if note == nil || len(children) == 0 {
+		return
+	}
+	needed := false
+	for _, c := range children {
+		if utf8.RuneCountInString(c.Title) < shortHeadingRunes {
+			needed = true
+			break
+		}
+	}
+	if !needed {
+		return
+	}
+	doc, err := html.Parse(strings.NewReader(string(note.HTML)))
+	if err != nil {
+		return
+	}
+	for i := range children {
+		if utf8.RuneCountInString(children[i].Title) >= shortHeadingRunes {
+			continue
+		}
+		section := navigateSectionPath(doc, children[i].Path)
+		if section == nil {
+			continue
+		}
+		children[i].Preview = sectionPreview(section, children[i].Title)
+	}
+}
+
+// sectionPreview returns the opening words of a section's text, without the
+// heading the caller already has.
+func sectionPreview(section *html.Node, title string) string {
+	text := strings.TrimSpace(htmlNodeText(section))
+	text = strings.TrimSpace(strings.TrimPrefix(text, title))
+	text = strings.Join(strings.Fields(text), " ")
+	if text == "" {
+		return ""
+	}
+	runes := []rune(text)
+	if len(runes) <= previewRunes {
+		return text
+	}
+	cut := string(runes[:previewRunes])
+	if sp := strings.LastIndexByte(cut, ' '); sp > previewRunes/2 {
+		cut = cut[:sp]
+	}
+	return cut + "…"
 }
 
 // tocPathHasPrefix reports whether path starts with prefix.

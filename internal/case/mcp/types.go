@@ -156,6 +156,9 @@ type TOCNode struct {
 	Level       int      `json:"level"`
 	Path        []string `json:"path"`
 	HasChildren bool     `json:"has_children"`
+	// Preview carries the section's opening words when the title is too short
+	// to choose by ("1", "2", ... in a corpus of aphorisms).
+	Preview string `json:"preview,omitempty"`
 }
 
 type ExpandPayload struct {
