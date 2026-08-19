@@ -43,11 +43,16 @@ RUN pip3 install --no-cache-dir --break-system-packages \
       tzdata
 
 # npm's global prefix is /usr, so modules land in /usr/lib/node_modules, which
-# NODE_PATH points at. CommonJS only — NODE_PATH is not consulted for ESM
-# imports, so ESM-only packages would be unresolvable from a block.
+# NODE_PATH points at for require().
 RUN npm install -g --loglevel=error \
       axios cheerio zod dayjs lodash \
       jsonwebtoken csv-parse axios-retry pg qs
+
+# NODE_PATH covers require() but is never consulted for ESM import. Node instead
+# walks up from the script looking for node_modules, and a block runs from a
+# temp dir under /tmp — so this symlink is what lets `import` resolve the same
+# packages. Landlock allows it: the resolved path is /usr/lib/node_modules.
+RUN ln -s /usr/lib/node_modules /tmp/node_modules
 
 # The system CA store lives in /etc, which the sandbox denies; curl/git/openssl
 # read this copy instead via SSL_CERT_FILE/CURL_CA_BUNDLE/GIT_SSL_CAINFO.

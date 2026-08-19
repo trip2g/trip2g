@@ -121,6 +121,13 @@ require("axios").get("https://api.github.com/zen", {timeout: 30000})
   .catch(e => console.log(JSON.stringify({changes: [], answer: "error=" + e.message})));
 ''', lambda a: a == "status=200"),
 
+    # ESM ignores NODE_PATH; this resolves only via the /tmp/node_modules symlink.
+    ("node esm import resolves", "node", '''
+import _ from "lodash";
+import { z } from "zod";
+console.log(JSON.stringify({changes: [], answer: "esm lodash=" + _.VERSION + " zod=" + (typeof z.string === "function")}));
+''', lambda a: a.startswith("esm lodash=") and a.endswith("zod=true")),
+
     ("cli tools present", "bash", '''
 missing=""
 for t in jq curl mlr sqlite3 openssl rg git gh unzip xz dig nc yq file gawk wget; do

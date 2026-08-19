@@ -58,11 +58,35 @@ Not installed on purpose: `pandas`/`numpy` (~120 MB for work the `csv` module an
 
 ### Node.js
 
-Installed globally into `/usr/lib/node_modules`, reachable via `NODE_PATH`.
+Installed globally into `/usr/lib/node_modules`. **Both `require` and `import`
+work** — write whichever.
 
-**Write CommonJS (`require`).** `NODE_PATH` is not consulted for ESM `import`, so
-`import` of a global package fails with `ERR_MODULE_NOT_FOUND`. This is also why
-ESM-only packages (`p-retry` >= 5, `got`, `node-fetch` v3) are absent.
+The details behind that, since they are easy to break:
+
+- A block is written to `run.js` in a temp dir and executed as `node run.js`;
+  the fence tag picks the interpreter, the `ext` field names the file. For node
+  the extension is load-bearing, because it selects the module system: `.mjs` is
+  always ESM, `.cjs` always CommonJS, `.js` depends on the nearest
+  `package.json` — and there is none in a temp dir.
+- That would make `.js` CommonJS, except Node 20.19+ **detects ESM syntax** in
+  `.js` and switches by itself. So a block using `import` or top-level `await`
+  runs as ESM with no flag and no separate fence tag. No node flag can do this
+  for a file: `--input-type=module` applies only to `-e` and stdin.
+- Resolution is the part that does not follow automatically. `NODE_PATH`
+  (set for the node interpreter in `interpreters.json`) is consulted **only** by
+  `require`; ESM ignores it entirely and instead walks up from the script
+  looking for `node_modules`. `Dockerfile.codellm` symlinks
+  `/tmp/node_modules` → `/usr/lib/node_modules` so that walk succeeds, since a
+  block always runs from a temp dir under `/tmp`. Landlock permits it because
+  the resolved path is in the read-only allowlist.
+- Consequence when changing any of this: dropping the symlink silently breaks
+  every `import` with `ERR_MODULE_NOT_FOUND` while `require` keeps working, and
+  moving `TMPDIR` off `/tmp` does the same. `scripts/test-codellm-sandbox.sh`
+  covers both syntaxes so the break surfaces.
+
+ESM-only packages are still avoided in the list below — not for resolution
+reasons any more, but because a CommonJS-capable package works under both
+syntaxes and an ESM-only one does not.
 
 | Package | What it is for |
 |---------|----------------|
