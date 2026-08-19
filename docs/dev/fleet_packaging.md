@@ -18,19 +18,29 @@ Run trip2g normally; run the fleet from the same image by overriding the command
 services:
   trip2g:
     image: ghcr.io/trip2g/trip2g:latest        # CMD ["/trip2g"]
+    environment:
+      - OWNER_PERSONAL_TOKEN_VALUE=t2g_...     # seeded for the owner at boot
   fleet:
     image: ghcr.io/trip2g/trip2g:latest
     command: ["/fleet"]
     environment:
       - TRIP2G_FLEET_TRIP2G_URL=http://trip2g:20081
       - TRIP2G_FLEET_CALLBACK_URL=http://fleet:9090
-      - TRIP2G_FLEET_JWT_SECRET=...            # = the app's JWT secret
+      - TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN=t2g_...  # = OWNER_PERSONAL_TOKEN_VALUE
       - TRIP2G_FLEET_LLM_BASE_URL=...
       - TRIP2G_FLEET_LLM_API_KEY=...
       # ... see cmd/fleet flags; every flag has a TRIP2G_FLEET_<NAME> env
 ```
 
 trip2g stays a dumb event source; the fleet reconciles its own webhooks against it. One image is the whole unit.
+
+The fleet holds no signing secret. Its one credential is a trip2g personal
+token: set the same value on both services, and the app seeds the matching
+`user_tokens` row for the owner at boot under the name
+`system: seeded by OWNER_PERSONAL_TOKEN_VALUE`. Rotating means a new value and
+a restart — the same pass revokes the row the old value carried. Revoking the
+row in the admin UI stops the fleet without a restart, and a restart does not
+bring it back: the way back is a new value.
 
 ## Enabling `executor: code`
 
