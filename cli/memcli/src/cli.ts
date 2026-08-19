@@ -94,6 +94,7 @@ export interface ServerEnv {
   PUBLIC_URL: string;
   JWT_SECRET: string;
   DATA_ENCRYPTION_KEY: string;
+  OWNER_PERSONAL_TOKEN_VALUE: string;
   STORAGE_BACKEND: string;
   STORAGE_LOCAL_DIR: string;
   FEATURES?: string;
@@ -774,9 +775,10 @@ export function buildServerEnv(opts: {
   email: string;
   secret: string;
   encryptionKey: string;
+  ownerPersonalToken: string;
   features?: string;
 }): ServerEnv {
-  const { port, iport, email, secret, encryptionKey } = opts;
+  const { port, iport, email, secret, encryptionKey, ownerPersonalToken } = opts;
   const env: ServerEnv = {
     LISTEN_ADDR: `0.0.0.0:${port}`,
     INTERNAL_LISTEN_ADDR: `:${iport}`,
@@ -785,6 +787,7 @@ export function buildServerEnv(opts: {
     PUBLIC_URL: `http://localhost:${port}`,
     JWT_SECRET: secret,
     DATA_ENCRYPTION_KEY: encryptionKey,
+    OWNER_PERSONAL_TOKEN_VALUE: ownerPersonalToken,
     STORAGE_BACKEND: 'local',
     STORAGE_LOCAL_DIR: '/data/storage',
   };
@@ -811,6 +814,7 @@ export function buildDockerRunArgs(opts: {
   email: string;
   secret: string;
   encryptionKey: string;
+  ownerPersonalToken: string;
   stateDir: string;
   image: string;
   containerName?: string;
@@ -948,6 +952,16 @@ async function gqlRequest<TData, TVariables>(
 // ---------------------------------------------------------------------------
 // Side-effectful helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Mint the value trip2g seeds as the owner's personal token: the credential a
+ * fleet host authenticates with (`--trip2g-admin-personal-token`). Shape
+ * matches personaltoken.Generate() — the `t2g_` prefix the resolver routes on,
+ * then 64 alphanumerics.
+ */
+export function generateOwnerPersonalToken(): string {
+  return 't2g_' + crypto.randomBytes(32).toString('hex');
+}
 
 function readEnvFile(envFile: string): Record<string, string> {
   if (!fs.existsSync(envFile)) return {};
@@ -2016,8 +2030,10 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
 
   let secret: string;
   let encryptionKey: string;
+  let ownerPersonalToken: string;
   const existingEnv = dryRun ? {} : readEnvFile(envFile);
-  const needsWrite = !existingEnv.JWT_SECRET || !existingEnv.DATA_ENCRYPTION_KEY;
+  const needsWrite =
+    !existingEnv.JWT_SECRET || !existingEnv.DATA_ENCRYPTION_KEY || !existingEnv.OWNER_PERSONAL_TOKEN_VALUE;
   if (existingEnv.JWT_SECRET) {
     secret = existingEnv.JWT_SECRET;
     console.log('Reusing existing JWT_SECRET from state dir.');
@@ -2031,11 +2047,26 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
     // AES-256 requires a 32-byte key; hex-encoding 16 random bytes yields 32 ASCII chars
     encryptionKey = crypto.randomBytes(16).toString('hex');
   }
+  if (existingEnv.OWNER_PERSONAL_TOKEN_VALUE) {
+    ownerPersonalToken = existingEnv.OWNER_PERSONAL_TOKEN_VALUE;
+    console.log('Reusing existing OWNER_PERSONAL_TOKEN_VALUE from state dir.');
+  } else {
+    ownerPersonalToken = generateOwnerPersonalToken();
+  }
   if (!dryRun && needsWrite) {
-    writeEnvFile(envFile, { JWT_SECRET: secret, DATA_ENCRYPTION_KEY: encryptionKey });
+    // The whole file is rewritten, so every value goes in — the two reused
+    // above included, or `up` would drop them.
+    writeEnvFile(envFile, {
+      JWT_SECRET: secret,
+      DATA_ENCRYPTION_KEY: encryptionKey,
+      OWNER_PERSONAL_TOKEN_VALUE: ownerPersonalToken,
+    });
     console.log('Generated secrets and wrote to state dir.');
   } else if (dryRun && needsWrite) {
-    console.log('[dry-run] Would generate JWT_SECRET and DATA_ENCRYPTION_KEY and write to', envFile);
+    console.log(
+      '[dry-run] Would generate JWT_SECRET, DATA_ENCRYPTION_KEY and OWNER_PERSONAL_TOKEN_VALUE and write to',
+      envFile,
+    );
   }
 
   if (!dryRun && !containerRunning && (await isPortBusy(port, flags.host))) {
@@ -2065,7 +2096,7 @@ async function cmdUp(flags: Flags, dryRun: boolean): Promise<void> {
   }
 
   const dockerArgs = buildDockerRunArgs({
-    port, iport, host: flags.host, email, secret, encryptionKey, stateDir, image, containerName: name,
+    port, iport, host: flags.host, email, secret, encryptionKey, ownerPersonalToken, stateDir, image, containerName: name,
     ...(embedded ? {
       network: netName,
       features: buildFeaturesJson(embName, flags.reranker),
