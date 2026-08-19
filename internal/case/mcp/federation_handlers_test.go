@@ -424,3 +424,54 @@ func TestFederatedCallsForwardEveryArgument(t *testing.T) {
 	call("federated_similar", `{"kb_id":"nietzsche","path":"a.md","limit":3}`)
 	require.Equal(t, 3, similar.Limit)
 }
+
+// TestFederatedSingleKBCallTimesOut pins the deadline on the single-KB hop. Only
+// the fan-out path was bounded, so a peer that accepted the connection and never
+// answered left the agent waiting on a tool that never returned — worse for it
+// than a fast failure.
+func TestFederatedSingleKBCallTimesOut(t *testing.T) {
+	kbNote := &appmodel.NoteView{
+		PathID:             17,
+		MCPFederationKBURL: "https://bob.example/_system/mcp",
+		MCPFederationKBID:  "nietzsche",
+	}
+	nvs := appmodel.NewNoteViews()
+	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(kbNote)}
+
+	federation := &federationMock{
+		noteHTMLFunc: func(ctx context.Context, _ appmodel.MCPNoteHTMLParams) (appmodel.FederationResult, error) {
+			<-ctx.Done() // a peer that never answers
+			return appmodel.FederationResult{}, ctx.Err()
+		},
+	}
+	env := &EnvMock{
+		FederationMaxDepthFunc:     func() int { return 3 },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 50 * time.Millisecond },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
+		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+			return true, nil
+		},
+		FederationClientFunc: func(_ context.Context, _ string) (appmodel.Federation, error) {
+			return federation, nil
+		},
+	}
+
+	paramsJSON, err := json.Marshal(mcp.CallToolParams{
+		Name:      "federated_note_html",
+		Arguments: json.RawMessage(`{"kb_id":"nietzsche","path":"a.md"}`),
+	})
+	require.NoError(t, err)
+
+	done := make(chan mcp.Response, 1)
+	go func() {
+		done <- callMCP(t, env, mcp.Request{JSONRPC: "2.0", Method: "tools/call", Params: paramsJSON, ID: 1})
+	}()
+
+	select {
+	case resp := <-done:
+		require.NotNil(t, resp.Error, "an unanswered peer must surface as an error, not a result")
+	case <-time.After(5 * time.Second):
+		t.Fatal("federated_note_html did not return: the single-KB hop is unbounded")
+	}
+}

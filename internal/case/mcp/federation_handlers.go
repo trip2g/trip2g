@@ -126,20 +126,21 @@ func federatedSingleKBResult(
 		resp := federationNotConfiguredResponse(id, kbID)
 		return model.FederationResult{}, &resp
 	}
-	client, err := env.FederationClient(ctx, kb.ID)
-	if err != nil {
-		// A client that can't be built is still a failed outbound attempt,
-		// same as on the fan-out path.
-		metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
-		resp := errorResponse(id, ErrCodeInternal, err.Error())
-		return model.FederationResult{}, &resp
-	}
-	result, err := call(client, rest)
+	// Bound the hop like the fan-out path does. Without a deadline a peer that
+	// accepts the connection and never answers leaves the agent waiting on a
+	// tool that never returns, which is worse for it than a fast failure.
+	result, err := callPeer(ctx, env, kb.ID, env.FederatedFanoutTimeout(),
+		func(ctx context.Context, client model.Federation) (model.FederationResult, error) {
+			return call(client, rest)
+		})
 	metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 	if err != nil {
 		resp := errorResponse(id, ErrCodeInternal, err.Error())
 		return model.FederationResult{}, &resp
 	}
+	// A peer answering "not configured" names the kb_id in its own frame; the
+	// caller must see it in theirs, same as on the fan-out path.
+	rewriteFederatedResponse(kb.ID, &result)
 	return result, nil
 }
 

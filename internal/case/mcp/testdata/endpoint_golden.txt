@@ -1482,6 +1482,7 @@ HTTP 200 application/json
       "results": [
         {
           "title": "Peer Note",
+          "kb_id": "peer",
           "note_id": 1,
           "note_path": "peer.md",
           "href": "/peer",
