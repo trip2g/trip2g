@@ -8005,6 +8005,31 @@ func (q *Queries) UserTokenByHash(ctx context.Context, tokenHash string) (UserTo
 	return i, err
 }
 
+const userTokenByHashAny = `-- name: UserTokenByHashAny :one
+select id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at from user_tokens
+where token_hash = ?
+`
+
+// Unfiltered on purpose: the owner-token seeder must tell a revoked row apart
+// from a missing one, because a revoked row is deliberate and stays revoked.
+func (q *Queries) UserTokenByHashAny(ctx context.Context, tokenHash string) (UserToken, error) {
+	row := q.db.QueryRowContext(ctx, userTokenByHashAny, tokenHash)
+	var i UserToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TokenHash,
+		&i.TokenPrefix,
+		&i.Scope,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.LastUsedAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
 const userTokenByID = `-- name: UserTokenByID :one
 select id, user_id, name, token_hash, token_prefix, scope, created_at, expires_at, last_used_at, revoked_at from user_tokens
 where id = ?

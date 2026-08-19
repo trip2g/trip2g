@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/createusertoken"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/personaltoken"
 )
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg createusertoken_test . Env
@@ -122,4 +123,20 @@ func TestResolveRefusesOnceTheUserHoldsTenActiveTokens(t *testing.T) {
 	errPayload, ok := result.(*model.ErrorPayload)
 	require.True(t, ok, "expected ErrorPayload, got %T", result)
 	require.Equal(t, "token_limit_exceeded", errPayload.Message)
+}
+
+// The reserved name belongs to the OWNER_PERSONAL_TOKEN_VALUE seeder. A person
+// typing it into the form gets a rendered error, not a 500 and not a row that
+// silently displaces the fleet's credential.
+func TestResolveRefusesTheReservedOwnerTokenName(t *testing.T) {
+	env := baseEnv(t)
+
+	result, err := createusertoken.Resolve(context.Background(), env,
+		1, createusertoken.Input{Name: personaltoken.ReservedOwnerTokenName})
+	require.NoError(t, err)
+
+	payload, ok := result.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload, got %T", result)
+	require.Equal(t, "reserved_name", payload.Message)
+	require.Empty(t, env.InsertUserTokenCalls(), "nothing may be minted under the reserved name")
 }
