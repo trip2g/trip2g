@@ -7,11 +7,6 @@ namespace $.$$ {
 				grow: 1,
 			},
 		},
-		Page: {
-			flex: {
-				grow: 1,
-			},
-		},
 		Row: {
 			border: {
 				bottom: {

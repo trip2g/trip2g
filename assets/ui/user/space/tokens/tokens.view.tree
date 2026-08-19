@@ -1,5 +1,6 @@
 $trip2g_user_space_tokens $mol_page
-	title @ \Tokens
+	menu_title @ \Tokens
+	title @ \Personal access tokens
 	tools /
 		<= AddLink $mol_link
 			arg *

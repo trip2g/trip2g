@@ -115,6 +115,14 @@ namespace $.$$ {
 	}
 
 	export class $trip2g_user_space_nav extends $.$trip2g_user_space_nav {
+		// $mol_book2_catalog asks for menu_title only when the spread is itself a
+		// book, so a plain page is listed under its own title. A page that wants
+		// a short label in the menu and a full one in the header declares both.
+		override spread_title(spread: string) {
+			const page = this.Spread(spread) as $mol_view & { menu_title?(): string }
+			return page.menu_title?.() || super.spread_title(spread)
+		}
+
 		// A token's own screen and the new-token form are routes, not sections:
 		// they are reachable by link and by URL, and listing them in the menu
 		// beside "My account" would make two of the three entries transient.
