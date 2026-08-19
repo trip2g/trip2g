@@ -242,6 +242,11 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 						Type:        "string",
 						Description: "String chunk id of the form \"p<pid>:c<chunk>\", copied verbatim from a remote search match's match_id field; alone it is enough to resolve the note",
 					},
+					"toc_path": {
+						Type:        "array",
+						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back.",
+						Items:       &Property{Type: "string"},
+					},
 				},
 				Required: []string{"kb_id"},
 			},

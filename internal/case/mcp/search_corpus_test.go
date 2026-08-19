@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -37,7 +38,8 @@ func corpusEnv() *EnvMock {
 	live := &appmodel.NoteView{Path: "published.md", PathID: 2, Title: "Published", Permalink: "/published"}
 
 	return &EnvMock{
-		MCPMetricsFunc: func() *metrics.MCPMetrics { return nil },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SearchLatestNotesFunc: func(string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: latest, URL: latest.Permalink, Score: 1,

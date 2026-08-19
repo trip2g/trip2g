@@ -106,7 +106,8 @@ func TestVerifyInboundSentinels(t *testing.T) {
 	})
 
 	t.Run("bad signature", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet // err in closure shadows outer test err intentionally
+		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{
+			//nolint:govet // err in closure shadows outer test err intentionally
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: []byte("other-secret")},
 			secretOK: true,
 		}, valid)
@@ -138,7 +139,8 @@ func TestVerifyInboundSentinels(t *testing.T) {
 	})
 
 	t.Run("revoked", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet // err in closure shadows outer test err intentionally
+		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{
+			//nolint:govet // err in closure shadows outer test err intentionally
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: secret, RevokedAt: &now},
 			secretOK: true,
 		}, valid)

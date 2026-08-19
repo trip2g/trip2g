@@ -2,44 +2,9 @@ package mcp
 
 import (
 	"encoding/json"
-	"strconv"
-	"strings"
 
 	"trip2g/internal/model"
 )
-
-// PID is a note id that tolerates what models actually send: a JSON number,
-// a numeric string ("70"), or a non-numeric string like a chunk match_id
-// ("p36:c2") or a path. Non-numeric input parses to Value 0 with Raw kept for
-// error messages, so a valid path in the same call can still resolve instead
-// of the whole request failing on unmarshal.
-type PID struct {
-	Value int64
-	Raw   string
-}
-
-func (p *PID) UnmarshalJSON(b []byte) error {
-	s := strings.TrimSpace(string(b))
-	if s == "null" {
-		return nil
-	}
-	if strings.HasPrefix(s, `"`) {
-		var raw string
-		if err := json.Unmarshal(b, &raw); err != nil {
-			return err
-		}
-		p.Raw = raw
-		if v, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64); err == nil {
-			p.Value = v
-		}
-		return nil
-	}
-	return json.Unmarshal(b, &p.Value)
-}
-
-func (p PID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p.Value)
-}
 
 // JSON-RPC 2.0 types
 
@@ -102,53 +67,6 @@ type CallToolResult struct {
 type Content struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
-}
-
-// Tool-specific argument types
-
-type SearchArguments struct {
-	Query       string `json:"query"`
-	Limit       int    `json:"limit,omitempty"`
-	DetailLimit int    `json:"detail_limit,omitempty"`
-}
-
-type FederatedSearchArguments struct {
-	Query       string   `json:"query"`
-	KBID        string   `json:"kb_id,omitempty"`
-	KBIDs       []string `json:"kb_ids,omitempty"`
-	Limit       int      `json:"limit,omitempty"`
-	DetailLimit int      `json:"detail_limit,omitempty"`
-}
-
-type FederatedSimilarArguments struct {
-	KBID   string `json:"kb_id"`
-	PID    int64  `json:"pid,omitempty"`
-	NoteID string `json:"note_id,omitempty"`
-	Path   string `json:"path,omitempty"`
-	Href   string `json:"href,omitempty"`
-	Limit  int    `json:"limit,omitempty"`
-}
-
-type FederatedNoteHTMLArguments struct {
-	KBID    string `json:"kb_id"`
-	PID     PID    `json:"pid,omitzero"`
-	NoteID  string `json:"note_id,omitempty"`
-	Path    string `json:"path,omitempty"`
-	Href    string `json:"href,omitempty"`
-	MatchID string `json:"match_id,omitempty"`
-}
-
-type FederatedInstructionsArguments struct {
-	KBID string `json:"kb_id"`
-}
-
-type FederatedExpandArguments struct {
-	KBID    string   `json:"kb_id"`
-	PID     int64    `json:"pid,omitempty"`
-	NoteID  string   `json:"note_id,omitempty"`
-	Path    string   `json:"path,omitempty"`
-	Href    string   `json:"href,omitempty"`
-	TocPath []string `json:"toc_path,omitempty"`
 }
 
 type FederationRef struct {
@@ -225,35 +143,9 @@ type SearchLink struct {
 	Href   string `json:"href"`
 }
 
-type SimilarArguments struct {
-	Path   string `json:"path,omitempty"`
-	Href   string `json:"href,omitempty"`
-	PID    int64  `json:"pid,omitempty"`
-	NoteID int64  `json:"note_id,omitempty"`
-	Limit  int    `json:"limit,omitempty"`
-}
-
 type SimilarResultPayload struct {
 	Source  SearchResultItem   `json:"source"`
 	Results []SearchResultItem `json:"results"`
-}
-
-type NoteHTMLArguments struct {
-	Path         string   `json:"path,omitempty"`
-	Href         string   `json:"href,omitempty"`
-	PID          PID      `json:"pid,omitzero"`
-	NoteID       PID      `json:"note_id,omitzero"`
-	MatchID      string   `json:"match_id,omitempty"`
-	ContextWords int      `json:"context_words,omitempty"`
-	TocPath      []string `json:"toc_path,omitempty"`
-}
-
-type ExpandArguments struct {
-	Path    string   `json:"path,omitempty"`
-	Href    string   `json:"href,omitempty"`
-	PID     int64    `json:"pid,omitempty"`
-	NoteID  int64    `json:"note_id,omitempty"`
-	TocPath []string `json:"toc_path,omitempty"`
 }
 
 // TOCNode is one node in a progressive-disclosure TOC walk: a direct child of the

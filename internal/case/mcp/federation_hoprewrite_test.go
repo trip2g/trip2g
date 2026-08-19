@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/metrics"
@@ -23,8 +24,9 @@ func singlePeerEnv(kbID string, fed *federationMock) *EnvMock {
 	nvs := appmodel.NewNoteViews()
 	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(note)}
 	return &EnvMock{
-		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc: func(context.Context, *appmodel.NoteView) (bool, error) {
 			return true, nil
 		},
@@ -50,7 +52,7 @@ func fedSingleSearchPayload(t *testing.T, result mcp.CallToolResult) mcp.SearchR
 func TestFederatedSearchPrefixesNestedKBID(t *testing.T) {
 	var gotKBID string
 	fed := &federationMock{
-		federatedSearchFunc: func(_ context.Context, params appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+		federatedSearchFunc: func(_ context.Context, params appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 			gotKBID = params.KBID
 			// The philosophers hub already stamped its child segment on the way up.
 			return appmodel.FederationResult{
@@ -73,7 +75,7 @@ func TestFederatedSearchPrefixesNestedKBID(t *testing.T) {
 // kb_id yet. Composed with the outer hop this is what accrues to the full path.
 func TestFederatedSearchStampsMiddleHopSegment(t *testing.T) {
 	fed := &federationMock{
-		searchFunc: func(context.Context, appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+		searchFunc: func(context.Context, appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 			// A leaf base answers over its own notes: no kb_id yet.
 			return appmodel.FederationResult{
 				Content:           []appmodel.FederationContent{{Type: "text", Text: "leaf"}},
@@ -93,7 +95,7 @@ func TestFederatedSearchStampsMiddleHopSegment(t *testing.T) {
 // Blind fan-out results keep the correct per-base kb_id for each direct peer.
 func TestFederatedSearchFanoutStampsPerBaseKBID(t *testing.T) {
 	env := fanoutEnv(2, 10, 5, 0, func(kbID string) fanoutSearchFn {
-		return func(context.Context, appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+		return func(context.Context, appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 			return appmodel.FederationResult{
 				Content:           []appmodel.FederationContent{{Type: "text", Text: "hit " + kbID}},
 				StructuredContent: json.RawMessage(`{"results":[{"title":"` + kbID + `"}]}`),
@@ -119,7 +121,7 @@ func TestFederatedSearchFanoutStampsPerBaseKBID(t *testing.T) {
 // prefixes its child segment so the suggested address is the caller's full path.
 func TestFederatedSearchComposedNotConfiguredHint(t *testing.T) {
 	fed := &federationMock{
-		federatedSearchFunc: func(context.Context, appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+		federatedSearchFunc: func(context.Context, appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 			return appmodel.FederationResult{
 				Content:           []appmodel.FederationContent{{Type: "text", Text: "not configured"}},
 				StructuredContent: json.RawMessage(`{"status":"federation_not_configured","kb_id":"ghost"}`),

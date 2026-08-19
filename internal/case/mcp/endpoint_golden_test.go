@@ -211,11 +211,11 @@ func normalizeGolden(body []byte) string {
 // goldenFedClient is a fixed federation peer: deterministic content, no network.
 type goldenFedClient struct{ appmodel.Federation }
 
-func (goldenFedClient) Search(context.Context, appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+func (goldenFedClient) Search(context.Context, appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 	return goldenFedResult("peer search hit"), nil
 }
 
-func (goldenFedClient) FederatedSearch(context.Context, appmodel.FederationSearchParams) (appmodel.FederationResult, error) {
+func (goldenFedClient) FederatedSearch(context.Context, appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 	return goldenFedResult("peer federated search hit"), nil
 }
 
@@ -223,7 +223,7 @@ func (goldenFedClient) Instructions(context.Context) (appmodel.FederationResult,
 	return goldenFedResult("peer instructions"), nil
 }
 
-func (goldenFedClient) FederatedInstructions(context.Context, appmodel.FederationInstructionsParams) (appmodel.FederationResult, error) {
+func (goldenFedClient) FederatedInstructions(context.Context, appmodel.MCPInstructionsParams) (appmodel.FederationResult, error) {
 	return goldenFedResult("peer federated instructions"), nil
 }
 

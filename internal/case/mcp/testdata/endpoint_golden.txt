@@ -218,6 +218,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -531,6 +538,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -886,6 +900,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -1162,7 +1183,7 @@ HTTP 200 application/json
   "id": 3,
   "error": {
     "code": -32602,
-    "message": "Invalid search arguments: json: cannot unmarshal number into Go struct field SearchArguments.query of type string"
+    "message": "Invalid search arguments: json: cannot unmarshal number into Go struct field MCPSearchParams.query of type string"
   }
 }
 
@@ -1741,6 +1762,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -2054,6 +2082,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [
@@ -2378,6 +2413,13 @@ HTTP 200 application/json
             "pid": {
               "type": "number",
               "description": "Non-negative integer (uint64) remote note id, copied verbatim from a federated_search result's note_id field. Not a path, slug, or match_id. Prefer path or match_id"
+            },
+            "toc_path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
             }
           },
           "required": [

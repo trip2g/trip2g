@@ -243,7 +243,7 @@ func resolveSearchLimits(log logger.Logger, limit, detailLimit int) (int, int) {
 func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 	log := logger.WithPrefix(env.Logger(), "mcp:handleSearch")
 
-	args, errResp := unmarshalArgs[SearchArguments](argsRaw, id, "search")
+	args, errResp := unmarshalArgs[model.MCPSearchParams](argsRaw, id, "search")
 	if errResp != nil {
 		return *errResp
 	}
@@ -573,12 +573,12 @@ func noteKind(note *model.NoteView) string {
 func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 	log := logger.WithPrefix(env.Logger(), "mcp:handleSimilar")
 
-	args, errResp := unmarshalArgs[SimilarArguments](argsRaw, id, "similar")
+	args, errResp := unmarshalArgs[model.MCPSimilarParams](argsRaw, id, "similar")
 	if errResp != nil {
 		return *errResp
 	}
 
-	if args.Path == "" && args.Href == "" && args.PID == 0 && args.NoteID == 0 {
+	if args.Path == "" && args.Href == "" && args.PID.IsZero() && args.NoteID.IsZero() {
 		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, or href is required")
 	}
 
@@ -636,10 +636,10 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 	return successResponse(id, structuredToolResult(sb.String(), buildSimilarPayload(sourceNote, results, env.NoteURL)))
 }
 
-func resolveSimilarReference(noteViews *model.NoteViews, args SimilarArguments) *model.NoteView {
-	id := args.PID
+func resolveSimilarReference(noteViews *model.NoteViews, args model.MCPSimilarParams) *model.NoteView {
+	id := args.PID.Value
 	if id == 0 {
-		id = args.NoteID
+		id = args.NoteID.Value
 	}
 	if id != 0 {
 		return noteViews.GetByPathID(id)
@@ -679,7 +679,7 @@ func buildSimilarPayload(sourceNote *model.NoteView, results []graphmodel.Simila
 func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 	log := logger.WithPrefix(env.Logger(), "mcp:handleNoteHTML")
 
-	args, errResp := unmarshalArgs[NoteHTMLArguments](argsRaw, id, "note_html")
+	args, errResp := unmarshalArgs[model.MCPNoteHTMLParams](argsRaw, id, "note_html")
 	if errResp != nil {
 		return *errResp
 	}
@@ -762,21 +762,21 @@ func topLevelSectionsNudge(note *model.NoteView) string {
 func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 	log := logger.WithPrefix(env.Logger(), "mcp:handleExpand")
 
-	args, errResp := unmarshalArgs[ExpandArguments](argsRaw, id, "expand")
+	args, errResp := unmarshalArgs[model.MCPExpandParams](argsRaw, id, "expand")
 	if errResp != nil {
 		return *errResp
 	}
 
-	if args.Path == "" && args.Href == "" && args.PID == 0 && args.NoteID == 0 {
+	if args.Path == "" && args.Href == "" && args.PID.IsZero() && args.NoteID.IsZero() {
 		return errorResponse(id, ErrCodeInvalidParams, "one of pid, note_id, path, or href is required")
 	}
 
 	noteViews := env.LatestNoteViews()
-	note := resolveNoteReference(noteViews, NoteHTMLArguments{
+	note := resolveNoteReference(noteViews, model.MCPNoteHTMLParams{
 		Path:   args.Path,
 		Href:   args.Href,
-		PID:    PID{Value: args.PID},
-		NoteID: PID{Value: args.NoteID},
+		PID:    args.PID,
+		NoteID: args.NoteID,
 	})
 	if note == nil {
 		log.Warn("note not found", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
@@ -867,7 +867,7 @@ func parseChunkMatchID(matchID string) (int64, int, bool) {
 	return pathID, chunkIndex, true
 }
 
-func resolveNoteReference(noteViews *model.NoteViews, args NoteHTMLArguments) *model.NoteView {
+func resolveNoteReference(noteViews *model.NoteViews, args model.MCPNoteHTMLParams) *model.NoteView {
 	id := args.PID.Value
 	if id == 0 {
 		id = args.NoteID.Value

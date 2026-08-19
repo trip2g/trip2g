@@ -10,7 +10,7 @@ import (
 )
 
 func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
-	args, errResp := unmarshalArgs[FederatedSearchArguments](argsRaw, id, "federated_search")
+	args, errResp := unmarshalArgs[model.MCPSearchParams](argsRaw, id, "federated_search")
 	if errResp != nil {
 		return *errResp
 	}
@@ -41,7 +41,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		}
 		results := fanout(ctx, env, selected, env.FederatedFanoutConcurrency(), env.FederatedFanoutTimeout(),
 			func(ctx context.Context, client model.Federation) (model.FederationResult, error) {
-				return client.Search(ctx, model.FederationSearchParams{Query: args.Query})
+				return client.Search(ctx, forwarded(*args))
 			})
 		m := metricsFromContext(ctx)
 		touched := 0
@@ -67,7 +67,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		metricsFromContext(ctx).RecordFederatedRequest(federatedStatus(err))
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
-	params := model.FederationSearchParams{Query: args.Query}
+	params := forwarded(*args)
 	var result model.FederationResult
 	if rest == "" {
 		result, err = client.Search(ctx, params)
@@ -148,7 +148,7 @@ func federatedSingleKBResult(
 // tools. Results are cached per full kb_id path so repeat calls (and
 // already-visited routes) are served without re-forwarding.
 func handleFederatedInstructions(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
-	args, errResp := unmarshalArgs[FederatedInstructionsArguments](argsRaw, id, "federated_instructions")
+	args, errResp := unmarshalArgs[model.MCPInstructionsParams](argsRaw, id, "federated_instructions")
 	if errResp != nil {
 		return *errResp
 	}
@@ -165,7 +165,7 @@ func handleFederatedInstructions(ctx context.Context, env Env, id any, argsRaw j
 			if rest == "" {
 				return client.Instructions(ctx)
 			}
-			return client.FederatedInstructions(ctx, model.FederationInstructionsParams{KBID: rest})
+			return client.FederatedInstructions(ctx, model.MCPInstructionsParams{KBID: rest})
 		})
 	if errResp != nil {
 		return *errResp
@@ -175,20 +175,14 @@ func handleFederatedInstructions(ctx context.Context, env Env, id any, argsRaw j
 }
 
 func handleFederatedSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
-	args, errResp := unmarshalArgs[FederatedSimilarArguments](argsRaw, id, "federated_similar")
+	args, errResp := unmarshalArgs[model.MCPSimilarParams](argsRaw, id, "federated_similar")
 	if errResp != nil {
 		return *errResp
 	}
 	if args.KBID == "" {
 		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
 	}
-	params := model.FederationSimilarParams{
-		PID:    args.PID,
-		NoteID: args.NoteID,
-		Path:   args.Path,
-		Href:   args.Href,
-		Limit:  args.Limit,
-	}
+	params := forwarded(*args)
 	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
 		if rest == "" {
 			return client.Similar(ctx, params)
@@ -199,20 +193,14 @@ func handleFederatedSimilar(ctx context.Context, env Env, id any, argsRaw json.R
 }
 
 func handleFederatedNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
-	args, errResp := unmarshalArgs[FederatedNoteHTMLArguments](argsRaw, id, "federated_note_html")
+	args, errResp := unmarshalArgs[model.MCPNoteHTMLParams](argsRaw, id, "federated_note_html")
 	if errResp != nil {
 		return *errResp
 	}
 	if args.KBID == "" {
 		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
 	}
-	params := model.FederationNoteHTMLParams{
-		PID:     args.PID.Value,
-		NoteID:  args.NoteID,
-		Path:    args.Path,
-		Href:    args.Href,
-		MatchID: args.MatchID,
-	}
+	params := forwarded(*args)
 	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
 		if rest == "" {
 			return client.NoteHTML(ctx, params)
@@ -223,20 +211,14 @@ func handleFederatedNoteHTML(ctx context.Context, env Env, id any, argsRaw json.
 }
 
 func handleFederatedExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
-	args, errResp := unmarshalArgs[FederatedExpandArguments](argsRaw, id, "federated_expand")
+	args, errResp := unmarshalArgs[model.MCPExpandParams](argsRaw, id, "federated_expand")
 	if errResp != nil {
 		return *errResp
 	}
 	if args.KBID == "" {
 		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
 	}
-	params := model.FederationExpandParams{
-		PID:     args.PID,
-		NoteID:  args.NoteID,
-		Path:    args.Path,
-		Href:    args.Href,
-		TocPath: args.TocPath,
-	}
+	params := forwarded(*args)
 	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
 		if rest == "" {
 			return client.Expand(ctx, params)
@@ -267,7 +249,7 @@ func handleFederatedGraphQLRequest(ctx context.Context, env Env, id any, argsRaw
 	}
 
 	return callFederatedSingleKB(ctx, env, id, args.KBID, func(client model.Federation, rest string) (model.FederationResult, error) {
-		return client.GraphQLRequest(ctx, model.FederationGraphQLParams{KBID: rest, Query: args.Query, Variables: args.Variables})
+		return client.GraphQLRequest(ctx, model.MCPGraphQLParams{KBID: rest, Query: args.Query, Variables: args.Variables})
 	})
 }
 
@@ -314,4 +296,24 @@ func federationNotConfiguredResponse(id any, kbID string) Response {
 		Message: message,
 	}
 	return successResponse(id, structuredToolResult(message, payload))
+}
+
+// forwarded strips the hub's routing token from a federated call's arguments so
+// the rest of them — limit, detail_limit, toc_path, match_id, the note id —
+// reach the peer verbatim. The hub and the peer share one params type per tool,
+// so nothing can be dropped by forgetting to copy a field.
+func forwarded[T interface {
+	model.MCPSearchParams | model.MCPSimilarParams | model.MCPNoteHTMLParams | model.MCPExpandParams
+}](args T) T {
+	switch p := any(&args).(type) {
+	case *model.MCPSearchParams:
+		p.KBID, p.KBIDs = "", nil
+	case *model.MCPSimilarParams:
+		p.KBID = ""
+	case *model.MCPNoteHTMLParams:
+		p.KBID = ""
+	case *model.MCPExpandParams:
+		p.KBID = ""
+	}
+	return args
 }
