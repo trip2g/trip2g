@@ -336,7 +336,7 @@ window.__trip2g_settings = {
 	qw422016.N().S(`
 
 </head>
-<body tabindex="-1">
+<body tabindex="-1" class="inline-mol">
 
 `)
 //line views.html:84

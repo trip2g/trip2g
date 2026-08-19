@@ -75,6 +75,15 @@ body {
   overflow-wrap: anywhere;
 }
 
+// $mol injects [mol_view_root] { width: 100%; height: 100% } at runtime, after
+// this file. An equally specific rule of ours would lose, so mark the embedding
+// side instead: a mol root must not claim a whole flex row while its own
+// stylesheet is still on the way.
+.inline-mol [mol_view_root] {
+  width: auto;
+  height: auto;
+}
+
 
 // --- Site header ---
 
