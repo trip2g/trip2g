@@ -129,12 +129,15 @@ type SearchResultItem struct {
 }
 
 type SearchMatch struct {
-	MatchID      string       `json:"match_id,omitempty"`
-	ChunkIndex   int          `json:"chunk_index,omitempty"`
-	Snippet      string       `json:"snippet"`
-	ContextWords int          `json:"context_words"`
-	TOCPath      []string     `json:"toc_path,omitempty"`
-	Links        []SearchLink `json:"links,omitempty"`
+	MatchID      string   `json:"match_id,omitempty"`
+	ChunkIndex   int      `json:"chunk_index,omitempty"`
+	Snippet      string   `json:"snippet"`
+	ContextWords int      `json:"context_words"`
+	TOCPath      []string `json:"toc_path,omitempty"`
+	// SectionURL is the match's own heading anchor — a link a person can open
+	// on the section itself, next to the machine-readable toc_path.
+	SectionURL string       `json:"section_url,omitempty"`
+	Links      []SearchLink `json:"links,omitempty"`
 }
 
 type SearchLink struct {

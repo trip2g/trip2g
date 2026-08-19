@@ -429,7 +429,8 @@ func buildSearchPayload(
 					match.ChunkIndex = chunkIndex
 				}
 				chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
-				match.TOCPath = tocPathForSnippet(string(r.NoteView.HTML), snippet, chunkContent)
+				match.TOCPath = snippetTocPath(r.NoteView, snippet, chunkContent)
+				match.SectionURL = sectionAnchorURL(r.NoteView, match.TOCPath, noteURL)
 				item.Matches = append(item.Matches, match)
 			}
 		}

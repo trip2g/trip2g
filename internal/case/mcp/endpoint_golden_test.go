@@ -349,6 +349,12 @@ func goldenEnv() *EnvMock {
 			Score:              0.4,
 			HighlightedContent: []string{"Base instructions."},
 		},
+		{
+			NoteView:           aphorisms,
+			URL:                aphorisms.Permalink,
+			Score:              0.7,
+			HighlightedContent: []string{"Замечай, чего требует твоя <mark>природа</mark>."},
+		},
 	}
 
 	return &EnvMock{

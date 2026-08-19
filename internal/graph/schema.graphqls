@@ -2438,6 +2438,28 @@ type MakeReleaseLivePayload {
 union MakeReleaseLiveOrErrorPayload = MakeReleaseLivePayload | ErrorPayload
 
 #
+# regenerateNoteEmbeddings
+#
+
+input RegenerateNoteEmbeddingsInput {
+  """
+  Enqueue every note regardless of whether its stored content hash still
+  matches. Use after a change to chunking or embedding input that the hash
+  does not cover — the per-chunk hashes still decide what is actually re-sent
+  to the model, so unaffected chunks cost nothing.
+  """
+  force: Boolean
+}
+
+type RegenerateNoteEmbeddingsPayload {
+  totalNotes: Int!
+  enqueued: Int!
+  upToDate: Int!
+}
+
+union RegenerateNoteEmbeddingsOrErrorPayload = RegenerateNoteEmbeddingsPayload | ErrorPayload
+
+#
 # updateNotePosition
 #
 
@@ -3280,6 +3302,8 @@ type AdminMutation {
   makeReleaseLive(input: MakeReleaseLiveInput!): MakeReleaseLiveOrErrorPayload!
 
   updateNoteGraphPositions(input: UpdateNoteGraphPositionsInput!): UpdateNoteGraphPositionsOrErrorPayload!
+
+  regenerateNoteEmbeddings(input: RegenerateNoteEmbeddingsInput!): RegenerateNoteEmbeddingsOrErrorPayload!
 
   # Telegram bot mutations
   createTgBot(input: CreateTgBotInput!): CreateTgBotOrErrorPayload!
