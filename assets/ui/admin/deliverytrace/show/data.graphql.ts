@@ -42,6 +42,7 @@ fragment TraceHop on AdminTraceDelivery {
   writes {
     path
     version
+    versionId
   }
 }`, variables, opts) as trip2g_admin_deliverytrace_show_dataQuery
 }

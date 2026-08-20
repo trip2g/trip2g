@@ -57,8 +57,26 @@ namespace $.$$ {
 			return new $mol_time_moment( this.data().createdAt ).toString( 'YYYY-MM-DD hh:mm:ss' )
 		}
 
-		override writes(): readonly string[] {
-			return this.data().writes.map( write => write.path )
+		// One expander per written note, keyed by the version it stored — opening one
+		// pulls that version's bytes, so a step that wrote a dozen notes costs
+		// nothing until you ask for a specific one.
+		@$mol_mem
+		override write_rows() {
+			return this.data().writes.map( write => this.Write( Number( write.versionId ) ) )
+		}
+
+		write( version_id: number ) {
+			const write = this.data().writes.find( item => Number( item.versionId ) === version_id )
+			if( !write ) throw new Error( `Unknown version ${ version_id }` )
+			return write
+		}
+
+		override write_path( version_id: number ): string {
+			return this.write( version_id ).path
+		}
+
+		override write_version_id( version_id: number ): number {
+			return version_id
 		}
 	}
 }

@@ -4794,7 +4794,7 @@ func (q *Queries) ListDeliveryTraces(ctx context.Context, arg ListDeliveryTraces
 }
 
 const listDeliveryWrites = `-- name: ListDeliveryWrites :many
-select np.value as path, nv.version as version
+select np.value as path, nv.version as version, nv.id as version_id
   from note_version_delivery_attribution a
   join note_versions nv on nv.id = a.note_version_id
   join note_paths np on np.id = nv.path_id
@@ -4809,8 +4809,9 @@ type ListDeliveryWritesParams struct {
 }
 
 type ListDeliveryWritesRow struct {
-	Path    string `json:"path"`
-	Version int64  `json:"version"`
+	Path      string `json:"path"`
+	Version   int64  `json:"version"`
+	VersionID int64  `json:"version_id"`
 }
 
 // What a delivery wrote: the note versions attributed to it. This is what makes
@@ -4824,7 +4825,7 @@ func (q *Queries) ListDeliveryWrites(ctx context.Context, arg ListDeliveryWrites
 	var items []ListDeliveryWritesRow
 	for rows.Next() {
 		var i ListDeliveryWritesRow
-		if err := rows.Scan(&i.Path, &i.Version); err != nil {
+		if err := rows.Scan(&i.Path, &i.Version, &i.VersionID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

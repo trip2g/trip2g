@@ -5,9 +5,11 @@ namespace $ {
 	// the whole row past the pane otherwise, and the paths inside it ellipsise in
 	// the middle rather than the row growing to fit them.
 	$mol_style_define( $trip2g_admin_labeler_paths, {
+		// No flex-basis: this cell lives both in a row (the steps table) and in a
+		// column (the step details), and in a column a basis is a HEIGHT — 30rem of
+		// empty space under a single path.
 		flex: {
-			basis: rem( 30 ),
-			grow: 1,
+			grow: 0,
 			shrink: 1,
 		},
 		minWidth: 0,

@@ -2054,6 +2054,7 @@ export type AdminTraceWrite = {
   __typename?: 'AdminTraceWrite';
   path: Scalars['String']['output'];
   version: Scalars['Int64']['output'];
+  versionId: Scalars['Int64']['output'];
 };
 
 export type AdminUpdateTelegramAccountInput = {

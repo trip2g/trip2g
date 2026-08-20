@@ -1,0 +1,10 @@
+query ($versionId: Int64!) {
+	admin {
+		noteVersion(versionId: $versionId) {
+			path
+			version
+			content
+			createdAt
+		}
+	}
+}

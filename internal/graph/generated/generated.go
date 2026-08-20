@@ -2047,6 +2047,9 @@ type AdminCost {
 type AdminTraceWrite @goModel(model: "trip2g/internal/db.ListDeliveryWritesRow") {
   path: String!
   version: Int64!
+  # The note_versions row this write inserted, so the exact bytes it stored can be
+  # read back through noteVersion(versionId:).
+  versionId: Int64!
 }
 
 input AdminChangeWebhookDeliveriesFilterInput {
@@ -30699,6 +30702,8 @@ func (ec *executionContext) fieldContext_AdminTraceDelivery_writes(_ context.Con
 				return ec.fieldContext_AdminTraceWrite_path(ctx, field)
 			case "version":
 				return ec.fieldContext_AdminTraceWrite_version(ctx, field)
+			case "versionId":
+				return ec.fieldContext_AdminTraceWrite_versionId(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTraceWrite", field.Name)
 		},
@@ -30752,6 +30757,35 @@ func (ec *executionContext) _AdminTraceWrite_version(ctx context.Context, field 
 }
 
 func (ec *executionContext) fieldContext_AdminTraceWrite_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTraceWrite",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTraceWrite_versionId(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveryWritesRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminTraceWrite_versionId,
+		func(ctx context.Context) (any, error) {
+			return obj.VersionID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminTraceWrite_versionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminTraceWrite",
 		Field:      field,
@@ -73279,6 +73313,11 @@ func (ec *executionContext) _AdminTraceWrite(ctx context.Context, sel ast.Select
 			}
 		case "version":
 			out.Values[i] = ec._AdminTraceWrite_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "versionId":
+			out.Values[i] = ec._AdminTraceWrite_versionId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

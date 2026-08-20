@@ -847,6 +847,9 @@ type AdminCost {
 type AdminTraceWrite @goModel(model: "trip2g/internal/db.ListDeliveryWritesRow") {
   path: String!
   version: Int64!
+  # The note_versions row this write inserted, so the exact bytes it stored can be
+  # read back through noteVersion(versionId:).
+  versionId: Int64!
 }
 
 input AdminChangeWebhookDeliveriesFilterInput {

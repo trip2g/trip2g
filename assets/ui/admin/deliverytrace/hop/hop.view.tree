@@ -43,6 +43,10 @@ $trip2g_admin_deliverytrace_hop $mol_page
 				<= Trigger_labeler $trip2g_admin_labeler_paths
 					title @ \Triggered by
 					paths <= trigger
-				<= Writes_labeler $trip2g_admin_labeler_paths
+				<= Writes_labeler $mol_labeler
 					title @ \Wrote
-					paths <= writes /string
+					Content <= Writes $mol_list
+						rows <= write_rows /
+	Write!version_id $trip2g_admin_deliverytrace_write
+		path <= write_path!version_id \
+		version_id <= write_version_id!version_id 0

@@ -18,5 +18,6 @@ fragment TraceHop on AdminTraceDelivery {
 	writes {
 		path
 		version
+		versionId
 	}
 }
