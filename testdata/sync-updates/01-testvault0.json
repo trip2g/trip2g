@@ -264,6 +264,18 @@
     "url": "http://localhost:20081/json_layout_test"
   },
   {
+    "path": "krisp/roles/transcript-ingest.md",
+    "url": "http://localhost:20081/krisp/roles/transcript_ingest"
+  },
+  {
+    "path": "krisp/roles/transcript-segment.md",
+    "url": "http://localhost:20081/krisp/roles/transcript_segment"
+  },
+  {
+    "path": "krisp/roles/transcript-wiki.md",
+    "url": "http://localhost:20081/krisp/roles/transcript_wiki"
+  },
+  {
     "path": "lang_hub/english.md",
     "url": "http://localhost:20081/lang_hub/english"
   },
