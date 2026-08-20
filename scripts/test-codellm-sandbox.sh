@@ -156,6 +156,22 @@ jq -nc --arg r "$r" '{changes: [], answer: $r}'
 if [ -z "$FLEET_SANDBOX_SENTINEL" ]; then r=absent; else r=LEAKED; fi
 jq -nc --arg r "$r" '{changes: [], answer: $r}'
 ''', lambda a: a == "absent"),
+
+    # fleetkit is shipped by the same Dockerfile and must be importable under the
+    # enforcing sandbox, not just with CODELLM_SANDBOX=off.
+    ("fleetkit imports and renders", "python", """
+import fleetkit
+n = fleetkit.note("a.md", {"title": "T: q"}, "# T")
+lines = n["content"].split(chr(10))
+q = chr(39)
+ok = lines[0] == "---" and lines[1] == "title: " + q + "T: q" + q and lines[2] == "---"
+ANSWER = "ok" if ok else "bad=" + repr(lines[:3])
+""" + EMIT_PY, lambda a: a == "ok"),
+
+    ("fleetkit bag is empty outside a delivery", "python", '''
+import fleetkit
+ANSWER = "empty" if fleetkit.bag() == {} else "unexpected"
+''' + EMIT_PY, lambda a: a == "empty"),
 ]
 
 failed = 0

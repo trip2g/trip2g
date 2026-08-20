@@ -35,6 +35,44 @@ there, since `curl`, `git`, node and python all need them. Change a path here
 and you must change `Dockerfile.codellm` to match, or the guard silently drops
 the variable; `TestInterpretersJSON_ShippedEnv` pins the pair together.
 
+### fleetkit
+
+A block's contract with the fleet is one line of JSON on stdout —
+`{"changes": [...], "answer": "..."}`. `fleetkit` builds it, and the notes that
+go into it, so a role does not re-derive the shape or glue YAML by hand:
+
+```python
+import fleetkit
+
+meetings = ...
+changes = [
+    fleetkit.note('transcripts/%s.md' % m['id'], {'title': m['name']}, m['text'])
+    for m in meetings
+]
+fleetkit.emit(changes, 'ingested %d' % len(changes))
+```
+
+| Function | What it returns |
+|----------|-----------------|
+| `render(meta, body='')` | markdown: YAML frontmatter + body, quoting decided by `yaml.safe_dump` |
+| `note(path, meta, body='')` | a write change carrying a rendered note |
+| `write(path, content)` | a change that replaces the whole note |
+| `patch(path, find, replace)` | a change that swaps the first occurrence of `find` |
+| `emit(changes, answer)` | prints the stdout contract — call once, and last |
+| `bag()` | the delivery bag from `FLEET_INPUT`; `{}` outside a delivery |
+
+The source is `cmd/codellm/fleetkit/fleetkit.py`, installed to
+`/usr/lib/python3/dist-packages/fleetkit.py` by `Dockerfile.codellm` — on the
+default `sys.path` and inside the subtree the sandbox grants.
+
+**This is an API that role notes in user vaults import.** Those notes are not in
+this repo, have no build step and are not rolled back with the image, so a
+rename or a signature change breaks them at runtime with nothing to catch it
+first. `TestFleetkit_SourceExports` pins the exported names for that reason;
+add functions freely, change existing ones only deliberately.
+
+There is no Node equivalent yet — a node block still assembles the JSON itself.
+
 ### Python
 
 Installed into `/usr/lib/python3/dist-packages`.
