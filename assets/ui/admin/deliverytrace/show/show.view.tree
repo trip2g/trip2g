@@ -4,17 +4,8 @@ $trip2g_admin_deliverytrace_show $trip2g_admin_catalog
 	param \hop
 	Empty $mol_status
 	ShowPage* $trip2g_admin_deliverytrace_hop
-		hop_title <= hop_title*
-		kind <= hop_kind*
-		delivery_id <= hop_id*
-		webhook <= hop_webhook*
-		depth <= hop_depth*
-		parent <= hop_parent*
-		status <= hop_status*
-		spend <= hop_spend*
-		created_at <= hop_created_at*
+		hop <= hop* null
 		trigger <= hop_trigger* /string
-		writes <= hop_writes* /string
 	menu_link_content* / <= HopItem* $mol_view
 		sub /
 			<= Rows* $mol_row

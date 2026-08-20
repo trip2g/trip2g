@@ -6,34 +6,42 @@ export type trip2g_admin_deliverytrace_show_dataQueryVariables = Exact<{
 }>;
 
 
-export type trip2g_admin_deliverytrace_show_dataQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', deliveryTrace: Array<{ __typename?: 'AdminTraceDelivery', kind: string, id: any, webhookId: any, status: string, responseStatus?: any | null, attempt: any, durationMs?: any | null, createdAt: any, completedAt?: any | null, parentKind?: string | null, parentId?: any | null, depthReached: any, costs: Array<{ __typename?: 'AdminCost', id: string, value: number }>, writes: Array<{ __typename?: 'AdminTraceWrite', path: string, version: any }> }> } };
+export type trip2g_admin_deliverytrace_show_dataQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', deliveryTrace: Array<(
+      { __typename?: 'AdminTraceDelivery' }
+      & { ' \u0024fragmentRefs'?: { 'TraceHopFragment': TraceHopFragment } }
+    )> } };
 
 
+/** Spreads fragments: $trip2g_admin_deliverytrace_hop_hop */
 export function $trip2g_admin_deliverytrace_show_data(variables: trip2g_admin_deliverytrace_show_dataQueryVariables, opts?: { revalidate?: boolean }): trip2g_admin_deliverytrace_show_dataQuery {
 	return $trip2g_gql_request(`query trip2g_admin_deliverytrace_show_data(\u0024trace: String!) {
   admin {
     deliveryTrace(trace: \u0024trace) {
-      kind
-      id
-      webhookId
-      status
-      responseStatus
-      attempt
-      durationMs
-      costs {
-        id
-        value
-      }
-      createdAt
-      completedAt
-      parentKind
-      parentId
-      depthReached
-      writes {
-        path
-        version
-      }
+      ...TraceHop
     }
+  }
+}
+
+fragment TraceHop on AdminTraceDelivery {
+  kind
+  id
+  webhookId
+  status
+  responseStatus
+  attempt
+  durationMs
+  costs {
+    id
+    value
+  }
+  createdAt
+  completedAt
+  parentKind
+  parentId
+  depthReached
+  writes {
+    path
+    version
   }
 }`, variables, opts) as trip2g_admin_deliverytrace_show_dataQuery
 }

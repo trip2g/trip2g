@@ -1,15 +1,20 @@
 namespace $.$$ {
 	export class $trip2g_admin_deliverytrace_show extends $.$trip2g_admin_deliverytrace_show {
 		@$mol_mem
-		hops( reset?: null ) {
+		hops() {
 			return $trip2g_admin_deliverytrace_show_data( { trace: this.trace() } ).admin.deliveryTrace
 		}
 
 		// Keyed by "<kind>:<id>" — the same shape the parent link uses, so a step
-		// can be addressed by the id its children point at.
+		// can be addressed by the id its children point at. The rows arrive masked;
+		// the list unmasks them for its own columns and hands the ref itself to the
+		// step page.
 		@$mol_mem
 		data() {
-			return new Map( this.hops().map( hop => [ `${ hop.kind }:${ hop.id }`, hop ] as const ) )
+			return new Map( this.hops().map( ref => {
+				const hop = $trip2g_admin_deliverytrace_hop_hop_unmask( ref )
+				return [ `${ hop.kind }:${ hop.id }`, { ref, hop } ] as const
+			} ) )
 		}
 
 		@$mol_mem
@@ -21,54 +26,28 @@ namespace $.$$ {
 			return this.trace() || super.trace_title()
 		}
 
-		hop( id: any ) {
-			const hop = this.data().get( id )
-			if( !hop ) throw new Error( `Unknown step ${ id }` )
-			return hop
+		row( id: any ) {
+			const row = this.data().get( id )
+			if( !row ) throw new Error( `Unknown step ${ id }` )
+			return row
+		}
+
+		override hop( id: any ) {
+			return this.row( id ).ref
 		}
 
 		override hop_ref( id: any ): string {
 			return id
 		}
 
-		override hop_title( id: any ): string {
-			return `${ this.hop_kind( id ) } #${ this.hop_id( id ) }`
-		}
-
-		override hop_kind( id: any ): string {
-			return this.hop( id ).kind
-		}
-
-		override hop_id( id: any ): string {
-			return this.hop( id ).id.toString()
-		}
-
-		override hop_webhook( id: any ): string {
-			return this.hop( id ).webhookId.toString()
-		}
-
-		override hop_depth( id: any ): string {
-			return this.hop( id ).depthReached.toString()
-		}
-
-		// The root has no cause; every other step names the delivery whose writes
-		// triggered it, in the same "<kind>:<id>" form the chain id uses.
-		override hop_parent( id: any ): string {
-			const hop = this.hop( id )
-			if( !hop.parentKind || !hop.parentId ) return '-'
-			return `${ hop.parentKind }:${ hop.parentId }`
-		}
-
 		override hop_status( id: any ): string {
-			const hop = this.hop( id )
+			const hop = this.row( id ).hop
 			const response = hop.responseStatus ? ` (${ hop.responseStatus })` : ''
 			return `${ hop.status }${ response }`
 		}
 
-		// Duration is trip2g's own measurement; everything else is what the agent
-		// reported about its run, in units only it knows.
 		override hop_spend( id: any ): string {
-			const hop = this.hop( id )
+			const hop = this.row( id ).hop
 			const parts: string[] = []
 			const costs = $trip2g_admin_costs_text( hop.costs )
 			if( costs !== '-' ) parts.push( costs )
@@ -76,22 +55,18 @@ namespace $.$$ {
 			return parts.join( ', ' ) || '-'
 		}
 
-		override hop_created_at( id: any ): string {
-			return new $mol_time_moment( this.hop( id ).createdAt ).toString( 'YYYY-MM-DD hh:mm:ss' )
-		}
-
 		// Notes this step wrote, from the version attribution.
 		override hop_writes( id: any ): readonly string[] {
-			return this.hop( id ).writes.map( w => w.path )
+			return this.row( id ).hop.writes.map( write => write.path )
 		}
 
 		// What set this step off: the notes its parent wrote. A root has no parent
 		// — a cron tick or a human edit started it, and neither is a note.
 		override hop_trigger( id: any ): readonly string[] {
-			const hop = this.hop( id )
+			const hop = this.row( id ).hop
 			if( !hop.parentKind || !hop.parentId ) return []
 			const parent = this.data().get( `${ hop.parentKind }:${ hop.parentId }` )
-			return parent ? parent.writes.map( w => w.path ) : []
+			return parent ? parent.hop.writes.map( write => write.path ) : []
 		}
 	}
 }
