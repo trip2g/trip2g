@@ -1,52 +1,38 @@
-$trip2g_admin_deliverytrace_show $mol_page
+$trip2g_admin_deliverytrace_show $trip2g_admin_catalog
 	trace? \
-	title <= trace_title \Delivery Chain
-	HopRow* $mol_view
+	menu_title <= trace_title \Delivery Chain
+	param \hop
+	Empty $mol_status
+	ShowPage* $trip2g_admin_deliverytrace_hop
+		hop_title <= hop_title*
+		kind <= hop_kind*
+		delivery_id <= hop_id*
+		webhook <= hop_webhook*
+		depth <= hop_depth*
+		parent <= hop_parent*
+		status <= hop_status*
+		spend <= hop_spend*
+		created_at <= hop_created_at*
+		trigger <= hop_trigger*
+		writes <= hop_writes*
+	menu_link_content* / <= HopItem* $mol_view
 		sub /
-			<= HopHead* $mol_row
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 400
 				sub /
-					<= HopKind* $mol_labeler
-						title @ \Kind
-						Content <= HopKindCell* $trip2g_admin_cell
-							content <= hop_kind* \
-					<= HopId* $mol_labeler
-						title \#
-						Content <= HopIdCell* $trip2g_admin_cell
-							content <= hop_id* \
-					<= HopWebhook* $mol_labeler
-						title @ \Webhook
-						Content <= HopWebhookCell* $trip2g_admin_cell
-							content <= hop_webhook* \
-					<= HopDepth* $mol_labeler
+					<= Step* $trip2g_admin_labeler_id
+						title @ \Step
+						value <= hop_ref* \
+					<= Depth_labeler* $mol_labeler
 						title @ \Depth
-						Content <= HopDepthCell* $trip2g_admin_cell
+						Content <= Depth* $trip2g_admin_cell
 							content <= hop_depth* \
-					<= HopParent* $mol_labeler
-						title @ \Caused by
-						Content <= HopParentCell* $trip2g_admin_cell
-							content <= hop_parent* \
-					<= HopStatus* $mol_labeler
+					<= Status_labeler* $mol_labeler
 						title @ \Status
-						Content <= HopStatusCell* $trip2g_admin_cell
+						Content <= Status* $trip2g_admin_cell
 							content <= hop_status* \
-					<= HopSpend* $mol_labeler
+					<= Spend_labeler* $mol_labeler
 						title @ \Spend
-						Content <= HopSpendCell* $trip2g_admin_cell
+						Content <= Spend* $trip2g_admin_cell
 							content <= hop_spend* \
-					<= HopCreatedAt* $mol_labeler
-						title @ \Created At
-						Content <= HopCreatedAtCell* $trip2g_admin_cell
-							content <= hop_created_at* \
-			<= HopFlow* $mol_row
-				sub /
-					<= HopTrigger* $trip2g_admin_labeler_paths
-						title @ \Triggered by
-						value <= hop_trigger* \
-					<= HopWrites* $trip2g_admin_labeler_paths
-						title @ \Wrote
-						value <= hop_writes* \
-	body /
-		<= Hops_labeler $mol_labeler
-			title @ \Hops
-			Content <= HopsList $mol_list
-				rows <= hop_rows /

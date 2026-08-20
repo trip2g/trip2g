@@ -1,12 +1,6 @@
 {
-	"$trip2g_admin_deliverytrace_show_HopKind_title": "Тип",
-	"$trip2g_admin_deliverytrace_show_HopWebhook_title": "Вебхук",
-	"$trip2g_admin_deliverytrace_show_HopDepth_title": "Глубина",
-	"$trip2g_admin_deliverytrace_show_HopParent_title": "Вызвано",
-	"$trip2g_admin_deliverytrace_show_HopStatus_title": "Статус",
-	"$trip2g_admin_deliverytrace_show_HopSpend_title": "Расход",
-	"$trip2g_admin_deliverytrace_show_HopCreatedAt_title": "Создано",
-	"$trip2g_admin_deliverytrace_show_Hops_labeler_title": "Шаги",
-	"$trip2g_admin_deliverytrace_show_HopTrigger_title": "Вызвано записью",
-	"$trip2g_admin_deliverytrace_show_HopWrites_title": "Записал"
+	"$trip2g_admin_deliverytrace_show_Step_title": "Шаг",
+	"$trip2g_admin_deliverytrace_show_Depth_labeler_title": "Глубина",
+	"$trip2g_admin_deliverytrace_show_Status_labeler_title": "Статус",
+	"$trip2g_admin_deliverytrace_show_Spend_labeler_title": "Расход"
 }

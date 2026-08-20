@@ -1,0 +1,56 @@
+$trip2g_admin_deliverytrace_hop $mol_page
+	hop_title \Step
+	kind \
+	delivery_id \
+	webhook \
+	depth \
+	parent \
+	status \
+	spend \
+	created_at \
+	trigger \
+	writes \
+	title <= hop_title
+	body /
+		<= Details $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= Kind_labeler $mol_labeler
+					title @ \Kind
+					Content <= Kind $trip2g_admin_cell
+						content <= kind
+				<= Id_labeler $mol_labeler
+					title \#
+					Content <= Id $trip2g_admin_cell
+						content <= delivery_id
+				<= Webhook_labeler $mol_labeler
+					title @ \Webhook
+					Content <= Webhook $trip2g_admin_cell
+						content <= webhook
+				<= Depth_labeler $mol_labeler
+					title @ \Depth
+					Content <= Depth $trip2g_admin_cell
+						content <= depth
+				<= Parent_labeler $mol_labeler
+					title @ \Caused by
+					Content <= Parent $trip2g_admin_cell
+						content <= parent
+				<= Status_labeler $mol_labeler
+					title @ \Status
+					Content <= Status $trip2g_admin_cell
+						content <= status
+				<= Spend_labeler $mol_labeler
+					title @ \Spend
+					Content <= Spend $trip2g_admin_cell
+						content <= spend
+				<= CreatedAt_labeler $mol_labeler
+					title @ \Created At
+					Content <= CreatedAt $trip2g_admin_cell
+						content <= created_at
+				<= Trigger_labeler $trip2g_admin_labeler_paths
+					title @ \Triggered by
+					value <= trigger
+				<= Writes_labeler $trip2g_admin_labeler_paths
+					title @ \Wrote
+					value <= writes
