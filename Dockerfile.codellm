@@ -17,7 +17,7 @@ FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && install -m 755 -d /etc/apt/keyrings \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
       -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
@@ -39,14 +39,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip3 install --no-cache-dir --break-system-packages \
       --target=/usr/lib/python3/dist-packages \
       requests httpx beautifulsoup4 lxml python-dateutil \
-      pyjwt cryptography tenacity pydantic pyyaml \
+      pyjwt cryptography tenacity pydantic pyyaml jsonschema \
       tzdata
 
 # npm's global prefix is /usr, so modules land in /usr/lib/node_modules, which
 # NODE_PATH points at for require().
 RUN npm install -g --loglevel=error \
       axios cheerio zod dayjs lodash \
-      jsonwebtoken csv-parse axios-retry pg qs
+      jsonwebtoken csv-parse axios-retry pg qs yaml ajv ajv-formats
 
 # NODE_PATH covers require() but is never consulted for ESM import. Node instead
 # walks up from the script looking for node_modules, and a block runs from a
@@ -63,6 +63,7 @@ RUN install -D /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl-certs/ca-bundle.c
 # above — /usr/lib/python3/dist-packages is on the default sys.path and is the
 # subtree the sandbox grants; /usr/local would be unreachable from a block.
 COPY cmd/codellm/fleetkit/fleetkit.py /usr/lib/python3/dist-packages/fleetkit.py
+COPY cmd/codellm/fleetkit/node /usr/lib/node_modules/fleetkit
 
 COPY --from=builder /codellm /codellm
 ENTRYPOINT ["/codellm"]

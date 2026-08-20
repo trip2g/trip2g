@@ -13,7 +13,20 @@ import (
 
 // fleetkitDest is where Dockerfile.codellm must install the helper module: on
 // python's default sys.path AND inside the /usr/lib subtree landlock grants.
-const fleetkitDest = "/usr/lib/python3/dist-packages/fleetkit.py"
+const (
+	fleetkitPyDest   = "/usr/lib/python3/dist-packages/fleetkit.py"
+	fleetkitNodeDest = "/usr/lib/node_modules/fleetkit"
+)
+
+// fleetkitAPI is the surface role notes import. Vault notes are outside this
+// repo, have no build step and are not rolled back with the image, so removing
+// or renaming one of these breaks them at runtime with nothing to catch it.
+func fleetkitAPI() []string {
+	return []string{
+		"render", "note", "write", "patch", "emit", "bag",
+		"note_frontmatter", "parse_frontmatter",
+	}
+}
 
 func repoFile(t *testing.T, rel string) string {
 	t.Helper()
@@ -29,10 +42,42 @@ func repoFile(t *testing.T, rel string) string {
 func TestFleetkit_ShippedToSandboxPath(t *testing.T) {
 	dockerfile := repoFile(t, "Dockerfile.codellm")
 
-	require.Contains(t, dockerfile, fleetkitDest,
+	require.Contains(t, dockerfile, fleetkitPyDest,
 		"Dockerfile.codellm must install fleetkit on the default sys.path under /usr/lib")
 	require.Contains(t, dockerfile, "cmd/codellm/fleetkit/fleetkit.py",
 		"the module must be COPYed from its source in the repo")
+
+	// NODE_PATH covers require(); the /tmp/node_modules symlink covers import.
+	// Both resolve through /usr/lib/node_modules, so the twin must land there.
+	require.Contains(t, dockerfile, fleetkitNodeDest,
+		"the node twin must install where NODE_PATH and the ESM symlink both resolve")
+	require.Contains(t, dockerfile, "cmd/codellm/fleetkit/node",
+		"the node twin must be COPYed from its source in the repo")
+}
+
+// TestFleetkit_TwinsAreSymmetric holds the two halves to the same surface. The
+// point of the node twin is that a role moving between languages keeps the same
+// calls, so a function added to one and forgotten in the other is a defect.
+func TestFleetkit_TwinsAreSymmetric(t *testing.T) {
+	py := repoFile(t, "cmd/codellm/fleetkit/fleetkit.py")
+	js := repoFile(t, "cmd/codellm/fleetkit/node/index.js")
+
+	for _, fn := range fleetkitAPI() {
+		require.Contains(t, py, "def "+fn+"(", "python fleetkit must export %q", fn)
+		require.Contains(t, js, "function "+fn+"(", "node fleetkit must export %q", fn)
+		require.Contains(t, js, fn, "node fleetkit must include %q in module.exports", fn)
+	}
+}
+
+// TestFleetkit_ToolboxPinsValidators pins the validator packages against the
+// README that advertises them: a block importing one that was dropped from the
+// image fails at runtime inside a delivery.
+func TestFleetkit_ToolboxPinsValidators(t *testing.T) {
+	dockerfile := repoFile(t, "Dockerfile.codellm")
+
+	require.Contains(t, dockerfile, "jsonschema", "python needs a JSON Schema validator")
+	require.Contains(t, dockerfile, "ajv", "node needs a JSON Schema validator")
+	require.Contains(t, dockerfile, " yaml", "the node twin needs a YAML package")
 }
 
 // TestFleetkit_SourceExports pins the helper's surface. Role notes live in user
@@ -41,7 +86,7 @@ func TestFleetkit_ShippedToSandboxPath(t *testing.T) {
 func TestFleetkit_SourceExports(t *testing.T) {
 	src := repoFile(t, "cmd/codellm/fleetkit/fleetkit.py")
 
-	for _, fn := range []string{"render", "note", "write", "patch", "emit", "bag"} {
+	for _, fn := range fleetkitAPI() {
 		require.Contains(t, src, "def "+fn+"(",
 			"fleetkit must keep exporting %q — vault role notes depend on it", fn)
 	}

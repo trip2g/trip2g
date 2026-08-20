@@ -1,0 +1,7 @@
+{
+  "name": "fleetkit",
+  "version": "1.0.0",
+  "description": "Helpers for the node blocks codellm executes: note rendering and the {changes, answer} stdout contract.",
+  "main": "index.js",
+  "license": "MIT"
+}

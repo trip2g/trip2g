@@ -57,7 +57,9 @@ jobs:
   # quietly reporting "green" for tests that never ran. Network is left BLOCKED
   # here on purpose (no network env override): TestSandbox_NetworkBlocked
   # must enforce. python3 is installed explicitly because the golang image is
-  # minimal; bash is already present.
+  # minimal; bash is already present. python3-yaml, node and a global yaml are
+  # what the fleetkit behaviour tests execute: without them those tests would
+  # skip, and MUST_ENFORCE turns that skip into the failure it should be.
   sandbox:
     runs-on: ubuntu-24.04
     steps:
@@ -72,7 +74,10 @@ jobs:
             -e FLEET_SANDBOX_MUST_ENFORCE=1 \
             -e CGO_ENABLED=0 \
             golang:1.26 \
-            sh -c "apt-get update -q && apt-get install -y -q python3 && go test -tags dev -count=1 -timeout 120s ./cmd/codellm/internal/coderun/..."
+            sh -c "apt-get update -q \
+              && apt-get install -y -q python3 python3-yaml nodejs npm \
+              && npm install -g --loglevel=error yaml \
+              && go test -tags dev -count=1 -timeout 180s ./cmd/codellm/internal/coderun/..."
 
   e2e:
     runs-on: ubuntu-latest

@@ -172,6 +172,31 @@ ANSWER = "ok" if ok else "bad=" + repr(lines[:3])
 import fleetkit
 ANSWER = "empty" if fleetkit.bag() == {} else "unexpected"
 ''' + EMIT_PY, lambda a: a == "empty"),
+
+    # The node twin ships in the same image and must resolve the same way the
+    # other global packages do.
+    ("fleetkit node twin renders identically", "node", """
+const fleetkit = require('fleetkit');
+const c = fleetkit.note('a.md', {title: 'T: q', when: '2026-01-15T10:00:00+00:00'}, '# T').content;
+const want = ['---', 'title: "T: q"', 'when: "2026-01-15T10:00:00+00:00"', '---', '# T'].join(String.fromCharCode(10));
+console.log(JSON.stringify({changes: [], answer: c === want ? 'ok' : 'bad=' + JSON.stringify(c)}));
+""", lambda a: a == "ok"),
+
+    ("python jsonschema and node ajv import", "python", '''
+import jsonschema
+jsonschema.validate({"a": 1}, {"type": "object", "required": ["a"]})
+try:
+    jsonschema.validate({}, {"type": "object", "required": ["a"]})
+    ANSWER = "missing-required-not-caught"
+except jsonschema.ValidationError:
+    ANSWER = "ok"
+''' + EMIT_PY, lambda a: a == "ok"),
+
+    ("node ajv validates", "node", """
+const Ajv = require('ajv');
+const ok = new Ajv().compile({type: 'object', required: ['a']})({a: 1});
+console.log(JSON.stringify({changes: [], answer: ok ? 'ok' : 'bad'}));
+""", lambda a: a == "ok"),
 ]
 
 failed = 0

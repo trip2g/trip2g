@@ -60,10 +60,36 @@ fleetkit.emit(changes, 'ingested %d' % len(changes))
 | `patch(path, find, replace)` | a change that swaps the first occurrence of `find` |
 | `emit(changes, answer)` | prints the stdout contract — call once, and last |
 | `bag()` | the delivery bag from `FLEET_INPUT`; `{}` outside a delivery |
+| `note_frontmatter(path)` | the frontmatter of a note in the bag; raises if the bag has no such path |
+| `parse_frontmatter(content)` | the frontmatter block of a markdown string; empty when there is none |
 
-The source is `cmd/codellm/fleetkit/fleetkit.py`, installed to
-`/usr/lib/python3/dist-packages/fleetkit.py` by `Dockerfile.codellm` — on the
-default `sys.path` and inside the subtree the sandbox grants.
+`note_frontmatter(path)` reads a note the delivery bag carries, so a lint role
+is plain code with no schema DSL to learn:
+
+```python
+data = fleetkit.note_frontmatter('calls/a.md')
+if not data.title:
+    issues.append('calls/a.md: no title')
+```
+
+A missing key reads as `None` (python) / `undefined` (node) rather than
+raising, so the `if` says what it looks like. A path the bag does not carry
+raises instead — that is the role's `attach_notes` being too narrow, not a
+finding about the note. Bring `jsonschema` or `zod` if you want a schema; the
+helper deliberately has no opinion.
+
+**Both languages, same names.** The twins are function-for-function identical
+and the node one keeps snake_case for that reason: a role moved between them
+should not have to relearn the API. `node` renders with YAML **version 1.1** to
+match PyYAML — not cosmetic, since under the 1.2 default a timestamp-shaped
+string is emitted bare and reads back as a timestamp, and `yes` reads back as
+`true`. `TestFleetkitRuns_EmitsTheContract` runs both and compares the parsed
+result.
+
+Sources are `cmd/codellm/fleetkit/fleetkit.py` and `cmd/codellm/fleetkit/node/`,
+installed by `Dockerfile.codellm` to `/usr/lib/python3/dist-packages/fleetkit.py`
+and `/usr/lib/node_modules/fleetkit` — on the default `sys.path` and where both
+`require` and `import` resolve, inside the subtree the sandbox grants.
 
 **This is an API that role notes in user vaults import.** Those notes are not in
 this repo, have no build step and are not rolled back with the image, so a
@@ -71,7 +97,6 @@ rename or a signature change breaks them at runtime with nothing to catch it
 first. `TestFleetkit_SourceExports` pins the exported names for that reason;
 add functions freely, change existing ones only deliberately.
 
-There is no Node equivalent yet — a node block still assembles the JSON itself.
 
 ### Python
 
@@ -89,6 +114,7 @@ Installed into `/usr/lib/python3/dist-packages`.
 | `tenacity` | Retry with exponential backoff against flaky APIs |
 | `pydantic` | Validate and reshape response JSON into typed models |
 | `pyyaml` | YAML configs, OpenAPI specs |
+| `jsonschema` | Validate frontmatter or an API response against a JSON Schema |
 | `tzdata` | Timezone database for `zoneinfo` — `/usr/share/zoneinfo` is denied by the sandbox |
 
 Not installed on purpose: `pandas`/`numpy` (~120 MB for work the `csv` module and
@@ -137,6 +163,8 @@ syntaxes and an ESM-only one does not.
 | `csv-parse` | CSV parsing, streaming or synchronous |
 | `axios-retry` | Retry policies layered onto axios |
 | `pg` | PostgreSQL client |
+| `yaml` | YAML parse/stringify; what `fleetkit` renders frontmatter with |
+| `ajv` / `ajv-formats` | JSON Schema validation, the node counterpart to `jsonschema` |
 | `qs` | Nested query-string parsing and serialization |
 
 Node 20 already provides `fetch`, `crypto.randomUUID()` and full ICU, so

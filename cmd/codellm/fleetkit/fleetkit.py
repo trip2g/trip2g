@@ -22,7 +22,7 @@ import os
 
 import yaml
 
-__all__ = ["render", "note", "write", "patch", "emit", "bag"]
+__all__ = ["render", "note", "write", "patch", "emit", "bag", "note_frontmatter"]
 
 
 def render(meta, body=""):
@@ -60,6 +60,46 @@ def emit(changes=(), answer=""):
     earlier print of anything else takes its place and fails the run.
     """
     print(json.dumps({"changes": list(changes), "answer": answer}))
+
+
+class Frontmatter(dict):
+    """A frontmatter mapping whose missing keys read as None.
+
+    So `if not data.title` says what it looks like instead of raising, and
+    matches what the node twin gets from a plain object for free. Still a dict:
+    data["title"], data.get("title") and **data all work.
+    """
+
+    def __getattr__(self, name):
+        return self.get(name)
+
+
+def note_frontmatter(path):
+    """Parse the frontmatter of a note the delivery bag carries.
+
+    A block has no vault filesystem — notes arrive in the bag, so this looks
+    `path` up among attached_notes and changed_files. A path the bag does not
+    carry is a role misconfiguration, not a finding, so it raises rather than
+    reading as a note with no fields.
+    """
+    for key in ("attached_notes", "changed_files"):
+        for entry in bag().get(key) or []:
+            if entry.get("path") == path:
+                return parse_frontmatter(entry.get("content") or "")
+    raise KeyError(
+        "note %r is not in the delivery bag; widen the role's attach_notes to cover it" % path
+    )
+
+
+def parse_frontmatter(content):
+    """The frontmatter block of a markdown string, or empty when there is none."""
+    if not content.startswith("---\n"):
+        return Frontmatter()
+    end = content.find("\n---", 3)
+    if end < 0:
+        return Frontmatter()
+    loaded = yaml.safe_load(content[4:end])
+    return Frontmatter(loaded if isinstance(loaded, dict) else {})
 
 
 def bag():
