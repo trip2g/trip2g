@@ -167,12 +167,11 @@ type ChangeWebhookDelivery struct {
 	CompletedAt    *time.Time `json:"completed_at"`
 	StartedAt      *time.Time `json:"started_at"`
 	HeartbeatAt    *time.Time `json:"heartbeat_at"`
-	TokensUsed     *int64     `json:"tokens_used"`
-	Steps          *int64     `json:"steps"`
 	ParentKind     *string    `json:"parent_kind"`
 	ParentID       *int64     `json:"parent_id"`
 	Trace          *string    `json:"trace"`
 	DepthReached   int64      `json:"depth_reached"`
+	Costs          *string    `json:"costs"`
 }
 
 type ChartDataCache struct {
@@ -260,12 +259,11 @@ type CronWebhookDelivery struct {
 	CompletedAt    *time.Time `json:"completed_at"`
 	StartedAt      *time.Time `json:"started_at"`
 	HeartbeatAt    *time.Time `json:"heartbeat_at"`
-	TokensUsed     *int64     `json:"tokens_used"`
-	Steps          *int64     `json:"steps"`
 	ParentKind     *string    `json:"parent_kind"`
 	ParentID       *int64     `json:"parent_id"`
 	Trace          *string    `json:"trace"`
 	DepthReached   int64      `json:"depth_reached"`
+	Costs          *string    `json:"costs"`
 }
 
 type FederationSecret struct {

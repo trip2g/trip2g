@@ -18,7 +18,7 @@ import (
 // mockEnv is a hand-written mock implementing updatenotes.Env.
 type mockEnv struct {
 	latestNoteViews            func() *appmodel.NoteViews
-	insertNoteWithVersion      func(ctx context.Context, note appmodel.RawNote) (int64, int64, error)
+	insertNote                 func(ctx context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error)
 	hideNotePath               func(ctx context.Context, params db.HideNotePathParams) error
 	prepareLatestNotes         func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	handleLatestNotesAfterSave func(ctx context.Context, pathIDs []int64) error
@@ -28,11 +28,11 @@ func (m *mockEnv) LatestNoteViews() *appmodel.NoteViews {
 	return m.latestNoteViews()
 }
 
-func (m *mockEnv) InsertNoteWithVersion(ctx context.Context, note appmodel.RawNote) (int64, int64, error) {
-	if m.insertNoteWithVersion == nil {
-		panic("unexpected call to InsertNoteWithVersion")
+func (m *mockEnv) InsertNote(ctx context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+	if m.insertNote == nil {
+		panic("unexpected call to InsertNote")
 	}
-	return m.insertNoteWithVersion(ctx, note)
+	return m.insertNote(ctx, note)
 }
 
 func (m *mockEnv) HideNotePath(ctx context.Context, params db.HideNotePathParams) error {
@@ -81,9 +81,9 @@ func TestResolve_UpsertBasic(t *testing.T) {
 	handleCalled := false
 	env := &mockEnv{
 		latestNoteViews: appmodel.NewNoteViews,
-		insertNoteWithVersion: func(_ context.Context, note appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			insertedNote = note
-			return 10, 110, nil
+			return appmodel.NoteSaveResult{PathID: 10, VersionID: 110}, nil
 		},
 		prepareLatestNotes: noopPrepare,
 		handleLatestNotesAfterSave: func(_ context.Context, ids []int64) error {
@@ -135,8 +135,8 @@ func TestResolve_UpsertReportsOwnVersion(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: appmodel.NewNoteViews,
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
-			return pathID, ownVersion, nil
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			return appmodel.NoteSaveResult{PathID: pathID, VersionID: ownVersion}, nil
 		},
 		prepareLatestNotes: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
 			return reloaded, nil
@@ -161,17 +161,18 @@ func TestResolve_UpsertReportsOwnVersion(t *testing.T) {
 		"must report the write's OWN inserted version, not the peer's reload version")
 }
 
-// TestResolve_UpsertFallsBackToReloadVersionWhenUnchanged pins the unchanged-content
-// path: InsertNoteWithVersion returns version id 0 (no new version created), so the
-// resolver falls back to the note's current version in the reload.
-func TestResolve_UpsertFallsBackToReloadVersionWhenUnchanged(t *testing.T) {
+// TestResolve_UpsertUnchangedIsInert pins the unchanged-content path: the write
+// stored nothing and unhid nothing, so there is no reload and no change event —
+// otherwise an idempotent agent write re-triggers the webhooks that caused it. The
+// path is still reported, with the version it already has.
+func TestResolve_UpsertUnchangedIsInert(t *testing.T) {
 	ctx := context.Background()
 
 	const pathID int64 = 8
 	const currentVersion int64 = 500
 
-	reloaded := appmodel.NewNoteViews()
-	reloaded.RegisterNote(&appmodel.NoteView{
+	current := appmodel.NewNoteViews()
+	current.RegisterNote(&appmodel.NoteView{
 		PathID:    pathID,
 		Path:      "note.md",
 		Permalink: "note.md",
@@ -179,15 +180,21 @@ func TestResolve_UpsertFallsBackToReloadVersionWhenUnchanged(t *testing.T) {
 		Content:   []byte("same content"),
 	})
 
+	reloads := 0
+	handles := 0
 	env := &mockEnv{
-		latestNoteViews: appmodel.NewNoteViews,
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
-			return pathID, 0, nil // content unchanged → no new version
+		latestNoteViews: func() *appmodel.NoteViews { return current },
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			return appmodel.NoteSaveResult{PathID: pathID, VersionID: 0}, nil // content unchanged → no new version
 		},
 		prepareLatestNotes: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
-			return reloaded, nil
+			reloads++
+			return current, nil
 		},
-		handleLatestNotesAfterSave: noopHandle,
+		handleLatestNotesAfterSave: func(_ context.Context, _ []int64) error {
+			handles++
+			return nil
+		},
 	}
 
 	input := model.UpdateNotesInput{
@@ -203,7 +210,9 @@ func TestResolve_UpsertFallsBackToReloadVersionWhenUnchanged(t *testing.T) {
 	require.True(t, ok, "expected UpdateNotesSuccessPayload, got %T", result)
 	require.Len(t, payload.Updated, 1)
 	require.Equal(t, currentVersion, payload.Updated[0].VersionID,
-		"version 0 from the write means unchanged content → fall back to the reload's current version")
+		"version 0 from the write means unchanged content → report the version it already has")
+	require.Zero(t, reloads, "nothing changed, so nothing to reload for")
+	require.Zero(t, handles, "a write that stored nothing must raise no change events")
 }
 
 func TestResolve_UpsertWithCorrectHash(t *testing.T) {
@@ -215,8 +224,8 @@ func TestResolve_UpsertWithCorrectHash(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: func() *appmodel.NoteViews { return nvs },
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
-			return 11, 111, nil
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			return appmodel.NoteSaveResult{PathID: 11, VersionID: 111}, nil
 		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -246,9 +255,9 @@ func TestResolve_UpsertWithWrongHash(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: func() *appmodel.NoteViews { return nvs },
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			t.Fatal("InsertNote should not be called on hash mismatch")
-			return 0, 0, nil
+			return appmodel.NoteSaveResult{PathID: 0, VersionID: 0}, nil
 		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -322,12 +331,12 @@ func TestResolve_UpsertCreateOnly(t *testing.T) {
 			var insertedNote appmodel.RawNote
 			env := &mockEnv{
 				latestNoteViews: func() *appmodel.NoteViews { return nvs },
-				insertNoteWithVersion: func(_ context.Context, note appmodel.RawNote) (int64, int64, error) {
+				insertNote: func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 					if !tt.wantCreated {
 						t.Fatal("InsertNote must not be called when an existing note blocks the create")
 					}
 					insertedNote = note
-					return 100, 200, nil
+					return appmodel.NoteSaveResult{PathID: 100, VersionID: 200}, nil
 				},
 				prepareLatestNotes:         noopPrepare,
 				handleLatestNotesAfterSave: noopHandle,
@@ -370,9 +379,9 @@ func TestResolve_PatchFound(t *testing.T) {
 	var insertedNote appmodel.RawNote
 	env := &mockEnv{
 		latestNoteViews: func() *appmodel.NoteViews { return nvs },
-		insertNoteWithVersion: func(_ context.Context, note appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			insertedNote = note
-			return 12, 112, nil
+			return appmodel.NoteSaveResult{PathID: 12, VersionID: 112}, nil
 		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -399,9 +408,9 @@ func TestResolve_PatchNotFound(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: func() *appmodel.NoteViews { return nvs },
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			t.Fatal("InsertNote should not be called when find string is absent")
-			return 0, 0, nil
+			return appmodel.NoteSaveResult{PathID: 0, VersionID: 0}, nil
 		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -428,9 +437,9 @@ func TestResolve_PatchMultipleOccurrences(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: func() *appmodel.NoteViews { return nvs },
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			t.Fatal("InsertNote should not be called on ambiguous patch")
-			return 0, 0, nil
+			return appmodel.NoteSaveResult{PathID: 0, VersionID: 0}, nil
 		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -457,9 +466,9 @@ func TestResolve_PatchNoteMissing(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: appmodel.NewNoteViews,
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			t.Fatal("InsertNote should not be called when note is missing")
-			return 0, 0, nil
+			return appmodel.NoteSaveResult{PathID: 0, VersionID: 0}, nil
 		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -488,9 +497,9 @@ func TestResolve_PatchWithWrongHash(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: func() *appmodel.NoteViews { return nvs },
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			t.Fatal("InsertNote should not be called on hash mismatch")
-			return 0, 0, nil
+			return appmodel.NoteSaveResult{PathID: 0, VersionID: 0}, nil
 		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
@@ -518,9 +527,9 @@ func TestResolve_Hide(t *testing.T) {
 	prepareCount := 0
 	env := &mockEnv{
 		latestNoteViews: appmodel.NewNoteViews,
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			t.Fatal("InsertNote should not be called for hide")
-			return 0, 0, nil
+			return appmodel.NoteSaveResult{PathID: 0, VersionID: 0}, nil
 		},
 		hideNotePath: func(_ context.Context, params db.HideNotePathParams) error {
 			hiddenPath = params.Value
@@ -559,9 +568,9 @@ func TestResolve_EmptyChangeSkipped(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: appmodel.NewNoteViews,
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			t.Fatal("InsertNote should not be called for empty change")
-			return 0, 0, nil
+			return appmodel.NoteSaveResult{PathID: 0, VersionID: 0}, nil
 		},
 		hideNotePath: func(_ context.Context, _ db.HideNotePathParams) error {
 			t.Fatal("HideNotePath should not be called for empty change")
@@ -595,9 +604,9 @@ func TestResolve_MixedBatch(t *testing.T) {
 
 	env := &mockEnv{
 		latestNoteViews: func() *appmodel.NoteViews { return nvs },
-		insertNoteWithVersion: func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) {
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			insertCallCount++
-			return int64(100 + insertCallCount), int64(200 + insertCallCount), nil
+			return appmodel.NoteSaveResult{PathID: int64(100 + insertCallCount), VersionID: int64(200 + insertCallCount)}, nil
 		},
 		hideNotePath: func(_ context.Context, _ db.HideNotePathParams) error {
 			hideCallCount++
@@ -655,8 +664,11 @@ func TestResolve_WriteAllowedInPattern(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            appmodel.NewNoteViews,
-		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		latestNoteViews: appmodel.NewNoteViews,
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			called = true
+			return appmodel.NoteSaveResult{PathID: 1, VersionID: 0}, nil
+		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
@@ -729,8 +741,11 @@ func TestResolve_ScopedToken_MatchingPattern_Allowed(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            appmodel.NewNoteViews,
-		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		latestNoteViews: appmodel.NewNoteViews,
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			called = true
+			return appmodel.NoteSaveResult{PathID: 1, VersionID: 0}, nil
+		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
@@ -760,8 +775,11 @@ func TestResolve_ScopedToken_LeadingSlashPathNotDenied(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            appmodel.NewNoteViews,
-		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		latestNoteViews: appmodel.NewNoteViews,
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			called = true
+			return appmodel.NoteSaveResult{PathID: 1, VersionID: 0}, nil
+		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
@@ -792,8 +810,11 @@ func TestResolve_ScopedToken_SlashPrefixedPatternNotDenied(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            appmodel.NewNoteViews,
-		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		latestNoteViews: appmodel.NewNoteViews,
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			called = true
+			return appmodel.NoteSaveResult{PathID: 1, VersionID: 0}, nil
+		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
@@ -905,8 +926,11 @@ func TestResolve_ScopedNoDeliveryKind_MatchingPattern_Allowed(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            appmodel.NewNoteViews,
-		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		latestNoteViews: appmodel.NewNoteViews,
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			called = true
+			return appmodel.NoteSaveResult{PathID: 1, VersionID: 0}, nil
+		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
@@ -929,8 +953,11 @@ func TestResolve_Unscoped_EmptyWritePatterns_Allowed(t *testing.T) {
 
 	called := false
 	env := &mockEnv{
-		latestNoteViews:            appmodel.NewNoteViews,
-		insertNoteWithVersion:      func(_ context.Context, _ appmodel.RawNote) (int64, int64, error) { called = true; return 1, 0, nil },
+		latestNoteViews: appmodel.NewNoteViews,
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			called = true
+			return appmodel.NoteSaveResult{PathID: 1, VersionID: 0}, nil
+		},
 		prepareLatestNotes:         noopPrepare,
 		handleLatestNotesAfterSave: noopHandle,
 	}
@@ -944,4 +971,141 @@ func TestResolve_Unscoped_EmptyWritePatterns_Allowed(t *testing.T) {
 	require.NoError(t, err)
 	require.IsType(t, model.UpdateNotesSuccessPayload{}, out)
 	require.True(t, called)
+}
+
+// TestResolve_UnhideReloadsWithoutEvents pins the other half of the no-op rule: a
+// write that stored nothing but brought a hidden path back must reload the served
+// snapshot — the note is absent from it while hidden — yet still raise no change
+// event, since its content did not change.
+func TestResolve_UnhideReloadsWithoutEvents(t *testing.T) {
+	ctx := context.Background()
+
+	const pathID int64 = 9
+
+	views := appmodel.NewNoteViews()
+	views.RegisterNote(&appmodel.NoteView{
+		PathID: pathID, Path: "note.md", Permalink: "note.md", VersionID: 42,
+	})
+
+	reloads := 0
+	handles := 0
+	env := &mockEnv{
+		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			return appmodel.NoteSaveResult{PathID: pathID, Unhidden: true}, nil
+		},
+		prepareLatestNotes: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			reloads++
+			return views, nil
+		},
+		handleLatestNotesAfterSave: func(_ context.Context, _ []int64) error {
+			handles++
+			return nil
+		},
+	}
+
+	result, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "note.md", Content: "same content"}},
+		},
+	})
+	require.NoError(t, err)
+
+	payload, ok := result.(model.UpdateNotesSuccessPayload)
+	require.True(t, ok, "expected UpdateNotesSuccessPayload, got %T", result)
+	require.Equal(t, 1, reloads, "an unhidden note must reach the served snapshot")
+	require.Zero(t, handles, "unhiding is not a content change")
+	require.Len(t, payload.Updated, 1)
+}
+
+// TestResolve_MixedBatchHandlesOnlyChangedPaths pins the filter: in a batch where
+// one write changed content and one did not, only the changed path reaches the
+// post-save handler, while both are reported to the caller.
+func TestResolve_MixedBatchHandlesOnlyChangedPaths(t *testing.T) {
+	ctx := context.Background()
+
+	const changedPathID int64 = 11
+	const unchangedPathID int64 = 12
+
+	views := appmodel.NewNoteViews()
+	views.RegisterNote(&appmodel.NoteView{
+		PathID: changedPathID, Path: "changed.md", Permalink: "changed.md", VersionID: 21,
+	})
+	views.RegisterNote(&appmodel.NoteView{
+		PathID: unchangedPathID, Path: "unchanged.md", Permalink: "unchanged.md", VersionID: 22,
+	})
+
+	var handled []int64
+	env := &mockEnv{
+		latestNoteViews: func() *appmodel.NoteViews { return views },
+		insertNote: func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			if note.Path == "changed.md" {
+				return appmodel.NoteSaveResult{PathID: changedPathID, VersionID: 21}, nil
+			}
+			return appmodel.NoteSaveResult{PathID: unchangedPathID}, nil
+		},
+		prepareLatestNotes: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			return views, nil
+		},
+		handleLatestNotesAfterSave: func(_ context.Context, pathIDs []int64) error {
+			handled = pathIDs
+			return nil
+		},
+	}
+
+	result, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "changed.md", Content: "new"}},
+			{Upsert: &model.NoteChangeUpsertInput{Path: "unchanged.md", Content: "same"}},
+		},
+	})
+	require.NoError(t, err)
+
+	payload, ok := result.(model.UpdateNotesSuccessPayload)
+	require.True(t, ok, "expected UpdateNotesSuccessPayload, got %T", result)
+	require.Len(t, payload.Updated, 2, "both paths are reported to the caller")
+	require.Equal(t, []int64{changedPathID}, handled, "only the changed path raises events")
+}
+
+// TestResolve_HideWithUnchangedUpsertStillReports pins a batch that mixes a hide
+// with a write that stored nothing: the hide drives the reload, and the no-op path
+// must still come back in the response.
+func TestResolve_HideWithUnchangedUpsertStillReports(t *testing.T) {
+	ctx := context.Background()
+
+	const pathID int64 = 13
+
+	views := appmodel.NewNoteViews()
+	views.RegisterNote(&appmodel.NoteView{
+		PathID: pathID, Path: "kept.md", Permalink: "kept.md", VersionID: 31,
+	})
+
+	handles := 0
+	env := &mockEnv{
+		latestNoteViews: func() *appmodel.NoteViews { return views },
+		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			return appmodel.NoteSaveResult{PathID: pathID}, nil
+		},
+		hideNotePath: func(_ context.Context, _ db.HideNotePathParams) error { return nil },
+		prepareLatestNotes: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			return views, nil
+		},
+		handleLatestNotesAfterSave: func(_ context.Context, _ []int64) error {
+			handles++
+			return nil
+		},
+	}
+
+	result, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		Changes: []model.NoteChangeInput{
+			{Hide: &model.NoteChangeHideInput{Path: "gone.md"}},
+			{Upsert: &model.NoteChangeUpsertInput{Path: "kept.md", Content: "same"}},
+		},
+	})
+	require.NoError(t, err)
+
+	payload, ok := result.(model.UpdateNotesSuccessPayload)
+	require.True(t, ok, "expected UpdateNotesSuccessPayload, got %T", result)
+	require.Len(t, payload.Updated, 1, "the unchanged path must not vanish from the response")
+	require.Zero(t, handles, "nothing was written, so no change events")
 }

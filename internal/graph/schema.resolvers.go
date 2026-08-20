@@ -668,6 +668,15 @@ func (r *adminDeliveryTraceResolver) LastAt(ctx context.Context, obj *db.ListDel
 	return ptr.To(time.Unix(obj.LastAtUnix, 0).UTC()), nil
 }
 
+// TotalCosts is the resolver for the totalCosts field.
+func (r *adminDeliveryTraceResolver) TotalCosts(ctx context.Context, obj *db.ListDeliveryTracesRow) ([]model.AdminCost, error) {
+	raws, err := r.env(ctx).ListTraceCosts(ctx, obj.Trace)
+	if err != nil {
+		return nil, err
+	}
+	return sumCosts(raws), nil
+}
+
 // Note is the resolver for the note field.
 func (r *adminFormNoteResolver) Note(ctx context.Context, obj *model.AdminFormNote) (*appmodel.NoteView, error) {
 	return r.env(ctx).LatestNoteViews().GetByPathID(obj.PathID), nil
@@ -2099,12 +2108,21 @@ func (r *adminQueryResolver) CronWebhookDeliveries(ctx context.Context, obj *app
 }
 
 // DeliveryTraces is the resolver for the deliveryTraces field.
-func (r *adminQueryResolver) DeliveryTraces(ctx context.Context, obj *appmodel.AdminQuery, limit *int64) ([]db.ListDeliveryTracesRow, error) {
+func (r *adminQueryResolver) DeliveryTraces(ctx context.Context, obj *appmodel.AdminQuery, limit *int64, withEmpty *bool) ([]db.ListDeliveryTracesRow, error) {
 	n := int64(defaultDeliveryTracesLimit)
 	if limit != nil && *limit > 0 {
 		n = *limit
 	}
-	return r.env(ctx).ListDeliveryTraces(ctx, n)
+	// Chains that wrote nothing are hidden by default: they are the cron runs that
+	// found no work, and there are as many of them as the schedule ticks.
+	onlyProductive := int64(1)
+	if withEmpty != nil && *withEmpty {
+		onlyProductive = 0
+	}
+	return r.env(ctx).ListDeliveryTraces(ctx, db.ListDeliveryTracesParams{
+		OnlyProductive: onlyProductive,
+		Lim:            n,
+	})
 }
 
 // DeliveryTrace is the resolver for the deliveryTrace field.
@@ -2540,6 +2558,11 @@ func (r *adminTgChatSubgraphAccessResolver) Subgraph(ctx context.Context, obj *d
 // Nodes is the resolver for the nodes field.
 func (r *adminTgChatSubgraphAccessesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTgChatSubgraphAccessesConnection) ([]db.TgChatSubgraphAccess, error) {
 	return r.env(ctx).AllTgChatSubgraphAccesses(ctx)
+}
+
+// Costs is the resolver for the costs field.
+func (r *adminTraceDeliveryResolver) Costs(ctx context.Context, obj *db.ListDeliveriesByTraceRow) ([]model.AdminCost, error) {
+	return decodeCosts(obj.Costs), nil
 }
 
 // Writes is the resolver for the writes field.

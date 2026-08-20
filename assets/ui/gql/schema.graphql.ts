@@ -324,6 +324,12 @@ export type AdminConfigValue = {
   updatedBy?: Maybe<AdminUser>;
 };
 
+export type AdminCost = {
+  __typename?: 'AdminCost';
+  id: Scalars['String']['output'];
+  value: Scalars['Float']['output'];
+};
+
 export type AdminCreateUserTokenInput = {
   expiresInDays?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
@@ -416,8 +422,9 @@ export type AdminDeliveryTrace = {
   depthReached: Scalars['Int64']['output'];
   lastAt: Scalars['Time']['output'];
   startedAt: Scalars['Time']['output'];
-  tokensUsed: Scalars['Int64']['output'];
+  totalCosts: Array<AdminCost>;
   trace?: Maybe<Scalars['String']['output']>;
+  writes: Scalars['Int64']['output'];
 };
 
 export type AdminFederationSecret = {
@@ -1564,6 +1571,7 @@ export type AdminQuerydeliveryTraceArgs = {
 
 export type AdminQuerydeliveryTracesArgs = {
   limit?: InputMaybe<Scalars['Int64']['input']>;
+  withEmpty?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -2027,6 +2035,7 @@ export type AdminTraceDelivery = {
   __typename?: 'AdminTraceDelivery';
   attempt: Scalars['Int64']['output'];
   completedAt?: Maybe<Scalars['Time']['output']>;
+  costs: Array<AdminCost>;
   createdAt: Scalars['Time']['output'];
   depthReached: Scalars['Int64']['output'];
   durationMs?: Maybe<Scalars['Int64']['output']>;
@@ -2037,8 +2046,6 @@ export type AdminTraceDelivery = {
   responseStatus?: Maybe<Scalars['Int64']['output']>;
   startedAt?: Maybe<Scalars['Time']['output']>;
   status: Scalars['String']['output'];
-  steps?: Maybe<Scalars['Int64']['output']>;
-  tokensUsed?: Maybe<Scalars['Int64']['output']>;
   webhookId: Scalars['Int64']['output'];
   writes: Array<AdminTraceWrite>;
 };

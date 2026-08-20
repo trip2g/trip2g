@@ -280,9 +280,6 @@ type Env interface {
 	revokeusertoken.Env
 	toggleuserfavoritenote.Env
 	pushnotes.Env
-	// InsertNoteWithVersion is InsertNote that also returns the inserted version id;
-	// updateNotes (updatenotes.Env) reports each save's own version race-free with it.
-	InsertNoteWithVersion(ctx context.Context, note model.RawNote) (int64, int64, error)
 	commitnotes.Env
 	rendernotepage.Env
 	uploadnoteasset.Env
@@ -426,9 +423,10 @@ type Env interface {
 	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)
 	ListWebhooks(ctx context.Context) ([]db.ChangeWebhook, error)
 	ListWebhookDeliveries(ctx context.Context, params db.ListWebhookDeliveriesParams) ([]db.ChangeWebhookDelivery, error)
-	ListDeliveryTraces(ctx context.Context, limit int64) ([]db.ListDeliveryTracesRow, error)
+	ListDeliveryTraces(ctx context.Context, arg db.ListDeliveryTracesParams) ([]db.ListDeliveryTracesRow, error)
 	ListDeliveriesByTrace(ctx context.Context, trace *string) ([]db.ListDeliveriesByTraceRow, error)
 	ListDeliveryWrites(ctx context.Context, arg db.ListDeliveryWritesParams) ([]db.ListDeliveryWritesRow, error)
+	ListTraceCosts(ctx context.Context, trace *string) ([]*string, error)
 	CronWebhookByID(ctx context.Context, id int64) (db.CronWebhook, error)
 	ListCronWebhooks(ctx context.Context) ([]db.CronWebhook, error)
 	ListCronWebhookDeliveries(ctx context.Context, params db.ListCronWebhookDeliveriesParams) ([]db.CronWebhookDelivery, error)

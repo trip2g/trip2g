@@ -71,7 +71,7 @@ The server reads the current content, replaces the first (and only) occurrence o
 Rules:
 - `find` must appear exactly once. If absent or ambiguous, the mutation returns `UpdateNotesPatchNotFoundPayload` with the `path` and `find` string that failed.
 - `find` is an exact string match, not a regex.
-- If `find` equals `replace`, the note is unchanged and no new version is created.
+- If `find` equals `replace`, the note is unchanged, no new version is created, and no change event is raised: no webhooks fire and re-embedding is skipped.
 - Empty `replace` is valid — it deletes the matched string.
 
 Optional `expectedHash` works the same as for upsert.

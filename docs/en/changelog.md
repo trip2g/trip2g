@@ -16,6 +16,18 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** Neither was reachable on mobile. The published-URL indicator lives in the status bar, which Obsidian mobile doesn't show, so the only route to a note's page was the "Copy published URL" command; and dismissing the warnings tab meant a detour through the tab switcher.
 - **How.** Update the plugin to 0.11.0, then tap `...` on a note → **Open on site**. For one-tap access, pin **Open published URL in browser** in Obsidian's Settings → Toolbar (mobile).
 
+### Delivery chains: trace every webhook step across the agent graph
+
+- **What.** Every webhook delivery now records which delivery caused it (`parent_delivery_id`) and which end-to-end chain it belongs to (`chain_id`). A new **System → Delivery Chains** screen in the admin lists all chains, each with a timeline of its steps: what path each delivery wrote, what it triggered next, the depth at which it fired, and the wall-clock span. Chains are assembled across separate agent hosts — a fleet agent on one machine and a webhook consumer on another — without either process knowing about the other.
+- **Why.** When a change triggers a webhook that writes a note that triggers another webhook, the full sequence was previously invisible: you could see individual delivery records but not the chain that connected them. This makes the entire propagation path inspectable from a single admin screen.
+- **How.** Open Admin → System → Delivery Chains. Each row is a root delivery; expand it to walk the chain step by step. The screen refreshes as new chains arrive. No configuration is needed — all deliveries since the upgrade are automatically linked.
+
+### Idempotent writes no longer fire change events
+
+- **What.** A `updateNotes` call whose content equals what is already stored creates no new version and raises no change event. No webhook delivery is queued, no SSE event is emitted, no re-embedding runs, and no Telegram publish-view refresh happens. Changing at least one byte still fires normally. Hiding a note and unhiding it (writing to the hidden path is the only way to unhide) both still work; unhiding refreshes the served snapshot but deliberately raises no change event.
+- **Why.** An agent that re-applied identical content re-triggered the webhook that caused it on every cycle, at full LLM cost, bounded only by `max_depth`. The fix stops the loop at the write layer: if nothing changed, nothing downstream needs to know.
+- **How.** Automatic. Agents that write back the full note content unchanged no longer cause runaway chains. The `max_depth` guard remains useful for agents that do produce genuine changes.
+
 ### Frontmatter key index
 
 - **What.** Note paths can be filtered by effective frontmatter keys and values through GraphQL. The server materializes frontmatter after patches and tracks whether each key is present in the latest or live note set.

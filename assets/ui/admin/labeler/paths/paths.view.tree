@@ -5,5 +5,5 @@ $trip2g_admin_labeler_paths $mol_labeler
 		rows <= rows /
 	Path!path $trip2g_admin_path
 		path <= path!path \
-	Empty $trip2g_admin_cell
+	Blank $trip2g_admin_cell
 		content \-

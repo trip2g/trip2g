@@ -3,11 +3,6 @@ $trip2g_admin_deliverytrace_show $trip2g_admin_catalog
 	menu_title <= trace_title \Delivery Chain
 	param \hop
 	Empty $mol_status
-	menu_head /
-		<= Menu_title
-		<= Menu_tools
-		<= Timeline $trip2g_admin_deliverytrace_timeline
-			hops <= hops /
 	ShowPage* $trip2g_admin_deliverytrace_hop
 		hop_title <= hop_title*
 		kind <= hop_kind*

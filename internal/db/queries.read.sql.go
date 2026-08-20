@@ -4488,7 +4488,7 @@ func (q *Queries) ListCronJobExecutionsByJobID(ctx context.Context, jobID int64)
 }
 
 const listCronWebhookDeliveries = `-- name: ListCronWebhookDeliveries :many
-select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached from cron_webhook_deliveries
+select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs from cron_webhook_deliveries
 where cron_webhook_id = ?
 order by created_at desc
 limit ?
@@ -4519,12 +4519,11 @@ func (q *Queries) ListCronWebhookDeliveries(ctx context.Context, arg ListCronWeb
 			&i.CompletedAt,
 			&i.StartedAt,
 			&i.HeartbeatAt,
-			&i.TokensUsed,
-			&i.Steps,
 			&i.ParentKind,
 			&i.ParentID,
 			&i.Trace,
 			&i.DepthReached,
+			&i.Costs,
 		); err != nil {
 			return nil, err
 		}
@@ -4649,7 +4648,7 @@ func (q *Queries) ListCronWebhooksDueForExecution(ctx context.Context) ([]CronWe
 const listDeliveriesByTrace = `-- name: ListDeliveriesByTrace :many
 select 'change' as kind, c.id as id, c.webhook_id as webhook_id, c.status as status,
        c.response_status as response_status, c.attempt as attempt, c.duration_ms as duration_ms,
-       c.tokens_used as tokens_used, c.steps as steps, c.created_at as created_at,
+       c.costs as costs, c.created_at as created_at,
        c.started_at as started_at, c.completed_at as completed_at,
        c.parent_kind as parent_kind, c.parent_id as parent_id,
        c.depth_reached as depth_reached
@@ -4657,7 +4656,7 @@ select 'change' as kind, c.id as id, c.webhook_id as webhook_id, c.status as sta
  union all
 select 'cron' as kind, r.id as id, r.cron_webhook_id as webhook_id, r.status as status,
        r.response_status as response_status, r.attempt as attempt, r.duration_ms as duration_ms,
-       r.tokens_used as tokens_used, r.steps as steps, r.created_at as created_at,
+       r.costs as costs, r.created_at as created_at,
        r.started_at as started_at, r.completed_at as completed_at,
        r.parent_kind as parent_kind, r.parent_id as parent_id,
        r.depth_reached as depth_reached
@@ -4673,8 +4672,7 @@ type ListDeliveriesByTraceRow struct {
 	ResponseStatus *int64     `json:"response_status"`
 	Attempt        int64      `json:"attempt"`
 	DurationMs     *int64     `json:"duration_ms"`
-	TokensUsed     *int64     `json:"tokens_used"`
-	Steps          *int64     `json:"steps"`
+	Costs          *string    `json:"costs"`
 	CreatedAt      time.Time  `json:"created_at"`
 	StartedAt      *time.Time `json:"started_at"`
 	CompletedAt    *time.Time `json:"completed_at"`
@@ -4701,8 +4699,7 @@ func (q *Queries) ListDeliveriesByTrace(ctx context.Context, trace *string) ([]L
 			&i.ResponseStatus,
 			&i.Attempt,
 			&i.DurationMs,
-			&i.TokensUsed,
-			&i.Steps,
+			&i.Costs,
 			&i.CreatedAt,
 			&i.StartedAt,
 			&i.CompletedAt,
@@ -4724,34 +4721,50 @@ func (q *Queries) ListDeliveriesByTrace(ctx context.Context, trace *string) ([]L
 }
 
 const listDeliveryTraces = `-- name: ListDeliveryTraces :many
+select trace, started_at_unix, last_at_unix, deliveries, depth_reached, writes from (
 select t.trace as trace,
        cast(strftime('%s', min(t.created_at)) as integer) as started_at_unix,
        cast(strftime('%s', max(t.created_at)) as integer) as last_at_unix,
        count(*) as deliveries,
-       cast(sum(coalesce(t.tokens_used, 0)) as integer) as tokens_used,
-       cast(max(t.depth_reached) as integer) as depth_reached
-  from (select trace, created_at, tokens_used, depth_reached
-          from change_webhook_deliveries where trace is not null
+       cast(max(t.depth_reached) as integer) as depth_reached,
+       cast(sum(t.writes) as integer) as writes
+  from (select c.trace as trace, c.created_at as created_at,
+               c.depth_reached as depth_reached,
+               (select count(*) from note_version_delivery_attribution a
+                 where a.delivery_kind = 'change' and a.delivery_id = c.id) as writes
+          from change_webhook_deliveries c where c.trace is not null
         union all
-        select trace, created_at, tokens_used, depth_reached
-          from cron_webhook_deliveries where trace is not null) as t
- group by t.trace
- order by started_at_unix desc
- limit ?
+        select r.trace as trace, r.created_at as created_at,
+               r.depth_reached as depth_reached,
+               (select count(*) from note_version_delivery_attribution a
+                 where a.delivery_kind = 'cron' and a.delivery_id = r.id) as writes
+          from cron_webhook_deliveries r where r.trace is not null) as t
+ group by t.trace) as g
+ where cast(?1 as integer) = 0 or g.writes > 0
+ order by g.started_at_unix desc
+ limit ?2
 `
+
+type ListDeliveryTracesParams struct {
+	OnlyProductive int64 `json:"only_productive"`
+	Lim            int64 `json:"lim"`
+}
 
 type ListDeliveryTracesRow struct {
 	Trace         *string `json:"trace"`
 	StartedAtUnix int64   `json:"started_at_unix"`
 	LastAtUnix    int64   `json:"last_at_unix"`
 	Deliveries    int64   `json:"deliveries"`
-	TokensUsed    int64   `json:"tokens_used"`
 	DepthReached  int64   `json:"depth_reached"`
+	Writes        int64   `json:"writes"`
 }
 
-// Chain overview: one row per trace, rolled up across both delivery kinds.
-func (q *Queries) ListDeliveryTraces(ctx context.Context, limit int64) ([]ListDeliveryTracesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listDeliveryTraces, limit)
+// Chain overview: one row per trace, rolled up across both delivery kinds, with
+// the number of note versions the chain produced. only_productive drops chains
+// that wrote nothing: a cron role that finds no work still runs, and those runs
+// otherwise bury the ones that did something.
+func (q *Queries) ListDeliveryTraces(ctx context.Context, arg ListDeliveryTracesParams) ([]ListDeliveryTracesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDeliveryTraces, arg.OnlyProductive, arg.Lim)
 	if err != nil {
 		return nil, err
 	}
@@ -4764,8 +4777,8 @@ func (q *Queries) ListDeliveryTraces(ctx context.Context, limit int64) ([]ListDe
 			&i.StartedAtUnix,
 			&i.LastAtUnix,
 			&i.Deliveries,
-			&i.TokensUsed,
 			&i.DepthReached,
+			&i.Writes,
 		); err != nil {
 			return nil, err
 		}
@@ -6634,6 +6647,41 @@ func (q *Queries) ListTgBots(ctx context.Context) ([]TgBot, error) {
 	return items, nil
 }
 
+const listTraceCosts = `-- name: ListTraceCosts :many
+select c.costs as costs
+  from change_webhook_deliveries c
+ where c.trace = ?1 and c.costs is not null
+ union all
+select r.costs as costs
+  from cron_webhook_deliveries r
+ where r.trace = ?1 and r.costs is not null
+`
+
+// The raw cost objects of one chain. Summing happens in Go: the keys are
+// whatever the agents reported, and sqlc cannot type json_each.
+func (q *Queries) ListTraceCosts(ctx context.Context, trace *string) ([]*string, error) {
+	rows, err := q.db.QueryContext(ctx, listTraceCosts, trace)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*string
+	for rows.Next() {
+		var costs *string
+		if err := rows.Scan(&costs); err != nil {
+			return nil, err
+		}
+		items = append(items, costs)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUncommittedPaths = `-- name: ListUncommittedPaths :many
 select note_path_id from note_uncommitted_paths
 `
@@ -6779,7 +6827,7 @@ func (q *Queries) ListUserTokensFiltered(ctx context.Context, userID *int64) ([]
 }
 
 const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
-select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached from change_webhook_deliveries
+select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs from change_webhook_deliveries
 where webhook_id = ?
 order by created_at desc
 limit ?
@@ -6810,12 +6858,11 @@ func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeli
 			&i.CompletedAt,
 			&i.StartedAt,
 			&i.HeartbeatAt,
-			&i.TokensUsed,
-			&i.Steps,
 			&i.ParentKind,
 			&i.ParentID,
 			&i.Trace,
 			&i.DepthReached,
+			&i.Costs,
 		); err != nil {
 			return nil, err
 		}

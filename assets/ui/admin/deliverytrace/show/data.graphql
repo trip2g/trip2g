@@ -8,10 +8,11 @@ query ($trace: String!) {
 			responseStatus
 			attempt
 			durationMs
-			tokensUsed
-			steps
+			costs {
+				id
+				value
+			}
 			createdAt
-			startedAt
 			completedAt
 			parentKind
 			parentId

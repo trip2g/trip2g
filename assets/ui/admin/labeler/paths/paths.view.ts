@@ -5,7 +5,7 @@ namespace $.$$ {
 		@$mol_mem
 		override rows() {
 			const paths = this.paths()
-			if( !paths.length ) return [ this.Empty() ]
+			if( !paths.length ) return [ this.Blank() ]
 			return paths.map( path => this.Path( path ) )
 		}
 

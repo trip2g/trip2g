@@ -315,6 +315,8 @@ type AdminCronWebhooksConnectionResolver interface {
 type AdminDeliveryTraceResolver interface {
 	StartedAt(ctx context.Context, obj *db.ListDeliveryTracesRow) (*time.Time, error)
 	LastAt(ctx context.Context, obj *db.ListDeliveryTracesRow) (*time.Time, error)
+
+	TotalCosts(ctx context.Context, obj *db.ListDeliveryTracesRow) ([]model.AdminCost, error)
 }
 type AdminFormNoteResolver interface {
 	Note(ctx context.Context, obj *model.AdminFormNote) (*model1.NoteView, error)
@@ -600,7 +602,7 @@ type AdminQueryResolver interface {
 	CronWebhook(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.CronWebhook, error)
 	AllCronWebhooks(ctx context.Context, obj *model1.AdminQuery) (*model.AdminCronWebhooksConnection, error)
 	CronWebhookDeliveries(ctx context.Context, obj *model1.AdminQuery, filter model.AdminCronWebhookDeliveriesFilterInput) (*model.AdminCronWebhookDeliveriesConnection, error)
-	DeliveryTraces(ctx context.Context, obj *model1.AdminQuery, limit *int64) ([]db.ListDeliveryTracesRow, error)
+	DeliveryTraces(ctx context.Context, obj *model1.AdminQuery, limit *int64, withEmpty *bool) ([]db.ListDeliveryTracesRow, error)
 	DeliveryTrace(ctx context.Context, obj *model1.AdminQuery, trace string) ([]db.ListDeliveriesByTraceRow, error)
 	HealthChecks(ctx context.Context, obj *model1.AdminQuery) ([]model.HealchCheck, error)
 	BuildGitCommit(ctx context.Context, obj *model1.AdminQuery) (string, error)
@@ -705,6 +707,8 @@ type AdminTgChatSubgraphAccessesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminTgChatSubgraphAccessesConnection) ([]db.TgChatSubgraphAccess, error)
 }
 type AdminTraceDeliveryResolver interface {
+	Costs(ctx context.Context, obj *db.ListDeliveriesByTraceRow) ([]model.AdminCost, error)
+
 	Writes(ctx context.Context, obj *db.ListDeliveriesByTraceRow) ([]db.ListDeliveryWritesRow, error)
 }
 type AdminUserResolver interface {
@@ -1998,8 +2002,13 @@ type AdminDeliveryTrace @goModel(model: "trip2g/internal/db.ListDeliveryTracesRo
   startedAt: Time! @goField(forceResolver: true)
   lastAt: Time! @goField(forceResolver: true)
   deliveries: Int64!
-  tokensUsed: Int64!
   depthReached: Int64!
+  # What the whole chain cost, summed per unit. The units are whatever its agents
+  # reported — trip2g has no list of them.
+  totalCosts: [AdminCost!]! @goField(forceResolver: true)
+  # Note versions this chain produced. Zero means every delivery in it ran and
+  # stored nothing.
+  writes: Int64!
 }
 
 # One hop of a chain. kind tells which delivery table the row came from, since
@@ -2012,8 +2021,8 @@ type AdminTraceDelivery @goModel(model: "trip2g/internal/db.ListDeliveriesByTrac
   responseStatus: Int64
   attempt: Int64!
   durationMs: Int64
-  tokensUsed: Int64
-  steps: Int64
+  # What this step cost, as its agent reported it: {unit: amount}, unit in the key.
+  costs: [AdminCost!]! @goField(forceResolver: true)
   createdAt: Time!
   # When the worker picked the delivery up. The gap from createdAt is queue wait,
   # which the chain timeline draws apart from the run itself.
@@ -2025,6 +2034,13 @@ type AdminTraceDelivery @goModel(model: "trip2g/internal/db.ListDeliveriesByTrac
   # Notes this delivery wrote, from the version attribution. The writes of one
   # hop are what triggered the next one, so a chain reads top to bottom.
   writes: [AdminTraceWrite!]! @goField(forceResolver: true)
+}
+
+# One reported amount in its own unit: {"tokens": 5186} arrives as id "tokens",
+# value 5186. trip2g stores and sums these without knowing what a unit means.
+type AdminCost {
+  id: String!
+  value: Float!
 }
 
 # One note version a delivery produced.
@@ -2510,8 +2526,10 @@ type AdminQuery {
   allCronWebhooks: AdminCronWebhooksConnection!
   cronWebhookDeliveries(filter: AdminCronWebhookDeliveriesFilterInput!): AdminCronWebhookDeliveriesConnection!
 
-  # Delivery chains: one agent run triggering the next, across both webhook kinds
-  deliveryTraces(limit: Int64): [AdminDeliveryTrace!]!
+  # Delivery chains: one agent run triggering the next, across both webhook kinds.
+  # withEmpty includes the chains that wrote nothing — a cron role that finds no
+  # work still runs, and those runs bury the ones that did something.
+  deliveryTraces(limit: Int64, withEmpty: Boolean): [AdminDeliveryTrace!]!
   deliveryTrace(trace: String!): [AdminTraceDelivery!]!
 
   healthChecks: [HealchCheck!]!
@@ -6400,6 +6418,11 @@ func (ec *executionContext) field_AdminQuery_deliveryTraces_args(ctx context.Con
 		return nil, err
 	}
 	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "withEmpty", ec.unmarshalOBoolean2ᚖbool)
+	if err != nil {
+		return nil, err
+	}
+	args["withEmpty"] = arg1
 	return args, nil
 }
 
@@ -11358,6 +11381,64 @@ func (ec *executionContext) fieldContext_AdminConfigStringValue_history(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminCost_id(ctx context.Context, field graphql.CollectedField, obj *model.AdminCost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminCost_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminCost_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCost_value(ctx context.Context, field graphql.CollectedField, obj *model.AdminCost) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminCost_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminCost_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminCronJob_id(ctx context.Context, field graphql.CollectedField, obj *db.CronJob) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12959,35 +13040,6 @@ func (ec *executionContext) fieldContext_AdminDeliveryTrace_deliveries(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminDeliveryTrace_tokensUsed(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveryTracesRow) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminDeliveryTrace_tokensUsed,
-		func(ctx context.Context) (any, error) {
-			return obj.TokensUsed, nil
-		},
-		nil,
-		ec.marshalNInt642int64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminDeliveryTrace_tokensUsed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminDeliveryTrace",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int64 does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _AdminDeliveryTrace_depthReached(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveryTracesRow) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13005,6 +13057,70 @@ func (ec *executionContext) _AdminDeliveryTrace_depthReached(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_AdminDeliveryTrace_depthReached(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminDeliveryTrace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminDeliveryTrace_totalCosts(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveryTracesRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminDeliveryTrace_totalCosts,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminDeliveryTrace().TotalCosts(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminCost2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCostᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminDeliveryTrace_totalCosts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminDeliveryTrace",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminCost_id(ctx, field)
+			case "value":
+				return ec.fieldContext_AdminCost_value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminCost", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminDeliveryTrace_writes(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveryTracesRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminDeliveryTrace_writes,
+		func(ctx context.Context) (any, error) {
+			return obj.Writes, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminDeliveryTrace_writes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminDeliveryTrace",
 		Field:      field,
@@ -25813,7 +25929,7 @@ func (ec *executionContext) _AdminQuery_deliveryTraces(ctx context.Context, fiel
 		ec.fieldContext_AdminQuery_deliveryTraces,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminQuery().DeliveryTraces(ctx, obj, fc.Args["limit"].(*int64))
+			return ec.resolvers.AdminQuery().DeliveryTraces(ctx, obj, fc.Args["limit"].(*int64), fc.Args["withEmpty"].(*bool))
 		},
 		nil,
 		ec.marshalNAdminDeliveryTrace2ᚕtrip2gᚋinternalᚋdbᚐListDeliveryTracesRowᚄ,
@@ -25838,10 +25954,12 @@ func (ec *executionContext) fieldContext_AdminQuery_deliveryTraces(ctx context.C
 				return ec.fieldContext_AdminDeliveryTrace_lastAt(ctx, field)
 			case "deliveries":
 				return ec.fieldContext_AdminDeliveryTrace_deliveries(ctx, field)
-			case "tokensUsed":
-				return ec.fieldContext_AdminDeliveryTrace_tokensUsed(ctx, field)
 			case "depthReached":
 				return ec.fieldContext_AdminDeliveryTrace_depthReached(ctx, field)
+			case "totalCosts":
+				return ec.fieldContext_AdminDeliveryTrace_totalCosts(ctx, field)
+			case "writes":
+				return ec.fieldContext_AdminDeliveryTrace_writes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminDeliveryTrace", field.Name)
 		},
@@ -25899,10 +26017,8 @@ func (ec *executionContext) fieldContext_AdminQuery_deliveryTrace(ctx context.Co
 				return ec.fieldContext_AdminTraceDelivery_attempt(ctx, field)
 			case "durationMs":
 				return ec.fieldContext_AdminTraceDelivery_durationMs(ctx, field)
-			case "tokensUsed":
-				return ec.fieldContext_AdminTraceDelivery_tokensUsed(ctx, field)
-			case "steps":
-				return ec.fieldContext_AdminTraceDelivery_steps(ctx, field)
+			case "costs":
+				return ec.fieldContext_AdminTraceDelivery_costs(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminTraceDelivery_createdAt(ctx, field)
 			case "startedAt":
@@ -30346,59 +30462,36 @@ func (ec *executionContext) fieldContext_AdminTraceDelivery_durationMs(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminTraceDelivery_tokensUsed(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveriesByTraceRow) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminTraceDelivery_costs(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveriesByTraceRow) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_AdminTraceDelivery_tokensUsed,
+		ec.fieldContext_AdminTraceDelivery_costs,
 		func(ctx context.Context) (any, error) {
-			return obj.TokensUsed, nil
+			return ec.resolvers.AdminTraceDelivery().Costs(ctx, obj)
 		},
 		nil,
-		ec.marshalOInt642ᚖint64,
+		ec.marshalNAdminCost2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCostᚄ,
 		true,
-		false,
+		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_AdminTraceDelivery_tokensUsed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminTraceDelivery_costs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminTraceDelivery",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int64 does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminTraceDelivery_steps(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveriesByTraceRow) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminTraceDelivery_steps,
-		func(ctx context.Context) (any, error) {
-			return obj.Steps, nil
-		},
-		nil,
-		ec.marshalOInt642ᚖint64,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminTraceDelivery_steps(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminTraceDelivery",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int64 does not have child fields")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminCost_id(ctx, field)
+			case "value":
+				return ec.fieldContext_AdminCost_value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminCost", field.Name)
 		},
 	}
 	return fc, nil
@@ -58929,6 +59022,50 @@ func (ec *executionContext) _AdminConfigStringValue(ctx context.Context, sel ast
 	return out
 }
 
+var adminCostImplementors = []string{"AdminCost"}
+
+func (ec *executionContext) _AdminCost(ctx context.Context, sel ast.SelectionSet, obj *model.AdminCost) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminCostImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminCost")
+		case "id":
+			out.Values[i] = ec._AdminCost_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._AdminCost_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminCronJobImplementors = []string{"AdminCronJob"}
 
 func (ec *executionContext) _AdminCronJob(ctx context.Context, sel ast.SelectionSet, obj *db.CronJob) graphql.Marshaler {
@@ -59896,13 +60033,49 @@ func (ec *executionContext) _AdminDeliveryTrace(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "tokensUsed":
-			out.Values[i] = ec._AdminDeliveryTrace_tokensUsed(ctx, field, obj)
+		case "depthReached":
+			out.Values[i] = ec._AdminDeliveryTrace_depthReached(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "depthReached":
-			out.Values[i] = ec._AdminDeliveryTrace_depthReached(ctx, field, obj)
+		case "totalCosts":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminDeliveryTrace_totalCosts(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "writes":
+			out.Values[i] = ec._AdminDeliveryTrace_writes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -72975,10 +73148,42 @@ func (ec *executionContext) _AdminTraceDelivery(ctx context.Context, sel ast.Sel
 			}
 		case "durationMs":
 			out.Values[i] = ec._AdminTraceDelivery_durationMs(ctx, field, obj)
-		case "tokensUsed":
-			out.Values[i] = ec._AdminTraceDelivery_tokensUsed(ctx, field, obj)
-		case "steps":
-			out.Values[i] = ec._AdminTraceDelivery_steps(ctx, field, obj)
+		case "costs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTraceDelivery_costs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._AdminTraceDelivery_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -84834,6 +85039,54 @@ func (ec *executionContext) marshalNAdminConfigValue2ᚕtrip2gᚋinternalᚋgrap
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNAdminConfigValue2trip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigValue(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminCost2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCost(ctx context.Context, sel ast.SelectionSet, v model.AdminCost) graphql.Marshaler {
+	return ec._AdminCost(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminCost2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCostᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminCost) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminCost2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCost(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

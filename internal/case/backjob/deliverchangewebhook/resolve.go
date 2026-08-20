@@ -26,7 +26,7 @@ type Env interface {
 	MarkWebhookDeliveryRunning(ctx context.Context, id int64) error
 	UpdateWebhookDeliveryResult(ctx context.Context, arg db.UpdateWebhookDeliveryResultParams) error
 	InsertWebhookDeliveryLog(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
-	InsertNote(ctx context.Context, note model.RawNote) (int64, error)
+	InsertNote(ctx context.Context, note model.RawNote) (model.NoteSaveResult, error)
 	PrepareLatestNotes(ctx context.Context, partial bool) (*model.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, pathIDs []int64) error
 	LatestNoteViews() *model.NoteViews
@@ -252,15 +252,11 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 		return nil
 	}
 
-	// Parse fleet-reported spend (tokens/steps) from the response body.
-	var tokensUsed, steps *int64
+	// What the run cost, as the agent reported it: an open {unit: amount} object,
+	// stored verbatim. An agent that reports nothing leaves the column null.
+	var costs *string
 	if resp, perr := webhookutil.ParseAgentResponse(result.Body); perr == nil && resp != nil {
-		if resp.TokensUsed > 0 {
-			tokensUsed = ptr.To(int64(resp.TokensUsed))
-		}
-		if resp.Steps > 0 {
-			steps = ptr.To(int64(resp.Steps))
-		}
+		costs = webhookutil.MarshalCosts(resp.Costs)
 	}
 
 	// Mark as success.
@@ -268,8 +264,7 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 		Status:         "success",
 		ResponseStatus: ptr.To(int64(result.StatusCode)),
 		DurationMs:     ptr.To(result.DurationMs),
-		TokensUsed:     tokensUsed,
-		Steps:          steps,
+		Costs:          costs,
 		ID:             params.DeliveryID,
 	})
 	if updateErr != nil {
@@ -387,13 +382,25 @@ func applyAgentChanges(ctx context.Context, env Env, result webhookutil.Delivery
 		return resolveErr
 	}
 
-	pathIDs := make([]int64, 0, len(notes))
+	// Only writes that stored something new are changes: an agent re-applying the
+	// same content must not re-fire the webhooks that produced it.
+	changedPathIDs := make([]int64, 0, len(notes))
+	reload := false
 	for _, note := range notes {
-		pathID, insertErr := env.InsertNote(ctx, note)
+		saved, insertErr := env.InsertNote(ctx, note)
 		if insertErr != nil {
 			return fmt.Errorf("failed to apply change for %s: %w", note.Path, insertErr)
 		}
-		pathIDs = append(pathIDs, pathID)
+		if saved.Versioned() {
+			changedPathIDs = append(changedPathIDs, saved.PathID)
+		}
+		if saved.AffectsSnapshot() {
+			reload = true
+		}
+	}
+
+	if !reload {
+		return nil
 	}
 
 	// Refresh LatestNoteViews cache after applying changes.
@@ -402,11 +409,15 @@ func applyAgentChanges(ctx context.Context, env Env, result webhookutil.Delivery
 		return fmt.Errorf("failed to refresh note views: %w", prepareErr)
 	}
 
+	if len(changedPathIDs) == 0 {
+		return nil
+	}
+
 	// Notes applied here are ordinary note changes: they must materialize their
 	// frontmatter, reach SSE subscribers and trigger change webhooks like any
 	// other write. A failure here does not undo the writes and must not re-run
 	// the agent, so it is logged rather than returned.
-	if handleErr := env.HandleLatestNotesAfterSave(ctx, pathIDs); handleErr != nil {
+	if handleErr := env.HandleLatestNotesAfterSave(ctx, changedPathIDs); handleErr != nil {
 		env.Logger().Error("failed to handle notes applied from agent response", "error", handleErr)
 	}
 

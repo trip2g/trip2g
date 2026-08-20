@@ -12,10 +12,12 @@ on conflict(version_id, chunk_index) do update set
 delete from note_version_chunks where version_id = ? and chunk_index > ?;
 
 -- name: InsertNotePath :one
+-- hidden_by comes back so the writer can tell whether this push is resurrecting
+-- a hidden path, and skip the unhide update when there is nothing to unhide.
 insert into note_paths (value, value_hash, latest_content_hash)
 values (?, ?, ?)
 on conflict(value) do update set value = excluded.value
-returning id, version_count, latest_content_hash;
+returning id, version_count, latest_content_hash, hidden_by;
 
 -- name: IncrementNoteVersionCount :one
 update note_paths
@@ -1071,8 +1073,7 @@ update change_webhook_deliveries
 set status = sqlc.arg(status),
     response_status = sqlc.narg(response_status),
     duration_ms = sqlc.narg(duration_ms),
-    tokens_used = coalesce(sqlc.narg(tokens_used), tokens_used),
-    steps = coalesce(sqlc.narg(steps), steps),
+    costs = coalesce(sqlc.narg(costs), costs),
     completed_at = datetime('now')
 where id = sqlc.arg(id);
 
@@ -1179,8 +1180,7 @@ update cron_webhook_deliveries
 set status = sqlc.arg(status),
     response_status = sqlc.narg(response_status),
     duration_ms = sqlc.narg(duration_ms),
-    tokens_used = coalesce(sqlc.narg(tokens_used), tokens_used),
-    steps = coalesce(sqlc.narg(steps), steps),
+    costs = coalesce(sqlc.narg(costs), costs),
     completed_at = datetime('now')
 where id = sqlc.arg(id);
 

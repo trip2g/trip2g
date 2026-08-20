@@ -35,6 +35,9 @@ func newEnvMock(log logger.Logger) *EnvMock {
 		LoggerFunc:             func() logger.Logger { return log },
 		CheckStorageLimitsFunc: func(_ context.Context, _ int64) (string, error) { return "", nil },
 		PublicURLFunc:          func() string { return "" },
+		// A push where nothing changed skips the reload and reports against the
+		// snapshot already in memory.
+		LatestNoteViewsFunc: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
 	}
 }
 
@@ -76,9 +79,9 @@ func TestResolve(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				env := newEnvMock(mockLogger)
-				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (int64, error) {
+				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 					require.Equal(t, "demo.canvas", note.Path)
-					return 1, nil
+					return appmodel.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 				}
 				env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
 					nvs := appmodel.NewNoteViews()
@@ -109,9 +112,9 @@ func TestResolve(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				env := newEnvMock(mockLogger)
-				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (int64, error) {
+				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 					require.Equal(t, "example.excalidraw", note.Path)
-					return 3, nil
+					return appmodel.NoteSaveResult{PathID: 3, VersionID: 3}, nil
 				}
 				env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
 					nvs := appmodel.NewNoteViews()
@@ -139,9 +142,9 @@ func TestResolve(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				env := newEnvMock(mockLogger)
-				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (int64, error) {
+				env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 					require.Equal(t, "mybase.base", note.Path)
-					return 2, nil
+					return appmodel.NoteSaveResult{PathID: 2, VersionID: 2}, nil
 				}
 				env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
 					nvs := appmodel.NewNoteViews()
@@ -169,8 +172,8 @@ func TestResolve(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				env := newEnvMock(mockLogger)
-				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (int64, error) {
-					return 1, nil
+				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+					return appmodel.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 				}
 				env.PrepareLatestNotesFunc = func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 					return &appmodel.NoteViews{
@@ -210,8 +213,8 @@ func TestResolve(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				env := newEnvMock(mockLogger)
-				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (int64, error) {
-					return 0, errors.New("database error")
+				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+					return appmodel.NoteSaveResult{}, errors.New("database error")
 				}
 				return env
 			},
@@ -247,8 +250,8 @@ func TestResolve(t *testing.T) {
 			},
 			setupEnv: func() *EnvMock {
 				env := newEnvMock(mockLogger)
-				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (int64, error) {
-					return 1, nil
+				env.InsertNoteFunc = func(ctx context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+					return appmodel.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 				}
 				env.PrepareLatestNotesFunc = func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 					return nil, errors.New("prepare error")
@@ -285,9 +288,9 @@ func TestResolve_MidBatchValidationFailure_NoPartialWrite(t *testing.T) {
 	env := newEnvMock(&logger.TestLogger{})
 
 	insertCount := 0
-	env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 		insertCount++
-		return int64(insertCount), nil
+		return appmodel.NoteSaveResult{PathID: int64(insertCount), VersionID: int64(insertCount)}, nil
 	}
 
 	result, err := pushnotes.Resolve(ctx, env, model.PushNotesInput{
@@ -322,8 +325,8 @@ func TestResolve_UpdatedNotes(t *testing.T) {
 
 	t.Run("updated contains pushed notes with url and warnings", func(t *testing.T) {
 		env := newEnvMock(mockLogger)
-		env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (int64, error) {
-			return 42, nil
+		env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			return appmodel.NoteSaveResult{PathID: 42, VersionID: 42}, nil
 		}
 		env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
 			return makeNVS(), nil
@@ -389,8 +392,8 @@ func TestResolve_LayoutWarnings(t *testing.T) {
 	mockLogger := &logger.TestLogger{}
 
 	env := newEnvMock(mockLogger)
-	env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (int64, error) {
-		return 1, nil
+	env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+		return appmodel.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 	}
 	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
 		nvs := appmodel.NewNoteViews()
@@ -476,8 +479,8 @@ func TestResolve_AssetURLAbsolutization(t *testing.T) {
 
 	setupEnv := func(publicURL string) *EnvMock {
 		env := newEnvMock(mockLogger)
-		env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (int64, error) {
-			return 42, nil
+		env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			return appmodel.NoteSaveResult{PathID: 42, VersionID: 42}, nil
 		}
 		env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
 			return makeNVSWithAsset(), nil
@@ -617,4 +620,37 @@ func TestResolve_ScopedToken(t *testing.T) {
 			require.IsType(t, &model.PushNotesPayload{}, result)
 		})
 	}
+}
+
+// TestResolve_UnchangedPushIsInert pins the no-op rule on the sync lane: a resync
+// that re-pushes identical content stores nothing, so it must not reload the vault,
+// must not defer anything to commitNotes, and must raise no change events — while
+// still reporting the pushed note back to the client.
+func TestResolve_UnchangedPushIsInert(t *testing.T) {
+	ctx := context.Background()
+
+	env := newEnvMock(&logger.TestLogger{})
+	env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+		return appmodel.NoteSaveResult{PathID: 5}, nil // content already stored
+	}
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+		t.Error("an unchanged push must not reload the vault")
+		return appmodel.NewNoteViews(), nil
+	}
+	env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error {
+		t.Error("an unchanged push must raise no change events")
+		return nil
+	}
+	env.InsertUncommittedPathFunc = func(_ context.Context, _ int64) error {
+		t.Error("an unchanged push has no side effects to defer")
+		return nil
+	}
+	env.LayoutsFunc = func() *appmodel.Layouts {
+		return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+	}
+
+	_, err := pushnotes.Resolve(ctx, env, model.PushNotesInput{
+		Updates: []model.PushNoteInput{{Path: "note.md", Content: "same"}},
+	})
+	require.NoError(t, err)
 }

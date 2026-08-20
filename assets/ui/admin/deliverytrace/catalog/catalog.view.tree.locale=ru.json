@@ -1,7 +1,9 @@
 {
 	"$trip2g_admin_deliverytrace_catalog_menu_title": "Цепочки доставок",
+	"$trip2g_admin_deliverytrace_catalog_EmptyCheck_title": "Показывать пустые",
 	"$trip2g_admin_deliverytrace_catalog_Row_started_labeler_title": "Начало",
 	"$trip2g_admin_deliverytrace_catalog_Row_deliveries_labeler_title": "Доставок",
-	"$trip2g_admin_deliverytrace_catalog_Row_tokens_labeler_title": "Токенов",
+	"$trip2g_admin_deliverytrace_catalog_Row_writes_labeler_title": "Записал",
+	"$trip2g_admin_deliverytrace_catalog_Row_costs_labeler_title": "Стоимость",
 	"$trip2g_admin_deliverytrace_catalog_Row_depth_labeler_title": "Глубина"
 }

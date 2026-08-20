@@ -5,9 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 
 	"trip2g/internal/model"
+	"trip2g/internal/ptr"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
@@ -28,11 +30,14 @@ const (
 
 // AgentResponse is the expected format of a webhook agent's response body.
 type AgentResponse struct {
-	Status     string        `json:"status"`
-	Message    string        `json:"message"`
-	Changes    []AgentChange `json:"changes"`
-	TokensUsed int           `json:"tokens_used"`
-	Steps      int           `json:"steps"`
+	Status  string        `json:"status"`
+	Message string        `json:"message"`
+	Changes []AgentChange `json:"changes"`
+	// Costs is what the run cost, as an open {unit: amount} object: the unit lives
+	// in the key, so an LLM agent reports {"tokens": 5186, "steps": 2} and something
+	// that bills money reports {"usd": 0.004}. trip2g stores it as given and only
+	// sums per key — it has no opinion about which units exist.
+	Costs map[string]float64 `json:"costs"`
 }
 
 // AgentChange represents a single file change from an agent.
@@ -145,4 +150,26 @@ func ParseAgentResponse(body []byte) (*AgentResponse, error) {
 	}
 
 	return &resp, nil
+}
+
+// MarshalCosts serializes a reported cost object for storage, keeping only
+// finite numbers: the contract is {unit: amount}, and a NaN or an infinity from a
+// careless agent would poison every later sum. Nothing usable yields nil, which
+// leaves the delivery's costs column untouched.
+func MarshalCosts(costs map[string]float64) *string {
+	clean := make(map[string]float64, len(costs))
+	for unit, amount := range costs {
+		if unit == "" || math.IsNaN(amount) || math.IsInf(amount, 0) {
+			continue
+		}
+		clean[unit] = amount
+	}
+	if len(clean) == 0 {
+		return nil
+	}
+	data, err := json.Marshal(clean)
+	if err != nil {
+		return nil
+	}
+	return ptr.To(string(data))
 }

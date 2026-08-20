@@ -65,17 +65,19 @@ namespace $.$$ {
 			return `${ hop.status }${ response }`
 		}
 
+		// Duration is trip2g's own measurement; everything else is what the agent
+		// reported about its run, in units only it knows.
 		override hop_spend( id: any ): string {
 			const hop = this.hop( id )
 			const parts: string[] = []
-			if( hop.tokensUsed ) parts.push( `${ hop.tokensUsed } tok` )
-			if( hop.steps ) parts.push( `${ hop.steps } steps` )
+			const costs = $trip2g_admin_costs_text( hop.costs )
+			if( costs !== '-' ) parts.push( costs )
 			if( hop.durationMs ) parts.push( `${ hop.durationMs } ms` )
 			return parts.join( ', ' ) || '-'
 		}
 
 		override hop_created_at( id: any ): string {
-			return new $mol_time_moment( this.hop( id ).createdAt ).toString( 'YYYY-MM-DD HH:mm:ss' )
+			return new $mol_time_moment( this.hop( id ).createdAt ).toString( 'YYYY-MM-DD hh:mm:ss' )
 		}
 
 		// Notes this step wrote, from the version attribution.

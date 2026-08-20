@@ -676,6 +676,11 @@ func (this AdminConfigStringValue) GetDescription() *string  { return this.Descr
 func (this AdminConfigStringValue) GetUpdatedAt() *time.Time { return this.UpdatedAt }
 func (this AdminConfigStringValue) GetUpdatedBy() *db.User   { return this.UpdatedBy }
 
+type AdminCost struct {
+	ID    string  `json:"id"`
+	Value float64 `json:"value"`
+}
+
 type AdminCreateUserTokenInput struct {
 	UserID        int64  `json:"userId"`
 	Name          string `json:"name"`
