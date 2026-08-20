@@ -156,6 +156,47 @@ jq -nc --arg r "$r" '{changes: [], answer: $r}'
 if [ -z "$FLEET_SANDBOX_SENTINEL" ]; then r=absent; else r=LEAKED; fi
 jq -nc --arg r "$r" '{changes: [], answer: $r}'
 ''', lambda a: a == "absent"),
+
+    # fleetkit is shipped by the same Dockerfile and must be importable under the
+    # enforcing sandbox, not just with CODELLM_SANDBOX=off.
+    ("fleetkit imports and renders", "python", """
+import fleetkit
+n = fleetkit.note("a.md", {"title": "T: q"}, "# T")
+lines = n["content"].split(chr(10))
+q = chr(39)
+ok = lines[0] == "---" and lines[1] == "title: " + q + "T: q" + q and lines[2] == "---"
+ANSWER = "ok" if ok else "bad=" + repr(lines[:3])
+""" + EMIT_PY, lambda a: a == "ok"),
+
+    ("fleetkit bag is empty outside a delivery", "python", '''
+import fleetkit
+ANSWER = "empty" if fleetkit.bag() == {} else "unexpected"
+''' + EMIT_PY, lambda a: a == "empty"),
+
+    # The node twin ships in the same image and must resolve the same way the
+    # other global packages do.
+    ("fleetkit node twin renders identically", "node", """
+const fleetkit = require('fleetkit');
+const c = fleetkit.note('a.md', {title: 'T: q', when: '2026-01-15T10:00:00+00:00'}, '# T').content;
+const want = ['---', 'title: "T: q"', 'when: "2026-01-15T10:00:00+00:00"', '---', '# T'].join(String.fromCharCode(10));
+console.log(JSON.stringify({changes: [], answer: c === want ? 'ok' : 'bad=' + JSON.stringify(c)}));
+""", lambda a: a == "ok"),
+
+    ("python jsonschema and node ajv import", "python", '''
+import jsonschema
+jsonschema.validate({"a": 1}, {"type": "object", "required": ["a"]})
+try:
+    jsonschema.validate({}, {"type": "object", "required": ["a"]})
+    ANSWER = "missing-required-not-caught"
+except jsonschema.ValidationError:
+    ANSWER = "ok"
+''' + EMIT_PY, lambda a: a == "ok"),
+
+    ("node ajv validates", "node", """
+const Ajv = require('ajv');
+const ok = new Ajv().compile({type: 'object', required: ['a']})({a: 1});
+console.log(JSON.stringify({changes: [], answer: ok ? 'ok' : 'bad'}));
+""", lambda a: a == "ok"),
 ]
 
 failed = 0
