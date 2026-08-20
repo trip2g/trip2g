@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/backjob/delivercronwebhook"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -46,6 +47,12 @@ func baseEnv(t *testing.T, url string, secretValues map[string]string) *EnvMock 
 		},
 		InsertNoteFunc: func(_ context.Context, _ model.RawNote) (int64, error) {
 			return 0, nil
+		},
+		PrepareLatestNotesFunc: func(_ context.Context, _ bool) (*model.NoteViews, error) {
+			return nil, nil
+		},
+		HandleLatestNotesAfterSaveFunc: func(_ context.Context, _ []int64) error {
+			return nil
 		},
 		LatestNoteViewsFunc: func() *model.NoteViews { return nil },
 		EnqueueDeliverCronWebhookFunc: func(_ context.Context, _ delivercronwebhook.DeliverCronParams) error {
@@ -583,4 +590,49 @@ func TestResolve_CronAttachNotes_GateSkipWhenNoneMatch(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, called, "HTTP endpoint must not be called when attach_notes gate is not satisfied")
 	require.Equal(t, "success", got.Status, "delivery must be marked success (skipped) when gate not satisfied")
+}
+
+// Same contract as the change lane: notes applied from a cron agent response
+// run through the post-save handler, under this delivery's identity and the
+// cron start depth.
+func TestResolve_CronAgentChanges_RunPostSaveHandlerWithDeliveryIdentity(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","content":"x"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		return 88, nil
+	}
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
+		return model.NewNoteViews(), nil
+	}
+
+	var gotPathIDs []int64
+	var gotReq *appreq.Request
+	env.HandleLatestNotesAfterSaveFunc = func(ctx context.Context, pathIDs []int64) error {
+		gotPathIDs = pathIDs
+		gotReq, _ = appreq.FromCtx(ctx)
+		return nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 12, Attempt: 1})
+	require.NoError(t, err)
+	require.Equal(t, []int64{88}, gotPathIDs)
+	require.NotNil(t, gotReq, "post-save handler must run under a delivery appreq")
+	require.Equal(t, 1, gotReq.WebhookDepth, "cron writes start at depth 1")
+	require.Equal(t, "cron", gotReq.WebhookDeliveryKind)
+	require.EqualValues(t, 12, gotReq.WebhookDeliveryID)
 }

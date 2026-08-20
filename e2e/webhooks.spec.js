@@ -367,6 +367,78 @@ test.describe.serial('Webhook E2E Tests', () => {
     expect(noteContent).toContain('Modified by agent');
   });
 
+  test('agent response changes cascade to downstream webhooks', async ({ request }) => {
+    // Two webhooks: the first writes into e2e_wh_cascade/out/ through its
+    // response body, the second watches that folder. Notes applied from a
+    // response body must trigger change webhooks like any other write, so the
+    // second webhook has to receive a delivery for the written note.
+    const agentResponse = JSON.stringify({
+      status: 'ok',
+      changes: [
+        {
+          path: 'e2e_wh_cascade/out/result.md',
+          content: '---\nfree: true\n---\n\n# Result\n\nWritten by the agent response.',
+        },
+      ],
+    });
+
+    const createQuery = `
+      mutation ChangeWebhookCreate($input: ChangeWebhookCreateInput!) {
+        admin {
+          changeWebhookCreate(input: $input) {
+            ... on ChangeWebhookCreatePayload {
+              webhook {
+                id
+              }
+              secret
+            }
+          }
+        }
+      }
+    `;
+
+    const producer = await graphqlAdmin(request, adminCookie, createQuery, {
+      input: {
+        url: `${APP_URL}/debug/test_webhook?body=${encodeURIComponent(agentResponse)}`,
+        includePatterns: ['e2e_wh_cascade/src/**'],
+        passApiKey: true,
+        maxDepth: 3,
+        writePatterns: ['e2e_wh_cascade/out/**'],
+      },
+    });
+    changeWebhookIds.push(producer.admin.changeWebhookCreate.webhook.id);
+
+    const consumer = await graphqlAdmin(request, adminCookie, createQuery, {
+      input: {
+        url: `${APP_URL}/debug/test_webhook`,
+        includePatterns: ['e2e_wh_cascade/out/**'],
+        passApiKey: false,
+        maxDepth: 3,
+      },
+    });
+    changeWebhookIds.push(consumer.admin.changeWebhookCreate.webhook.id);
+
+    await pushAndCommit(request, apiKey, [
+      {
+        path: 'e2e_wh_cascade/src/trigger.md',
+        content: '---\nfree: true\n---\n\n# Trigger\n\nTriggers the producer webhook.',
+      },
+    ]);
+    await waitAllJobs(request);
+
+    // The producer's own delivery carries src/trigger.md; only a downstream
+    // delivery carries the note the agent response wrote. depth must be 1: a
+    // depth-0 delivery for that path would mean it was committed by an ordinary
+    // request (e.g. a leftover note from an earlier run), not caused by this run.
+    const calls = await getWebhookCalls(request);
+    const downstream = calls.filter(
+      (call) =>
+        call.body?.depth === 1 &&
+        (call.body?.changes || []).some((change) => change.path === 'e2e_wh_cascade/out/result.md'),
+    );
+    expect(downstream.length).toBeGreaterThan(0);
+  });
+
   test('cron webhook fires with instruction', async ({ request }) => {
     // 1. Create cron webhook
     const createQuery = `
