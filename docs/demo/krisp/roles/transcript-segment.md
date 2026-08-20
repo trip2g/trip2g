@@ -1,14 +1,13 @@
 ---
 description: "Krisp transcript → topic-boundary segmentation (step 1 of 2)"
-model: qwen/qwen3-14b
 tools: [write_note]
-read_patterns: ["transcripts/**"]
-write_patterns: ["segments/**"]
+read_patterns: ["demo/krisp/transcripts/**"]
+write_patterns: ["demo/krisp/segments/**"]
 fleet_id: llm
 mode: change
 trigger_on: [create, update]
-trigger_include: ["transcripts/**"]
-trigger_exclude: ["segments/**", "wiki/**"]
+trigger_include: ["demo/krisp/transcripts/**"]
+trigger_exclude: ["demo/krisp/segments/**", "demo/krisp/wiki/**"]
 for_each: changed_files
 max_depth: 3
 concurrency: skip
@@ -29,7 +28,7 @@ max_tokens: 16000
 - `type` определи сам (sales-call, planning, brainstorm, interview, voice-note, lecture, support — или своё точное слово).
 - `participants` — перечисли говорящих; для сольной заметки `-`.
 
-Когда разметка готова, **запиши результат** инструментом `write_note`. Путь = `segments/` + basename исходного файла (то есть для `{{ change_file.Path }}` это `segments/<имя-без-папки>`). Строгий формат:
+Когда разметка готова, **запиши результат** инструментом `write_note`. Путь = `demo/krisp/segments/` + basename исходного файла (то есть для `{{ change_file.Path }}` это `demo/krisp/segments/<имя-без-папки>`). Строгий формат:
 
 ---
 id: <basename без .md>

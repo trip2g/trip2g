@@ -1,14 +1,13 @@
 ---
 description: "Segments → knowledge note with [[WikiLinks]] (step 2 of 2)"
-model: qwen/qwen3-14b
 tools: [read_note, write_note]
-read_patterns: ["segments/**", "transcripts/**"]
-write_patterns: ["qwen3-14b/wiki/**"]
+read_patterns: ["demo/krisp/segments/**", "demo/krisp/transcripts/**"]
+write_patterns: ["demo/krisp/wiki/**"]
 fleet_id: llm
 mode: change
 trigger_on: [create, update]
-trigger_include: ["segments/**"]
-trigger_exclude: ["wiki/**"]
+trigger_include: ["demo/krisp/segments/**"]
+trigger_exclude: ["demo/krisp/wiki/**"]
 for_each: changed_files
 max_depth: 3
 concurrency: skip
@@ -19,7 +18,7 @@ max_tokens: 16000
 
 Карта сегментов задаёт структуру (темы и временные окна). Для деталей **прочитай исходный транскрипт** инструментом `read_note` по пути из фронтматтера `source_transcript` карты сегментов.
 
-Когда готово, **запиши результат** инструментом `write_note` по пути `qwen3-14b/wiki/` + basename файла сегментов (модель namespace'ится для сравнения прогонов). Строгий формат:
+Когда готово, **запиши результат** инструментом `write_note` по пути `demo/krisp/wiki/` + basename файла сегментов. Строгий формат:
 
 ---
 id: <basename без .md>

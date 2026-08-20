@@ -78,5 +78,10 @@ templates/kanban/node_modules/
 
 # demo video working files (large binaries)
 docs/demo-video/
+# Krisp demo stand output: the agents write these back into the vault on every
+# run (docker-compose.yaml, docs/dev/fleet_run.md). Roles are committed, data is not.
+docs/demo/krisp/transcripts/
+docs/demo/krisp/segments/
+docs/demo/krisp/wiki/
 docs/_layouts/mesh/*.mp4
 __pycache__/
