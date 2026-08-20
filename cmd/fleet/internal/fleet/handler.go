@@ -13,6 +13,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 
 	"trip2g/cmd/fleet/internal/agentruntime"
+	"trip2g/cmd/fleet/internal/fleetmetrics"
 	"trip2g/internal/fleetinput"
 	"trip2g/internal/webhookutil"
 )
@@ -57,6 +58,7 @@ const statusError = "error"
 // <h> is this fleet's identity hash. Authenticated by the per-role HMAC secret,
 // NOT the delegated-admin cookie (that gates the separate GraphQL server).
 func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
 	rawPath := strings.TrimPrefix(r.URL.Path, f.WebhookPath())
 	isCron := strings.HasPrefix(rawPath, "cron/")
 	key := rawPath
@@ -66,12 +68,14 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 
 	role, ok := f.roleByKey(key)
 	if !ok {
+		f.metrics.RecordDeliveryAuthFailure("unknown_key")
 		http.Error(w, "unknown delivery key", http.StatusNotFound)
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		f.metrics.RecordDeliveryAuthFailure("read_body")
 		http.Error(w, "read body", http.StatusBadRequest)
 		return
 	}
@@ -82,17 +86,26 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		secret = f.cronSecretFor(role)
 	}
 	if !webhookutil.VerifyHMAC(body, secret, r.Header.Get("X-Webhook-Signature")) {
+		f.metrics.RecordDeliveryAuthFailure("bad_signature")
 		http.Error(w, "bad signature", http.StatusUnauthorized)
 		return
 	}
 
 	if isCron {
-		f.serveCronDelivery(w, r, role, body)
+		f.serveCronDelivery(w, r, role, body, started)
 		return
 	}
+	f.serveChangeDelivery(w, r, role, body, started)
+}
 
+// serveChangeDelivery handles a change-triggered delivery: it fans the payload
+// out into per-item render contexts, runs one agent per item (continue on
+// error), and reports the aggregate spend. started is the delivery's arrival
+// time, carried in so the recorded duration covers the auth work too.
+func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role Role, body []byte, started time.Time) {
 	var payload deliveryPayload
 	if uerr := json.Unmarshal(body, &payload); uerr != nil {
+		f.metrics.RecordDeliveryAuthFailure("bad_payload")
 		http.Error(w, "bad payload", http.StatusBadRequest)
 		return
 	}
@@ -114,6 +127,8 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 	// marking the delivery failed.
 	items := fanOut(role.ForEach, base)
 	if len(items) == 0 {
+		f.metrics.ObserveFanout(role.NotePath, 0, 0)
+		f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindChange, agentruntime.StatusCompleted, time.Since(started).Seconds())
 		writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
 			Status:     agentruntime.StatusCompleted,
 			Message:    "no " + role.ForEach + " items to process",
@@ -171,8 +186,11 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	f.metrics.ObserveFanout(role.NotePath, len(items), len(errMsgs))
+
 	// Whole batch failed: surface a non-2xx so trip2g's retry/backoff engages.
 	if successCount == 0 {
+		f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindChange, statusError, time.Since(started).Seconds())
 		writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{
 			Status:  statusError,
 			Message: strings.Join(errMsgs, "; "),
@@ -197,6 +215,7 @@ func (f *Fleet) ServeDelivery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Changes already applied in-loop via the scoped token; report spend only.
+	f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindChange, status, time.Since(started).Seconds())
 	writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
 		Status:     status,
 		Message:    message,
@@ -269,9 +288,10 @@ func statusSeverity(status string) int {
 // serveCronDelivery handles a cron-triggered POST /_fleet/<h>/webhook/cron/<key>.
 // Unlike change delivery, there are no changed_files; the role body is rendered
 // once with an empty change context and the wall-clock `now` variable.
-func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role Role, body []byte) {
+func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role Role, body []byte, started time.Time) {
 	var payload cronDeliveryPayload
 	if uerr := json.Unmarshal(body, &payload); uerr != nil {
+		f.metrics.RecordDeliveryAuthFailure("bad_payload")
 		http.Error(w, "bad payload", http.StatusBadRequest)
 		return
 	}
@@ -289,6 +309,7 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 
 	instruction, rerr := renderInstruction(role.Body, rc)
 	if rerr != nil {
+		f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindCron, statusError, time.Since(started).Seconds())
 		writeJSON(w, http.StatusBadRequest, webhookutil.AgentResponse{
 			Status:  statusError,
 			Message: fmt.Sprintf("render: %v", rerr),
@@ -312,6 +333,7 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 	if runErr != nil {
 		//nolint:sloglint // Fleet has no logger instance; global slog is intentional here
 		slog.WarnContext(r.Context(), "fleet: cron run error", "role", role.NotePath, "error", runErr)
+		f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindCron, statusError, time.Since(started).Seconds())
 		writeJSON(w, http.StatusBadGateway, webhookutil.AgentResponse{
 			Status:  statusError,
 			Message: runErr.Error(),
@@ -319,6 +341,7 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 		return
 	}
 
+	f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindCron, res.Status, time.Since(started).Seconds())
 	writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
 		Status:     res.Status,
 		Message:    res.Answer,
@@ -363,8 +386,12 @@ type execRoleInput struct {
 // way — fleet runs no code in-process there either.
 func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 	kb := newRemoteKB(p.GQL, p.Overlay)
+	done := f.metrics.RunStarted()
+	defer done()
 	return agentruntime.Run(p.Ctx, agentruntime.Input{
 		Instruction:   p.Instr,
+		Role:          p.Role.NotePath,
+		Metrics:       f.runMetrics(),
 		ReadPatterns:  p.Role.ReadPatterns,
 		WritePatterns: p.Role.WritePatterns,
 		Tools:         p.Role.Tools,
@@ -383,4 +410,14 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// runMetrics adapts the fleet's metrics sink to agentruntime's interface. A nil
+// sink is passed through as a nil interface so the runtime records nothing at
+// all rather than calling into a typed nil.
+func (f *Fleet) runMetrics() agentruntime.Metrics {
+	if f.metrics == nil {
+		return nil
+	}
+	return f.metrics
 }

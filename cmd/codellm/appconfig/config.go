@@ -29,6 +29,11 @@ type Config struct {
 	// must be an explicit operator opt-in, not the default.
 	Addr string
 
+	// MetricsAddr is the internal listener: Prometheus /metrics, pprof, and the
+	// liveness/readiness probes. Loopback by default and unauthenticated, exactly
+	// like the monolith's internal listener. Empty disables it.
+	MetricsAddr string
+
 	// AllowedPrograms is the interpreter allowlist (python, bash, node, ...).
 	// Empty disables code execution (every request then fails 422).
 	AllowedPrograms []string
@@ -75,7 +80,13 @@ type Config struct {
 
 // Defaults.
 const (
-	DefaultAddr            = "127.0.0.1:8087"
+	DefaultAddr = "127.0.0.1:8087"
+	// DefaultMetricsAddr puts the internal listener in the 18xxx band. The
+	// monolith's own internal listeners occupy 19xxx (infra/site.yml, one per
+	// site, "MUST be unique per service" — 19087 is already trip2g_landing's),
+	// so the standalone binaries stay clear of it: codellm 8087 -> 18087,
+	// fleet 9090 -> 18090.
+	DefaultMetricsAddr     = "127.0.0.1:18087"
 	DefaultAllowedPrograms = "python,bash,node"
 	DefaultTimeout         = 300 * time.Second
 	DefaultTrip2gBaseURL   = "http://127.0.0.1:8081"
@@ -90,6 +101,7 @@ const minAPIKeyLength = 32
 func DefaultConfig() Config {
 	return Config{
 		Addr:            DefaultAddr,
+		MetricsAddr:     DefaultMetricsAddr,
 		AllowedPrograms: splitCSV(DefaultAllowedPrograms),
 		Sandbox:         coderun.SandboxNative,
 		Timeout:         DefaultTimeout,
@@ -127,6 +139,11 @@ func GetArgs(args []string) (*Config, error) {
 func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_ADDR"); v != "" {
 		c.Addr = v
+	}
+	// LookupEnv, not Getenv: an explicitly empty CODELLM_METRICS_ADDR is how an
+	// operator turns the listener off, and Getenv cannot tell that from unset.
+	if v, ok := os.LookupEnv("CODELLM_METRICS_ADDR"); ok {
+		c.MetricsAddr = v
 	}
 	if v := os.Getenv("CODELLM_ALLOWED_PROGRAMS"); v != "" {
 		c.AllowedPrograms = splitCSV(v)
@@ -176,6 +193,8 @@ func (c *Config) defineAndParseFlags(args []string) error {
 	exposeEnvPrefix := strings.Join(c.ExposeEnvPrefix, ",")
 
 	fs.StringVar(&c.Addr, "addr", c.Addr, "listen address for the OpenAI-compatible API; defaults to loopback since auth is a no-op seam")
+	fs.StringVar(&c.MetricsAddr, "metrics-addr", c.MetricsAddr,
+		"loopback listen address for /metrics, pprof and the liveness/readiness probes; empty = disabled")
 	fs.StringVar(&allowedPrograms, "allowed-programs", allowedPrograms, "comma-separated interpreter allowlist; empty disables code execution")
 	fs.StringVar(&sandbox, "sandbox", sandbox, "sandbox mode: native | besteffort | off")
 	fs.BoolVar(&sandboxNetwork, "sandbox-network", sandboxNetwork, "allow network access from sandboxed blocks")

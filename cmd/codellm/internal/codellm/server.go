@@ -28,6 +28,7 @@ import (
 	goopenai "github.com/sashabaranov/go-openai"
 
 	"trip2g/cmd/codellm/internal/codellm/codellmgql"
+	"trip2g/cmd/codellm/internal/codellmmetrics"
 	"trip2g/cmd/codellm/internal/coderun"
 	"trip2g/internal/webhookutil"
 )
@@ -89,6 +90,11 @@ type Config struct {
 	// secure default). Kept distinct from Auth so the transport-lock and the
 	// caller-identity concerns wire independently.
 	TokenCheck func(*http.Request) error
+
+	// Metrics is the Prometheus sink served on the internal listener. nil
+	// disables recording entirely (every call site is nil-safe), which is what
+	// tests and a --metrics-addr="" run get.
+	Metrics *codellmmetrics.Metrics
 }
 
 // BrowserAuth composes codellm's two auth regimes into one middleware for the
@@ -106,19 +112,59 @@ type Config struct {
 // tokenCheck nil → no key auth; every request must pass the browser admin gate
 // (the secure default until an api_key is configured).
 func BrowserAuth(admin func(http.Handler) http.Handler, tokenCheck func(*http.Request) error) func(http.Handler) http.Handler {
+	return BrowserAuthWithMetrics(admin, tokenCheck, nil)
+}
+
+// BrowserAuthWithMetrics is BrowserAuth plus auth accounting: which lane
+// admitted (or rejected) each request. The cookie lane's verdict is only
+// visible from the response status the admin middleware wrote, so it is read
+// back off the wrapped writer. m may be nil.
+func BrowserAuthWithMetrics(
+	admin func(http.Handler) http.Handler,
+	tokenCheck func(*http.Request) error,
+	m *codellmmetrics.Metrics,
+) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		gated := admin(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if tokenCheck != nil {
-				if err := tokenCheck(r); err == nil {
+				err := tokenCheck(r)
+				if err == nil {
+					m.RecordAuth(codellmmetrics.LaneAPIKey, codellmmetrics.Allowed)
 					next.ServeHTTP(w, r)
 					return
 				}
+				// A caller that presented a key and got rejected is the probing
+				// signal; a caller with no key at all is just using the cookie lane.
+				if bearerToken(r) != "" {
+					m.RecordAuth(codellmmetrics.LaneAPIKey, codellmmetrics.Denied)
+				}
 			}
-			gated.ServeHTTP(w, r)
+			rec := &authStatusWriter{ResponseWriter: w, status: http.StatusOK}
+			gated.ServeHTTP(rec, r)
+			result := codellmmetrics.Allowed
+			if rec.status == http.StatusUnauthorized {
+				result = codellmmetrics.Denied
+			}
+			m.RecordAuth(codellmmetrics.LaneCookie, result)
 		})
 	}
 }
+
+// authStatusWriter captures the status the admin gate wrote so the cookie
+// lane's allow/deny verdict can be counted.
+type authStatusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *authStatusWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
+// Unwrap keeps http.ResponseController able to reach the real writer.
+func (w *authStatusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 // Server is the codellm HTTP service.
 type Server struct {
@@ -128,14 +174,18 @@ type Server struct {
 type blockRunner struct{ cfg Config }
 
 func (r blockRunner) RunBlocks(ctx context.Context, req codellmgql.BlockRunRequest) (codellmgql.BlockRunResult, error) {
+	observe, blocks := blockObserver(r.cfg.Metrics)
 	out, debug, err := coderun.ExecBlocksDebug(ctx, coderun.CodeInput{
 		Body: req.Body, Input: req.FleetInput,
 		AllowedPrograms: r.cfg.AllowedPrograms,
 		Sandbox:         r.cfg.Sandbox, MaxStdoutBytes: r.cfg.MaxStdoutBytes,
 		Timeout: r.cfg.Timeout, EnvPassthrough: r.cfg.ExposeEnv,
 		EnvPrefix: r.cfg.ExposeEnvPrefix,
+		Observe:   observe,
 	}, req.MaxSteps)
+	r.cfg.Metrics.ObserveRequestBlocks(*blocks)
 	if err != nil {
+		r.cfg.Metrics.RecordExecError(err)
 		return codellmgql.BlockRunResult{}, err
 	}
 	results := make([]codellmgql.BlockResult, 0, len(debug))
@@ -164,13 +214,16 @@ func New(cfg Config) *Server {
 func (s *Server) Handler() http.Handler {
 	const graphqlPrefix = "/_system/codellm/graphql"
 
+	m := s.cfg.Metrics
 	mux := http.NewServeMux()
 	graphqlHandler := codellmgql.NewHTTPHandler(nil, blockRunner{cfg: s.cfg})
 	gqlAuthHandler := s.cfg.Auth(graphqlHandler)
 	// Auth-gated (browser cookie / fleet channel token — see cfg.Auth).
-	mux.Handle("POST /v1/chat/completions", s.cfg.Auth(http.HandlerFunc(s.handleChatCompletions)))
-	mux.Handle("POST "+graphqlPrefix, gqlAuthHandler)
-	mux.Handle("GET "+graphqlPrefix, s.cfg.Auth(playground.Handler("CodeLLM GraphQL Playground", graphqlPrefix)))
+	mux.Handle("POST /v1/chat/completions",
+		m.Instrument("chat_completions", s.cfg.Auth(http.HandlerFunc(s.handleChatCompletions))))
+	mux.Handle("POST "+graphqlPrefix, m.Instrument("graphql", gqlAuthHandler))
+	mux.Handle("GET "+graphqlPrefix,
+		m.Instrument("graphql_playground", s.cfg.Auth(playground.Handler("CodeLLM GraphQL Playground", graphqlPrefix))))
 	// Open: liveness + client compatibility, never gated.
 	mux.HandleFunc("GET /v1/models", s.handleModels)
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
@@ -205,6 +258,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	// (ExposeEnv/ExposeEnvPrefix). buildChildEnv sources the VALUES from codellm's
 	// OWN environment for those names; the request carries nothing about env.
 	s.logExposedEnv()
+	observe, blocks := blockObserver(s.cfg.Metrics)
 	in := coderun.CodeInput{
 		Body:            body,
 		AllowedPrograms: s.cfg.AllowedPrograms,
@@ -214,15 +268,21 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		Input:           bag,
 		EnvPassthrough:  s.cfg.ExposeEnv,
 		EnvPrefix:       s.cfg.ExposeEnvPrefix,
+		Observe:         observe,
 	}
 
 	changes, answer, err := coderun.ExecCode(r.Context(), in)
+	s.cfg.Metrics.ObserveRequestBlocks(*blocks)
 	if err != nil {
 		// Apply-error semantics = hard-fail 422 (decision b): a failing block,
 		// timeout, or unparseable stdout is a deterministic failure, not a soft
 		// skip. 422 (not 5xx) so fleet's OpenAILLM does not retry it.
+		s.cfg.Metrics.RecordExecError(err)
 		writeError(w, http.StatusUnprocessableEntity, "code_execution_error", err.Error())
 		return
+	}
+	for _, ch := range changes {
+		s.cfg.Metrics.RecordChange(ch.Kind)
 	}
 
 	resp := buildResponse(req.Model, changes, answer)
@@ -372,4 +432,15 @@ func mustJSON(v any) string {
 		panic(errors.New("codellm: marshal tool arguments: " + err.Error()))
 	}
 	return string(b)
+}
+
+// blockObserver builds the coderun observe hook that feeds the block metrics,
+// plus the per-request block counter it increments. The counter is request-
+// local: coderun calls the observer from the request's own goroutine.
+func blockObserver(m *codellmmetrics.Metrics) (func(coderun.BlockStats), *int) {
+	n := 0
+	return func(st coderun.BlockStats) {
+		n++
+		m.RecordBlock(st)
+	}, &n
 }

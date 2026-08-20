@@ -139,9 +139,17 @@ type CodeSpec struct {
 	Stats          *RunBlockStats // optional execution metrics sink
 }
 
+// RunBlockStats is the optional execution-metrics sink for one RunBlock call.
+// Outcome/ExitCode are filled even when RunBlock returns an error, so a caller
+// can count HOW a block failed, not just that it did.
 type RunBlockStats struct {
-	DurationMs  int64
-	MaxRSSBytes int64
+	DurationMs      int64
+	MaxRSSBytes     int64
+	Outcome         string
+	ExitCode        int
+	StdoutBytes     int
+	StdoutTruncated bool
+	SandboxFallback string
 }
 
 // codeOutput is the stdout JSON contract that every code program must emit.
@@ -175,19 +183,19 @@ type rawCodeChange struct {
 func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) {
 	interp, ok := currentRegistry().byName[spec.Program]
 	if !ok {
-		return "", "", false, fmt.Errorf("coderun: unknown program %q", spec.Program)
+		return "", "", false, execErrf(KindUnknownProgram, "coderun: unknown program %q", spec.Program)
 	}
 
 	// Per-run throwaway workdir: prevents cross-run contamination.
 	workDir, mkErr := os.MkdirTemp("", "fleet-coderun-*")
 	if mkErr != nil {
-		return "", "", false, fmt.Errorf("coderun: create workdir: %w", mkErr)
+		return "", "", false, execErrf(KindSetupFailed, "coderun: create workdir: %w", mkErr)
 	}
 	defer os.RemoveAll(workDir)
 
 	codeFile := filepath.Join(workDir, "run"+interp.Ext)
 	if wErr := os.WriteFile(codeFile, []byte(spec.Code), 0o600); wErr != nil {
-		return "", "", false, fmt.Errorf("coderun: write code file: %w", wErr)
+		return "", "", false, execErrf(KindSetupFailed, "coderun: write code file: %w", wErr)
 	}
 
 	inputData := spec.Input
@@ -196,7 +204,7 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 	}
 	inputFile := filepath.Join(workDir, "input.json")
 	if wErr := os.WriteFile(inputFile, inputData, 0o600); wErr != nil {
-		return "", "", false, fmt.Errorf("coderun: write input file: %w", wErr)
+		return "", "", false, execErrf(KindSetupFailed, "coderun: write input file: %w", wErr)
 	}
 
 	runCtx := ctx
@@ -224,11 +232,14 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 
 	// Fail-closed: when the enforcing mode is requested but the OS cannot
 	// sandbox at all, REFUSE the run — never run untrusted code unconfined.
+	var fallback string
 	if sandboxed && !sandboxSupportedOS {
 		if policy.Mode.enforcing() {
-			return "", "", false, fmt.Errorf("coderun: sandbox mode %q requires Linux; refusing to run unsandboxed", policy.Mode)
+			return "", "", false, execErrf(KindSandboxRefused,
+				"coderun: sandbox mode %q requires Linux; refusing to run unsandboxed", policy.Mode)
 		}
-		warnSandboxFallback("unsupported OS", nil)
+		fallback = "unsupported OS"
+		warnSandboxFallback(fallback, nil)
 		sandboxed = false
 	}
 
@@ -238,9 +249,10 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 		if sbErr != nil {
 			// Enforcing mode: a sandbox that cannot be built refuses the run.
 			if policy.Mode.enforcing() {
-				return "", "", false, fmt.Errorf("coderun: sandbox setup failed: %w", sbErr)
+				return "", "", false, execErrf(KindSandboxRefused, "coderun: sandbox setup failed: %w", sbErr)
 			}
-			warnSandboxFallback("sandbox setup failed", sbErr)
+			fallback = "sandbox setup failed"
+			warnSandboxFallback(fallback, sbErr)
 			sandboxed = false
 		} else {
 			cmd = sbCmd
@@ -254,10 +266,7 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 
 	startedAt := time.Now()
 	runErr := cmd.Run()
-	if spec.Stats != nil {
-		spec.Stats.DurationMs = time.Since(startedAt).Milliseconds()
-		spec.Stats.MaxRSSBytes = maxRSSBytes(cmd.ProcessState)
-	}
+	elapsed := time.Since(startedAt)
 	// A sandboxed command that failed to START never ran the child: namespace
 	// creation was denied (e.g. unprivileged userns disabled) or a confinement
 	// step failed. Enforcing mode REFUSES the run (the code never ran, so this
@@ -265,27 +274,78 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 	// execution with a per-run warning.
 	if runErr != nil && sandboxed && cmd.ProcessState == nil && runCtx.Err() == nil {
 		if policy.Mode.enforcing() {
-			return "", "", false, fmt.Errorf("coderun: sandboxed child failed to start; refusing to run unsandboxed: %w", runErr)
+			return "", "", false, execErrf(KindSandboxRefused,
+				"coderun: sandboxed child failed to start; refusing to run unsandboxed: %w", runErr)
 		}
-		warnSandboxFallback("sandboxed child failed to start", runErr)
+		fallback = "sandboxed child failed to start"
+		warnSandboxFallback(fallback, runErr)
 		cmd = exec.CommandContext(runCtx, fullArgv[0], fullArgv[1:]...)
 		prepareCmd(cmd, workDir, env, spec.Stdin, &outBuf, &errBuf, limit)
+		startedAt = time.Now()
 		runErr = cmd.Run()
+		elapsed = time.Since(startedAt)
 	}
 	outStr := outBuf.String()
 	errStr := errBuf.String()
 
-	if runCtx.Err() != nil {
-		return outStr, errStr, true, errors.New("coderun: timed out")
+	timedOut := runCtx.Err() != nil
+	recordRunBlockStats(spec.Stats, runBlockOutcome(cmd, runErr, timedOut), cmd, elapsed, &outBuf, fallback)
+
+	if timedOut {
+		return outStr, errStr, true, &ExecError{Kind: KindTimeout, Err: errors.New("coderun: timed out")}
 	}
 	if runErr != nil {
 		msg := errStr
 		if msg == "" {
 			msg = runErr.Error()
 		}
-		return outStr, errStr, false, fmt.Errorf("coderun: non-zero exit: %s", msg)
+		// No ProcessState means the child never ran (exec failed): that is a start
+		// failure, not an exit status the code chose.
+		if cmd.ProcessState == nil {
+			return outStr, errStr, false, execErrf(KindStartFailed, "coderun: start failed: %s", msg)
+		}
+		return outStr, errStr, false, execErrf(KindNonZeroExit, "coderun: non-zero exit: %s", msg)
 	}
 	return outStr, errStr, false, nil
+}
+
+// runBlockOutcome classifies one finished child: a timeout, a child that never
+// started (no ProcessState), a non-zero exit, or a clean run.
+func runBlockOutcome(cmd *exec.Cmd, runErr error, timedOut bool) string {
+	switch {
+	case timedOut:
+		return BlockTimeout
+	case cmd.ProcessState == nil:
+		return BlockStartFailed
+	case runErr != nil:
+		return BlockNonZeroExit
+	default:
+		return BlockOK
+	}
+}
+
+// recordRunBlockStats fills the caller's optional stats sink. No-op when the
+// caller passed none (the zero-overhead production path before metrics wiring).
+func recordRunBlockStats(stats *RunBlockStats, outcome string, cmd *exec.Cmd, elapsed time.Duration, out *limitedBuffer, fallback string) {
+	if stats == nil {
+		return
+	}
+	stats.DurationMs = elapsed.Milliseconds()
+	stats.MaxRSSBytes = maxRSSBytes(cmd.ProcessState)
+	stats.Outcome = outcome
+	stats.ExitCode = exitCode(cmd.ProcessState)
+	stats.StdoutBytes = len(out.String())
+	stats.StdoutTruncated = out.Truncated()
+	stats.SandboxFallback = fallback
+}
+
+// exitCode reports the child's exit status, or -1 when it never produced one
+// (never started, or killed before reaping).
+func exitCode(state *os.ProcessState) int {
+	if state == nil {
+		return -1
+	}
+	return state.ExitCode()
 }
 
 // prepareCmd applies the run wiring shared by the sandboxed and plain paths:
@@ -312,12 +372,12 @@ func ParseCodeOutput(stdout string) ([]webhookutil.AgentChange, string, error) {
 		if len(preview) > 200 {
 			preview = preview[:200] + "..."
 		}
-		return nil, "", fmt.Errorf("coderun: parse stdout: %w (got: %q)", err, preview)
+		return nil, "", execErrf(KindParseError, "coderun: parse stdout: %w (got: %q)", err, preview)
 	}
 	changes := make([]webhookutil.AgentChange, 0, len(out.Changes))
 	for i, c := range out.Changes {
 		if c.Path == "" {
-			return nil, "", fmt.Errorf("coderun: change[%d]: missing path", i)
+			return nil, "", execErrf(KindParseError, "coderun: change[%d]: missing path", i)
 		}
 		if c.Find != "" || c.Replace != "" {
 			changes = append(changes, webhookutil.AgentChange{
@@ -470,8 +530,9 @@ func resolveEnvVars(decls []envVar) []string {
 // limitedBuffer is an io.Writer that accumulates up to limit bytes and silently
 // discards the rest. Used to bound stdout/stderr capture.
 type limitedBuffer struct {
-	limit int
-	data  []byte
+	limit     int
+	data      []byte
+	truncated bool
 }
 
 func (b *limitedBuffer) Write(p []byte) (int, error) {
@@ -481,9 +542,17 @@ func (b *limitedBuffer) Write(p []byte) (int, error) {
 			b.data = append(b.data, p...)
 		} else {
 			b.data = append(b.data, p[:rem]...)
+			b.truncated = true
 		}
+	} else if len(p) > 0 {
+		b.truncated = true
 	}
 	return len(p), nil
 }
 
 func (b *limitedBuffer) String() string { return string(b.data) }
+
+// Truncated reports whether the writer dropped bytes past its limit. Silent
+// truncation shows up downstream as an unparseable stdout, so it is worth
+// surfacing on its own.
+func (b *limitedBuffer) Truncated() bool { return b.truncated }

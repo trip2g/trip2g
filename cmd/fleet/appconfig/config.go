@@ -32,6 +32,14 @@ const (
 	// ingress (mirrors codellm's loopback default). The API is gated by the
 	// delegated-admin middleware regardless of bind.
 	DefaultGraphQLAddr = "127.0.0.1:9093"
+
+	// DefaultMetricsAddr binds the internal listener (Prometheus /metrics, pprof,
+	// liveness/readiness) to loopback: none of it is authenticated, exactly like
+	// the monolith's internal listener. The 18xxx band keeps the standalone
+	// binaries clear of the 19xxx internal ports infra/site.yml assigns one per
+	// site ("MUST be unique per service"; 19090 is already reserved there):
+	// codellm 8087 -> 18087, fleet 9090 -> 18090.
+	DefaultMetricsAddr = "127.0.0.1:18090"
 )
 
 // Config holds the subset of fleet's machine-level settings layered via
@@ -44,6 +52,7 @@ type Config struct {
 	CallbackURL   string   // trip2g-reachable base URL of this fleet (reconcile: webhook target)
 	Trip2gBaseURL string   // trip2g base URL fleet talks to (reconcile: discovery/registration)
 	GraphQLAddr   string   // fleet's own GraphQL read API (roles + roleGraph); empty = disabled
+	MetricsAddr   string   // internal listener: /metrics, pprof, probes; loopback-only, empty = disabled
 	DefaultModel  string   // fallback model when a role omits model
 	OfferedTools  []string // allowed tools a role may declare
 
@@ -58,6 +67,7 @@ func DefaultConfig() *Config {
 		ListenAddr:      DefaultListenAddr,
 		Trip2gBaseURL:   DefaultTrip2gBaseURL,
 		GraphQLAddr:     DefaultGraphQLAddr,
+		MetricsAddr:     DefaultMetricsAddr,
 		DefaultModel:    DefaultModel,
 		offeredToolsCSV: DefaultOfferedTools,
 	}
@@ -82,6 +92,9 @@ func (c *Config) DefineFlags(fs *flag.FlagSet) {
 			"the delegated-admin middleware (forwards the caller's cookie to the monolith's "+
 			"viewer{role}; admin -> serve, else 401, monolith-unreachable -> fail-closed). Front it "+
 			"with Caddy /_fleet/* as the sole ingress; expose a non-loopback bind only behind that proxy")
+	fs.StringVar(&c.MetricsAddr, "metrics-addr", c.MetricsAddr,
+		"loopback listen address serving Prometheus /metrics, pprof and the liveness/readiness probes; "+
+			"unauthenticated by design, so never bind it off-box. Empty = disabled")
 	fs.StringVar(&c.DefaultModel, "default-model", c.DefaultModel,
 		"default model when a role omits model")
 	fs.StringVar(&c.offeredToolsCSV, "offered-tools", c.offeredToolsCSV,

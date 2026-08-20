@@ -2,7 +2,6 @@ package coderun
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -30,6 +29,11 @@ type CodeInput struct {
 	EnvPrefix       []string      // parent env var name prefixes forwarded to child
 	MaxStdoutBytes  int           // stdout cap per code child; 0 → 1 MiB default
 	Sandbox         SandboxPolicy // OS-level isolation; zero value = safe default (native)
+
+	// Observe, when non-nil, receives one BlockStats per executed block (exit
+	// code, duration, RSS, stdout size). It is the metrics seam: coderun measures
+	// and reports, the caller counts, so this package needs no metrics import.
+	Observe func(BlockStats)
 }
 
 // ExecCode extracts and runs the fenced blocks in in.Body and returns the parsed
@@ -75,7 +79,7 @@ func ExecCodeDebug(ctx context.Context, in CodeInput) ([]webhookutil.AgentChange
 func ExecBlocksDebug(ctx context.Context, in CodeInput, steps int) (string, []BlockDebug, error) {
 	blocks := ExtractFencedBlocks(in.Body)
 	if len(blocks) == 0 {
-		return "", nil, errors.New("coderun: no fenced code block found in rendered body")
+		return "", nil, &ExecError{Kind: KindNoBlocks, Err: errNoFencedBlock}
 	}
 	if steps > 0 && steps < len(blocks) {
 		blocks = blocks[:steps]
@@ -118,7 +122,7 @@ type ExecResult struct {
 func Exec(ctx context.Context, in CodeInput, capture bool) (ExecResult, error) {
 	blocks := ExtractFencedBlocks(in.Body)
 	if len(blocks) == 0 {
-		return ExecResult{}, errors.New("coderun: no fenced code block found in rendered body")
+		return ExecResult{}, &ExecError{Kind: KindNoBlocks, Err: errNoFencedBlock}
 	}
 
 	programs, err := resolvePrograms(blocks, in)
@@ -166,12 +170,16 @@ func runSingleBlock(
 		Sandbox:        in.Sandbox,
 		Stats:          &stats,
 	})
+	observeSingleBlock(in.Observe, program, stats)
 	if runErr != nil {
 		return "", nil, fmt.Errorf("coderun: %w", runErr)
 	}
 	var debug []BlockDebug
 	if capture {
-		debug = []BlockDebug{{Index: 0, ExitCode: 0, DurationMs: stats.DurationMs, MaxRSSBytes: stats.MaxRSSBytes, Stdout: out, Stderr: stderr}}
+		debug = []BlockDebug{{
+			Index: 0, ExitCode: stats.ExitCode, DurationMs: stats.DurationMs,
+			MaxRSSBytes: stats.MaxRSSBytes, Stdout: out, Stderr: stderr,
+		}}
 	}
 	return out, debug, nil
 }
@@ -190,6 +198,7 @@ func runMultiBlock(
 		}
 	}
 	out, stderrs, built, pipeErr := runPipeline(ctx, blocks, programs, in, limit, taps)
+	observePipeline(in.Observe, built, programs)
 	if pipeErr != nil {
 		return "", nil, pipeErr
 	}
@@ -208,8 +217,8 @@ func runMultiBlock(
 func buildBlockDebug(built []builtBlock, taps pipelineDebugTaps, finalStdout string, stderrs []string, n int) []BlockDebug {
 	debug := make([]BlockDebug, n)
 	for i := range n {
-		d := BlockDebug{Index: i, ExitCode: 0}
-		d.DurationMs = time.Since(built[i].startedAt).Milliseconds()
+		d := BlockDebug{Index: i, ExitCode: exitCode(built[i].cmd.ProcessState)}
+		d.DurationMs = built[i].elapsed().Milliseconds()
 		d.MaxRSSBytes = maxRSSBytes(built[i].cmd.ProcessState)
 		if i < len(stderrs) {
 			d.Stderr = stderrs[i]
@@ -251,13 +260,15 @@ func resolvePrograms(blocks []FencedBlock, in CodeInput) ([]string, error) {
 			program = fenceLangToProgram(b.Lang)
 		}
 		if program == "" {
-			return nil, fmt.Errorf("coderun: %sfence language %q not supported (use python, bash, or node)", blockPrefix(i, len(blocks)), b.Lang)
+			return nil, execErrf(KindUnknownFence,
+				"coderun: %sfence language %q not supported (use python, bash, or node)", blockPrefix(i, len(blocks)), b.Lang)
 		}
 		if !IsAllowed(program, in.AllowedPrograms) {
 			if len(in.AllowedPrograms) == 0 {
-				return nil, errors.New("coderun: code execution disabled (set --allowed-programs)")
+				return nil, &ExecError{Kind: KindDisallowedProgram, Err: errExecutionDisabled}
 			}
-			return nil, fmt.Errorf("coderun: %sprogram %q not in --allowed-programs %v", blockPrefix(i, len(blocks)), program, in.AllowedPrograms)
+			return nil, execErrf(KindDisallowedProgram,
+				"coderun: %sprogram %q not in --allowed-programs %v", blockPrefix(i, len(blocks)), program, in.AllowedPrograms)
 		}
 		programs[i] = program
 	}
@@ -272,13 +283,76 @@ type pipelineDebugTaps []*limitedBuffer
 
 // builtBlock is a fully prepared (not yet started) pipeline stage.
 type builtBlock struct {
-	cmd       *exec.Cmd
-	workDir   string
-	blockCtx  context.Context
-	cancel    context.CancelFunc
-	errBuf    limitedBuffer
-	sandboxed bool
-	startedAt time.Time
+	cmd        *exec.Cmd
+	workDir    string
+	blockCtx   context.Context
+	cancel     context.CancelFunc
+	errBuf     limitedBuffer
+	sandboxed  bool
+	fallback   string // besteffort degradation reason; empty when sandboxed as asked
+	startedAt  time.Time
+	finishedAt time.Time
+	// outcome is classified inside waitOne, while blockCtx.Err() still
+	// distinguishes a real deadline from the teardown cancel that cleanupPipeline
+	// issues on the way out. Empty means the block was never waited on.
+	outcome string
+}
+
+// elapsed is the block's wall time: from Start to the Wait that reaped it, or
+// to now for a block that never finished.
+func (b *builtBlock) elapsed() time.Duration {
+	if b.finishedAt.IsZero() {
+		return time.Since(b.startedAt)
+	}
+	return b.finishedAt.Sub(b.startedAt)
+}
+
+// observePipeline reports one BlockStats per pipeline block. Only the last
+// block's stdout is buffered (the others stream into the next block's stdin),
+// so stdout size and truncation are reported for it alone.
+func observePipeline(observe func(BlockStats), built []builtBlock, programs []string) {
+	if observe == nil {
+		return
+	}
+	for i := range built {
+		bb := &built[i]
+		// A block that was never waited on never ran to an outcome (the run was
+		// abandoned mid-start); the failure is reported as an exec error instead.
+		if bb.outcome == "" {
+			continue
+		}
+		st := BlockStats{
+			Index:           i,
+			Outcome:         bb.outcome,
+			ExitCode:        exitCode(bb.cmd.ProcessState),
+			DurationMs:      bb.elapsed().Milliseconds(),
+			MaxRSSBytes:     maxRSSBytes(bb.cmd.ProcessState),
+			SandboxFallback: bb.fallback,
+		}
+		if i < len(programs) {
+			st.Program = programs[i]
+		}
+		if last, ok := bb.cmd.Stdout.(*limitedBuffer); ok && last != nil {
+			st.StdoutBytes = len(last.String())
+			st.StdoutTruncated = last.Truncated()
+		}
+		observe(st)
+	}
+}
+
+// classifyPipelineBlock names how one block ended. It must run before
+// cleanupPipeline cancels blockCtx, or every block looks timed out.
+func classifyPipelineBlock(bb *builtBlock) string {
+	switch {
+	case bb.blockCtx.Err() != nil:
+		return BlockTimeout
+	case bb.cmd.ProcessState == nil:
+		return BlockStartFailed
+	case bb.cmd.ProcessState.ExitCode() != 0:
+		return BlockNonZeroExit
+	default:
+		return BlockOK
+	}
 }
 
 // runPipeline runs len(blocks) > 1 as a true streaming pipeline: block i's
@@ -373,7 +447,7 @@ func startAll(built []builtBlock, pipes []*io.PipeWriter, n int) error {
 			for j := range i {
 				_ = pipes[j].CloseWithError(sErr)
 			}
-			return fmt.Errorf("coderun: %sstart failed: %w", blockPrefix(i, n), sErr)
+			return execErrf(KindStartFailed, "coderun: %sstart failed: %w", blockPrefix(i, n), sErr)
 		}
 	}
 	return nil
@@ -412,20 +486,20 @@ func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPol
 	for i, e := range errs {
 		if e != nil {
 			if built[i].blockCtx.Err() != nil {
-				return "", stderrs, fmt.Errorf("coderun: %stimed out", blockPrefix(i, n))
+				return "", stderrs, execErrf(KindTimeout, "coderun: %stimed out", blockPrefix(i, n))
 			}
 			msg := stderrs[i]
 			if msg == "" {
 				msg = e.Error()
 			}
-			return "", stderrs, fmt.Errorf("coderun: %snon-zero exit: %s", blockPrefix(i, n), msg)
+			return "", stderrs, execErrf(KindNonZeroExit, "coderun: %snon-zero exit: %s", blockPrefix(i, n), msg)
 		}
 	}
 
 	// All blocks succeeded; extract the last block's stdout via the Stdout pointer.
 	lastBuf, ok := built[n-1].cmd.Stdout.(*limitedBuffer)
 	if !ok || lastBuf == nil {
-		return "", stderrs, errors.New("coderun: internal error: last block stdout not captured")
+		return "", stderrs, &ExecError{Kind: KindInternal, Err: errLastStdoutMissing}
 	}
 	return lastBuf.String(), stderrs, nil
 }
@@ -434,6 +508,8 @@ func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPol
 // downstream pipe writer (if any) so the next block sees EOF.
 func waitOne(idx int, built []builtBlock, pipes []*io.PipeWriter, n int, sandbox SandboxPolicy, ch chan<- pipeWaitResult) {
 	werr := built[idx].cmd.Wait()
+	built[idx].finishedAt = time.Now()
+	built[idx].outcome = classifyPipelineBlock(&built[idx])
 	if idx < n-1 {
 		if werr != nil {
 			_ = pipes[idx].CloseWithError(werr)
@@ -477,19 +553,19 @@ func closeAllPipes(pipes []*io.PipeWriter) {
 func buildBlockCmd(ctx context.Context, code, program string, in CodeInput) (builtBlock, error) {
 	interp, ok := currentRegistry().byName[program]
 	if !ok {
-		return builtBlock{}, fmt.Errorf("unknown program %q", program)
+		return builtBlock{}, execErrf(KindUnknownProgram, "unknown program %q", program)
 	}
 
 	workDir, mkErr := os.MkdirTemp("", "fleet-coderun-*")
 	if mkErr != nil {
-		return builtBlock{}, fmt.Errorf("create workdir: %w", mkErr)
+		return builtBlock{}, execErrf(KindSetupFailed, "create workdir: %w", mkErr)
 	}
 	tear := func() { _ = os.RemoveAll(workDir) }
 
 	codeFile := filepath.Join(workDir, "run"+interp.Ext)
 	if wErr := os.WriteFile(codeFile, []byte(code), 0o600); wErr != nil {
 		tear()
-		return builtBlock{}, fmt.Errorf("write code file: %w", wErr)
+		return builtBlock{}, execErrf(KindSetupFailed, "write code file: %w", wErr)
 	}
 
 	inputData := in.Input
@@ -499,7 +575,7 @@ func buildBlockCmd(ctx context.Context, code, program string, in CodeInput) (bui
 	inputFile := filepath.Join(workDir, "input.json")
 	if wErr := os.WriteFile(inputFile, inputData, 0o600); wErr != nil {
 		tear()
-		return builtBlock{}, fmt.Errorf("write input file: %w", wErr)
+		return builtBlock{}, execErrf(KindSetupFailed, "write input file: %w", wErr)
 	}
 
 	env := buildChildEnv(inputFile, interp, in.EnvPassthrough, in.EnvPrefix)
@@ -514,13 +590,15 @@ func buildBlockCmd(ctx context.Context, code, program string, in CodeInput) (bui
 	policy := in.Sandbox.withDefaults(in.Timeout)
 	sandboxed := policy.Mode != SandboxOff
 
+	var fallback string
 	if sandboxed && !sandboxSupportedOS {
 		if policy.Mode.enforcing() {
 			cancel()
 			tear()
-			return builtBlock{}, fmt.Errorf("sandbox mode %q requires Linux; refusing to run unsandboxed", policy.Mode)
+			return builtBlock{}, execErrf(KindSandboxRefused, "sandbox mode %q requires Linux; refusing to run unsandboxed", policy.Mode)
 		}
-		warnSandboxFallback("unsupported OS", nil)
+		fallback = "unsupported OS"
+		warnSandboxFallback(fallback, nil)
 		sandboxed = false
 	}
 
@@ -531,9 +609,10 @@ func buildBlockCmd(ctx context.Context, code, program string, in CodeInput) (bui
 			if policy.Mode.enforcing() {
 				cancel()
 				tear()
-				return builtBlock{}, fmt.Errorf("sandbox setup failed: %w", sbErr)
+				return builtBlock{}, execErrf(KindSandboxRefused, "sandbox setup failed: %w", sbErr)
 			}
-			warnSandboxFallback("sandbox setup failed", sbErr)
+			fallback = "sandbox setup failed"
+			warnSandboxFallback(fallback, sbErr)
 			sandboxed = false
 		} else {
 			cmd = sbCmd
@@ -554,6 +633,7 @@ func buildBlockCmd(ctx context.Context, code, program string, in CodeInput) (bui
 		blockCtx:  blockCtx,
 		cancel:    cancel,
 		sandboxed: sandboxed,
+		fallback:  fallback,
 	}, nil
 }
 

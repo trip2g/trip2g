@@ -95,3 +95,20 @@ func TestGetArgs_MinLengthAPIKeyAccepted(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, string(key), cfg.APIKey)
 }
+
+// TestGetArgs_MetricsAddr covers the internal listener's config lane: a
+// loopback default, env and flag overrides, and empty = disabled.
+func TestGetArgs_MetricsAddr(t *testing.T) {
+	cfg, err := GetArgs(nil)
+	require.NoError(t, err)
+	require.Equal(t, DefaultMetricsAddr, cfg.MetricsAddr, "the internal listener must default to loopback")
+
+	t.Setenv("CODELLM_METRICS_ADDR", "127.0.0.1:19000")
+	cfg, err = GetArgs(nil)
+	require.NoError(t, err)
+	require.Equal(t, "127.0.0.1:19000", cfg.MetricsAddr)
+
+	cfg, err = GetArgs([]string{"--metrics-addr", ""})
+	require.NoError(t, err)
+	require.Empty(t, cfg.MetricsAddr, "an empty address must disable the listener, not fail validation")
+}

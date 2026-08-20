@@ -252,3 +252,23 @@ are silently weaker while namespaces still apply. Verify the host supports it
 
 Verify a deployment with `scripts/test-codellm-sandbox.sh`, which checks both
 that the toolbox works and that the denials still hold.
+
+## Metrics
+
+A second, loopback-only listener serves Prometheus, pprof and the probes
+(`--metrics-addr` / `CODELLM_METRICS_ADDR`, default `127.0.0.1:18087`; empty
+disables it). Nothing on that port is authenticated — never bind it off-box.
+
+```bash
+curl -s http://127.0.0.1:18087/metrics | grep '^codellm_'
+```
+
+The block series carry what a stability check needs: outcome and real exit code
+per interpreter (`codellm_blocks_total`, `codellm_block_exit_codes_total`),
+duration and peak RSS, stdout size plus a truncation counter, and
+`codellm_exec_errors_total{kind}`, which classifies every failed run — from a
+disallowed program that never reached a child to a timeout or an unparseable
+stdout. `codellm_sandbox_fallbacks_total` is the one to watch: it means a
+`besteffort` policy ran code unsandboxed.
+
+Full catalog, the fleet's side, and what to alert on: `docs/dev/fleet_codellm_metrics.md`.
