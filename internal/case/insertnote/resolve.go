@@ -28,11 +28,11 @@ type Env interface {
 	NoteVersionActor(ctx context.Context) model.NoteActor
 }
 
-// Resolve writes the note and returns its note_paths id and the id of the
-// note_versions row it inserted. The version id is 0 when no new version was
-// created (content unchanged) — callers that need a version id should fall back
-// to the current latest in that case.
-func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, int64, error) {
+// Resolve writes the note and reports what the write actually did: which path it
+// hit, the version it inserted (0 when the content was already stored), and
+// whether it brought a hidden path back. Callers use that to tell a real change
+// from a write that changed nothing.
+func Resolve(ctx context.Context, env Env, arg model.RawNote) (model.NoteSaveResult, error) {
 	sha := sha256.New()
 
 	sha.Write([]byte(arg.Path))
@@ -59,7 +59,7 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, int64, err
 				continue
 			}
 
-			return 0, 0, fmt.Errorf("failed to InsertNotePath: %w", insertErr)
+			return model.NoteSaveResult{}, fmt.Errorf("failed to InsertNotePath: %w", insertErr)
 		}
 
 		notePath = &insertedRow
@@ -68,18 +68,23 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, int64, err
 	}
 
 	if notePath == nil {
-		return 0, 0, ErrNotePathHashUnresolvedCollision
+		return model.NoteSaveResult{}, ErrNotePathHashUnresolvedCollision
 	}
 
-	// Always unhide note when pushed (even if content hasn't changed)
-	err := env.UnhideNotePath(ctx, arg.Path)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to unhide note path: %w", err)
+	// A push always brings a hidden note back, content change or not: writing is
+	// the only way to unhide, so a restored file with unchanged bytes must still
+	// reappear. Reported to the caller, since the served snapshot has to be
+	// reloaded for it even when no version follows.
+	result := model.NoteSaveResult{PathID: notePath.ID, Unhidden: notePath.HiddenBy != nil}
+	if result.Unhidden {
+		if err := env.UnhideNotePath(ctx, arg.Path); err != nil {
+			return model.NoteSaveResult{}, fmt.Errorf("failed to unhide note path: %w", err)
+		}
 	}
 
 	if notePath.VersionCount > 0 && notePath.LatestContentHash == contentHash {
-		// Content hasn't changed, no new version created (version id 0).
-		return notePath.ID, 0, nil
+		// Content hasn't changed, no new version created.
+		return result, nil
 	}
 
 	increaseParams := db.IncrementNoteVersionCountParams{
@@ -90,7 +95,7 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, int64, err
 
 	version, err := env.IncrementNoteVersionCount(ctx, increaseParams)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
+		return model.NoteSaveResult{}, fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
 	}
 
 	actor := env.NoteVersionActor(ctx)
@@ -106,7 +111,7 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, int64, err
 
 	versionID, err := env.InsertNoteVersion(ctx, noteVersion)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to InsertNoteVersion: %w", err)
+		return model.NoteSaveResult{}, fmt.Errorf("failed to InsertNoteVersion: %w", err)
 	}
 
 	if actor.DeliveryKind != nil && actor.DeliveryID != nil {
@@ -116,9 +121,11 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, int64, err
 			DeliveryID:    *actor.DeliveryID,
 		})
 		if err != nil {
-			return 0, 0, fmt.Errorf("failed to InsertNoteVersionDeliveryAttribution: %w", err)
+			return model.NoteSaveResult{}, fmt.Errorf("failed to InsertNoteVersionDeliveryAttribution: %w", err)
 		}
 	}
 
-	return notePath.ID, versionID, nil
+	result.VersionID = versionID
+
+	return result, nil
 }

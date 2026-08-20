@@ -1,0 +1,8 @@
+$trip2g_admin_path $mol_view
+	path \
+	hint <= path
+	sub /
+		<= Head $mol_view
+			sub / <= head \
+		<= Tail $mol_view
+			sub / <= tail \

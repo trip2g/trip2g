@@ -7,6 +7,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	internalmodel "trip2g/internal/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/webhookutil"
 )
@@ -16,6 +17,7 @@ type Env interface {
 	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)
 	LatestNoteViews() *internalmodel.NoteViews
 	InsertWebhookDelivery(ctx context.Context, arg db.InsertWebhookDeliveryParams) (db.ChangeWebhookDelivery, error)
+	SetWebhookDeliveryChain(ctx context.Context, arg db.SetWebhookDeliveryChainParams) error
 	EnqueueDeliverChangeWebhook(ctx context.Context, params handlenotewebhooks.DeliverChangeWebhookParams) error
 }
 
@@ -118,12 +120,25 @@ func Resolve(ctx context.Context, env Env, input model.TriggerChangeWebhookInput
 		}, nil
 	}
 
+	// A manual trigger has no causing delivery: it starts its own chain at depth 0.
+	trace := webhookutil.TraceID(webhookutil.DeliveryKindChange, delivery.ID)
+	chainErr := env.SetWebhookDeliveryChain(ctx, db.SetWebhookDeliveryChainParams{
+		ID:    delivery.ID,
+		Trace: ptr.To(trace),
+	})
+	if chainErr != nil {
+		return &model.ErrorPayload{
+			Message: fmt.Sprintf("Failed to stamp delivery chain: %v", chainErr),
+		}, nil
+	}
+
 	// Enqueue job.
 	err = env.EnqueueDeliverChangeWebhook(ctx, handlenotewebhooks.DeliverChangeWebhookParams{
 		DeliveryID: delivery.ID,
 		WebhookID:  webhook.ID,
 		Attempt:    1,
 		Depth:      0,
+		Trace:      trace,
 		Changes:    changeInfos,
 	})
 	if err != nil {

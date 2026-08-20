@@ -45,8 +45,8 @@ func baseEnv(t *testing.T, url string, secretValues map[string]string) *EnvMock 
 		InsertWebhookDeliveryLogFunc: func(_ context.Context, _ db.InsertWebhookDeliveryLogParams) error {
 			return nil
 		},
-		InsertNoteFunc: func(_ context.Context, _ model.RawNote) (int64, error) {
-			return 0, nil
+		InsertNoteFunc: func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
+			return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 		},
 		PrepareLatestNotesFunc: func(_ context.Context, _ bool) (*model.NoteViews, error) {
 			return nil, nil
@@ -172,9 +172,9 @@ func TestResolve_CronAgentChanges_EmptyWritePatterns_Denied(t *testing.T) {
 		}, nil
 	}
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 0, nil
+		return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 	}
 
 	var got db.UpdateCronWebhookDeliveryResultParams
@@ -209,9 +209,9 @@ func TestResolve_CronAgentChanges_MatchingWritePatterns_Allowed(t *testing.T) {
 		}, nil
 	}
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 1, nil
+		return model.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 	}
 
 	var got db.UpdateCronWebhookDeliveryResultParams
@@ -325,9 +325,9 @@ func TestResolve_CronAgentChanges_PatchKind_FindReplace(t *testing.T) {
 	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
 
 	var insertedNote model.RawNote
-	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (model.NoteSaveResult, error) {
 		insertedNote = note
-		return 1, nil
+		return model.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 	}
 
 	var got db.UpdateCronWebhookDeliveryResultParams
@@ -369,9 +369,9 @@ func TestResolve_CronAgentChanges_StaleExpectedHash_Rejected(t *testing.T) {
 	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
 
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 0, nil
+		return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 	}
 
 	var got db.UpdateCronWebhookDeliveryResultParams
@@ -414,9 +414,9 @@ func TestResolve_CronAgentChanges_MatchingExpectedHash_Applied(t *testing.T) {
 	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
 
 	var insertedNote model.RawNote
-	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (model.NoteSaveResult, error) {
 		insertedNote = note
-		return 1, nil
+		return model.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 	}
 
 	err := delivercronwebhook.Resolve(context.Background(), env,
@@ -449,9 +449,9 @@ func TestResolve_CronAgentChanges_MidBatchFailure_NoPartialApply(t *testing.T) {
 	}
 
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 0, nil
+		return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 	}
 
 	var got db.UpdateCronWebhookDeliveryResultParams
@@ -493,9 +493,9 @@ func TestResolve_CronAgentChanges_PatchKind_FindMissing_Error(t *testing.T) {
 	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
 
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 0, nil
+		return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 	}
 
 	var got db.UpdateCronWebhookDeliveryResultParams
@@ -612,8 +612,8 @@ func TestResolve_CronAgentChanges_RunPostSaveHandlerWithDeliveryIdentity(t *test
 			ReadPatterns:   "[]",
 		}, nil
 	}
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
-		return 88, nil
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
+		return model.NoteSaveResult{PathID: 88, VersionID: 88}, nil
 	}
 	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
 		return model.NewNoteViews(), nil
@@ -635,4 +635,41 @@ func TestResolve_CronAgentChanges_RunPostSaveHandlerWithDeliveryIdentity(t *test
 	require.Equal(t, 1, gotReq.WebhookDepth, "cron writes start at depth 1")
 	require.Equal(t, "cron", gotReq.WebhookDeliveryKind)
 	require.EqualValues(t, 12, gotReq.WebhookDeliveryID)
+}
+
+// TestResolve_AgentChangesUnchangedRaiseNoEvents pins the no-op rule on the
+// response-body apply lane: an agent that re-applies the content it applied last
+// time stores nothing, so the write must not re-fire the webhooks that produced
+// it — that loop costs a full LLM run per cycle and changes nothing.
+func TestResolve_AgentChangesUnchangedRaiseNoEvents(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","content":"x"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
+		return model.NoteSaveResult{PathID: 77}, nil // content already stored
+	}
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
+		t.Error("an unchanged apply must not reload the vault")
+		return model.NewNoteViews(), nil
+	}
+	env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error {
+		t.Error("an unchanged apply must raise no change events")
+		return nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env, delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 12, Attempt: 1})
+	require.NoError(t, err)
 }

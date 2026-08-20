@@ -14,7 +14,7 @@ placeholder where the fetched rows are injected.
 {
   "data": {
     "source": "url",
-    "url": "http://localhost:8090/v1/query",
+    "url": "http://localhost:8087/v1/query",
     "body": "{\"sql\":\"SELECT day, revenue FROM stats ORDER BY day\"}"
   },
   "config": {

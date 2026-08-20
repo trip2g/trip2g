@@ -30,7 +30,8 @@ services:
   data_mock:
     image: python:3.12-slim
     ports:
-      - "8090:8090"
+      # 8090 is taken on the host; the server still listens on 8090 inside.
+      - "8087:8090"
     volumes:
       - ./scripts:/scripts:ro
     command: python /scripts/data_mock_server.py
@@ -41,7 +42,7 @@ services:
       context: .
       dockerfile: Dockerfile.mockserver
     command: ["--config", "/configs/krisp.jsonnet", "--listen", ":9092"]
-    container_name: trip2g-test-krispmock
+    container_name: trip2g-dev-krispmock
     ports:
       - "19092:9092"
     healthcheck:
@@ -49,6 +50,133 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  # OpenAI-compatible stub for the fleet's LLM roles (cmd/mockserver +
+  # configs/llm.jsonnet). Deterministic: it answers by the source path in the
+  # rendered instruction, so a transcript becomes segments and segments become a
+  # wiki note — the krisp pipeline runs end to end with no model and no key.
+  llm-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.mockserver
+    command: ["--config", "/configs/llm.jsonnet", "--listen", ":9091"]
+    container_name: trip2g-dev-llmmock
+    ports:
+      - "19091:9091"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9091/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Code executor for `executor: code` roles. Holds the KRISP_* values itself and
+  # exposes them to the python child through its own allowlist — the fleet never
+  # sees a secret. Sandbox off because the block must reach krisp-mock.
+  codellm:
+    build:
+      context: .
+      dockerfile: Dockerfile.codellm
+    container_name: trip2g-dev-codellm
+    depends_on:
+      krisp-mock:
+        condition: service_healthy
+    ports:
+      - "18082:8082"
+    environment:
+      - CODELLM_ADDR=0.0.0.0:8082
+      - CODELLM_ALLOWED_PROGRAMS=python
+      - CODELLM_SANDBOX=off
+      - CODELLM_API_KEY=dev-codellm-shared-key-0123456789abcdef
+      - CODELLM_TRIP2G_URL=http://host.docker.internal:8081
+      - CODELLM_EXPOSE_ENV=KRISP_TOKEN,KRISP_BASE_URL
+      - KRISP_TOKEN=dev-krisp-token
+      - KRISP_BASE_URL=http://krisp-mock:9092
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8082/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # Two fleets against the `make air` hub on the host: one per LLM endpoint, the
+  # way the per-provider-fleet model prescribes. They reach the hub through
+  # host.docker.internal; the hub reaches them back on the published ports, so
+  # the callback URLs are localhost from its point of view.
+  #
+  # Both authenticate with OWNER_PERSONAL_TOKEN_VALUE — set the same value in
+  # .env and restart `make air`, otherwise discovery 401s.
+  #
+  # Ports 9090/9098/9099 are left to `make airfleet`/`make aircodellm` so a
+  # host-run fleet can coexist with these.
+  fleet-code:
+    build:
+      context: .
+      dockerfile: Dockerfile.fleet
+    container_name: trip2g-dev-fleet-code
+    depends_on:
+      codellm:
+        condition: service_healthy
+    ports:
+      - "19090:9090"
+    environment:
+      - TRIP2G_FLEET_FLEET_ID=codellm
+      - TRIP2G_FLEET_LISTEN=:9090
+      - TRIP2G_FLEET_CALLBACK_URL=http://localhost:19090
+      - TRIP2G_FLEET_TRIP2G_URL=http://host.docker.internal:8081
+      - TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN=${OWNER_PERSONAL_TOKEN_VALUE:-t2g_devfleetdevfleetdevfleetdevfleetdevfleetdevfleetdevfleetdevfl}
+      - TRIP2G_FLEET_FLEET_SECRET=dev-fleet-code-secret
+      - TRIP2G_FLEET_LLM_BASE_URL=http://codellm:8082/v1
+      - TRIP2G_FLEET_LLM_API_KEY=dev-codellm-shared-key-0123456789abcdef
+      - TRIP2G_FLEET_DEFAULT_MODEL=codellm
+      - TRIP2G_FLEET_AGENTS_FOLDER=demo/krisp/roles/
+      - TRIP2G_FLEET_POLL_SECONDS=5
+      - TRIP2G_FLEET_TOKEN_CEILING=100000
+      - TRIP2G_FLEET_STEP_CEILING=25
+      - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  fleet-llm:
+    build:
+      context: .
+      dockerfile: Dockerfile.fleet
+    container_name: trip2g-dev-fleet-llm
+    depends_on:
+      llm-mock:
+        condition: service_healthy
+    ports:
+      - "19095:9090"
+    environment:
+      - TRIP2G_FLEET_FLEET_ID=llm
+      - TRIP2G_FLEET_LISTEN=:9090
+      - TRIP2G_FLEET_CALLBACK_URL=http://localhost:19095
+      - TRIP2G_FLEET_TRIP2G_URL=http://host.docker.internal:8081
+      - TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN=${OWNER_PERSONAL_TOKEN_VALUE:-t2g_devfleetdevfleetdevfleetdevfleetdevfleetdevfleetdevfleetdevfl}
+      - TRIP2G_FLEET_FLEET_SECRET=dev-fleet-llm-secret
+      - TRIP2G_FLEET_LLM_BASE_URL=http://llm-mock:9091/v1
+      - TRIP2G_FLEET_LLM_API_KEY=x
+      - TRIP2G_FLEET_DEFAULT_MODEL=mock
+      - TRIP2G_FLEET_AGENTS_FOLDER=demo/krisp/roles/
+      - TRIP2G_FLEET_POLL_SECONDS=5
+      - TRIP2G_FLEET_TOKEN_CEILING=100000
+      - TRIP2G_FLEET_STEP_CEILING=25
+      - TRIP2G_FLEET_OFFERED_TOOLS=search,read_note,patch_note,write_note
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
 
 volumes: {}
 

@@ -635,7 +635,7 @@ CREATE TABLE change_webhook_deliveries (
   duration_ms integer,
   created_at datetime not null default (datetime('now')),
   completed_at datetime
-, started_at datetime, heartbeat_at datetime, tokens_used integer, steps integer);
+, started_at datetime, heartbeat_at datetime, parent_kind text, parent_id integer, trace text, depth_reached integer not null default 0, costs text);
 CREATE INDEX idx_change_webhook_deliveries_webhook_created
   on change_webhook_deliveries(webhook_id, created_at);
 CREATE TABLE cron_webhooks (
@@ -668,7 +668,7 @@ CREATE TABLE cron_webhook_deliveries (
   duration_ms integer,
   created_at datetime not null default (datetime('now')),
   completed_at datetime
-, started_at datetime, heartbeat_at datetime, tokens_used integer, steps integer);
+, started_at datetime, heartbeat_at datetime, parent_kind text, parent_id integer, trace text, depth_reached integer not null default 0, costs text);
 CREATE INDEX idx_cron_webhook_deliveries_webhook_created
   on cron_webhook_deliveries(cron_webhook_id, created_at);
 CREATE TABLE webhook_delivery_logs (
@@ -876,6 +876,10 @@ CREATE TABLE note_version_frontmatter_keys (
   key_id string not null references note_version_frontmatter_key_values (value) on delete cascade,
   unique (note_version_id, key_id)
 );
+CREATE INDEX note_version_frontmatter_keys_key_id_idx
+  on note_version_frontmatter_keys (key_id);
+CREATE INDEX idx_change_webhook_deliveries_trace on change_webhook_deliveries(trace, created_at);
+CREATE INDEX idx_cron_webhook_deliveries_trace on cron_webhook_deliveries(trace, created_at);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -1004,4 +1008,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260628120000'),
   ('20260628120100'),
   ('20260713100000'),
-  ('20260715051651');
+  ('20260715051651'),
+  ('20260820105848'),
+  ('20260820125621');

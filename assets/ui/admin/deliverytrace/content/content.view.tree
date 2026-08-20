@@ -1,0 +1,5 @@
+$trip2g_admin_deliverytrace_content $mol_view
+	version_id 0
+	sub /
+		<= Text $mol_view
+			sub / <= text \

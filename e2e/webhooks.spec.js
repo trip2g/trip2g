@@ -439,6 +439,117 @@ test.describe.serial('Webhook E2E Tests', () => {
     expect(downstream.length).toBeGreaterThan(0);
   });
 
+  test('a cascaded delivery joins its cause chain', async ({ request }) => {
+    // Same two-webhook shape as the cascade test, but this time we check what
+    // the admin API reports: both deliveries must sit in one chain, with the
+    // downstream one pointing back at the delivery that caused it.
+    const agentResponse = JSON.stringify({
+      status: 'ok',
+      changes: [
+        {
+          path: 'e2e_wh_chain/out/result.md',
+          content: '---\nfree: true\n---\n\n# Result\n\nWritten by the agent response.',
+        },
+      ],
+    });
+
+    const createQuery = `
+      mutation ChangeWebhookCreate($input: ChangeWebhookCreateInput!) {
+        admin {
+          changeWebhookCreate(input: $input) {
+            ... on ChangeWebhookCreatePayload {
+              webhook {
+                id
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const producer = await graphqlAdmin(request, adminCookie, createQuery, {
+      input: {
+        url: `${APP_URL}/debug/test_webhook?body=${encodeURIComponent(agentResponse)}`,
+        includePatterns: ['e2e_wh_chain/src/**'],
+        passApiKey: true,
+        maxDepth: 3,
+        writePatterns: ['e2e_wh_chain/out/**'],
+      },
+    });
+    const producerId = producer.admin.changeWebhookCreate.webhook.id;
+    changeWebhookIds.push(producerId);
+
+    const consumer = await graphqlAdmin(request, adminCookie, createQuery, {
+      input: {
+        url: `${APP_URL}/debug/test_webhook`,
+        includePatterns: ['e2e_wh_chain/out/**'],
+        passApiKey: false,
+        maxDepth: 3,
+      },
+    });
+    const consumerId = consumer.admin.changeWebhookCreate.webhook.id;
+    changeWebhookIds.push(consumerId);
+
+    await pushAndCommit(request, apiKey, [
+      {
+        path: 'e2e_wh_chain/src/trigger.md',
+        content: '---\nfree: true\n---\n\n# Trigger\n\nTriggers the producer webhook.',
+      },
+    ]);
+    await waitAllJobs(request);
+
+    const tracesData = await graphqlAdmin(request, adminCookie, `
+      query {
+        admin {
+          deliveryTraces(limit: 20) {
+            trace
+            deliveries
+            depthReached
+          }
+        }
+      }
+    `);
+
+    // The chain we just produced is the one with two hops reaching depth 1.
+    const chains = tracesData.admin.deliveryTraces.filter(
+      (t) => t.deliveries >= 2 && t.depthReached >= 1,
+    );
+    expect(chains.length).toBeGreaterThan(0);
+
+    let joined = null;
+    for (const chain of chains) {
+      const hopsData = await graphqlAdmin(request, adminCookie, `
+        query Hops($trace: String!) {
+          admin {
+            deliveryTrace(trace: $trace) {
+              kind
+              id
+              webhookId
+              parentKind
+              parentId
+              depthReached
+            }
+          }
+        }
+      `, { trace: chain.trace });
+
+      const hops = hopsData.admin.deliveryTrace;
+      const root = hops.find((h) => h.webhookId === producerId);
+      const child = hops.find((h) => h.webhookId === consumerId);
+      if (root && child) {
+        joined = { root, child };
+        break;
+      }
+    }
+
+    expect(joined, 'both deliveries must share one trace').not.toBeNull();
+    expect(joined.root.parentId).toBeNull();
+    expect(joined.root.depthReached).toBe(0);
+    expect(joined.child.parentKind).toBe('change');
+    expect(joined.child.parentId).toBe(joined.root.id);
+    expect(joined.child.depthReached).toBe(1);
+  });
+
   test('cron webhook fires with instruction', async ({ request }) => {
     // 1. Create cron webhook
     const createQuery = `

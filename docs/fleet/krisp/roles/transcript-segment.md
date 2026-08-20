@@ -4,6 +4,7 @@ model: qwen/qwen3-14b
 tools: [write_note]
 read_patterns: ["transcripts/**"]
 write_patterns: ["segments/**"]
+fleet_id: llm
 mode: change
 trigger_on: [create, update]
 trigger_include: ["transcripts/**"]

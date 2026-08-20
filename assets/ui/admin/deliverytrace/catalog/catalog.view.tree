@@ -1,0 +1,38 @@
+$trip2g_admin_deliverytrace_catalog $trip2g_admin_catalog
+	menu_title @ \Delivery Chains
+	param \id
+	Empty $mol_status
+	actions /
+		<= EmptyCheck $mol_check_box
+			title @ \Show empty
+			checked? <=> with_empty? false
+	ShowPage* $trip2g_admin_deliverytrace_show
+		trace <= row_id* \
+	menu_link_content* / <= TraceItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 800
+				sub <= row_content* /
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= Row_started_labeler* $mol_labeler
+						title @ \Started
+						Content <= Row_started* $trip2g_admin_cell
+							content <= row_started* \-
+					<= Row_deliveries_labeler* $mol_labeler
+						title @ \Deliveries
+						Content <= Row_deliveries* $trip2g_admin_cell
+							content <= row_deliveries* \-
+					<= Row_writes_labeler* $mol_labeler
+						title @ \Wrote
+						Content <= Row_writes* $trip2g_admin_cell
+							content <= row_writes* \-
+					<= Row_costs_labeler* $mol_labeler
+						title @ \Cost
+						Content <= Row_costs* $trip2g_admin_cell
+							content <= row_costs* \-
+					<= Row_depth_labeler* $mol_labeler
+						title @ \Depth
+						Content <= Row_depth* $trip2g_admin_cell
+							content <= row_depth* \-

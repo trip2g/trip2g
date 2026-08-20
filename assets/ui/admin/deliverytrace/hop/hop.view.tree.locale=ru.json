@@ -1,0 +1,11 @@
+{
+	"$trip2g_admin_deliverytrace_hop_Kind_labeler_title": "Тип",
+	"$trip2g_admin_deliverytrace_hop_Webhook_labeler_title": "Вебхук",
+	"$trip2g_admin_deliverytrace_hop_Depth_labeler_title": "Глубина",
+	"$trip2g_admin_deliverytrace_hop_Parent_labeler_title": "Вызвано доставкой",
+	"$trip2g_admin_deliverytrace_hop_Status_labeler_title": "Статус",
+	"$trip2g_admin_deliverytrace_hop_Spend_labeler_title": "Расход",
+	"$trip2g_admin_deliverytrace_hop_CreatedAt_labeler_title": "Создано",
+	"$trip2g_admin_deliverytrace_hop_Trigger_labeler_title": "Вызвано записью",
+	"$trip2g_admin_deliverytrace_hop_Writes_labeler_title": "Записал"
+}

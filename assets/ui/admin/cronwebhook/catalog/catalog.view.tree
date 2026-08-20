@@ -17,10 +17,8 @@ $trip2g_admin_cronwebhook_catalog $trip2g_admin_catalog
 				sub <= row_content* /
 					<= Id* $trip2g_admin_labeler_id
 						value <= row_id_string* \id
-					<= Row_url_labeler* $mol_labeler
-						title \URL
-						Content <= Row_url* $trip2g_admin_cell
-							content <= row_url* \url
+					<= Row_url_labeler* $trip2g_admin_labeler_url
+						value <= row_url* \url
 					<= Row_schedule_labeler* $mol_labeler
 						title \Schedule
 						Content <= Row_schedule* $trip2g_admin_cell

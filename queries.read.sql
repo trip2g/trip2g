@@ -1356,6 +1356,81 @@ select * from cron_webhooks where enabled = true and disabled_at is null;
 -- name: CronWebhookByID :one
 select * from cron_webhooks where id = ? and disabled_at is null;
 
+-- name: WebhookDeliveryTraceByID :one
+select trace, depth_reached from change_webhook_deliveries where id = ?;
+
+-- name: CronWebhookDeliveryTraceByID :one
+select trace, depth_reached from cron_webhook_deliveries where id = ?;
+
+-- name: ListDeliveryTraces :many
+-- Chain overview: one row per trace, rolled up across both delivery kinds, with
+-- the number of note versions the chain produced. only_productive drops chains
+-- that wrote nothing: a cron role that finds no work still runs, and those runs
+-- otherwise bury the ones that did something.
+select * from (
+select t.trace as trace,
+       cast(strftime('%s', min(t.created_at)) as integer) as started_at_unix,
+       cast(strftime('%s', max(t.created_at)) as integer) as last_at_unix,
+       count(*) as deliveries,
+       cast(max(t.depth_reached) as integer) as depth_reached,
+       cast(sum(t.writes) as integer) as writes
+  from (select c.trace as trace, c.created_at as created_at,
+               c.depth_reached as depth_reached,
+               (select count(*) from note_version_delivery_attribution a
+                 where a.delivery_kind = 'change' and a.delivery_id = c.id) as writes
+          from change_webhook_deliveries c where c.trace is not null
+        union all
+        select r.trace as trace, r.created_at as created_at,
+               r.depth_reached as depth_reached,
+               (select count(*) from note_version_delivery_attribution a
+                 where a.delivery_kind = 'cron' and a.delivery_id = r.id) as writes
+          from cron_webhook_deliveries r where r.trace is not null) as t
+ group by t.trace) as g
+ where cast(sqlc.arg(only_productive) as integer) = 0 or g.writes > 0
+ order by g.started_at_unix desc
+ limit sqlc.arg(lim);
+
+-- name: ListTraceCosts :many
+-- The raw cost objects of one chain. Summing happens in Go: the keys are
+-- whatever the agents reported, and sqlc cannot type json_each.
+select c.costs as costs
+  from change_webhook_deliveries c
+ where c.trace = sqlc.arg(trace) and c.costs is not null
+ union all
+select r.costs as costs
+  from cron_webhook_deliveries r
+ where r.trace = sqlc.arg(trace) and r.costs is not null;
+
+-- name: ListDeliveriesByTrace :many
+-- Every hop of one chain, in causal order, across both delivery kinds.
+select 'change' as kind, c.id as id, c.webhook_id as webhook_id, c.status as status,
+       c.response_status as response_status, c.attempt as attempt, c.duration_ms as duration_ms,
+       c.costs as costs, c.created_at as created_at,
+       c.started_at as started_at, c.completed_at as completed_at,
+       c.parent_kind as parent_kind, c.parent_id as parent_id,
+       c.depth_reached as depth_reached
+  from change_webhook_deliveries c where c.trace = sqlc.arg(trace)
+ union all
+select 'cron' as kind, r.id as id, r.cron_webhook_id as webhook_id, r.status as status,
+       r.response_status as response_status, r.attempt as attempt, r.duration_ms as duration_ms,
+       r.costs as costs, r.created_at as created_at,
+       r.started_at as started_at, r.completed_at as completed_at,
+       r.parent_kind as parent_kind, r.parent_id as parent_id,
+       r.depth_reached as depth_reached
+  from cron_webhook_deliveries r where r.trace = sqlc.arg(trace)
+ order by created_at, id;
+
+-- name: ListDeliveryWrites :many
+-- What a delivery wrote: the note versions attributed to it. This is what makes
+-- a chain readable, since the writes of one hop are the trigger of the next.
+select np.value as path, nv.version as version, nv.id as version_id
+  from note_version_delivery_attribution a
+  join note_versions nv on nv.id = a.note_version_id
+  join note_paths np on np.id = nv.path_id
+ where a.delivery_kind = sqlc.arg(kind)
+   and a.delivery_id = sqlc.arg(delivery_id)
+ order by np.value;
+
 -- name: ListCronWebhookDeliveries :many
 select * from cron_webhook_deliveries
 where cron_webhook_id = ?

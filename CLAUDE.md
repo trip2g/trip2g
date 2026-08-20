@@ -194,6 +194,7 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `job_statuses.md` | Job status tracking |
 | `task_loop.md` | Task loop workflow |
 | `subprocess_agent.md` | Subprocess agent (subot) |
+| `fleet_write_validation.md` | Fleet: surfacing scope denials and a `strict` linter for agent writes; testing plan — design, not yet built |
 | `update_note_mutation.md` | Atomic note updates via find/replace |
 | `obsidian_sync_refactoring.md` | Sync plugin refactoring plan |
 | `obsidian_sse_pulls.md` | Live note change subscriptions |

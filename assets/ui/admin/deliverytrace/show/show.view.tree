@@ -1,0 +1,28 @@
+$trip2g_admin_deliverytrace_show $trip2g_admin_catalog
+	trace? \
+	menu_title <= trace_title \Delivery Chain
+	param \hop
+	Empty $mol_status
+	ShowPage* $trip2g_admin_deliverytrace_hop
+		hop <= hop* null
+		trigger <= hop_trigger* /string
+	menu_link_content* / <= HopItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 400
+				sub /
+					<= Step* $trip2g_admin_labeler_id
+						title @ \Step
+						value <= hop_ref* \
+					<= Status_labeler* $mol_labeler
+						title @ \Status
+						Content <= Status* $trip2g_admin_cell
+							content <= hop_status* \
+					<= Spend_labeler* $mol_labeler
+						title @ \Spend
+						Content <= Spend* $trip2g_admin_cell
+							content <= hop_spend* \
+					<= Writes_labeler* $trip2g_admin_labeler_paths
+						title @ \Wrote
+						paths <= hop_writes* /string

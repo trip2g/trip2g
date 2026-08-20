@@ -131,9 +131,9 @@ func TestServeDelivery_HappyPathScopedWriteOnly(t *testing.T) {
 
 	var resp webhookutil.AgentResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	require.Nil(t, resp.Changes)          // writes already applied in-loop
-	require.Equal(t, 30, resp.TokensUsed) // (10+5)*2
-	require.Equal(t, 2, resp.Steps)
+	require.Nil(t, resp.Changes)                        // writes already applied in-loop
+	require.InDelta(t, 30, resp.Costs["tokens"], 0.001) // (10+5)*2
+	require.InDelta(t, 2, resp.Costs["steps"], 0.001)
 }
 
 // TestDeliveryPayload_DecodesTriggerContext asserts the widened delivery payload
@@ -335,8 +335,8 @@ func TestServeDelivery_ForEachChangedFiles(t *testing.T) {
 
 	var resp webhookutil.AgentResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	require.Equal(t, 10, resp.TokensUsed) // (3+2)*2 runs
-	require.Equal(t, 2, resp.Steps)       // 1 step per run
+	require.InDelta(t, 10, resp.Costs["tokens"], 0.001) // (3+2)*2 runs
+	require.InDelta(t, 2, resp.Costs["steps"], 0.001)   // 1 step per run
 }
 
 // TestServeDelivery_NoForEach_SingleRunAllChanges asserts the legacy mode runs
@@ -380,8 +380,8 @@ func TestServeDelivery_ForEach_ContinueOnError(t *testing.T) {
 
 	var resp webhookutil.AgentResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	require.Equal(t, 5, resp.TokensUsed) // only item 1 succeeded (3+2)
-	require.Equal(t, 1, resp.Steps)      // only item 1
+	require.InDelta(t, 5, resp.Costs["tokens"], 0.001) // only item 1 succeeded (3+2)
+	require.InDelta(t, 1, resp.Costs["steps"], 0.001)  // only item 1
 	require.Contains(t, resp.Message, "item 2 boom", "per-item error must be reported")
 }
 
@@ -411,8 +411,7 @@ func TestServeDelivery_ForEach_ZeroItems200NoOp(t *testing.T) {
 			var resp webhookutil.AgentResponse
 			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 			require.Equal(t, "completed", resp.Status)
-			require.Equal(t, 0, resp.TokensUsed)
-			require.Equal(t, 0, resp.Steps)
+			require.Empty(t, resp.Costs, "a run that did nothing reports no cost at all")
 			require.Contains(t, resp.Message, mode, "no-op message should name the empty collection")
 		})
 	}
@@ -632,7 +631,7 @@ func TestServeCronDelivery_HappyPath(t *testing.T) {
 	var resp webhookutil.AgentResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	require.Equal(t, agentruntime.StatusCompleted, resp.Status)
-	require.Equal(t, 5, resp.TokensUsed) // (3+2)*1
+	require.InDelta(t, 5, resp.Costs["tokens"], 0.001) // (3+2)*1
 }
 
 // TestServeCronDelivery_NowVarRendered asserts the `now` template variable is

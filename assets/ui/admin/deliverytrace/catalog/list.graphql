@@ -1,0 +1,16 @@
+query ($withEmpty: Boolean!) {
+	admin {
+		deliveryTraces(limit: 50, withEmpty: $withEmpty) {
+			trace
+			startedAt
+			lastAt
+			deliveries
+			depthReached
+			totalCosts {
+				id
+				value
+			}
+			writes
+		}
+	}
+}

@@ -12,10 +12,12 @@ on conflict(version_id, chunk_index) do update set
 delete from note_version_chunks where version_id = ? and chunk_index > ?;
 
 -- name: InsertNotePath :one
+-- hidden_by comes back so the writer can tell whether this push is resurrecting
+-- a hidden path, and skip the unhide update when there is nothing to unhide.
 insert into note_paths (value, value_hash, latest_content_hash)
 values (?, ?, ?)
 on conflict(value) do update set value = excluded.value
-returning id, version_count, latest_content_hash;
+returning id, version_count, latest_content_hash, hidden_by;
 
 -- name: IncrementNoteVersionCount :one
 update note_paths
@@ -1035,6 +1037,16 @@ where not exists (
   where webhook_id = ?1 and status = 'pending')
 returning *;
 
+-- name: SetWebhookDeliveryChain :exec
+-- Stamps the chain columns right after the delivery row is inserted. A root
+-- (no parent) carries its own trace id; a child inherits the parent's.
+update change_webhook_deliveries
+set parent_kind = sqlc.narg(parent_kind),
+    parent_id = sqlc.narg(parent_id),
+    trace = sqlc.arg(trace),
+    depth_reached = sqlc.arg(depth_reached)
+where id = sqlc.arg(id);
+
 -- name: MarkWebhookDeliveryRunning :exec
 update change_webhook_deliveries
 set status = 'running', started_at = datetime('now')
@@ -1061,8 +1073,7 @@ update change_webhook_deliveries
 set status = sqlc.arg(status),
     response_status = sqlc.narg(response_status),
     duration_ms = sqlc.narg(duration_ms),
-    tokens_used = coalesce(sqlc.narg(tokens_used), tokens_used),
-    steps = coalesce(sqlc.narg(steps), steps),
+    costs = coalesce(sqlc.narg(costs), costs),
     completed_at = datetime('now')
 where id = sqlc.arg(id);
 
@@ -1137,6 +1148,13 @@ where not exists (
   where cron_webhook_id = ?1 and status = 'pending')
 returning *;
 
+-- name: SetCronWebhookDeliveryChain :exec
+-- Cron deliveries are always chain roots: their trace is their own id and
+-- depth_reached stays 0 (what they write sits one level down).
+update cron_webhook_deliveries
+set trace = sqlc.arg(trace)
+where id = sqlc.arg(id);
+
 -- name: MarkCronWebhookDeliveryRunning :exec
 update cron_webhook_deliveries
 set status = 'running', started_at = datetime('now')
@@ -1162,8 +1180,7 @@ update cron_webhook_deliveries
 set status = sqlc.arg(status),
     response_status = sqlc.narg(response_status),
     duration_ms = sqlc.narg(duration_ms),
-    tokens_used = coalesce(sqlc.narg(tokens_used), tokens_used),
-    steps = coalesce(sqlc.narg(steps), steps),
+    costs = coalesce(sqlc.narg(costs), costs),
     completed_at = datetime('now')
 where id = sqlc.arg(id);
 
@@ -1177,17 +1194,17 @@ values (?, ?, ?, ?, ?);
 
 -- name: CleanupOldDeliveryLogs :exec
 -- Cron webhook response bodies can be hundreds of KB (full note content from agents),
--- so logs accumulate fast. Keep only the last day.
+-- so logs accumulate fast. The retention window is configurable.
 delete from webhook_delivery_logs
-where created_at < datetime('now', '-1 days');
+where created_at < sqlc.arg(cutoff_time);
 
 -- name: CleanupOldChangeWebhookDeliveries :exec
 delete from change_webhook_deliveries
-where created_at < datetime('now', '-30 days');
+where created_at < sqlc.arg(cutoff_time);
 
 -- name: CleanupOldCronWebhookDeliveries :exec
 delete from cron_webhook_deliveries
-where created_at < datetime('now', '-30 days');
+where created_at < sqlc.arg(cutoff_time);
 
 -- ============================================
 -- Frontmatter Patches

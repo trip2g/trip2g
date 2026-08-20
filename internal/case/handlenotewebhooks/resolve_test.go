@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
@@ -797,4 +798,69 @@ func createNoteView(path string, title string, content string) *model.NoteViews 
 	nvs.PathMap[path] = note
 	nvs.Map[path] = note
 	return nvs
+}
+
+// chainWebhook is a webhook that matches any note, used by the chain tests.
+func chainWebhook() db.ChangeWebhook {
+	return db.ChangeWebhook{
+		ID:              1,
+		Url:             "https://example.com/webhook",
+		IncludePatterns: `["**"]`,
+		ExcludePatterns: `[]`,
+		OnCreate:        true,
+		OnUpdate:        true,
+		OnRemove:        true,
+		MaxDepth:        5,
+	}
+}
+
+// A write nobody's delivery caused (a person, an api key, the vault sync) opens
+// a new chain: no parent, and the delivery's own id is the trace id.
+func TestResolve_ChainRoot(t *testing.T) {
+	env := newMockEnv()
+	env.setWebhooks([]db.ChangeWebhook{chainWebhook()})
+	env.noteViews = createNoteView("notes/a.md", "A", "content")
+
+	err := handlenotewebhooks.Resolve(context.Background(), env,
+		[]handlenotewebhooks.NoteChange{{PathID: 1, Event: "update"}}, 0)
+	require.NoError(t, err)
+
+	stamps := env.getChainStamps()
+	require.Len(t, stamps, 1)
+	require.Nil(t, stamps[0].ParentKind)
+	require.Nil(t, stamps[0].ParentID)
+	require.Equal(t, "change:1", *stamps[0].Trace)
+	require.EqualValues(t, 0, stamps[0].DepthReached)
+
+	enqueued := env.getEnqueued()
+	require.Len(t, enqueued, 1)
+	require.Equal(t, "change:1", enqueued[0].Trace, "the job carries the trace into the payload")
+}
+
+// A write made under a delivery's scoped token continues that delivery's chain:
+// the parent is the delivery from the request, and the trace is inherited, so a
+// cron root and every hop below it group under one id.
+func TestResolve_ChainChildInheritsParentTrace(t *testing.T) {
+	env := newMockEnv()
+	env.setWebhooks([]db.ChangeWebhook{chainWebhook()})
+	env.noteViews = createNoteView("notes/a.md", "A", "content")
+	env.setParentTrace("cron", 42, "cron:42")
+
+	ctx := appreq.NewContext(context.Background(),
+		appreq.NewDeliveryRequest("cron", 42, 1))
+
+	err := handlenotewebhooks.Resolve(ctx, env,
+		[]handlenotewebhooks.NoteChange{{PathID: 1, Event: "update"}}, 1)
+	require.NoError(t, err)
+
+	stamps := env.getChainStamps()
+	require.Len(t, stamps, 1)
+	require.Equal(t, "cron", *stamps[0].ParentKind)
+	require.EqualValues(t, 42, *stamps[0].ParentID)
+	require.Equal(t, "cron:42", *stamps[0].Trace)
+	require.EqualValues(t, 1, stamps[0].DepthReached)
+
+	enqueued := env.getEnqueued()
+	require.Len(t, enqueued, 1)
+	require.Equal(t, "cron:42", enqueued[0].Trace)
 }
