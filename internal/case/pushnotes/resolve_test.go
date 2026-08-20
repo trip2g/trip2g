@@ -37,7 +37,7 @@ func newEnvMock(log logger.Logger) *EnvMock {
 		PublicURLFunc:          func() string { return "" },
 		// A push where nothing changed skips the reload and reports against the
 		// snapshot already in memory.
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		LatestNoteViewsFunc: appmodel.NewNoteViews,
 	}
 }
 

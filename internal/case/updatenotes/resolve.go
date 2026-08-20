@@ -99,33 +99,12 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 		switch {
 		case change.Upsert != nil:
 			upsert := change.Upsert
-			norm, errp := normalizeAndAuthorize(ctx, upsert.Path)
-			if errp != nil {
-				return errp, nil
-			}
-			upsert.Path = norm
-			// ExpectedHash gates the upsert with optimistic concurrency.
-			// actualHash defaults to "" for an absent note (the nv != nil block is skipped),
-			// so expectedHash == "" is the create-only sentinel: it asserts "expect this note
-			// to be absent" — absent → actualHash "" matches → create; an existing note always
-			// hashes non-empty → HashMismatch (never overwritten). A non-empty expectedHash is
-			// the usual optimistic update (matches only the exact current content).
-			if upsert.ExpectedHash != nil {
-				nv := nvs.PathMap[upsert.Path]
-				var actualHash string
-				if nv != nil {
-					actualHash = hashContent(nv.Content)
-				}
-				if actualHash != *upsert.ExpectedHash {
-					return model.UpdateNotesHashMismatchPayload{
-						Path:       upsert.Path,
-						ActualHash: actualHash,
-					}, nil
-				}
-			}
-			saved, err := env.InsertNote(ctx, appmodel.RawNote{Path: upsert.Path, Content: upsert.Content})
+			saved, payload, err := applyUpsert(ctx, env, nvs, upsert)
 			if err != nil {
-				return nil, fmt.Errorf("updatenotes: insert upsert %s: %w", upsert.Path, err)
+				return nil, err
+			}
+			if payload != nil {
+				return payload, nil
 			}
 			pathIDs = append(pathIDs, saved.PathID)
 			versionIDs = append(versionIDs, saved.VersionID)
@@ -138,37 +117,12 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			paths = append(paths, upsert.Path)
 		case change.Patch != nil:
 			patch := change.Patch
-			norm, errp := normalizeAndAuthorize(ctx, patch.Path)
-			if errp != nil {
-				return errp, nil
-			}
-			patch.Path = norm
-			nv := nvs.PathMap[patch.Path]
-			if nv == nil {
-				return &model.ErrorPayload{Message: fmt.Sprintf("note not found: %s", patch.Path)}, nil
-			}
-			if patch.ExpectedHash != nil {
-				actualHash := hashContent(nv.Content)
-				if actualHash != *patch.ExpectedHash {
-					return model.UpdateNotesHashMismatchPayload{
-						Path:       patch.Path,
-						ActualHash: actualHash,
-					}, nil
-				}
-			}
-			content := string(nv.Content)
-			idx := strings.Index(content, patch.Find)
-			if idx == -1 {
-				return model.UpdateNotesPatchNotFoundPayload{Path: patch.Path, Find: patch.Find}, nil
-			}
-			// Check for multiple occurrences
-			if strings.Contains(content[idx+len(patch.Find):], patch.Find) {
-				return model.UpdateNotesPatchNotFoundPayload{Path: patch.Path, Find: patch.Find}, nil
-			}
-			newContent := content[:idx] + patch.Replace + content[idx+len(patch.Find):]
-			saved, err := env.InsertNote(ctx, appmodel.RawNote{Path: patch.Path, Content: newContent})
+			saved, payload, err := applyPatch(ctx, env, nvs, patch)
 			if err != nil {
-				return nil, fmt.Errorf("updatenotes: insert patch %s: %w", patch.Path, err)
+				return nil, err
+			}
+			if payload != nil {
+				return payload, nil
 			}
 			pathIDs = append(pathIDs, saved.PathID)
 			versionIDs = append(versionIDs, saved.VersionID)
@@ -236,6 +190,98 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	}
 
 	return model.UpdateNotesSuccessPayload{Paths: paths, Updated: updated}, nil
+}
+
+// applyUpsert normalizes and authorizes the path, enforces the optimistic
+// concurrency check, and writes. A non-nil payload is a caller-visible refusal
+// (unauthorized path, hash mismatch) that ends the whole batch.
+//
+// ExpectedHash gates the upsert with optimistic concurrency. actualHash defaults
+// to "" for an absent note, so expectedHash == "" is the create-only sentinel: it
+// asserts "expect this note to be absent" — absent → actualHash "" matches →
+// create; an existing note always hashes non-empty → HashMismatch (never
+// overwritten). A non-empty expectedHash is the usual optimistic update (matches
+// only the exact current content).
+func applyUpsert(
+	ctx context.Context,
+	env Env,
+	nvs *appmodel.NoteViews,
+	upsert *model.NoteChangeUpsertInput,
+) (appmodel.NoteSaveResult, model.UpdateNotesOrErrorPayload, error) {
+	norm, errp := normalizeAndAuthorize(ctx, upsert.Path)
+	if errp != nil {
+		return appmodel.NoteSaveResult{}, errp, nil
+	}
+	upsert.Path = norm
+
+	if upsert.ExpectedHash != nil {
+		nv := nvs.PathMap[upsert.Path]
+		var actualHash string
+		if nv != nil {
+			actualHash = hashContent(nv.Content)
+		}
+		if actualHash != *upsert.ExpectedHash {
+			return appmodel.NoteSaveResult{}, model.UpdateNotesHashMismatchPayload{
+				Path:       upsert.Path,
+				ActualHash: actualHash,
+			}, nil
+		}
+	}
+
+	saved, err := env.InsertNote(ctx, appmodel.RawNote{Path: upsert.Path, Content: upsert.Content})
+	if err != nil {
+		return appmodel.NoteSaveResult{}, nil, fmt.Errorf("updatenotes: insert upsert %s: %w", upsert.Path, err)
+	}
+	return saved, nil, nil
+}
+
+// applyPatch resolves the single occurrence of Find in the stored content and
+// writes the result. A non-nil payload is a caller-visible refusal (unauthorized
+// path, missing note, hash mismatch, absent or ambiguous Find) that ends the
+// whole batch.
+func applyPatch(
+	ctx context.Context,
+	env Env,
+	nvs *appmodel.NoteViews,
+	patch *model.NoteChangePatchInput,
+) (appmodel.NoteSaveResult, model.UpdateNotesOrErrorPayload, error) {
+	norm, errp := normalizeAndAuthorize(ctx, patch.Path)
+	if errp != nil {
+		return appmodel.NoteSaveResult{}, errp, nil
+	}
+	patch.Path = norm
+
+	nv := nvs.PathMap[patch.Path]
+	if nv == nil {
+		return appmodel.NoteSaveResult{}, &model.ErrorPayload{Message: fmt.Sprintf("note not found: %s", patch.Path)}, nil
+	}
+	if patch.ExpectedHash != nil {
+		actualHash := hashContent(nv.Content)
+		if actualHash != *patch.ExpectedHash {
+			return appmodel.NoteSaveResult{}, model.UpdateNotesHashMismatchPayload{
+				Path:       patch.Path,
+				ActualHash: actualHash,
+			}, nil
+		}
+	}
+
+	content := string(nv.Content)
+	idx := strings.Index(content, patch.Find)
+	if idx == -1 {
+		return appmodel.NoteSaveResult{}, model.UpdateNotesPatchNotFoundPayload{Path: patch.Path, Find: patch.Find}, nil
+	}
+	// A second occurrence makes the edit ambiguous, so it is refused rather than
+	// applied to the first one.
+	if strings.Contains(content[idx+len(patch.Find):], patch.Find) {
+		return appmodel.NoteSaveResult{}, model.UpdateNotesPatchNotFoundPayload{Path: patch.Path, Find: patch.Find}, nil
+	}
+
+	newContent := content[:idx] + patch.Replace + content[idx+len(patch.Find):]
+	saved, err := env.InsertNote(ctx, appmodel.RawNote{Path: patch.Path, Content: newContent})
+	if err != nil {
+		return appmodel.NoteSaveResult{}, nil, fmt.Errorf("updatenotes: insert patch %s: %w", patch.Path, err)
+	}
+	return saved, nil, nil
 }
 
 // collectUpdated reports each saved note with the version id the WRITE itself

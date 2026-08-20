@@ -990,7 +990,7 @@ func TestResolve_UnhideReloadsWithoutEvents(t *testing.T) {
 	reloads := 0
 	handles := 0
 	env := &mockEnv{
-		latestNoteViews: func() *appmodel.NoteViews { return appmodel.NewNoteViews() },
+		latestNoteViews: appmodel.NewNoteViews,
 		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 			return appmodel.NoteSaveResult{PathID: pathID, Unhidden: true}, nil
 		},
