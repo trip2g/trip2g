@@ -15,6 +15,7 @@ $trip2g_admin_deliverytrace_hop $mol_page
 		<= Details $mol_view
 			style *
 				flexDirection \column
+				minWidth \0
 			sub /
 				<= Kind_labeler $mol_labeler
 					title @ \Kind

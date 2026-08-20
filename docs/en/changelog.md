@@ -18,9 +18,15 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ### Delivery chains: trace every webhook step across the agent graph
 
-- **What.** Every webhook delivery now records which delivery caused it (`parent_delivery_id`) and which end-to-end chain it belongs to (`chain_id`). A new **System → Delivery Chains** screen in the admin lists all chains, each with a timeline of its steps: what path each delivery wrote, what it triggered next, the depth at which it fired, and the wall-clock span. Chains are assembled across separate agent hosts — a fleet agent on one machine and a webhook consumer on another — without either process knowing about the other.
+- **What.** Every webhook delivery now records which delivery caused it and which chain it belongs to. A new **System → Delivery Chains** screen lists the chains, and opening one walks its steps: what each step wrote, which write triggered it, its status, what it cost and how deep in the chain it sat. Chains span separate agent hosts — one host running the code role, another running the LLM roles — without either knowing the other exists.
 - **Why.** When a change triggers a webhook that writes a note that triggers another webhook, the full sequence was previously invisible: you could see individual delivery records but not the chain that connected them. This makes the entire propagation path inspectable from a single admin screen.
-- **How.** Open Admin → System → Delivery Chains. Each row is a root delivery; expand it to walk the chain step by step. The screen refreshes as new chains arrive. No configuration is needed — all deliveries since the upgrade are automatically linked.
+- **How.** Open Admin → System → Delivery Chains and pick a chain to see its steps. Chains that wrote nothing are hidden — a schedule that finds no work still runs, and those runs would bury the rest — turn on **Show empty** to see them. Nothing to configure: every delivery made after the upgrade is linked.
+
+### Agents report what a run cost in their own units
+
+- **What.** A webhook agent's response now carries a `costs` object instead of the fixed `tokens_used` and `steps` fields: `{"costs": {"tokens": 5186, "steps": 2}}`. The unit is the key, so an agent that bills money reports `{"usd": 0.004}` and one that counts anything else reports that. The admin shows whatever arrived, per step and summed per unit over the whole chain.
+- **Why.** Tokens and steps are one executor's vocabulary. Anything else — a paid API, a credit balance, a queue quota — had nowhere to report itself, and trip2g carried a notion of "tokens" it has no business knowing about.
+- **How.** Return `costs` as an object of numbers from your webhook agent. Values must be plain numbers; anything else is dropped. The old `tokens_used` and `steps` fields are gone — an agent that still sends them simply reports no cost.
 
 ### Idempotent writes no longer fire change events
 
