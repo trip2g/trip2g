@@ -8,8 +8,8 @@ $trip2g_admin_deliverytrace_hop $mol_page
 	status \
 	spend \
 	created_at \
-	trigger \
-	writes \
+	trigger /string
+	writes /string
 	title <= hop_title
 	body /
 		<= Details $mol_view
@@ -50,7 +50,7 @@ $trip2g_admin_deliverytrace_hop $mol_page
 						content <= created_at
 				<= Trigger_labeler $trip2g_admin_labeler_paths
 					title @ \Triggered by
-					value <= trigger
+					paths <= trigger
 				<= Writes_labeler $trip2g_admin_labeler_paths
 					title @ \Wrote
-					value <= writes
+					paths <= writes

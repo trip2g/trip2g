@@ -79,21 +79,17 @@ namespace $.$$ {
 		}
 
 		// Notes this step wrote, from the version attribution.
-		override hop_writes( id: any ): string {
-			return this.paths( this.hop( id ).writes )
+		override hop_writes( id: any ): readonly string[] {
+			return this.hop( id ).writes.map( w => w.path )
 		}
 
 		// What set this step off: the notes its parent wrote. A root has no parent
 		// — a cron tick or a human edit started it, and neither is a note.
-		override hop_trigger( id: any ): string {
+		override hop_trigger( id: any ): readonly string[] {
 			const hop = this.hop( id )
-			if( !hop.parentKind || !hop.parentId ) return '-'
+			if( !hop.parentKind || !hop.parentId ) return []
 			const parent = this.data().get( `${ hop.parentKind }:${ hop.parentId }` )
-			return parent ? this.paths( parent.writes ) : `${ hop.parentKind }:${ hop.parentId }`
-		}
-
-		paths( writes: readonly { path: string }[] ): string {
-			return writes.map( w => w.path ).join( ', ' ) || '-'
+			return parent ? parent.writes.map( w => w.path ) : []
 		}
 	}
 }

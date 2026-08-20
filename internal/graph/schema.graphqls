@@ -819,6 +819,9 @@ type AdminTraceDelivery @goModel(model: "trip2g/internal/db.ListDeliveriesByTrac
   tokensUsed: Int64
   steps: Int64
   createdAt: Time!
+  # When the worker picked the delivery up. The gap from createdAt is queue wait,
+  # which the chain timeline draws apart from the run itself.
+  startedAt: Time
   completedAt: Time
   parentKind: String
   parentId: Int64

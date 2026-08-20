@@ -3,6 +3,11 @@ $trip2g_admin_deliverytrace_show $trip2g_admin_catalog
 	menu_title <= trace_title \Delivery Chain
 	param \hop
 	Empty $mol_status
+	menu_head /
+		<= Menu_title
+		<= Menu_tools
+		<= Timeline $trip2g_admin_deliverytrace_timeline
+			hops <= hops /
 	ShowPage* $trip2g_admin_deliverytrace_hop
 		hop_title <= hop_title*
 		kind <= hop_kind*
@@ -13,8 +18,8 @@ $trip2g_admin_deliverytrace_show $trip2g_admin_catalog
 		status <= hop_status*
 		spend <= hop_spend*
 		created_at <= hop_created_at*
-		trigger <= hop_trigger*
-		writes <= hop_writes*
+		trigger <= hop_trigger* /string
+		writes <= hop_writes* /string
 	menu_link_content* / <= HopItem* $mol_view
 		sub /
 			<= Rows* $mol_row
@@ -24,10 +29,6 @@ $trip2g_admin_deliverytrace_show $trip2g_admin_catalog
 					<= Step* $trip2g_admin_labeler_id
 						title @ \Step
 						value <= hop_ref* \
-					<= Depth_labeler* $mol_labeler
-						title @ \Depth
-						Content <= Depth* $trip2g_admin_cell
-							content <= hop_depth* \
 					<= Status_labeler* $mol_labeler
 						title @ \Status
 						Content <= Status* $trip2g_admin_cell
@@ -36,3 +37,6 @@ $trip2g_admin_deliverytrace_show $trip2g_admin_catalog
 						title @ \Spend
 						Content <= Spend* $trip2g_admin_cell
 							content <= hop_spend* \
+					<= Writes_labeler* $trip2g_admin_labeler_paths
+						title @ \Wrote
+						paths <= hop_writes* /string

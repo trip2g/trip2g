@@ -11,6 +11,7 @@ query ($trace: String!) {
 			tokensUsed
 			steps
 			createdAt
+			startedAt
 			completedAt
 			parentKind
 			parentId

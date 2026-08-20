@@ -1384,14 +1384,16 @@ select t.trace as trace,
 select 'change' as kind, c.id as id, c.webhook_id as webhook_id, c.status as status,
        c.response_status as response_status, c.attempt as attempt, c.duration_ms as duration_ms,
        c.tokens_used as tokens_used, c.steps as steps, c.created_at as created_at,
-       c.completed_at as completed_at, c.parent_kind as parent_kind, c.parent_id as parent_id,
+       c.started_at as started_at, c.completed_at as completed_at,
+       c.parent_kind as parent_kind, c.parent_id as parent_id,
        c.depth_reached as depth_reached
   from change_webhook_deliveries c where c.trace = sqlc.arg(trace)
  union all
 select 'cron' as kind, r.id as id, r.cron_webhook_id as webhook_id, r.status as status,
        r.response_status as response_status, r.attempt as attempt, r.duration_ms as duration_ms,
        r.tokens_used as tokens_used, r.steps as steps, r.created_at as created_at,
-       r.completed_at as completed_at, r.parent_kind as parent_kind, r.parent_id as parent_id,
+       r.started_at as started_at, r.completed_at as completed_at,
+       r.parent_kind as parent_kind, r.parent_id as parent_id,
        r.depth_reached as depth_reached
   from cron_webhook_deliveries r where r.trace = sqlc.arg(trace)
  order by created_at, id;

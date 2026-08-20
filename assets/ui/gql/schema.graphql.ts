@@ -2035,6 +2035,7 @@ export type AdminTraceDelivery = {
   parentId?: Maybe<Scalars['Int64']['output']>;
   parentKind?: Maybe<Scalars['String']['output']>;
   responseStatus?: Maybe<Scalars['Int64']['output']>;
+  startedAt?: Maybe<Scalars['Time']['output']>;
   status: Scalars['String']['output'];
   steps?: Maybe<Scalars['Int64']['output']>;
   tokensUsed?: Maybe<Scalars['Int64']['output']>;

@@ -2015,6 +2015,9 @@ type AdminTraceDelivery @goModel(model: "trip2g/internal/db.ListDeliveriesByTrac
   tokensUsed: Int64
   steps: Int64
   createdAt: Time!
+  # When the worker picked the delivery up. The gap from createdAt is queue wait,
+  # which the chain timeline draws apart from the run itself.
+  startedAt: Time
   completedAt: Time
   parentKind: String
   parentId: Int64
@@ -25902,6 +25905,8 @@ func (ec *executionContext) fieldContext_AdminQuery_deliveryTrace(ctx context.Co
 				return ec.fieldContext_AdminTraceDelivery_steps(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminTraceDelivery_createdAt(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_AdminTraceDelivery_startedAt(ctx, field)
 			case "completedAt":
 				return ec.fieldContext_AdminTraceDelivery_completedAt(ctx, field)
 			case "parentKind":
@@ -30416,6 +30421,35 @@ func (ec *executionContext) _AdminTraceDelivery_createdAt(ctx context.Context, f
 }
 
 func (ec *executionContext) fieldContext_AdminTraceDelivery_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTraceDelivery",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTraceDelivery_startedAt(ctx context.Context, field graphql.CollectedField, obj *db.ListDeliveriesByTraceRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminTraceDelivery_startedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.StartedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminTraceDelivery_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminTraceDelivery",
 		Field:      field,
@@ -72950,6 +72984,8 @@ func (ec *executionContext) _AdminTraceDelivery(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "startedAt":
+			out.Values[i] = ec._AdminTraceDelivery_startedAt(ctx, field, obj)
 		case "completedAt":
 			out.Values[i] = ec._AdminTraceDelivery_completedAt(ctx, field, obj)
 		case "parentKind":

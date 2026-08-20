@@ -1,4 +1,9 @@
 $trip2g_admin_labeler_paths $mol_labeler
 	title @ \Paths
-	Content <= Cell $trip2g_admin_cell
-		content <= value \-
+	paths /string
+	Content <= Cell $mol_list
+		rows <= rows /
+	Path!path $trip2g_admin_path
+		path <= path!path \
+	Empty $trip2g_admin_cell
+		content \-

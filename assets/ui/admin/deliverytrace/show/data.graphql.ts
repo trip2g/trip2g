@@ -6,7 +6,7 @@ export type trip2g_admin_deliverytrace_show_dataQueryVariables = Exact<{
 }>;
 
 
-export type trip2g_admin_deliverytrace_show_dataQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', deliveryTrace: Array<{ __typename?: 'AdminTraceDelivery', kind: string, id: any, webhookId: any, status: string, responseStatus?: any | null, attempt: any, durationMs?: any | null, tokensUsed?: any | null, steps?: any | null, createdAt: any, completedAt?: any | null, parentKind?: string | null, parentId?: any | null, depthReached: any, writes: Array<{ __typename?: 'AdminTraceWrite', path: string, version: any }> }> } };
+export type trip2g_admin_deliverytrace_show_dataQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', deliveryTrace: Array<{ __typename?: 'AdminTraceDelivery', kind: string, id: any, webhookId: any, status: string, responseStatus?: any | null, attempt: any, durationMs?: any | null, tokensUsed?: any | null, steps?: any | null, createdAt: any, startedAt?: any | null, completedAt?: any | null, parentKind?: string | null, parentId?: any | null, depthReached: any, writes: Array<{ __typename?: 'AdminTraceWrite', path: string, version: any }> }> } };
 
 
 export function $trip2g_admin_deliverytrace_show_data(variables: trip2g_admin_deliverytrace_show_dataQueryVariables, opts?: { revalidate?: boolean }): trip2g_admin_deliverytrace_show_dataQuery {
@@ -23,6 +23,7 @@ export function $trip2g_admin_deliverytrace_show_data(variables: trip2g_admin_de
       tokensUsed
       steps
       createdAt
+      startedAt
       completedAt
       parentKind
       parentId
