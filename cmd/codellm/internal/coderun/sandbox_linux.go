@@ -199,7 +199,7 @@ func sandboxCommand(ctx context.Context, argv []string, workDir string, p Sandbo
 	if err != nil {
 		return nil, fmt.Errorf("sandbox: resolve self: %w", err)
 	}
-	roDirs, roFiles := sandboxROPaths(argv[0])
+	roDirs, roFiles := sandboxROPaths(argv[0], p.Network)
 	spec := sandboxChildSpec{
 		Argv:          argv,
 		WorkDir:       workDir,
@@ -267,17 +267,36 @@ func sandboxCommand(ctx context.Context, argv []string, workDir string, p Sandbo
 }
 
 // sandboxROPaths returns the read-only paths the interpreter needs: the
-// resolved interpreter directory, the core executable and library dirs, and the
-// dynamic-linker cache. Everything else (notably the blanket /etc, /opt and the
+// resolved interpreter directory, the core executable and library dirs, and a
+// named handful of /etc files. Everything else (the blanket /etc, /opt and the
 // rest of /usr) is denied so a compromised interpreter cannot read host config.
-func sandboxROPaths(program string) ([]string, []string) {
+//
+// The /etc files are individually named rather than granted as a directory:
+// node refuses to start without openssl.cnf even for an offline block, and the
+// resolver config is what makes DNS work — without it a block can only reach
+// raw IPs. The resolver files are added only when the network is actually
+// reachable, so a no-network block still sees nothing of the host's DNS setup.
+// /etc/passwd, /etc/shadow and the rest of /etc stay denied in both cases.
+func sandboxROPaths(program string, network bool) ([]string, []string) {
 	dirs := []string{
 		"/bin", "/sbin",
 		"/usr/bin", "/usr/sbin",
 		"/lib", "/lib32", "/lib64",
 		"/usr/lib", "/usr/lib32", "/usr/lib64",
 	}
-	files := []string{"/etc/ld.so.cache"} // dynamic linker cache only, not all of /etc
+	files := []string{
+		"/etc/ld.so.cache",     // dynamic linker cache
+		"/etc/ssl/openssl.cnf", // node aborts at startup without it
+	}
+	if network {
+		files = append(files,
+			"/etc/resolv.conf",
+			"/etc/hosts",
+			"/etc/nsswitch.conf",
+			"/etc/services",
+			"/etc/gai.conf",
+		)
+	}
 	if bin, err := exec.LookPath(program); err == nil {
 		if resolved, rerr := filepath.EvalSymlinks(bin); rerr == nil {
 			bin = resolved

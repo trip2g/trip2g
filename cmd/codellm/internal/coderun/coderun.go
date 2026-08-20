@@ -20,18 +20,32 @@ import (
 //go:embed interpreters.json
 var defaultInterpretersJSON []byte
 
-// interpreter describes one language runtime: binary argv prefix, fence labels, temp-file extension.
+// interpreter describes one language runtime: binary argv prefix, fence labels,
+// temp-file extension, and the env it needs to find its packages.
 type interpreter struct {
 	Name            string   `json:"name"`
 	Cmd             []string `json:"cmd"`
 	CodeBlockLabels []string `json:"code_block_labels"`
 	Ext             string   `json:"ext"`
+	Env             []envVar `json:"env"`
 }
 
-// interpreterRegistry holds two indices built from the loaded interpreter list.
+// envVar is one declarative child-env entry. IfExists names a path that must be
+// present for the var to be set, so an entry describing a path baked into the
+// runtime image is simply skipped in a dev run outside it — pointing an
+// interpreter at a missing bundle breaks it rather than configures it.
+type envVar struct {
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	IfExists string `json:"if_exists"`
+}
+
+// interpreterRegistry holds two indices built from the loaded interpreter list,
+// plus the env applied to every interpreter.
 type interpreterRegistry struct {
 	byLabel map[string]*interpreter
 	byName  map[string]*interpreter
+	env     []envVar
 }
 
 // registry is guarded by registryMu: a startup --interpreters override may race
@@ -63,6 +77,7 @@ func mustBuildRegistry(data []byte) *interpreterRegistry {
 // buildRegistry parses an interpreters JSON blob and builds byLabel and byName indices.
 func buildRegistry(data []byte) (*interpreterRegistry, error) {
 	var payload struct {
+		Env          []envVar      `json:"env"`
 		Interpreters []interpreter `json:"interpreters"`
 	}
 	if err := json.Unmarshal(data, &payload); err != nil {
@@ -71,6 +86,7 @@ func buildRegistry(data []byte) (*interpreterRegistry, error) {
 	reg := &interpreterRegistry{
 		byLabel: make(map[string]*interpreter),
 		byName:  make(map[string]*interpreter),
+		env:     payload.Env,
 	}
 	for i := range payload.Interpreters {
 		interp := &payload.Interpreters[i]
@@ -197,7 +213,7 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 	// Secret-scrub: build an explicit MINIMAL env. NEVER nil (inherits parent)
 	// or os.Environ() (exposes all secrets). The base is PATH + FLEET_INPUT only.
 	// Selective pass-through adds only explicitly declared vars/prefixes on top.
-	env := buildChildEnv(inputFile, spec.EnvPassthrough, spec.EnvPrefix)
+	env := buildChildEnv(inputFile, interp, spec.EnvPassthrough, spec.EnvPrefix)
 	limit := spec.MaxStdoutBytes
 	if limit == 0 {
 		limit = 1 << 20
@@ -390,16 +406,21 @@ func extractFirstFencedBlock(body string) (string, string) {
 }
 
 // buildChildEnv constructs the child process environment: a minimal base
-// (PATH + FLEET_INPUT) plus selected parent vars via the explicit-allowlist
+// (PATH + FLEET_INPUT + the env declared in interpreters.json, globally and for
+// this interpreter) plus selected parent vars via the explicit-allowlist
 // (passthrough) and prefix-match mechanisms.
 //
 // Secret-scrub guarantee: only vars that are explicitly listed in passthrough
 // OR whose name starts with an entry in prefix are forwarded. No other parent
 // env var is included. An empty passthrough AND empty prefix → base only.
-func buildChildEnv(inputFile string, passthrough, prefix []string) []string {
+func buildChildEnv(inputFile string, interp *interpreter, passthrough, prefix []string) []string {
 	env := []string{
 		"PATH=" + os.Getenv("PATH"),
 		"FLEET_INPUT=" + inputFile,
+	}
+	env = append(env, resolveEnvVars(currentRegistry().env)...)
+	if interp != nil {
+		env = append(env, resolveEnvVars(interp.Env)...)
 	}
 	if len(passthrough) == 0 && len(prefix) == 0 {
 		return env
@@ -423,6 +444,25 @@ func buildChildEnv(inputFile string, passthrough, prefix []string) []string {
 				break
 			}
 		}
+	}
+	return env
+}
+
+// resolveEnvVars renders declared env entries, skipping any whose IfExists path
+// is absent. The values are static config, not parent env, so the secret-scrub
+// guarantee holds.
+func resolveEnvVars(decls []envVar) []string {
+	var env []string
+	for _, v := range decls {
+		if v.Name == "" {
+			continue
+		}
+		if v.IfExists != "" {
+			if _, err := os.Stat(v.IfExists); err != nil {
+				continue
+			}
+		}
+		env = append(env, v.Name+"="+v.Value)
 	}
 	return env
 }

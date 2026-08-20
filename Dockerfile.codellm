@@ -9,7 +9,54 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /codellm ./cmd/codellm
 
-FROM alpine:latest
-RUN apk add --no-cache ca-certificates python3
+# Runtime carries the interpreters and the toolbox that executed blocks draw on.
+# Everything must land under /usr/bin or /usr/lib: the landlock sandbox
+# (internal/coderun/sandbox_linux.go) grants those read-only and denies the rest
+# of the filesystem, so /usr/local and /opt are unreachable from a block.
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates curl gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && install -m 755 -d /etc/apt/keyrings \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+      python3 python3-pip \
+      nodejs \
+      bash jq miller sqlite3 openssl ripgrep git gh \
+      unzip xz-utils dnsutils netcat-openbsd yq file gawk wget tzdata \
+    && apt-get purge -y gnupg && apt-get autoremove -y \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# --target is required: Debian's pip ignores --prefix and defaults to
+# /usr/local/lib/python3.11/dist-packages, which the sandbox denies.
+# /usr/lib/python3/dist-packages is on the default sys.path and is allowed.
+RUN pip3 install --no-cache-dir --break-system-packages \
+      --target=/usr/lib/python3/dist-packages \
+      requests httpx beautifulsoup4 lxml python-dateutil \
+      pyjwt cryptography tenacity pydantic pyyaml \
+      tzdata
+
+# npm's global prefix is /usr, so modules land in /usr/lib/node_modules, which
+# NODE_PATH points at for require().
+RUN npm install -g --loglevel=error \
+      axios cheerio zod dayjs lodash \
+      jsonwebtoken csv-parse axios-retry pg qs
+
+# NODE_PATH covers require() but is never consulted for ESM import. Node instead
+# walks up from the script looking for node_modules, and a block runs from a
+# temp dir under /tmp — so this symlink is what lets `import` resolve the same
+# packages. Landlock allows it: the resolved path is /usr/lib/node_modules.
+RUN ln -s /usr/lib/node_modules /tmp/node_modules
+
+# The system CA store lives in /etc, which the sandbox denies; curl/git/openssl
+# read this copy instead via SSL_CERT_FILE/CURL_CA_BUNDLE/GIT_SSL_CAINFO.
+RUN install -D /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl-certs/ca-bundle.crt
+
 COPY --from=builder /codellm /codellm
 ENTRYPOINT ["/codellm"]
