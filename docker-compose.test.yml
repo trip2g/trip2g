@@ -558,9 +558,8 @@ services:
   # Second fleet, dedicated to executor:code roles, pointed at codellm. Per the
   # per-provider-fleet model (docs/dev/codellm_extraction.md P3): one fleet serves
   # one LLM endpoint, and codellm is "just a fleet whose --llm-base-url points at
-  # the codellm service". Its FLEET_ID (codellm) partitions role discovery — it
-  # only processes roles tagged `fleet_id: codellm` (the krisp ingest role, as
-  # shipped in docs/fleet/krisp/roles/transcript-ingest.md), while the
+  # the codellm service". Its FLEET_ID (e2ec) partitions role discovery — it only
+  # processes roles tagged `fleet_id: e2ec` (the krisp ingest role), while the
   # llm-mock `fleet` (e2e) owns the transcript-agent LLM role.
   #
   # This fleet holds NO secret values and sends nothing about env. codellm (which
@@ -581,7 +580,7 @@ services:
     ports:
       - "29094:9090"
     environment:
-      - TRIP2G_FLEET_FLEET_ID=codellm
+      - TRIP2G_FLEET_FLEET_ID=llmcode
       - TRIP2G_FLEET_LISTEN=:9090
       - TRIP2G_FLEET_CALLBACK_URL=http://fleet-code:9090
       - TRIP2G_FLEET_TRIP2G_URL=http://app:20081
