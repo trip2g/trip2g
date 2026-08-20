@@ -9,8 +9,10 @@ import (
 	"trip2g/internal/case/handletgpublishviews"
 	"trip2g/internal/case/materializenotefrontmatters"
 	"trip2g/internal/case/updatesubgraphs"
+	"trip2g/internal/db"
 	"trip2g/internal/model"
 	"trip2g/internal/notebus"
+	"trip2g/internal/webhookutil"
 
 	"github.com/valyala/fasthttp"
 )
@@ -110,6 +112,41 @@ func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []i
 	}
 
 	return nil
+}
+
+// DeliveryTrace returns the trace id of an existing delivery, dispatching on
+// its kind (delivery ids are only unique within their own table). A delivery
+// that predates the chain columns, or one that vanished with its retention
+// window, yields an empty trace: the caller then starts a fresh chain rather
+// than failing the delivery it is about to create.
+func (a *app) DeliveryTrace(ctx context.Context, kind string, deliveryID int64) (string, error) {
+	var trace *string
+	switch kind {
+	case webhookutil.DeliveryKindChange:
+		row, err := a.WebhookDeliveryTraceByID(ctx, deliveryID)
+		if db.IsNoFound(err) {
+			return "", nil
+		}
+		if err != nil {
+			return "", err
+		}
+		trace = row.Trace
+	case webhookutil.DeliveryKindCron:
+		row, err := a.CronWebhookDeliveryTraceByID(ctx, deliveryID)
+		if db.IsNoFound(err) {
+			return "", nil
+		}
+		if err != nil {
+			return "", err
+		}
+		trace = row.Trace
+	default:
+		return "", nil
+	}
+	if trace == nil {
+		return "", nil
+	}
+	return *trace, nil
 }
 
 func (a *app) SubscribeNoteChanges(include, exclude []string) *notebus.Subscriber {

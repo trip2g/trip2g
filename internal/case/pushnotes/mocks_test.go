@@ -27,7 +27,7 @@ var _ pushnotes.Env = &EnvMock{}
 //			HandleLatestNotesAfterSaveFunc: func(ctx context.Context, changedPathIDs []int64) error {
 //				panic("mock out the HandleLatestNotesAfterSave method")
 //			},
-//			InsertNoteFunc: func(ctx context.Context, update appmodel.RawNote) (int64, error) {
+//			InsertNoteFunc: func(ctx context.Context, update appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 //				panic("mock out the InsertNote method")
 //			},
 //			InsertUncommittedPathFunc: func(ctx context.Context, notePathID int64) error {
@@ -62,7 +62,7 @@ type EnvMock struct {
 	HandleLatestNotesAfterSaveFunc func(ctx context.Context, changedPathIDs []int64) error
 
 	// InsertNoteFunc mocks the InsertNote method.
-	InsertNoteFunc func(ctx context.Context, update appmodel.RawNote) (int64, error)
+	InsertNoteFunc func(ctx context.Context, update appmodel.RawNote) (appmodel.NoteSaveResult, error)
 
 	// InsertUncommittedPathFunc mocks the InsertUncommittedPath method.
 	InsertUncommittedPathFunc func(ctx context.Context, notePathID int64) error
@@ -216,7 +216,7 @@ func (mock *EnvMock) HandleLatestNotesAfterSaveCalls() []struct {
 }
 
 // InsertNote calls InsertNoteFunc.
-func (mock *EnvMock) InsertNote(ctx context.Context, update appmodel.RawNote) (int64, error) {
+func (mock *EnvMock) InsertNote(ctx context.Context, update appmodel.RawNote) (appmodel.NoteSaveResult, error) {
 	if mock.InsertNoteFunc == nil {
 		panic("EnvMock.InsertNoteFunc: method is nil but Env.InsertNote was just called")
 	}

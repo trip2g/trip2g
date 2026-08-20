@@ -24,5 +24,7 @@ $trip2g_admin_menu_system $trip2g_admin_catalog
 			close_icon <= Spread_close
 		cronwebhooks <= ListCronWebhooks $trip2g_admin_cronwebhook_catalog
 			close_icon <= Spread_close
+		deliverytraces <= ListDeliveryTraces $trip2g_admin_deliverytrace_catalog
+			close_icon <= Spread_close
 		renderall <= RenderAll $trip2g_admin_debug_renderall
 			close_icon <= Spread_close

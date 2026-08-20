@@ -7,6 +7,8 @@ import (
 	"trip2g/internal/case/backjob/delivercronwebhook"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+	"trip2g/internal/ptr"
+	"trip2g/internal/webhookutil"
 
 	"github.com/robfig/cron/v3"
 )
@@ -15,6 +17,7 @@ type Env interface {
 	ListCronWebhooksDueForExecution(ctx context.Context) ([]db.CronWebhook, error)
 	UpdateCronWebhookNextRunAt(ctx context.Context, arg db.UpdateCronWebhookNextRunAtParams) error
 	InsertCronWebhookDelivery(ctx context.Context, arg db.InsertCronWebhookDeliveryParams) (db.CronWebhookDelivery, error)
+	SetCronWebhookDeliveryChain(ctx context.Context, arg db.SetCronWebhookDeliveryChainParams) error
 	EnqueueDeliverCronWebhook(ctx context.Context, params delivercronwebhook.DeliverCronParams) error
 	Logger() logger.Logger
 }
@@ -80,11 +83,14 @@ func processCronWebhook(ctx context.Context, env Env, wh db.CronWebhook) error {
 		return fmt.Errorf("failed to insert cron webhook delivery: %w", err)
 	}
 
+	trace := stampCronDeliveryChain(ctx, env, delivery.ID)
+
 	// Enqueue background job.
 	err = env.EnqueueDeliverCronWebhook(ctx, delivercronwebhook.DeliverCronParams{
 		DeliveryID:    delivery.ID,
 		CronWebhookID: wh.ID,
 		Attempt:       1,
+		Trace:         trace,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to enqueue cron webhook delivery: %w", err)
@@ -97,4 +103,20 @@ func processCronWebhook(ctx context.Context, env Env, wh db.CronWebhook) error {
 	)
 
 	return nil
+}
+
+// stampCronDeliveryChain marks the delivery as a chain root and returns its
+// trace id: a cron run has no cause to point at, and every delivery its writes
+// go on to trigger inherits this id. Stamping never blocks the run.
+func stampCronDeliveryChain(ctx context.Context, env Env, deliveryID int64) string {
+	trace := webhookutil.TraceID(webhookutil.DeliveryKindCron, deliveryID)
+	err := env.SetCronWebhookDeliveryChain(ctx, db.SetCronWebhookDeliveryChainParams{
+		ID:    deliveryID,
+		Trace: ptr.To(trace),
+	})
+	if err != nil {
+		env.Logger().Error("failed to stamp cron delivery chain", "delivery_id", deliveryID, "error", err)
+		return ""
+	}
+	return trace
 }

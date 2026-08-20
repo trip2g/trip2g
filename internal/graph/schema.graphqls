@@ -794,6 +794,64 @@ type AdminChangeWebhookDeliveriesConnection
   nodes: [AdminChangeWebhookDelivery!]! @goField(forceResolver: true)
 }
 
+# One delivery chain, rolled up: the root plus every delivery its writes caused.
+type AdminDeliveryTrace @goModel(model: "trip2g/internal/db.ListDeliveryTracesRow") {
+  trace: String
+  # Aggregates over a union of both delivery tables come back as epoch seconds
+  # (SQLite has no datetime type to cast to), so these are resolved into Time.
+  startedAt: Time! @goField(forceResolver: true)
+  lastAt: Time! @goField(forceResolver: true)
+  deliveries: Int64!
+  depthReached: Int64!
+  # What the whole chain cost, summed per unit. The units are whatever its agents
+  # reported — trip2g has no list of them.
+  totalCosts: [AdminCost!]! @goField(forceResolver: true)
+  # Note versions this chain produced. Zero means every delivery in it ran and
+  # stored nothing.
+  writes: Int64!
+}
+
+# One hop of a chain. kind tells which delivery table the row came from, since
+# ids are only unique within their own table.
+type AdminTraceDelivery @goModel(model: "trip2g/internal/db.ListDeliveriesByTraceRow") {
+  kind: String!
+  id: Int64!
+  webhookId: Int64!
+  status: String!
+  responseStatus: Int64
+  attempt: Int64!
+  durationMs: Int64
+  # What this step cost, as its agent reported it: {unit: amount}, unit in the key.
+  costs: [AdminCost!]! @goField(forceResolver: true)
+  createdAt: Time!
+  # When the worker picked the delivery up. The gap from createdAt is queue wait,
+  # which the chain timeline draws apart from the run itself.
+  startedAt: Time
+  completedAt: Time
+  parentKind: String
+  parentId: Int64
+  depthReached: Int64!
+  # Notes this delivery wrote, from the version attribution. The writes of one
+  # hop are what triggered the next one, so a chain reads top to bottom.
+  writes: [AdminTraceWrite!]! @goField(forceResolver: true)
+}
+
+# One reported amount in its own unit: {"tokens": 5186} arrives as id "tokens",
+# value 5186. trip2g stores and sums these without knowing what a unit means.
+type AdminCost {
+  id: String!
+  value: Float!
+}
+
+# One note version a delivery produced.
+type AdminTraceWrite @goModel(model: "trip2g/internal/db.ListDeliveryWritesRow") {
+  path: String!
+  version: Int64!
+  # The note_versions row this write inserted, so the exact bytes it stored can be
+  # read back through noteVersion(versionId:).
+  versionId: Int64!
+}
+
 input AdminChangeWebhookDeliveriesFilterInput {
   webhookId: Int64!
   limit: Int64
@@ -1270,6 +1328,12 @@ type AdminQuery {
   cronWebhook(id: Int64!): AdminCronWebhook
   allCronWebhooks: AdminCronWebhooksConnection!
   cronWebhookDeliveries(filter: AdminCronWebhookDeliveriesFilterInput!): AdminCronWebhookDeliveriesConnection!
+
+  # Delivery chains: one agent run triggering the next, across both webhook kinds.
+  # withEmpty includes the chains that wrote nothing — a cron role that finds no
+  # work still runs, and those runs bury the ones that did something.
+  deliveryTraces(limit: Int64, withEmpty: Boolean): [AdminDeliveryTrace!]!
+  deliveryTrace(trace: String!): [AdminTraceDelivery!]!
 
   healthChecks: [HealchCheck!]!
   buildGitCommit: String!

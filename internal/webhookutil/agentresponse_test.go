@@ -1,6 +1,7 @@
 package webhookutil
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -70,13 +71,33 @@ func TestParseAgentResponse_WithExpectedHash(t *testing.T) {
 	require.Equal(t, &hash, resp.Changes[0].ExpectedHash)
 }
 
-func TestParseAgentResponse_ParsesSpend(t *testing.T) {
-	body := []byte(`{"status":"ok","tokens_used":1234,"steps":5,"changes":[]}`)
+func TestParseAgentResponse_ParsesCosts(t *testing.T) {
+	body := []byte(`{"status":"ok","costs":{"tokens":1234,"steps":5},"changes":[]}`)
 	resp, err := ParseAgentResponse(body)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	require.Equal(t, 1234, resp.TokensUsed)
-	require.Equal(t, 5, resp.Steps)
+	require.Equal(t, map[string]float64{"tokens": 1234, "steps": 5}, resp.Costs)
+}
+
+// The unit set is open, so a cost object is stored as given — including units
+// trip2g has never heard of.
+func TestMarshalCosts_KeepsUnknownUnits(t *testing.T) {
+	raw := MarshalCosts(map[string]float64{"usd": 0.004})
+	require.NotNil(t, raw)
+	require.JSONEq(t, `{"usd":0.004}`, *raw)
+}
+
+// A careless agent must not poison later sums, and an empty report must leave the
+// delivery's costs untouched rather than storing an empty object.
+func TestMarshalCosts_DropsUnusableValues(t *testing.T) {
+	require.Nil(t, MarshalCosts(nil))
+	require.Nil(t, MarshalCosts(map[string]float64{}))
+	require.Nil(t, MarshalCosts(map[string]float64{"tokens": math.NaN()}))
+	require.Nil(t, MarshalCosts(map[string]float64{"": 1}))
+
+	raw := MarshalCosts(map[string]float64{"tokens": 5, "broken": math.Inf(1)})
+	require.NotNil(t, raw)
+	require.JSONEq(t, `{"tokens":5}`, *raw)
 }
 
 func TestParseAgentResponse_PatchChangeNoContentOK(t *testing.T) {

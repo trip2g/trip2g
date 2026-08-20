@@ -324,6 +324,12 @@ export type AdminConfigValue = {
   updatedBy?: Maybe<AdminUser>;
 };
 
+export type AdminCost = {
+  __typename?: 'AdminCost';
+  id: Scalars['String']['output'];
+  value: Scalars['Float']['output'];
+};
+
 export type AdminCreateUserTokenInput = {
   expiresInDays?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
@@ -408,6 +414,17 @@ export type AdminCronWebhookDelivery = {
 export type AdminCronWebhooksConnection = {
   __typename?: 'AdminCronWebhooksConnection';
   nodes: Array<AdminCronWebhook>;
+};
+
+export type AdminDeliveryTrace = {
+  __typename?: 'AdminDeliveryTrace';
+  deliveries: Scalars['Int64']['output'];
+  depthReached: Scalars['Int64']['output'];
+  lastAt: Scalars['Time']['output'];
+  startedAt: Scalars['Time']['output'];
+  totalCosts: Array<AdminCost>;
+  trace?: Maybe<Scalars['String']['output']>;
+  writes: Scalars['Int64']['output'];
 };
 
 export type AdminFederationSecret = {
@@ -1433,6 +1450,8 @@ export type AdminQuery = {
   cronJob?: Maybe<AdminCronJob>;
   cronWebhook?: Maybe<AdminCronWebhook>;
   cronWebhookDeliveries: AdminCronWebhookDeliveriesConnection;
+  deliveryTrace: Array<AdminTraceDelivery>;
+  deliveryTraces: Array<AdminDeliveryTrace>;
   federationSecrets: Array<AdminFederationSecret>;
   formNotes: Array<AdminFormNote>;
   formSubmits: AdminFormSubmitsConnection;
@@ -1542,6 +1561,17 @@ export type AdminQuerycronWebhookArgs = {
 
 export type AdminQuerycronWebhookDeliveriesArgs = {
   filter: AdminCronWebhookDeliveriesFilterInput;
+};
+
+
+export type AdminQuerydeliveryTraceArgs = {
+  trace: Scalars['String']['input'];
+};
+
+
+export type AdminQuerydeliveryTracesArgs = {
+  limit?: InputMaybe<Scalars['Int64']['input']>;
+  withEmpty?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -1999,6 +2029,32 @@ export type AdminTgUserProfile = {
   lastName?: Maybe<Scalars['String']['output']>;
   sha256Hash: Scalars['String']['output'];
   username?: Maybe<Scalars['String']['output']>;
+};
+
+export type AdminTraceDelivery = {
+  __typename?: 'AdminTraceDelivery';
+  attempt: Scalars['Int64']['output'];
+  completedAt?: Maybe<Scalars['Time']['output']>;
+  costs: Array<AdminCost>;
+  createdAt: Scalars['Time']['output'];
+  depthReached: Scalars['Int64']['output'];
+  durationMs?: Maybe<Scalars['Int64']['output']>;
+  id: Scalars['Int64']['output'];
+  kind: Scalars['String']['output'];
+  parentId?: Maybe<Scalars['Int64']['output']>;
+  parentKind?: Maybe<Scalars['String']['output']>;
+  responseStatus?: Maybe<Scalars['Int64']['output']>;
+  startedAt?: Maybe<Scalars['Time']['output']>;
+  status: Scalars['String']['output'];
+  webhookId: Scalars['Int64']['output'];
+  writes: Array<AdminTraceWrite>;
+};
+
+export type AdminTraceWrite = {
+  __typename?: 'AdminTraceWrite';
+  path: Scalars['String']['output'];
+  version: Scalars['Int64']['output'];
+  versionId: Scalars['Int64']['output'];
 };
 
 export type AdminUpdateTelegramAccountInput = {

@@ -130,10 +130,8 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 		f.metrics.ObserveFanout(role.NotePath, 0, 0)
 		f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindChange, agentruntime.StatusCompleted, time.Since(started).Seconds())
 		writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
-			Status:     agentruntime.StatusCompleted,
-			Message:    "no " + role.ForEach + " items to process",
-			TokensUsed: 0,
-			Steps:      0,
+			Status:  agentruntime.StatusCompleted,
+			Message: "no " + role.ForEach + " items to process",
 		})
 		return
 	}
@@ -216,12 +214,13 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 
 	// Changes already applied in-loop via the scoped token; report spend only.
 	f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindChange, status, time.Since(started).Seconds())
+	// Changes already applied in-loop via the scoped token; report spend only. The
+	// units live in the keys — trip2g stores the object as given.
 	writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
-		Status:     status,
-		Message:    message,
-		Changes:    nil,
-		TokensUsed: totalTokens,
-		Steps:      totalSteps,
+		Status:  status,
+		Message: message,
+		Changes: nil,
+		Costs:   runCosts(totalTokens, totalSteps),
 	})
 }
 
@@ -343,10 +342,9 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 
 	f.metrics.RecordDelivery(role.NotePath, fleetmetrics.KindCron, res.Status, time.Since(started).Seconds())
 	writeJSON(w, http.StatusOK, webhookutil.AgentResponse{
-		Status:     res.Status,
-		Message:    res.Answer,
-		TokensUsed: res.TokensUsed,
-		Steps:      res.Steps,
+		Status:  res.Status,
+		Message: res.Answer,
+		Costs:   runCosts(res.TokensUsed, res.Steps),
 	})
 }
 
@@ -420,4 +418,18 @@ func (f *Fleet) runMetrics() agentruntime.Metrics {
 		return nil
 	}
 	return f.metrics
+}
+
+// runCosts reports what a run cost in the open {unit: amount} shape trip2g
+// stores: this fleet spends tokens and loop steps, another executor would report
+// dollars or credits under its own keys.
+func runCosts(tokens, steps int) map[string]float64 {
+	costs := map[string]float64{}
+	if tokens > 0 {
+		costs["tokens"] = float64(tokens)
+	}
+	if steps > 0 {
+		costs["steps"] = float64(steps)
+	}
+	return costs
 }

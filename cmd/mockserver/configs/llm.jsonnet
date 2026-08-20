@@ -43,6 +43,33 @@ local truncate(s, n) =
   local trimmed = std.stripChars(s, " \t\n\r");
   if std.length(trimmed) <= n then trimmed else trimmed[:n];
 
+// Pipeline routing: roles that name their source note in backticks (the krisp
+// chain does) get an answer written to the next stage's folder, so a transcript
+// becomes segments and segments become a wiki note. A role that names no
+// backticked path keeps the historic fixed target — the fleet e2e relies on it.
+local backtickedPaths(s) =
+  local parts = std.split(s, "`");
+  [parts[i] for i in std.range(0, std.length(parts) - 1)
+   if i % 2 == 1 && std.endsWith(parts[i], ".md")];
+
+local defaultTarget = "segments/sample.md";
+
+local nextStagePath(instruction) =
+  local transcripts = std.filter(
+    function(p) std.length(std.findSubstr("transcripts/", p)) > 0,
+    backtickedPaths(instruction),
+  );
+  local segments = std.filter(
+    function(p) std.length(std.findSubstr("segments/", p)) > 0,
+    backtickedPaths(instruction),
+  );
+  if std.length(transcripts) > 0 then
+    std.strReplace(transcripts[0], "transcripts/", "segments/")
+  else if std.length(segments) > 0 then
+    std.strReplace(segments[0], "segments/", "wiki/")
+  else
+    defaultTarget;
+
 if req.method == "GET" && req.path == "/health" then
   { bodyText: "ok", headers: { "Content-Type": "text/plain; charset=utf-8" } }
 
@@ -94,7 +121,7 @@ else if req.method == "POST" && req.path == "/v1/chat/completions" then
       local content = "processed: " + truncate(instructionContent, 200);
       // arguments must be a JSON string (not an object) — matches json.Marshal output.
       // Go marshals map keys alphabetically: "content" < "path".
-      local argsObj = { content: content, path: "segments/sample.md" };
+      local argsObj = { content: content, path: nextStagePath(instructionContent) };
       {
         id: "t1",
         type: "function",

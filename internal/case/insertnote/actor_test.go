@@ -79,10 +79,10 @@ func TestInsertNoteRecordsUserActor(t *testing.T) {
 
 	env := &actorEnv{WriteQueries: wq, userID: &user.ID}
 
-	pathID, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "user-note.md", Content: "hello"})
+	saved, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "user-note.md", Content: "hello"})
 	require.NoError(t, err)
 
-	version := latestVersion(t, rq, pathID)
+	version := latestVersion(t, rq, saved.PathID)
 	require.NotNil(t, version.CreatedByUserID)
 	require.Equal(t, user.ID, *version.CreatedByUserID)
 	require.Nil(t, version.CreatedByApiKeyID)
@@ -124,10 +124,10 @@ func TestInsertNoteRecordsAPIKeyActor(t *testing.T) {
 
 	env := &actorEnv{WriteQueries: wq, apiKeyID: &apiKey.ID}
 
-	pathID, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "synced-note.md", Content: "from sync"})
+	saved, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "synced-note.md", Content: "from sync"})
 	require.NoError(t, err)
 
-	version := latestVersion(t, rq, pathID)
+	version := latestVersion(t, rq, saved.PathID)
 	require.NotNil(t, version.CreatedByApiKeyID)
 	require.Equal(t, apiKey.ID, *version.CreatedByApiKeyID)
 	require.Nil(t, version.CreatedByUserID)
@@ -153,10 +153,10 @@ func TestInsertNoteRecordsNoActorAsNull(t *testing.T) {
 
 	env := &actorEnv{WriteQueries: wq} // userID and apiKeyID both nil
 
-	pathID, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "anon-note.md", Content: "no actor"})
+	saved, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "anon-note.md", Content: "no actor"})
 	require.NoError(t, err)
 
-	version := latestVersion(t, rq, pathID)
+	version := latestVersion(t, rq, saved.PathID)
 	require.Nil(t, version.CreatedByUserID)
 	require.Nil(t, version.CreatedByApiKeyID)
 	require.Nil(t, version.CreatedByClient)
@@ -180,10 +180,10 @@ func TestInsertNoteRecordsClientHeader(t *testing.T) {
 	clientVal := "obsidian-plugin/4.2.1"
 	env := &actorEnv{WriteQueries: wq, client: &clientVal}
 
-	pathID, _, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "client-note.md", Content: "from client"})
+	saved, err := insertnote.Resolve(ctx, env, model.RawNote{Path: "client-note.md", Content: "from client"})
 	require.NoError(t, err)
 
-	version := latestVersion(t, rq, pathID)
+	version := latestVersion(t, rq, saved.PathID)
 	require.NotNil(t, version.CreatedByClient)
 	require.Equal(t, clientVal, *version.CreatedByClient)
 	require.Nil(t, version.CreatedByUserID)

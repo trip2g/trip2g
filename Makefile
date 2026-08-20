@@ -58,6 +58,21 @@ check-doc-links:
 docker-deps:
 	docker-compose up -d minio
 
+# krisp-demo: the agent pipeline against mocks, on the `make air` hub.
+#   krisp-mock (synthetic meetings) -> codellm (runs the ingest python) ->
+#   fleet-code -> transcripts -> fleet-llm + llm-mock -> segments -> wiki.
+# Requires OWNER_PERSONAL_TOKEN_VALUE in .env (both fleets authenticate with it)
+# and DEV=true (loopback callbacks). Watch the chains in the admin under
+# System -> Delivery Chains. See docs/dev/fleet_run.md.
+krisp-demo:
+	docker-compose up -d --build krisp-mock llm-mock codellm fleet-code fleet-llm
+
+krisp-demo-down:
+	docker-compose stop krisp-mock llm-mock codellm fleet-code fleet-llm
+
+krisp-demo-logs:
+	docker-compose logs -f codellm fleet-code fleet-llm
+
 air: docker-deps
 	go tool github.com/air-verse/air
 

@@ -48,8 +48,8 @@ func baseEnv(t *testing.T, url string, secretValues map[string]string) *EnvMock 
 		InsertWebhookDeliveryLogFunc: func(_ context.Context, _ db.InsertWebhookDeliveryLogParams) error {
 			return nil
 		},
-		InsertNoteFunc: func(_ context.Context, _ model.RawNote) (int64, error) {
-			return 0, nil
+		InsertNoteFunc: func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
+			return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 		},
 		PrepareLatestNotesFunc: func(_ context.Context, _ bool) (*model.NoteViews, error) {
 			return nil, nil
@@ -384,7 +384,7 @@ func TestResolve_TransformJsonnet_LoggedBodyEqualsTransformedBytes(t *testing.T)
 func TestResolve_PersistsSpend(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok","tokens_used":321,"steps":3,"changes":[]}`))
+		_, _ = w.Write([]byte(`{"status":"ok","costs":{"tokens":321,"steps":3},"changes":[]}`))
 	}))
 	defer srv.Close()
 
@@ -399,10 +399,8 @@ func TestResolve_PersistsSpend(t *testing.T) {
 		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 1, Attempt: 1})
 	require.NoError(t, err)
 	require.Equal(t, "success", got.Status)
-	require.NotNil(t, got.TokensUsed)
-	require.EqualValues(t, 321, *got.TokensUsed)
-	require.NotNil(t, got.Steps)
-	require.EqualValues(t, 3, *got.Steps)
+	require.NotNil(t, got.Costs)
+	require.JSONEq(t, `{"tokens":321,"steps":3}`, *got.Costs)
 }
 
 // F2: applyAgentChanges with empty write_patterns must deny all writes (was: allow all).
@@ -426,9 +424,9 @@ func TestResolve_AgentChanges_EmptyWritePatterns_Denied(t *testing.T) {
 		}, nil
 	}
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 0, nil
+		return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 	}
 
 	var got db.UpdateWebhookDeliveryResultParams
@@ -463,9 +461,9 @@ func TestResolve_AgentChanges_MatchingWritePatterns_Allowed(t *testing.T) {
 		}, nil
 	}
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 1, nil
+		return model.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 	}
 	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
 		return model.NewNoteViews(), nil
@@ -512,9 +510,9 @@ func TestResolve_AgentChanges_PatchKind_FindReplace(t *testing.T) {
 	}
 
 	var insertedNote model.RawNote
-	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (model.NoteSaveResult, error) {
 		insertedNote = note
-		return 1, nil
+		return model.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 	}
 
 	var got db.UpdateWebhookDeliveryResultParams
@@ -556,9 +554,9 @@ func TestResolve_AgentChanges_StaleExpectedHash_Rejected(t *testing.T) {
 	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
 
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 0, nil
+		return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 	}
 
 	var got db.UpdateWebhookDeliveryResultParams
@@ -602,9 +600,9 @@ func TestResolve_AgentChanges_MatchingExpectedHash_Applied(t *testing.T) {
 	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) { return nvs, nil }
 
 	var insertedNote model.RawNote
-	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, note model.RawNote) (model.NoteSaveResult, error) {
 		insertedNote = note
-		return 1, nil
+		return model.NoteSaveResult{PathID: 1, VersionID: 1}, nil
 	}
 
 	err := deliverchangewebhook.Resolve(context.Background(), env,
@@ -637,9 +635,9 @@ func TestResolve_AgentChanges_MidBatchFailure_NoPartialApply(t *testing.T) {
 	}
 
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 0, nil
+		return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 	}
 
 	var got db.UpdateWebhookDeliveryResultParams
@@ -681,9 +679,9 @@ func TestResolve_AgentChanges_PatchKind_FindMissing_Error(t *testing.T) {
 	env.LatestNoteViewsFunc = func() *model.NoteViews { return nvs }
 
 	insertCalled := false
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
 		insertCalled = true
-		return 0, nil
+		return model.NoteSaveResult{PathID: 0, VersionID: 1}, nil
 	}
 
 	var got db.UpdateWebhookDeliveryResultParams
@@ -720,8 +718,8 @@ func TestResolve_AgentChanges_RunPostSaveHandlerWithDeliveryIdentity(t *testing.
 			ReadPatterns:   "[]",
 		}, nil
 	}
-	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
-		return 77, nil
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
+		return model.NoteSaveResult{PathID: 77, VersionID: 77}, nil
 	}
 	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
 		return model.NewNoteViews(), nil
@@ -743,4 +741,41 @@ func TestResolve_AgentChanges_RunPostSaveHandlerWithDeliveryIdentity(t *testing.
 	require.Equal(t, 3, gotReq.WebhookDepth, "writes inherit the delivery depth + 1")
 	require.Equal(t, "change", gotReq.WebhookDeliveryKind)
 	require.EqualValues(t, 11, gotReq.WebhookDeliveryID)
+}
+
+// TestResolve_AgentChangesUnchangedRaiseNoEvents pins the no-op rule on the
+// response-body apply lane: an agent that re-applies the content it applied last
+// time stores nothing, so the write must not re-fire the webhooks that produced
+// it — that loop costs a full LLM run per cycle and changes nothing.
+func TestResolve_AgentChangesUnchangedRaiseNoEvents(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","content":"x"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (model.NoteSaveResult, error) {
+		return model.NoteSaveResult{PathID: 77}, nil // content already stored
+	}
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
+		t.Error("an unchanged apply must not reload the vault")
+		return model.NewNoteViews(), nil
+	}
+	env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error {
+		t.Error("an unchanged apply must raise no change events")
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env, handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 11, Attempt: 1})
+	require.NoError(t, err)
 }

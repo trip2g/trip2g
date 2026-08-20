@@ -1,0 +1,9 @@
+$trip2g_admin_deliverytrace_write $mol_expander
+	path \
+	version_id 0
+	label /
+		<= Path $trip2g_admin_path
+			path <= path
+	content /
+		<= Body $trip2g_admin_deliverytrace_content
+			version_id <= version_id

@@ -10,8 +10,8 @@ import (
 )
 
 // TestUpdateWebhookDeliveryResult_SpendCoalesce verifies that a status-only
-// UpdateWebhookDeliveryResult call (nil TokensUsed/Steps) does not clobber
-// spend values written by a prior call.
+// UpdateWebhookDeliveryResult call (nil Costs) does not clobber the cost object
+// written by a prior call.
 func TestUpdateWebhookDeliveryResult_SpendCoalesce(t *testing.T) {
 	conn, _, cleanup := setupTestDB(t)
 	defer cleanup()
@@ -29,36 +29,31 @@ func TestUpdateWebhookDeliveryResult_SpendCoalesce(t *testing.T) {
 	require.NoError(t, err)
 
 	// First update: write spend.
-	tokensUsed := int64(123)
-	steps := int64(5)
+	costs := `{"tokens":123,"steps":5}`
 	require.NoError(t, wq.UpdateWebhookDeliveryResult(ctx, db.UpdateWebhookDeliveryResultParams{
 		Status:         "success",
 		ResponseStatus: nil,
 		DurationMs:     nil,
-		TokensUsed:     &tokensUsed,
-		Steps:          &steps,
+		Costs:          &costs,
 		ID:             del.ID,
 	}))
 
-	// Second update: status-only, nil spend → must NOT overwrite tokens_used/steps.
+	// Second update: status-only, nil costs → must NOT overwrite what was reported.
 	require.NoError(t, wq.UpdateWebhookDeliveryResult(ctx, db.UpdateWebhookDeliveryResultParams{
 		Status:         "failed",
 		ResponseStatus: nil,
 		DurationMs:     nil,
-		TokensUsed:     nil,
-		Steps:          nil,
+		Costs:          nil,
 		ID:             del.ID,
 	}))
 
-	var gotTokens, gotSteps *int64
+	var gotCosts *string
 	require.NoError(t, conn.QueryRowContext(ctx,
-		`select tokens_used, steps from change_webhook_deliveries where id = ?`, del.ID,
-	).Scan(&gotTokens, &gotSteps))
+		`select costs from change_webhook_deliveries where id = ?`, del.ID,
+	).Scan(&gotCosts))
 
-	require.NotNil(t, gotTokens, "tokens_used must not be clobbered by status-only update")
-	require.EqualValues(t, 123, *gotTokens)
-	require.NotNil(t, gotSteps, "steps must not be clobbered by status-only update")
-	require.EqualValues(t, 5, *gotSteps)
+	require.NotNil(t, gotCosts, "costs must not be clobbered by a status-only update")
+	require.JSONEq(t, `{"tokens":123,"steps":5}`, *gotCosts)
 }
 
 // TestUpdateCronWebhookDeliveryResult_SpendCoalesce is the cron-twin of the
@@ -80,34 +75,29 @@ func TestUpdateCronWebhookDeliveryResult_SpendCoalesce(t *testing.T) {
 	require.NoError(t, err)
 
 	// First update: write spend.
-	tokensUsed := int64(123)
-	steps := int64(5)
+	costs := `{"tokens":123,"steps":5}`
 	require.NoError(t, wq.UpdateCronWebhookDeliveryResult(ctx, db.UpdateCronWebhookDeliveryResultParams{
 		Status:         "success",
 		ResponseStatus: nil,
 		DurationMs:     nil,
-		TokensUsed:     &tokensUsed,
-		Steps:          &steps,
+		Costs:          &costs,
 		ID:             del.ID,
 	}))
 
-	// Second update: status-only, nil spend → must NOT overwrite tokens_used/steps.
+	// Second update: status-only, nil costs → must NOT overwrite what was reported.
 	require.NoError(t, wq.UpdateCronWebhookDeliveryResult(ctx, db.UpdateCronWebhookDeliveryResultParams{
 		Status:         "failed",
 		ResponseStatus: nil,
 		DurationMs:     nil,
-		TokensUsed:     nil,
-		Steps:          nil,
+		Costs:          nil,
 		ID:             del.ID,
 	}))
 
-	var gotTokens, gotSteps *int64
+	var gotCosts *string
 	require.NoError(t, conn.QueryRowContext(ctx,
-		`select tokens_used, steps from cron_webhook_deliveries where id = ?`, del.ID,
-	).Scan(&gotTokens, &gotSteps))
+		`select costs from cron_webhook_deliveries where id = ?`, del.ID,
+	).Scan(&gotCosts))
 
-	require.NotNil(t, gotTokens, "tokens_used must not be clobbered by status-only update")
-	require.EqualValues(t, 123, *gotTokens)
-	require.NotNil(t, gotSteps, "steps must not be clobbered by status-only update")
-	require.EqualValues(t, 5, *gotSteps)
+	require.NotNil(t, gotCosts, "costs must not be clobbered by a status-only update")
+	require.JSONEq(t, `{"tokens":123,"steps":5}`, *gotCosts)
 }

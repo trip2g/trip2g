@@ -26,8 +26,8 @@ var _ Env = &EnvMock{}
 //			HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
 //				panic("mock out the HideNotePath method")
 //			},
-//			InsertNoteWithVersionFunc: func(ctx context.Context, note appmodel.RawNote) (int64, int64, error) {
-//				panic("mock out the InsertNoteWithVersion method")
+//			InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+//				panic("mock out the InsertNote method")
 //			},
 //			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 //				panic("mock out the LatestNoteViews method")
@@ -48,8 +48,8 @@ type EnvMock struct {
 	// HideNotePathFunc mocks the HideNotePath method.
 	HideNotePathFunc func(ctx context.Context, params db.HideNotePathParams) error
 
-	// InsertNoteWithVersionFunc mocks the InsertNoteWithVersion method.
-	InsertNoteWithVersionFunc func(ctx context.Context, note appmodel.RawNote) (int64, int64, error)
+	// InsertNoteFunc mocks the InsertNote method.
+	InsertNoteFunc func(ctx context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error)
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *appmodel.NoteViews
@@ -73,8 +73,8 @@ type EnvMock struct {
 			// Params is the params argument value.
 			Params db.HideNotePathParams
 		}
-		// InsertNoteWithVersion holds details about calls to the InsertNoteWithVersion method.
-		InsertNoteWithVersion []struct {
+		// InsertNote holds details about calls to the InsertNote method.
+		InsertNote []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Note is the note argument value.
@@ -93,7 +93,7 @@ type EnvMock struct {
 	}
 	lockHandleLatestNotesAfterSave sync.RWMutex
 	lockHideNotePath               sync.RWMutex
-	lockInsertNoteWithVersion      sync.RWMutex
+	lockInsertNote                 sync.RWMutex
 	lockLatestNoteViews            sync.RWMutex
 	lockPrepareLatestNotes         sync.RWMutex
 }
@@ -170,10 +170,10 @@ func (mock *EnvMock) HideNotePathCalls() []struct {
 	return calls
 }
 
-// InsertNoteWithVersion calls InsertNoteWithVersionFunc.
-func (mock *EnvMock) InsertNoteWithVersion(ctx context.Context, note appmodel.RawNote) (int64, int64, error) {
-	if mock.InsertNoteWithVersionFunc == nil {
-		panic("EnvMock.InsertNoteWithVersionFunc: method is nil but Env.InsertNoteWithVersion was just called")
+// InsertNote calls InsertNoteFunc.
+func (mock *EnvMock) InsertNote(ctx context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+	if mock.InsertNoteFunc == nil {
+		panic("EnvMock.InsertNoteFunc: method is nil but Env.InsertNote was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
@@ -182,17 +182,17 @@ func (mock *EnvMock) InsertNoteWithVersion(ctx context.Context, note appmodel.Ra
 		Ctx:  ctx,
 		Note: note,
 	}
-	mock.lockInsertNoteWithVersion.Lock()
-	mock.calls.InsertNoteWithVersion = append(mock.calls.InsertNoteWithVersion, callInfo)
-	mock.lockInsertNoteWithVersion.Unlock()
-	return mock.InsertNoteWithVersionFunc(ctx, note)
+	mock.lockInsertNote.Lock()
+	mock.calls.InsertNote = append(mock.calls.InsertNote, callInfo)
+	mock.lockInsertNote.Unlock()
+	return mock.InsertNoteFunc(ctx, note)
 }
 
-// InsertNoteWithVersionCalls gets all the calls that were made to InsertNoteWithVersion.
+// InsertNoteCalls gets all the calls that were made to InsertNote.
 // Check the length with:
 //
-//	len(mockedEnv.InsertNoteWithVersionCalls())
-func (mock *EnvMock) InsertNoteWithVersionCalls() []struct {
+//	len(mockedEnv.InsertNoteCalls())
+func (mock *EnvMock) InsertNoteCalls() []struct {
 	Ctx  context.Context
 	Note appmodel.RawNote
 } {
@@ -200,9 +200,9 @@ func (mock *EnvMock) InsertNoteWithVersionCalls() []struct {
 		Ctx  context.Context
 		Note appmodel.RawNote
 	}
-	mock.lockInsertNoteWithVersion.RLock()
-	calls = mock.calls.InsertNoteWithVersion
-	mock.lockInsertNoteWithVersion.RUnlock()
+	mock.lockInsertNote.RLock()
+	calls = mock.calls.InsertNote
+	mock.lockInsertNote.RUnlock()
 	return calls
 }
 

@@ -178,6 +178,61 @@ targets `boards/sprint.md`. Any update to the board fires the triage agent.
 
 ---
 
+## Krisp demo stand (mocks, no LLM, no credentials)
+
+Runs the whole three-step agent pipeline against your `make air` hub with every
+external dependency replaced by a mock. Services live in `docker-compose.yaml`
+alongside minio, so this is your dev stand, not a separate one.
+
+```
+krisp-mock  synthetic meetings (3 of them), stands in for the Krisp API
+codellm     runs the ingest role's python; no LLM involved
+llm-mock    deterministic chat-completions stub for the two LLM roles
+fleet-code  serves `fleet_id: codellm` roles — the cron ingest
+fleet-llm   serves `fleet_id: llm` roles — segmentation and wiki extraction
+```
+
+One-time setup — both fleets authenticate with the hub's seeded owner token, so
+`.env` needs the value `.air.fleet.toml` already uses, and `DEV=true` so the hub
+accepts loopback callback URLs:
+
+```sh
+echo 'OWNER_PERSONAL_TOKEN_VALUE=t2g_devfleetdevfleetdevfleetdevfleetdevfleetdevfleetdevfleetdevfl' >> .env
+# restart `make air` so boot seeds the token row
+```
+
+Then:
+
+```sh
+make krisp-demo            # build + start the five services
+cd docs && node ../obsidian-sync/dist/trip2g-sync.mjs --folder .   # sync the roles into the vault
+make krisp-demo-logs       # follow codellm + both fleets
+```
+
+The roles live in the vault at `demo/krisp/roles/` (committed under
+`docs/demo/krisp/roles/`) and are scoped to `demo/krisp/**`, so the pipeline
+never touches the rest of the vault. They are demo copies of the shipped roles in
+`docs/fleet/krisp/roles/`, which use top-level paths instead.
+
+What happens next, without you doing anything:
+
+1. Both fleets discover their roles within ~5 s and register webhooks.
+2. The cron ingest fires (every minute), pulls 3 synthetic meetings from
+   krisp-mock and writes `demo/krisp/transcripts/<id>.md`.
+3. Each transcript triggers segmentation → `demo/krisp/segments/<id>.md`.
+4. Each segments note triggers wiki extraction → `demo/krisp/wiki/<id>.md`.
+
+Three meetings, so three chains of three deliveries each, spread across two
+fleets. Watch them in the admin under **System → Delivery Chains**: each chain
+shows its root cron delivery at depth 0 and the two change deliveries hanging
+off it, with the delivery that caused each hop. Sync again to pull the generated
+notes down into `docs/demo/krisp/` (the output folders are gitignored).
+
+The cron schedule is `* * * * *`, so the ingest re-runs every minute. It writes
+the same three transcripts, so nothing new is produced — but the write still
+fires the downstream webhooks, so chains keep appearing. Stop the stand with
+`make krisp-demo-down` when you have seen enough.
+
 ## Demo e2e (standalone)
 
 The fleet end-to-end spec exercises the full loop with a deterministic stub LLM.

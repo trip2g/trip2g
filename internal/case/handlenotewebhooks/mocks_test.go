@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/webhookutil"
 )
 
 // mockEnv is a manual mock for the Env interface.
@@ -26,6 +27,9 @@ type mockEnv struct {
 	insertDeliveryErr  error
 	enqueueDeliveryErr error
 	nextDeliveryID     int64
+
+	chainStamps  []db.SetWebhookDeliveryChainParams
+	parentTraces map[string]string // "<kind>:<id>" -> trace of that delivery
 
 	ifClearOK         bool
 	ifNoPendingOK     bool
@@ -120,6 +124,22 @@ func (m *mockEnv) EnqueueDeliverChangeWebhook(ctx context.Context, params handle
 	return nil
 }
 
+func (m *mockEnv) SetWebhookDeliveryChain(ctx context.Context, arg db.SetWebhookDeliveryChainParams) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.chainStamps = append(m.chainStamps, arg)
+
+	return nil
+}
+
+func (m *mockEnv) DeliveryTrace(ctx context.Context, kind string, deliveryID int64) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.parentTraces[webhookutil.TraceID(kind, deliveryID)], nil
+}
+
 func (m *mockEnv) Logger() logger.Logger {
 	return m.logger
 }
@@ -157,4 +177,21 @@ func (m *mockEnv) getEnqueued() []handlenotewebhooks.DeliverChangeWebhookParams 
 	copy(result, m.enqueued)
 
 	return result
+}
+
+func (m *mockEnv) getChainStamps() []db.SetWebhookDeliveryChainParams {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.chainStamps
+}
+
+func (m *mockEnv) setParentTrace(kind string, deliveryID int64, trace string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.parentTraces == nil {
+		m.parentTraces = map[string]string{}
+	}
+	m.parentTraces[webhookutil.TraceID(kind, deliveryID)] = trace
 }

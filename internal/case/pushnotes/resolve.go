@@ -15,7 +15,7 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	InsertNote(ctx context.Context, update appmodel.RawNote) (int64, error)
+	InsertNote(ctx context.Context, update appmodel.RawNote) (appmodel.NoteSaveResult, error)
 	InsertUncommittedPath(ctx context.Context, notePathID int64) error
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
@@ -66,6 +66,9 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 
 	skipCommit := input.SkipCommit != nil && *input.SkipCommit
 	pathIDs := []int64{}
+	// changedPathIDs is pathIDs minus the writes that stored nothing new.
+	changedPathIDs := []int64{}
+	reload := false
 
 	// Validate the whole batch before writing anything: callers (e.g. gitapi's
 	// applyDiff) roll back only their own state on failure, so a partially
@@ -84,29 +87,46 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 
 		log.Info("insert note", "path", update.Path)
 
-		pathID, err := env.InsertNote(ctx, note)
+		saved, err := env.InsertNote(ctx, note)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert note: %w", err)
 		}
 
-		pathIDs = append(pathIDs, pathID)
+		// Every pushed path is reported back; only the ones that actually changed
+		// carry side effects. A vault resync re-pushes thousands of identical
+		// notes, and each of those used to fire webhooks, embeddings and SSE.
+		pathIDs = append(pathIDs, saved.PathID)
+		if saved.Versioned() {
+			changedPathIDs = append(changedPathIDs, saved.PathID)
+		}
+		if saved.AffectsSnapshot() {
+			reload = true
+		}
 	}
 
-	nvs, err := env.PrepareLatestNotes(ctx, input.Partial)
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare notes: %w", err)
+	// An unhidden path has no new version but must still reach the served
+	// snapshot, so the reload is driven by AffectsSnapshot, not by the change set.
+	nvs := env.LatestNoteViews()
+	if reload {
+		var prepErr error
+		nvs, prepErr = env.PrepareLatestNotes(ctx, input.Partial)
+		if prepErr != nil {
+			return nil, fmt.Errorf("failed to prepare notes: %w", prepErr)
+		}
 	}
 
-	// If skipCommit, save path IDs to uncommitted table and skip HandleLatestNotesAfterSave
+	// If skipCommit, save path IDs to uncommitted table and skip HandleLatestNotesAfterSave.
+	// The uncommitted table is a deferred side-effect batch, so an unchanged push
+	// has nothing to defer.
 	if skipCommit {
-		for _, pathID := range pathIDs {
+		for _, pathID := range changedPathIDs {
 			insertErr := env.InsertUncommittedPath(ctx, pathID)
 			if insertErr != nil {
 				return nil, fmt.Errorf("failed to insert uncommitted path: %w", insertErr)
 			}
 		}
-	} else {
-		err = env.HandleLatestNotesAfterSave(ctx, pathIDs)
+	} else if len(changedPathIDs) > 0 {
+		err := env.HandleLatestNotesAfterSave(ctx, changedPathIDs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to handle latest notes after save: %w", err)
 		}

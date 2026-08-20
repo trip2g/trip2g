@@ -35,7 +35,7 @@ var _ delivercronwebhook.Env = &EnvMock{}
 //			HandleLatestNotesAfterSaveFunc: func(ctx context.Context, pathIDs []int64) error {
 //				panic("mock out the HandleLatestNotesAfterSave method")
 //			},
-//			InsertNoteFunc: func(ctx context.Context, note model.RawNote) (int64, error) {
+//			InsertNoteFunc: func(ctx context.Context, note model.RawNote) (model.NoteSaveResult, error) {
 //				panic("mock out the InsertNote method")
 //			},
 //			InsertWebhookDeliveryLogFunc: func(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error {
@@ -82,7 +82,7 @@ type EnvMock struct {
 	HandleLatestNotesAfterSaveFunc func(ctx context.Context, pathIDs []int64) error
 
 	// InsertNoteFunc mocks the InsertNote method.
-	InsertNoteFunc func(ctx context.Context, note model.RawNote) (int64, error)
+	InsertNoteFunc func(ctx context.Context, note model.RawNote) (model.NoteSaveResult, error)
 
 	// InsertWebhookDeliveryLogFunc mocks the InsertWebhookDeliveryLog method.
 	InsertWebhookDeliveryLogFunc func(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
@@ -346,7 +346,7 @@ func (mock *EnvMock) HandleLatestNotesAfterSaveCalls() []struct {
 }
 
 // InsertNote calls InsertNoteFunc.
-func (mock *EnvMock) InsertNote(ctx context.Context, note model.RawNote) (int64, error) {
+func (mock *EnvMock) InsertNote(ctx context.Context, note model.RawNote) (model.NoteSaveResult, error) {
 	if mock.InsertNoteFunc == nil {
 		panic("EnvMock.InsertNoteFunc: method is nil but Env.InsertNote was just called")
 	}
