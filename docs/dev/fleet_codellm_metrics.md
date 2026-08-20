@@ -8,11 +8,18 @@ authenticated — never bind it off-box.
 | Binary | Flag | Env | Default |
 |--------|------|-----|---------|
 | codellm | `--metrics-addr` | `CODELLM_METRICS_ADDR` | `127.0.0.1:18087` |
-| fleet | `--metrics-addr` | `TRIP2G_FLEET_METRICS_ADDR` | `127.0.0.1:19090` |
+| fleet | `--metrics-addr` | `TRIP2G_FLEET_METRICS_ADDR` | `127.0.0.1:18090` |
 
-Empty disables the listener; every record call site is nil-safe, so a disabled
-listener costs nothing. The ports follow the deployment convention of a
-`1`-prefixed twin of the service port (`infra/site.yml`: `8087` → `19087`).
+Empty disables the listener (an explicitly empty env var works too); every
+record call site is nil-safe, so a disabled listener costs nothing. The ports
+sit in the 18xxx band: `infra/site.yml` hands out 19xxx one per site for the
+monolith's own internal listeners and requires them unique, so the standalone
+binaries stay clear of that range — codellm `8087` → `18087`, fleet `9090` →
+`18090`.
+
+A non-loopback bind is warned about, not blocked: scraping a containerized
+instance requires binding the container's interface. Whoever does that owns
+keeping the port private — it serves pprof with no authentication.
 
 Collectors live in `cmd/codellm/internal/codellmmetrics` and
 `cmd/fleet/internal/fleetmetrics`. Each owns a **private registry** rather than
@@ -49,7 +56,7 @@ is a fleet metric and a codellm-backed fleet reports zero on it.
 | `codellm_block_stdout_bytes{program}` | only the block whose stdout is buffered reports a size — in a pipeline the intermediate blocks stream into the next block's stdin |
 | `codellm_block_stdout_truncated_total{program}` | stdout hit the cap and the overflow was dropped; downstream this reads as a parse error |
 | `codellm_sandbox_fallbacks_total{reason}` | a `besteffort` policy degraded to unsandboxed execution. Enforcing mode refuses instead, and shows up as `codellm_exec_errors_total{kind="sandbox_refused"}` |
-| `codellm_exec_errors_total{kind}` | `no_blocks`, `unknown_fence`, `disallowed_program`, `sandbox_refused`, `setup_failed`, `start_failed`, `timeout`, `nonzero_exit`, `parse_error` |
+| `codellm_exec_errors_total{kind}` | every failed run, whether or not a child ran: `no_blocks`, `unknown_fence`, `disallowed_program`, `unknown_program`, `sandbox_refused`, `setup_failed`, `start_failed`, `timeout`, `nonzero_exit`, `parse_error`, `internal`, `unclassified` |
 | `codellm_request_blocks` | blocks executed per request |
 | `codellm_changes_total{kind}` | `write` \| `patch` |
 | `codellm_config_info{sandbox_mode,sandbox_network,allowed_programs}` | always 1; the posture this process runs with |
@@ -94,23 +101,31 @@ count. That keeps the execution core free of a metrics dependency.
 
 | Metric | Notes |
 |---|---|
-| `fleet_syncs_total{status}` + `fleet_sync_duration_seconds` | one discovery+reconcile cycle |
-| `fleet_last_successful_sync_timestamp_seconds` | only a fully clean cycle advances it |
+| `fleet_syncs_total{status}` + `fleet_sync_duration_seconds` | one discovery+reconcile cycle; status = `ok` \| `partial` (registry refreshed, some role notes dropped) \| `error` (reconcile failed — the cycle did not land) |
+| `fleet_last_successful_sync_timestamp_seconds` | advanced by `ok` and `partial`, never by `error`; **0 until the first one**. Partial counts on purpose: one permanently unparseable role note must not freeze the gauge and turn the staleness alert into a standing complaint about a typo — `fleet_roles_skipped_total` is the signal for that |
 | `fleet_roles_registered` / `fleet_roles_skipped_total` | |
 | `fleet_roles_write_scope_misconfigured` | roles declaring write tools with no `write_patterns` — the deny-all trap, as a gauge instead of one warning at startup |
 | `fleet_webhook_actions_total{action,status}` / `fleet_webhooks_owned{kind}` | a nonzero steady-state create/update rate means two fleets share a `fleet_id` and are re-pointing each other's webhooks |
 | `fleet_config_info{fleet_id,default_model,exec_enabled}` | always 1 |
 
 `/readyz` reports ready once the **first sync attempt completes**, not once it
-succeeds. Gating on success would make the fleet's readiness cascade from a
-trip2g outage and invite restart loops; staleness is what
+succeeds: a fleet whose first poll found trip2g down still answers deliveries
+for whatever it knows rather than parking itself. The cost is that a fleet
+which has never synced reports ready with an empty registry, and every delivery
+it receives 404s as `unknown_key`. Staleness is what
 `fleet_last_successful_sync_timestamp_seconds` is for.
 
 ## What to alert on
 
 1. `fleet_last_successful_sync_timestamp_seconds` older than ~3× the poll
    interval — the failure mode that hides all the others: the fleet keeps
-   serving a stale registry and otherwise looks healthy.
+   serving a stale registry and otherwise looks healthy. The gauge is 0 before
+   the first successful cycle, so guard the expression against a fresh process:
+
+   ```promql
+   time() - fleet_last_successful_sync_timestamp_seconds > 90
+     and time() - process_start_time_seconds > 90
+   ```
 2. `rate(fleet_runs_total{status="capped"})` — money burning.
 3. `rate(fleet_llm_retries_total)` — upstream degrading, on either lane.
 4. `codellm_requests_total{status="422"}` as a share of all requests — the exec
@@ -125,4 +140,10 @@ trip2g outage and invite restart loops; staleness is what
 `role` is the role note path, bounded by the number of role notes in the agents
 folder. If that ever grows large, drop `role` from the histograms
 (`fleet_run_steps`, `fleet_run_duration_seconds`, `fleet_delivery_duration_seconds`)
-and keep it on the counters.
+and keep it on the counters. Renamed or deleted roles leave their series behind
+until the process restarts.
+
+`exit_code` is bounded by the exit statuses actually seen (at most ~257 per
+program). The `tool` label is bounded to the offered tool set: a tool name the
+model invented is recorded as `tool="unknown"`, since that name is
+attacker-controllable and must never mint a series.

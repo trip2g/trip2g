@@ -74,7 +74,6 @@ func (r *Reconciler) reconcileChange(ctx context.Context, roles []Role) error {
 	// extras from a superseded spec version: they share this fleet's
 	// "fleet:<FleetID>:" description-marker prefix — listOwned already filtered
 	// to it — but their old marker/spec-hash suffix no longer matches desired).
-	r.metrics.SetWebhooksOwned(fleetmetrics.KindChange, len(existing))
 	for marker, have := range existing {
 		if _, keep := desired[marker]; !keep {
 			if derr := r.recorded("delete", r.delete(ctx, have.id)); derr != nil {
@@ -104,6 +103,9 @@ func (r *Reconciler) reconcileChange(ctx context.Context, roles []Role) error {
 			}
 		}
 	}
+	// Published after the diff is applied, so the gauge is what this fleet owns
+	// now rather than what it found at the start of the cycle.
+	r.metrics.SetWebhooksOwned(fleetmetrics.KindChange, len(desired))
 	return nil
 }
 
@@ -122,7 +124,6 @@ func (r *Reconciler) reconcileCron(ctx context.Context, roles []Role) error {
 	}
 
 	// Delete owned cron-webhooks whose marker is no longer desired.
-	r.metrics.SetWebhooksOwned(fleetmetrics.KindCron, len(existing))
 	for marker, id := range existing {
 		if _, keep := desired[marker]; !keep {
 			if derr := r.recorded("delete", r.deleteCron(ctx, id)); derr != nil {
@@ -139,6 +140,7 @@ func (r *Reconciler) reconcileCron(ctx context.Context, roles []Role) error {
 			return cerr
 		}
 	}
+	r.metrics.SetWebhooksOwned(fleetmetrics.KindCron, len(desired))
 	return nil
 }
 

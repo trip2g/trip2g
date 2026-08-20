@@ -182,8 +182,54 @@ func TestRun_RecordsNotPermittedTool(t *testing.T) {
 		KB:           kb,
 	})
 	require.NoError(t, err)
-	require.Equal(t, outcomeNotPermitted, m.tools[toolWriteNote])
+	// The rejected name is model-supplied, so it is bucketed: a hallucinated or
+	// injected tool name must never mint a metric series of its own.
+	require.Equal(t, outcomeNotPermitted, m.tools[unknownTool])
+	require.NotContains(t, m.tools, toolWriteNote)
 	require.Equal(t, []string{denialNotPermitted}, m.denials)
+}
+
+// TestRun_RecordsFinish asserts the ordinary successful termination is counted:
+// finish is the tool call most runs end on.
+func TestRun_RecordsFinish(t *testing.T) {
+	llm := &stubLLM{fallback: ChatResult{
+		ToolCalls:    []ToolCall{toolCall("1", toolFinish, map[string]any{"answer": "done"})},
+		PromptTokens: 5, CompletionTokens: 5,
+	}}
+	m := newFakeMetrics()
+
+	_, err := Run(context.Background(), Input{
+		Instruction: "Finish.", Model: "test-model", Role: "roles/f.md", Metrics: m,
+		MaxTokens: 1000, MaxSteps: 3, LLM: llm, KB: newMemKB(nil),
+	})
+	require.NoError(t, err)
+	require.Equal(t, outcomeOK, m.tools[toolFinish])
+}
+
+// TestRun_FailedRunKeepsItsSteps asserts a run that dies mid-loop still reports
+// the steps and spend it already burned — otherwise a failing role looks free.
+func TestRun_FailedRunKeepsItsSteps(t *testing.T) {
+	kb := newMemKB(map[string]string{"boards/a.md": "todo todo"})
+	llm := &stubLLM{fallback: ChatResult{
+		ToolCalls: []ToolCall{toolCall("1", toolPatchNote, map[string]any{
+			"path": "boards/a.md", "find": "todo", "replace": "doing",
+		})},
+		PromptTokens: 10, CompletionTokens: 5,
+	}}
+	m := newFakeMetrics()
+
+	res, err := Run(context.Background(), Input{
+		Instruction: "Patch it.", ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"},
+		Model: "test-model", Role: "roles/patch.md", Metrics: m, HardFailApply: true,
+		MaxTokens: 10000, MaxSteps: 5, LLM: llm, KB: kb,
+	})
+	require.Error(t, err)
+	require.Nil(t, res, "the caller contract is nil result on error")
+
+	require.Len(t, m.runs, 1)
+	require.Equal(t, statusErrorForRun, m.runs[0].status)
+	require.Equal(t, 1, m.runs[0].steps, "the step it burned before failing must still be reported")
+	require.Equal(t, 15, m.totalTokens())
 }
 
 // llmMetricsRecorder captures the provider-call lane.
@@ -238,4 +284,36 @@ func TestOpenAILLM_RecordsTerminalFailureReason(t *testing.T) {
 
 	require.Empty(t, rec.retries)
 	require.Equal(t, []string{"exec|codellm|4xx"}, rec.requests)
+}
+
+// TestOpenAILLM_ExhaustedRetriesRecordOnce asserts the final failure is the
+// request's outcome and not also counted as a retry — otherwise the retry rate
+// overstates by one per failed call.
+func TestOpenAILLM_ExhaustedRetriesRecordOnce(t *testing.T) {
+	llm, calls := llmStubServer(t, func(int, map[string]any) (int, string) {
+		return http.StatusInternalServerError, `{"error":{"message":"boom","type":"server_error"}}`
+	})
+	rec := &llmMetricsRecorder{}
+	llm.SetMetrics(rec, "llm")
+
+	_, err := llm.Chat(context.Background(), "test-model", []Message{{Role: RoleUser, Content: "x"}}, nil)
+	require.Error(t, err)
+
+	require.Equal(t, int32(llmMaxAttempts), calls.Load())
+	require.Len(t, rec.retries, llmMaxAttempts-1, "the last attempt is the outcome, not a retry")
+	require.Equal(t, []string{"llm|test-model|5xx"}, rec.requests)
+}
+
+// TestOpenAILLM_EmptyCompletionIsNotSuccess asserts a 200 carrying no choices
+// is recorded as the provider-side failure it is.
+func TestOpenAILLM_EmptyCompletionIsNotSuccess(t *testing.T) {
+	llm, _ := llmStubServer(t, func(int, map[string]any) (int, string) {
+		return http.StatusOK, `{"id":"1","object":"chat.completion","choices":[],"usage":{"prompt_tokens":7,"completion_tokens":0}}`
+	})
+	rec := &llmMetricsRecorder{}
+	llm.SetMetrics(rec, "llm")
+
+	_, err := llm.Chat(context.Background(), "test-model", []Message{{Role: RoleUser, Content: "x"}}, nil)
+	require.ErrorIs(t, err, ErrEmptyCompletion)
+	require.Equal(t, []string{"llm|test-model|empty_completion"}, rec.requests)
 }

@@ -31,7 +31,7 @@ type Config struct {
 
 	// MetricsAddr is the internal listener: Prometheus /metrics, pprof, and the
 	// liveness/readiness probes. Loopback by default and unauthenticated, exactly
-	// like the monolith's internal listener — never expose it. Empty disables it.
+	// like the monolith's internal listener. Empty disables it.
 	MetricsAddr string
 
 	// AllowedPrograms is the interpreter allowlist (python, bash, node, ...).
@@ -81,9 +81,11 @@ type Config struct {
 // Defaults.
 const (
 	DefaultAddr = "127.0.0.1:8087"
-	// DefaultMetricsAddr follows the deployment convention of a "1"-prefixed
-	// twin of the service port for the internal listener (see infra/site.yml:
-	// 8087 -> 19087), so codellm's 8087 pairs with 18087.
+	// DefaultMetricsAddr puts the internal listener in the 18xxx band. The
+	// monolith's own internal listeners occupy 19xxx (infra/site.yml, one per
+	// site, "MUST be unique per service" — 19087 is already trip2g_landing's),
+	// so the standalone binaries stay clear of it: codellm 8087 -> 18087,
+	// fleet 9090 -> 18090.
 	DefaultMetricsAddr     = "127.0.0.1:18087"
 	DefaultAllowedPrograms = "python,bash,node"
 	DefaultTimeout         = 300 * time.Second
@@ -138,7 +140,9 @@ func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_ADDR"); v != "" {
 		c.Addr = v
 	}
-	if v := os.Getenv("CODELLM_METRICS_ADDR"); v != "" {
+	// LookupEnv, not Getenv: an explicitly empty CODELLM_METRICS_ADDR is how an
+	// operator turns the listener off, and Getenv cannot tell that from unset.
+	if v, ok := os.LookupEnv("CODELLM_METRICS_ADDR"); ok {
 		c.MetricsAddr = v
 	}
 	if v := os.Getenv("CODELLM_ALLOWED_PROGRAMS"); v != "" {

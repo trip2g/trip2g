@@ -1,5 +1,6 @@
 // Package fleetmetrics is the fleet's Prometheus surface: the collectors plus
 // the internal listener's handler (/metrics, pprof, liveness/readiness).
+// Catalog and alerting recipes live in docs/dev/fleet_codellm_metrics.md.
 //
 // It owns its OWN registry rather than the global default one, so the fleet
 // stays independent of the monolith's internal/metrics (which registers
@@ -30,8 +31,11 @@ const (
 	LaneExec = "exec"
 
 	// StatusOK / StatusError are the coarse outcomes shared by several lanes.
-	StatusOK    = "ok"
-	StatusError = "error"
+	// StatusPartial is a sync that refreshed the registry but could not use every
+	// role note it found.
+	StatusOK      = "ok"
+	StatusError   = "error"
+	StatusPartial = "partial"
 
 	roleLabel   = "role"
 	statusLabel = "status"
@@ -62,14 +66,14 @@ type Metrics struct {
 	llmDuration *prometheus.HistogramVec
 	llmRetries  *prometheus.CounterVec
 
-	syncs             *prometheus.CounterVec
-	syncDuration      prometheus.Histogram
-	lastSync          prometheus.Gauge
-	rolesRegistered   prometheus.Gauge
-	rolesSkipped      prometheus.Counter
-	rolesMisconfigred prometheus.Gauge
-	webhookActions    *prometheus.CounterVec
-	webhooksOwned     *prometheus.GaugeVec
+	syncs              *prometheus.CounterVec
+	syncDuration       prometheus.Histogram
+	lastSync           prometheus.Gauge
+	rolesRegistered    prometheus.Gauge
+	rolesSkipped       prometheus.Counter
+	rolesMisconfigured prometheus.Gauge
+	webhookActions     *prometheus.CounterVec
+	webhooksOwned      *prometheus.GaugeVec
 
 	configInfo *prometheus.GaugeVec
 }
@@ -90,7 +94,7 @@ func New() *Metrics {
 		m.runs, m.runSteps, m.runDuration, m.tokens, m.toolCalls, m.denials, m.applyFailures,
 		m.llmRequests, m.llmDuration, m.llmRetries,
 		m.syncs, m.syncDuration, m.lastSync, m.rolesRegistered, m.rolesSkipped,
-		m.rolesMisconfigred, m.webhookActions, m.webhooksOwned, m.configInfo,
+		m.rolesMisconfigured, m.webhookActions, m.webhooksOwned, m.configInfo,
 	)
 	return m
 }
@@ -174,7 +178,7 @@ func (m *Metrics) initRun() {
 func (m *Metrics) initControlPlane() {
 	m.syncs = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "fleet_syncs_total",
-		Help: "Discovery/reconcile poll cycles by outcome",
+		Help: "Discovery/reconcile poll cycles by outcome (ok|partial|error)",
 	}, []string{statusLabel})
 	m.syncDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:    "fleet_sync_duration_seconds",
@@ -183,7 +187,7 @@ func (m *Metrics) initControlPlane() {
 	})
 	m.lastSync = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "fleet_last_successful_sync_timestamp_seconds",
-		Help: "Unix time of the last fully successful poll cycle; staleness here means the fleet is serving stale roles",
+		Help: "Unix time of the last poll cycle that refreshed the registry (ok or partial); 0 until the first one. Staleness here means the fleet is serving stale roles",
 	})
 	m.rolesRegistered = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "fleet_roles_registered",
@@ -193,7 +197,7 @@ func (m *Metrics) initControlPlane() {
 		Name: "fleet_roles_skipped_total",
 		Help: "Role notes skipped during discovery (parse or validation failure)",
 	})
-	m.rolesMisconfigred = prometheus.NewGauge(prometheus.GaugeOpts{
+	m.rolesMisconfigured = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "fleet_roles_write_scope_misconfigured",
 		Help: "Roles declaring write tools with no write_patterns — every write they attempt is denied",
 	})
@@ -315,7 +319,7 @@ func (m *Metrics) RecordTokens(model, role, kind string, n int) {
 	m.tokens.WithLabelValues(model, role, kind).Add(float64(n))
 }
 
-// RecordToolCall counts one tool invocation and its outcome.
+// RecordToolCall counts one tool invocation.
 func (m *Metrics) RecordToolCall(tool, outcome string) {
 	if m == nil {
 		return
@@ -323,7 +327,7 @@ func (m *Metrics) RecordToolCall(tool, outcome string) {
 	m.toolCalls.WithLabelValues(tool, outcome).Inc()
 }
 
-// RecordDenial counts one scope denial by kind (read|write|not_permitted).
+// RecordDenial counts one scope denial.
 func (m *Metrics) RecordDenial(kind string) {
 	if m == nil {
 		return
@@ -357,16 +361,17 @@ func (m *Metrics) RecordLLMRetry(lane, reason string) {
 	m.llmRetries.WithLabelValues(lane, reason).Inc()
 }
 
-// RecordSync records one poll cycle. A fully successful cycle also stamps the
-// freshness gauge — the single metric worth alerting on, since a fleet serving
-// stale roles otherwise looks perfectly healthy.
+// RecordSync records one poll cycle. Any cycle that refreshed the registry
+// stamps the freshness gauge, StatusPartial included: a single unparseable role
+// note must not freeze it forever. Roles that could not be used are counted
+// separately by AddRolesSkipped.
 func (m *Metrics) RecordSync(status string, seconds float64) {
 	if m == nil {
 		return
 	}
 	m.syncs.WithLabelValues(status).Inc()
 	m.syncDuration.Observe(seconds)
-	if status == StatusOK {
+	if status != StatusError {
 		m.lastSync.Set(float64(time.Now().Unix()))
 	}
 }
@@ -378,7 +383,7 @@ func (m *Metrics) SetRoles(registered, misconfigured int) {
 		return
 	}
 	m.rolesRegistered.Set(float64(registered))
-	m.rolesMisconfigred.Set(float64(misconfigured))
+	m.rolesMisconfigured.Set(float64(misconfigured))
 }
 
 // AddRolesSkipped counts role notes discovery could not use.
@@ -397,7 +402,8 @@ func (m *Metrics) RecordWebhookAction(action, status string) {
 	m.webhookActions.WithLabelValues(action, status).Inc()
 }
 
-// SetWebhooksOwned publishes how many webhooks of a kind this fleet owns.
+// SetWebhooksOwned publishes how many webhooks of a kind this fleet owns after
+// the current reconcile.
 func (m *Metrics) SetWebhooksOwned(kind string, n int) {
 	if m == nil {
 		return

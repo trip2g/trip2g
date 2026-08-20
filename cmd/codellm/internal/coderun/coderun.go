@@ -299,6 +299,11 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 		if msg == "" {
 			msg = runErr.Error()
 		}
+		// No ProcessState means the child never ran (exec failed): that is a start
+		// failure, not an exit status the code chose.
+		if cmd.ProcessState == nil {
+			return outStr, errStr, false, execErrf(KindStartFailed, "coderun: start failed: %s", msg)
+		}
 		return outStr, errStr, false, execErrf(KindNonZeroExit, "coderun: non-zero exit: %s", msg)
 	}
 	return outStr, errStr, false, nil

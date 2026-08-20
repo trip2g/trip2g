@@ -11,6 +11,7 @@ package main
 
 import (
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -109,6 +110,7 @@ func startMetricsServer(cfg *appconfig.Config) *codellmmetrics.Metrics {
 	if cfg.MetricsAddr == "" {
 		return nil
 	}
+	warnIfMetricsAddrNonLoopback(cfg.MetricsAddr)
 	m := codellmmetrics.New()
 	m.SetConfigInfo(string(cfg.Sandbox), strconv.FormatBool(cfg.SandboxNetwork), strings.Join(cfg.AllowedPrograms, ","))
 
@@ -125,4 +127,22 @@ func startMetricsServer(cfg *appconfig.Config) *codellmmetrics.Metrics {
 		}
 	}()
 	return m
+}
+
+// warnIfMetricsAddrNonLoopback logs a loud warning when the internal listener
+// is bound off loopback. It is not blocked — scraping a containerized codellm
+// requires binding the container's interface — but /metrics and pprof are
+// unauthenticated, so the exposure must be visible in the log.
+func warnIfMetricsAddrNonLoopback(addr string) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return
+	}
+	if host == "localhost" {
+		return
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return
+	}
+	log.Printf("WARNING: codellm metrics bound non-loopback (%s): /metrics and pprof are unauthenticated", addr)
 }

@@ -430,14 +430,7 @@ func validateLoopbackAddr(addr string) error {
 // is a legitimate topology, and the delegated-admin gate still authenticates
 // every request — but the operator should see the exposure explicitly.
 func warnIfGraphQLAddrNonLoopback(lg logger.Logger, addr string) {
-	host, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		return
-	}
-	if host == "localhost" {
-		return
-	}
-	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+	if isLoopbackAddr(addr) {
 		return
 	}
 	lg.Warn("fleet GraphQL bound non-loopback; ensure Caddy is the sole ingress + delegated-admin gate", "addr", addr)
@@ -493,17 +486,26 @@ func syncOnce(ctx context.Context, lg logger.Logger, f *fleet.Fleet, d *fleet.Di
 	}
 	f.SetRoles(roles)
 
-	status := fleetmetrics.StatusOK
-	if err := r.Reconcile(ctx, roles); err != nil {
-		lg.Error("reconcile failed", "err", err)
-		status = fleetmetrics.StatusError
+	reconcileErr := r.Reconcile(ctx, roles)
+	if reconcileErr != nil {
+		lg.Error("reconcile failed", "err", reconcileErr)
 	}
-	if len(errs) > 0 && status == fleetmetrics.StatusOK {
-		// Discovery dropped role notes: the registry is live but incomplete, so
-		// the freshness gauge must not advance as if everything synced.
-		status = "partial"
+	m.RecordSync(syncStatus(reconcileErr, len(errs)), time.Since(started).Seconds())
+}
+
+// syncStatus grades one poll cycle. A reconcile failure outranks everything: the
+// cycle did not land. Otherwise dropped role notes make it partial — the
+// registry WAS refreshed, so freshness still advances, and the dropped notes are
+// counted separately by fleet_roles_skipped_total.
+func syncStatus(reconcileErr error, skipped int) string {
+	switch {
+	case reconcileErr != nil:
+		return fleetmetrics.StatusError
+	case skipped > 0:
+		return fleetmetrics.StatusPartial
+	default:
+		return fleetmetrics.StatusOK
 	}
-	m.RecordSync(status, time.Since(started).Seconds())
 }
 
 // gracefulShutdown drains in-flight deliveries (srv.Shutdown waits for active
@@ -701,13 +703,15 @@ func reportRoles(roles []fleet.Role, offered []string, defaultModel string) stri
 // and returns the sink every component records into (nil when disabled, which
 // all the call sites tolerate). A bind failure is logged, not fatal: losing
 // observability must not take the fleet down. ready reports whether the first
-// discovery sync has been ATTEMPTED, not whether it succeeded: gating readiness
-// on success would cascade a trip2g outage into restart loops here. Staleness
-// is reported by fleet_last_successful_sync_timestamp_seconds instead.
+// discovery sync has been ATTEMPTED, not whether it succeeded, so a fleet whose
+// first poll found trip2g down still answers deliveries for whatever it knows
+// rather than parking itself. Staleness is reported by
+// fleet_last_successful_sync_timestamp_seconds instead.
 func startMetricsServer(lg logger.Logger, cli cliFlags, ready func() bool) *fleetmetrics.Metrics {
 	if cli.appCfg.MetricsAddr == "" {
 		return nil
 	}
+	warnIfMetricsAddrNonLoopback(lg, cli.appCfg.MetricsAddr)
 	m := fleetmetrics.New()
 	m.SetConfigInfo(cli.cfg.FleetID, cli.cfg.DefaultModel, strconv.FormatBool(cli.cfg.ExecBaseURL != ""))
 
@@ -719,4 +723,28 @@ func startMetricsServer(lg logger.Logger, cli cliFlags, ready func() bool) *flee
 		}
 	}()
 	return m
+}
+
+// warnIfMetricsAddrNonLoopback logs a loud warning when the internal listener
+// is bound off loopback. It is not blocked — scraping a containerized fleet
+// requires binding the container's interface — but /metrics and pprof are
+// unauthenticated, so the exposure must be visible in the log.
+func warnIfMetricsAddrNonLoopback(lg logger.Logger, addr string) {
+	if isLoopbackAddr(addr) {
+		return
+	}
+	lg.Warn("fleet metrics bound non-loopback: /metrics and pprof are unauthenticated", "addr", addr)
+}
+
+// isLoopbackAddr reports whether a host:port binds only the loopback interface.
+func isLoopbackAddr(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
+	}
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

@@ -52,8 +52,7 @@ type Metrics struct {
 }
 
 // New builds the collectors on a private registry, together with the standard
-// Go runtime and process collectors (goroutines, GC, open fds, RSS) — a service
-// that forks a child per code block lives or dies by those.
+// Go runtime and process collectors (goroutines, GC, open fds, RSS).
 func New() *Metrics {
 	m := &Metrics{
 		reg: prometheus.NewRegistry(),
@@ -72,7 +71,7 @@ func New() *Metrics {
 		}),
 		auth: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "codellm_auth_total",
-			Help: "Auth decisions on the browser-facing endpoints, by lane (apikey|cookie) and result",
+			Help: "Auth decisions on the browser-facing endpoints, by lane (apikey|cookie) and result; denials on a code-executing endpoint are a probing signal",
 		}, []string{"lane", "result"}),
 		execError: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "codellm_exec_errors_total",
@@ -200,8 +199,7 @@ func (m *Metrics) Instrument(endpoint string, next http.Handler) http.Handler {
 }
 
 // RecordAuth counts one auth decision: lane is LaneAPIKey or LaneCookie,
-// result is Allowed or Denied. A rising denied rate on an endpoint that
-// executes code is a probing signal, not noise.
+// result is Allowed or Denied.
 func (m *Metrics) RecordAuth(lane, result string) {
 	if m == nil {
 		return
@@ -225,9 +223,7 @@ func (m *Metrics) RecordBlock(s coderun.BlockStats) {
 	if s.MaxRSSBytes > 0 {
 		m.blockMaxRSS.WithLabelValues(program).Observe(float64(s.MaxRSSBytes))
 	}
-	if s.StdoutBytes > 0 {
-		m.blockStdout.WithLabelValues(program).Observe(float64(s.StdoutBytes))
-	}
+	m.blockStdout.WithLabelValues(program).Observe(float64(s.StdoutBytes))
 	if s.StdoutTruncated {
 		m.blockTruncated.WithLabelValues(program).Inc()
 	}
@@ -253,7 +249,7 @@ func (m *Metrics) ObserveRequestBlocks(n int) {
 	m.requestBlocks.Observe(float64(n))
 }
 
-// RecordChange counts one returned note change by kind (write|patch).
+// RecordChange counts one returned note change.
 func (m *Metrics) RecordChange(kind string) {
 	if m == nil {
 		return
@@ -281,3 +277,8 @@ func (r *statusRecorder) WriteHeader(code int) {
 	r.status = code
 	r.ResponseWriter.WriteHeader(code)
 }
+
+// Unwrap keeps http.ResponseController able to reach the real writer, so
+// wrapping does not quietly disable flushing or hijacking for a future
+// streaming endpoint.
+func (r *statusRecorder) Unwrap() http.ResponseWriter { return r.ResponseWriter }

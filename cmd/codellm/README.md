@@ -266,8 +266,9 @@ curl -s http://127.0.0.1:18087/metrics | grep '^codellm_'
 The block series carry what a stability check needs: outcome and real exit code
 per interpreter (`codellm_blocks_total`, `codellm_block_exit_codes_total`),
 duration and peak RSS, stdout size plus a truncation counter, and
-`codellm_exec_errors_total{kind}` for failures that never reached a child
-(unknown fence, disallowed program, sandbox refused). `codellm_sandbox_fallbacks_total`
-is the one to watch: it means a `besteffort` policy ran code unsandboxed.
+`codellm_exec_errors_total{kind}`, which classifies every failed run — from a
+disallowed program that never reached a child to a timeout or an unparseable
+stdout. `codellm_sandbox_fallbacks_total` is the one to watch: it means a
+`besteffort` policy ran code unsandboxed.
 
 Full catalog, the fleet's side, and what to alert on: `docs/dev/fleet_codellm_metrics.md`.

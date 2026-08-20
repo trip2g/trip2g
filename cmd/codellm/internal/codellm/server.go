@@ -128,10 +128,16 @@ func BrowserAuthWithMetrics(
 		gated := admin(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if tokenCheck != nil {
-				if err := tokenCheck(r); err == nil {
+				err := tokenCheck(r)
+				if err == nil {
 					m.RecordAuth(codellmmetrics.LaneAPIKey, codellmmetrics.Allowed)
 					next.ServeHTTP(w, r)
 					return
+				}
+				// A caller that presented a key and got rejected is the probing
+				// signal; a caller with no key at all is just using the cookie lane.
+				if bearerToken(r) != "" {
+					m.RecordAuth(codellmmetrics.LaneAPIKey, codellmmetrics.Denied)
 				}
 			}
 			rec := &authStatusWriter{ResponseWriter: w, status: http.StatusOK}
@@ -156,6 +162,9 @@ func (w *authStatusWriter) WriteHeader(code int) {
 	w.status = code
 	w.ResponseWriter.WriteHeader(code)
 }
+
+// Unwrap keeps http.ResponseController able to reach the real writer.
+func (w *authStatusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 // Server is the codellm HTTP service.
 type Server struct {

@@ -53,12 +53,19 @@ const (
 
 // Denial kinds reported to Metrics.RecordDenial.
 const (
-	denialRead          = "read"
-	denialWrite         = "write"
-	denialNotPermitted  = "not_permitted"
+	denialRead         = "read"
+	denialWrite        = "write"
+	denialNotPermitted = "not_permitted"
+)
+
+// Run status and token-kind label values reported to Metrics.
+const (
 	statusErrorForRun   = "error"
 	tokenKindPrompt     = "prompt"
 	tokenKindCompletion = "completion"
+	// unknownTool is the label stand-in for a tool name the model invented. The
+	// name is attacker-controllable, so it must never reach a metric label.
+	unknownTool = "unknown"
 )
 
 // Metrics is the optional run-metrics sink. It is declared here, minimally, so
@@ -162,20 +169,21 @@ Rules:
 // wraps run so every exit path — including the error ones — is measured once.
 func Run(ctx context.Context, in Input) (*Result, error) {
 	started := time.Now()
-	res, err := run(ctx, in)
+	// res is allocated here, not in run, so a run that fails mid-loop still
+	// reports the steps and spend it already consumed. The caller still gets the
+	// nil-result-on-error contract.
+	res := &Result{Status: StatusMaxSteps}
+	err := run(ctx, in, res)
 	recordRun(in, res, err, time.Since(started))
-	return res, err
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
-// recordRun reports the run's terminal status, steps and token spend. A run
-// that failed outright has no Result, so it is counted with zero steps under
-// the error status.
+// recordRun reports the run's terminal status, steps and duration.
 func recordRun(in Input, res *Result, err error, elapsed time.Duration) {
 	if in.Metrics == nil {
-		return
-	}
-	if res == nil {
-		in.Metrics.RecordRun(in.Role, statusErrorForRun, 0, elapsed.Seconds())
 		return
 	}
 	status := res.Status
@@ -185,18 +193,18 @@ func recordRun(in Input, res *Result, err error, elapsed time.Duration) {
 	in.Metrics.RecordRun(in.Role, status, res.Steps, elapsed.Seconds())
 }
 
-func run(ctx context.Context, in Input) (*Result, error) {
+func run(ctx context.Context, in Input, res *Result) error {
 	if in.LLM == nil {
-		return nil, errors.New("agentruntime: LLM is required")
+		return errors.New("agentruntime: LLM is required")
 	}
 	if in.KB == nil {
-		return nil, errors.New("agentruntime: KB is required")
+		return errors.New("agentruntime: KB is required")
 	}
 	if in.MaxTokens <= 0 {
-		return nil, errors.New("agentruntime: MaxTokens must be > 0")
+		return errors.New("agentruntime: MaxTokens must be > 0")
 	}
 	if in.MaxSteps <= 0 {
-		return nil, errors.New("agentruntime: MaxSteps must be > 0")
+		return errors.New("agentruntime: MaxSteps must be > 0")
 	}
 
 	scoped := NewScopedKB(in.KB, in.ReadPatterns, in.WritePatterns)
@@ -234,18 +242,16 @@ func run(ctx context.Context, in Input) (*Result, error) {
 	}
 	messages = append(messages, Message{Role: RoleUser, Content: "Begin."})
 
-	res := &Result{Status: StatusMaxSteps}
-
 	for step := range in.MaxSteps {
 		// Hard-cap check happens BEFORE each model call: once spent, stop.
 		if res.TokensUsed >= in.MaxTokens {
 			res.Status = StatusCapped
-			return res, nil
+			return nil
 		}
 
 		chat, err := chatWithBudget(ctx, in.LLM, in.Model, messages, tools, in.MaxTokens-res.TokensUsed)
 		if err != nil {
-			return nil, fmt.Errorf("agentruntime: chat step %d: %w", step, err)
+			return fmt.Errorf("agentruntime: chat step %d: %w", step, err)
 		}
 		res.Steps++
 		res.TokensUsed += chat.PromptTokens + chat.CompletionTokens
@@ -258,7 +264,7 @@ func run(ctx context.Context, in Input) (*Result, error) {
 		if len(chat.ToolCalls) == 0 {
 			res.Answer = chat.Content
 			res.Status = StatusCompleted
-			return res, nil
+			return nil
 		}
 
 		messages = append(messages, Message{
@@ -275,14 +281,14 @@ func run(ctx context.Context, in Input) (*Result, error) {
 			messages:  &messages,
 		}, chat.ToolCalls)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if done {
-			return res, nil
+			return nil
 		}
 	}
 
-	return res, nil
+	return nil
 }
 
 // toolLoop bundles the per-run state one assistant turn's tool calls act on.
@@ -303,6 +309,9 @@ func runToolCalls(ctx context.Context, in Input, tl toolLoop, calls []ToolCall) 
 		if call.Name == toolFinish {
 			tl.res.Answer = finishAnswer(call.Arguments)
 			tl.res.Status = StatusCompleted
+			if in.Metrics != nil {
+				in.Metrics.RecordToolCall(toolFinish, outcomeOK)
+			}
 			return true, nil
 		}
 		// Execution-time allowlist enforcement: reject any tool not in the
@@ -311,7 +320,9 @@ func runToolCalls(ctx context.Context, in Input, tl toolLoop, calls []ToolCall) 
 			denial := "tool not permitted: " + call.Name
 			tl.res.Denials = append(tl.res.Denials, denial)
 			if in.Metrics != nil {
-				in.Metrics.RecordToolCall(call.Name, outcomeNotPermitted)
+				// The rejected name is model-supplied: bucket it instead of
+				// minting a metric series per hallucination.
+				in.Metrics.RecordToolCall(unknownTool, outcomeNotPermitted)
 				in.Metrics.RecordDenial(denialNotPermitted)
 			}
 			*tl.messages = append(*tl.messages, Message{

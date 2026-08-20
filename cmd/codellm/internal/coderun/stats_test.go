@@ -24,6 +24,7 @@ func TestExec_ObserverReportsExitCode(t *testing.T) {
 		Body:            "```bash\necho boom >&2; exit 3\n```",
 		AllowedPrograms: []string{"bash"},
 		Sandbox:         sandboxOff(),
+		Timeout:         300 * time.Second,
 		Observe:         func(s BlockStats) { seen = append(seen, s) },
 	}, false)
 
@@ -43,6 +44,7 @@ func TestExec_ObserverReportsSuccess(t *testing.T) {
 		Body:            "```bash\necho '{\"changes\":[],\"answer\":\"ok\"}'\n```",
 		AllowedPrograms: []string{"bash"},
 		Sandbox:         sandboxOff(),
+		Timeout:         300 * time.Second,
 		Observe:         func(s BlockStats) { seen = append(seen, s) },
 	})
 
@@ -55,7 +57,7 @@ func TestExec_ObserverReportsSuccess(t *testing.T) {
 }
 
 // TestExec_ObserverReportsTruncation asserts stdout hitting MaxStdoutBytes is
-// reported as truncated — today the overflow is dropped silently and only
+// reported as truncated: the overflow is dropped, and without this flag it only
 // surfaces later as a confusing parse error.
 func TestExec_ObserverReportsTruncation(t *testing.T) {
 	var seen []BlockStats
@@ -75,7 +77,11 @@ func TestExec_ObserverReportsTruncation(t *testing.T) {
 }
 
 // TestExec_ObserverReportsEveryPipelineBlock asserts the multi-block path
-// observes each block, not just the last one.
+// observes each block, not just the last one, and that a clean block is
+// reported as such. The Timeout is what production always sets and is load
+// bearing here: it gives each block its own cancellable context, and the
+// pipeline teardown cancels those on the way out — classifying after teardown
+// would report every successful block as a timeout.
 func TestExec_ObserverReportsEveryPipelineBlock(t *testing.T) {
 	var seen []BlockStats
 	body := "```bash\necho hi\n```\n```bash\ncat >/dev/null; echo '{\"changes\":[],\"answer\":\"ok\"}'\n```"
@@ -83,6 +89,7 @@ func TestExec_ObserverReportsEveryPipelineBlock(t *testing.T) {
 		Body:            body,
 		AllowedPrograms: []string{"bash"},
 		Sandbox:         sandboxOff(),
+		Timeout:         300 * time.Second,
 		Observe:         func(s BlockStats) { seen = append(seen, s) },
 	})
 
@@ -161,4 +168,57 @@ func TestErrorKind_ClassifiesSetupFailures(t *testing.T) {
 func TestErrorKind_Fallbacks(t *testing.T) {
 	require.Empty(t, ErrorKind(nil))
 	require.Equal(t, KindUnclassified, ErrorKind(errors.New("boom")))
+}
+
+// TestExec_ObserverReportsPipelineFailure asserts a failing block in a pipeline
+// is reported with its own exit code, not folded into the run-level error.
+func TestExec_ObserverReportsPipelineFailure(t *testing.T) {
+	var seen []BlockStats
+	body := "```bash\necho hi\n```\n```bash\ncat >/dev/null; exit 5\n```"
+	_, _, err := ExecCode(context.Background(), CodeInput{
+		Body:            body,
+		AllowedPrograms: []string{"bash"},
+		Sandbox:         sandboxOff(),
+		Timeout:         300 * time.Second,
+		Observe:         func(s BlockStats) { seen = append(seen, s) },
+	})
+
+	require.Error(t, err)
+	require.Equal(t, KindNonZeroExit, ErrorKind(err))
+	require.Len(t, seen, 2)
+	require.Equal(t, BlockOK, seen[0].Outcome)
+	require.Equal(t, BlockNonZeroExit, seen[1].Outcome)
+	require.Equal(t, 5, seen[1].ExitCode)
+}
+
+// TestExec_ResolveFailureReportsNoBlock asserts a run rejected before any child
+// starts emits an exec error and no block stats — a phantom block with a zero
+// exit code would read as a clean run that never happened.
+func TestExec_ResolveFailureReportsNoBlock(t *testing.T) {
+	var seen []BlockStats
+	_, _, err := ExecCode(context.Background(), CodeInput{
+		Body:            "```bash\necho hi\n```",
+		AllowedPrograms: []string{"python"}, // bash is not allowed: refused up front
+		Sandbox:         sandboxOff(),
+		Observe:         func(s BlockStats) { seen = append(seen, s) },
+	})
+
+	require.Error(t, err)
+	require.Equal(t, KindDisallowedProgram, ErrorKind(err))
+	require.Empty(t, seen)
+}
+
+// TestObserveSingleBlock_SkipsUnrunBlock covers the same guard on the path that
+// cannot be forced from the outside: RunBlock failing during setup (sandbox
+// refused, workdir creation) leaves the stats sink untouched, and an unset
+// Outcome must not be reported as a block.
+func TestObserveSingleBlock_SkipsUnrunBlock(t *testing.T) {
+	var seen []BlockStats
+	observe := func(s BlockStats) { seen = append(seen, s) }
+
+	observeSingleBlock(observe, "bash", RunBlockStats{})
+	require.Empty(t, seen)
+
+	observeSingleBlock(observe, "bash", RunBlockStats{Outcome: BlockOK})
+	require.Len(t, seen, 1)
 }

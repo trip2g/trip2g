@@ -34,7 +34,9 @@ const (
 	reasonServer      = "5xx"
 	reasonClient      = "4xx"
 	reasonCanceled    = "canceled"
+	reasonTimeout     = "timeout"
 	reasonNetwork     = "network"
+	reasonEmpty       = "empty_completion"
 	statusOK          = "ok"
 )
 
@@ -93,8 +95,8 @@ func (l *OpenAILLM) chat(ctx context.Context, model string, messages []Message, 
 
 	started := time.Now()
 	resp, err := l.createWithRetry(ctx, req)
-	l.recordRequest(model, err, time.Since(started))
 	if err != nil {
+		l.recordRequest(model, err, time.Since(started))
 		return ChatResult{}, err
 	}
 
@@ -103,8 +105,12 @@ func (l *OpenAILLM) chat(ctx context.Context, model string, messages []Message, 
 		CompletionTokens: resp.Usage.CompletionTokens,
 	}
 	if len(resp.Choices) == 0 {
+		// A 200 with no choices is a provider-side failure, not a success: record
+		// it as one before handing ErrEmptyCompletion back.
+		l.recordRequest(model, ErrEmptyCompletion, time.Since(started))
 		return out, ErrEmptyCompletion
 	}
+	l.recordRequest(model, nil, time.Since(started))
 	msg := resp.Choices[0].Message
 	out.Content = msg.Content
 	for _, tc := range msg.ToolCalls {
@@ -138,7 +144,9 @@ func (l *OpenAILLM) createWithRetry(ctx context.Context, req goopenai.ChatComple
 		if !isRetryableLLMError(ctx, err) {
 			return goopenai.ChatCompletionResponse{}, err
 		}
-		if l.metrics != nil {
+		// Only count it as a retry when another attempt actually follows; the
+		// last failure is the request's outcome, not a retry.
+		if l.metrics != nil && attempt < llmMaxAttempts-1 {
 			l.metrics.RecordLLMRetry(l.lane, llmErrorReason(err))
 		}
 		lastErr = err
@@ -161,7 +169,13 @@ func (l *OpenAILLM) recordRequest(model string, err error, elapsed time.Duration
 // llmErrorReason maps a provider error onto a bounded label: the HTTP class it
 // came back as, a cancellation, or a transport failure.
 func llmErrorReason(err error) string {
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+	if errors.Is(err, ErrEmptyCompletion) {
+		return reasonEmpty
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return reasonTimeout
+	}
+	if errors.Is(err, context.Canceled) {
 		return reasonCanceled
 	}
 	var apiErr *goopenai.APIError

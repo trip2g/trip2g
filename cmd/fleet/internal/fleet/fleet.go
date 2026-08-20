@@ -55,8 +55,10 @@ func (f *Fleet) SetRoles(roles []Role) {
 	f.registry = reg
 	f.mu.Unlock()
 
+	// Counted over reg, not roles: both gauges must describe the same set, and
+	// reg is deduplicated by urlKey.
 	misconfigured := 0
-	for _, r := range roles {
+	for _, r := range reg {
 		if r.DeclaresWriteToolsButNoWritePatterns() {
 			misconfigured++
 		}

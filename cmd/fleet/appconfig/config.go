@@ -35,10 +35,11 @@ const (
 
 	// DefaultMetricsAddr binds the internal listener (Prometheus /metrics, pprof,
 	// liveness/readiness) to loopback: none of it is authenticated, exactly like
-	// the monolith's internal listener. The port follows the deployment
-	// convention of a "1"-prefixed twin of the service port (infra/site.yml:
-	// 8087 -> 19087), so the fleet's 9090 pairs with 19090.
-	DefaultMetricsAddr = "127.0.0.1:19090"
+	// the monolith's internal listener. The 18xxx band keeps the standalone
+	// binaries clear of the 19xxx internal ports infra/site.yml assigns one per
+	// site ("MUST be unique per service"; 19090 is already reserved there):
+	// codellm 8087 -> 18087, fleet 9090 -> 18090.
+	DefaultMetricsAddr = "127.0.0.1:18090"
 )
 
 // Config holds the subset of fleet's machine-level settings layered via

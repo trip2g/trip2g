@@ -94,9 +94,11 @@ func execErrf(kind, format string, a ...any) error {
 	return &ExecError{Kind: kind, Err: fmt.Errorf(format, a...)}
 }
 
-// observeSingleBlock reports the single-block path's measured stats.
+// observeSingleBlock reports the single-block path's measured stats. An empty
+// Outcome means RunBlock failed before the child ran (sandbox refused, workdir
+// or file setup) — there is no block to report, only an exec error.
 func observeSingleBlock(observe func(BlockStats), program string, stats RunBlockStats) {
-	if observe == nil {
+	if observe == nil || stats.Outcome == "" {
 		return
 	}
 	observe(BlockStats{

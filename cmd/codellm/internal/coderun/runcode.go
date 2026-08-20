@@ -292,6 +292,10 @@ type builtBlock struct {
 	fallback   string // besteffort degradation reason; empty when sandboxed as asked
 	startedAt  time.Time
 	finishedAt time.Time
+	// outcome is classified inside waitOne, while blockCtx.Err() still
+	// distinguishes a real deadline from the teardown cancel that cleanupPipeline
+	// issues on the way out. Empty means the block was never waited on.
+	outcome string
 }
 
 // elapsed is the block's wall time: from Start to the Wait that reaped it, or
@@ -312,9 +316,14 @@ func observePipeline(observe func(BlockStats), built []builtBlock, programs []st
 	}
 	for i := range built {
 		bb := &built[i]
+		// A block that was never waited on never ran to an outcome (the run was
+		// abandoned mid-start); the failure is reported as an exec error instead.
+		if bb.outcome == "" {
+			continue
+		}
 		st := BlockStats{
 			Index:           i,
-			Outcome:         pipelineOutcome(bb),
+			Outcome:         bb.outcome,
 			ExitCode:        exitCode(bb.cmd.ProcessState),
 			DurationMs:      bb.elapsed().Milliseconds(),
 			MaxRSSBytes:     maxRSSBytes(bb.cmd.ProcessState),
@@ -331,9 +340,9 @@ func observePipeline(observe func(BlockStats), built []builtBlock, programs []st
 	}
 }
 
-// pipelineOutcome classifies one finished pipeline block from its process
-// state and its own (timeout-bearing) context.
-func pipelineOutcome(bb *builtBlock) string {
+// classifyPipelineBlock names how one block ended. It must run before
+// cleanupPipeline cancels blockCtx, or every block looks timed out.
+func classifyPipelineBlock(bb *builtBlock) string {
 	switch {
 	case bb.blockCtx.Err() != nil:
 		return BlockTimeout
@@ -500,6 +509,7 @@ func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPol
 func waitOne(idx int, built []builtBlock, pipes []*io.PipeWriter, n int, sandbox SandboxPolicy, ch chan<- pipeWaitResult) {
 	werr := built[idx].cmd.Wait()
 	built[idx].finishedAt = time.Now()
+	built[idx].outcome = classifyPipelineBlock(&built[idx])
 	if idx < n-1 {
 		if werr != nil {
 			_ = pipes[idx].CloseWithError(werr)

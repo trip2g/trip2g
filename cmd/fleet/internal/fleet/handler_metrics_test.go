@@ -1,6 +1,10 @@
 package fleet
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -58,7 +62,7 @@ func TestMetrics_DeliveryIsRecorded(t *testing.T) {
 }
 
 // TestMetrics_RejectedDeliveriesAreCounted asserts requests turned away before
-// a run — a wrong HMAC, an unknown key — are visible. Today they are silent.
+// a run — a wrong HMAC, an unknown key — are visible rather than silent.
 func TestMetrics_RejectedDeliveriesAreCounted(t *testing.T) {
 	f, m := newMeteredFleet(t)
 
@@ -71,8 +75,8 @@ func TestMetrics_RejectedDeliveriesAreCounted(t *testing.T) {
 }
 
 // TestMetrics_RolesGaugeFlagsTheDenyAllTrap asserts a role declaring write
-// tools with no write_patterns is published as misconfigured, not just logged
-// once at startup.
+// tools with no write_patterns is published as misconfigured, rather than only
+// logged once at startup.
 func TestMetrics_RolesGaugeFlagsTheDenyAllTrap(t *testing.T) {
 	m := fleetmetrics.New()
 	f := NewFleet(Config{FleetID: "f1", FleetSecret: "seed"}, nil, &stubLLM{}, nil)
@@ -85,4 +89,61 @@ func TestMetrics_RolesGaugeFlagsTheDenyAllTrap(t *testing.T) {
 	out := scrapeFleet(t, m)
 	require.Contains(t, out, "fleet_roles_registered 2")
 	require.Contains(t, out, "fleet_roles_write_scope_misconfigured 1")
+}
+
+// TestMetrics_ReconcileActionsAreCounted asserts each webhook mutation lands
+// under its own action label and that the owned gauge reports the post-reconcile
+// state: repeated creates or updates in a steady state are how two fleets
+// sharing a fleet_id announce themselves.
+func TestMetrics_ReconcileActionsAreCounted(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
+	staleURL := "https://old-host.example/_fleet/" + fleetHash("f1") + "/webhook/" + urlKey(role.NotePath)
+	foreign := "fleet:f1:roles/gone.md:v0"
+
+	gql := fakeAdminGQL(func(op string, _ json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesDataURL(
+				[3]string{"7", markerFor("f1", role), staleURL},
+				[3]string{"8", foreign, ""},
+			), nil
+		case "UpdateChangeWebhook":
+			return updateOKData, nil
+		case "DeleteChangeWebhook":
+			return deleteOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+
+	m := fleetmetrics.New()
+	r := newReconciler(gql)
+	r.SetMetrics(m)
+	require.NoError(t, r.Reconcile(context.Background(), []Role{role}))
+
+	out := scrapeFleet(t, m)
+	require.Contains(t, out, `fleet_webhook_actions_total{action="update",status="ok"} 1`)
+	require.Contains(t, out, `fleet_webhook_actions_total{action="delete",status="ok"} 1`)
+	require.Contains(t, out, `fleet_webhooks_owned{kind="change"} 1`)
+}
+
+// TestMetrics_FailedReconcileActionIsCounted asserts a mutation that errors is
+// attributed to the action that failed, not swallowed with the returned error.
+func TestMetrics_FailedReconcileActionIsCounted(t *testing.T) {
+	role := Role{NotePath: "roles/triage.md", Mode: "change", MaxDepth: 1, Concurrency: "skip"}
+	gql := fakeAdminGQL(func(op string, _ json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesData(), nil
+		case "CreateChangeWebhook":
+			return "", errors.New("trip2g is down")
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+
+	m := fleetmetrics.New()
+	r := newReconciler(gql)
+	r.SetMetrics(m)
+	require.Error(t, r.Reconcile(context.Background(), []Role{role}))
+
+	require.Contains(t, scrapeFleet(t, m), `fleet_webhook_actions_total{action="create",status="error"} 1`)
 }
