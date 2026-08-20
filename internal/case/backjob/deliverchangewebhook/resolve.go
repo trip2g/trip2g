@@ -40,6 +40,9 @@ type Env interface {
 // changeWebhookPayload is the JSON body sent to the webhook endpoint.
 type changeWebhookPayload struct {
 	webhookutil.BasePayload
+	// Trace identifies the delivery chain this run belongs to ("cron:4242"),
+	// so an agent can tag its own logs with the chain the admin UI shows.
+	Trace         string                          `json:"trace,omitempty"`
 	Depth         int                             `json:"depth"`
 	Instruction   string                          `json:"instruction"`
 	Changes       []handlenotewebhooks.ChangeInfo `json:"changes"`
@@ -75,6 +78,7 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 	// Build payload.
 	payload := changeWebhookPayload{
 		BasePayload:   webhookutil.NewBasePayload(params.DeliveryID, params.Attempt),
+		Trace:         params.Trace,
 		Depth:         params.Depth,
 		Instruction:   wh.Instruction,
 		Changes:       params.Changes,

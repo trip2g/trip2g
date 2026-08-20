@@ -155,6 +155,7 @@ import (
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/ptr"
 )
 
 // ID is the resolver for the id field.
@@ -655,6 +656,16 @@ func (r *adminCronWebhookDeliveriesConnectionResolver) Nodes(ctx context.Context
 // Nodes is the resolver for the nodes field.
 func (r *adminCronWebhooksConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronWebhooksConnection) ([]db.CronWebhook, error) {
 	return r.env(ctx).ListCronWebhooks(ctx)
+}
+
+// StartedAt is the resolver for the startedAt field.
+func (r *adminDeliveryTraceResolver) StartedAt(ctx context.Context, obj *db.ListDeliveryTracesRow) (*time.Time, error) {
+	return ptr.To(time.Unix(obj.StartedAtUnix, 0).UTC()), nil
+}
+
+// LastAt is the resolver for the lastAt field.
+func (r *adminDeliveryTraceResolver) LastAt(ctx context.Context, obj *db.ListDeliveryTracesRow) (*time.Time, error) {
+	return ptr.To(time.Unix(obj.LastAtUnix, 0).UTC()), nil
 }
 
 // Note is the resolver for the note field.
@@ -2085,6 +2096,20 @@ func (r *adminQueryResolver) CronWebhookDeliveries(ctx context.Context, obj *app
 		CronWebhookID: filter.CronWebhookID,
 		Limit:         limit,
 	}, nil
+}
+
+// DeliveryTraces is the resolver for the deliveryTraces field.
+func (r *adminQueryResolver) DeliveryTraces(ctx context.Context, obj *appmodel.AdminQuery, limit *int64) ([]db.ListDeliveryTracesRow, error) {
+	n := int64(defaultDeliveryTracesLimit)
+	if limit != nil && *limit > 0 {
+		n = *limit
+	}
+	return r.env(ctx).ListDeliveryTraces(ctx, n)
+}
+
+// DeliveryTrace is the resolver for the deliveryTrace field.
+func (r *adminQueryResolver) DeliveryTrace(ctx context.Context, obj *appmodel.AdminQuery, trace string) ([]db.ListDeliveriesByTraceRow, error) {
+	return r.env(ctx).ListDeliveriesByTrace(ctx, &trace)
 }
 
 // HealthChecks is the resolver for the healthChecks field.
@@ -3741,6 +3766,11 @@ func (r *Resolver) AdminCronWebhooksConnection() generated.AdminCronWebhooksConn
 	return &adminCronWebhooksConnectionResolver{r}
 }
 
+// AdminDeliveryTrace returns generated.AdminDeliveryTraceResolver implementation.
+func (r *Resolver) AdminDeliveryTrace() generated.AdminDeliveryTraceResolver {
+	return &adminDeliveryTraceResolver{r}
+}
+
 // AdminFormNote returns generated.AdminFormNoteResolver implementation.
 func (r *Resolver) AdminFormNote() generated.AdminFormNoteResolver { return &adminFormNoteResolver{r} }
 
@@ -4189,6 +4219,7 @@ type adminCronJobsConnectionResolver struct{ *Resolver }
 type adminCronWebhookResolver struct{ *Resolver }
 type adminCronWebhookDeliveriesConnectionResolver struct{ *Resolver }
 type adminCronWebhooksConnectionResolver struct{ *Resolver }
+type adminDeliveryTraceResolver struct{ *Resolver }
 type adminFormNoteResolver struct{ *Resolver }
 type adminFormSubmitsConnectionResolver struct{ *Resolver }
 type adminFrontmatterPatchResolver struct{ *Resolver }

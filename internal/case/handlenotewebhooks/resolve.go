@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/webhookutil"
 )
 
@@ -36,6 +38,7 @@ type DeliverChangeWebhookParams struct {
 	WebhookID     int64        `json:"webhook_id"`
 	Attempt       int          `json:"attempt"`
 	Depth         int          `json:"depth"`
+	Trace         string       `json:"trace,omitempty"`
 	Changes       []ChangeInfo `json:"changes"`
 	PreviousError string       `json:"previous_error,omitempty"`
 }
@@ -52,6 +55,8 @@ type Env interface {
 	InsertWebhookDeliveryIfNoPending(ctx context.Context, webhookID int64) (db.ChangeWebhookDelivery, error)
 	LatestNoteViews() *model.NoteViews
 	EnqueueDeliverChangeWebhook(ctx context.Context, params DeliverChangeWebhookParams) error
+	SetWebhookDeliveryChain(ctx context.Context, arg db.SetWebhookDeliveryChainParams) error
+	DeliveryTrace(ctx context.Context, kind string, deliveryID int64) (string, error)
 	Logger() logger.Logger
 }
 
@@ -255,12 +260,15 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 			continue
 		}
 
+		trace := stampDeliveryChain(ctx, env, delivery.ID, depth)
+
 		// Enqueue background job.
 		enqueueErr := env.EnqueueDeliverChangeWebhook(ctx, DeliverChangeWebhookParams{
 			DeliveryID: delivery.ID,
 			WebhookID:  wh.ID,
 			Attempt:    1,
 			Depth:      depth,
+			Trace:      trace,
 			Changes:    matched,
 		})
 		if enqueueErr != nil {
@@ -276,4 +284,38 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 	}
 
 	return nil
+}
+
+// stampDeliveryChain records where this delivery sits in its chain and returns
+// its trace id. The parent is whatever delivery authenticated the write that
+// produced these changes — it rides the request, so no lookup is needed to find
+// it; only its trace id is read. A write from a human, an api key or the vault
+// sync has no parent, which makes this delivery a chain root carrying its own
+// trace id. Stamping never blocks the delivery: on error the row keeps its
+// null chain columns and the delivery proceeds unrecorded.
+func stampDeliveryChain(ctx context.Context, env Env, deliveryID int64, depth int) string {
+	arg := db.SetWebhookDeliveryChainParams{
+		ID:           deliveryID,
+		DepthReached: int64(depth),
+		Trace:        ptr.To(webhookutil.TraceID(webhookutil.DeliveryKindChange, deliveryID)),
+	}
+
+	if req, err := appreq.FromCtx(ctx); err == nil && req.WebhookDeliveryID != 0 {
+		arg.ParentKind = ptr.To(req.WebhookDeliveryKind)
+		arg.ParentID = ptr.To(req.WebhookDeliveryID)
+		parentTrace, traceErr := env.DeliveryTrace(ctx, req.WebhookDeliveryKind, req.WebhookDeliveryID)
+		if traceErr != nil {
+			env.Logger().Error("failed to read parent delivery trace",
+				"delivery_id", deliveryID, "parent_kind", req.WebhookDeliveryKind,
+				"parent_id", req.WebhookDeliveryID, "error", traceErr)
+		} else if parentTrace != "" {
+			arg.Trace = ptr.To(parentTrace)
+		}
+	}
+
+	if err := env.SetWebhookDeliveryChain(ctx, arg); err != nil {
+		env.Logger().Error("failed to stamp delivery chain", "delivery_id", deliveryID, "error", err)
+		return ""
+	}
+	return *arg.Trace
 }

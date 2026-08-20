@@ -1,0 +1,42 @@
+$trip2g_admin_deliverytrace_show $mol_page
+	trace? \
+	title <= trace_title \Delivery Chain
+	HopRow* $mol_row
+		sub /
+			<= HopKind* $mol_labeler
+				title @ \Kind
+				Content <= HopKindCell* $trip2g_admin_cell
+					content <= hop_kind* \
+			<= HopId* $mol_labeler
+				title \#
+				Content <= HopIdCell* $trip2g_admin_cell
+					content <= hop_id* \
+			<= HopWebhook* $mol_labeler
+				title @ \Webhook
+				Content <= HopWebhookCell* $trip2g_admin_cell
+					content <= hop_webhook* \
+			<= HopDepth* $mol_labeler
+				title @ \Depth
+				Content <= HopDepthCell* $trip2g_admin_cell
+					content <= hop_depth* \
+			<= HopParent* $mol_labeler
+				title @ \Caused by
+				Content <= HopParentCell* $trip2g_admin_cell
+					content <= hop_parent* \
+			<= HopStatus* $mol_labeler
+				title @ \Status
+				Content <= HopStatusCell* $trip2g_admin_cell
+					content <= hop_status* \
+			<= HopSpend* $mol_labeler
+				title @ \Spend
+				Content <= HopSpendCell* $trip2g_admin_cell
+					content <= hop_spend* \
+			<= HopCreatedAt* $mol_labeler
+				title @ \Created At
+				Content <= HopCreatedAtCell* $trip2g_admin_cell
+					content <= hop_created_at* \
+	body /
+		<= Hops_labeler $mol_labeler
+			title @ \Hops
+			Content <= HopsList $mol_list
+				rows <= hop_rows /

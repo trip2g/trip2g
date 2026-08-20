@@ -1247,7 +1247,7 @@ func (q *WriteQueries) InsertCronWebhook(ctx context.Context, arg InsertCronWebh
 const insertCronWebhookDelivery = `-- name: InsertCronWebhookDelivery :one
 insert into cron_webhook_deliveries (cron_webhook_id, attempt)
 values (?, ?)
-returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached
 `
 
 type InsertCronWebhookDeliveryParams struct {
@@ -1271,6 +1271,10 @@ func (q *WriteQueries) InsertCronWebhookDelivery(ctx context.Context, arg Insert
 		&i.HeartbeatAt,
 		&i.TokensUsed,
 		&i.Steps,
+		&i.ParentKind,
+		&i.ParentID,
+		&i.Trace,
+		&i.DepthReached,
 	)
 	return i, err
 }
@@ -1284,7 +1288,7 @@ where ?2 is not null
     where cron_webhook_id = ?1
       and status in ('pending','running')
       and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
-returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached
 `
 
 type InsertCronWebhookDeliveryIfClearParams struct {
@@ -1310,6 +1314,10 @@ func (q *WriteQueries) InsertCronWebhookDeliveryIfClear(ctx context.Context, arg
 		&i.HeartbeatAt,
 		&i.TokensUsed,
 		&i.Steps,
+		&i.ParentKind,
+		&i.ParentID,
+		&i.Trace,
+		&i.DepthReached,
 	)
 	return i, err
 }
@@ -1320,7 +1328,7 @@ select ?, 1, 'pending'
 where not exists (
   select 1 from cron_webhook_deliveries
   where cron_webhook_id = ?1 and status = 'pending')
-returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached
 `
 
 func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context, cronWebhookID int64) (CronWebhookDelivery, error) {
@@ -1339,6 +1347,10 @@ func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context,
 		&i.HeartbeatAt,
 		&i.TokensUsed,
 		&i.Steps,
+		&i.ParentKind,
+		&i.ParentID,
+		&i.Trace,
+		&i.DepthReached,
 	)
 	return i, err
 }
@@ -2709,7 +2721,7 @@ func (q *WriteQueries) InsertWebhook(ctx context.Context, arg InsertWebhookParam
 const insertWebhookDelivery = `-- name: InsertWebhookDelivery :one
 insert into change_webhook_deliveries (webhook_id, attempt)
 values (?, ?)
-returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached
 `
 
 type InsertWebhookDeliveryParams struct {
@@ -2733,6 +2745,10 @@ func (q *WriteQueries) InsertWebhookDelivery(ctx context.Context, arg InsertWebh
 		&i.HeartbeatAt,
 		&i.TokensUsed,
 		&i.Steps,
+		&i.ParentKind,
+		&i.ParentID,
+		&i.Trace,
+		&i.DepthReached,
 	)
 	return i, err
 }
@@ -2746,7 +2762,7 @@ where ?2 is not null
     where webhook_id = ?1
       and status in ('pending','running')
       and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
-returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached
 `
 
 type InsertWebhookDeliveryIfClearParams struct {
@@ -2772,6 +2788,10 @@ func (q *WriteQueries) InsertWebhookDeliveryIfClear(ctx context.Context, arg Ins
 		&i.HeartbeatAt,
 		&i.TokensUsed,
 		&i.Steps,
+		&i.ParentKind,
+		&i.ParentID,
+		&i.Trace,
+		&i.DepthReached,
 	)
 	return i, err
 }
@@ -2782,7 +2802,7 @@ select ?, 1, 'pending'
 where not exists (
   select 1 from change_webhook_deliveries
   where webhook_id = ?1 and status = 'pending')
-returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached
 `
 
 // queue_one mode: insert only if there is no pending delivery already queued.
@@ -2802,6 +2822,10 @@ func (q *WriteQueries) InsertWebhookDeliveryIfNoPending(ctx context.Context, web
 		&i.HeartbeatAt,
 		&i.TokensUsed,
 		&i.Steps,
+		&i.ParentKind,
+		&i.ParentID,
+		&i.Trace,
+		&i.DepthReached,
 	)
 	return i, err
 }
@@ -3353,6 +3377,24 @@ func (q *WriteQueries) SetChartDataError(ctx context.Context, arg SetChartDataEr
 	return err
 }
 
+const setCronWebhookDeliveryChain = `-- name: SetCronWebhookDeliveryChain :exec
+update cron_webhook_deliveries
+set trace = ?1
+where id = ?2
+`
+
+type SetCronWebhookDeliveryChainParams struct {
+	Trace *string `json:"trace"`
+	ID    int64   `json:"id"`
+}
+
+// Cron deliveries are always chain roots: their trace is their own id and
+// depth_reached stays 0 (what they write sits one level down).
+func (q *WriteQueries) SetCronWebhookDeliveryChain(ctx context.Context, arg SetCronWebhookDeliveryChainParams) error {
+	_, err := q.db.ExecContext(ctx, setCronWebhookDeliveryChain, arg.Trace, arg.ID)
+	return err
+}
+
 const setPatreonMemberCurrentTier = `-- name: SetPatreonMemberCurrentTier :exec
 update patreon_members
 set current_tier_id = ?
@@ -3382,6 +3424,36 @@ type SetTelegramPublishNoteLastErrorParams struct {
 
 func (q *WriteQueries) SetTelegramPublishNoteLastError(ctx context.Context, arg SetTelegramPublishNoteLastErrorParams) error {
 	_, err := q.db.ExecContext(ctx, setTelegramPublishNoteLastError, arg.LastError, arg.NotePathID)
+	return err
+}
+
+const setWebhookDeliveryChain = `-- name: SetWebhookDeliveryChain :exec
+update change_webhook_deliveries
+set parent_kind = ?1,
+    parent_id = ?2,
+    trace = ?3,
+    depth_reached = ?4
+where id = ?5
+`
+
+type SetWebhookDeliveryChainParams struct {
+	ParentKind   *string `json:"parent_kind"`
+	ParentID     *int64  `json:"parent_id"`
+	Trace        *string `json:"trace"`
+	DepthReached int64   `json:"depth_reached"`
+	ID           int64   `json:"id"`
+}
+
+// Stamps the chain columns right after the delivery row is inserted. A root
+// (no parent) carries its own trace id; a child inherits the parent's.
+func (q *WriteQueries) SetWebhookDeliveryChain(ctx context.Context, arg SetWebhookDeliveryChainParams) error {
+	_, err := q.db.ExecContext(ctx, setWebhookDeliveryChain,
+		arg.ParentKind,
+		arg.ParentID,
+		arg.Trace,
+		arg.DepthReached,
+		arg.ID,
+	)
 	return err
 }
 

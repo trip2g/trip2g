@@ -162,6 +162,10 @@ func (r *Resolver) env(ctx context.Context) Env {
 	return reqEnv
 }
 
+// defaultDeliveryTracesLimit bounds the chain list when the caller asks for no
+// explicit limit.
+const defaultDeliveryTracesLimit = 50
+
 type Env interface {
 	GitCommit() string
 	IsDevMode() bool
@@ -422,6 +426,8 @@ type Env interface {
 	WebhookByID(ctx context.Context, id int64) (db.ChangeWebhook, error)
 	ListWebhooks(ctx context.Context) ([]db.ChangeWebhook, error)
 	ListWebhookDeliveries(ctx context.Context, params db.ListWebhookDeliveriesParams) ([]db.ChangeWebhookDelivery, error)
+	ListDeliveryTraces(ctx context.Context, limit int64) ([]db.ListDeliveryTracesRow, error)
+	ListDeliveriesByTrace(ctx context.Context, trace *string) ([]db.ListDeliveriesByTraceRow, error)
 	CronWebhookByID(ctx context.Context, id int64) (db.CronWebhook, error)
 	ListCronWebhooks(ctx context.Context) ([]db.CronWebhook, error)
 	ListCronWebhookDeliveries(ctx context.Context, params db.ListCronWebhookDeliveriesParams) ([]db.CronWebhookDelivery, error)

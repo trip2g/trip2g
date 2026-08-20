@@ -59,6 +59,9 @@ type Env interface {
 // cronWebhookPayload is the JSON body sent to the cron webhook endpoint.
 type cronWebhookPayload struct {
 	webhookutil.BasePayload
+	// Trace identifies the delivery chain this run belongs to ("cron:4242"),
+	// so an agent can tag its own logs with the chain the admin UI shows.
+	Trace          string                     `json:"trace,omitempty"`
 	Instruction    string                     `json:"instruction"`
 	ResponseSchema json.RawMessage            `json:"response_schema"`
 	AttachedNotes  []webhookutil.AttachedNote `json:"attached_notes,omitempty"`
@@ -117,6 +120,7 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	// Build payload.
 	payload := cronWebhookPayload{
 		BasePayload:    webhookutil.NewBasePayload(params.DeliveryID, params.Attempt),
+		Trace:          params.Trace,
 		Instruction:    wh.Instruction,
 		ResponseSchema: ResponseSchema,
 		AttachedNotes:  attachedNotes,

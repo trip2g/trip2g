@@ -1356,6 +1356,46 @@ select * from cron_webhooks where enabled = true and disabled_at is null;
 -- name: CronWebhookByID :one
 select * from cron_webhooks where id = ? and disabled_at is null;
 
+-- name: WebhookDeliveryTraceByID :one
+select trace, depth_reached from change_webhook_deliveries where id = ?;
+
+-- name: CronWebhookDeliveryTraceByID :one
+select trace, depth_reached from cron_webhook_deliveries where id = ?;
+
+-- name: ListDeliveryTraces :many
+-- Chain overview: one row per trace, rolled up across both delivery kinds.
+select t.trace as trace,
+       cast(strftime('%s', min(t.created_at)) as integer) as started_at_unix,
+       cast(strftime('%s', max(t.created_at)) as integer) as last_at_unix,
+       count(*) as deliveries,
+       cast(sum(coalesce(t.tokens_used, 0)) as integer) as tokens_used,
+       cast(max(t.depth_reached) as integer) as depth_reached
+  from (select trace, created_at, tokens_used, depth_reached
+          from change_webhook_deliveries where trace is not null
+        union all
+        select trace, created_at, tokens_used, depth_reached
+          from cron_webhook_deliveries where trace is not null) as t
+ group by t.trace
+ order by started_at_unix desc
+ limit ?;
+
+-- name: ListDeliveriesByTrace :many
+-- Every hop of one chain, in causal order, across both delivery kinds.
+select 'change' as kind, c.id as id, c.webhook_id as webhook_id, c.status as status,
+       c.response_status as response_status, c.attempt as attempt, c.duration_ms as duration_ms,
+       c.tokens_used as tokens_used, c.steps as steps, c.created_at as created_at,
+       c.completed_at as completed_at, c.parent_kind as parent_kind, c.parent_id as parent_id,
+       c.depth_reached as depth_reached
+  from change_webhook_deliveries c where c.trace = sqlc.arg(trace)
+ union all
+select 'cron' as kind, r.id as id, r.cron_webhook_id as webhook_id, r.status as status,
+       r.response_status as response_status, r.attempt as attempt, r.duration_ms as duration_ms,
+       r.tokens_used as tokens_used, r.steps as steps, r.created_at as created_at,
+       r.completed_at as completed_at, r.parent_kind as parent_kind, r.parent_id as parent_id,
+       r.depth_reached as depth_reached
+  from cron_webhook_deliveries r where r.trace = sqlc.arg(trace)
+ order by created_at, id;
+
 -- name: ListCronWebhookDeliveries :many
 select * from cron_webhook_deliveries
 where cron_webhook_id = ?

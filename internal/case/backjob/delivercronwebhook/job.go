@@ -15,6 +15,7 @@ type DeliverCronParams struct {
 	DeliveryID    int64  `json:"delivery_id"`
 	CronWebhookID int64  `json:"cron_webhook_id"`
 	Attempt       int    `json:"attempt"`
+	Trace         string `json:"trace,omitempty"`
 	PreviousError string `json:"previous_error,omitempty"`
 }
 

@@ -1035,6 +1035,16 @@ where not exists (
   where webhook_id = ?1 and status = 'pending')
 returning *;
 
+-- name: SetWebhookDeliveryChain :exec
+-- Stamps the chain columns right after the delivery row is inserted. A root
+-- (no parent) carries its own trace id; a child inherits the parent's.
+update change_webhook_deliveries
+set parent_kind = sqlc.narg(parent_kind),
+    parent_id = sqlc.narg(parent_id),
+    trace = sqlc.arg(trace),
+    depth_reached = sqlc.arg(depth_reached)
+where id = sqlc.arg(id);
+
 -- name: MarkWebhookDeliveryRunning :exec
 update change_webhook_deliveries
 set status = 'running', started_at = datetime('now')
@@ -1136,6 +1146,13 @@ where not exists (
   select 1 from cron_webhook_deliveries
   where cron_webhook_id = ?1 and status = 'pending')
 returning *;
+
+-- name: SetCronWebhookDeliveryChain :exec
+-- Cron deliveries are always chain roots: their trace is their own id and
+-- depth_reached stays 0 (what they write sits one level down).
+update cron_webhook_deliveries
+set trace = sqlc.arg(trace)
+where id = sqlc.arg(id);
 
 -- name: MarkCronWebhookDeliveryRunning :exec
 update cron_webhook_deliveries

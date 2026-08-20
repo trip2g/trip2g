@@ -794,6 +794,37 @@ type AdminChangeWebhookDeliveriesConnection
   nodes: [AdminChangeWebhookDelivery!]! @goField(forceResolver: true)
 }
 
+# One delivery chain, rolled up: the root plus every delivery its writes caused.
+type AdminDeliveryTrace @goModel(model: "trip2g/internal/db.ListDeliveryTracesRow") {
+  trace: String
+  # Aggregates over a union of both delivery tables come back as epoch seconds
+  # (SQLite has no datetime type to cast to), so these are resolved into Time.
+  startedAt: Time! @goField(forceResolver: true)
+  lastAt: Time! @goField(forceResolver: true)
+  deliveries: Int64!
+  tokensUsed: Int64!
+  depthReached: Int64!
+}
+
+# One hop of a chain. kind tells which delivery table the row came from, since
+# ids are only unique within their own table.
+type AdminTraceDelivery @goModel(model: "trip2g/internal/db.ListDeliveriesByTraceRow") {
+  kind: String!
+  id: Int64!
+  webhookId: Int64!
+  status: String!
+  responseStatus: Int64
+  attempt: Int64!
+  durationMs: Int64
+  tokensUsed: Int64
+  steps: Int64
+  createdAt: Time!
+  completedAt: Time
+  parentKind: String
+  parentId: Int64
+  depthReached: Int64!
+}
+
 input AdminChangeWebhookDeliveriesFilterInput {
   webhookId: Int64!
   limit: Int64
@@ -1270,6 +1301,10 @@ type AdminQuery {
   cronWebhook(id: Int64!): AdminCronWebhook
   allCronWebhooks: AdminCronWebhooksConnection!
   cronWebhookDeliveries(filter: AdminCronWebhookDeliveriesFilterInput!): AdminCronWebhookDeliveriesConnection!
+
+  # Delivery chains: one agent run triggering the next, across both webhook kinds
+  deliveryTraces(limit: Int64): [AdminDeliveryTrace!]!
+  deliveryTrace(trace: String!): [AdminTraceDelivery!]!
 
   healthChecks: [HealchCheck!]!
   buildGitCommit: String!

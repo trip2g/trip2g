@@ -410,6 +410,16 @@ export type AdminCronWebhooksConnection = {
   nodes: Array<AdminCronWebhook>;
 };
 
+export type AdminDeliveryTrace = {
+  __typename?: 'AdminDeliveryTrace';
+  deliveries: Scalars['Int64']['output'];
+  depthReached: Scalars['Int64']['output'];
+  lastAt: Scalars['Time']['output'];
+  startedAt: Scalars['Time']['output'];
+  tokensUsed: Scalars['Int64']['output'];
+  trace?: Maybe<Scalars['String']['output']>;
+};
+
 export type AdminFederationSecret = {
   __typename?: 'AdminFederationSecret';
   createdAt: Scalars['Time']['output'];
@@ -1433,6 +1443,8 @@ export type AdminQuery = {
   cronJob?: Maybe<AdminCronJob>;
   cronWebhook?: Maybe<AdminCronWebhook>;
   cronWebhookDeliveries: AdminCronWebhookDeliveriesConnection;
+  deliveryTrace: Array<AdminTraceDelivery>;
+  deliveryTraces: Array<AdminDeliveryTrace>;
   federationSecrets: Array<AdminFederationSecret>;
   formNotes: Array<AdminFormNote>;
   formSubmits: AdminFormSubmitsConnection;
@@ -1542,6 +1554,16 @@ export type AdminQuerycronWebhookArgs = {
 
 export type AdminQuerycronWebhookDeliveriesArgs = {
   filter: AdminCronWebhookDeliveriesFilterInput;
+};
+
+
+export type AdminQuerydeliveryTraceArgs = {
+  trace: Scalars['String']['input'];
+};
+
+
+export type AdminQuerydeliveryTracesArgs = {
+  limit?: InputMaybe<Scalars['Int64']['input']>;
 };
 
 
@@ -1999,6 +2021,24 @@ export type AdminTgUserProfile = {
   lastName?: Maybe<Scalars['String']['output']>;
   sha256Hash: Scalars['String']['output'];
   username?: Maybe<Scalars['String']['output']>;
+};
+
+export type AdminTraceDelivery = {
+  __typename?: 'AdminTraceDelivery';
+  attempt: Scalars['Int64']['output'];
+  completedAt?: Maybe<Scalars['Time']['output']>;
+  createdAt: Scalars['Time']['output'];
+  depthReached: Scalars['Int64']['output'];
+  durationMs?: Maybe<Scalars['Int64']['output']>;
+  id: Scalars['Int64']['output'];
+  kind: Scalars['String']['output'];
+  parentId?: Maybe<Scalars['Int64']['output']>;
+  parentKind?: Maybe<Scalars['String']['output']>;
+  responseStatus?: Maybe<Scalars['Int64']['output']>;
+  status: Scalars['String']['output'];
+  steps?: Maybe<Scalars['Int64']['output']>;
+  tokensUsed?: Maybe<Scalars['Int64']['output']>;
+  webhookId: Scalars['Int64']['output'];
 };
 
 export type AdminUpdateTelegramAccountInput = {

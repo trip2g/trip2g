@@ -1356,6 +1356,22 @@ func (q *Queries) CronWebhookByID(ctx context.Context, id int64) (CronWebhook, e
 	return i, err
 }
 
+const cronWebhookDeliveryTraceByID = `-- name: CronWebhookDeliveryTraceByID :one
+select trace, depth_reached from cron_webhook_deliveries where id = ?
+`
+
+type CronWebhookDeliveryTraceByIDRow struct {
+	Trace        *string `json:"trace"`
+	DepthReached int64   `json:"depth_reached"`
+}
+
+func (q *Queries) CronWebhookDeliveryTraceByID(ctx context.Context, id int64) (CronWebhookDeliveryTraceByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, cronWebhookDeliveryTraceByID, id)
+	var i CronWebhookDeliveryTraceByIDRow
+	err := row.Scan(&i.Trace, &i.DepthReached)
+	return i, err
+}
+
 const federationSecretByKBURL = `-- name: FederationSecretByKBURL :one
 select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at from federation_secrets
  where kb_url = ?
@@ -4472,7 +4488,7 @@ func (q *Queries) ListCronJobExecutionsByJobID(ctx context.Context, jobID int64)
 }
 
 const listCronWebhookDeliveries = `-- name: ListCronWebhookDeliveries :many
-select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps from cron_webhook_deliveries
+select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached from cron_webhook_deliveries
 where cron_webhook_id = ?
 order by created_at desc
 limit ?
@@ -4505,6 +4521,10 @@ func (q *Queries) ListCronWebhookDeliveries(ctx context.Context, arg ListCronWeb
 			&i.HeartbeatAt,
 			&i.TokensUsed,
 			&i.Steps,
+			&i.ParentKind,
+			&i.ParentID,
+			&i.Trace,
+			&i.DepthReached,
 		); err != nil {
 			return nil, err
 		}
@@ -4612,6 +4632,136 @@ func (q *Queries) ListCronWebhooksDueForExecution(ctx context.Context) ([]CronWe
 			&i.TransformJsonnet,
 			&i.AttachNotes,
 			&i.ConcurrencyMode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDeliveriesByTrace = `-- name: ListDeliveriesByTrace :many
+select 'change' as kind, c.id as id, c.webhook_id as webhook_id, c.status as status,
+       c.response_status as response_status, c.attempt as attempt, c.duration_ms as duration_ms,
+       c.tokens_used as tokens_used, c.steps as steps, c.created_at as created_at,
+       c.completed_at as completed_at, c.parent_kind as parent_kind, c.parent_id as parent_id,
+       c.depth_reached as depth_reached
+  from change_webhook_deliveries c where c.trace = ?1
+ union all
+select 'cron' as kind, r.id as id, r.cron_webhook_id as webhook_id, r.status as status,
+       r.response_status as response_status, r.attempt as attempt, r.duration_ms as duration_ms,
+       r.tokens_used as tokens_used, r.steps as steps, r.created_at as created_at,
+       r.completed_at as completed_at, r.parent_kind as parent_kind, r.parent_id as parent_id,
+       r.depth_reached as depth_reached
+  from cron_webhook_deliveries r where r.trace = ?1
+ order by created_at, id
+`
+
+type ListDeliveriesByTraceRow struct {
+	Kind           string     `json:"kind"`
+	ID             int64      `json:"id"`
+	WebhookID      int64      `json:"webhook_id"`
+	Status         string     `json:"status"`
+	ResponseStatus *int64     `json:"response_status"`
+	Attempt        int64      `json:"attempt"`
+	DurationMs     *int64     `json:"duration_ms"`
+	TokensUsed     *int64     `json:"tokens_used"`
+	Steps          *int64     `json:"steps"`
+	CreatedAt      time.Time  `json:"created_at"`
+	CompletedAt    *time.Time `json:"completed_at"`
+	ParentKind     *string    `json:"parent_kind"`
+	ParentID       *int64     `json:"parent_id"`
+	DepthReached   int64      `json:"depth_reached"`
+}
+
+// Every hop of one chain, in causal order, across both delivery kinds.
+func (q *Queries) ListDeliveriesByTrace(ctx context.Context, trace *string) ([]ListDeliveriesByTraceRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDeliveriesByTrace, trace)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDeliveriesByTraceRow
+	for rows.Next() {
+		var i ListDeliveriesByTraceRow
+		if err := rows.Scan(
+			&i.Kind,
+			&i.ID,
+			&i.WebhookID,
+			&i.Status,
+			&i.ResponseStatus,
+			&i.Attempt,
+			&i.DurationMs,
+			&i.TokensUsed,
+			&i.Steps,
+			&i.CreatedAt,
+			&i.CompletedAt,
+			&i.ParentKind,
+			&i.ParentID,
+			&i.DepthReached,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDeliveryTraces = `-- name: ListDeliveryTraces :many
+select t.trace as trace,
+       cast(strftime('%s', min(t.created_at)) as integer) as started_at_unix,
+       cast(strftime('%s', max(t.created_at)) as integer) as last_at_unix,
+       count(*) as deliveries,
+       cast(sum(coalesce(t.tokens_used, 0)) as integer) as tokens_used,
+       cast(max(t.depth_reached) as integer) as depth_reached
+  from (select trace, created_at, tokens_used, depth_reached
+          from change_webhook_deliveries where trace is not null
+        union all
+        select trace, created_at, tokens_used, depth_reached
+          from cron_webhook_deliveries where trace is not null) as t
+ group by t.trace
+ order by started_at_unix desc
+ limit ?
+`
+
+type ListDeliveryTracesRow struct {
+	Trace         *string `json:"trace"`
+	StartedAtUnix int64   `json:"started_at_unix"`
+	LastAtUnix    int64   `json:"last_at_unix"`
+	Deliveries    int64   `json:"deliveries"`
+	TokensUsed    int64   `json:"tokens_used"`
+	DepthReached  int64   `json:"depth_reached"`
+}
+
+// Chain overview: one row per trace, rolled up across both delivery kinds.
+func (q *Queries) ListDeliveryTraces(ctx context.Context, limit int64) ([]ListDeliveryTracesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDeliveryTraces, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDeliveryTracesRow
+	for rows.Next() {
+		var i ListDeliveryTracesRow
+		if err := rows.Scan(
+			&i.Trace,
+			&i.StartedAtUnix,
+			&i.LastAtUnix,
+			&i.Deliveries,
+			&i.TokensUsed,
+			&i.DepthReached,
 		); err != nil {
 			return nil, err
 		}
@@ -6580,7 +6730,7 @@ func (q *Queries) ListUserTokensFiltered(ctx context.Context, userID *int64) ([]
 }
 
 const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
-select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps from change_webhook_deliveries
+select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, tokens_used, steps, parent_kind, parent_id, trace, depth_reached from change_webhook_deliveries
 where webhook_id = ?
 order by created_at desc
 limit ?
@@ -6613,6 +6763,10 @@ func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeli
 			&i.HeartbeatAt,
 			&i.TokensUsed,
 			&i.Steps,
+			&i.ParentKind,
+			&i.ParentID,
+			&i.Trace,
+			&i.DepthReached,
 		); err != nil {
 			return nil, err
 		}
@@ -8141,5 +8295,21 @@ func (q *Queries) WebhookDeliveryLogByDelivery(ctx context.Context, arg WebhookD
 		&i.ErrorMessage,
 		&i.CreatedAt,
 	)
+	return i, err
+}
+
+const webhookDeliveryTraceByID = `-- name: WebhookDeliveryTraceByID :one
+select trace, depth_reached from change_webhook_deliveries where id = ?
+`
+
+type WebhookDeliveryTraceByIDRow struct {
+	Trace        *string `json:"trace"`
+	DepthReached int64   `json:"depth_reached"`
+}
+
+func (q *Queries) WebhookDeliveryTraceByID(ctx context.Context, id int64) (WebhookDeliveryTraceByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, webhookDeliveryTraceByID, id)
+	var i WebhookDeliveryTraceByIDRow
+	err := row.Scan(&i.Trace, &i.DepthReached)
 	return i, err
 }

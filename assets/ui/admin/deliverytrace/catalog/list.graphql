@@ -1,0 +1,12 @@
+query {
+	admin {
+		deliveryTraces(limit: 50) {
+			trace
+			startedAt
+			lastAt
+			deliveries
+			tokensUsed
+			depthReached
+		}
+	}
+}

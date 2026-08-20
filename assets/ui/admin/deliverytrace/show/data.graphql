@@ -1,0 +1,20 @@
+query ($trace: String!) {
+	admin {
+		deliveryTrace(trace: $trace) {
+			kind
+			id
+			webhookId
+			status
+			responseStatus
+			attempt
+			durationMs
+			tokensUsed
+			steps
+			createdAt
+			completedAt
+			parentKind
+			parentId
+			depthReached
+		}
+	}
+}
