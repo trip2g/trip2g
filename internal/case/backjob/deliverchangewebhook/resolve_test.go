@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/backjob/deliverchangewebhook"
 	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/db"
@@ -52,6 +53,9 @@ func baseEnv(t *testing.T, url string, secretValues map[string]string) *EnvMock 
 		},
 		PrepareLatestNotesFunc: func(_ context.Context, _ bool) (*model.NoteViews, error) {
 			return nil, nil
+		},
+		HandleLatestNotesAfterSaveFunc: func(_ context.Context, _ []int64) error {
+			return nil
 		},
 		EnqueueDeliverChangeWebhookFunc: func(_ context.Context, _ handlenotewebhooks.DeliverChangeWebhookParams) error {
 			return nil
@@ -693,4 +697,50 @@ func TestResolve_AgentChanges_PatchKind_FindMissing_Error(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, insertCalled, "InsertNote must not be called when patch find string is absent")
 	require.Equal(t, "failed", got.Status, "delivery must be marked failed when patch find is missing")
+}
+
+// Notes applied from an agent response are ordinary note changes: they must go
+// through the post-save handler so frontmatter materializes, SSE fires and
+// downstream change webhooks trigger. The synthesized request carries this
+// delivery's identity and depth+1, so the depth guard still applies.
+func TestResolve_AgentChanges_RunPostSaveHandlerWithDeliveryIdentity(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","changes":[{"path":"notes/todo.md","content":"x"}]}`))
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.WebhookByIDFunc = func(_ context.Context, id int64) (db.ChangeWebhook, error) {
+		return db.ChangeWebhook{
+			ID:             id,
+			Url:            srv.URL,
+			TimeoutSeconds: 10,
+			WritePatterns:  `["notes/**"]`,
+			ReadPatterns:   "[]",
+		}, nil
+	}
+	env.InsertNoteFunc = func(_ context.Context, _ model.RawNote) (int64, error) {
+		return 77, nil
+	}
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*model.NoteViews, error) {
+		return model.NewNoteViews(), nil
+	}
+
+	var gotPathIDs []int64
+	var gotReq *appreq.Request
+	env.HandleLatestNotesAfterSaveFunc = func(ctx context.Context, pathIDs []int64) error {
+		gotPathIDs = pathIDs
+		gotReq, _ = appreq.FromCtx(ctx)
+		return nil
+	}
+
+	err := deliverchangewebhook.Resolve(context.Background(), env,
+		handlenotewebhooks.DeliverChangeWebhookParams{WebhookID: 1, DeliveryID: 11, Attempt: 1, Depth: 2})
+	require.NoError(t, err)
+	require.Equal(t, []int64{77}, gotPathIDs)
+	require.NotNil(t, gotReq, "post-save handler must run under a delivery appreq")
+	require.Equal(t, 3, gotReq.WebhookDepth, "writes inherit the delivery depth + 1")
+	require.Equal(t, "change", gotReq.WebhookDeliveryKind)
+	require.EqualValues(t, 11, gotReq.WebhookDeliveryID)
 }

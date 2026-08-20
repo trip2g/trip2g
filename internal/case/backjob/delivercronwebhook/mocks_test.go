@@ -32,6 +32,9 @@ var _ delivercronwebhook.Env = &EnvMock{}
 //			GetSecretValuesFunc: func(ctx context.Context, like string) (map[string]string, error) {
 //				panic("mock out the GetSecretValues method")
 //			},
+//			HandleLatestNotesAfterSaveFunc: func(ctx context.Context, pathIDs []int64) error {
+//				panic("mock out the HandleLatestNotesAfterSave method")
+//			},
 //			InsertNoteFunc: func(ctx context.Context, note model.RawNote) (int64, error) {
 //				panic("mock out the InsertNote method")
 //			},
@@ -46,6 +49,9 @@ var _ delivercronwebhook.Env = &EnvMock{}
 //			},
 //			MarkCronWebhookDeliveryRunningFunc: func(ctx context.Context, id int64) error {
 //				panic("mock out the MarkCronWebhookDeliveryRunning method")
+//			},
+//			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*model.NoteViews, error) {
+//				panic("mock out the PrepareLatestNotes method")
 //			},
 //			ShortAPITokenSecretFunc: func() string {
 //				panic("mock out the ShortAPITokenSecret method")
@@ -72,6 +78,9 @@ type EnvMock struct {
 	// GetSecretValuesFunc mocks the GetSecretValues method.
 	GetSecretValuesFunc func(ctx context.Context, like string) (map[string]string, error)
 
+	// HandleLatestNotesAfterSaveFunc mocks the HandleLatestNotesAfterSave method.
+	HandleLatestNotesAfterSaveFunc func(ctx context.Context, pathIDs []int64) error
+
 	// InsertNoteFunc mocks the InsertNote method.
 	InsertNoteFunc func(ctx context.Context, note model.RawNote) (int64, error)
 
@@ -86,6 +95,9 @@ type EnvMock struct {
 
 	// MarkCronWebhookDeliveryRunningFunc mocks the MarkCronWebhookDeliveryRunning method.
 	MarkCronWebhookDeliveryRunningFunc func(ctx context.Context, id int64) error
+
+	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
+	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*model.NoteViews, error)
 
 	// ShortAPITokenSecretFunc mocks the ShortAPITokenSecret method.
 	ShortAPITokenSecretFunc func() string
@@ -119,6 +131,13 @@ type EnvMock struct {
 			// Like is the like argument value.
 			Like string
 		}
+		// HandleLatestNotesAfterSave holds details about calls to the HandleLatestNotesAfterSave method.
+		HandleLatestNotesAfterSave []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// PathIDs is the pathIDs argument value.
+			PathIDs []int64
+		}
 		// InsertNote holds details about calls to the InsertNote method.
 		InsertNote []struct {
 			// Ctx is the ctx argument value.
@@ -146,6 +165,13 @@ type EnvMock struct {
 			// ID is the id argument value.
 			ID int64
 		}
+		// PrepareLatestNotes holds details about calls to the PrepareLatestNotes method.
+		PrepareLatestNotes []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Partial is the partial argument value.
+			Partial bool
+		}
 		// ShortAPITokenSecret holds details about calls to the ShortAPITokenSecret method.
 		ShortAPITokenSecret []struct {
 		}
@@ -163,11 +189,13 @@ type EnvMock struct {
 	lockCronWebhookByID                 sync.RWMutex
 	lockEnqueueDeliverCronWebhook       sync.RWMutex
 	lockGetSecretValues                 sync.RWMutex
+	lockHandleLatestNotesAfterSave      sync.RWMutex
 	lockInsertNote                      sync.RWMutex
 	lockInsertWebhookDeliveryLog        sync.RWMutex
 	lockLatestNoteViews                 sync.RWMutex
 	lockLogger                          sync.RWMutex
 	lockMarkCronWebhookDeliveryRunning  sync.RWMutex
+	lockPrepareLatestNotes              sync.RWMutex
 	lockShortAPITokenSecret             sync.RWMutex
 	lockUpdateCronWebhookDeliveryResult sync.RWMutex
 	lockWebhookHTTPClient               sync.RWMutex
@@ -278,6 +306,42 @@ func (mock *EnvMock) GetSecretValuesCalls() []struct {
 	mock.lockGetSecretValues.RLock()
 	calls = mock.calls.GetSecretValues
 	mock.lockGetSecretValues.RUnlock()
+	return calls
+}
+
+// HandleLatestNotesAfterSave calls HandleLatestNotesAfterSaveFunc.
+func (mock *EnvMock) HandleLatestNotesAfterSave(ctx context.Context, pathIDs []int64) error {
+	if mock.HandleLatestNotesAfterSaveFunc == nil {
+		panic("EnvMock.HandleLatestNotesAfterSaveFunc: method is nil but Env.HandleLatestNotesAfterSave was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		PathIDs []int64
+	}{
+		Ctx:     ctx,
+		PathIDs: pathIDs,
+	}
+	mock.lockHandleLatestNotesAfterSave.Lock()
+	mock.calls.HandleLatestNotesAfterSave = append(mock.calls.HandleLatestNotesAfterSave, callInfo)
+	mock.lockHandleLatestNotesAfterSave.Unlock()
+	return mock.HandleLatestNotesAfterSaveFunc(ctx, pathIDs)
+}
+
+// HandleLatestNotesAfterSaveCalls gets all the calls that were made to HandleLatestNotesAfterSave.
+// Check the length with:
+//
+//	len(mockedEnv.HandleLatestNotesAfterSaveCalls())
+func (mock *EnvMock) HandleLatestNotesAfterSaveCalls() []struct {
+	Ctx     context.Context
+	PathIDs []int64
+} {
+	var calls []struct {
+		Ctx     context.Context
+		PathIDs []int64
+	}
+	mock.lockHandleLatestNotesAfterSave.RLock()
+	calls = mock.calls.HandleLatestNotesAfterSave
+	mock.lockHandleLatestNotesAfterSave.RUnlock()
 	return calls
 }
 
@@ -440,6 +504,42 @@ func (mock *EnvMock) MarkCronWebhookDeliveryRunningCalls() []struct {
 	mock.lockMarkCronWebhookDeliveryRunning.RLock()
 	calls = mock.calls.MarkCronWebhookDeliveryRunning
 	mock.lockMarkCronWebhookDeliveryRunning.RUnlock()
+	return calls
+}
+
+// PrepareLatestNotes calls PrepareLatestNotesFunc.
+func (mock *EnvMock) PrepareLatestNotes(ctx context.Context, partial bool) (*model.NoteViews, error) {
+	if mock.PrepareLatestNotesFunc == nil {
+		panic("EnvMock.PrepareLatestNotesFunc: method is nil but Env.PrepareLatestNotes was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		Partial bool
+	}{
+		Ctx:     ctx,
+		Partial: partial,
+	}
+	mock.lockPrepareLatestNotes.Lock()
+	mock.calls.PrepareLatestNotes = append(mock.calls.PrepareLatestNotes, callInfo)
+	mock.lockPrepareLatestNotes.Unlock()
+	return mock.PrepareLatestNotesFunc(ctx, partial)
+}
+
+// PrepareLatestNotesCalls gets all the calls that were made to PrepareLatestNotes.
+// Check the length with:
+//
+//	len(mockedEnv.PrepareLatestNotesCalls())
+func (mock *EnvMock) PrepareLatestNotesCalls() []struct {
+	Ctx     context.Context
+	Partial bool
+} {
+	var calls []struct {
+		Ctx     context.Context
+		Partial bool
+	}
+	mock.lockPrepareLatestNotes.RLock()
+	calls = mock.calls.PrepareLatestNotes
+	mock.lockPrepareLatestNotes.RUnlock()
 	return calls
 }
 

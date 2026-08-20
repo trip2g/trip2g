@@ -278,6 +278,24 @@ func (c *Request) resolvePersonalToken(plaintext string) (*usertoken.Data, error
 	return c.PersonalTokenResolver.Resolve(c.Req, plaintext)
 }
 
+// NewDeliveryRequest returns a Request for a webhook delivery job that applies
+// an agent's note changes itself (the "changes in the response body" path). The
+// job worker has no fasthttp request, so the appreq is synthesized to carry what
+// the scoped api_token would have carried had the agent written back through the
+// API: the delivery identity (so note versions are attributed to this delivery)
+// and depth (so the change webhooks those writes trigger stay under the depth
+// guard instead of restarting the counter at zero). The token is anonymous and
+// pre-extracted, so nothing reads headers off the absent fasthttp context.
+func NewDeliveryRequest(kind string, deliveryID int64, depth int) *Request {
+	req := &Request{
+		WebhookDepth:        depth,
+		WebhookDeliveryKind: kind,
+		WebhookDeliveryID:   deliveryID,
+	}
+	req.SetUserToken(nil)
+	return req
+}
+
 // NewContext returns a copy of parent with req stored as the appreq value.
 // Use this to pass an appreq through a standard context.Context when the
 // original fasthttp.RequestCtx is no longer available (e.g. SSE streams).

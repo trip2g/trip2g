@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/jsonneteval"
 	"trip2g/internal/logger"
@@ -45,6 +46,8 @@ type Env interface {
 	UpdateCronWebhookDeliveryResult(ctx context.Context, arg db.UpdateCronWebhookDeliveryResultParams) error
 	InsertWebhookDeliveryLog(ctx context.Context, arg db.InsertWebhookDeliveryLogParams) error
 	InsertNote(ctx context.Context, note model.RawNote) (int64, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*model.NoteViews, error)
+	HandleLatestNotesAfterSave(ctx context.Context, pathIDs []int64) error
 	LatestNoteViews() *model.NoteViews
 	EnqueueDeliverCronWebhook(ctx context.Context, params DeliverCronParams) error
 	ShortAPITokenSecret() string
@@ -139,10 +142,10 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 		ttl := time.Duration(wh.TimeoutSeconds)*time.Second + tokenTTLMargin
 
 		token, signErr := shortapitoken.Sign(shortapitoken.Data{
-			Depth:         1, // Cron webhooks always start at depth 1.
+			Depth:         cronStartDepth,
 			ReadPatterns:  readPatterns,
 			WritePatterns: writePatterns,
-			DeliveryKind:  "cron",
+			DeliveryKind:  deliveryKindCron,
 			DeliveryID:    params.DeliveryID,
 		}, env.ShortAPITokenSecret(), ttl)
 		if signErr != nil {
@@ -235,7 +238,11 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	// Parse agent response for changes.
 	var applyErr error
 	if result.StatusCode >= 200 && result.StatusCode < 300 && result.StatusCode != http.StatusAccepted {
-		applyErr = applyCronAgentChanges(ctx, env, result, writePatterns)
+		// Apply under a synthesized delivery appreq: the notes are attributed to
+		// this delivery and the webhooks they trigger inherit depth+1, exactly as
+		// if the agent had written them back through the scoped api_token.
+		applyCtx := appreq.NewContext(ctx, appreq.NewDeliveryRequest(deliveryKindCron, params.DeliveryID, cronStartDepth))
+		applyErr = applyCronAgentChanges(applyCtx, env, result, writePatterns)
 	}
 
 	// Handle agent response errors with retry.
@@ -369,6 +376,15 @@ func transformExtVars(payloadBytes []byte) map[string]string {
 	return ev
 }
 
+// cronStartDepth is the depth a cron delivery's writes carry: a cron run is
+// itself the root, so what it writes sits one level down. Both the scoped
+// api_token and the apply path's synthesized appreq use it.
+const cronStartDepth = 1
+
+// deliveryKindCron is this lane's delivery kind, carried by the scoped
+// api_token and by the appreq the apply path synthesizes.
+const deliveryKindCron = "cron"
+
 // applyCronAgentChanges parses, validates, and applies agent response changes.
 // The whole batch is validated (write patterns, expected_hash CAS, patch
 // resolution) before any item is written, so an invalid item rejects the
@@ -387,10 +403,28 @@ func applyCronAgentChanges(ctx context.Context, env Env, result webhookutil.Deli
 		return resolveErr
 	}
 
+	pathIDs := make([]int64, 0, len(notes))
 	for _, note := range notes {
-		if _, insertErr := env.InsertNote(ctx, note); insertErr != nil {
+		pathID, insertErr := env.InsertNote(ctx, note)
+		if insertErr != nil {
 			return fmt.Errorf("failed to apply change for %s: %w", note.Path, insertErr)
 		}
+		pathIDs = append(pathIDs, pathID)
+	}
+
+	// Refresh LatestNoteViews so the applied notes are visible to the change
+	// webhooks they trigger (matchChange resolves each path through the view).
+	_, prepareErr := env.PrepareLatestNotes(ctx, false)
+	if prepareErr != nil {
+		return fmt.Errorf("failed to refresh note views: %w", prepareErr)
+	}
+
+	// Notes applied here are ordinary note changes: they must materialize their
+	// frontmatter, reach SSE subscribers and trigger change webhooks like any
+	// other write. A failure here does not undo the writes and must not re-run
+	// the agent, so it is logged rather than returned.
+	if handleErr := env.HandleLatestNotesAfterSave(ctx, pathIDs); handleErr != nil {
+		env.Logger().Error("failed to handle notes applied from agent response", "error", handleErr)
 	}
 
 	return nil
