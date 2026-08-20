@@ -297,6 +297,15 @@ setup() {
     cp -r "$PROJECT_ROOT/docs/demo" "$VAULT0"
     rm -f "$VAULT0/$STATE_FILE"
 
+    # Drop gitignored local artifacts from the copy: the krisp demo stand writes
+    # agent output back into docs/demo/krisp/* on every run. Those paths never
+    # reach the server, so vault1 cannot pull them and the vault comparison fails
+    # on a machine that has run the stand. The test vault must match a fresh checkout.
+    (cd "$PROJECT_ROOT/docs/demo" && git ls-files --others --ignored --exclude-standard --directory) \
+        | while IFS= read -r ignored; do
+            [ -n "$ignored" ] && rm -rf "${VAULT0:?}/$ignored"
+        done
+
     # Create empty testvault1
     log_info "Creating empty tmp/testvault1"
     mkdir -p "$VAULT1"
