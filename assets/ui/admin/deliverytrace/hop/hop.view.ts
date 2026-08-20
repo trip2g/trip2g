@@ -5,7 +5,12 @@ namespace $.$$ {
 		// what it asks the server for stay in one place.
 		@$mol_mem
 		data() {
-			return $trip2g_admin_deliverytrace_hop_hop_unmask( this.hop() )
+			// The prop is nullable (a page can be constructed before its row exists),
+			// so unmask hands back a nullable fragment; every field access below would
+			// otherwise have to re-check it.
+			const hop = $trip2g_admin_deliverytrace_hop_hop_unmask( this.hop() )
+			if( !hop ) throw new Error( 'Step has no delivery data' )
+			return hop
 		}
 
 		override hop_title(): string {
