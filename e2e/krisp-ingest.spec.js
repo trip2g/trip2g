@@ -136,7 +136,7 @@ test.describe.serial('Krisp cron ingest (dockerized)', () => {
             query { admin { allCronWebhooks { nodes { description } } } }
           `);
           return d.admin.allCronWebhooks.nodes.some(n =>
-            n.description.startsWith('fleetcron:e2ec:' + ROLE_PATH + '#'),
+            n.description.startsWith('fleetcron:codellm:' + ROLE_PATH + '#'),
           );
         },
         { timeout: 30000, intervals: [1000] },
@@ -150,7 +150,7 @@ test.describe.serial('Krisp cron ingest (dockerized)', () => {
       query { admin { allCronWebhooks { nodes { id description } } } }
     `);
     const cronWebhook = wh.admin.allCronWebhooks.nodes.find(n =>
-      n.description.startsWith('fleetcron:e2ec:' + ROLE_PATH + '#'),
+      n.description.startsWith('fleetcron:codellm:' + ROLE_PATH + '#'),
     );
     expect(cronWebhook, 'fleet cron webhook must be registered').toBeTruthy();
 
