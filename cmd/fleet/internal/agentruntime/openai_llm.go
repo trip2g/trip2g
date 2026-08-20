@@ -20,6 +20,24 @@ const (
 	llmRetryBaseGap = 500 * time.Millisecond
 )
 
+// LLMMetrics is the optional provider-call sink. Declared here, minimally, so
+// agentruntime never imports the fleet's metrics package. Implementations must
+// be nil-safe.
+type LLMMetrics interface {
+	RecordLLMRequest(lane, model, status string, seconds float64)
+	RecordLLMRetry(lane, reason string)
+}
+
+// Retry/failure reasons reported to LLMMetrics.
+const (
+	reasonRateLimited = "429"
+	reasonServer      = "5xx"
+	reasonClient      = "4xx"
+	reasonCanceled    = "canceled"
+	reasonNetwork     = "network"
+	statusOK          = "ok"
+)
+
 // OpenAILLM is the production LLM backed by any OpenAI-compatible chat
 // completions endpoint. BaseURL is the configurable knob: leave empty for the
 // default OpenAI endpoint, or point it at a local/vendor model
@@ -28,7 +46,18 @@ const (
 // Transient failures (HTTP 429/5xx, network errors) are retried with
 // exponential backoff, bounded by llmMaxAttempts and the caller's context.
 type OpenAILLM struct {
-	client *goopenai.Client
+	client  *goopenai.Client
+	metrics LLMMetrics
+	lane    string
+}
+
+// SetMetrics attaches the metrics sink and names the lane this client serves
+// (fleetmetrics.LaneLLM for the role's model, LaneExec for codellm). Kept a
+// setter so the constructor signature — and every existing call site — stays
+// as it was.
+func (l *OpenAILLM) SetMetrics(m LLMMetrics, lane string) {
+	l.metrics = m
+	l.lane = lane
 }
 
 // NewOpenAILLM builds an OpenAILLM. apiKey is the bearer credential; baseURL,
@@ -62,7 +91,9 @@ func (l *OpenAILLM) chat(ctx context.Context, model string, messages []Message, 
 		req.MaxCompletionTokens = maxCompletionTokens
 	}
 
+	started := time.Now()
 	resp, err := l.createWithRetry(ctx, req)
+	l.recordRequest(model, err, time.Since(started))
 	if err != nil {
 		return ChatResult{}, err
 	}
@@ -107,9 +138,55 @@ func (l *OpenAILLM) createWithRetry(ctx context.Context, req goopenai.ChatComple
 		if !isRetryableLLMError(ctx, err) {
 			return goopenai.ChatCompletionResponse{}, err
 		}
+		if l.metrics != nil {
+			l.metrics.RecordLLMRetry(l.lane, llmErrorReason(err))
+		}
 		lastErr = err
 	}
 	return goopenai.ChatCompletionResponse{}, fmt.Errorf("llm: giving up after %d attempts: %w", llmMaxAttempts, lastErr)
+}
+
+// recordRequest reports one completed chat call (all its attempts included).
+func (l *OpenAILLM) recordRequest(model string, err error, elapsed time.Duration) {
+	if l.metrics == nil {
+		return
+	}
+	status := statusOK
+	if err != nil {
+		status = llmErrorReason(err)
+	}
+	l.metrics.RecordLLMRequest(l.lane, model, status, elapsed.Seconds())
+}
+
+// llmErrorReason maps a provider error onto a bounded label: the HTTP class it
+// came back as, a cancellation, or a transport failure.
+func llmErrorReason(err error) string {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return reasonCanceled
+	}
+	var apiErr *goopenai.APIError
+	if errors.As(err, &apiErr) {
+		return httpStatusReason(apiErr.HTTPStatusCode)
+	}
+	var reqErr *goopenai.RequestError
+	if errors.As(err, &reqErr) {
+		return httpStatusReason(reqErr.HTTPStatusCode)
+	}
+	return reasonNetwork
+}
+
+// httpStatusReason buckets an HTTP status into the reason labels.
+func httpStatusReason(code int) string {
+	switch {
+	case code == http.StatusTooManyRequests:
+		return reasonRateLimited
+	case code >= http.StatusInternalServerError:
+		return reasonServer
+	case code >= http.StatusBadRequest:
+		return reasonClient
+	default:
+		return reasonNetwork
+	}
 }
 
 // isRetryableLLMError reports whether err is worth another attempt: rate

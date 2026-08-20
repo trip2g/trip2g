@@ -13,13 +13,32 @@ import (
 	"github.com/Khan/genqlient/graphql"
 
 	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
+	"trip2g/cmd/fleet/internal/fleetmetrics"
 )
 
 // Reconciler drives the desired-vs-actual webhook diff over the genqlient admin
 // lane.
 type Reconciler struct {
-	gql graphql.Client
-	cfg Config
+	gql     graphql.Client
+	cfg     Config
+	metrics *fleetmetrics.Metrics
+}
+
+// SetMetrics attaches the metrics sink; nil records nothing.
+func (r *Reconciler) SetMetrics(m *fleetmetrics.Metrics) {
+	r.metrics = m
+}
+
+// recorded counts one reconcile action and passes its error through, so a call
+// site stays a single line. Webhook churn (repeated creates/updates in a steady
+// state) is how two fleets sharing a fleet_id announce themselves.
+func (r *Reconciler) recorded(action string, err error) error {
+	status := fleetmetrics.StatusOK
+	if err != nil {
+		status = fleetmetrics.StatusError
+	}
+	r.metrics.RecordWebhookAction(action, status)
+	return err
 }
 
 // NewReconciler builds a Reconciler over the genqlient admin lane.
@@ -55,9 +74,10 @@ func (r *Reconciler) reconcileChange(ctx context.Context, roles []Role) error {
 	// extras from a superseded spec version: they share this fleet's
 	// "fleet:<FleetID>:" description-marker prefix — listOwned already filtered
 	// to it — but their old marker/spec-hash suffix no longer matches desired).
+	r.metrics.SetWebhooksOwned(fleetmetrics.KindChange, len(existing))
 	for marker, have := range existing {
 		if _, keep := desired[marker]; !keep {
-			if derr := r.delete(ctx, have.id); derr != nil {
+			if derr := r.recorded("delete", r.delete(ctx, have.id)); derr != nil {
 				return derr
 			}
 		}
@@ -66,7 +86,7 @@ func (r *Reconciler) reconcileChange(ctx context.Context, roles []Role) error {
 	for marker, role := range desired {
 		have, present := existing[marker]
 		if !present {
-			if cerr := r.create(ctx, role); cerr != nil {
+			if cerr := r.recorded("create", r.create(ctx, role)); cerr != nil {
 				return cerr
 			}
 			continue
@@ -79,7 +99,7 @@ func (r *Reconciler) reconcileChange(ctx context.Context, roles []Role) error {
 		// carries no url to compare (test fakes), so leave it alone.
 		want := changeDeliveryURL(r.cfg.CallbackURL, r.cfg.FleetID, role.NotePath)
 		if have.url != "" && have.url != want {
-			if uerr := r.update(ctx, have.id, want); uerr != nil {
+			if uerr := r.recorded("update", r.update(ctx, have.id, want)); uerr != nil {
 				return uerr
 			}
 		}
@@ -102,9 +122,10 @@ func (r *Reconciler) reconcileCron(ctx context.Context, roles []Role) error {
 	}
 
 	// Delete owned cron-webhooks whose marker is no longer desired.
+	r.metrics.SetWebhooksOwned(fleetmetrics.KindCron, len(existing))
 	for marker, id := range existing {
 		if _, keep := desired[marker]; !keep {
-			if derr := r.deleteCron(ctx, id); derr != nil {
+			if derr := r.recorded("delete", r.deleteCron(ctx, id)); derr != nil {
 				return derr
 			}
 		}
@@ -114,7 +135,7 @@ func (r *Reconciler) reconcileCron(ctx context.Context, roles []Role) error {
 		if _, present := existing[marker]; present {
 			continue // marker already matches => spec unchanged
 		}
-		if cerr := r.createCron(ctx, role); cerr != nil {
+		if cerr := r.recorded("create", r.createCron(ctx, role)); cerr != nil {
 			return cerr
 		}
 	}
@@ -128,7 +149,7 @@ func (r *Reconciler) Deregister(ctx context.Context) error {
 		return err
 	}
 	for _, have := range existing {
-		if derr := r.delete(ctx, have.id); derr != nil {
+		if derr := r.recorded("delete", r.delete(ctx, have.id)); derr != nil {
 			return derr
 		}
 	}
@@ -137,7 +158,7 @@ func (r *Reconciler) Deregister(ctx context.Context) error {
 		return err
 	}
 	for _, id := range existingCron {
-		if derr := r.deleteCron(ctx, id); derr != nil {
+		if derr := r.recorded("delete", r.deleteCron(ctx, id)); derr != nil {
 			return derr
 		}
 	}

@@ -29,6 +29,11 @@ type Config struct {
 	// must be an explicit operator opt-in, not the default.
 	Addr string
 
+	// MetricsAddr is the internal listener: Prometheus /metrics, pprof, and the
+	// liveness/readiness probes. Loopback by default and unauthenticated, exactly
+	// like the monolith's internal listener — never expose it. Empty disables it.
+	MetricsAddr string
+
 	// AllowedPrograms is the interpreter allowlist (python, bash, node, ...).
 	// Empty disables code execution (every request then fails 422).
 	AllowedPrograms []string
@@ -75,7 +80,11 @@ type Config struct {
 
 // Defaults.
 const (
-	DefaultAddr            = "127.0.0.1:8087"
+	DefaultAddr = "127.0.0.1:8087"
+	// DefaultMetricsAddr follows the deployment convention of a "1"-prefixed
+	// twin of the service port for the internal listener (see infra/site.yml:
+	// 8087 -> 19087), so codellm's 8087 pairs with 18087.
+	DefaultMetricsAddr     = "127.0.0.1:18087"
 	DefaultAllowedPrograms = "python,bash,node"
 	DefaultTimeout         = 300 * time.Second
 	DefaultTrip2gBaseURL   = "http://127.0.0.1:8081"
@@ -90,6 +99,7 @@ const minAPIKeyLength = 32
 func DefaultConfig() Config {
 	return Config{
 		Addr:            DefaultAddr,
+		MetricsAddr:     DefaultMetricsAddr,
 		AllowedPrograms: splitCSV(DefaultAllowedPrograms),
 		Sandbox:         coderun.SandboxNative,
 		Timeout:         DefaultTimeout,
@@ -127,6 +137,9 @@ func GetArgs(args []string) (*Config, error) {
 func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_ADDR"); v != "" {
 		c.Addr = v
+	}
+	if v := os.Getenv("CODELLM_METRICS_ADDR"); v != "" {
+		c.MetricsAddr = v
 	}
 	if v := os.Getenv("CODELLM_ALLOWED_PROGRAMS"); v != "" {
 		c.AllowedPrograms = splitCSV(v)
@@ -176,6 +189,8 @@ func (c *Config) defineAndParseFlags(args []string) error {
 	exposeEnvPrefix := strings.Join(c.ExposeEnvPrefix, ",")
 
 	fs.StringVar(&c.Addr, "addr", c.Addr, "listen address for the OpenAI-compatible API; defaults to loopback since auth is a no-op seam")
+	fs.StringVar(&c.MetricsAddr, "metrics-addr", c.MetricsAddr,
+		"loopback listen address for /metrics, pprof and the liveness/readiness probes; empty = disabled")
 	fs.StringVar(&allowedPrograms, "allowed-programs", allowedPrograms, "comma-separated interpreter allowlist; empty disables code execution")
 	fs.StringVar(&sandbox, "sandbox", sandbox, "sandbox mode: native | besteffort | off")
 	fs.BoolVar(&sandboxNetwork, "sandbox-network", sandboxNetwork, "allow network access from sandboxed blocks")

@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"trip2g/cmd/fleet/internal/agentruntime"
+	"trip2g/cmd/fleet/internal/fleetmetrics"
 )
 
 // Fleet ties config, the trip2g HTTP client, the LLM, and the live role
@@ -15,6 +16,7 @@ type Fleet struct {
 	hc      *http.Client
 	llm     agentruntime.LLM
 	execLLM agentruntime.LLM // exec-tool endpoint (codellm); nil = exec disabled
+	metrics *fleetmetrics.Metrics
 
 	mu       sync.RWMutex
 	registry map[string]Role // urlKey(notePath) -> Role
@@ -37,6 +39,12 @@ func NewFleet(cfg Config, hc *http.Client, llm, execLLM agentruntime.LLM) *Fleet
 	}
 }
 
+// SetMetrics attaches the metrics sink. Kept a setter so NewFleet's signature —
+// and every existing call site — stays as it was; nil records nothing.
+func (f *Fleet) SetMetrics(m *fleetmetrics.Metrics) {
+	f.metrics = m
+}
+
 // SetRoles atomically swaps the live role registry (called after each poll).
 func (f *Fleet) SetRoles(roles []Role) {
 	reg := make(map[string]Role, len(roles))
@@ -46,6 +54,14 @@ func (f *Fleet) SetRoles(roles []Role) {
 	f.mu.Lock()
 	f.registry = reg
 	f.mu.Unlock()
+
+	misconfigured := 0
+	for _, r := range roles {
+		if r.DeclaresWriteToolsButNoWritePatterns() {
+			misconfigured++
+		}
+	}
+	f.metrics.SetRoles(len(reg), misconfigured)
 }
 
 // WebhookPath is this fleet's delivery path prefix ("/_fleet/<h>/webhook/"),

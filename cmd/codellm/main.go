@@ -12,9 +12,12 @@ package main
 import (
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"trip2g/cmd/codellm/internal/codellm"
+	"trip2g/cmd/codellm/internal/codellmmetrics"
 	"trip2g/cmd/codellm/internal/coderun"
 	"trip2g/internal/delegatedadmin"
 
@@ -62,8 +65,14 @@ func main() {
 	// 	}
 	// }
 
+	// Metrics live on their own loopback listener (mirrors the monolith's
+	// internal listener): /metrics, pprof and the probes are unauthenticated, so
+	// the port must never leave the box.
+	metrics := startMetricsServer(cfg)
+
 	srvCfg := codellm.Config{
 		AllowedPrograms: cfg.AllowedPrograms,
+		Metrics:         metrics,
 		Sandbox: coderun.SandboxPolicy{
 			Mode:    cfg.Sandbox,
 			Network: cfg.SandboxNetwork,
@@ -79,7 +88,7 @@ func main() {
 		// (fail-safe), leaving the browser delegated-admin gate as the only way in.
 		TokenCheck: codellm.APIKeyCheck(cfg.APIKey),
 	}
-	srvCfg.Auth = codellm.BrowserAuth(admin.Wrap, srvCfg.TokenCheck)
+	srvCfg.Auth = codellm.BrowserAuthWithMetrics(admin.Wrap, srvCfg.TokenCheck, metrics)
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,
@@ -90,4 +99,30 @@ func main() {
 	if err = srv.ListenAndServe(); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
+}
+
+// startMetricsServer brings up the internal listener when --metrics-addr is
+// set and returns the sink the service records into (nil when disabled, which
+// every record call site tolerates). A failure to bind it is logged, not fatal:
+// losing observability must not take the service down.
+func startMetricsServer(cfg *appconfig.Config) *codellmmetrics.Metrics {
+	if cfg.MetricsAddr == "" {
+		return nil
+	}
+	m := codellmmetrics.New()
+	m.SetConfigInfo(string(cfg.Sandbox), strconv.FormatBool(cfg.SandboxNetwork), strings.Join(cfg.AllowedPrograms, ","))
+
+	srv := &http.Server{
+		Addr: cfg.MetricsAddr,
+		// codellm is ready as soon as it listens: it holds no warm-up state.
+		Handler:           m.Handler(nil),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	go func() {
+		log.Printf("codellm metrics listening on %s", cfg.MetricsAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("codellm metrics server error: %v", err)
+		}
+	}()
+	return m
 }

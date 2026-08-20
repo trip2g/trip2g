@@ -19,7 +19,9 @@ import (
 	"os"
 	"os/signal"
 	"slices"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -28,6 +30,7 @@ import (
 	"trip2g/cmd/fleet/internal/fleet"
 	"trip2g/cmd/fleet/internal/fleet/fleetgql"
 	"trip2g/cmd/fleet/internal/fleet/graph"
+	"trip2g/cmd/fleet/internal/fleetmetrics"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/delegatedadmin"
 	"trip2g/internal/logger"
@@ -82,11 +85,24 @@ func run() error {
 
 	lg := zerologger.New(cli.cfg.LogLevel, false)
 
+	// Metrics live on their own loopback listener (mirrors the monolith's
+	// internal listener). It starts before the first sync so a scrape can see the
+	// fleet warming up.
+	var firstSyncDone atomic.Bool
+	metrics := startMetricsServer(lg, cli, firstSyncDone.Load)
+
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	adminGQL := fleet.NewAdminGraphQLClient(cli.cfg.Trip2gBaseURL, cli.cfg.Trip2gAdminPersonalToken, httpClient)
 	llm := agentruntime.NewOpenAILLM(cli.cfg.LLMAPIKey, cli.cfg.LLMBaseURL)
+	llm.SetMetrics(metrics, fleetmetrics.LaneLLM)
 
-	f := fleet.NewFleet(cli.cfg, httpClient, llm, execLLM(cli.cfg))
+	exec := execLLM(cli.cfg)
+	if exec != nil {
+		exec.SetMetrics(metrics, fleetmetrics.LaneExec)
+	}
+
+	f := fleet.NewFleet(cli.cfg, httpClient, llm, execAsLLM(exec))
+	f.SetMetrics(metrics)
 	discovery := fleet.NewDiscovery(adminGQL, cli.cfg.FleetID, cli.cfg.AgentsFolder, cli.cfg.OfferedTools)
 
 	// --dry-run: connect, print + flag each role's resolved config, then exit
@@ -97,6 +113,7 @@ func run() error {
 	}
 
 	reconciler := fleet.NewReconciler(adminGQL, cli.cfg)
+	reconciler.SetMetrics(metrics)
 
 	// --graph-addr: localhost-only debug surface serving the dependency graph.
 	graphSrv, err := startGraphDebugServer(lg, discovery, adminGQL, cli)
@@ -123,7 +140,8 @@ func run() error {
 	}
 
 	// First sync before serving so the registry is populated.
-	syncOnce(ctx, lg, f, discovery, reconciler)
+	syncOnce(ctx, lg, f, discovery, reconciler, metrics)
+	firstSyncDone.Store(true)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(f.WebhookPath(), f.ServeDelivery)
@@ -161,7 +179,7 @@ func run() error {
 				return nil
 			}
 		case <-ticker.C:
-			syncOnce(ctx, lg, f, discovery, reconciler)
+			syncOnce(ctx, lg, f, discovery, reconciler, metrics)
 		}
 	}
 }
@@ -222,11 +240,21 @@ func startFleetGraphQLServer(
 // execLLM builds the exec-tool client (codellm) when --exec-base-url is set.
 // nil disables the exec tool; program allowlisting and sandboxing are the
 // codellm operator's concern — fleet executes no code in-process.
-func execLLM(cfg fleet.Config) agentruntime.LLM {
+func execLLM(cfg fleet.Config) *agentruntime.OpenAILLM {
 	if cfg.ExecBaseURL == "" {
 		return nil
 	}
 	return agentruntime.NewOpenAILLM(cfg.ExecAPIKey, cfg.ExecBaseURL)
+}
+
+// execAsLLM converts the (possibly nil) exec client to the LLM interface. A
+// typed nil in an interface is NOT nil, and the exec tool is enabled by a
+// non-nil LLM, so the conversion has to be explicit.
+func execAsLLM(exec *agentruntime.OpenAILLM) agentruntime.LLM {
+	if exec == nil {
+		return nil
+	}
+	return exec
 }
 
 // newFleetGraphQLHandler builds the fleet GraphQL server's HTTP handler: a mux
@@ -453,18 +481,29 @@ func validateConfig(cfg fleet.Config) error {
 	return nil
 }
 
-func syncOnce(ctx context.Context, lg logger.Logger, f *fleet.Fleet, d *fleet.Discovery, r *fleet.Reconciler) {
+func syncOnce(ctx context.Context, lg logger.Logger, f *fleet.Fleet, d *fleet.Discovery, r *fleet.Reconciler, m *fleetmetrics.Metrics) {
+	started := time.Now()
 	roles, errs := d.DiscoverRoles(ctx)
 	for _, e := range errs {
 		lg.Warn("discover: skipped role", "err", e)
 	}
+	m.AddRolesSkipped(len(errs))
 	for _, role := range roles {
 		role.WarnIfWriteScopeMisconfigured(lg)
 	}
 	f.SetRoles(roles)
+
+	status := fleetmetrics.StatusOK
 	if err := r.Reconcile(ctx, roles); err != nil {
 		lg.Error("reconcile failed", "err", err)
+		status = fleetmetrics.StatusError
 	}
+	if len(errs) > 0 && status == fleetmetrics.StatusOK {
+		// Discovery dropped role notes: the registry is live but incomplete, so
+		// the freshness gauge must not advance as if everything synced.
+		status = "partial"
+	}
+	m.RecordSync(status, time.Since(started).Seconds())
 }
 
 // gracefulShutdown drains in-flight deliveries (srv.Shutdown waits for active
@@ -656,4 +695,28 @@ func reportRoles(roles []fleet.Role, offered []string, defaultModel string) stri
 		b.WriteByte('\n')
 	}
 	return b.String()
+}
+
+// startMetricsServer brings up the internal listener when --metrics-addr is set
+// and returns the sink every component records into (nil when disabled, which
+// all the call sites tolerate). A bind failure is logged, not fatal: losing
+// observability must not take the fleet down. ready reports whether the first
+// discovery sync has been ATTEMPTED, not whether it succeeded: gating readiness
+// on success would cascade a trip2g outage into restart loops here. Staleness
+// is reported by fleet_last_successful_sync_timestamp_seconds instead.
+func startMetricsServer(lg logger.Logger, cli cliFlags, ready func() bool) *fleetmetrics.Metrics {
+	if cli.appCfg.MetricsAddr == "" {
+		return nil
+	}
+	m := fleetmetrics.New()
+	m.SetConfigInfo(cli.cfg.FleetID, cli.cfg.DefaultModel, strconv.FormatBool(cli.cfg.ExecBaseURL != ""))
+
+	srv := &http.Server{Addr: cli.appCfg.MetricsAddr, Handler: m.Handler(ready), ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		lg.Info("fleet metrics listening", "addr", cli.appCfg.MetricsAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			lg.Error("metrics server failed", "err", err)
+		}
+	}()
+	return m
 }

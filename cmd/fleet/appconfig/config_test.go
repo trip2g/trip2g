@@ -103,3 +103,20 @@ func TestSplitCSV(t *testing.T) {
 		})
 	}
 }
+
+// TestMetricsAddr covers the internal listener's config lane: a loopback
+// default, the TRIP2G_FLEET_ env fallback, and empty = disabled.
+func TestMetricsAddr(t *testing.T) {
+	cfg, err := Get(context.Background(), nil)
+	require.NoError(t, err)
+	require.Equal(t, DefaultMetricsAddr, cfg.MetricsAddr, "the internal listener must default to loopback")
+
+	t.Setenv("TRIP2G_FLEET_METRICS_ADDR", "127.0.0.1:19500")
+	cfg, err = Get(context.Background(), nil)
+	require.NoError(t, err)
+	require.Equal(t, "127.0.0.1:19500", cfg.MetricsAddr)
+
+	cfg, err = Get(context.Background(), []string{"--metrics-addr", ""})
+	require.NoError(t, err)
+	require.Empty(t, cfg.MetricsAddr, "an empty address must disable the listener, not fail validation")
+}

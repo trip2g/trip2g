@@ -176,6 +176,7 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `config_refactoring.md` | Config refactoring plan |
 | `multidomain.md` | Multi-domain routing |
 | `simplebackup.md` | Simple backup system |
+| `fleet_codellm_metrics.md` | fleet/codellm Prometheus metrics: second listener, metric catalog, what to alert on |
 | `sitemap.md` | Sitemap.xml generation |
 | `rss.md` | RSS feed |
 | `vector_search.md` | Vector search (OpenAI embeddings) |
