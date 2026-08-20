@@ -32,8 +32,8 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		refreshtelegramchatusernames.New(app),
 		regeneratenoteembeddings.New(app),
 		executecronwebhooks.New(app, app.config.CronExecuteWebhooksSchedule),
-		cleanupwebhookdeliverylogs.New(app),
-		cleanupwebhookdeliveries.New(app),
+		cleanupwebhookdeliverylogs.New(app, app.config.WebhookDeliveryLogs),
+		cleanupwebhookdeliveries.New(app, app.config.WebhookDeliveries),
 		cleanupapikeylogs.New(app, app.config.APIKeyLogs),
 		expirestalewebhookdeliveries.New(app),
 	}
