@@ -109,33 +109,33 @@ func (q *WriteQueries) CleanupOldAPIKeyLogs(ctx context.Context, cutoffTime time
 
 const cleanupOldChangeWebhookDeliveries = `-- name: CleanupOldChangeWebhookDeliveries :exec
 delete from change_webhook_deliveries
-where created_at < datetime('now', '-30 days')
+where created_at < ?1
 `
 
-func (q *WriteQueries) CleanupOldChangeWebhookDeliveries(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, cleanupOldChangeWebhookDeliveries)
+func (q *WriteQueries) CleanupOldChangeWebhookDeliveries(ctx context.Context, cutoffTime time.Time) error {
+	_, err := q.db.ExecContext(ctx, cleanupOldChangeWebhookDeliveries, cutoffTime)
 	return err
 }
 
 const cleanupOldCronWebhookDeliveries = `-- name: CleanupOldCronWebhookDeliveries :exec
 delete from cron_webhook_deliveries
-where created_at < datetime('now', '-30 days')
+where created_at < ?1
 `
 
-func (q *WriteQueries) CleanupOldCronWebhookDeliveries(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, cleanupOldCronWebhookDeliveries)
+func (q *WriteQueries) CleanupOldCronWebhookDeliveries(ctx context.Context, cutoffTime time.Time) error {
+	_, err := q.db.ExecContext(ctx, cleanupOldCronWebhookDeliveries, cutoffTime)
 	return err
 }
 
 const cleanupOldDeliveryLogs = `-- name: CleanupOldDeliveryLogs :exec
 delete from webhook_delivery_logs
-where created_at < datetime('now', '-1 days')
+where created_at < ?1
 `
 
 // Cron webhook response bodies can be hundreds of KB (full note content from agents),
-// so logs accumulate fast. Keep only the last day.
-func (q *WriteQueries) CleanupOldDeliveryLogs(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, cleanupOldDeliveryLogs)
+// so logs accumulate fast. The retention window is configurable.
+func (q *WriteQueries) CleanupOldDeliveryLogs(ctx context.Context, cutoffTime time.Time) error {
+	_, err := q.db.ExecContext(ctx, cleanupOldDeliveryLogs, cutoffTime)
 	return err
 }
 

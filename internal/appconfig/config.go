@@ -14,6 +14,8 @@ import (
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/case/admin/renderpreview"
 	cleanupapikeylogs "trip2g/internal/case/cronjob/cleanupapikeylogs"
+	"trip2g/internal/case/cronjob/cleanupwebhookdeliveries"
+	"trip2g/internal/case/cronjob/cleanupwebhookdeliverylogs"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/datasize"
 	"trip2g/internal/features"
@@ -147,6 +149,9 @@ type Config struct {
 
 	APIKeyLogs cleanupapikeylogs.Config
 
+	WebhookDeliveries   cleanupwebhookdeliveries.Config
+	WebhookDeliveryLogs cleanupwebhookdeliverylogs.Config
+
 	DataEncryption dataencryption.Config
 
 	SimpleBackup SimpleBackupConfig
@@ -268,6 +273,8 @@ func DefaultConfig() *Config {
 		Metrics:              DefaultMetricsConfig(),
 		RenderPreview:        renderpreview.DefaultConfig(),
 		APIKeyLogs:           cleanupapikeylogs.DefaultConfig(),
+		WebhookDeliveries:    cleanupwebhookdeliveries.DefaultConfig(),
+		WebhookDeliveryLogs:  cleanupwebhookdeliverylogs.DefaultConfig(),
 	}
 }
 
@@ -628,6 +635,18 @@ func (c *Config) defineMinioFlags() {
 		"api-key-logs-retention",
 		c.APIKeyLogs.Retention,
 		"How long to keep API key access logs (default 90d)",
+	)
+	flag.DurationVar(
+		&c.WebhookDeliveries.Retention,
+		"webhook-deliveries-retention",
+		c.WebhookDeliveries.Retention,
+		"How long to keep webhook delivery rows (default 90d)",
+	)
+	flag.DurationVar(
+		&c.WebhookDeliveryLogs.Retention,
+		"webhook-delivery-logs-retention",
+		c.WebhookDeliveryLogs.Retention,
+		"How long to keep webhook delivery request/response bodies (default 90d)",
 	)
 }
 

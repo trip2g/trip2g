@@ -3,11 +3,13 @@ package cleanupwebhookdeliverylogs
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"trip2g/internal/logger"
 )
 
 type Env interface {
-	CleanupOldDeliveryLogs(ctx context.Context) error
+	CleanupOldDeliveryLogs(ctx context.Context, cutoffTime time.Time) error
 	Logger() logger.Logger
 }
 
@@ -16,9 +18,11 @@ type Result struct {
 	Cleaned bool
 }
 
-// Resolve deletes webhook delivery logs older than 1 day.
-func Resolve(ctx context.Context, env Env) (*Result, error) {
-	err := env.CleanupOldDeliveryLogs(ctx)
+// Resolve deletes webhook delivery logs older than the configured retention period.
+func Resolve(ctx context.Context, env Env, cfg Config) (*Result, error) {
+	cutoff := time.Now().Add(-cfg.Retention)
+
+	err := env.CleanupOldDeliveryLogs(ctx, cutoff)
 	if err != nil {
 		return nil, fmt.Errorf("failed to cleanup old delivery logs: %w", err)
 	}

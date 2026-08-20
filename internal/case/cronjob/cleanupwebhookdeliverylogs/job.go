@@ -7,11 +7,12 @@ import (
 
 // Job implements the cronjobs.Job interface.
 type job struct {
-	env Env
+	env    Env
+	config Config
 }
 
-func New(env Env) cronjobs.Job {
-	return &job{env: env}
+func New(env Env, config Config) cronjobs.Job {
+	return &job{env: env, config: config}
 }
 
 func (j *job) Name() string {
@@ -19,8 +20,8 @@ func (j *job) Name() string {
 }
 
 // Schedule runs daily at midnight. Cron webhook response bodies store full agent
-// payloads (hundreds of KB each), so logs must be pruned frequently to prevent
-// the database from growing into the hundreds of MB range.
+// payloads (hundreds of KB each), so a long retention window grows the database
+// into the hundreds of MB range.
 func (j *job) Schedule() string {
 	return "0 0 0 * * *"
 }
@@ -30,5 +31,5 @@ func (j *job) ExecuteAfterStart() bool {
 }
 
 func (j *job) Execute(ctx context.Context) (any, error) {
-	return Resolve(ctx, j.env)
+	return Resolve(ctx, j.env, j.config)
 }
