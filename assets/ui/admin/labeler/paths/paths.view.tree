@@ -1,0 +1,4 @@
+$trip2g_admin_labeler_paths $mol_labeler
+	title @ \Paths
+	Content <= Cell $trip2g_admin_cell
+		content <= value \-

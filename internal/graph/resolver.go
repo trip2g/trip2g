@@ -428,6 +428,7 @@ type Env interface {
 	ListWebhookDeliveries(ctx context.Context, params db.ListWebhookDeliveriesParams) ([]db.ChangeWebhookDelivery, error)
 	ListDeliveryTraces(ctx context.Context, limit int64) ([]db.ListDeliveryTracesRow, error)
 	ListDeliveriesByTrace(ctx context.Context, trace *string) ([]db.ListDeliveriesByTraceRow, error)
+	ListDeliveryWrites(ctx context.Context, arg db.ListDeliveryWritesParams) ([]db.ListDeliveryWritesRow, error)
 	CronWebhookByID(ctx context.Context, id int64) (db.CronWebhook, error)
 	ListCronWebhooks(ctx context.Context) ([]db.CronWebhook, error)
 	ListCronWebhookDeliveries(ctx context.Context, params db.ListCronWebhookDeliveriesParams) ([]db.CronWebhookDelivery, error)

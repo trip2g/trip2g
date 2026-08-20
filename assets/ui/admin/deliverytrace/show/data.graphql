@@ -15,6 +15,10 @@ query ($trace: String!) {
 			parentKind
 			parentId
 			depthReached
+			writes {
+				path
+				version
+			}
 		}
 	}
 }

@@ -2542,6 +2542,14 @@ func (r *adminTgChatSubgraphAccessesConnectionResolver) Nodes(ctx context.Contex
 	return r.env(ctx).AllTgChatSubgraphAccesses(ctx)
 }
 
+// Writes is the resolver for the writes field.
+func (r *adminTraceDeliveryResolver) Writes(ctx context.Context, obj *db.ListDeliveriesByTraceRow) ([]db.ListDeliveryWritesRow, error) {
+	return r.env(ctx).ListDeliveryWrites(ctx, db.ListDeliveryWritesParams{
+		Kind:       obj.Kind,
+		DeliveryID: obj.ID,
+	})
+}
+
 // Ban is the resolver for the ban field.
 func (r *adminUserResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan, error) {
 	return r.env(ctx).UserBanByUserID(ctx, obj.ID)
@@ -4013,6 +4021,11 @@ func (r *Resolver) AdminTgChatSubgraphAccessesConnection() generated.AdminTgChat
 	return &adminTgChatSubgraphAccessesConnectionResolver{r}
 }
 
+// AdminTraceDelivery returns generated.AdminTraceDeliveryResolver implementation.
+func (r *Resolver) AdminTraceDelivery() generated.AdminTraceDeliveryResolver {
+	return &adminTraceDeliveryResolver{r}
+}
+
 // AdminUser returns generated.AdminUserResolver implementation.
 func (r *Resolver) AdminUser() generated.AdminUserResolver { return &adminUserResolver{r} }
 
@@ -4272,6 +4285,7 @@ type adminTgChatMemberResolver struct{ *Resolver }
 type adminTgChatMembersConnectionResolver struct{ *Resolver }
 type adminTgChatSubgraphAccessResolver struct{ *Resolver }
 type adminTgChatSubgraphAccessesConnectionResolver struct{ *Resolver }
+type adminTraceDeliveryResolver struct{ *Resolver }
 type adminUserResolver struct{ *Resolver }
 type adminUserBansConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessResolver struct{ *Resolver }

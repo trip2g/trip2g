@@ -2039,6 +2039,13 @@ export type AdminTraceDelivery = {
   steps?: Maybe<Scalars['Int64']['output']>;
   tokensUsed?: Maybe<Scalars['Int64']['output']>;
   webhookId: Scalars['Int64']['output'];
+  writes: Array<AdminTraceWrite>;
+};
+
+export type AdminTraceWrite = {
+  __typename?: 'AdminTraceWrite';
+  path: Scalars['String']['output'];
+  version: Scalars['Int64']['output'];
 };
 
 export type AdminUpdateTelegramAccountInput = {

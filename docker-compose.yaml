@@ -30,7 +30,8 @@ services:
   data_mock:
     image: python:3.12-slim
     ports:
-      - "8090:8090"
+      # 8090 is taken on the host; the server still listens on 8090 inside.
+      - "8087:8090"
     volumes:
       - ./scripts:/scripts:ro
     command: python /scripts/data_mock_server.py

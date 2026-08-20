@@ -56,6 +56,26 @@ namespace $.$$ {
 			return parts.join( ', ' ) || '-'
 		}
 
+		// Paths this hop wrote, from the version attribution.
+		override hop_writes( index: any ): string {
+			return this.paths( this.hop( index ).writes )
+		}
+
+		// What set this hop off: the notes its parent wrote. A root has no parent
+		// — a cron tick or a human edit started it, and neither is a note.
+		override hop_trigger( index: any ): string {
+			const hop = this.hop( index )
+			if( !hop.parentKind || !hop.parentId ) return '-'
+			const parent = this.hops().find(
+				h => h.kind === hop.parentKind && h.id === hop.parentId,
+			)
+			return parent ? this.paths( parent.writes ) : `${ hop.parentKind }:${ hop.parentId }`
+		}
+
+		paths( writes: readonly { path: string }[] ): string {
+			return writes.map( w => w.path ).join( ', ' ) || '-'
+		}
+
 		override hop_created_at( index: any ): string {
 			return new $mol_time_moment( this.hop( index ).createdAt ).toString( 'YYYY-MM-DD HH:mm:ss' )
 		}

@@ -4776,6 +4776,51 @@ func (q *Queries) ListDeliveryTraces(ctx context.Context, limit int64) ([]ListDe
 	return items, nil
 }
 
+const listDeliveryWrites = `-- name: ListDeliveryWrites :many
+select np.value as path, nv.version as version
+  from note_version_delivery_attribution a
+  join note_versions nv on nv.id = a.note_version_id
+  join note_paths np on np.id = nv.path_id
+ where a.delivery_kind = ?1
+   and a.delivery_id = ?2
+ order by np.value
+`
+
+type ListDeliveryWritesParams struct {
+	Kind       string `json:"kind"`
+	DeliveryID int64  `json:"delivery_id"`
+}
+
+type ListDeliveryWritesRow struct {
+	Path    string `json:"path"`
+	Version int64  `json:"version"`
+}
+
+// What a delivery wrote: the note versions attributed to it. This is what makes
+// a chain readable, since the writes of one hop are the trigger of the next.
+func (q *Queries) ListDeliveryWrites(ctx context.Context, arg ListDeliveryWritesParams) ([]ListDeliveryWritesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listDeliveryWrites, arg.Kind, arg.DeliveryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDeliveryWritesRow
+	for rows.Next() {
+		var i ListDeliveryWritesRow
+		if err := rows.Scan(&i.Path, &i.Version); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDistinctAccountIDsFromSentAccountMessages = `-- name: ListDistinctAccountIDsFromSentAccountMessages :many
 select distinct account_id
   from telegram_publish_sent_account_messages

@@ -823,6 +823,15 @@ type AdminTraceDelivery @goModel(model: "trip2g/internal/db.ListDeliveriesByTrac
   parentKind: String
   parentId: Int64
   depthReached: Int64!
+  # Notes this delivery wrote, from the version attribution. The writes of one
+  # hop are what triggered the next one, so a chain reads top to bottom.
+  writes: [AdminTraceWrite!]! @goField(forceResolver: true)
+}
+
+# One note version a delivery produced.
+type AdminTraceWrite @goModel(model: "trip2g/internal/db.ListDeliveryWritesRow") {
+  path: String!
+  version: Int64!
 }
 
 input AdminChangeWebhookDeliveriesFilterInput {

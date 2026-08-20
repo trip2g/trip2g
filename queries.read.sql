@@ -1396,6 +1396,17 @@ select 'cron' as kind, r.id as id, r.cron_webhook_id as webhook_id, r.status as 
   from cron_webhook_deliveries r where r.trace = sqlc.arg(trace)
  order by created_at, id;
 
+-- name: ListDeliveryWrites :many
+-- What a delivery wrote: the note versions attributed to it. This is what makes
+-- a chain readable, since the writes of one hop are the trigger of the next.
+select np.value as path, nv.version as version
+  from note_version_delivery_attribution a
+  join note_versions nv on nv.id = a.note_version_id
+  join note_paths np on np.id = nv.path_id
+ where a.delivery_kind = sqlc.arg(kind)
+   and a.delivery_id = sqlc.arg(delivery_id)
+ order by np.value;
+
 -- name: ListCronWebhookDeliveries :many
 select * from cron_webhook_deliveries
 where cron_webhook_id = ?
