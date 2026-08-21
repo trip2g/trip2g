@@ -24,7 +24,7 @@ const (
 func fleetkitAPI() []string {
 	return []string{
 		"render", "note", "write", "patch", "emit", "bag",
-		"frontmatter", "note_frontmatter", "parse_frontmatter",
+		"frontmatter", "secrets", "note_frontmatter", "parse_frontmatter",
 	}
 }
 

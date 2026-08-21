@@ -13,6 +13,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -32,9 +33,24 @@ func main() {
 	// absent. Phase 2 completes the sandbox story (move + tests).
 	coderun.MaybeRunSandboxChild()
 
+	// `codellm seal` produces the ciphertext pasted into a role note. It exits
+	// before any server wiring: sealing needs the key and nothing else.
+	if len(os.Args) > 1 && os.Args[1] == "seal" {
+		if err := runSeal(os.Args[2:], os.Stdin, os.Stdout); err != nil {
+			log.Fatalf("seal: %v", err)
+		}
+		return
+	}
+
 	cfg, err := appconfig.Get()
 	if err != nil {
 		log.Fatalf("config: %v", err)
+	}
+
+	// A deploy that forwards the seal key to executed code would leave every
+	// role able to open every blob, with nothing visibly broken. Refuse to start.
+	if sealErr := codellm.ValidateSealKeyNotExposed(cfg.ExposeEnv, cfg.ExposeEnvPrefix); sealErr != nil {
+		log.Fatalf("config: %v", sealErr)
 	}
 
 	// Delegated-admin gate for the browser-facing endpoints: each request's

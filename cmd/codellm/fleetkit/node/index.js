@@ -86,6 +86,16 @@ function frontmatter() {
   return bag().frontmatter || {};
 }
 
+/**
+ * The values codellm unsealed for this run, by frontmatter field name. Kept out
+ * of frontmatter() deliberately: the bag is what a role prints while debugging,
+ * and a secret inside the object most likely to be dumped whole ends up
+ * published in the vault. Empty when the role declares no `unseal` fields.
+ */
+function secrets() {
+  return bag().secrets || {};
+}
+
 function note_frontmatter(path) {
   const b = bag();
   for (const key of ['attached_notes', 'changed_files']) {
@@ -100,5 +110,5 @@ function note_frontmatter(path) {
 
 module.exports = {
   render, note, write, patch, emit, bag,
-  frontmatter, note_frontmatter, parse_frontmatter,
+  frontmatter, secrets, note_frontmatter, parse_frontmatter,
 };

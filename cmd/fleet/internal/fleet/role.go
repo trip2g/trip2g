@@ -18,6 +18,12 @@ type Role struct {
 	// does not model still reach the role's own code through the delivery bag.
 	Frontmatter map[string]string
 
+	// Unseal lists the frontmatter fields carrying sealed values; UnsealEnvKey
+	// names the env var in codellm holding the key that opens them. fleet only
+	// forwards these — it holds no key and never sees a plaintext.
+	Unseal       []string
+	UnsealEnvKey string
+
 	FleetID        string // partition key: only the fleet whose --fleet-id matches processes this role
 	Model          string
 	Tools          []string
@@ -45,6 +51,8 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 		NotePath:       notePath,
 		Body:           body,
 		Frontmatter:    copyMeta(m),
+		Unseal:         parseList(m["unseal"]),
+		UnsealEnvKey:   strings.TrimSpace(m["unseal_env_key"]),
 		FleetID:        strings.TrimSpace(m["fleet_id"]),
 		Model:          strings.TrimSpace(m["model"]),
 		Tools:          parseList(m["tools"]),
