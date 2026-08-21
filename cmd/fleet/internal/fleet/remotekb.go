@@ -14,11 +14,12 @@ import (
 
 // JSON map keys used in the hybrid UpdateNotesScoped variables.
 const (
-	jsonKeyPath    = "path"
-	jsonKeyContent = "content"
-	jsonKeyFind    = "find"
-	jsonKeyReplace = "replace"
-	jsonKeyChanges = "changes"
+	jsonKeyPath         = "path"
+	jsonKeyContent      = "content"
+	jsonKeyFind         = "find"
+	jsonKeyReplace      = "replace"
+	jsonKeyExpectedHash = "expectedHash"
+	jsonKeyChanges      = "changes"
 )
 
 // remoteKB is the fleet's agentruntime.KB over the trip2g API, scoped to a
@@ -91,6 +92,30 @@ func (k *remoteKB) Patch(ctx context.Context, path, find, replace string) error 
 	}
 	// Best-effort overlay sync: keep in-memory view consistent so a subsequent
 	// Read in the same run is served from cache without a remote round-trip.
+	if cur, ok := k.overlay[path]; ok {
+		k.overlay[path] = replaceOnce(cur, find, replace)
+	}
+	return nil
+}
+
+// PatchIfUnchanged applies a patch only if the note still hashes to
+// expectedHash, letting trip2g compare against the live content inside the same
+// atomic mutation (internal/case/updatenotes applies the check and the edit
+// together). That closes the window between the caller verifying a note and the
+// edit landing — including the case where Read was served from the overlay,
+// which is seeded once per delivery and never refreshed: stale bytes now produce
+// a loud hash mismatch instead of an unverified write.
+func (k *remoteKB) PatchIfUnchanged(ctx context.Context, path, find, replace, expectedHash string) error {
+	if err := k.update(ctx, []map[string]any{
+		{"patch": map[string]any{
+			jsonKeyPath:         path,
+			jsonKeyFind:         find,
+			jsonKeyReplace:      replace,
+			jsonKeyExpectedHash: expectedHash,
+		}},
+	}); err != nil {
+		return err
+	}
 	if cur, ok := k.overlay[path]; ok {
 		k.overlay[path] = replaceOnce(cur, find, replace)
 	}

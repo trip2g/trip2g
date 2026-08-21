@@ -155,6 +155,26 @@ forms).
   fleet-wide for operators who do want agents managing roles. It logs a WARN at
   startup when off, because a guard silently disabled is worse than none.
 
+The patch is conditional on the bytes that were verified. `ScopedKB` hashes the
+content it read and `remoteKB.PatchIfUnchanged` sends it as `expectedHash`, so
+trip2g compares against the live note inside the same atomic mutation
+(`internal/case/updatenotes`). Without it the guard verified one version and
+trip2g patched whatever was current — a window that is wider than a race, because
+`remoteKB.Read` is served from an overlay seeded once per delivery and never
+refreshed. Stale bytes now produce a loud hash mismatch instead of an unverified
+write. A concurrent edit therefore fails the run, which is the intended trade.
+
+fleet computes the hash itself rather than asking for it, so no schema or query
+changed; the two implementations are tied together by a golden value asserted from
+both sides (`TestContentHashGolden` / `TestHashContentGolden`), because a silent
+drift would look like a concurrency fault rather than a bug. A KB without the
+optional `conditionalPatcher` interface (`FileKB`, test doubles) is patched
+unconditionally, as before.
+
+Future: the overlay could carry the hash of what fleet last wrote, making a
+write-then-patch of the same note in one run conditional too. Not needed yet — a
+role doing that is better rewritten.
+
 This closes authorship, not the underlying property that a role declares its own
 scope. A human-authored role still does — which is intended: the point is that
 only humans mint roles.
