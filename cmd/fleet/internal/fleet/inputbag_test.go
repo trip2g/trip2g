@@ -71,3 +71,32 @@ func TestParseRole_RetainsFrontmatterCopy(t *testing.T) {
 	meta["custom"] = "two"
 	require.Equal(t, "one", role.Frontmatter["custom"])
 }
+
+// A role narrows which of codellm's allowlisted env vars its code receives.
+// fleet only forwards the declaration; codellm intersects it with the operator
+// allowlist, so this can never widen access.
+func TestBuildInputBag_CarriesEnvDeclaration(t *testing.T) {
+	role, err := ParseRole("roles/ingest.md", "body", map[string]string{
+		"fleet_id":        "codellm",
+		"env_passthrough": "[KRISP_TOKEN, KRISP_BASE_URL]",
+		"env_prefix":      "[KRISP_]",
+	})
+	require.NoError(t, err)
+
+	bag := decodeBag(t, buildInputBag(role, renderCtx{}))
+
+	require.Equal(t, []string{"KRISP_TOKEN", "KRISP_BASE_URL"}, bag.EnvPassthrough)
+	require.Equal(t, []string{"KRISP_"}, bag.EnvPrefix)
+}
+
+// A role that declares neither field keeps the pre-existing behaviour, so notes
+// written before the fields came back are unaffected.
+func TestBuildInputBag_NoEnvDeclarationIsOmitted(t *testing.T) {
+	role, err := ParseRole("roles/x.md", "body", map[string]string{"fleet_id": "codellm"})
+	require.NoError(t, err)
+
+	bag := decodeBag(t, buildInputBag(role, renderCtx{}))
+
+	require.Empty(t, bag.EnvPassthrough)
+	require.Empty(t, bag.EnvPrefix)
+}

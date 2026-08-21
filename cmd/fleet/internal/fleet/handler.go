@@ -236,13 +236,15 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 // included.
 func buildInputBag(role Role, rc renderCtx) []byte {
 	bag := fleetinput.Input{
-		Frontmatter:   role.Frontmatter,
-		Unseal:        role.Unseal,
-		UnsealEnvKey:  role.UnsealEnvKey,
-		ChangedFiles:  rc.ChangedFiles,
-		ChangeFile:    rc.ChangeFile,
-		AttachedNotes: rc.AttachedNotes,
-		Depth:         rc.Depth,
+		Frontmatter:    role.Frontmatter,
+		Unseal:         role.Unseal,
+		UnsealEnvKey:   role.UnsealEnvKey,
+		EnvPassthrough: role.EnvPassthrough,
+		EnvPrefix:      role.EnvPrefix,
+		ChangedFiles:   rc.ChangedFiles,
+		ChangeFile:     rc.ChangeFile,
+		AttachedNotes:  rc.AttachedNotes,
+		Depth:          rc.Depth,
 	}
 	data, _ := json.Marshal(bag)
 	return data
@@ -368,12 +370,14 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 func buildCronInputBag(role Role, rc renderCtx) []byte {
 	now := rc.Now.Format(time.RFC3339)
 	bag := fleetinput.Input{
-		Frontmatter:   role.Frontmatter,
-		Unseal:        role.Unseal,
-		UnsealEnvKey:  role.UnsealEnvKey,
-		AttachedNotes: rc.AttachedNotes,
-		Depth:         rc.Depth,
-		Now:           &now,
+		Frontmatter:    role.Frontmatter,
+		Unseal:         role.Unseal,
+		UnsealEnvKey:   role.UnsealEnvKey,
+		EnvPassthrough: role.EnvPassthrough,
+		EnvPrefix:      role.EnvPrefix,
+		AttachedNotes:  rc.AttachedNotes,
+		Depth:          rc.Depth,
+		Now:            &now,
 	}
 	data, _ := json.Marshal(bag)
 	return data
