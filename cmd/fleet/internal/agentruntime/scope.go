@@ -2,6 +2,8 @@ package agentruntime
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	pathpkg "path"
@@ -163,10 +165,33 @@ func (s *ScopedKB) Patch(ctx context.Context, path, find, replace string) error 
 	if norm == "" || !webhookutil.MatchesAny(norm, s.writePatterns) {
 		return ErrWriteDenied
 	}
-	if err := s.checkPatchNotRoleAuthoring(ctx, norm, find, replace); err != nil {
+	verifiedHash, err := s.checkPatchNotRoleAuthoring(ctx, norm, find, replace)
+	if err != nil {
 		return err
 	}
+	if cp, ok := s.kb.(conditionalPatcher); ok && verifiedHash != nil {
+		return cp.PatchIfUnchanged(ctx, norm, find, replace, *verifiedHash)
+	}
 	return s.kb.Patch(ctx, norm, find, replace)
+}
+
+// conditionalPatcher is the optional half of KB: a backend that can apply a
+// patch only if the note still hashes to what the caller verified. remoteKB
+// implements it by passing expectedHash to trip2g, which compares against the
+// live content inside the same atomic mutation. A KB without it (FileKB, test
+// doubles) is patched unconditionally, as before.
+type conditionalPatcher interface {
+	PatchIfUnchanged(ctx context.Context, path, find, replace, expectedHash string) error
+}
+
+// contentHash mirrors trip2g's hashContent (internal/case/updatenotes) byte for
+// byte — base64 URL encoding of the SHA-256 of the raw content. The two are
+// pinned to the same golden value from both sides; see TestContentHashGolden
+// here and its twin in the updatenotes tests. A silent drift between them would
+// turn every conditional patch into a hash mismatch.
+func contentHash(content string) string {
+	sum := sha256.Sum256([]byte(content))
+	return base64.URLEncoding.EncodeToString(sum[:])
 }
 
 // checkPatchNotRoleAuthoring denies a patch that would leave a role note behind,
@@ -181,16 +206,21 @@ func (s *ScopedKB) Patch(ctx context.Context, path, find, replace string) error 
 // The read goes through the underlying KB, not this ScopedKB, on purpose: a
 // role may hold write scope over a path without read scope, and the guard must
 // not be defeated by the role's own read_patterns.
-func (s *ScopedKB) checkPatchNotRoleAuthoring(ctx context.Context, path, find, replace string) error {
+// It returns the hash of the exact bytes it verified, so the caller can make the
+// mutation conditional on them and close the window between checking and
+// patching. A nil hash means nothing was verified (the guard is off), not that
+// the content hashed to the empty string.
+func (s *ScopedKB) checkPatchNotRoleAuthoring(ctx context.Context, path, find, replace string) (*string, error) {
 	if s.allowRoleAuthoring {
-		return nil
+		return nil, nil
 	}
 	current, err := s.kb.Read(ctx, path)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrRoleGuardUnverifiable, err)
+		return nil, fmt.Errorf("%w: %w", ErrRoleGuardUnverifiable, err)
 	}
 	if declaresRole(current) || declaresRole(applyPatchPreview(current, find, replace)) {
-		return ErrRoleAuthoringDenied
+		return nil, ErrRoleAuthoringDenied
 	}
-	return nil
+	hash := contentHash(current)
+	return &hash, nil
 }
