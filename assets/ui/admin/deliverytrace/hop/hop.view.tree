@@ -1,52 +1,71 @@
-$trip2g_admin_deliverytrace_hop $mol_page
+$trip2g_admin_deliverytrace_hop $mol_book2
 	hop null $trip2g_admin_deliverytrace_hop_hop_ref
 	trigger /string
-	title <= hop_title \Step
-	body /
-		<= Details $mol_view
-			style *
-				flexDirection \column
-				minWidth \0
-			sub /
-				<= Kind_labeler $mol_labeler
-					title @ \Kind
-					Content <= Kind $trip2g_admin_cell
-						content <= kind \
-				<= Id_labeler $mol_labeler
-					title \#
-					Content <= Id $trip2g_admin_cell
-						content <= delivery_id \
-				<= Webhook_labeler $mol_labeler
-					title @ \Webhook
-					Content <= Webhook $trip2g_admin_cell
-						content <= webhook \
-				<= Depth_labeler $mol_labeler
-					title @ \Depth
-					Content <= Depth $trip2g_admin_cell
-						content <= depth \
-				<= Parent_labeler $mol_labeler
-					title @ \Caused by
-					Content <= Parent $trip2g_admin_cell
-						content <= parent \
-				<= Status_labeler $mol_labeler
-					title @ \Status
-					Content <= Status $trip2g_admin_cell
-						content <= status \
-				<= Spend_labeler $mol_labeler
-					title @ \Spend
-					Content <= Spend $trip2g_admin_cell
-						content <= spend \
-				<= CreatedAt_labeler $mol_labeler
-					title @ \Created At
-					Content <= CreatedAt $trip2g_admin_cell
-						content <= created_at \
-				<= Trigger_labeler $trip2g_admin_labeler_paths
-					title @ \Triggered by
-					paths <= trigger
-				<= Writes_labeler $mol_labeler
-					title @ \Wrote
-					Content <= Writes $mol_list
-						rows <= write_rows /
+	menu_title <= hop_title \Step
+	pages <= hop_pages /
+	Details_page $mol_page
+		title <= hop_title
+		body /
+			<= Details $mol_view
+				style *
+					flexDirection \column
+					minWidth \0
+				sub /
+					<= Kind_labeler $mol_labeler
+						title @ \Kind
+						Content <= Kind $trip2g_admin_cell
+							content <= kind \
+					<= Id_labeler $mol_labeler
+						title \#
+						Content <= Id $trip2g_admin_cell
+							content <= delivery_id \
+					<= Webhook_labeler $mol_labeler
+						title @ \Webhook
+						Content <= Webhook $trip2g_admin_cell
+							content <= webhook \
+					<= Depth_labeler $mol_labeler
+						title @ \Depth
+						Content <= Depth $trip2g_admin_cell
+							content <= depth \
+					<= Parent_labeler $mol_labeler
+						title @ \Caused by
+						Content <= Parent $trip2g_admin_cell
+							content <= parent \
+					<= Status_labeler $mol_labeler
+						title @ \Status
+						Content <= Status $trip2g_admin_cell
+							content <= status \
+					<= Spend_labeler $mol_labeler
+						title @ \Spend
+						Content <= Spend $trip2g_admin_cell
+							content <= spend \
+					<= CreatedAt_labeler $mol_labeler
+						title @ \Created At
+						Content <= CreatedAt $trip2g_admin_cell
+							content <= created_at \
+					<= Trigger_labeler $trip2g_admin_labeler_paths
+						title @ \Triggered by
+						paths <= trigger
+					<= Writes_labeler $mol_labeler
+						title @ \Wrote
+						Content <= Writes $mol_list
+							rows <= write_rows /
+					<= Log_labeler $mol_labeler
+						title @ \Log
+						Content <= Log_link $mol_link
+							arg <= log_open_arg *
+							sub / <= log_link_title @ \Open
 	Write!version_id $trip2g_admin_deliverytrace_write
 		path <= write_path!version_id \
 		version_id <= write_version_id!version_id 0
+	Log_page $mol_page
+		title @ \Log
+		tools /
+			<= Log_close $mol_link
+				arg <= log_close_arg *
+				hint @ \Close page
+				sub / <= Log_close_icon $mol_icon_close
+		body /
+			<= Log $trip2g_admin_deliverytrace_log
+				kind <= kind
+				delivery_id <= log_delivery_id 0

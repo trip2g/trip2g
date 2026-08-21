@@ -121,6 +121,11 @@ type Input struct {
 	// so they keep their self-correction loop.
 	HardFailApply bool
 
+	// Item is the 1-based fan-out index when one delivery runs the agent once per
+	// item. It labels every run-log entry so an operator reading a fanned-out
+	// delivery can tell whose call was whose. 0 for a single run.
+	Item int
+
 	// Role labels this run's metrics (the role note path). Empty for --once and
 	// tests, which report under the empty label.
 	Role string
@@ -142,6 +147,10 @@ type Result struct {
 	TokensUsed int                       `json:"tokens_used"`
 	Steps      int                       `json:"steps"`
 	Denials    []string                  `json:"denials,omitempty"`
+	// Logs is the run log: one entry per tool call, in the order they ran.
+	// Denials duplicates the denied subset of it as flat strings, for the
+	// callers that only ever wanted that.
+	Logs []webhookutil.AgentLog `json:"logs,omitempty"`
 }
 
 const systemPromptTemplate = `You are a scoped trip2g micro-agent. Follow the instruction below.
@@ -279,6 +288,8 @@ func run(ctx context.Context, in Input, res *Result) error {
 			permitted: permitted,
 			invokers:  invokers,
 			messages:  &messages,
+			step:      step + 1,
+			item:      in.Item,
 		}, chat.ToolCalls)
 		if err != nil {
 			return err
@@ -298,6 +309,10 @@ type toolLoop struct {
 	permitted map[string]bool
 	invokers  map[string]toolInvoker
 	messages  *[]Message
+	// step is the 1-based model turn these calls came from; it labels every row
+	// the turn adds to the run log. item is the run's fan-out index, or 0.
+	step int
+	item int
 }
 
 // runToolCalls executes one assistant turn's tool calls in order, appending
@@ -312,6 +327,7 @@ func runToolCalls(ctx context.Context, in Input, tl toolLoop, calls []ToolCall) 
 			if in.Metrics != nil {
 				in.Metrics.RecordToolCall(toolFinish, outcomeOK)
 			}
+			logToolCall(tl.res, tl.item, tl.step, call, outcomeOK, "", 0)
 			return true, nil
 		}
 		// Execution-time allowlist enforcement: reject any tool not in the
@@ -325,6 +341,7 @@ func runToolCalls(ctx context.Context, in Input, tl toolLoop, calls []ToolCall) 
 				in.Metrics.RecordToolCall(unknownTool, outcomeNotPermitted)
 				in.Metrics.RecordDenial(denialNotPermitted)
 			}
+			logToolCall(tl.res, tl.item, tl.step, call, outcomeNotPermitted, denial, 0)
 			*tl.messages = append(*tl.messages, Message{
 				Role:       RoleTool,
 				ToolCallID: call.ID,
@@ -333,7 +350,9 @@ func runToolCalls(ctx context.Context, in Input, tl toolLoop, calls []ToolCall) 
 			})
 			continue
 		}
+		started := time.Now()
 		output, outcome := execTool(ctx, tl.scoped, tl.res, call, tl.invokers)
+		logToolCall(tl.res, tl.item, tl.step, call, outcome, output, time.Since(started))
 		if in.Metrics != nil {
 			in.Metrics.RecordToolCall(call.Name, outcome)
 			if outcome == outcomeDenied {
@@ -408,6 +427,79 @@ func outcomeFor(output string) string {
 		return outcomeError
 	}
 	return outcomeOK
+}
+
+// logToolCall appends one run-log entry for a finished tool call. The opaque
+// Data bag carries this runtime's own vocabulary — tool, outcome, sizes — which
+// nothing downstream parses; trip2g stores it and hands it back. Content never
+// goes in: only how many bytes moved, so the log stays small and the written
+// bytes are read back through the note version the write produced.
+func logToolCall(res *Result, item, step int, call ToolCall, outcome, output string, elapsed time.Duration) {
+	data := map[string]any{
+		"tool":    call.Name,
+		"step":    step,
+		"outcome": outcome,
+		"ms":      elapsed.Milliseconds(),
+	}
+	if item > 0 {
+		data["item"] = item
+	}
+
+	// The arguments worth seeing, by the shape each tool takes. An unknown tool
+	// (a role's MCP server, say) contributes none of these: its argument names
+	// are not this runtime's to guess, and its values may hold anything.
+	var args struct {
+		Path    string `json:"path"`
+		Query   string `json:"query"`
+		Content string `json:"content"`
+	}
+	_ = json.Unmarshal([]byte(call.Arguments), &args)
+	if args.Path != "" {
+		data["path"] = args.Path
+	}
+	if args.Query != "" {
+		data["query"] = args.Query
+	}
+	if args.Content != "" {
+		data["content_bytes"] = len(args.Content)
+	}
+
+	msg := call.Name
+	if args.Path != "" {
+		msg += " " + args.Path
+	}
+	if outcome == outcomeOK {
+		data["result_bytes"] = len(output)
+	} else {
+		msg += ": " + outcome
+		data["reason"] = strings.TrimPrefix(output, "error: ")
+	}
+
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		// A bag that will not serialize must not cost the operator the entry.
+		encoded = nil
+	}
+	res.Logs = append(res.Logs, webhookutil.AgentLog{
+		TS:    time.Now().UTC(),
+		Level: levelForOutcome(outcome),
+		Msg:   msg,
+		Data:  encoded,
+	})
+}
+
+// levelForOutcome grades an outcome for readers that only skim levels. A denial
+// is a warning, not an error: the runtime feeds it back and the model is
+// expected to correct itself. Only a failure the run cannot absorb is an error.
+func levelForOutcome(outcome string) string {
+	switch outcome {
+	case outcomeOK:
+		return "info"
+	case outcomeError, outcomeApplyFailed:
+		return "error"
+	default:
+		return "warn"
+	}
 }
 
 // denialForTool maps a denied tool call to the denial kind it represents.

@@ -83,5 +83,40 @@ namespace $.$$ {
 		override write_version_id( version_id: number ): number {
 			return version_id
 		}
+
+		// The log is addressed by the delivery itself, not by the chain, so it is
+		// fetched only when its page is open.
+		override log_delivery_id(): number {
+			return Number( this.data().id )
+		}
+
+		// This step is a book of its own: the details, and the log beside them when
+		// it is opened. The parent chain splices these in, so the log gets its own
+		// column and its own URL rather than growing inside the step's card.
+		@$mol_mem
+		override hop_pages() {
+			return this.log_open()
+				? [ this.Details_page(), this.Log_page() ]
+				: [ this.Details_page() ]
+		}
+
+		// "<kind>:<id>" — the same key the chain addresses a step by, so the arg
+		// names which step's log is open and opening another one replaces it.
+		log_id(): string {
+			const hop = this.data()
+			return `${ hop.kind }:${ hop.id }`
+		}
+
+		log_open(): boolean {
+			return this.$.$mol_state_arg.value( 'log' ) === this.log_id()
+		}
+
+		override log_open_arg() {
+			return { log: this.log_id() }
+		}
+
+		override log_close_arg() {
+			return { log: null }
+		}
 	}
 }

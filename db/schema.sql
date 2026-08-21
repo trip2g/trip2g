@@ -635,7 +635,7 @@ CREATE TABLE change_webhook_deliveries (
   duration_ms integer,
   created_at datetime not null default (datetime('now')),
   completed_at datetime
-, started_at datetime, heartbeat_at datetime, parent_kind text, parent_id integer, trace text, depth_reached integer not null default 0, costs text);
+, started_at datetime, heartbeat_at datetime, parent_kind text, parent_id integer, trace text, depth_reached integer not null default 0, costs text, logs text);
 CREATE INDEX idx_change_webhook_deliveries_webhook_created
   on change_webhook_deliveries(webhook_id, created_at);
 CREATE TABLE cron_webhooks (
@@ -668,7 +668,7 @@ CREATE TABLE cron_webhook_deliveries (
   duration_ms integer,
   created_at datetime not null default (datetime('now')),
   completed_at datetime
-, started_at datetime, heartbeat_at datetime, parent_kind text, parent_id integer, trace text, depth_reached integer not null default 0, costs text);
+, started_at datetime, heartbeat_at datetime, parent_kind text, parent_id integer, trace text, depth_reached integer not null default 0, costs text, logs text);
 CREATE INDEX idx_cron_webhook_deliveries_webhook_created
   on cron_webhook_deliveries(cron_webhook_id, created_at);
 CREATE TABLE webhook_delivery_logs (
@@ -1010,4 +1010,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260713100000'),
   ('20260715051651'),
   ('20260820105848'),
-  ('20260820125621');
+  ('20260820125621'),
+  ('20260821014419');

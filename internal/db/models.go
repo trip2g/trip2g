@@ -172,6 +172,7 @@ type ChangeWebhookDelivery struct {
 	Trace          *string    `json:"trace"`
 	DepthReached   int64      `json:"depth_reached"`
 	Costs          *string    `json:"costs"`
+	Logs           *string    `json:"logs"`
 }
 
 type ChartDataCache struct {
@@ -264,6 +265,7 @@ type CronWebhookDelivery struct {
 	Trace          *string    `json:"trace"`
 	DepthReached   int64      `json:"depth_reached"`
 	Costs          *string    `json:"costs"`
+	Logs           *string    `json:"logs"`
 }
 
 type FederationSecret struct {

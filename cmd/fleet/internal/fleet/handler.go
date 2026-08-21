@@ -154,6 +154,7 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 	var totalTokens, totalSteps, successCount int
 	var aggStatus string
 	var answers, errMsgs []string
+	var logs []webhookutil.AgentLog
 	for i, rc := range items {
 		instruction, rerr := renderInstruction(role.Body, rc)
 		if rerr != nil {
@@ -170,6 +171,7 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 			GQL:      NewScopedGraphQLClient(f.cfg.Trip2gBaseURL, payload.APIToken, f.hc),
 			Overlay:  overlay,
 			InputBag: buildInputBag(rc),
+			Item:     fanOutItem(len(items), i),
 		})
 		if runErr != nil {
 			errMsgs = append(errMsgs, fmt.Sprintf("item %d: %v", i+1, runErr))
@@ -178,6 +180,9 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 		totalTokens += res.TokensUsed
 		totalSteps += res.Steps
 		successCount++
+		// Collected across the whole fan-out: each entry carries its own item
+		// index, so one delivery's log stays readable as a single sequence.
+		logs = append(logs, res.Logs...)
 		aggStatus = mergeStatus(aggStatus, res.Status)
 		if res.Answer != "" {
 			answers = append(answers, res.Answer)
@@ -221,6 +226,7 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 		Message: message,
 		Changes: nil,
 		Costs:   runCosts(totalTokens, totalSteps),
+		Logs:    logs,
 	})
 }
 
@@ -345,6 +351,7 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 		Status:  res.Status,
 		Message: res.Answer,
 		Costs:   runCosts(res.TokensUsed, res.Steps),
+		Logs:    res.Logs,
 	})
 }
 
@@ -365,6 +372,17 @@ type execRoleInput struct {
 	GQL      graphql.Client // scoped genqlient client for the delivery's KB lane
 	Overlay  map[string]string
 	InputBag []byte // JSON bag for code executor ($FLEET_INPUT); nil for LLM executor
+	Item     int    // 1-based fan-out index labelling this run's log entries; 0 when not fanned out
+}
+
+// fanOutItem returns the 1-based label for run i of n. A delivery that ran the
+// agent once is not a fan-out, so its entries carry no item at all rather than a
+// meaningless "1 of 1".
+func fanOutItem(n, i int) int {
+	if n < 2 {
+		return 0
+	}
+	return i + 1
 }
 
 // execRole dispatches a single rendered instruction against this fleet's LLM.
@@ -397,6 +415,7 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 		MaxTokens:     clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
 		MaxSteps:      clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
 		InputBag:      p.InputBag,
+		Item:          p.Item,
 		HardFailApply: true,
 		ExecLLM:       f.execLLM,
 		LLM:           f.llm,

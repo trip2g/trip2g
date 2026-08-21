@@ -1,0 +1,10 @@
+query ($kind: String!, $deliveryId: Int64!) {
+	admin {
+		deliveryLogs(kind: $kind, deliveryId: $deliveryId) {
+			ts
+			level
+			msg
+			data
+		}
+	}
+}

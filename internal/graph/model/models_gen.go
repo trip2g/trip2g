@@ -706,6 +706,13 @@ type AdminCronWebhooksConnection struct {
 	Nodes []db.CronWebhook `json:"nodes"`
 }
 
+type AdminDeliveryLog struct {
+	Ts    *time.Time `json:"ts,omitempty"`
+	Level string     `json:"level"`
+	Msg   string     `json:"msg"`
+	Data  *string    `json:"data,omitempty"`
+}
+
 type AdminFormBoolValue struct {
 	Name  string `json:"name"`
 	Value bool   `json:"value"`

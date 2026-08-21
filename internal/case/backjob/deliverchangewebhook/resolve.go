@@ -254,9 +254,13 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 
 	// What the run cost, as the agent reported it: an open {unit: amount} object,
 	// stored verbatim. An agent that reports nothing leaves the column null.
-	var costs *string
+	var costs, logs *string
 	if resp, perr := webhookutil.ParseAgentResponse(result.Body); perr == nil && resp != nil {
 		costs = webhookutil.MarshalCosts(resp.Costs)
+		// The run log, trimmed to its limits. Its entries carry an opaque data
+		// bag trip2g never reads: what the agent called, and what it means, is
+		// the agent's own vocabulary.
+		logs = webhookutil.MarshalLogs(resp.Logs)
 	}
 
 	// Mark as success.
@@ -265,6 +269,7 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 		ResponseStatus: ptr.To(int64(result.StatusCode)),
 		DurationMs:     ptr.To(result.DurationMs),
 		Costs:          costs,
+		Logs:           logs,
 		ID:             params.DeliveryID,
 	})
 	if updateErr != nil {

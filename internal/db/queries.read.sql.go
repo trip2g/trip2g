@@ -1372,6 +1372,45 @@ func (q *Queries) CronWebhookDeliveryTraceByID(ctx context.Context, id int64) (C
 	return i, err
 }
 
+const deliveryLogs = `-- name: DeliveryLogs :many
+select c.logs as logs from change_webhook_deliveries c
+ where ?1 = 'change' and c.id = ?2
+ union all
+select r.logs as logs from cron_webhook_deliveries r
+ where ?1 = 'cron' and r.id = ?2
+`
+
+type DeliveryLogsParams struct {
+	Kind       interface{} `json:"kind"`
+	DeliveryID int64       `json:"delivery_id"`
+}
+
+// The run log one delivery stored, fetched per hop rather than alongside the
+// chain: it is capped at 64 KB, and a chain listing has no use for it. Returns
+// at most one row; the kind guard picks the table ids are unique within.
+func (q *Queries) DeliveryLogs(ctx context.Context, arg DeliveryLogsParams) ([]*string, error) {
+	rows, err := q.db.QueryContext(ctx, deliveryLogs, arg.Kind, arg.DeliveryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*string
+	for rows.Next() {
+		var logs *string
+		if err := rows.Scan(&logs); err != nil {
+			return nil, err
+		}
+		items = append(items, logs)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const federationSecretByKBURL = `-- name: FederationSecretByKBURL :one
 select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at from federation_secrets
  where kb_url = ?
@@ -4488,7 +4527,7 @@ func (q *Queries) ListCronJobExecutionsByJobID(ctx context.Context, jobID int64)
 }
 
 const listCronWebhookDeliveries = `-- name: ListCronWebhookDeliveries :many
-select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs from cron_webhook_deliveries
+select id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs, logs from cron_webhook_deliveries
 where cron_webhook_id = ?
 order by created_at desc
 limit ?
@@ -4524,6 +4563,7 @@ func (q *Queries) ListCronWebhookDeliveries(ctx context.Context, arg ListCronWeb
 			&i.Trace,
 			&i.DepthReached,
 			&i.Costs,
+			&i.Logs,
 		); err != nil {
 			return nil, err
 		}
@@ -6828,7 +6868,7 @@ func (q *Queries) ListUserTokensFiltered(ctx context.Context, userID *int64) ([]
 }
 
 const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
-select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs from change_webhook_deliveries
+select id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs, logs from change_webhook_deliveries
 where webhook_id = ?
 order by created_at desc
 limit ?
@@ -6864,6 +6904,7 @@ func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeli
 			&i.Trace,
 			&i.DepthReached,
 			&i.Costs,
+			&i.Logs,
 		); err != nil {
 			return nil, err
 		}

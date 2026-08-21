@@ -836,6 +836,18 @@ type AdminTraceDelivery @goModel(model: "trip2g/internal/db.ListDeliveriesByTrac
   writes: [AdminTraceWrite!]! @goField(forceResolver: true)
 }
 
+# One entry of an agent's run log. ts, level and msg mean the same for every
+# agent; data does not — it is the agent's own bag, stored and returned as sent.
+# trip2g never reads it, because an agent may call tools this platform has never
+# heard of, an MCP server declared in its role note among them.
+type AdminDeliveryLog {
+  ts: Time
+  level: String!
+  msg: String!
+  # Raw JSON, exactly as the agent sent it. Render it, do not interpret it.
+  data: String
+}
+
 # One reported amount in its own unit: {"tokens": 5186} arrives as id "tokens",
 # value 5186. trip2g stores and sums these without knowing what a unit means.
 type AdminCost {
@@ -1334,6 +1346,9 @@ type AdminQuery {
   # work still runs, and those runs bury the ones that did something.
   deliveryTraces(limit: Int64, withEmpty: Boolean): [AdminDeliveryTrace!]!
   deliveryTrace(trace: String!): [AdminTraceDelivery!]!
+  # One delivery's run log, addressed directly. Kept off the chain query so
+  # opening a chain does not drag every hop's log along with it.
+  deliveryLogs(kind: String!, deliveryId: Int64!): [AdminDeliveryLog!]!
 
   healthChecks: [HealchCheck!]!
   buildGitCommit: String!
