@@ -3,6 +3,7 @@ package agentruntime
 import (
 	"context"
 	"errors"
+	"fmt"
 	pathpkg "path"
 	"strings"
 
@@ -186,7 +187,7 @@ func (s *ScopedKB) checkPatchNotRoleAuthoring(ctx context.Context, path, find, r
 	}
 	current, err := s.kb.Read(ctx, path)
 	if err != nil {
-		return ErrRoleGuardUnverifiable
+		return fmt.Errorf("%w: %w", ErrRoleGuardUnverifiable, err)
 	}
 	if declaresRole(current) || declaresRole(applyPatchPreview(current, find, replace)) {
 		return ErrRoleAuthoringDenied
