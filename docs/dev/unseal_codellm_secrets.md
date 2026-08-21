@@ -117,8 +117,16 @@ is tautological. Its real costs are ergonomic: adding a secret needs a redeploy,
 lives in docker-compose detached from the role note that depends on it (an undocumented surprise
 dependency), and the allowlist is flat.
 
-**Rejected as the end state** because of those costs, not for security. It remains the fallback
-when a role declares no `unseal` fields.
+**Kept, and not as a fallback.** For an operator who already runs Docker secrets, Kubernetes
+secrets or a Vault agent, the credential is already in a process environment and sealing is
+duplicate bookkeeping. This is the normal path; sealing is what a role reaches for when a secret
+belongs to it alone, or when adding one must not require a redeploy.
+
+The one thing that changed is that `env_passthrough` / `env_prefix` came back as role fields, this
+time as an **intersection**: the operator allowlist is still the boundary and a role can only
+narrow its own share of it. Declaring neither keeps the previous behaviour (the whole allowlist),
+so no existing role note is affected. Note this is a tightening, not a relaxation — before it, one
+code role saw every secret every other code role on that codellm needed.
 
 ### B. `requires_secrets` manifest + the existing `secrets` table
 

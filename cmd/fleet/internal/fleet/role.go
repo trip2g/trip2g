@@ -24,6 +24,12 @@ type Role struct {
 	Unseal       []string
 	UnsealEnvKey string
 
+	// EnvPassthrough / EnvPrefix narrow which of codellm's allowlisted env vars
+	// this role's code receives. They can only narrow: the operator's allowlist
+	// is the boundary, and a role declaring neither gets the whole allowlist.
+	EnvPassthrough []string
+	EnvPrefix      []string
+
 	FleetID        string // partition key: only the fleet whose --fleet-id matches processes this role
 	Model          string
 	Tools          []string
@@ -53,6 +59,8 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 		Frontmatter:    copyMeta(m),
 		Unseal:         parseList(m["unseal"]),
 		UnsealEnvKey:   strings.TrimSpace(m["unseal_env_key"]),
+		EnvPassthrough: parseList(m["env_passthrough"]),
+		EnvPrefix:      parseList(m["env_prefix"]),
 		FleetID:        strings.TrimSpace(m["fleet_id"]),
 		Model:          strings.TrimSpace(m["model"]),
 		Tools:          parseList(m["tools"]),
