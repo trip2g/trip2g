@@ -81,6 +81,7 @@ type Config struct {
 	LeaderAddr                 string
 	MCPFederationMaxDepth      int
 	MCPFederationAllowPrivate  bool
+	WebhookAllowPrivate        bool
 	MCPFederatedGraphQLEnabled bool
 	FederatedFanoutConcurrency int
 	FederatedFanoutLimit       int
@@ -545,6 +546,12 @@ func (c *Config) defineServerFlags() {
 		"mcp-federation-allow-private",
 		false,
 		"Disable SSRF protection for federation calls (allow private/internal addresses).",
+	)
+	flag.BoolVar(
+		&c.WebhookAllowPrivate,
+		"webhook-allow-private",
+		false,
+		"Disable SSRF protection for webhook deliveries (allow private/internal addresses).",
 	)
 	flag.BoolVar(&c.MCPFederatedGraphQLEnabled, "mcp-federated-graphql", false,
 		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")

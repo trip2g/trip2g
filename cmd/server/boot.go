@@ -156,7 +156,7 @@ func (a *app) constructJobs() {
 	a.GenerateNoteVersionEmbeddingJob = generatenoteversionembedding.New(a)
 	a.DeliverChangeWebhookJob = deliverchangewebhook.New(a)
 	a.DeliverCronWebhookJob = delivercronwebhook.New(a)
-	a.webhookHTTPClient = webhookutil.NewClient(a.config.DevMode)
+	a.webhookHTTPClient = webhookutil.NewClient(a.config.DevMode || a.config.WebhookAllowPrivate)
 	a.fedHTTPClient = webhookutil.NewClient(a.config.DevMode || a.config.MCPFederationAllowPrivate)
 
 	a.initDebugJobs()

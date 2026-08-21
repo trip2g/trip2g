@@ -17,6 +17,16 @@ func TestDefaultInternalListenAddrIsLoopback(t *testing.T) {
 	}
 }
 
+// Webhook deliveries go through the SSRF-safe dialer by default; only an
+// operator setting -webhook-allow-private opts a deployment out of it.
+func TestDefaultConfigWebhookAllowPrivateIsFalse(t *testing.T) {
+	t.Parallel()
+
+	if DefaultConfig().WebhookAllowPrivate {
+		t.Fatal("webhook-allow-private must default to false")
+	}
+}
+
 // applyStorageEnvFallback must accept the canonical S3 secret-key env name
 // (MINIO_SECRET_ACCESS_KEY) when -minio-secret-key was never explicitly set, and
 // must never clobber an explicitly set -minio-secret-key — even one whose value
@@ -47,6 +57,16 @@ func TestApplyStorageEnvFallbackSecretKey(t *testing.T) {
 
 		if c.Storage.SecretKey != DefaultMinIOSecretKey {
 			t.Fatalf("explicitly set flag was clobbered by fallback: got %q", c.Storage.SecretKey)
+		}
+	})
+
+	t.Run("webhook-allow-private flag can be set", func(t *testing.T) {
+		if err := flag.CommandLine.Set("webhook-allow-private", "true"); err != nil {
+			t.Fatalf("failed to set webhook-allow-private flag: %v", err)
+		}
+
+		if !c.WebhookAllowPrivate {
+			t.Fatal("webhook-allow-private flag did not set Config.WebhookAllowPrivate")
 		}
 	})
 }
