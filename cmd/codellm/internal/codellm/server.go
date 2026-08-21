@@ -21,6 +21,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -269,6 +270,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	// (ExposeEnv/ExposeEnvPrefix). buildChildEnv sources the VALUES from codellm's
 	// OWN environment for those names; the request carries nothing about env.
 	s.logExposedEnv()
+	roleEnvNames, roleEnvPrefixes := envDeclaration(bag)
+	envForRun := effectiveEnvNames(os.Environ(), s.cfg.ExposeEnv, s.cfg.ExposeEnvPrefix, roleEnvNames, roleEnvPrefixes)
 	observe, blocks := blockObserver(s.cfg.Metrics)
 	in := coderun.CodeInput{
 		Body:            body,
@@ -277,9 +280,12 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		MaxStdoutBytes:  s.cfg.MaxStdoutBytes,
 		Timeout:         s.cfg.Timeout,
 		Input:           bag,
-		EnvPassthrough:  s.cfg.ExposeEnv,
-		EnvPrefix:       s.cfg.ExposeEnvPrefix,
-		Observe:         observe,
+		// The operator's allowlist bounds what may be exposed; the role's own
+		// declaration narrows it. Resolved to exact names here, so nothing
+		// downstream has to expand a prefix again.
+		EnvPassthrough: envForRun,
+		EnvPrefix:      nil,
+		Observe:        observe,
 	}
 
 	changes, answer, err := coderun.ExecCode(r.Context(), in)

@@ -4,18 +4,49 @@ free: true
 lang_redirect: "[[ru/user/codellm-secrets]]"
 ---
 
-A code role that pulls from an external API needs a token. Putting it in the note in plain text is out: the vault syncs through Obsidian, sits in git, and lands in backups. Putting it in the server's environment works, but then adding a secret means editing a compose file and restarting, and every code role on that instance can read every value.
+A code role that pulls from an external API needs a token. There are two ways to give it one, and neither is a workaround for the other.
 
-The third option is what Rails does with `credentials.yml.enc`: commit the encrypted value, keep the key out of the repo. A role note carries the ciphertext, codellm holds the key, and the value is decrypted for that one role at the moment it runs.
+The usual way is the run environment: the operator of the codellm service holds the value, and the code reads it like any other environment variable. If you already run Docker secrets, Kubernetes secrets, or a Vault agent, this is where your credentials already live, and nothing here asks you to move them.
+
+The other way is what Rails does with `credentials.yml.enc`: commit the encrypted value, keep the key out of the repo. The role note carries the ciphertext, codellm holds the key, and the value is decrypted for that one role at the moment it runs. Reach for it when a secret belongs to a single role, or when adding one should not mean editing a compose file and restarting.
 
 In this article:
 
+- [From the run environment](#from-the-run-environment)
 - [Sealing a value](#sealing-a-value)
 - [Declaring it in the role](#declaring-it-in-the-role)
 - [Reading it in code](#reading-it-in-code)
 - [What this protects](#what-this-protects)
 - [Rotating keys](#rotating-keys)
-- [The operator-environment fallback](#the-operator-environment-fallback)
+
+## From the run environment
+
+The codellm operator decides what code may see, with an allowlist of variable names:
+
+```bash
+CODELLM_EXPOSE_ENV=KRISP_TOKEN,KRISP_BASE_URL
+CODELLM_EXPOSE_ENV_PREFIX=KRISP_
+```
+
+Nothing is exposed by default. A variable that appears on neither list never reaches the code, whatever a role asks for.
+
+The role then reads it:
+
+```python
+import os
+token = os.environ["KRISP_TOKEN"]
+```
+
+By default every code role on that codellm sees every allowlisted variable. A role can narrow its own share:
+
+```yaml
+env_passthrough: [KRISP_TOKEN]
+env_prefix: [KRISP_]
+```
+
+This only narrows. The operator's allowlist stays the boundary, so declaring a variable the operator did not allow gets you nothing, and a role that declares neither field keeps seeing the whole allowlist. Narrowing is worth doing once several roles share one codellm and each has its own credential.
+
+The cost of this path is that adding a secret is an operator action: a new variable means editing the deployment and restarting. That is the trade the second path removes.
 
 ## Sealing a value
 
@@ -104,13 +135,3 @@ unseal_env_key: SEAL_KEY_V2
 That makes rotation gradual instead of a flag day. Add `SEAL_KEY_V2` alongside the old key, re-seal and move roles one at a time, and drop the old key when nothing points at it.
 
 Re-sealing means editing the note, so replacing a compromised upstream token is a note edit plus a sync, not a database update. And the old ciphertext stays in the vault's git history — it is unreadable without the key, but rotating the key does not erase it, so treat a leaked `SEAL_KEY` as a leak of everything sealed with it.
-
-## The operator-environment fallback
-
-Sealing is not mandatory. A role that declares no `unseal` fields still reads whatever the codellm operator has allowlisted into the run environment through `CODELLM_EXPOSE_ENV`:
-
-```python
-token = os.environ["KRISP_TOKEN"]
-```
-
-That path still works and is fine for a value the operator sets once and every code role may see. Sealing is what you reach for when a secret belongs to one role, or when adding a secret should not mean a redeploy.

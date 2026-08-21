@@ -48,6 +48,14 @@ type Input struct {
 	// the object most likely to be printed whole narrows that accident.
 	Secrets map[string]string `json:"secrets,omitempty"`
 
+	// EnvPassthrough / EnvPrefix are the role's declaration of which env vars
+	// its code needs. codellm intersects them with its OWN operator allowlist,
+	// so a role can only narrow what it receives, never widen it. Declaring
+	// neither means the whole allowlist, which is what roles written before the
+	// fields existed expect.
+	EnvPassthrough []string `json:"env_passthrough,omitempty"`
+	EnvPrefix      []string `json:"env_prefix,omitempty"`
+
 	ChangedFiles  []ChangeInfo   `json:"changed_files"`
 	ChangeFile    *ChangeInfo    `json:"change_file,omitempty"`
 	AttachedNotes []AttachedNote `json:"attached_notes"`

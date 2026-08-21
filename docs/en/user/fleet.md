@@ -69,6 +69,7 @@ The keys, verified against the runtime:
 | `max_tokens`, `max_steps`, `timeout_seconds` | per-run budget (timeout defaults to 300s) |
 | `max_depth` | cascade depth limit; loop protection |
 | `concurrency` | `skip`, `queue_one`, or `allow_overlap` when deliveries pile up |
+| `env_passthrough`, `env_prefix` | code roles only: which env vars the code receives, narrowing what the codellm operator allowlisted |
 | `unseal`, `unseal_env_key` | code roles only: which frontmatter fields hold sealed secrets, and which key opens them |
 
 Fleet validates every role at discovery time and refuses bad ones out loud: a role that declares a tool the fleet does not offer, a change role with empty triggers, a body that references `change_file` without fanning out over changed files. Misconfiguration fails at poll time, not silently at 3 a.m.
@@ -121,7 +122,7 @@ The body's first fenced code block is the program (`python`, `bash`, or `node`).
 
 Isolation is strict by default, and it is codellm's, not the fleet's: the child runs in an OS-level sandbox (Linux namespaces plus Landlock filesystem confinement, no network unless the operator allows it) that fails closed on unsupported systems. Code execution as a whole is off until the codellm operator enables specific interpreters.
 
-Secrets do not travel in the role's environment. A code role that needs a token carries the encrypted value in its own frontmatter and declares which fields to open — see [[en/user/codellm-secrets|Secrets for code roles]].
+A code role that needs a token reads it from the run environment, which the codellm operator fills, or carries an encrypted value in its own frontmatter. Both paths are covered in [[en/user/codellm-secrets|Secrets for code roles]].
 
 ## Fan-out and templating
 
