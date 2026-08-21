@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/signinbyhat"
 	"trip2g/internal/metrics"
+	"trip2g/internal/noteloader"
 	"trip2g/internal/router"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -242,6 +243,18 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 	if a.internalServer != nil {
 		if internalErr := a.internalServer.Shutdown(); internalErr != nil {
 			a.log.Error("failed to shutdown internal server", "error", internalErr)
+		}
+	}
+
+	// Release the search indexes last. With an on-disk index this unlocks the
+	// directory for the next instance and leaves it in a state that reopens in
+	// milliseconds; with the default in-memory index it is a no-op.
+	for _, loader := range []*noteloader.Loader{a.liveNoteLoader, a.latestNoteLoader} {
+		if loader == nil {
+			continue
+		}
+		if closeErr := loader.Close(); closeErr != nil {
+			a.log.Error("failed to close search index", "error", closeErr)
 		}
 	}
 

@@ -56,6 +56,18 @@ type Config struct {
 	DatabaseFile       string
 	MaxRequestBodySize int // in MB
 
+	// SearchIndexPath, when non-empty, moves the bleve full-text index out of
+	// the heap and onto disk under this directory (one subdirectory per index
+	// schema version). Empty keeps the in-memory index, which is the historical
+	// behaviour and stays the default.
+	//
+	// The in-memory index is upsidedown over gtreap, and it is expensive: on a
+	// 1017-note vault measured 2026-08-21 it held 350 MB of heap for 10 MB of
+	// text. The same corpus as an on-disk scorch index costs 4 MB of heap and
+	// ~45 MB of disk, and reopening it after a restart takes 4 ms instead of the
+	// 8 s a rebuild needs. See docs/dev/search_index_on_disk.md.
+	SearchIndexPath string
+
 	LogQueries bool
 
 	// Application settings
@@ -509,6 +521,8 @@ func (c *Config) defineFlags() {
 func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.ListenAddr, "listen-addr", c.ListenAddr, "Listen address")
 	flag.StringVar(&c.DatabaseFile, "db-file", c.DatabaseFile, "Database file")
+	flag.StringVar(&c.SearchIndexPath, "search-index-path", c.SearchIndexPath,
+		"directory for the on-disk full-text search index (SEARCH_INDEX_PATH); empty keeps the index in memory")
 	flag.IntVar(&c.MaxRequestBodySize, "max-request-body-size", 10, "Max request body size in MB")
 	flag.BoolVar(&c.LogQueries, "log-queries", c.LogQueries, "Log database queries")
 	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
