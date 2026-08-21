@@ -18,7 +18,7 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	InsertNote(ctx context.Context, update appmodel.RawNote) (int64, error)
+	InsertNote(ctx context.Context, update appmodel.RawNote) (appmodel.NoteSaveResult, error)
 	InsertUncommittedPath(ctx context.Context, notePathID int64) error
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
@@ -653,4 +653,110 @@ func TestResolve_UnchangedPushIsInert(t *testing.T) {
 		Updates: []model.PushNoteInput{{Path: "note.md", Content: "same"}},
 	})
 	require.NoError(t, err)
+}
+
+// TestRestoredNoteReachesCommit pins the deferred half of a restore: a push that
+// only unhides a path stores no new version, so it used to be dropped from
+// uncommitted_paths and never reached commitNotes — the client was told nothing
+// was published and the post-save handler never ran for it.
+func TestRestoredNoteReachesCommit(t *testing.T) {
+	ctx := context.Background()
+	mockLogger := &logger.TestLogger{}
+
+	restored := appmodel.NoteSaveResult{PathID: 7, Unhidden: true}
+	require.False(t, restored.Versioned(), "a restore stores no new version")
+	require.True(t, restored.AffectsSnapshot(), "a restore changes what is served")
+
+	setup := func() *EnvMock {
+		env := newEnvMock(mockLogger)
+		env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			return restored, nil
+		}
+		env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			return &appmodel.NoteViews{
+				List: []*appmodel.NoteView{
+					{Path: "restored.md", PathID: 7, VersionID: 100, Assets: map[string]struct{}{}},
+				},
+				Subgraphs: map[string]*appmodel.NoteSubgraph{},
+			}, nil
+		}
+		env.LayoutsFunc = func() *appmodel.Layouts {
+			return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+		}
+		return env
+	}
+
+	input := func(skipCommit bool) model.PushNotesInput {
+		return model.PushNotesInput{
+			Updates:    []model.PushNoteInput{{Path: "restored.md", Content: "# Restored"}},
+			SkipCommit: &skipCommit,
+		}
+	}
+
+	t.Run("deferred: the path is queued for commitNotes", func(t *testing.T) {
+		env := setup()
+		var queued []int64
+		env.InsertUncommittedPathFunc = func(_ context.Context, notePathID int64) error {
+			queued = append(queued, notePathID)
+			return nil
+		}
+
+		_, err := pushnotes.Resolve(ctx, env, input(true))
+		require.NoError(t, err)
+		require.Equal(t, []int64{7}, queued)
+	})
+
+	t.Run("direct: the post-save handler runs for the path", func(t *testing.T) {
+		env := setup()
+		var handled []int64
+		env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, changedPathIDs []int64) error {
+			handled = append(handled, changedPathIDs...)
+			return nil
+		}
+
+		_, err := pushnotes.Resolve(ctx, env, input(false))
+		require.NoError(t, err)
+		require.Equal(t, []int64{7}, handled)
+	})
+}
+
+// TestUnchangedNoteStaysQuiet is the other half: a resync re-pushing identical
+// content to a visible path must not queue or fire anything. That gating is why
+// the restore case regressed, and it has to survive the fix.
+func TestUnchangedNoteStaysQuiet(t *testing.T) {
+	ctx := context.Background()
+	env := newEnvMock(&logger.TestLogger{})
+	env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+		return appmodel.NoteSaveResult{PathID: 7}, nil
+	}
+	env.LayoutsFunc = func() *appmodel.Layouts {
+		return &appmodel.Layouts{Map: map[string]appmodel.Layout{}}
+	}
+	queued := 0
+	env.InsertUncommittedPathFunc = func(_ context.Context, _ int64) error {
+		queued++
+		return nil
+	}
+	handled := 0
+	env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error {
+		handled++
+		return nil
+	}
+
+	skip := true
+	_, err := pushnotes.Resolve(ctx, env, model.PushNotesInput{
+		Updates:    []model.PushNoteInput{{Path: "same.md", Content: "# Same"}},
+		SkipCommit: &skip,
+	})
+	require.NoError(t, err)
+
+	skip = false
+	_, err = pushnotes.Resolve(ctx, env, model.PushNotesInput{
+		Updates:    []model.PushNoteInput{{Path: "same.md", Content: "# Same"}},
+		SkipCommit: &skip,
+	})
+	require.NoError(t, err)
+
+	require.Zero(t, queued, "an unchanged push has nothing to defer")
+	require.Zero(t, handled, "an unchanged push is not a change")
 }

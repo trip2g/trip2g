@@ -66,9 +66,11 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 
 	skipCommit := input.SkipCommit != nil && *input.SkipCommit
 	pathIDs := []int64{}
-	// changedPathIDs is pathIDs minus the writes that stored nothing new.
+	// changedPathIDs is pathIDs minus the writes that changed nothing anyone can
+	// see. A resync re-pushing identical content to a visible path is not a
+	// change; a restore is, even though it stores no new version — the note
+	// reappears on the site.
 	changedPathIDs := []int64{}
-	reload := false
 
 	// Validate the whole batch before writing anything: callers (e.g. gitapi's
 	// applyDiff) roll back only their own state on failure, so a partially
@@ -96,18 +98,15 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		// carry side effects. A vault resync re-pushes thousands of identical
 		// notes, and each of those used to fire webhooks, embeddings and SSE.
 		pathIDs = append(pathIDs, saved.PathID)
-		if saved.Versioned() {
-			changedPathIDs = append(changedPathIDs, saved.PathID)
-		}
 		if saved.AffectsSnapshot() {
-			reload = true
+			changedPathIDs = append(changedPathIDs, saved.PathID)
 		}
 	}
 
-	// An unhidden path has no new version but must still reach the served
-	// snapshot, so the reload is driven by AffectsSnapshot, not by the change set.
+	// Nothing reached the served snapshot: report against the views already in
+	// memory instead of paying for a reload.
 	nvs := env.LatestNoteViews()
-	if reload {
+	if len(changedPathIDs) > 0 {
 		var prepErr error
 		nvs, prepErr = env.PrepareLatestNotes(ctx, input.Partial)
 		if prepErr != nil {
@@ -116,8 +115,9 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	}
 
 	// If skipCommit, save path IDs to uncommitted table and skip HandleLatestNotesAfterSave.
-	// The uncommitted table is a deferred side-effect batch, so an unchanged push
-	// has nothing to defer.
+	// The uncommitted table is what commitNotes later reports and acts on, so a
+	// path missing here is invisible to the client and never gets its side
+	// effects. An unchanged push has nothing to defer.
 	if skipCommit {
 		for _, pathID := range changedPathIDs {
 			insertErr := env.InsertUncommittedPath(ctx, pathID)

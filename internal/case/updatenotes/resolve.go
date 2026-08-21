@@ -83,9 +83,9 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	// versionIDs is aligned with pathIDs: each entry is the write's OWN inserted
 	// version id (0 when content was unchanged).
 	var versionIDs []int64
-	// changedPathIDs is pathIDs minus the writes that stored nothing new: only
-	// those may raise change events. reload is wider — an unhidden path has no new
-	// version but must still reach the served snapshot.
+	// changedPathIDs is pathIDs minus the writes that changed nothing anyone can
+	// see: only those may raise change events. reload is wider — a hide changes
+	// the served snapshot too, and deliberately raises no events.
 	var changedPathIDs []int64
 	reload := false
 	hid := false
@@ -108,10 +108,8 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			}
 			pathIDs = append(pathIDs, saved.PathID)
 			versionIDs = append(versionIDs, saved.VersionID)
-			if saved.Versioned() {
-				changedPathIDs = append(changedPathIDs, saved.PathID)
-			}
 			if saved.AffectsSnapshot() {
+				changedPathIDs = append(changedPathIDs, saved.PathID)
 				reload = true
 			}
 			paths = append(paths, upsert.Path)
@@ -126,10 +124,8 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			}
 			pathIDs = append(pathIDs, saved.PathID)
 			versionIDs = append(versionIDs, saved.VersionID)
-			if saved.Versioned() {
-				changedPathIDs = append(changedPathIDs, saved.PathID)
-			}
 			if saved.AffectsSnapshot() {
+				changedPathIDs = append(changedPathIDs, saved.PathID)
 				reload = true
 			}
 			paths = append(paths, patch.Path)
@@ -163,10 +159,10 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	}
 
 	// The reload covers everything that changed what is served: new versions,
-	// unhidden paths, hides. The post-save handler is narrower — it raises change
-	// events, and a write that stored nothing new is not a change. Without that
-	// split an idempotent agent write re-triggers the webhooks that caused it, at
-	// full LLM cost, on every cycle.
+	// unhidden paths, hides. The post-save handler is narrower — it skips hides,
+	// and it skips a write that stored nothing and hid nothing. Without that split
+	// an idempotent agent write re-triggers the webhooks that caused it, at full
+	// LLM cost, on every cycle.
 	views := nvs
 	if reload {
 		reloaded, prepErr := env.PrepareLatestNotes(ctx, false)

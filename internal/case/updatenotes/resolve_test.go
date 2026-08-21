@@ -973,11 +973,11 @@ func TestResolve_Unscoped_EmptyWritePatterns_Allowed(t *testing.T) {
 	require.True(t, called)
 }
 
-// TestResolve_UnhideReloadsWithoutEvents pins the other half of the no-op rule: a
-// write that stored nothing but brought a hidden path back must reload the served
-// snapshot — the note is absent from it while hidden — yet still raise no change
-// event, since its content did not change.
-func TestResolve_UnhideReloadsWithoutEvents(t *testing.T) {
+// TestResolve_UnhideReloadsAndRaisesEvent pins the restore case: a write that
+// stored nothing but brought a hidden path back must reload the served snapshot —
+// the note is absent from it while hidden — and raise the change event too. The
+// note reappears on the site, and that is a change however unchanged its bytes are.
+func TestResolve_UnhideReloadsAndRaisesEvent(t *testing.T) {
 	ctx := context.Background()
 
 	const pathID int64 = 9
@@ -988,7 +988,7 @@ func TestResolve_UnhideReloadsWithoutEvents(t *testing.T) {
 	})
 
 	reloads := 0
-	handles := 0
+	var handled []int64
 	env := &mockEnv{
 		latestNoteViews: appmodel.NewNoteViews,
 		insertNote: func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
@@ -998,8 +998,8 @@ func TestResolve_UnhideReloadsWithoutEvents(t *testing.T) {
 			reloads++
 			return views, nil
 		},
-		handleLatestNotesAfterSave: func(_ context.Context, _ []int64) error {
-			handles++
+		handleLatestNotesAfterSave: func(_ context.Context, ids []int64) error {
+			handled = append(handled, ids...)
 			return nil
 		},
 	}
@@ -1014,7 +1014,7 @@ func TestResolve_UnhideReloadsWithoutEvents(t *testing.T) {
 	payload, ok := result.(model.UpdateNotesSuccessPayload)
 	require.True(t, ok, "expected UpdateNotesSuccessPayload, got %T", result)
 	require.Equal(t, 1, reloads, "an unhidden note must reach the served snapshot")
-	require.Zero(t, handles, "unhiding is not a content change")
+	require.Equal(t, []int64{pathID}, handled, "a note coming back is a change")
 	require.Len(t, payload.Updated, 1)
 }
 
