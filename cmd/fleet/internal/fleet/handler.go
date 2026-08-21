@@ -237,6 +237,8 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 func buildInputBag(role Role, rc renderCtx) []byte {
 	bag := fleetinput.Input{
 		Frontmatter:   role.Frontmatter,
+		Unseal:        role.Unseal,
+		UnsealEnvKey:  role.UnsealEnvKey,
 		ChangedFiles:  rc.ChangedFiles,
 		ChangeFile:    rc.ChangeFile,
 		AttachedNotes: rc.AttachedNotes,
@@ -367,6 +369,8 @@ func buildCronInputBag(role Role, rc renderCtx) []byte {
 	now := rc.Now.Format(time.RFC3339)
 	bag := fleetinput.Input{
 		Frontmatter:   role.Frontmatter,
+		Unseal:        role.Unseal,
+		UnsealEnvKey:  role.UnsealEnvKey,
 		AttachedNotes: rc.AttachedNotes,
 		Depth:         rc.Depth,
 		Now:           &now,

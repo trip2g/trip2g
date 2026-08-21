@@ -1,6 +1,6 @@
 # Sealed secrets for codellm role notes
 
-**Status:** Design, not yet built (2026-08-21).
+**Status:** Built, except the seal HTTP endpoint (2026-08-21). The `seal` CLI, the unseal step and the bag contract are in; `/_system/codellm/seal` is the remaining piece.
 **Builds on:** `codellm_extraction.md` (env passthrough, the `requires_secrets` hardening it sketches at the end of "The wire protocol"), `fleet_run.md`, `internal/dataencryption`.
 
 ## TL;DR
@@ -304,12 +304,12 @@ through the 422 into fleet's run logs and the delivery trace UI. codellm returns
 Producing a blob must not require a terminal on the codellm host, so sealing has two front doors
 over one operation.
 
-**CLI.** `codellm seal --env-key SEAL_KEY_V2` reads the plaintext from stdin and prints
+**CLI (built).** `codellm seal --env-key SEAL_KEY_V2` reads the plaintext from stdin and prints
 `sealed:v1:...`. `--env-key` names the master key and defaults to `SEAL_KEY`, mirroring the form's
 field. The value comes from stdin rather than a flag on purpose: an argv secret is visible in the
 process table and lands in shell history — the same class of leak as a value in a query string.
 
-**HTTP.** One path from config, defaulting to `/_system/codellm/seal` (the `/_system/` prefix
+**HTTP (not built yet).** One path from config, defaulting to `/_system/codellm/seal` (the `/_system/` prefix
 matches trip2g's own admin endpoints). `GET` renders a small HTML form, `POST` performs the
 sealing. Two fields — the env var name holding the master key, defaulting to `SEAL_KEY`, and the
 value to seal — so the operator can paste a credential in a browser and copy the blob straight

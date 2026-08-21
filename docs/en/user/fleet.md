@@ -14,7 +14,7 @@ In this article:
 - [Roles are notes](#roles-are-notes)
 - [Triggers: on change and on schedule](#triggers-on-change-and-on-schedule)
 - [Tools and scope](#tools-and-scope)
-- [executor: code](#executor-code)
+- [Code roles](#code-roles)
 - [Fan-out and templating](#fan-out-and-templating)
 - [Budgets, spend, and shutdown](#budgets-spend-and-shutdown)
 - [Worked example: a knowledge base that builds itself](#worked-example-a-knowledge-base-that-builds-itself)
@@ -27,7 +27,7 @@ Fleet is a sidecar: a separate process (`cmd/fleet` in the trip2g repo) that con
 Two kinds of agents run under one roof:
 
 - **LLM roles** (the default): a model in a tool loop that searches, reads, and writes notes until it finishes or hits a budget.
-- **Code roles** (`executor: code`): a Python, Bash, or Node program in a sandbox, for deterministic steps that need no model.
+- **Code roles**: a Python, Bash, or Node program in a sandbox, for deterministic steps that need no model.
 
 Because agents read and write plain notes, anything that renders notes doubles as an agent UI. A [[en/user/kanban|kanban board]] over task notes is a live control surface: an agent moves a card by editing frontmatter, and you see it move.
 
@@ -58,7 +58,7 @@ The keys, verified against the runtime:
 
 | Key | Meaning |
 |-----|---------|
-| `executor` | `llm` (default) or `code` |
+| `fleet_id` | which fleet claims this role. It also picks the kind of run: a fleet pointed at codellm executes the body as code, one pointed at a model runs it as prose. A role with no `fleet_id` is claimed by nobody and never runs |
 | `model`, `tools` | which model, which tools this role may call |
 | `read_patterns`, `write_patterns` | glob scopes the runtime enforces on every read and write |
 | `mode` | `change`, `cron`, or `both` |
@@ -69,9 +69,9 @@ The keys, verified against the runtime:
 | `max_tokens`, `max_steps`, `timeout_seconds` | per-run budget (timeout defaults to 300s) |
 | `max_depth` | cascade depth limit; loop protection |
 | `concurrency` | `skip`, `queue_one`, or `allow_overlap` when deliveries pile up |
-| `env_passthrough`, `env_prefix` | code roles only: which env vars the child process gets |
+| `unseal`, `unseal_env_key` | code roles only: which frontmatter fields hold sealed secrets, and which key opens them |
 
-Fleet validates every role at discovery time and refuses bad ones out loud: a role that declares a tool the fleet does not offer, a change role with empty triggers, a code role without a fenced code block. Misconfiguration fails at poll time, not silently at 3 a.m.
+Fleet validates every role at discovery time and refuses bad ones out loud: a role that declares a tool the fleet does not offer, a change role with empty triggers, a body that references `change_file` without fanning out over changed files. Misconfiguration fails at poll time, not silently at 3 a.m.
 
 ## Triggers: on change and on schedule
 
@@ -95,30 +95,33 @@ An LLM role gets five tools:
 
 Every call is checked against `read_patterns` and `write_patterns` at the runtime level, not in the prompt. An out-of-scope request is denied and the denial is fed back to the model. Writes go through a per-delivery scoped token the hub mints for that one delivery, so the agent physically cannot reach paths outside its scope, and every write is a normal note version you can inspect and revert.
 
-## executor: code
+## Code roles
 
-Not every step needs a model. Pagination, format conversion, pulling an external API: these are deterministic, and running them through an LLM adds cost and noise. A code role runs a program instead:
+Not every step needs a model. Pagination, format conversion, pulling an external API: these are deterministic, and running them through an LLM adds cost and noise. Point the role at a fleet backed by codellm and the body runs as a program instead:
 
 ````markdown
 ---
-executor: code
+fleet_id: codellm
 mode: cron
 cron_schedule: "*/30 * * * *"
 write_patterns: ["transcripts/**", "logs/**"]
-env_passthrough: [KRISP_API_TOKEN]
 ---
 ```python
-import json, os
-# fetch new items, then emit writes on stdout:
-print(json.dumps({"changes": [
-    {"path": "transcripts/2026-07-02_standup.md", "content": "..."}
-]}))
+import json, fleetkit
+
+cfg = fleetkit.frontmatter()
+# fetch new items, then emit the writes:
+fleetkit.emit([fleetkit.note("transcripts/2026-07-02_standup.md", {"title": "Standup"}, "...")])
 ```
 ````
 
-The body's first fenced code block is the program (`python`, `bash`, or `node`). The delivery context arrives as JSON in the file named by `$FLEET_INPUT`; the program prints a `{"changes": [...]}` JSON object to stdout, and fleet applies each change through the same `write_patterns` enforcement as `write_note`. Code execution is not a scope bypass.
+There is no `executor` key. The role names a fleet, the fleet decides what kind of run it is, and the same note can move between them by changing one line.
 
-Isolation is strict by default. The child runs in an OS-level sandbox (Linux namespaces plus Landlock filesystem confinement, no network unless the operator allows it) that fails closed on unsupported systems. Its environment is scrubbed: no env var crosses into the child unless the role lists it in `env_passthrough` or `env_prefix`. And code execution as a whole is off until the fleet operator enables specific interpreters with `--allowed-programs`.
+The body's first fenced code block is the program (`python`, `bash`, or `node`). The delivery context arrives as JSON in the file named by `$FLEET_INPUT` — `fleetkit.bag()` reads it, and `fleetkit.frontmatter()` gives you the role note's own frontmatter, so a role's configuration lives in the note that declares it. The program prints a `{"changes": [...]}` object to stdout, and every change is applied through the same `write_patterns` enforcement as `write_note`. Code execution is not a scope bypass.
+
+Isolation is strict by default, and it is codellm's, not the fleet's: the child runs in an OS-level sandbox (Linux namespaces plus Landlock filesystem confinement, no network unless the operator allows it) that fails closed on unsupported systems. Code execution as a whole is off until the codellm operator enables specific interpreters.
+
+Secrets do not travel in the role's environment. A code role that needs a token carries the encrypted value in its own frontmatter and declares which fields to open — see [[en/user/codellm-secrets|Secrets for code roles]].
 
 ## Fan-out and templating
 
@@ -140,7 +143,7 @@ The clearest fleet pipeline in production use turns raw call transcripts into a 
 
 ```
 Krisp API
-   │  cron: executor: code role (ingest)
+   │  cron: code role (ingest)
    ▼
 transcripts/<date>_<slug>.md    raw transcript, verbatim, never edited
    │  change webhook on transcripts/** → segmentation role
@@ -175,11 +178,12 @@ go build -o fleet ./cmd/fleet
   --fleet-secret "<any random seed>" \
   --llm-base-url https://openrouter.ai/api/v1 \
   --llm-api-key  "<key>" \
-  --agents-folder roles/ \
-  --allowed-programs python,bash
+  --agents-folder roles/
 ```
 
-Every flag has a `TRIP2G_FLEET_<FLAG>` environment variable equivalent. `--llm-base-url` takes any OpenAI-compatible endpoint, including a local model.
+Every flag has a `TRIP2G_FLEET_<FLAG>` environment variable equivalent. `--llm-base-url` takes any OpenAI-compatible endpoint, including a local model — or a codellm instance, which is what makes this fleet run code bodies instead of prose.
+
+Sandboxing and the interpreter allowlist are codellm's settings, not fleet's. Fleet runs no code itself.
 
 The `--trip2g-admin-personal-token` is fleet's only credential on the hub: a [[en/user/mcp|personal token]] belonging to an admin. You do not mint it by hand — set `OWNER_PERSONAL_TOKEN_VALUE` on the hub to a `t2g_` value and it seeds the token for the owner at boot, then pass the same value to fleet. Fleet never holds the hub's signing secret, so the credential is one revocable row: revoke it in the admin UI and fleet stops within half a minute, without restarting the hub. A restart will not bring a revoked row back — restoring access means a new value.
 

@@ -30,6 +30,7 @@ __all__ = [
     "emit",
     "bag",
     "frontmatter",
+    "secrets",
     "note_frontmatter",
 ]
 
@@ -94,6 +95,22 @@ def frontmatter():
     reads as None rather than raising.
     """
     return Frontmatter(bag().get("frontmatter") or {})
+
+
+def secrets():
+    """The values codellm unsealed for this run, by frontmatter field name.
+
+    Kept out of frontmatter() deliberately: the bag is what a role prints while
+    debugging, and a secret inside the object most likely to be dumped whole
+    ends up published in the vault. Read the two separately:
+
+        cfg = fleetkit.frontmatter()
+        sec = fleetkit.secrets()
+        requests.get(cfg.api_url, headers={'Authorization': sec.api_token})
+
+    Empty when the role declares no `unseal` fields.
+    """
+    return Frontmatter(bag().get("secrets") or {})
 
 
 def note_frontmatter(path):

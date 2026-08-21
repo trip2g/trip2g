@@ -254,6 +254,17 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	body, bag := extractBodyAndBag(req.Messages)
 
+	// Open the sealed frontmatter fields the role declared. The key never leaves
+	// this process: it is resolved from codellm's OWN environment and the
+	// plaintext goes into the bag, not into the child's env, so a role can only
+	// read the secrets its own note declared.
+	bag, secrets, unsealErr := unsealBag(bag, osEnv{}, s.cfg.ExposeEnv)
+	if unsealErr != nil {
+		s.cfg.Metrics.RecordExecError(unsealErr)
+		writeError(w, http.StatusUnprocessableEntity, "unseal_error", unsealErr.Error())
+		return
+	}
+
 	// codellm alone decides what env to expose: its operator allowlist
 	// (ExposeEnv/ExposeEnvPrefix). buildChildEnv sources the VALUES from codellm's
 	// OWN environment for those names; the request carries nothing about env.
@@ -278,7 +289,10 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		// timeout, or unparseable stdout is a deterministic failure, not a soft
 		// skip. 422 (not 5xx) so fleet's OpenAILLM does not retry it.
 		s.cfg.Metrics.RecordExecError(err)
-		writeError(w, http.StatusUnprocessableEntity, "code_execution_error", err.Error())
+		// Redact before the message leaves the process: it can quote the child's
+		// stdout, and the likeliest parse failure is a role printing the bag.
+		writeError(w, http.StatusUnprocessableEntity, "code_execution_error",
+			redactSecrets(err.Error(), secrets))
 		return
 	}
 	for _, ch := range changes {

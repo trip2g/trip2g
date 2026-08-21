@@ -266,11 +266,21 @@ import json, os, tempfile, fleetkit
 
 path = os.path.join(tempfile.mkdtemp(), "bag.json")
 with open(path, "w") as fh:
-    json.dump({"frontmatter": {"krisp_base_url": "https://api.krisp.ai", "max": "3"}}, fh)
+    json.dump({
+        "frontmatter": {"krisp_base_url": "https://api.krisp.ai", "max": "3", "krisp_token": "sealed:v1:zzz"},
+        "secrets": {"krisp_token": "opened-value"},
+    }, fh)
 os.environ["FLEET_INPUT"] = path
 
 fm = fleetkit.frontmatter()
-print(json.dumps({"url": fm.krisp_base_url, "max": fm.max, "missing": fm.nope}))
+sec = fleetkit.secrets()
+print(json.dumps({
+    "url": fm.krisp_base_url,
+    "max": fm.max,
+    "missing": fm.nope,
+    "token": sec.krisp_token,
+    "fm_has_plaintext": fm.krisp_token,
+}))
 `
 
 const jsRoleFrontmatter = `
@@ -278,11 +288,21 @@ const fs = require('fs'), os = require('os'), path = require('path');
 const fleetkit = require('fleetkit');
 
 const p = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'bag')), 'bag.json');
-fs.writeFileSync(p, JSON.stringify({frontmatter: {krisp_base_url: 'https://api.krisp.ai', max: '3'}}));
+fs.writeFileSync(p, JSON.stringify({
+  frontmatter: {krisp_base_url: 'https://api.krisp.ai', max: '3', krisp_token: 'sealed:v1:zzz'},
+  secrets: {krisp_token: 'opened-value'},
+}));
 process.env.FLEET_INPUT = p;
 
 const fm = fleetkit.frontmatter();
-console.log(JSON.stringify({url: fm.krisp_base_url, max: fm.max, missing: fm.nope ?? null}));
+const sec = fleetkit.secrets();
+console.log(JSON.stringify({
+  url: fm.krisp_base_url,
+  max: fm.max,
+  missing: fm.nope ?? null,
+  token: sec.krisp_token,
+  fm_has_plaintext: fm.krisp_token,
+}));
 `
 
 func TestFleetkitRuns_RoleFrontmatter(t *testing.T) {
@@ -298,9 +318,11 @@ func TestFleetkitRuns_RoleFrontmatter(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var got struct {
-				URL     string `json:"url"`
-				Max     string `json:"max"`
-				Missing any    `json:"missing"`
+				URL            string `json:"url"`
+				Max            string `json:"max"`
+				Missing        any    `json:"missing"`
+				Token          string `json:"token"`
+				FMHasPlaintext string `json:"fm_has_plaintext"`
 			}
 			out := tc.run(t, tc.src)
 			require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(out)), &got), "stdout: %q", out)
@@ -308,6 +330,9 @@ func TestFleetkitRuns_RoleFrontmatter(t *testing.T) {
 			require.Equal(t, "https://api.krisp.ai", got.URL)
 			require.Equal(t, "3", got.Max, "trip2g stringifies note meta; values arrive as text")
 			require.Nil(t, got.Missing, "a missing key must read as empty, not raise")
+			require.Equal(t, "opened-value", got.Token, "secrets() reads the unsealed section")
+			require.Equal(t, "sealed:v1:zzz", got.FMHasPlaintext,
+				"the plaintext must NOT be merged into frontmatter")
 		})
 	}
 }
