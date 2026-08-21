@@ -65,6 +65,14 @@ sealed:v1:9nR2v0QkX8tWc1pE...
 
 The secret goes in on stdin, not as an argument: a flag would show up in the process table and in your shell history.
 
+### From the browser
+
+Sealing does not require a terminal on the codellm host. The same operation has a form at `/_system/codellm/seal`, behind the same admin login as the rest of codellm: name the key variable (`SEAL_KEY` unless you use another one), paste the value, and copy the `sealed:v1:...` result straight into the note.
+
+The value is sent in the form body and never appears in the URL — a secret in a URL ends up in proxy logs, browser history and `Referer` headers. The result page shows the sealed blob only, never the value you typed.
+
+The path is configurable (`CODELLM_SEAL_PATH`) if the default collides with something in your setup.
+
 ## Declaring it in the role
 
 Paste the output into the role note's frontmatter and list which fields to open:
