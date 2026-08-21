@@ -23,7 +23,13 @@ func TestDeclaresRole(t *testing.T) {
 		{"frontmatter not at start", "intro\n\n---\nfleet_id: codellm\n---\n", false},
 		{"leading blank lines then frontmatter", "\n\n---\nfleet_id: codellm\n---\n", true},
 		{"crlf line endings", "---\r\nfleet_id: codellm\r\n---\r\nbody\r\n", true},
-		{"unterminated frontmatter", "---\nfleet_id: codellm\n", false},
+		// goldmark closes an open block at EOF and parses what it collected, so
+		// an unterminated frontmatter still makes the note a role.
+		{"unterminated frontmatter", "---\nfleet_id: codellm\n", true},
+		{"four-dash fence", "----\nfleet_id: codellm\n----\n", true},
+		{"mismatched fence lengths", "---\nfleet_id: codellm\n--------\n", true},
+		{"duplicate fleet_id keys", "---\nfleet_id: a\nfleet_id: b\n---\n", true},
+		{"list body is not a fence", "- item\n- other\n", false},
 		{"empty content", "", false},
 		{"nested fleet_id is not a role marker", "---\nmeta:\n  fleet_id: codellm\n---\n", false},
 	}

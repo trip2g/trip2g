@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // ErrRoleAuthoringDenied is returned when a write or patch would create a role
@@ -31,32 +31,33 @@ var ErrRoleAuthoringDenied = errors.New("write denied: agents may not author or 
 // accusation of role authoring.
 var ErrRoleGuardUnverifiable = errors.New("write denied: cannot verify the patched note is not a role note")
 
-const frontmatterDelimiter = "---"
-
 // declaresRole reports whether content's YAML frontmatter declares a top-level
 // fleet_id key, with or without a value: an empty fleet_id cannot run, but it
 // is one keystroke from one that can, and nothing legitimate writes it.
 //
-// Only a top-level key counts, matching how fleet reads role config out of
-// trip2g's flat note meta. The parse is deliberately more permissive than
-// trip2g's about what counts as frontmatter (leading blank lines, CRLF,
-// trailing spaces on the delimiters) — erring towards seeing a role that
-// trip2g would not is a false denial, which is loud and recoverable, while the
-// opposite is a silent hole.
+// The frontmatter rules mirror goldmark-meta, which is what actually produces a
+// note's meta in trip2g (internal/mdloader -> NoteView.RawMeta -> the GraphQL
+// meta field fleet's DiscoverRoles reads fleet_id from). Mirroring matters more
+// than elegance here: every input goldmark parses as frontmatter but this
+// function does not is a silent hole in the guard, which is why
+// TestDeclaresRoleMatchesGoldmark diffs the two directly. The YAML library is
+// v2 for the same reason, not by preference: v3 rejects duplicate keys that v2
+// accepts, and a note goldmark parses but this rejects is a bypass, not a
+// stricter check.
+//
+// Erring the other way is fine — a false denial is loud and recoverable — so
+// leading blank lines count here even though goldmark requires the fence on
+// line 0.
 func declaresRole(content string) bool {
 	body := strings.ReplaceAll(content, "\r\n", "\n")
 	body = strings.TrimPrefix(body, "\uFEFF")
 	body = strings.TrimLeft(body, "\n")
 	lines := strings.Split(body, "\n")
-	if strings.TrimRight(lines[0], " \t") != frontmatterDelimiter {
-		return false
-	}
-	front, ok := untilClosingDelimiter(lines[1:])
-	if !ok {
+	if !isFrontmatterFence(lines[0]) {
 		return false
 	}
 	var meta map[string]any
-	if err := yaml.Unmarshal([]byte(front), &meta); err != nil {
+	if err := yaml.Unmarshal([]byte(frontmatterBody(lines[1:])), &meta); err != nil {
 		// Unparseable frontmatter yields no meta in trip2g either, so the note
 		// cannot become a role through it.
 		return false
@@ -65,17 +66,25 @@ func declaresRole(content string) bool {
 	return found
 }
 
-// untilClosingDelimiter returns everything before the closing "---" line and
-// whether one was found. Frontmatter without a terminator is not frontmatter.
-func untilClosingDelimiter(lines []string) (string, bool) {
-	var out []string
-	for _, line := range lines {
-		if strings.TrimRight(line, " \t") == frontmatterDelimiter {
-			return strings.Join(out, "\n"), true
+// isFrontmatterFence mirrors goldmark-meta's isSeparator: ANY run of dashes,
+// surrounded by optional whitespace. Not just "---" — "----" opens frontmatter
+// just as well, and the opening and closing fences need not be the same length.
+func isFrontmatterFence(line string) bool {
+	trimmed := strings.TrimSpace(line)
+	return trimmed != "" && strings.Trim(trimmed, "-") == ""
+}
+
+// frontmatterBody returns the lines up to the closing fence — or all of them
+// when there is none. An unterminated block is NOT "not frontmatter": goldmark
+// closes the open block at EOF and parses what it collected, so a note ending
+// mid-frontmatter still carries meta.
+func frontmatterBody(lines []string) string {
+	for i, line := range lines {
+		if isFrontmatterFence(line) {
+			return strings.Join(lines[:i], "\n")
 		}
-		out = append(out, line)
 	}
-	return "", false
+	return strings.Join(lines, "\n")
 }
 
 // applyPatchPreview returns what the note would contain after a find/replace,
