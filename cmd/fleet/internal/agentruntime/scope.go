@@ -23,6 +23,11 @@ type ScopedKB struct {
 	kb            KB
 	readPatterns  []string
 	writePatterns []string
+
+	// allowRoleAuthoring disables the role-authoring guard (see roleguard.go).
+	// The zero value keeps the guard on, so every construction is safe by
+	// default and only an explicit operator opt-in turns it off.
+	allowRoleAuthoring bool
 }
 
 // NewScopedKB builds a ScopedKB. Patterns are normalized (leading "/" and "./"
@@ -143,6 +148,9 @@ func (s *ScopedKB) Write(ctx context.Context, path string, content string) error
 	if norm == "" || !webhookutil.MatchesAny(norm, s.writePatterns) {
 		return ErrWriteDenied
 	}
+	if !s.allowRoleAuthoring && declaresRole(content) {
+		return ErrRoleAuthoringDenied
+	}
 	return s.kb.Write(ctx, norm, content)
 }
 
@@ -154,5 +162,34 @@ func (s *ScopedKB) Patch(ctx context.Context, path, find, replace string) error 
 	if norm == "" || !webhookutil.MatchesAny(norm, s.writePatterns) {
 		return ErrWriteDenied
 	}
+	if err := s.checkPatchNotRoleAuthoring(ctx, norm, find, replace); err != nil {
+		return err
+	}
 	return s.kb.Patch(ctx, norm, find, replace)
+}
+
+// checkPatchNotRoleAuthoring denies a patch that would leave a role note behind,
+// and one that edits a note already carrying the marker.
+//
+// A patch is a find/replace applied server-side (trip2g's updateNotes), so
+// fleet does not otherwise read the note: verifying costs one read. Matching on
+// the replace fragment alone would be cheaper and is not enough — retagging an
+// existing role note changes only the fleet_id VALUE, so the marker never
+// appears in the fragment.
+//
+// The read goes through the underlying KB, not this ScopedKB, on purpose: a
+// role may hold write scope over a path without read scope, and the guard must
+// not be defeated by the role's own read_patterns.
+func (s *ScopedKB) checkPatchNotRoleAuthoring(ctx context.Context, path, find, replace string) error {
+	if s.allowRoleAuthoring {
+		return nil
+	}
+	current, err := s.kb.Read(ctx, path)
+	if err != nil {
+		return ErrRoleGuardUnverifiable
+	}
+	if declaresRole(current) || declaresRole(applyPatchPreview(current, find, replace)) {
+		return ErrRoleAuthoringDenied
+	}
+	return nil
 }

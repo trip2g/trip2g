@@ -405,21 +405,22 @@ func (f *Fleet) execRole(p execRoleInput) (*agentruntime.Result, error) {
 	done := f.metrics.RunStarted()
 	defer done()
 	return agentruntime.Run(p.Ctx, agentruntime.Input{
-		Instruction:   p.Instr,
-		Role:          p.Role.NotePath,
-		Metrics:       f.runMetrics(),
-		ReadPatterns:  p.Role.ReadPatterns,
-		WritePatterns: p.Role.WritePatterns,
-		Tools:         p.Role.Tools,
-		Model:         orDefault(p.Role.Model, f.cfg.DefaultModel),
-		MaxTokens:     clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
-		MaxSteps:      clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
-		InputBag:      p.InputBag,
-		Item:          p.Item,
-		HardFailApply: true,
-		ExecLLM:       f.execLLM,
-		LLM:           f.llm,
-		KB:            kb,
+		Instruction:        p.Instr,
+		Role:               p.Role.NotePath,
+		Metrics:            f.runMetrics(),
+		ReadPatterns:       p.Role.ReadPatterns,
+		WritePatterns:      p.Role.WritePatterns,
+		Tools:              p.Role.Tools,
+		Model:              orDefault(p.Role.Model, f.cfg.DefaultModel),
+		MaxTokens:          clampBudget(p.Role.MaxTokens, f.cfg.TokenCeiling),
+		MaxSteps:           clampBudget(p.Role.MaxSteps, f.cfg.StepCeiling),
+		InputBag:           p.InputBag,
+		Item:               p.Item,
+		HardFailApply:      true,
+		AllowRoleAuthoring: f.cfg.AllowRoleAuthoring,
+		ExecLLM:            f.execLLM,
+		LLM:                f.llm,
+		KB:                 kb,
 	})
 }
 

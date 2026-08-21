@@ -104,9 +104,57 @@ extraction quality than a week of the cron running unattended.
 Only after 3 is worth automating: a fixed transcript, a pinned model, and
 assertions on the shape of the output rather than its wording.
 
+## Built: agents may not author role notes
+
+**Status: implemented.** A role that can write note content can write a *role
+note*, and a role note declares its own `write_patterns`, `tools` and `model`.
+So a role confined to `transcripts/**` could mint a successor with
+`write_patterns: ["**"]`, and the reconciler would pick it up out of band, on
+its own poll, outside any delivery-chain depth limit — `max_depth` bounds
+recursion, not authorship. The realistic trigger is not a malicious operator but
+prompt injection through note content, which reaches an LLM role as
+`changed_files` content and can arrive from outside the vault (telegram inbox,
+forms).
+
+`ScopedKB` now denies it (`cmd/fleet/internal/agentruntime/roleguard.go`):
+
+- The marker is `fleet_id` in a note's YAML frontmatter — necessary and
+  sufficient, since `DiscoverRoles` skips a note with an empty `fleet_id`
+  ("untagged roles are never claimed") and one tagged for another fleet. The
+  check keys on the marker and never on the path, so role notes stay free to
+  live anywhere in the vault.
+- `write_note` is checked against the content being written. `patch_note` costs
+  one read: the edit is applied server-side by trip2g's `updateNotes`, so fleet
+  does not otherwise read the note. Matching on the `replace` fragment alone
+  would be cheaper and is not enough — retagging an existing role note changes
+  only the fleet_id VALUE, so the marker never appears in the fragment.
+  `applyPatchPreview` mirrors trip2g's semantics exactly (unique match, replaced
+  once) and both the current and the resulting content are checked, so editing an
+  existing role note is refused as well as creating one.
+- The verification read goes through the underlying KB, not the ScopedKB: a role
+  may hold write scope over a path without read scope, and the guard must not be
+  defeated by the role's own `read_patterns`.
+- An unreadable note fails closed, under a distinct error
+  (`ErrRoleGuardUnverifiable`), so an infrastructure failure is never reported as
+  an accusation of role authoring.
+- `--allow-role-authoring` (env `TRIP2G_FLEET_ALLOW_ROLE_AUTHORING`) turns it off
+  fleet-wide for operators who do want agents managing roles. It logs a WARN at
+  startup when off, because a guard silently disabled is worse than none.
+
+This closes authorship, not the underlying property that a role declares its own
+scope. A human-authored role still does — which is intended: the point is that
+only humans mint roles.
+
+Gap 1 above is what makes the denial usable: the run log carries the reason
+(`logToolCall` stores it in `data.reason` at WARN level), so the delivery trace
+shows *why* rather than leaving the operator to read an empty **Wrote** column.
+
 ## Related
 
 - [fleet_run.md](fleet_run.md) — running the fleet, and the krisp demo stand.
 - [webhooks.md](webhooks.md) — delivery chains, and why an unchanged write raises
   no event.
 - [agent_runtime_design.md](agent_runtime_design.md) — the scoped tool loop.
+- [unseal_codellm_secrets.md](unseal_codellm_secrets.md) — sealed secrets in role
+  frontmatter; role authorship is the escalation path that design depends on
+  being closed.

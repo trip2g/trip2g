@@ -121,6 +121,13 @@ type Input struct {
 	// so they keep their self-correction loop.
 	HardFailApply bool
 
+	// AllowRoleAuthoring lets this run write notes whose frontmatter carries
+	// fleet_id — that is, create or edit ROLE notes. Off by default: a role
+	// declares its own write_patterns, so authoring one is privilege escalation
+	// (see ErrRoleAuthoringDenied). Operators who genuinely want agents to
+	// manage roles turn it on fleet-wide with --allow-role-authoring.
+	AllowRoleAuthoring bool
+
 	// Item is the 1-based fan-out index when one delivery runs the agent once per
 	// item. It labels every run-log entry so an operator reading a fanned-out
 	// delivery can tell whose call was whose. 0 for a single run.
@@ -217,6 +224,7 @@ func run(ctx context.Context, in Input, res *Result) error {
 	}
 
 	scoped := NewScopedKB(in.KB, in.ReadPatterns, in.WritePatterns)
+	scoped.allowRoleAuthoring = in.AllowRoleAuthoring
 	tools := allowedToolDefs(in.Tools, in.ExecLLM != nil)
 	// permitted is the execution-time enforcement set: same as the advertised set.
 	// finish is always present (already guaranteed by allowedToolDefs).
@@ -549,6 +557,25 @@ func execReadNote(ctx context.Context, scoped *ScopedKB, res *Result, call ToolC
 	return content, outcomeOK
 }
 
+// writeDenial classifies a ScopedKB write/patch error as a denial and builds the
+// operator-facing run-log line. A denial is soft: the loop reports it and keeps
+// going. It is deliberately NOT folded into the generic apply-failure path,
+// because a denial the operator cannot see is the known failure mode here — the
+// model paraphrases the tool error as its own refusal and the real cause never
+// surfaces (see Role.WarnIfWriteScopeMisconfigured).
+func writeDenial(err error, verb, path string) (string, bool) {
+	switch {
+	case errors.Is(err, ErrWriteDenied):
+		return verb + " " + path, true
+	case errors.Is(err, ErrRoleAuthoringDenied):
+		return verb + " " + path + ": role note (fleet_id) — agents may not author roles", true
+	case errors.Is(err, ErrRoleGuardUnverifiable):
+		return verb + " " + path + ": could not be verified as a non-role note", true
+	default:
+		return "", false
+	}
+}
+
 func execWriteNote(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) (string, string) {
 	var args struct {
 		Path    string `json:"path"`
@@ -558,9 +585,9 @@ func execWriteNote(ctx context.Context, scoped *ScopedKB, res *Result, call Tool
 		return "error: invalid arguments: " + err.Error(), outcomeInvalidArgs
 	}
 	err := scoped.Write(ctx, args.Path, args.Content)
-	if errors.Is(err, ErrWriteDenied) {
-		res.Denials = append(res.Denials, "write "+args.Path)
-		return "error: " + ErrWriteDenied.Error(), outcomeDenied
+	if denial, ok := writeDenial(err, "write", args.Path); ok {
+		res.Denials = append(res.Denials, denial)
+		return "error: " + err.Error(), outcomeDenied
 	}
 	if err != nil {
 		return "error: " + err.Error(), outcomeApplyFailed
@@ -583,9 +610,9 @@ func execPatchNote(ctx context.Context, scoped *ScopedKB, res *Result, call Tool
 		return "error: invalid arguments: " + err.Error(), outcomeInvalidArgs
 	}
 	err := scoped.Patch(ctx, args.Path, args.Find, args.Replace)
-	if errors.Is(err, ErrWriteDenied) {
-		res.Denials = append(res.Denials, "patch "+args.Path)
-		return "error: " + ErrWriteDenied.Error(), outcomeDenied
+	if denial, ok := writeDenial(err, "patch", args.Path); ok {
+		res.Denials = append(res.Denials, denial)
+		return "error: " + err.Error(), outcomeDenied
 	}
 	if err != nil {
 		return "error: " + err.Error(), outcomeApplyFailed
@@ -699,8 +726,8 @@ func makeExecInvoker(execLLM LLM) toolInvoker {
 			default: // AgentChangeKindWrite or empty
 				applyErr = scoped.Write(ctx, ch.Path, ch.Content)
 			}
-			if errors.Is(applyErr, ErrWriteDenied) {
-				res.Denials = append(res.Denials, "exec write "+ch.Path)
+			if denial, ok := writeDenial(applyErr, "exec write", ch.Path); ok {
+				res.Denials = append(res.Denials, denial)
 				continue
 			}
 			if applyErr != nil {

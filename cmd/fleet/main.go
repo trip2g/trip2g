@@ -153,6 +153,10 @@ func run() error {
 
 	srvErrCh := make(chan error, 1)
 	go func() {
+		if cli.cfg.AllowRoleAuthoring {
+			lg.Warn("role-authoring guard is OFF (--allow-role-authoring): agents may create and " +
+				"edit role notes, and a role declares its own write_patterns")
+		}
 		lg.Info("fleet listening", "fleet_id", cli.cfg.FleetID, "addr", cli.cfg.ListenAddr, "callback", cli.cfg.CallbackURL)
 		listenErr := srv.ListenAndServe()
 		if listenErr != nil && listenErr != http.ErrServerClosed {
@@ -600,6 +604,9 @@ func parseFlags(ctx context.Context) (cliFlags, error) {
 		"max seconds to drain in-flight runs on shutdown before forcing close")
 	fs.BoolVar(&cli.cfg.KeepWebhooksOnShutdown, "keep-webhooks-on-shutdown", false,
 		"do not deregister webhooks on shutdown (rolling deploys: trip2g keeps them and retries)")
+	fs.BoolVar(&cli.cfg.AllowRoleAuthoring, "allow-role-authoring", false,
+		"let agents create and edit role notes (fleet_id in frontmatter). Off by default: a role "+
+			"declares its own write_patterns, so authoring one escalates scope")
 	fs.StringVar(&cli.cfg.LogLevel, "log-level", "info",
 		"log level: debug|info|warn|error")
 	fs.StringVar(&cli.graphAddr, "graph-addr", "",
