@@ -1074,6 +1074,7 @@ set status = sqlc.arg(status),
     response_status = sqlc.narg(response_status),
     duration_ms = sqlc.narg(duration_ms),
     costs = coalesce(sqlc.narg(costs), costs),
+    logs = coalesce(sqlc.narg(logs), logs),
     completed_at = datetime('now')
 where id = sqlc.arg(id);
 
@@ -1181,6 +1182,7 @@ set status = sqlc.arg(status),
     response_status = sqlc.narg(response_status),
     duration_ms = sqlc.narg(duration_ms),
     costs = coalesce(sqlc.narg(costs), costs),
+    logs = coalesce(sqlc.narg(logs), logs),
     completed_at = datetime('now')
 where id = sqlc.arg(id);
 

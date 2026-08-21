@@ -1420,6 +1420,16 @@ select 'cron' as kind, r.id as id, r.cron_webhook_id as webhook_id, r.status as 
   from cron_webhook_deliveries r where r.trace = sqlc.arg(trace)
  order by created_at, id;
 
+-- name: DeliveryLogs :many
+-- The run log one delivery stored, fetched per hop rather than alongside the
+-- chain: it is capped at 64 KB, and a chain listing has no use for it. Returns
+-- at most one row; the kind guard picks the table ids are unique within.
+select c.logs as logs from change_webhook_deliveries c
+ where sqlc.arg(kind) = 'change' and c.id = sqlc.arg(delivery_id)
+ union all
+select r.logs as logs from cron_webhook_deliveries r
+ where sqlc.arg(kind) = 'cron' and r.id = sqlc.arg(delivery_id);
+
 -- name: ListDeliveryWrites :many
 -- What a delivery wrote: the note versions attributed to it. This is what makes
 -- a chain readable, since the writes of one hop are the trigger of the next.

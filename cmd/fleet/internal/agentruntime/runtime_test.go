@@ -620,3 +620,109 @@ func TestRun_SoftApply_RealLLMSelfCorrects(t *testing.T) {
 	require.Len(t, res.Changes, 1, "only the successful retry is recorded")
 	require.Equal(t, "recovered", res.Answer)
 }
+
+// decodeLogData unpacks one run-log entry's opaque Data bag.
+func decodeLogData(t *testing.T, e webhookutil.AgentLog) map[string]any {
+	t.Helper()
+	var out map[string]any
+	require.NoError(t, json.Unmarshal(e.Data, &out))
+	return out
+}
+
+// TestRun_LogsEveryToolCall pins the run log: one entry per tool call, in order,
+// carrying the outcome the loop already computes and the size of what moved —
+// never the content. Without it a denied write is invisible to the operator: the
+// delivery succeeds and the Wrote column is empty.
+func TestRun_LogsEveryToolCall(t *testing.T) {
+	kb := newMemKB(map[string]string{
+		"src/notes/a.md": "hello world",
+	})
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", toolSearch, map[string]any{"query": "hello"})}},
+			{ToolCalls: []ToolCall{toolCall("2", toolReadNote, map[string]any{"path": "src/notes/a.md"})}},
+			// Out of write scope: the loop denies it and feeds the error back.
+			{ToolCalls: []ToolCall{toolCall("3", toolWriteNote, map[string]any{"path": "src/notes/a.md", "content": "nope"})}},
+			// In scope: 9 bytes of content.
+			{ToolCalls: []ToolCall{toolCall("4", toolWriteNote, map[string]any{"path": "out/a.md", "content": "123456789"})}},
+			{ToolCalls: []ToolCall{toolCall("5", toolFinish, map[string]any{"answer": "done"})}},
+		},
+	}
+
+	res, err := Run(context.Background(), Input{
+		Instruction:   "Summarize.",
+		ReadPatterns:  []string{"src/**"},
+		WritePatterns: []string{"out/**"},
+		Model:         "test-model",
+		MaxTokens:     10000,
+		MaxSteps:      10,
+		LLM:           llm,
+		KB:            kb,
+	})
+	require.NoError(t, err)
+	require.Len(t, res.Logs, 5)
+
+	search := decodeLogData(t, res.Logs[0])
+	require.Equal(t, toolSearch, search["tool"])
+	require.Equal(t, "hello", search["query"])
+	require.Equal(t, outcomeOK, search["outcome"])
+	require.EqualValues(t, 1, search["step"])
+	require.Equal(t, "info", res.Logs[0].Level)
+	require.False(t, res.Logs[0].TS.IsZero(), "an entry without a time cannot be ordered against anything else")
+
+	read := decodeLogData(t, res.Logs[1])
+	require.Equal(t, "src/notes/a.md", read["path"])
+	require.EqualValues(t, len("hello world"), read["result_bytes"])
+
+	denied := decodeLogData(t, res.Logs[2])
+	require.Equal(t, "src/notes/a.md", denied["path"])
+	require.Equal(t, outcomeDenied, denied["outcome"])
+	require.NotEmpty(t, denied["reason"], "a denial has to carry its reason")
+	require.EqualValues(t, 3, denied["step"])
+	require.Equal(t, "warn", res.Logs[2].Level, "a denial is not an error: the model is expected to correct itself")
+	require.Contains(t, res.Logs[2].Msg, "src/notes/a.md")
+
+	wrote := decodeLogData(t, res.Logs[3])
+	require.Equal(t, "out/a.md", wrote["path"])
+	require.Equal(t, outcomeOK, wrote["outcome"])
+	require.EqualValues(t, 9, wrote["content_bytes"])
+
+	require.Equal(t, toolFinish, decodeLogData(t, res.Logs[4])["tool"])
+
+	// Content never rides along: only its size.
+	raw, err := json.Marshal(res.Logs)
+	require.NoError(t, err)
+	require.NotContains(t, string(raw), "123456789")
+	require.NotContains(t, string(raw), "hello world")
+}
+
+// TestRun_LogsUnpermittedTool pins the hallucinated-tool entry: the name is
+// model-supplied, so it must reach the operator as data even though it must
+// never reach a metric label.
+func TestRun_LogsUnpermittedTool(t *testing.T) {
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", "list_files", map[string]any{"path": "/"})}},
+			{ToolCalls: []ToolCall{toolCall("2", toolFinish, map[string]any{"answer": "done"})}},
+		},
+	}
+
+	res, err := Run(context.Background(), Input{
+		Instruction:  "Do a thing.",
+		ReadPatterns: []string{"src/**"},
+		Tools:        []string{toolReadNote},
+		Model:        "test-model",
+		MaxTokens:    10000,
+		MaxSteps:     10,
+		LLM:          llm,
+		KB:           newMemKB(nil),
+	})
+	require.NoError(t, err)
+	require.Len(t, res.Logs, 2)
+
+	got := decodeLogData(t, res.Logs[0])
+	require.Equal(t, "list_files", got["tool"])
+	require.Equal(t, outcomeNotPermitted, got["outcome"])
+	require.NotEmpty(t, got["reason"])
+	require.Equal(t, "warn", res.Logs[0].Level)
+}

@@ -1,8 +1,10 @@
 package webhookutil
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -138,4 +140,89 @@ func TestAgentChangeIsPatch(t *testing.T) {
 		}
 		require.Equalf(t, tc.want, c.IsPatch(), "IsPatch() for kind=%q", tc.kind)
 	}
+}
+
+func TestMarshalLogs_Empty(t *testing.T) {
+	require.Nil(t, MarshalLogs(nil))
+	require.Nil(t, MarshalLogs([]AgentLog{}))
+}
+
+func TestMarshalLogs_KeepsEntries(t *testing.T) {
+	out := MarshalLogs([]AgentLog{
+		{TS: time.Unix(0, 0).UTC(), Level: "info", Msg: "read_note a.md", Data: json.RawMessage(`{"tool":"read_note"}`)},
+	})
+	require.NotNil(t, out)
+	require.Contains(t, *out, `"msg":"read_note a.md"`)
+	require.Contains(t, *out, `"tool":"read_note"`)
+}
+
+func TestMarshalLogs_CapsEntryCount(t *testing.T) {
+	logs := make([]AgentLog, MaxAgentLogs+40)
+	for i := range logs {
+		logs[i] = AgentLog{Level: "info", Msg: "entry"}
+	}
+
+	out := MarshalLogs(logs)
+	require.NotNil(t, out)
+
+	var got []AgentLog
+	require.NoError(t, json.Unmarshal([]byte(*out), &got))
+	require.Len(t, got, MaxAgentLogs+1, "the cap plus the line saying what was dropped")
+	require.Contains(t, got[len(got)-1].Msg, "40", "the operator has to learn how much is missing")
+}
+
+func TestMarshalLogs_CapsTotalSize(t *testing.T) {
+	// One entry whose Data alone blows the size ceiling.
+	fat := make([]byte, MaxAgentLogsBytes*2)
+	for i := range fat {
+		fat[i] = 'x'
+	}
+	logs := []AgentLog{
+		{Level: "info", Msg: "small"},
+		{Level: "info", Msg: "fat", Data: json.RawMessage(`"` + string(fat) + `"`)},
+	}
+
+	out := MarshalLogs(logs)
+	require.NotNil(t, out)
+	require.LessOrEqual(t, len(*out), MaxAgentLogsBytes*2,
+		"an agent must not be able to store an unbounded blob for 90 days")
+
+	var got []AgentLog
+	require.NoError(t, json.Unmarshal([]byte(*out), &got))
+	require.Equal(t, "small", got[0].Msg)
+	require.Contains(t, got[len(got)-1].Msg, "dropped")
+}
+
+func TestParseAgentResponse_ParsesLogs(t *testing.T) {
+	body := []byte(`{"status":"completed","logs":[` +
+		`{"ts":"2026-08-21T10:00:01Z","level":"warn","msg":"denied",` +
+		`"data":{"tool":"write_note","outcome":"denied"}}]}`)
+	resp, err := ParseAgentResponse(body)
+	require.NoError(t, err)
+	require.Len(t, resp.Logs, 1)
+	require.Equal(t, "warn", resp.Logs[0].Level)
+	require.JSONEq(t, `{"tool":"write_note","outcome":"denied"}`, string(resp.Logs[0].Data))
+}
+
+// A fleet response, through storage, back to the admin decoder.
+func TestAgentLogRoundTrip(t *testing.T) {
+	body, err := json.Marshal(AgentResponse{
+		Status: "completed",
+		Costs:  map[string]float64{"tokens": 5186},
+		Logs: []AgentLog{{
+			TS:    time.Date(2026, 8, 21, 10, 0, 1, 0, time.UTC),
+			Level: "warn",
+			Msg:   "write_note segments/x.md: denied",
+			Data:  json.RawMessage(`{"tool":"write_note","outcome":"denied","reason":"write outside scope"}`),
+		}},
+	})
+	require.NoError(t, err)
+
+	resp, err := ParseAgentResponse(body)
+	require.NoError(t, err)
+
+	stored := MarshalLogs(resp.Logs)
+	require.NotNil(t, stored)
+	require.Contains(t, *stored, "write outside scope")
+	require.NotContains(t, *stored, "content")
 }

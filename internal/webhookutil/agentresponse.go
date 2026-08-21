@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"trip2g/internal/model"
 	"trip2g/internal/ptr"
@@ -38,6 +39,23 @@ type AgentResponse struct {
 	// that bills money reports {"usd": 0.004}. trip2g stores it as given and only
 	// sums per key — it has no opinion about which units exist.
 	Costs map[string]float64 `json:"costs"`
+	// Logs is what the agent wants an operator to see about the run. trip2g
+	// stores it and hands it back; it never reads Data.
+	Logs []AgentLog `json:"logs,omitempty"`
+}
+
+// AgentLog is one entry an agent reports about its run: when, how bad, a human
+// line, and whatever else its author wants to carry.
+//
+// Data is deliberately opaque. An agent's vocabulary is its own — it may call
+// tools this platform has never heard of, e.g. an MCP server declared in a role
+// note — so trip2g stores Data as given and returns it unread. Only ts/level/msg
+// mean anything here, and they mean the same for every agent.
+type AgentLog struct {
+	TS    time.Time       `json:"ts"`
+	Level string          `json:"level"`
+	Msg   string          `json:"msg"`
+	Data  json.RawMessage `json:"data,omitempty"`
 }
 
 // AgentChange represents a single file change from an agent.
@@ -172,4 +190,59 @@ func MarshalCosts(costs map[string]float64) *string {
 		return nil
 	}
 	return ptr.To(string(data))
+}
+
+// Agent-reported logs are agent-controlled data kept for the delivery's whole
+// retention, so they are bounded on both axes: a careless or hostile agent must
+// not be able to park an unbounded blob in the database.
+const (
+	// MaxAgentLogs is how many entries one delivery may store.
+	MaxAgentLogs = 500
+	// MaxAgentLogsBytes is the ceiling on the serialized result.
+	MaxAgentLogsBytes = 64 * 1024
+)
+
+// MarshalLogs serializes an agent's run log for storage, trimmed to the limits
+// above. Whatever it drops is replaced by a final entry saying how much went
+// missing — a silently truncated log reads as a complete one. Nothing usable
+// yields nil, which leaves the delivery's logs column untouched.
+func MarshalLogs(logs []AgentLog) *string {
+	if len(logs) == 0 {
+		return nil
+	}
+
+	kept := logs
+	dropped := 0
+	if len(kept) > MaxAgentLogs {
+		dropped = len(kept) - MaxAgentLogs
+		kept = kept[:MaxAgentLogs]
+	}
+
+	// Drop from the tail until the whole thing fits. The first entries are the
+	// ones that explain how a run started, so they are the ones worth keeping.
+	for {
+		data, err := json.Marshal(appendDropNote(kept, dropped))
+		if err != nil {
+			return nil
+		}
+		if len(data) <= MaxAgentLogsBytes || len(kept) == 0 {
+			out := string(data)
+			return &out
+		}
+		kept = kept[:len(kept)-1]
+		dropped++
+	}
+}
+
+// appendDropNote returns the entries plus, when anything was dropped, one more
+// saying so.
+func appendDropNote(kept []AgentLog, dropped int) []AgentLog {
+	if dropped == 0 {
+		return kept
+	}
+	note := AgentLog{
+		Level: "warn",
+		Msg:   fmt.Sprintf("%d further log entries dropped: over the %d-entry / %d-byte limit", dropped, MaxAgentLogs, MaxAgentLogsBytes),
+	}
+	return append(append(make([]AgentLog, 0, len(kept)+1), kept...), note)
 }

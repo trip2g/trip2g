@@ -1247,7 +1247,7 @@ func (q *WriteQueries) InsertCronWebhook(ctx context.Context, arg InsertCronWebh
 const insertCronWebhookDelivery = `-- name: InsertCronWebhookDelivery :one
 insert into cron_webhook_deliveries (cron_webhook_id, attempt)
 values (?, ?)
-returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs, logs
 `
 
 type InsertCronWebhookDeliveryParams struct {
@@ -1274,6 +1274,7 @@ func (q *WriteQueries) InsertCronWebhookDelivery(ctx context.Context, arg Insert
 		&i.Trace,
 		&i.DepthReached,
 		&i.Costs,
+		&i.Logs,
 	)
 	return i, err
 }
@@ -1287,7 +1288,7 @@ where ?2 is not null
     where cron_webhook_id = ?1
       and status in ('pending','running')
       and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
-returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs, logs
 `
 
 type InsertCronWebhookDeliveryIfClearParams struct {
@@ -1316,6 +1317,7 @@ func (q *WriteQueries) InsertCronWebhookDeliveryIfClear(ctx context.Context, arg
 		&i.Trace,
 		&i.DepthReached,
 		&i.Costs,
+		&i.Logs,
 	)
 	return i, err
 }
@@ -1326,7 +1328,7 @@ select ?, 1, 'pending'
 where not exists (
   select 1 from cron_webhook_deliveries
   where cron_webhook_id = ?1 and status = 'pending')
-returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs
+returning id, cron_webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs, logs
 `
 
 func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context, cronWebhookID int64) (CronWebhookDelivery, error) {
@@ -1348,6 +1350,7 @@ func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context,
 		&i.Trace,
 		&i.DepthReached,
 		&i.Costs,
+		&i.Logs,
 	)
 	return i, err
 }
@@ -2726,7 +2729,7 @@ func (q *WriteQueries) InsertWebhook(ctx context.Context, arg InsertWebhookParam
 const insertWebhookDelivery = `-- name: InsertWebhookDelivery :one
 insert into change_webhook_deliveries (webhook_id, attempt)
 values (?, ?)
-returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs, logs
 `
 
 type InsertWebhookDeliveryParams struct {
@@ -2753,6 +2756,7 @@ func (q *WriteQueries) InsertWebhookDelivery(ctx context.Context, arg InsertWebh
 		&i.Trace,
 		&i.DepthReached,
 		&i.Costs,
+		&i.Logs,
 	)
 	return i, err
 }
@@ -2766,7 +2770,7 @@ where ?2 is not null
     where webhook_id = ?1
       and status in ('pending','running')
       and coalesce(heartbeat_at, started_at, created_at) >= datetime('now', ?2))
-returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs, logs
 `
 
 type InsertWebhookDeliveryIfClearParams struct {
@@ -2795,6 +2799,7 @@ func (q *WriteQueries) InsertWebhookDeliveryIfClear(ctx context.Context, arg Ins
 		&i.Trace,
 		&i.DepthReached,
 		&i.Costs,
+		&i.Logs,
 	)
 	return i, err
 }
@@ -2805,7 +2810,7 @@ select ?, 1, 'pending'
 where not exists (
   select 1 from change_webhook_deliveries
   where webhook_id = ?1 and status = 'pending')
-returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs
+returning id, webhook_id, status, response_status, attempt, duration_ms, created_at, completed_at, started_at, heartbeat_at, parent_kind, parent_id, trace, depth_reached, costs, logs
 `
 
 // queue_one mode: insert only if there is no pending delivery already queued.
@@ -2828,6 +2833,7 @@ func (q *WriteQueries) InsertWebhookDeliveryIfNoPending(ctx context.Context, web
 		&i.Trace,
 		&i.DepthReached,
 		&i.Costs,
+		&i.Logs,
 	)
 	return i, err
 }
@@ -3834,8 +3840,9 @@ set status = ?1,
     response_status = ?2,
     duration_ms = ?3,
     costs = coalesce(?4, costs),
+    logs = coalesce(?5, logs),
     completed_at = datetime('now')
-where id = ?5
+where id = ?6
 `
 
 type UpdateCronWebhookDeliveryResultParams struct {
@@ -3843,6 +3850,7 @@ type UpdateCronWebhookDeliveryResultParams struct {
 	ResponseStatus *int64  `json:"response_status"`
 	DurationMs     *int64  `json:"duration_ms"`
 	Costs          *string `json:"costs"`
+	Logs           *string `json:"logs"`
 	ID             int64   `json:"id"`
 }
 
@@ -3852,6 +3860,7 @@ func (q *WriteQueries) UpdateCronWebhookDeliveryResult(ctx context.Context, arg 
 		arg.ResponseStatus,
 		arg.DurationMs,
 		arg.Costs,
+		arg.Logs,
 		arg.ID,
 	)
 	return err
@@ -4585,8 +4594,9 @@ set status = ?1,
     response_status = ?2,
     duration_ms = ?3,
     costs = coalesce(?4, costs),
+    logs = coalesce(?5, logs),
     completed_at = datetime('now')
-where id = ?5
+where id = ?6
 `
 
 type UpdateWebhookDeliveryResultParams struct {
@@ -4594,6 +4604,7 @@ type UpdateWebhookDeliveryResultParams struct {
 	ResponseStatus *int64  `json:"response_status"`
 	DurationMs     *int64  `json:"duration_ms"`
 	Costs          *string `json:"costs"`
+	Logs           *string `json:"logs"`
 	ID             int64   `json:"id"`
 }
 
@@ -4603,6 +4614,7 @@ func (q *WriteQueries) UpdateWebhookDeliveryResult(ctx context.Context, arg Upda
 		arg.ResponseStatus,
 		arg.DurationMs,
 		arg.Costs,
+		arg.Logs,
 		arg.ID,
 	)
 	return err

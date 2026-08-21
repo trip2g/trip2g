@@ -1,0 +1,17 @@
+$trip2g_admin_deliverytrace_log $mol_list
+	kind \
+	delivery_id 0
+	rows <= entry_rows /
+	Entry!index $mol_expander
+		label /
+			<= Entry_line!index $mol_view
+				sub / <= entry_label!index \
+		content /
+			<= Entry_data!index $trip2g_admin_deliverytrace_log_data
+				text <= entry_data!index \
+
+$trip2g_admin_deliverytrace_log_data $mol_view
+	text \
+	sub /
+		<= Text $mol_view
+			sub / <= text

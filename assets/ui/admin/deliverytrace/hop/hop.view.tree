@@ -47,6 +47,11 @@ $trip2g_admin_deliverytrace_hop $mol_page
 					title @ \Wrote
 					Content <= Writes $mol_list
 						rows <= write_rows /
+				<= Log_labeler $mol_labeler
+					title @ \Log
+					Content <= Log $trip2g_admin_deliverytrace_log
+						kind <= kind
+						delivery_id <= log_delivery_id 0
 	Write!version_id $trip2g_admin_deliverytrace_write
 		path <= write_path!version_id \
 		version_id <= write_version_id!version_id 0

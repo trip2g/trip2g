@@ -7,5 +7,6 @@
 	"$trip2g_admin_deliverytrace_hop_Spend_labeler_title": "Расход",
 	"$trip2g_admin_deliverytrace_hop_CreatedAt_labeler_title": "Создано",
 	"$trip2g_admin_deliverytrace_hop_Trigger_labeler_title": "Вызвано записью",
-	"$trip2g_admin_deliverytrace_hop_Writes_labeler_title": "Записал"
+	"$trip2g_admin_deliverytrace_hop_Writes_labeler_title": "Записал",
+	"$trip2g_admin_deliverytrace_hop_Log_labeler_title": "Лог"
 }

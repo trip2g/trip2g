@@ -83,5 +83,11 @@ namespace $.$$ {
 		override write_version_id( version_id: number ): number {
 			return version_id
 		}
+
+		// The log is addressed by the delivery itself, not by the chain, so it is
+		// fetched only when this step is on screen.
+		override log_delivery_id(): number {
+			return Number( this.data().id )
+		}
 	}
 }
