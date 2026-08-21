@@ -29,6 +29,14 @@ var ErrRoleAuthoringDenied = errors.New("write denied: agents may not author or 
 // the note could not be read. It fails closed, and is kept distinct from
 // ErrRoleAuthoringDenied so an infrastructure failure is never reported as an
 // accusation of role authoring.
+//
+// "Not found" fails closed too, and deliberately: remoteKB reads through the
+// DELIVERY-SCOPED client, so a missing note and a note outside this token's
+// read scope are indistinguishable here. Letting "not found" through would hand
+// a role that can write a path it cannot read exactly the bypass the unscoped
+// verification read exists to prevent. The cost is that patching a genuinely
+// absent note reports this instead of trip2g's own "note not found" — so the
+// underlying error is wrapped in, and this is NOT classified as a denial.
 var ErrRoleGuardUnverifiable = errors.New("write denied: cannot verify the patched note is not a role note")
 
 // declaresRole reports whether content's YAML frontmatter declares a top-level

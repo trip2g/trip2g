@@ -558,7 +558,11 @@ func execReadNote(ctx context.Context, scoped *ScopedKB, res *Result, call ToolC
 }
 
 // writeDenial classifies a ScopedKB write/patch error as a denial and builds the
-// operator-facing run-log line. A denial is soft: the loop reports it and keeps
+// operator-facing run-log line. ErrRoleGuardUnverifiable is deliberately absent:
+// it is not an authorization decision but a failure to check, most often a patch
+// against a note that does not exist. Reporting it as a denial would fill the
+// denial log with false role-authoring hits and hide trip2g's real reason, so it
+// falls through to the apply-failure path it took before the guard existed. A denial is soft: the loop reports it and keeps
 // going. It is deliberately NOT folded into the generic apply-failure path,
 // because a denial the operator cannot see is the known failure mode here — the
 // model paraphrases the tool error as its own refusal and the real cause never
@@ -569,8 +573,6 @@ func writeDenial(err error, verb, path string) (string, bool) {
 		return verb + " " + path, true
 	case errors.Is(err, ErrRoleAuthoringDenied):
 		return verb + " " + path + ": role note (fleet_id) — agents may not author roles", true
-	case errors.Is(err, ErrRoleGuardUnverifiable):
-		return verb + " " + path + ": could not be verified as a non-role note", true
 	default:
 		return "", false
 	}

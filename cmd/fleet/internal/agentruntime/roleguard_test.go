@@ -272,3 +272,35 @@ func TestRun_AllowRoleAuthoringOptsOut(t *testing.T) {
 	require.Len(t, res.Changes, 1)
 	require.Empty(t, res.Denials)
 }
+
+// Patching a note that does not exist is an ordinary apply failure, not a
+// denial. It still fails closed — a scoped reader cannot tell "absent" from
+// "outside my read scope" — but it must not be logged as a role-authoring hit,
+// or the denial log fills with false accusations and hides trip2g's own reason.
+func TestScopedKB_PatchMissingNoteIsNotReportedAsDenial(t *testing.T) {
+	kb := newMemKB(nil)
+	scoped := NewScopedKB(kb, nil, []string{"**"})
+
+	err := scoped.Patch(context.Background(), "notes/absent.md", "a", "b")
+
+	require.ErrorIs(t, err, ErrRoleGuardUnverifiable)
+	require.NotErrorIs(t, err, ErrRoleAuthoringDenied)
+
+	_, isDenial := writeDenial(err, "patch", "notes/absent.md")
+	require.False(t, isDenial, "must not be classified as a denial")
+	require.ErrorContains(t, err, "not found", "the underlying cause must reach the operator")
+}
+
+// The two real denials stay denials, with the reason the operator needs.
+func TestWriteDenialClassification(t *testing.T) {
+	scopeMsg, ok := writeDenial(ErrWriteDenied, "write", "a.md")
+	require.True(t, ok)
+	require.Equal(t, "write a.md", scopeMsg)
+
+	roleMsg, ok := writeDenial(ErrRoleAuthoringDenied, "write", "a.md")
+	require.True(t, ok)
+	require.Contains(t, roleMsg, "fleet_id")
+
+	_, ok = writeDenial(errors.New("boom"), "write", "a.md")
+	require.False(t, ok)
+}

@@ -136,7 +136,21 @@ forms).
   defeated by the role's own `read_patterns`.
 - An unreadable note fails closed, under a distinct error
   (`ErrRoleGuardUnverifiable`), so an infrastructure failure is never reported as
-  an accusation of role authoring.
+  an accusation of role authoring. "Not found" fails closed too: `remoteKB` reads
+  through the delivery-scoped client, so an absent note and one outside this
+  token's read scope look identical, and letting "not found" through would hand a
+  role that can write a path it cannot read the very bypass the unscoped
+  verification read exists to prevent. It is classified as an apply failure
+  rather than a denial, and wraps the underlying cause, so the denial log does not
+  fill with false role-authoring hits.
+- The marker parser mirrors `goldmark-meta`, which is what actually produces a
+  note's meta in trip2g — not a hand-written idea of what frontmatter looks like.
+  The first version did the latter and shipped five bypasses (`----` fences,
+  mismatched fence lengths, longer dash runs, unterminated blocks that goldmark
+  still closes at EOF, and duplicate YAML keys that yaml.v2 accepts and v3
+  rejects). `TestDeclaresRoleMatchesGoldmark` now diffs the two parsers over a
+  corpus and asserts the only property that matters: if trip2g would run it as a
+  role, the guard must see a role.
 - `--allow-role-authoring` (env `TRIP2G_FLEET_ALLOW_ROLE_AUTHORING`) turns it off
   fleet-wide for operators who do want agents managing roles. It logs a WARN at
   startup when off, because a guard silently disabled is worse than none.
