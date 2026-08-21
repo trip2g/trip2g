@@ -64,6 +64,7 @@ Required flags have no default and cause a startup error if absent.
 | `--agents-folder` | `FLEET_AGENTS_FOLDER` | `roles/` | Note-path LIKE prefix used when discovering role notes in trip2g |
 | `--offered-tools` | — | `search,read_note,patch_note,write_note` | Comma-separated list of tools the fleet exposes to agents; roles may only use a subset |
 | `--poll-seconds` | — | `30` | Discovery + reconcile interval in seconds |
+| `--allow-role-authoring` | `TRIP2G_FLEET_ALLOW_ROLE_AUTHORING` | `false` | Let agents create and edit **role notes** (`fleet_id` in frontmatter). Off by default: a role declares its own `write_patterns`, so authoring one escalates scope. Logs a WARN at startup when on. See [fleet_write_validation.md](fleet_write_validation.md) |
 
 ---
 

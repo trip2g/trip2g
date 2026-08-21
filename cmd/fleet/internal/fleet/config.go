@@ -29,5 +29,6 @@ type Config struct {
 	PollInterval             time.Duration // discovery/reconcile poll cadence
 	ShutdownGrace            time.Duration // max time to drain in-flight runs on shutdown
 	KeepWebhooksOnShutdown   bool          // skip webhook deregister on shutdown (rolling deploys; trip2g retains + retries)
+	AllowRoleAuthoring       bool          // let agents create/edit role notes (fleet_id frontmatter); off = deny, see agentruntime.ErrRoleAuthoringDenied
 	LogLevel                 string        // zerolog level: debug|info|warn|error
 }
