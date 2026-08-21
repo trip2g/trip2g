@@ -33,13 +33,27 @@ krisp_base_url: https://api.krisp.ai
 ```
 
 ```python
-fm = fleetkit.bag().frontmatter
-base_url = fm.krisp_base_url.rstrip('/')
-token = fm.krisp_token          # decrypted by codellm; ciphertext never reaches here
+cfg = fleetkit.frontmatter()      # the role's own frontmatter, ciphertext included
+sec = fleetkit.secrets()          # what codellm unsealed for this run
+
+base_url = cfg.krisp_base_url.rstrip('/')
+token = sec.krisp_token
 ```
 
-Secret and non-secret config read identically. There is no `unseal()` call in the role, no env
-var mapping, and no master key inside the sandbox.
+There is no `unseal()` call in the role, no env var mapping, and no master key inside the
+sandbox.
+
+**Decided: unsealed values go in their own `secrets` section, not inline in the frontmatter.**
+Inline would read more uniformly — `cfg.krisp_token` beside `cfg.krisp_base_url` — and that
+uniformity is why this design beat the alternatives in the first place. It loses to one thing:
+the bag is what a role dumps while debugging, and `print(cfg)` or `emit(answer=json.dumps(bag))`
+would publish the token into vault content, which is the store this whole feature exists to keep
+clean. A separate section costs one asymmetry in the role's source and takes the secret out of
+the object most likely to be dumped whole. The asymmetry is also honest: those two values are not
+the same kind of thing.
+
+Note what it does not buy: dumping the *whole bag* still carries the secrets. This narrows the
+accident, it does not remove it.
 
 ## The pivotal fact
 
@@ -209,7 +223,13 @@ blobs.
 2. **codellm** reads `unseal` from the bag, resolves `unseal_env_key` against **its own**
    environment, decrypts those fields, and replaces the ciphertext with plaintext in the bag it
    writes to `$FLEET_INPUT`.
-3. **The role's code** reads them as ordinary frontmatter through `fleetkit.bag().frontmatter`.
+3. **The role's code** reads config through `fleetkit.frontmatter()` and unsealed values through
+   `fleetkit.secrets()`. Both return the attribute-access mapping `fleetkit` already uses for
+   frontmatter, so a missing key reads as `None` instead of raising.
+
+The ciphertext stays in the frontmatter as it was written. codellm adds the plaintext alongside
+rather than substituting it, so a role can still tell that a value was sealed, and the bag's
+frontmatter section is a faithful view of the note.
 
 trip2g needs no change: it stores and serves the note like any other, ciphertext included.
 
@@ -460,9 +480,7 @@ which is exactly the provisioning ergonomics sealing exists to provide.
 
 ## Open questions
 
-- Whether the unsealed values should sit inline in the bag's frontmatter (chosen, for a uniform
-  read) or in a separate `bag.secrets` section that a wholesale dump is less likely to catch.
-  This is the debug-leak footgun above; the two goals are in direct tension.
+
 - Whether `unseal` should also be honoured on **attached** notes. **Answer: no, and the code
   already enforces it.** `buildAttachedNotes` (`internal/webhookutil/attached_notes.go`) constructs
   `Meta` explicitly from `tags` and `layout` only — arbitrary frontmatter never travels that path —
@@ -485,7 +503,7 @@ which is exactly the provisioning ergonomics sealing exists to provide.
   values. If anyone later adds the bag to `exec` calls, plaintext flows into a real model
   conversation and out to the provider.
 
-- Whether to bind the ciphertext to its location with AAD. `dataencryption` passes `nil` additional
+- ~~Whether to bind the ciphertext to its location with AAD.~~ **Decided: no AAD.** `dataencryption` passes `nil` additional
   data, so nothing ties a blob to the note and field it belongs to: anyone who can read a blob can
   paste it into their own role under the same key and have it decrypt — relocation, not a crypto
   break. The obvious binding is the note path, and it has a real cost: **renaming or moving a role
@@ -494,5 +512,12 @@ which is exactly the provisioning ergonomics sealing exists to provide.
   half-measure buys nothing. Note also that `EncryptData`/`DecryptData` take no AAD parameter and
   are shared with the `secrets` table and `cmd/tge2e`, so this means a new method beside them, not
   a change to them.
+
+  Rejected because the cost lands on an everyday operation and the benefit does not. Moving a note
+  between folders is routine in Obsidian, and binding to the path would break every blob in it
+  silently, at the next tick. What binding buys is preventing one role from copying another's
+  ciphertext — and under the pivotal fact the roles are written by the same person who owns the
+  secrets, so that is not an adversary. Revisit only if role authorship ever spreads beyond one
+  trusted party, which is the same condition that reopens the rest of this design.
 - What the `--dry-run` reconcile report should say about a role whose `unseal` field cannot be
   opened — a startup-time validation would catch a bad blob before its first cron tick.

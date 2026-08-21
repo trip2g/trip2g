@@ -170,7 +170,7 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 			Instr:    instruction,
 			GQL:      NewScopedGraphQLClient(f.cfg.Trip2gBaseURL, payload.APIToken, f.hc),
 			Overlay:  overlay,
-			InputBag: buildInputBag(rc),
+			InputBag: buildInputBag(role, rc),
 			Item:     fanOutItem(len(items), i),
 		})
 		if runErr != nil {
@@ -234,8 +234,14 @@ func (f *Fleet) serveChangeDelivery(w http.ResponseWriter, r *http.Request, role
 // to code programs via $FLEET_INPUT. It carries only non-secret trigger data
 // (the same fields exposed to Jet templates). The scoped write token is never
 // included.
-func buildInputBag(rc renderCtx) []byte {
-	bag := fleetinput.Input{ChangedFiles: rc.ChangedFiles, ChangeFile: rc.ChangeFile, AttachedNotes: rc.AttachedNotes, Depth: rc.Depth}
+func buildInputBag(role Role, rc renderCtx) []byte {
+	bag := fleetinput.Input{
+		Frontmatter:   role.Frontmatter,
+		ChangedFiles:  rc.ChangedFiles,
+		ChangeFile:    rc.ChangeFile,
+		AttachedNotes: rc.AttachedNotes,
+		Depth:         rc.Depth,
+	}
 	data, _ := json.Marshal(bag)
 	return data
 }
@@ -333,7 +339,7 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 		Instr:    instruction,
 		GQL:      NewScopedGraphQLClient(f.cfg.Trip2gBaseURL, payload.APIToken, f.hc),
 		Overlay:  overlay,
-		InputBag: buildCronInputBag(rc),
+		InputBag: buildCronInputBag(role, rc),
 	})
 	if runErr != nil {
 		//nolint:sloglint // Fleet has no logger instance; global slog is intentional here
@@ -357,9 +363,14 @@ func (f *Fleet) serveCronDelivery(w http.ResponseWriter, r *http.Request, role R
 
 // buildCronInputBag marshals the cron render context into the JSON bag delivered
 // to code programs via $FLEET_INPUT. Exposes now as an RFC3339 string.
-func buildCronInputBag(rc renderCtx) []byte {
+func buildCronInputBag(role Role, rc renderCtx) []byte {
 	now := rc.Now.Format(time.RFC3339)
-	bag := fleetinput.Input{AttachedNotes: rc.AttachedNotes, Depth: rc.Depth, Now: &now}
+	bag := fleetinput.Input{
+		Frontmatter:   role.Frontmatter,
+		AttachedNotes: rc.AttachedNotes,
+		Depth:         rc.Depth,
+		Now:           &now,
+	}
 	data, _ := json.Marshal(bag)
 	return data
 }
