@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"trip2g/internal/features"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/fedinstr"
@@ -54,6 +55,8 @@ func TestFederatedInstructionsDirectPeer(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
@@ -85,6 +88,8 @@ func TestFederatedInstructionsNestedForwards(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
@@ -110,6 +115,8 @@ func TestFederatedInstructionsRespectsMaxDepth(t *testing.T) {
 	cache := fedinstr.New()
 	federation := &federationMock{} // must never be called: depth is rejected up front
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
@@ -139,6 +146,8 @@ func TestFederatedInstructionsCacheHitSkipsForward(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
@@ -168,6 +177,8 @@ func TestFederatedInstructionsCacheConcurrent(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
@@ -202,6 +213,8 @@ func TestFederatedInstructionsUnknownKBID(t *testing.T) {
 	nvs := fedInstrNoteViews()
 	cache := fedinstr.New()
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
@@ -219,6 +232,8 @@ func TestFederatedInstructionsUnknownKBID(t *testing.T) {
 
 func TestFederatedInstructionsRequiresKBID(t *testing.T) {
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second }, MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
 	resp := callFederatedInstructions(t, env, `{}`)
 	require.NotNil(t, resp.Error)

@@ -35,7 +35,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	useLatest := siteConfig.ShowDraftVersions || userToken.IsAdmin()
 
-	results, merged, err := Retrieve(ctx, env, input.Query, useLatest)
+	results, merged, err := Retrieve(ctx, env, input.Query, useLatest, input.Rerank)
 	if err != nil {
 		return nil, err
 	}

@@ -2375,6 +2375,11 @@ type SearchConnection struct {
 
 type SearchInput struct {
 	Query string `json:"query"`
+	// Run the second-stage cross-encoder reranker for this search. Omit to use the
+	// instance default (vector_search.reranker.default). Ignored when no reranker
+	// is configured. Reranking is linear in candidates and slow on CPU, so it is
+	// opt-in by default.
+	Rerank *bool `json:"rerank,omitempty"`
 }
 
 type SecretKeysFilter struct {

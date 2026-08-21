@@ -269,3 +269,35 @@ func TestParseFeatures_CustomModelWithoutDimensions_Panics(t *testing.T) {
 	}()
 	Parse(`{"vector_search":{"enabled":true,"model":"my-custom-model","base_url":"http://localhost:8080/v1"}}`)
 }
+
+func TestRerankerShouldRerank(t *testing.T) {
+	want := func(v bool) *bool { return &v }
+
+	tests := []struct {
+		name    string
+		cfg     RerankerConfig
+		request *bool
+		expect  bool
+	}{
+		// No sidecar: nothing a caller says can conjure one. This is why the MCP
+		// argument is hidden entirely when the capability is off.
+		{"disabled, silent", RerankerConfig{}, nil, false},
+		{"disabled, asked for", RerankerConfig{}, want(true), false},
+
+		// Opt-in instance: the second stage costs real seconds, so silence means no.
+		{"opt-in, silent", RerankerConfig{Enabled: true}, nil, false},
+		{"opt-in, asked for", RerankerConfig{Enabled: true}, want(true), true},
+		{"opt-in, declined", RerankerConfig{Enabled: true}, want(false), false},
+
+		// Default-on instance: silence means yes, and an explicit no still wins.
+		{"default-on, silent", RerankerConfig{Enabled: true, Default: true}, nil, true},
+		{"default-on, asked for", RerankerConfig{Enabled: true, Default: true}, want(true), true},
+		{"default-on, declined", RerankerConfig{Enabled: true, Default: true}, want(false), false},
+	}
+
+	for _, tt := range tests {
+		if got := tt.cfg.ShouldRerank(tt.request); got != tt.expect {
+			t.Errorf("%s: ShouldRerank() = %v, want %v", tt.name, got, tt.expect)
+		}
+	}
+}

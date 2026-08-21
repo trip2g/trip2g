@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+	"trip2g/internal/features"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/metrics"
@@ -24,6 +25,8 @@ func singlePeerEnv(kbID string, fed *federationMock) *EnvMock {
 	nvs := appmodel.NewNoteViews()
 	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(note)}
 	return &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },

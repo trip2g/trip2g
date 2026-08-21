@@ -2734,6 +2734,14 @@ enum SearchMatchOrigin {
 
 input SearchInput {
   query: String!
+
+  """
+  Run the second-stage cross-encoder reranker for this search. Omit to use the
+  instance default (vector_search.reranker.default). Ignored when no reranker
+  is configured. Reranking is linear in candidates and slow on CPU, so it is
+  opt-in by default.
+  """
+  rerank: Boolean
 }
 
 type SearchResult {
@@ -51690,7 +51698,7 @@ func (ec *executionContext) unmarshalInputSearchInput(ctx context.Context, obj a
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"query"}
+	fieldsInOrder := [...]string{"query", "rerank"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -51704,6 +51712,13 @@ func (ec *executionContext) unmarshalInputSearchInput(ctx context.Context, obj a
 				return it, err
 			}
 			it.Query = data
+		case "rerank":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rerank"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rerank = data
 		}
 	}
 

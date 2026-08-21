@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"trip2g/internal/features"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/metrics"
@@ -37,6 +38,8 @@ func fanoutEnv(
 		nvs.MCPFederationNotes = append(nvs.MCPFederationNotes, appmodel.NewMCPFederationNote(note))
 	}
 	return &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {

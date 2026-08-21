@@ -100,7 +100,7 @@ func TestGoldenRetrieve_TextOnly(t *testing.T) {
 	env := goldenEnv(t, srv.URL)
 	env.FeaturesFunc = func() features.Features { return features.Features{} } // vector disabled
 
-	results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", false)
+	results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
 	require.NoError(t, err)
 	require.False(t, merged)
 	require.Equal(t, []string{"/b", "/a", "/e"}, urlsOf(results))
@@ -110,7 +110,7 @@ func TestGoldenRetrieve_HybridRRF(t *testing.T) {
 	srv := newEmbeddingServer(t, []float32{1, 0})
 	defer srv.Close()
 
-	results, merged, err := sitesearch.Retrieve(context.Background(), goldenEnv(t, srv.URL), "q", false)
+	results, merged, err := sitesearch.Retrieve(context.Background(), goldenEnv(t, srv.URL), "q", false, nil)
 	require.NoError(t, err)
 	require.True(t, merged)
 	require.Equal(t, []string{"/a", "/b", "/c", "/d", "/e"}, urlsOf(results))
@@ -170,6 +170,7 @@ func TestGoldenRetrieve_RerankerBlends(t *testing.T) {
 			Enabled: true,
 			Reranker: features.RerankerConfig{
 				Enabled:     true,
+				Default:     true, // this instance reranks unless the caller opts out
 				BaseURL:     ceSrv.URL + "/rerank",
 				TopN:        10,
 				BlendWeight: 0.5,
@@ -177,9 +178,80 @@ func TestGoldenRetrieve_RerankerBlends(t *testing.T) {
 		}}
 	}
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false)
+	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
 	require.NoError(t, err)
 	require.Equal(t, []string{"/d", "/a", "/b", "/e", "/c"}, urlsOf(results))
+}
+
+// hybridOrder is the plain RRF order from TestGoldenRetrieve_HybridRRF — what a
+// search must return whenever the cross-encoder stage does not run.
+var hybridOrder = []string{"/a", "/b", "/c", "/d", "/e"} //nolint:gochecknoglobals // test fixture
+
+// wantRerank expresses an explicit caller preference; nil means no preference.
+func wantRerank(v bool) *bool { return &v }
+
+// A caller can decline the second stage on an instance that reranks by default:
+// the CE server is wired up and would reorder, and must not be consulted.
+func TestGoldenRetrieve_RerankOptOut(t *testing.T) {
+	embSrv := newEmbeddingServer(t, []float32{1, 0})
+	defer embSrv.Close()
+
+	ceSrv := goldenCEServer(t, func(doc string) float64 {
+		t.Fatalf("reranker must not be called when the caller passed rerank=false, got %q", doc)
+		return 0
+	})
+
+	env := goldenEnv(t, embSrv.URL)
+	env.FeaturesFunc = func() features.Features {
+		return features.Features{VectorSearch: features.VectorSearchConfig{
+			Enabled: true,
+			Reranker: features.RerankerConfig{
+				Enabled: true, Default: true,
+				BaseURL: ceSrv.URL + "/rerank", TopN: 10, BlendWeight: 0.5,
+			},
+		}}
+	}
+
+	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, wantRerank(false))
+	require.NoError(t, err)
+	require.Equal(t, hybridOrder, urlsOf(results))
+}
+
+// Mirror image: an opt-in instance leaves the order alone until a caller asks,
+// and reorders when one does.
+func TestGoldenRetrieve_RerankOptIn(t *testing.T) {
+	embSrv := newEmbeddingServer(t, []float32{1, 0})
+	defer embSrv.Close()
+
+	ceScores := map[string]float64{"body a": 0.1, "body c": 0.2, "body d": 0.95}
+	ceSrv := goldenCEServer(t, func(doc string) float64 {
+		for sub, score := range ceScores {
+			if strings.Contains(doc, sub) {
+				return score
+			}
+		}
+		t.Fatalf("unexpected rerank doc: %q", doc)
+		return 0
+	})
+
+	env := goldenEnv(t, embSrv.URL)
+	env.FeaturesFunc = func() features.Features {
+		return features.Features{VectorSearch: features.VectorSearchConfig{
+			Enabled: true,
+			Reranker: features.RerankerConfig{
+				Enabled: true, Default: false,
+				BaseURL: ceSrv.URL + "/rerank", TopN: 10, BlendWeight: 0.5,
+			},
+		}}
+	}
+
+	silent, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+	require.NoError(t, err)
+	require.Equal(t, hybridOrder, urlsOf(silent), "no preference on an opt-in instance must not rerank")
+
+	asked, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, wantRerank(true))
+	require.NoError(t, err)
+	require.Equal(t, []string{"/d", "/a", "/b", "/e", "/c"}, urlsOf(asked), "an explicit ask must rerank")
 }
 
 func anonSiteEnv(env *EnvMock) *EnvMock {
