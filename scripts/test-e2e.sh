@@ -74,6 +74,10 @@ export GIT_API_BASE_PATH="${GIT_API_BASE_PATH:-/git}"
 export USER_TOKEN_COOKIE_NAME=trip2g_e2e
 export ENDPOINT="${APP_URL}/graphql" # for push_notes.py
 
+# Shared with scripts/test-sync-cli.sh: tolerates the demo vault's expected CRITICAL.
+SYNC_CLI_ENTRY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/obsidian-sync/src/sync/cli/cmd.ts"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/sync-cli.sh"
+
 # Success flag - set to 1 at the very end if all tests pass
 SUCCESS=0
 
@@ -105,9 +109,12 @@ wait_all_jobs() {
 }
 
 # Helper function to sync vault
+# testvault0 is a copy of docs/demo, so every sync of it reports the deliberately
+# broken layout fixture. run_sync_cli tolerates that one CRITICAL and nothing else;
+# calling cmd.ts directly here aborts the whole run under set -e.
 sync_vault() {
   echo "🔄 Syncing vault..."
-  npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder tmp/testvault0 --api-key "$API_KEY" --api-url "$ENDPOINT"
+  run_sync_cli --folder tmp/testvault0 --api-key "$API_KEY" --api-url "$ENDPOINT"
 }
 
 # Helper: sign in to peer and push seedvault content
