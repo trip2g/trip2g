@@ -104,6 +104,8 @@ func main() {
 		// constant-time compared. An empty CODELLM_API_KEY disables key auth
 		// (fail-safe), leaving the browser delegated-admin gate as the only way in.
 		TokenCheck: codellm.APIKeyCheck(cfg.APIKey),
+		// The sealing form: the operator's browser front door to `codellm seal`.
+		SealPath: cfg.SealPath,
 	}
 	srvCfg.Auth = codellm.BrowserAuthWithMetrics(admin.Wrap, srvCfg.TokenCheck, metrics)
 
@@ -112,7 +114,8 @@ func main() {
 		Handler:           codellm.New(srvCfg).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-	log.Printf("codellm listening on %s (sandbox=%s, network=%t, programs=%v)", cfg.Addr, cfg.Sandbox, cfg.SandboxNetwork, cfg.AllowedPrograms)
+	log.Printf("codellm listening on %s (sandbox=%s, network=%t, programs=%v, seal=%s)",
+		cfg.Addr, cfg.Sandbox, cfg.SandboxNetwork, cfg.AllowedPrograms, cfg.SealPath)
 	if err = srv.ListenAndServe(); err != nil {
 		log.Fatalf("server error: %v", err)
 	}

@@ -18,6 +18,7 @@ import (
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 
+	"trip2g/cmd/codellm/internal/codellm"
 	"trip2g/cmd/codellm/internal/coderun"
 )
 
@@ -76,6 +77,13 @@ type Config struct {
 	// env / mounted secret) is the point: fleet holds no secrets.
 	ExposeEnv       []string
 	ExposeEnvPrefix []string
+
+	// SealPath is where the sealing form is served (GET renders it, POST seals),
+	// gated by the same auth as the other browser-facing endpoints. The endpoint
+	// has no enable/disable switch — authorization is already answered by that
+	// gate, so whether this address is published, to whom, and behind what is a
+	// deployment question, and this path is what serves it.
+	SealPath string
 }
 
 // Defaults.
@@ -92,6 +100,10 @@ const (
 	DefaultTrip2gBaseURL   = "http://127.0.0.1:8081"
 )
 
+// DefaultSealPath is the sealing form's path; the /_system/ prefix matches
+// trip2g's admin endpoints and is already proxied to codellm by Caddy.
+const DefaultSealPath = codellm.DefaultSealPath
+
 // minAPIKeyLength is the minimum length a non-empty APIKey must have. Key auth
 // guards an RCE-capable endpoint (code execution); a short key is guessable and
 // makes that guard worthless. Empty is still allowed — it means key auth is off.
@@ -107,6 +119,7 @@ func DefaultConfig() Config {
 		Timeout:         DefaultTimeout,
 		MaxStdoutBytes:  0,
 		Trip2gBaseURL:   DefaultTrip2gBaseURL,
+		SealPath:        DefaultSealPath,
 	}
 }
 
@@ -178,6 +191,9 @@ func (c *Config) applyEnv() {
 	if v := os.Getenv("CODELLM_EXPOSE_ENV_PREFIX"); v != "" {
 		c.ExposeEnvPrefix = splitCSV(v)
 	}
+	if v := os.Getenv("CODELLM_SEAL_PATH"); v != "" {
+		c.SealPath = v
+	}
 }
 
 // defineAndParseFlags registers flags seeded from the env-resolved config (so
@@ -207,6 +223,7 @@ func (c *Config) defineAndParseFlags(args []string) error {
 			"(a request can never exceed this); empty = expose nothing")
 	fs.StringVar(&exposeEnvPrefix, "expose-env-prefix", exposeEnvPrefix,
 		"comma-separated allowlist of env var name PREFIXES codellm may expose from its own env to code")
+	fs.StringVar(&c.SealPath, "seal-path", c.SealPath, "path of the sealing form (GET renders it, POST seals); auth-gated like the other browser endpoints")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -228,6 +245,7 @@ func (c *Config) validate() error {
 		ozzo.Field(&c.Timeout, ozzo.By(nonNegativeDuration)),
 		ozzo.Field(&c.Sandbox, ozzo.In(coderun.SandboxNative, coderun.SandboxBestEffort, coderun.SandboxOff)),
 		ozzo.Field(&c.APIKey, ozzo.By(minAPIKeyLengthIfSet)),
+		ozzo.Field(&c.SealPath, ozzo.Required, ozzo.By(servableSealPath)),
 	)
 }
 
@@ -246,6 +264,16 @@ func minAPIKeyLengthIfSet(value any) error {
 		return fmt.Errorf("must be at least %d characters", minAPIKeyLength)
 	}
 	return nil
+}
+
+// servableSealPath rejects a seal path codellm cannot register (relative, or
+// already taken by another route — which would panic the mux on boot).
+func servableSealPath(value any) error {
+	s, ok := value.(string)
+	if !ok {
+		return errors.New("not a string")
+	}
+	return codellm.ValidateSealPath(s)
 }
 
 // nonNegativeDuration rejects a negative timeout (0 is valid: request-context

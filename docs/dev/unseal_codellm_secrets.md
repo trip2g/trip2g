@@ -1,6 +1,6 @@
 # Sealed secrets for codellm role notes
 
-**Status:** Built, except the seal HTTP endpoint (2026-08-21). The `seal` CLI, the unseal step and the bag contract are in; `/_system/codellm/seal` is the remaining piece.
+**Status:** Built (2026-08-21). The `seal` CLI, the seal endpoint, the unseal step and the bag contract are all in.
 **Builds on:** `codellm_extraction.md` (env passthrough, the `requires_secrets` hardening it sketches at the end of "The wire protocol"), `fleet_run.md`, `internal/dataencryption`.
 
 ## TL;DR
@@ -317,19 +317,23 @@ over one operation.
 field. The value comes from stdin rather than a flag on purpose: an argv secret is visible in the
 process table and lands in shell history — the same class of leak as a value in a query string.
 
-**HTTP (not built yet).** One path from config, defaulting to `/_system/codellm/seal` (the `/_system/` prefix
-matches trip2g's own admin endpoints). `GET` renders a small HTML form, `POST` performs the
-sealing. Two fields — the env var name holding the master key, defaulting to `SEAL_KEY`, and the
-value to seal — so the operator can paste a credential in a browser and copy the blob straight
-into a note. It is always enabled; the base path is configurable for deployments where the default
-collides or is inconvenient.
+**HTTP (built).** One path from config — `CODELLM_SEAL_PATH` / `--seal-path`, defaulting to
+`/_system/codellm/seal` (the `/_system/` prefix matches trip2g's own admin endpoints, and Caddy
+already forwards `/_system/codellm/*` to the service, so the default needs no infra change).
+`GET` renders a small HTML form, `POST` performs the sealing. Two fields — the env var name
+holding the master key, defaulting to `SEAL_KEY`, and the value to seal — so the operator can
+paste a credential in a browser and copy the blob straight into a note. It is always enabled; the
+base path is configurable for deployments where the default collides or is inconvenient, and a
+path already served by another route is refused at boot rather than panicking the mux.
 
 Four rules, none of them optional:
 
 - **The value travels in the POST body.** The `GET` carries nothing but the empty form. Keep it
   that way: a secret that reaches a URL — a GET parameter, a redirect — lands in reverse-proxy
   access logs, browser history, and `Referer` headers, where a provisioning path leaks worse than
-  the thing it protects.
+  the thing it protects. Enforced rather than assumed: the handler reads `PostFormValue` only and
+  refuses any request carrying a query string. The rendered result carries the blob but not the
+  plaintext, which would otherwise sit in the DOM and the back-forward cache.
 - **Never log the value**, at any level. codellm's existing habit of logging exposed env *names*
   and never values (`logExposedEnv`, `internal/codellm/server.go:314`) is the standard to match.
 - **Scrub the unsealed plaintexts from every error, preview, and returned log.** This is mandatory,

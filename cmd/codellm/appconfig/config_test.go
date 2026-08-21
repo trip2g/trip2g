@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"trip2g/cmd/codellm/internal/codellm"
 	"trip2g/cmd/codellm/internal/coderun"
 )
 
@@ -111,4 +112,35 @@ func TestGetArgs_MetricsAddr(t *testing.T) {
 	cfg, err = GetArgs([]string{"--metrics-addr", ""})
 	require.NoError(t, err)
 	require.Empty(t, cfg.MetricsAddr, "an empty address must disable the listener, not fail validation")
+}
+
+func TestGetArgs_SealPathDefaultsUnderSystemPrefix(t *testing.T) {
+	cfg, err := GetArgs(nil)
+	require.NoError(t, err)
+	require.Equal(t, codellm.DefaultSealPath, cfg.SealPath)
+}
+
+func TestGetArgs_SealPathFromEnvAndFlag(t *testing.T) {
+	t.Setenv("CODELLM_SEAL_PATH", "/from-env")
+	cfg, err := GetArgs(nil)
+	require.NoError(t, err)
+	require.Equal(t, "/from-env", cfg.SealPath)
+
+	cfg, err = GetArgs([]string{"--seal-path", "/from-flag"})
+	require.NoError(t, err)
+	require.Equal(t, "/from-flag", cfg.SealPath)
+}
+
+func TestGetArgs_SealPathMustBeAbsolute(t *testing.T) {
+	_, err := GetArgs([]string{"--seal-path", "seal"})
+	require.Error(t, err)
+}
+
+// A path already served would panic the mux at registration; refusing it in
+// config turns a crash on boot into a readable configuration error.
+func TestGetArgs_SealPathCannotCollideWithABuiltInRoute(t *testing.T) {
+	for _, path := range []string{"/healthz", "/v1/models", "/v1/chat/completions", "/_system/codellm/graphql"} {
+		_, err := GetArgs([]string{"--seal-path", path})
+		require.Error(t, err, path)
+	}
 }

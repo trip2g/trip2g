@@ -40,7 +40,7 @@ is a fleet metric and a codellm-backed fleet reports zero on it.
 
 | Metric | Notes |
 |---|---|
-| `codellm_requests_total{endpoint,status}` | endpoint = `chat_completions` \| `graphql` \| `graphql_playground` |
+| `codellm_requests_total{endpoint,status}` | endpoint = `chat_completions` \| `graphql` \| `graphql_playground` \| `seal_form` \| `seal` |
 | `codellm_request_duration_seconds{endpoint}` | |
 | `codellm_requests_in_flight` | each in-flight request may fork an interpreter child |
 | `codellm_auth_total{lane,result}` | lane = `apikey` \| `cookie`. Denials on an endpoint that executes code are a probing signal |

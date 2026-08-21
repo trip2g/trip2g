@@ -43,6 +43,15 @@ const fleetInputMessageName = "fleet_input"
 // whatever model the request asks for, so this is only for client compatibility.
 const modelID = "codellm"
 
+// The routes Handler always registers. Named so ValidateSealPath can refuse a
+// configured seal path that would collide with one and panic the mux.
+const (
+	chatPath      = "/v1/chat/completions"
+	graphqlPrefix = "/_system/codellm/graphql"
+	modelsPath    = "/v1/models"
+	healthzPath   = "/healthz"
+)
+
 // Config configures a codellm Server. codellm holds no vault/KB/secrets; the
 // only knobs are the code-execution policy and the auth seam.
 type Config struct {
@@ -96,6 +105,12 @@ type Config struct {
 	// disables recording entirely (every call site is nil-safe), which is what
 	// tests and a --metrics-addr="" run get.
 	Metrics *codellmmetrics.Metrics
+
+	// SealPath is where the sealing form is served; empty → DefaultSealPath. It
+	// is the only knob the endpoint has: authorization is already answered by
+	// Auth, so whether the address is published, and behind what, is a
+	// deployment question the configurable path serves.
+	SealPath string
 }
 
 // BrowserAuth composes codellm's two auth regimes into one middleware for the
@@ -204,30 +219,36 @@ func New(cfg Config) *Server {
 	if cfg.Auth == nil {
 		cfg.Auth = func(next http.Handler) http.Handler { return next }
 	}
+	if cfg.SealPath == "" {
+		cfg.SealPath = DefaultSealPath
+	}
 	return &Server{cfg: cfg}
 }
 
-// Handler returns the HTTP handler for the service. The two BROWSER-facing
-// endpoints — execution (/v1/chat/completions) and the markdown-structure
-// GraphQL (/_system/codellm/graphql) — are wrapped by the
-// auth seam (cfg.Auth); everything else (liveness /healthz, /v1/models for
-// client compat) is open. See the two-auth-regime note on Config.Auth.
+// Handler returns the HTTP handler for the service. The BROWSER-facing
+// endpoints — execution (/v1/chat/completions), the markdown-structure GraphQL
+// (/_system/codellm/graphql) and the sealing form (cfg.SealPath) — are wrapped
+// by the auth seam (cfg.Auth); everything else (liveness /healthz, /v1/models
+// for client compat) is open. See the two-auth-regime note on Config.Auth.
 func (s *Server) Handler() http.Handler {
-	const graphqlPrefix = "/_system/codellm/graphql"
-
 	m := s.cfg.Metrics
 	mux := http.NewServeMux()
 	graphqlHandler := codellmgql.NewHTTPHandler(nil, blockRunner{cfg: s.cfg})
 	gqlAuthHandler := s.cfg.Auth(graphqlHandler)
 	// Auth-gated (browser cookie / fleet channel token — see cfg.Auth).
-	mux.Handle("POST /v1/chat/completions",
+	mux.Handle("POST "+chatPath,
 		m.Instrument("chat_completions", s.cfg.Auth(http.HandlerFunc(s.handleChatCompletions))))
 	mux.Handle("POST "+graphqlPrefix, m.Instrument("graphql", gqlAuthHandler))
 	mux.Handle("GET "+graphqlPrefix,
 		m.Instrument("graphql_playground", s.cfg.Auth(playground.Handler("CodeLLM GraphQL Playground", graphqlPrefix))))
+	// Sealing: a GET renders the form, a POST seals. Both verbs go through the
+	// same middleware, the way the playground's GET already does.
+	sealHandler := s.cfg.Auth(http.HandlerFunc(s.handleSeal))
+	mux.Handle("GET "+s.cfg.SealPath, m.Instrument("seal_form", sealHandler))
+	mux.Handle("POST "+s.cfg.SealPath, m.Instrument("seal", sealHandler))
 	// Open: liveness + client compatibility, never gated.
-	mux.HandleFunc("GET /v1/models", s.handleModels)
-	mux.HandleFunc("GET /healthz", s.handleHealthz)
+	mux.HandleFunc("GET "+modelsPath, s.handleModels)
+	mux.HandleFunc("GET "+healthzPath, s.handleHealthz)
 	return mux
 }
 
