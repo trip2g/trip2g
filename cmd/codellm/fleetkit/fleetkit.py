@@ -22,7 +22,16 @@ import os
 
 import yaml
 
-__all__ = ["render", "note", "write", "patch", "emit", "bag", "note_frontmatter"]
+__all__ = [
+    "render",
+    "note",
+    "write",
+    "patch",
+    "emit",
+    "bag",
+    "frontmatter",
+    "note_frontmatter",
+]
 
 
 def render(meta, body=""):
@@ -72,6 +81,19 @@ class Frontmatter(dict):
 
     def __getattr__(self, name):
         return self.get(name)
+
+
+def frontmatter():
+    """The role note's OWN frontmatter, as an attribute-access mapping.
+
+    This is the role's configuration — thresholds, target folders, endpoints —
+    read from the note that declares it instead of hardcoded in the body. Values
+    are strings: trip2g stringifies note meta, so `max: 3` arrives as "3".
+
+    Returns an empty mapping outside a delivery, so `frontmatter().whatever`
+    reads as None rather than raising.
+    """
+    return Frontmatter(bag().get("frontmatter") or {})
 
 
 def note_frontmatter(path):

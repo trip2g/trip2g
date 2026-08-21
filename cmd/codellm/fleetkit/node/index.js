@@ -77,6 +77,15 @@ function parse_frontmatter(content) {
  * changed_files. A path the bag does not carry is a role misconfiguration, not
  * a finding, so it throws rather than reading as a note with no fields.
  */
+/**
+ * The role note's OWN frontmatter — its configuration, read from the note that
+ * declares it instead of hardcoded in the body. Values are strings: trip2g
+ * stringifies note meta, so `max: 3` arrives as "3". Empty outside a delivery.
+ */
+function frontmatter() {
+  return bag().frontmatter || {};
+}
+
 function note_frontmatter(path) {
   const b = bag();
   for (const key of ['attached_notes', 'changed_files']) {
@@ -89,4 +98,7 @@ function note_frontmatter(path) {
   );
 }
 
-module.exports = { render, note, write, patch, emit, bag, note_frontmatter, parse_frontmatter };
+module.exports = {
+  render, note, write, patch, emit, bag,
+  frontmatter, note_frontmatter, parse_frontmatter,
+};

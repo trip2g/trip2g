@@ -21,6 +21,13 @@ type AttachedNote struct {
 }
 
 type Input struct {
+	// Frontmatter is the role note's OWN frontmatter, as flat strings — trip2g
+	// stringifies note meta, so a numeric or boolean field arrives as its text
+	// form and nothing downstream should expect typed values. It lets a role read
+	// its configuration from the note that declares it instead of hardcoding it
+	// in the body.
+	Frontmatter map[string]string `json:"frontmatter"`
+
 	ChangedFiles  []ChangeInfo   `json:"changed_files"`
 	ChangeFile    *ChangeInfo    `json:"change_file,omitempty"`
 	AttachedNotes []AttachedNote `json:"attached_notes"`

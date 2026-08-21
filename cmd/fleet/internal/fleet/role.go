@@ -11,8 +11,13 @@ import (
 
 // Role is a parsed role note: flat frontmatter (config) + body (instruction).
 type Role struct {
-	NotePath       string
-	Body           string
+	NotePath string
+	Body     string
+
+	// Frontmatter is the note's raw flat meta, kept whole so fields this struct
+	// does not model still reach the role's own code through the delivery bag.
+	Frontmatter map[string]string
+
 	FleetID        string // partition key: only the fleet whose --fleet-id matches processes this role
 	Model          string
 	Tools          []string
@@ -39,6 +44,7 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 	r := Role{
 		NotePath:       notePath,
 		Body:           body,
+		Frontmatter:    copyMeta(m),
 		FleetID:        strings.TrimSpace(m["fleet_id"]),
 		Model:          strings.TrimSpace(m["model"]),
 		Tools:          parseList(m["tools"]),
@@ -67,6 +73,17 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 		return Role{}, fmt.Errorf("timeout_seconds: %w", err)
 	}
 	return r, nil
+}
+
+// copyMeta clones the frontmatter map. Discovery builds one map per note and
+// the Role outlives that loop, so sharing it would let a later write reach into
+// an already-parsed Role.
+func copyMeta(m map[string]string) map[string]string {
+	out := make(map[string]string, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
 }
 
 // defaultTimeoutSeconds is the agent-run timeout applied when a role omits
