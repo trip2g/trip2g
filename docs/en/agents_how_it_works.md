@@ -128,7 +128,7 @@ The raw transcript is written by a deterministic ingest step — not the LLM. Th
 
 ### The code executor role kind
 
-A second role kind (`executor: code`) runs Python, Bash, or Node code for steps that do not need a language model — pagination, field mapping, format conversion. Same role-note format, same trigger mechanism, no LLM cost or latency. The program runs in an OS-level sandbox with a scrubbed environment, and its writes pass through the same `write_patterns` enforcement as `write_note`. See [[en/user/fleet|Fleet: the agent sidecar]] for the full reference and how to run the daemon.
+A second role kind runs Python, Bash, or Node code for steps that do not need a language model — pagination, field mapping, format conversion. A role picks it by naming a fleet backed by codellm, the code-execution service; the note format and the trigger mechanism are the same, without LLM cost or latency. The program runs in an OS-level sandbox, and its writes pass through the same `write_patterns` enforcement as `write_note`. See [[en/user/fleet|Fleet: the agent sidecar]] for the full reference and how to run the daemon.
 
 ## Honest limits
 
