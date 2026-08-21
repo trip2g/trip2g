@@ -45,11 +45,16 @@ const vectorTopK = 50
 // the corpus (latest = drafts included, live = published only). merged reports
 // whether the vector lane contributed, so callers can apply hybrid-only caps.
 // Permission filtering and output shaping stay with the callers.
+//
+// rerank carries the caller's explicit preference for the second stage: nil
+// means "no preference", and the instance's reranker.default decides. It can
+// never turn on a reranker that is not configured.
 func Retrieve(
 	ctx context.Context,
 	env RetrieveEnv,
 	query string,
 	useLatest bool,
+	rerank *bool,
 ) ([]appmodel.SearchResult, bool, error) {
 	var results []appmodel.SearchResult
 	var err error
@@ -88,7 +93,7 @@ func Retrieve(
 	}
 
 	// Optional second-stage cross-encoder rerank, BLENDED with the RRF order.
-	results = rerankResults(ctx, env, query, results, passageByURL)
+	results = rerankResults(ctx, env, query, results, passageByURL, rerank)
 
 	return results, merged, nil
 }
@@ -284,7 +289,8 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 
 // rerankResults applies the shared optional cross-encoder rerank
 // (reranker.BlendRRF) to the fused candidate set, blending the CE score with
-// the first-stage RRF order. No-op when the reranker is not configured.
+// the first-stage RRF order. No-op when the reranker is not configured, or when
+// this request did not ask for it and the instance does not rerank by default.
 // See docs/dev/reranker.md.
 func rerankResults(
 	ctx context.Context,
@@ -292,8 +298,13 @@ func rerankResults(
 	query string,
 	results []appmodel.SearchResult,
 	passageByURL map[string]string,
+	want *bool,
 ) []appmodel.SearchResult {
-	return reranker.BlendRRF(ctx, env.Features().VectorSearch.Reranker, env.Logger(), query, results, passageByURL)
+	cfg := env.Features().VectorSearch.Reranker
+	if !cfg.ShouldRerank(want) {
+		return results
+	}
+	return reranker.BlendRRF(ctx, cfg, env.Logger(), query, results, passageByURL)
 }
 
 // generateSnippet extracts a text snippet from note content for vector-only results.

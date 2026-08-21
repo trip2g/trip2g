@@ -98,7 +98,7 @@ func TestRerankBlend_CENudgesButRRFDominatesAtLowWeight(t *testing.T) {
 	})
 	env := &rerankEnv{feats: rerankerFeatures(0.2, srv.URL)}
 
-	out := rerankResults(context.Background(), env, "q", results, passages)
+	out := rerankResults(context.Background(), env, "q", results, passages, wantRerank(true))
 	require.Equal(t, "/a", out[0].URL, "low weight: strong RRF prior must win")
 }
 
@@ -118,7 +118,7 @@ func TestRerankBlend_CEOverridesAtHighWeight(t *testing.T) {
 	})
 	env := &rerankEnv{feats: rerankerFeatures(0.9, srv.URL)}
 
-	out := rerankResults(context.Background(), env, "q", results, passages)
+	out := rerankResults(context.Background(), env, "q", results, passages, wantRerank(true))
 	require.Equal(t, "/b", out[0].URL, "high weight: confident CE flips a near-tie")
 }
 
@@ -134,7 +134,7 @@ func TestRerankBlend_NoPassageKeepsStageOne(t *testing.T) {
 	srv := ceServer(t, func(string) float64 { return 0.5 })
 	env := &rerankEnv{feats: rerankerFeatures(0.5, srv.URL)}
 
-	out := rerankResults(context.Background(), env, "q", results, passages)
+	out := rerankResults(context.Background(), env, "q", results, passages, wantRerank(true))
 	require.Len(t, out, 3)
 	urls := map[string]bool{}
 	for _, r := range out {
@@ -146,6 +146,76 @@ func TestRerankBlend_NoPassageKeepsStageOne(t *testing.T) {
 func TestRerankBlend_DisabledIsPassthrough(t *testing.T) {
 	results := []appmodel.SearchResult{makeResult("/a", 0.03, "A"), makeResult("/b", 0.02, "B")}
 	env := &rerankEnv{feats: features.Features{}} // reranker disabled
-	out := rerankResults(context.Background(), env, "q", results, nil)
+	out := rerankResults(context.Background(), env, "q", results, nil, wantRerank(true))
 	require.Equal(t, results, out)
+}
+
+// wantRerank expresses an explicit caller preference for the second stage.
+// A nil *bool means "no preference", which is what most call sites pass.
+func wantRerank(v bool) *bool { return &v }
+
+// deadCEServer stands in for a reranker that must never be reached: any request
+// to it fails the test, which is how these cases prove the stage was skipped
+// rather than merely producing the same order by luck.
+func deadCEServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Error("reranker was called when it should have been skipped")
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestRerankResults_SkippedUnlessAsked(t *testing.T) {
+	results := []appmodel.SearchResult{
+		makeResult("/a", 0.030, "A"),
+		makeResult("/b", 0.020, "B"),
+	}
+	passages := map[string]string{"/a": "alpha passage", "/b": "beta passage"}
+
+	cases := []struct {
+		name    string
+		enabled bool
+		byDflt  bool
+		want    *bool
+	}{
+		{name: "capability off, no preference", enabled: false, byDflt: false, want: nil},
+		{name: "capability off, caller asks anyway", enabled: false, byDflt: false, want: wantRerank(true)},
+		{name: "opt-in instance, no preference", enabled: true, byDflt: false, want: nil},
+		{name: "opt-in instance, caller declines", enabled: true, byDflt: false, want: wantRerank(false)},
+		{name: "default-on instance, caller declines", enabled: true, byDflt: true, want: wantRerank(false)},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			feats := rerankerFeatures(0.9, deadCEServer(t).URL)
+			feats.VectorSearch.Reranker.Enabled = tc.enabled
+			feats.VectorSearch.Reranker.Default = tc.byDflt
+
+			out := rerankResults(context.Background(), &rerankEnv{feats: feats}, "q", results, passages, tc.want)
+			require.Equal(t, []string{"/a", "/b"}, []string{out[0].URL, out[1].URL},
+				"stage-1 order must survive untouched")
+		})
+	}
+}
+
+func TestRerankResults_DefaultOnRuns(t *testing.T) {
+	// Same near-tie as the blend tests: with the CE consulted, /b wins.
+	results := []appmodel.SearchResult{
+		makeResult("/a", 0.021, "A"),
+		makeResult("/b", 0.020, "B"),
+	}
+	passages := map[string]string{"/a": "alpha passage", "/b": "beta passage"}
+
+	srv := ceServer(t, func(doc string) float64 {
+		if strings.Contains(doc, "beta") {
+			return 0.99
+		}
+		return 0.01
+	})
+	feats := rerankerFeatures(0.9, srv.URL)
+	feats.VectorSearch.Reranker.Default = true
+
+	out := rerankResults(context.Background(), &rerankEnv{feats: feats}, "q", results, passages, nil)
+	require.Equal(t, "/b", out[0].URL, "a default-on instance reranks without being asked")
 }

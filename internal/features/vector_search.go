@@ -200,13 +200,44 @@ type VectorSearchConfig struct {
 // order. Only candidates whose passage fits the CE window (~512 tokens) are
 // rescored; the rest keep their stage-1 score. See docs/dev/reranker.md.
 type RerankerConfig struct {
-	Enabled        bool    `json:"enabled"`
+	// Enabled is a CAPABILITY, not a policy: it says a cross-encoder sidecar is
+	// configured and callers are allowed to ask for it. It does not by itself
+	// mean every search pays for it — see Default.
+	Enabled bool `json:"enabled"`
+
+	// Default decides what happens when the caller expresses no preference.
+	// false (the default) makes reranking strictly opt-in per request: the MCP
+	// `rerank` argument or the GraphQL `rerank` input field. true reranks
+	// everything unless the caller opts out.
+	//
+	// Opt-in is the sane default because the cross-encoder is linear in
+	// candidates and slow on CPU — roughly a second per candidate — so
+	// top_n=20 adds ~20s to a search. Instances with a GPU sidecar, or with a
+	// small top_n, can flip this on.
+	Default bool `json:"default"`
+
 	BaseURL        string  `json:"base_url"`        // rerank endpoint, e.g. "http://reranker:8000/rerank"
 	Model          string  `json:"model"`           // e.g. "BAAI/bge-reranker-v2-m3"
 	TopN           int     `json:"top_n"`           // candidates to rerank (default 50)
 	OutputK        int     `json:"output_k"`        // results to keep after rerank (default 20)
 	BlendWeight    float64 `json:"blend_weight"`    // CE weight in [0,1]: final = (1-w)*rrf_norm + w*ce_norm (default 0.5)
 	TimeoutSeconds int     `json:"timeout_seconds"` // per-request rerank timeout (default 10; raise for CPU inference)
+}
+
+// ShouldRerank reports whether this particular request should run the
+// cross-encoder. want is the caller's explicit preference: nil when the request
+// said nothing, in which case the instance's Default decides. A disabled
+// reranker always wins — asking for one that is not configured cannot conjure
+// it, and callers are told so up front (the MCP argument is not advertised at
+// all when Enabled is false).
+func (r RerankerConfig) ShouldRerank(want *bool) bool {
+	if !r.Enabled {
+		return false
+	}
+	if want != nil {
+		return *want
+	}
+	return r.Default
 }
 
 // ResolvedDimensions returns the embedding vector size: explicit override if

@@ -23,6 +23,8 @@ type Env interface {
 func TestResolve(t *testing.T) {
 	t.Run("initialize returns server info", func(t *testing.T) {
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -62,6 +64,8 @@ func TestResolve(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -115,6 +119,8 @@ soul_profile:
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -148,6 +154,8 @@ soul_profile:
 
 	t.Run("tools/list returns static tools", func(t *testing.T) {
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -200,6 +208,8 @@ soul_profile:
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -261,6 +271,8 @@ soul_profile:
 			Content:        []byte("RU instructions"),
 		}
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -289,6 +301,8 @@ soul_profile:
 
 	t.Run("method not found returns error", func(t *testing.T) {
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second }, MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
 
 		req := mcp.Request{
@@ -306,6 +320,8 @@ soul_profile:
 
 	t.Run("invalid call params returns error", func(t *testing.T) {
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -339,6 +355,8 @@ soul_profile:
 	// transport answers 202 Accepted with an empty body, per the MCP spec.
 	t.Run("notifications/initialized returns no response body", func(t *testing.T) {
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second }, MCPMetricsFunc: func() *metrics.MCPMetrics { return nil }}
 
 		// A notification carries no id, so none is sent here.
@@ -443,6 +461,8 @@ func TestExpandReturnsDirectChildren(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -693,6 +713,8 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 
 func TestFederatedSearchWithoutKBNotesReturnsStructuredStatus(t *testing.T) {
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -872,6 +894,8 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 
 func noteHTMLEnv(note *appmodel.NoteView) *EnvMock {
 	return &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -897,6 +921,8 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -946,6 +972,8 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -991,6 +1019,8 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1061,6 +1091,8 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1169,6 +1201,8 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1215,6 +1249,8 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1263,6 +1299,8 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1412,6 +1450,8 @@ func TestHandleNoteHtml(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1446,6 +1486,8 @@ func TestHandleNoteHtml(t *testing.T) {
 
 	t.Run("returns error for non-existent note", func(t *testing.T) {
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1572,6 +1614,8 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1615,6 +1659,8 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1658,6 +1704,8 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
@@ -1702,6 +1750,8 @@ func TestStripFrontmatter(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },

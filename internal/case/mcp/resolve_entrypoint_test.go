@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+	"trip2g/internal/features"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/logger"
@@ -31,6 +32,8 @@ func TestResolveEntryPoint(t *testing.T) {
 		views.PathMap[note.Path] = note
 
 		return &EnvMock{
+			FeaturesFunc: func() features.Features { return features.Features{} },
+
 			FederatedFanoutTimeoutFunc:  func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:              func() *metrics.MCPMetrics { return nil },
 			LoggerFunc:                  func() logger.Logger { return &logger.DummyLogger{} },

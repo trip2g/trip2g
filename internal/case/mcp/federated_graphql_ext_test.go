@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+	"trip2g/internal/features"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/metrics"
@@ -38,6 +39,8 @@ func buildFedGQLEnvMock(t *testing.T, federatedEnabled bool, clientFactory func(
 	nvs.MCPFederationNotes = []*appmodel.MCPFederationNote{appmodel.NewMCPFederationNote(kbNote)}
 
 	return &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc:  func() time.Duration { return 2 * time.Second },
 		LatestNoteViewsFunc:         func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc:             func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },

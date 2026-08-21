@@ -57,7 +57,7 @@ func TestRetrieve_CorpusSelection(t *testing.T) {
 
 	t.Run("live", func(t *testing.T) {
 		env := retrieveEnv(t, srv.URL)
-		results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", false)
+		results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
 		require.NoError(t, err)
 		require.True(t, merged)
 		require.Len(t, results, 1)
@@ -68,7 +68,7 @@ func TestRetrieve_CorpusSelection(t *testing.T) {
 
 	t.Run("latest", func(t *testing.T) {
 		env := retrieveEnv(t, srv.URL)
-		results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", true)
+		results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", true, nil)
 		require.NoError(t, err)
 		require.True(t, merged)
 		require.Len(t, results, 1)
@@ -106,7 +106,7 @@ func TestRetrieve_VectorResultsCarryChunkIndex(t *testing.T) {
 		return &appmodel.NoteViews{PathMap: map[string]*appmodel.NoteView{"a.md": noteA, "b.md": noteB}}
 	}
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false)
+	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
 	require.NoError(t, err)
 
 	byURL := map[string]appmodel.SearchResult{}
@@ -135,7 +135,7 @@ func TestRetrieve_DimensionMismatchSkipsStaleChunks(t *testing.T) {
 	env.SearchLiveNotesFunc = func(string) ([]appmodel.SearchResult, error) { return nil, nil }
 	// Stored chunks are 2-dim; the query is 3-dim.
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false)
+	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
 	require.NoError(t, err)
 	require.Empty(t, results, "dim-mismatched chunks must not produce candidates")
 }

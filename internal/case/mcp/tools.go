@@ -3,6 +3,8 @@ package mcp
 import (
 	"context"
 	"fmt"
+
+	"trip2g/internal/features"
 )
 
 // This file holds the MCP tool catalog: what tools exist, how they are
@@ -302,6 +304,18 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 		},
 	}
 
+	// The rerank argument is advertised ONLY where a cross-encoder sidecar is
+	// actually configured. An argument the instance cannot honour is worse than
+	// no argument: the agent burns a turn discovering that it did nothing.
+	if rr := env.Features().VectorSearch.Reranker; rr.Enabled {
+		rerankProp := Property{Type: "boolean", Description: rerankArgDescription(rr)}
+		for i := range tools {
+			if tools[i].Name == "search" || tools[i].Name == "federated_search" {
+				tools[i].InputSchema.Properties["rerank"] = rerankProp
+			}
+		}
+	}
+
 	if env.FederatedGraphQLEnabled() {
 		tools = append(tools, federatedGraphQLTool(nestedKBIDNote))
 	}
@@ -311,6 +325,28 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 	}
 
 	return tools
+}
+
+// rerankArgDescription spells out both the effective default and the price,
+// because neither reaches the model on its own: this schema has no JSON Schema
+// `default` keyword, and the cost lives in the deployment, not in the protocol.
+// An agent that cannot see the cost switches reranking on by reflex, and every
+// search silently becomes many seconds slower — so the number is stated in the
+// units the agent controls, candidates.
+func rerankArgDescription(rr features.RerankerConfig) string {
+	const shared = "Second-stage cross-encoder rerank: re-scores the top candidates against the query as pairs, " +
+		"which orders results more accurately than the vector stage alone. " +
+		"Cost is linear in candidates — this instance reranks up to %d, " +
+		"which on a CPU sidecar is roughly a second each (~%ds) and on a GPU sidecar far less. "
+
+	if rr.Default {
+		return fmt.Sprintf(shared+
+			"DEFAULT ON here: omit the argument to rerank, pass false to skip it when a fast answer "+
+			"matters more than the ordering.", rr.TopN, rr.TopN)
+	}
+	return fmt.Sprintf(shared+
+		"DEFAULT OFF here: pass true only when the ordering you got back looks wrong and a better one "+
+		"is worth the wait. Do not set it on every call.", rr.TopN, rr.TopN)
 }
 
 // dynamicTools lists the tools notes register through mcp_method frontmatter.

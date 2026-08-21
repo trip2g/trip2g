@@ -8,6 +8,10 @@ nudges. It reranks **windowed passages** (the best-matching chunk per note,
 behind `vector_search.reranker.enabled`. Whether to turn it on is a benchmark
 decision (see [Benchmark](#benchmark)).
 
+`enabled` is a **capability**, not a policy: it says a sidecar exists and callers
+may ask for it. Whether a given search actually pays for it is decided per
+request — see [Asking for it per request](#asking-for-it-per-request).
+
 This replaces an earlier *replace-mode* reranker that measured strictly worse
 and was removed. The failure and the fix are documented below so we don't
 repeat the mistake.
@@ -132,6 +136,7 @@ the F3b collapse.
     "base_url": "http://embedding:8000/v1",
     "reranker": {
       "enabled": true,
+      "default": false,
       "base_url": "http://reranker:8000/rerank",
       "model": "BAAI/bge-reranker-v2-m3",
       "top_n": 50,
@@ -144,7 +149,8 @@ the F3b collapse.
 
 | field | default | meaning |
 |---|---|---|
-| `enabled` | `false` | turn the second stage on |
+| `enabled` | `false` | the sidecar exists and callers may ask for it (capability) |
+| `default` | `false` | rerank when the request expresses no preference |
 | `base_url` | — | rerank endpoint (required when enabled) |
 | `model` | — | cross-encoder model name |
 | `top_n` | 50 | fused candidates rescored |
@@ -159,6 +165,68 @@ baseline runs never pull the model. CPU inference is slow:
 a warm rerank of 20 passages takes ~6 s, of 50 passages ~25 s on a loaded box —
 so raise `timeout_seconds` well above the 10 s default when serving on CPU, or
 the lane silently degrades to the RRF order on timeout.
+
+## Asking for it per request
+
+The second stage is linear in candidates and slow on CPU — about a second per
+candidate on our own box (50 passages of ~326 tokens measured at 48.5 s on
+2026-08-21). At `top_n=20` that is ~20 s added to a search, which is fine for an
+agent doing research and unacceptable for a human waiting on a search box. So
+who pays is a per-request decision, not only a deployment-wide one:
+
+| `enabled` | `default` | request says nothing | request says `true` | request says `false` |
+|---|---|---|---|---|
+| `false` | — | no rerank | no rerank | no rerank |
+| `true` | `false` | no rerank | rerank | no rerank |
+| `true` | `true` | rerank | rerank | no rerank |
+
+Callers express the preference as:
+
+- **MCP** — a `rerank` boolean on `search` and `federated_search`. On
+  `federated_search` it rides along to the peer, which applies it against ITS
+  own config: reranking happens where the corpus is, because that is the only
+  place the passages exist.
+- **GraphQL** — a `rerank: Boolean` field on `SearchInput`.
+
+The MCP argument is **advertised only when `enabled` is true**. An argument the
+instance cannot honour is worse than no argument at all: the agent spends a turn
+discovering that it did nothing. Its description also carries the price in
+candidates and the effective default for that instance, because neither reaches
+the model otherwise — and an agent that cannot see a cost will turn the option
+on by reflex.
+
+Note for existing deployments: `default` is `false`, so an instance that
+previously ran with `reranker.enabled: true` and expected every search to be
+reranked must now set `"default": true` to keep that behaviour.
+
+## The second failure: a batch limit nobody saw
+
+Blend mode measured well and shipped, and then did not run in production for
+months. The serving side had `--max-client-batch-size 8` while `top_n` was 50,
+and `reranker.Client.Rerank` posts every candidate in a single request. The
+server answered `422 batch size 50 > maximum allowed batch size 8`, `BlendRRF`
+took its graceful-degradation path, logged a warning, and returned the stage-1
+order. Search kept working, so nobody looked.
+
+The reranker's own metrics eventually told the whole story at a glance:
+
+```
+te_request_count{method="batch"}      61359
+te_request_failure{err="batch_size"}  61354
+te_request_success{method="batch"}        5
+```
+
+Three lessons, all cheap in hindsight:
+
+- **The benchmark stack and production must agree on serving flags.** The
+  vecbench compose file runs the TEI image with no batch flags at all, so it
+  gets the defaults (`max-client-batch-size` 32) and `top_n=20` fits. Production
+  set 8 for memory reasons. Nothing compared the two.
+- **Graceful degradation needs a counter.** A fallback that is indistinguishable
+  from success will hide forever. If the second stage is skipped because it
+  failed, that has to be visible somewhere a human looks.
+- **`top_n` is a client-side batch size.** Whatever serves the cross-encoder has
+  a maximum request size; `top_n` must fit under it, or every call fails.
 
 ## Benchmark
 

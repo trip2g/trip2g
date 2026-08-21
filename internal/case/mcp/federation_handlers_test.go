@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+	"trip2g/internal/features"
 
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/metrics"
@@ -113,6 +114,8 @@ func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
@@ -171,6 +174,8 @@ func TestFederatedNoteHTMLToleratesStringPID(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
@@ -225,6 +230,8 @@ func TestFederatedNoteHTMLForwardsMatchIDOnly(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
@@ -276,6 +283,8 @@ func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
@@ -329,6 +338,8 @@ func TestFederatedExpandUsesMockedFederationClient(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
@@ -393,6 +404,8 @@ func TestFederatedCallsForwardEveryArgument(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederationMaxDepthFunc:     func() int { return 3 },
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
@@ -455,6 +468,8 @@ func TestFederatedSingleKBCallTimesOut(t *testing.T) {
 		},
 	}
 	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
 		FederationMaxDepthFunc:     func() int { return 3 },
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 50 * time.Millisecond },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },

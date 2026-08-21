@@ -17,6 +17,13 @@ type MCPSearchParams struct {
 	KBIDs       []string `json:"kb_ids,omitempty"`
 	Limit       int      `json:"limit,omitempty"`
 	DetailLimit int      `json:"detail_limit,omitempty"`
+
+	// Rerank is the caller's explicit preference for the second-stage
+	// cross-encoder; nil means "no preference" and the instance default
+	// decides. It rides along through forwarded() on federated_search, so a
+	// peer applies it against ITS OWN reranker config — reranking happens
+	// where the corpus is, which is the only place the passages exist.
+	Rerank *bool `json:"rerank,omitempty"`
 }
 
 type MCPSimilarParams struct {
