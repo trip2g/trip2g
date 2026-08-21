@@ -3,8 +3,11 @@ package noteloader
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"trip2g/internal/model"
@@ -25,7 +28,21 @@ var ErrSearchNotAvailable = errors.New("search index is not available")
 type noteContent struct {
 	Title string
 	Body  string
+
+	// Hash is the note's contentHash in hex. It is stored, never indexed, and
+	// exists so a persisted index can say what it already holds: after a
+	// restart the in-memory contentHashes map is empty, and without this the
+	// loader could neither skip unchanged notes nor notice notes deleted while
+	// the process was down. See adoptPersistedIndex.
+	Hash string
 }
+
+// searchIndexSchemaVersion changes whenever the mapping below changes in a way
+// that makes an existing on-disk index wrong (new field, different analyzer).
+// The index lives in a directory named after it, and createSearchIndex deletes
+// directories from other versions, so a bump rebuilds instead of silently
+// serving results from a stale schema.
+const searchIndexSchemaVersion = "v1"
 
 // langTextField builds a stored, indexed text field mapping named `name`,
 // analyzed with `analyzer`. We index Title/Body under both a Russian-analyzed
@@ -55,6 +72,16 @@ func (l *Loader) createSearchIndex() (bleve.Index, error) {
 		langTextField("Body_en", "en"),
 	)
 
+	// Stored but not indexed: it must never match a query, only travel with the
+	// document so a reopened index can be compared against the database.
+	hashField := bleve.NewKeywordFieldMapping()
+	hashField.Name = "Hash"
+	hashField.Store = true
+	hashField.Index = false
+	hashField.IncludeInAll = false
+	hashField.IncludeTermVectors = false
+	documentMapping.AddFieldMappingsAt("Hash", hashField)
+
 	// Use this as the DEFAULT mapping: notes are indexed as plain structs with no
 	// type field, so a mapping registered under a named type would never apply
 	// (bleve would fall back to the dynamic default analyzer for everything).
@@ -62,7 +89,65 @@ func (l *Loader) createSearchIndex() (bleve.Index, error) {
 	mapping.DefaultMapping = documentMapping
 	mapping.DefaultAnalyzer = "ru"
 
-	return bleve.NewMemOnly(mapping)
+	if l.searchIndexPath == "" {
+		return bleve.NewMemOnly(mapping)
+	}
+
+	// One directory per loader version ("live", "latest", ...) so the two
+	// loaders never share an index, and one below it per schema version.
+	dir := filepath.Join(l.searchIndexPath, l.version, searchIndexSchemaVersion)
+	if err := os.MkdirAll(filepath.Dir(dir), 0o750); err != nil {
+		return nil, fmt.Errorf("failed to create search index directory: %w", err)
+	}
+	l.removeStaleIndexVersions(filepath.Dir(dir))
+
+	index, err := bleve.Open(dir)
+	switch {
+	case err == nil:
+		l.adoptOnNextBuild = true
+		l.log.Info("search index opened from disk", "path", dir)
+		return index, nil
+	case errors.Is(err, bleve.ErrorIndexPathDoesNotExist):
+		// First run for this schema version: build it below.
+	default:
+		// Deliberately NOT deleting the directory here. The obvious reading of
+		// "cannot open" is "corrupt, rebuild it", and it is wrong: a
+		// zero-downtime handoff runs the old and the new instance at the same
+		// time, the old one holds the index lock, and rebuilding would destroy a
+		// live index out from under it. Fall back to memory for this process
+		// instead — correct, slower, and loud. A genuinely corrupt index is a
+		// human's call: delete the directory and restart.
+		l.log.Error("search index could not be opened, falling back to the in-memory index",
+			"path", dir, "error", err)
+		return bleve.NewMemOnly(mapping)
+	}
+
+	index, err = bleve.New(dir, mapping)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create on-disk search index at %s: %w", dir, err)
+	}
+	l.log.Info("search index created on disk", "path", dir)
+	return index, nil
+}
+
+// removeStaleIndexVersions deletes index directories written by another schema
+// version. Left alone they would sit on disk forever, one dead copy per bump.
+func (l *Loader) removeStaleIndexVersions(parent string) {
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() || e.Name() == searchIndexSchemaVersion {
+			continue
+		}
+		stale := filepath.Join(parent, e.Name())
+		if rmErr := os.RemoveAll(stale); rmErr != nil {
+			l.log.Warn("failed to remove stale search index", "path", stale, "error", rmErr)
+			continue
+		}
+		l.log.Info("removed search index of an older schema version", "path", stale)
+	}
 }
 
 func contentHash(note *model.NoteView) [32]byte {
@@ -113,6 +198,13 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 		l.indexedPermalinks = make(map[int64]string)
 	}
 
+	if l.adoptOnNextBuild {
+		if err := l.adoptPersistedIndex(index, notes); err != nil {
+			return nil, err
+		}
+		l.adoptOnNextBuild = false
+	}
+
 	// Track current PathIDs to detect deleted notes
 	currentPathIDs := make(map[int64]struct{})
 	indexed := 0
@@ -143,6 +235,7 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 		content := noteContent{
 			Title: note.Title,
 			Body:  extractText(note.Ast(), note.Content),
+			Hash:  hex.EncodeToString(hash[:]),
 		}
 
 		indexErr := index.Index(note.Permalink, content)
@@ -176,6 +269,74 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	)
 
 	return index, nil
+}
+
+// adoptPersistedIndex teaches a freshly reopened on-disk index to the loader:
+// it reads back the hash stored with every document and rebuilds the two maps
+// that drive incremental indexing, then deletes documents whose note no longer
+// exists.
+//
+// Both halves matter. Without the hashes every note would be re-indexed on
+// every boot, which is the work the on-disk index exists to avoid. Without the
+// deletion pass a note removed while the process was down would stay in the
+// index forever, because the deletion check below walks contentHashes, and on
+// a fresh process that map starts empty.
+func (l *Loader) adoptPersistedIndex(index bleve.Index, notes *model.NoteViews) error {
+	count, err := index.DocCount()
+	if err != nil {
+		return fmt.Errorf("failed to count documents in the persisted index: %w", err)
+	}
+	if count == 0 {
+		return nil
+	}
+
+	req := bleve.NewSearchRequest(bleve.NewMatchAllQuery())
+	req.Size = int(count)
+	req.Fields = []string{"Hash"}
+	result, err := index.Search(req)
+	if err != nil {
+		return fmt.Errorf("failed to read back the persisted index: %w", err)
+	}
+
+	stored := make(map[string][32]byte, len(result.Hits))
+	for _, hit := range result.Hits {
+		raw, ok := hit.Fields["Hash"].(string)
+		if !ok {
+			continue // pre-hash document: treat as unknown, it will be re-indexed
+		}
+		decoded, decErr := hex.DecodeString(raw)
+		if decErr != nil || len(decoded) != sha256.Size {
+			continue
+		}
+		var h [32]byte
+		copy(h[:], decoded)
+		stored[hit.ID] = h
+	}
+
+	adopted := 0
+	for _, note := range notes.List {
+		h, ok := stored[note.Permalink]
+		if !ok {
+			continue
+		}
+		l.contentHashes[note.PathID] = h
+		l.indexedPermalinks[note.PathID] = note.Permalink
+		delete(stored, note.Permalink)
+		adopted++
+	}
+
+	// Whatever is left belongs to no current note: the note was deleted, renamed
+	// or hidden while this process was not running.
+	orphans := 0
+	for permalink := range stored {
+		if delErr := index.Delete(permalink); delErr != nil {
+			return fmt.Errorf("failed to delete orphaned document %s: %w", permalink, delErr)
+		}
+		orphans++
+	}
+
+	l.log.Info("persisted search index adopted", "documents", count, "adopted", adopted, "orphans_removed", orphans)
+	return nil
 }
 
 func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {

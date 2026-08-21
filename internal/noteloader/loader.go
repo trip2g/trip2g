@@ -90,6 +90,15 @@ type Loader struct {
 	contentHashes     map[int64][32]byte // PathID -> content hash for incremental indexing
 	indexedPermalinks map[int64]string   // PathID -> permalink of docs currently in the index
 
+	// searchIndexPath, when set, puts the bleve index on disk under this
+	// directory instead of holding it in the heap. See SetSearchIndexPath.
+	searchIndexPath string
+
+	// adoptOnNextBuild marks an index that was opened from disk rather than
+	// built here, so the next build reconciles it against the database before
+	// walking the notes. See adoptPersistedIndex.
+	adoptOnNextBuild bool
+
 	chunks []model.NoteChunk // per-chunk embeddings for vector search
 
 	// prevHTML holds the rendered HTML of notes from the previous Load cycle,
@@ -117,6 +126,45 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 		config:     config,
 		patchCache: frontmatterpatch.NewResultCache(),
 	}
+}
+
+// Close releases the search index. It matters only for an on-disk index: the
+// directory is locked while open, so a second loader (or a restarted process
+// that raced the old one) cannot use it until this returns. An in-memory index
+// has nothing to release.
+//
+// A crash without Close is survivable — scorch replays what it persisted, and a
+// note indexed but not yet flushed is re-indexed on the next load because its
+// hash will not match — but a clean close reopens several times faster.
+func (l *Loader) Close() error {
+	l.Lock()
+	defer l.Unlock()
+
+	if l.searchIndex == nil {
+		return nil
+	}
+	index := l.searchIndex
+	l.searchIndex = nil
+	if err := index.Close(); err != nil {
+		return fmt.Errorf("failed to close search index: %w", err)
+	}
+	return nil
+}
+
+// SetSearchIndexPath moves the full-text index out of the heap and onto disk
+// under path. Empty (the default) keeps the historical in-memory index.
+//
+// The index is stored under <path>/<version>/<schema>, so the "live" and
+// "latest" loaders never share one. Call it before the first Load.
+//
+// Why it exists: the in-memory index is upsidedown over gtreap, and it costs
+// roughly 35x the size of the indexed text — measured 350 MB of heap for 10 MB
+// of notes. On disk the same corpus costs 4 MB of heap, and a restart reopens
+// it in milliseconds instead of spending seconds rebuilding it.
+func (l *Loader) SetSearchIndexPath(path string) {
+	l.Lock()
+	defer l.Unlock()
+	l.searchIndexPath = path
 }
 
 // SetFrontmatterPatches sets the frontmatter patches to apply during note loading.
