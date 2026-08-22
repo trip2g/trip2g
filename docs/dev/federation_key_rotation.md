@@ -28,6 +28,53 @@ peer: whether it can rotate at all. Public bases carry no secret, and adapters
 (GitHub, Telegram) speak the same auth without implementing this, so both
 install with rotation off and keep a long-lived key by design.
 
+## Where it is called
+
+**`/_system/mcp`, as a tool that is dispatched but never listed.**
+
+The same URL as everything else, because a peer's address is provisioned once —
+in a KB-note, in a tunnel, in an ingress rule — and a second route is a second
+thing to expose, to document, and to forget the day someone tightens the
+ingress. The transport, the bearer parsing and `verifyInbound` already run there
+(`internal/case/mcp/endpoint.go`, `authenticateAnonymousRequest`), so a rotate
+handler starts from an authenticated context rather than building one.
+
+Not in `tools/list`, for two reasons that point the same way. That list is the
+stable method contract third-party adapters are asked to mirror, and rotation is
+control-plane — precisely what an adapter installs with the flag off to avoid.
+And the list is read by an LLM agent, which will call what it is shown; a
+rotation tool advertised beside `search` is one a model reaches for on its own
+initiative.
+
+`graphql_request` is the precedent and it works exactly this way: it sits in
+`builtinToolHandlers` and answers method-not-found unless the caller qualifies
+(`internal/case/mcp/resolve.go`), while `tools.go` offers it only to the callers
+that may use it.
+
+**The kid is not an argument.** `verifyInbound` already puts the authenticated
+kid into the context (`contextWithFederationAuth`, `internal/case/mcp/resolve.go`),
+so the handler rotates the pairing that signed the call and cannot address
+another. A `kid` parameter would let any valid peer rotate any other pairing's
+key — the confused deputy this design should not have.
+
+### Where the new key sits in the request
+
+The JWT signs `{iss, iat, exp, rid}` and binds nothing else, so a key placed in
+the tool's arguments could be rewritten in flight by anyone able to touch the
+connection, inside the 30-second window. Two ways out:
+
+1. **Carry the key in a signed claim**, leaving the tool's arguments empty.
+   Smallest change, and it works — but it puts a payload somewhere no other tool
+   keeps one, for this call alone.
+2. **Bind the body.** Add a claim carrying a digest of the request body and
+   verify it in `verifyInbound`. The key then travels in the arguments like any
+   other, and every federated call gains the property, not just this one.
+
+The second is the straighter path. Today *no* federated call's body is
+authenticated; rotation is only the first place where that becomes fatal rather
+than merely untidy. Whichever is chosen, this is the one change visible to peers
+that are not trip2g, and the place a protocol version field belongs.
+
 ## What each side stores
 
 Both sides hold the same two values against one row. No row is ever added for a
@@ -60,7 +107,7 @@ sequenceDiagram
 
     Note over A: N = 32 random bytes
     A->>A: prev := current, current := N
-    A->>B: rotate(kid, N) — JWT signed with prev, N in the signed claims
+    A->>B: rotate(N) — signed with prev; the kid comes from the JWT, never from an argument
     B->>B: prev := current, current := N, rotated_at := now
     B->>B: audit: rotated kid
     B-->>A: ok
@@ -144,11 +191,9 @@ rotation.
 - **The SSRF-safe dialer.** This makes the server POST to an address supplied in
   a mutation, so it goes through the same client the federation calls already
   use (`ssrfsafe.DialTimeout`, `internal/federation/client.go`), not a fresh one.
-- **The new key rides in the signed claims.** `signOutbound` signs
-  `{iss, iat, exp, rid}` today and does not bind the request body at all, so a
-  key carried in the body would be rewritable inside the 30-second window. This
-  is the one change to the JWT that peers other than trip2g can see, which is
-  where a protocol version field belongs.
+- **The new key is authenticated, not merely sent.** See "Where the new key
+  sits in the request" above: today nothing binds a federated call's body, so
+  the key needs either a signed claim of its own or a body digest in the claims.
 - **32 bytes, and a degenerate value is refused.** The asker generates the key,
   so the base validates what it is given rather than trusting it.
 
