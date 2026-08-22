@@ -107,7 +107,8 @@ sequenceDiagram
 
     Note over A: N = 32 random bytes
     A->>A: prev := current, current := N
-    A->>B: rotate(N) — signed with prev; the kid comes from the JWT, never from an argument
+    A->>B: rotate(N), signed with prev
+    Note over B: the kid comes from the JWT, never from an argument
     B->>B: prev := current, current := N, rotated_at := now
     B->>B: audit: rotated kid
     B-->>A: ok
