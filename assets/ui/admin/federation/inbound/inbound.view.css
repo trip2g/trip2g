@@ -1,0 +1,11 @@
+[trip2g_admin_federation_inbound_KeyCell],
+[trip2g_admin_federation_inbound_SecretHexCell] {
+	/* One long opaque line each. Wrapped they push the card past the viewport and
+	   read as a wall; the value is copied with the button beside them, never by
+	   selecting it, so the middle of it is not something a person needs to see. */
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+	font-family: var(--mol_font_mono);
+}

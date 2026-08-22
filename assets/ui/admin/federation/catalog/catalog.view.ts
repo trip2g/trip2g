@@ -58,7 +58,12 @@ namespace $.$$ {
 			return this.row( id ).subgraphIds.map( ( value: any ) => Number( value ) )
 		}
 
+		// Scope belongs to an inbound key. On an outbound one the number would be
+		// whatever an inbound key with the same kid happens to grant — the scope
+		// table keys on kid, not on the row — and reading that as "what this key
+		// carries" is exactly backwards.
 		override row_subgraph_count( id: any ): string {
+			if ( this.row( id ).kbUrl ) return '—'
 			return this.row( id ).subgraphCount.toString()
 		}
 

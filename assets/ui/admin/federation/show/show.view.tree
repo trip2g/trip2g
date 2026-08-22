@@ -16,7 +16,7 @@ $trip2g_admin_federation_show $mol_page
 		<= Info $mol_view
 			style *
 				flexDirection \column
-			sub /
+			sub <= info_sub /
 				<= Kid_labeler $mol_labeler
 					title \Key ID
 					Content <= KidCell $trip2g_admin_cell
@@ -33,7 +33,11 @@ $trip2g_admin_federation_show $mol_page
 					title \Last Rotated
 					Content <= RotatedCell $trip2g_admin_cell
 						content <= rotated_label
-				<= SubgraphsSection_labeler $mol_labeler
-					title \Subgraph Access
-					Content <= SubgraphList $trip2g_admin_subgraph_select_list
-						ids? <=> subgraph_ids? /number
+	SubgraphsSection_labeler $mol_labeler
+		title \Subgraph Access
+		Content <= SubgraphList $trip2g_admin_subgraph_select_list
+			ids? <=> subgraph_ids? /number
+	OutboundScopeNote $mol_labeler
+		title \Subgraph Access
+		Content <= OutboundScopeCell $mol_view
+			sub / \Granted by the peer, on their side. An outbound key carries no scope of its own.

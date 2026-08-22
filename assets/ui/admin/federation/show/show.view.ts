@@ -1,5 +1,20 @@
 namespace $.$$ {
 	export class $trip2g_admin_federation_show extends $.$trip2g_admin_federation_show {
+		// Scope is what a BASE grants a peer, so it belongs to an inbound key only.
+		// An outbound one is this instance asking, and what it may read is decided
+		// on the other side entirely. Offering the editor there would be worse than
+		// useless: the scope table keys on kid, so a pairing wired in both
+		// directions under one kid would have the outbound card silently editing
+		// what the inbound key surfaces.
+		@$mol_mem
+		override info_sub(): readonly any[] {
+			const scope = this.direction() === 'inbound'
+				? this.SubgraphsSection_labeler()
+				: this.OutboundScopeNote()
+
+			return [...super.info_sub(), scope]
+		}
+
 		// Said in words rather than left blank: an empty cell reads as "unknown",
 		// and the difference between "never rotated" and "rotated at" is the whole
 		// question of whether the key that was handed over is still the live one.
