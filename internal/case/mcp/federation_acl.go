@@ -24,7 +24,7 @@ func accessibleKBNotes(ctx context.Context, env federationACLEnv) ([]*model.MCPF
 			continue
 		}
 
-		ok, err := env.CanReadNote(ctx, kb.Note)
+		ok, err := canReadMCPNote(ctx, env, kb.Note)
 		if err != nil {
 			return nil, fmt.Errorf("check federation kb-note access: %w", err)
 		}

@@ -381,7 +381,14 @@ func FederationDepthFromContext(ctx context.Context) int {
 	return depth
 }
 
-func canReadMCPNote(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
+// mcpNoteReader is the only thing canReadMCPNote needs from an env, so every
+// caller on the MCP surface can reach it — including accessibleKBNotes, whose
+// own env is narrower than Env.
+type mcpNoteReader interface {
+	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
+}
+
+func canReadMCPNote(ctx context.Context, env mcpNoteReader, note *model.NoteView) (bool, error) {
 	if mcpAPIKeyAuthed(ctx) {
 		return true, nil // API key = admin, sees all notes
 	}
