@@ -742,7 +742,7 @@ CREATE TABLE federation_secrets (
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict,
   revoked_at datetime
-);
+, prev_secret_crypt blob, rotated_at datetime);
 CREATE INDEX idx_federation_secrets_kid
   on federation_secrets(kid);
 CREATE INDEX idx_federation_secrets_kb_url
@@ -1011,4 +1011,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260715051651'),
   ('20260820105848'),
   ('20260820125621'),
-  ('20260821014419');
+  ('20260821014419'),
+  ('20260822050102');

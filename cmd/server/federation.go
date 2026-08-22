@@ -82,12 +82,10 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 			return nil, fmt.Errorf("get federation secret by kb url: %w", err)
 		}
 		if ok {
-			secret, decErr := a.DecryptData(secretRow.SecretCrypt)
-			if decErr != nil {
-				return nil, decErr
+			keyErr := a.loadPeerKeys(&peer, secretRow)
+			if keyErr != nil {
+				return nil, keyErr
 			}
-			peer.KID = secretRow.Kid
-			peer.Secret = secret
 		} else {
 			configured, confErr := a.HasFederationSecretForKBURL(dbCtx, kb.URL)
 			if confErr != nil {
@@ -122,4 +120,58 @@ func (a *app) FederatedFanoutTimeout() time.Duration {
 
 func (a *app) MCPMetrics() *metrics.MCPMetrics {
 	return a.mcpMetrics
+}
+
+func (a *app) RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) error {
+	return a.WriteQueries.RotateFederationSecret(ctx, arg)
+}
+
+func (a *app) ClearFederationSecretPrev(ctx context.Context, id int64) error {
+	return a.WriteQueries.ClearFederationSecretPrev(ctx, id)
+}
+
+// FederationPeerClient builds a client for a peer described by the caller rather
+// than by a KB-note. Rotation needs it: the pairing it talks to is named by a
+// secret row, and at install time there is no note and no row yet.
+func (a *app) FederationPeerClient(peer model.FederationPeer) model.Federation {
+	return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode)
+}
+
+// FederationAllowsPlainHTTP reports whether this deployment federates over
+// addresses that are not on the public internet. It is the same condition that
+// decides whether the dialer refuses private addresses, and deliberately not a
+// setting of its own: an internal address rarely has a certificate, and a second
+// flag would only ever repeat what this one already says.
+func (a *app) FederationAllowsPlainHTTP() bool {
+	return a.config.DevMode || a.config.MCPFederationAllowPrivate
+}
+
+// loadPeerKeys puts the pairing's keys on an outbound peer: the current one, and
+// the one it rotated away from while the other side could still be holding it.
+//
+// Outside that window the peer has stopped accepting the old key too, so
+// carrying it would buy a second refused request per call and nothing else.
+func (a *app) loadPeerKeys(peer *model.FederationPeer, row db.FederationSecret) error {
+	secret, err := a.DecryptData(row.SecretCrypt)
+	if err != nil {
+		return err
+	}
+
+	peer.KID = row.Kid
+	peer.Secret = secret
+
+	if len(row.PrevSecretCrypt) == 0 || row.RotatedAt == nil {
+		return nil
+	}
+	if time.Since(*row.RotatedAt) > model.RotationGrace {
+		return nil
+	}
+
+	previous, err := a.DecryptData(row.PrevSecretCrypt)
+	if err != nil {
+		return err
+	}
+	peer.PrevSecret = previous
+
+	return nil
 }

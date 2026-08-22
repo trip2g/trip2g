@@ -269,14 +269,16 @@ type CronWebhookDelivery struct {
 }
 
 type FederationSecret struct {
-	ID          int64      `json:"id"`
-	Kid         string     `json:"kid"`
-	SecretCrypt []byte     `json:"secret_crypt"`
-	KbUrl       *string    `json:"kb_url"`
-	Description *string    `json:"description"`
-	CreatedAt   time.Time  `json:"created_at"`
-	CreatedBy   int64      `json:"created_by"`
-	RevokedAt   *time.Time `json:"revoked_at"`
+	ID              int64      `json:"id"`
+	Kid             string     `json:"kid"`
+	SecretCrypt     []byte     `json:"secret_crypt"`
+	KbUrl           *string    `json:"kb_url"`
+	Description     *string    `json:"description"`
+	CreatedAt       time.Time  `json:"created_at"`
+	CreatedBy       int64      `json:"created_by"`
+	RevokedAt       *time.Time `json:"revoked_at"`
+	PrevSecretCrypt []byte     `json:"prev_secret_crypt"`
+	RotatedAt       *time.Time `json:"rotated_at"`
 }
 
 type FederationSecretSubgraph struct {

@@ -23,6 +23,10 @@ func (m federationVerifyEnvMock) FederationSecretByKID(context.Context, string) 
 	return m.secret, true, nil
 }
 
+func (m federationVerifyEnvMock) ClearFederationSecretPrev(context.Context, int64) error {
+	return nil
+}
+
 func (m federationVerifyEnvMock) ListFederationSecretSubgraphsByKID(context.Context, string) ([]string, error) {
 	return m.subgraphs, nil
 }
@@ -79,69 +83,67 @@ func TestPrefixKBID(t *testing.T) {
 
 func TestSignOutboundVerifyInboundRoundTrip(t *testing.T) {
 	secret := []byte("12345678901234567890123456789012")
-	token, err := signOutbound(secret, "alice", "https://hub.local", "rid-1")
+	token, err := signOutbound(secret, "alice", "https://peer.example/_system/mcp", "rid-1", nil)
 	require.NoError(t, err)
 
-	kid, allowed, err := verifyInbound(context.Background(), federationVerifyEnvMock{
+	auth, err := verifyInbound(context.Background(), federationVerifyEnvMock{
 		secret:    db.FederationSecret{Kid: "alice", SecretCrypt: secret},
 		secretOK:  true,
 		subgraphs: []string{"team"},
-	}, token)
+	}, token, nil)
 
 	require.NoError(t, err)
-	require.Equal(t, "alice", kid)
-	require.Equal(t, []string{"team"}, allowed)
+	require.Equal(t, "alice", auth.KID)
+	require.Equal(t, []string{"team"}, auth.AllowedSubgraphs)
 }
 
 func TestVerifyInboundSentinels(t *testing.T) {
 	secret := []byte("12345678901234567890123456789012")
 	now := time.Now()
 
-	valid, err := signOutbound(secret, "alice", "https://hub.local", "rid-1")
+	valid, err := signOutbound(secret, "alice", "https://hub.local", "rid-1", nil)
 	require.NoError(t, err)
 
 	t.Run("unknown kid", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{}, valid) //nolint:govet // err in closure shadows outer test err intentionally
+		//nolint:govet // err in closure shadows outer test err intentionally
+		_, err := verifyInbound(context.Background(), federationVerifyEnvMock{}, valid, nil)
 		require.ErrorIs(t, err, ErrFedAuthUnknownKid)
 	})
 
 	t.Run("bad signature", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet // err in closure shadows outer test err intentionally
+		_, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet // err in closure shadows outer test err intentionally
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: []byte("other-secret")},
 			secretOK: true,
-		}, valid)
+		}, valid, nil)
 		require.ErrorIs(t, err, ErrFedAuthBadSig)
 	})
 
 	t.Run("expired", func(t *testing.T) {
 		//nolint:govet // err in closure shadows outer test err intentionally
-		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(-time.Minute), 30*time.Second)
+		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(-time.Minute), 30*time.Second, nil)
 		require.NoError(t, err)
 
-		_, _, err = verifyInbound(context.Background(), federationVerifyEnvMock{
+		_, err = verifyInbound(context.Background(), federationVerifyEnvMock{
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: secret},
 			secretOK: true,
-		}, token)
+		}, token, nil)
 		require.ErrorIs(t, err, ErrFedAuthExpired)
 	})
 
 	t.Run("future iat", func(t *testing.T) {
 		//nolint:govet // err in closure shadows outer test err intentionally
-		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(10*time.Second), 30*time.Second)
+		token, err := signOutboundAt(secret, "alice", "https://hub.local", "rid-1", now.Add(10*time.Second), 30*time.Second, nil)
 		require.NoError(t, err)
 
-		_, _, err = verifyInbound(context.Background(), federationVerifyEnvMock{
+		_, err = verifyInbound(context.Background(), federationVerifyEnvMock{
 			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: secret},
 			secretOK: true,
-		}, token)
+		}, token, nil)
 		require.ErrorIs(t, err, ErrFedAuthFutureIAT)
 	})
 
-	t.Run("revoked", func(t *testing.T) {
-		_, _, err := verifyInbound(context.Background(), federationVerifyEnvMock{ //nolint:govet // err in closure shadows outer test err intentionally
-			secret:   db.FederationSecret{Kid: "alice", SecretCrypt: secret, RevokedAt: &now},
-			secretOK: true,
-		}, valid)
-		require.ErrorIs(t, err, ErrFedAuthRevoked)
-	})
+	// No "revoked" case: FederationSecretByKID filters revoked rows, so a
+	// revoked kid reaches verification as no row at all and answers unknown kid.
+	// The branch that used to answer otherwise was reachable only from a mock
+	// that ignored the where clause.
 }

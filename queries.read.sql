@@ -195,6 +195,18 @@ select * from federation_secrets
  order by created_at desc, id desc
  limit 1;
 
+-- name: OutboundFederationSecretByKID :one
+select * from federation_secrets
+ where kid = ?
+   and kb_url is not null
+   and revoked_at is null
+ order by created_at desc, id desc
+ limit 1;
+
+-- name: FederationSecretByID :one
+select * from federation_secrets
+ where id = ?;
+
 -- name: ListFederationSecrets :many
 select
   fs.id,

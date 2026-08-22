@@ -9,6 +9,8 @@ import (
 	"trip2g/internal/case/admin/createoutboundfederationsecret"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/logger"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 
 	"github.com/stretchr/testify/require"
@@ -171,6 +173,12 @@ func TestResolve(t *testing.T) {
 			t.Parallel()
 
 			env := tt.mockFunc()
+			// This table is about validation and the insert. Rotation is a call
+			// to a peer with its own tests below, and leaving it on here would
+			// make every case need a peer to answer.
+			if tt.input.Rotate == nil {
+				tt.input.Rotate = ptr(false)
+			}
 			got, err := createoutboundfederationsecret.Resolve(context.Background(), env, tt.input)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -193,4 +201,142 @@ func TestResolve(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ptr[T any](value T) *T {
+	return &value
+}
+
+// The default is rotation, and what it has to produce is a row holding a key the
+// peer accepted rather than the one that was handed over: the handover travels
+// through a chat, and leaving it live is the whole reason this exists.
+func TestResolveRotatesByDefault(t *testing.T) {
+	t.Parallel()
+
+	handedOver, err := hex.DecodeString(validSecret())
+	require.NoError(t, err)
+
+	var proposed []byte
+	mock := &envMock{}
+	mock.FederationAllowsPlainHTTPFunc = func() bool { return false }
+	mock.PublicURLFunc = func() string { return "https://hub.example" }
+	mock.AuditLoggerFunc = func() logger.Logger { return &logger.DummyLogger{} }
+	mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+		return &usertoken.Data{ID: 1}, nil
+	}
+	mock.EncryptDataFunc = func(plaintext []byte) ([]byte, error) {
+		return append([]byte("enc:"), plaintext...), nil
+	}
+	mock.InsertFederationSecretFunc = func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
+		require.Equal(t, append([]byte("enc:"), handedOver...), arg.SecretCrypt,
+			"the row starts on the handed-over key, which the rotation below then moves off")
+		return db.FederationSecret{ID: 10, Kid: arg.Kid}, nil
+	}
+	mock.RotateFederationSecretFunc = func(ctx context.Context, arg db.RotateFederationSecretParams) error {
+		require.Equal(t, int64(10), arg.ID)
+		require.Equal(t, append([]byte("enc:"), proposed...), arg.SecretCrypt)
+		return nil
+	}
+	mock.FederationPeerClientFunc = func(peer appmodel.FederationPeer) appmodel.Federation {
+		return &peerStub{
+			rotate: func(params appmodel.MCPRotateSecretParams) {
+				require.Equal(t, handedOver, peer.Secret, "the rotation is authorised by the key being retired")
+				decoded, decodeErr := hex.DecodeString(params.SecretHex)
+				require.NoError(t, decodeErr)
+				require.Len(t, decoded, 32)
+				require.NotEqual(t, handedOver, decoded)
+				proposed = decoded
+			},
+		}
+	}
+
+	input := model.CreateOutboundFederationSecretInput{
+		Kid:       "peer-kid",
+		SecretHex: validSecret(),
+		KbURL:     "https://peer.example.com",
+	}
+
+	payload, err := createoutboundfederationsecret.Resolve(context.Background(), mock, input)
+
+	require.NoError(t, err)
+	require.IsType(t, &model.CreateOutboundFederationSecretPayload{}, payload)
+	require.NotEmpty(t, proposed, "the peer was never asked to take a new key")
+}
+
+// A peer that will not rotate leaves nothing behind. A row holding the
+// handed-over key would be a working link resting on the credential the flag
+// exists to retire, and it would look like success.
+func TestResolveWritesNothingWhenThePeerRefuses(t *testing.T) {
+	t.Parallel()
+
+	mock := &envMock{}
+	mock.FederationAllowsPlainHTTPFunc = func() bool { return false }
+	mock.PublicURLFunc = func() string { return "https://hub.example" }
+	mock.FederationPeerClientFunc = func(peer appmodel.FederationPeer) appmodel.Federation {
+		return &peerStub{err: errors.New("connection refused")}
+	}
+	mock.InsertFederationSecretFunc = func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
+		t.Fatal("a row was inserted for a peer that refused the rotation")
+		return db.FederationSecret{}, nil
+	}
+
+	input := model.CreateOutboundFederationSecretInput{
+		Kid:       "peer-kid",
+		SecretHex: validSecret(),
+		KbURL:     "https://peer.example.com",
+	}
+
+	payload, err := createoutboundfederationsecret.Resolve(context.Background(), mock, input)
+
+	require.NoError(t, err)
+	require.IsType(t, &model.ErrorPayload{}, payload)
+}
+
+// Rotation puts a fresh key on the wire, so it refuses an address that cannot
+// carry one — unless the deployment has already said it federates over addresses
+// that are not on the open internet.
+func TestResolveRefusesPlainHTTP(t *testing.T) {
+	t.Parallel()
+
+	mock := &envMock{}
+	mock.FederationAllowsPlainHTTPFunc = func() bool { return false }
+	mock.InsertFederationSecretFunc = func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
+		t.Fatal("a row was inserted for an address rotation refused")
+		return db.FederationSecret{}, nil
+	}
+
+	input := model.CreateOutboundFederationSecretInput{
+		Kid:       "peer-kid",
+		SecretHex: validSecret(),
+		KbURL:     "http://peer.example.com",
+	}
+
+	payload, err := createoutboundfederationsecret.Resolve(context.Background(), mock, input)
+
+	require.NoError(t, err)
+	errPayload, ok := payload.(*model.ErrorPayload)
+	require.True(t, ok)
+	require.Contains(t, errPayload.Message, "https")
+}
+
+// peerStub answers a rotation and nothing else; every other federated call
+// panics, so a test that reaches one is a test whose subject moved.
+type peerStub struct {
+	appmodel.Federation
+	rotate func(params appmodel.MCPRotateSecretParams)
+	err    error
+}
+
+func (p *peerStub) RotateSecret(_ context.Context, params appmodel.MCPRotateSecretParams) (appmodel.FederationResult, error) {
+	if p.err != nil {
+		return appmodel.FederationResult{}, p.err
+	}
+	if p.rotate != nil {
+		p.rotate(params)
+	}
+	return appmodel.FederationResult{}, nil
+}
+
+func (p *peerStub) Search(_ context.Context, _ appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
+	return appmodel.FederationResult{IsError: true}, nil
 }

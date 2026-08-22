@@ -40,7 +40,7 @@ func TestSearchFederationJWTUsesLiveCorpus(t *testing.T) {
 		live: &model.NoteView{Path: "published.md", PathID: 2, Title: "Published", Permalink: "/published", Free: true},
 	}
 
-	ctx := contextWithFederationAuth(context.Background(), "kid1", []string{"subA"})
+	ctx := contextWithFederationAuth(context.Background(), federationAuth{KID: "kid1", AllowedSubgraphs: []string{"subA"}})
 	require.False(t, mcpAPIKeyAuthed(ctx), "federation auth must not count as API-key auth")
 
 	resp := handleSearch(ctx, env, 1, json.RawMessage(`{"query":"x"}`))

@@ -334,6 +334,10 @@ type RevokeUserTokenOrErrorPayload interface {
 	IsRevokeUserTokenOrErrorPayload()
 }
 
+type RotateFederationSecretOrErrorPayload interface {
+	IsRotateFederationSecretOrErrorPayload()
+}
+
 type RunCronJobOrErrorPayload interface {
 	IsRunCronJobOrErrorPayload()
 }
@@ -1381,6 +1385,7 @@ type CreateOutboundFederationSecretInput struct {
 	SecretHex   string  `json:"secretHex"`
 	KbURL       string  `json:"kbURL"`
 	Description *string `json:"description,omitempty"`
+	Rotate      *bool   `json:"rotate,omitempty"`
 }
 
 type CreateOutboundFederationSecretPayload struct {
@@ -1866,6 +1871,8 @@ func (ErrorPayload) IsDeleteFrontmatterPatchOrErrorPayload() {}
 func (ErrorPayload) IsCreateInboundFederationSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateOutboundFederationSecretOrErrorPayload() {}
+
+func (ErrorPayload) IsRotateFederationSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsRevokeFederationSecretOrErrorPayload() {}
 
@@ -2356,6 +2363,12 @@ type RevokeUserTokenPayload struct {
 }
 
 func (RevokeUserTokenPayload) IsRevokeUserTokenOrErrorPayload() {}
+
+type RotateFederationSecretPayload struct {
+	Kid string `json:"kid"`
+}
+
+func (RotateFederationSecretPayload) IsRotateFederationSecretOrErrorPayload() {}
 
 type RunCronJobInput struct {
 	ID int64 `json:"id"`

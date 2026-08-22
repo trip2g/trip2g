@@ -1411,8 +1411,31 @@ func (q *Queries) DeliveryLogs(ctx context.Context, arg DeliveryLogsParams) ([]*
 	return items, nil
 }
 
+const federationSecretByID = `-- name: FederationSecretByID :one
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
+ where id = ?
+`
+
+func (q *Queries) FederationSecretByID(ctx context.Context, id int64) (FederationSecret, error) {
+	row := q.db.QueryRowContext(ctx, federationSecretByID, id)
+	var i FederationSecret
+	err := row.Scan(
+		&i.ID,
+		&i.Kid,
+		&i.SecretCrypt,
+		&i.KbUrl,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
+	)
+	return i, err
+}
+
 const federationSecretByKBURL = `-- name: FederationSecretByKBURL :one
-select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at from federation_secrets
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
  where kb_url = ?
    and revoked_at is null
  order by created_at desc, id desc
@@ -1431,12 +1454,14 @@ func (q *Queries) FederationSecretByKBURL(ctx context.Context, kbUrl *string) (F
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
 	)
 	return i, err
 }
 
 const federationSecretByKID = `-- name: FederationSecretByKID :one
-select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at from federation_secrets
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
  where kid = ?
    and kb_url is null
    and revoked_at is null
@@ -1456,6 +1481,8 @@ func (q *Queries) FederationSecretByKID(ctx context.Context, kid string) (Federa
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
 	)
 	return i, err
 }
@@ -7378,6 +7405,33 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 		&i.PriceUsd,
 		&i.StartsAt,
 		&i.EndsAt,
+	)
+	return i, err
+}
+
+const outboundFederationSecretByKID = `-- name: OutboundFederationSecretByKID :one
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
+ where kid = ?
+   and kb_url is not null
+   and revoked_at is null
+ order by created_at desc, id desc
+ limit 1
+`
+
+func (q *Queries) OutboundFederationSecretByKID(ctx context.Context, kid string) (FederationSecret, error) {
+	row := q.db.QueryRowContext(ctx, outboundFederationSecretByKID, kid)
+	var i FederationSecret
+	err := row.Scan(
+		&i.ID,
+		&i.Kid,
+		&i.SecretCrypt,
+		&i.KbUrl,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
 	)
 	return i, err
 }

@@ -1242,6 +1242,18 @@ update federation_secrets
    set revoked_at = current_timestamp
  where id = ?;
 
+-- name: RotateFederationSecret :exec
+update federation_secrets
+   set prev_secret_crypt = secret_crypt,
+       secret_crypt = ?,
+       rotated_at = current_timestamp
+ where id = ?;
+
+-- name: ClearFederationSecretPrev :exec
+update federation_secrets
+   set prev_secret_crypt = null
+ where id = ?;
+
 -- name: InsertFederationSecretSubgraph :exec
 insert into federation_secret_subgraphs (kid, subgraph_id, created_by)
 values (?, ?, ?);

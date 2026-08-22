@@ -47,15 +47,24 @@ func (e *fedGQLEnv) CanReadNote(_ context.Context, _ *model.NoteView) (bool, err
 func (e *fedGQLEnv) FederationClient(_ context.Context, _ string) (model.Federation, error) {
 	panic("unexpected")
 }
-func (e *fedGQLEnv) SearchLatestNotes(_ string) ([]model.SearchResult, error) { panic("unexpected") }
-func (e *fedGQLEnv) SearchLiveNotes(_ string) ([]model.SearchResult, error)   { panic("unexpected") }
-func (e *fedGQLEnv) LiveNoteChunks() []model.NoteChunk                        { panic("unexpected") }
-func (e *fedGQLEnv) LiveNoteViews() *model.NoteViews                          { panic("unexpected") }
-func (e *fedGQLEnv) OpenAI() *openai.Client                                   { panic("unexpected") }
-func (e *fedGQLEnv) SiteConfig(_ context.Context) model.SiteConfig            { panic("unexpected") }
-func (e *fedGQLEnv) PublicURL() string                                        { panic("unexpected") }
-func (e *fedGQLEnv) NoteURL(_ *model.NoteView) string                         { panic("unexpected") }
-func (e *fedGQLEnv) Logger() logger.Logger                                    { return &logger.DummyLogger{} }
+func (e *fedGQLEnv) SearchLatestNotes(_ string) ([]model.SearchResult, error)   { panic("unexpected") }
+func (e *fedGQLEnv) SearchLiveNotes(_ string) ([]model.SearchResult, error)     { panic("unexpected") }
+func (e *fedGQLEnv) LiveNoteChunks() []model.NoteChunk                          { panic("unexpected") }
+func (e *fedGQLEnv) LiveNoteViews() *model.NoteViews                            { panic("unexpected") }
+func (e *fedGQLEnv) OpenAI() *openai.Client                                     { panic("unexpected") }
+func (e *fedGQLEnv) SiteConfig(_ context.Context) model.SiteConfig              { panic("unexpected") }
+func (e *fedGQLEnv) PublicURL() string                                          { panic("unexpected") }
+func (e *fedGQLEnv) NoteURL(_ *model.NoteView) string                           { panic("unexpected") }
+func (e *fedGQLEnv) Logger() logger.Logger                                      { return &logger.DummyLogger{} }
+func (e *fedGQLEnv) AuditLogger() logger.Logger                                 { return &logger.DummyLogger{} }
+func (e *fedGQLEnv) EncryptData(_ []byte) ([]byte, error)                       { panic("unexpected") }
+func (e *fedGQLEnv) ClearFederationSecretPrev(_ context.Context, _ int64) error { panic("unexpected") }
+func (e *fedGQLEnv) FederationSecretByID(_ context.Context, _ int64) (db.FederationSecret, error) {
+	panic("unexpected")
+}
+func (e *fedGQLEnv) RotateFederationSecret(_ context.Context, _ db.RotateFederationSecretParams) error {
+	panic("unexpected")
+}
 func (e *fedGQLEnv) FederationSecretByKBURL(_ context.Context, _ string) (db.FederationSecret, bool, error) {
 	panic("unexpected")
 }
@@ -87,7 +96,7 @@ func (e *fedGQLEnv) ResolveAPIKey(_ context.Context, _, _ string) (*db.ApiKey, e
 // TestHandleGraphQLRequestScoped_MutationRejected: fed ctx + mutation → rejected before scoped call.
 func TestHandleGraphQLRequestScoped_MutationRejected(t *testing.T) {
 	env := &fedGQLEnv{federatedEnabled: true}
-	ctx := contextWithFederationAuth(context.Background(), "kid1", []string{"subA"})
+	ctx := contextWithFederationAuth(context.Background(), federationAuth{KID: "kid1", AllowedSubgraphs: []string{"subA"}})
 	argsRaw, _ := json.Marshal(GraphQLRequestArguments{Query: `mutation { createNote { id } }`})
 
 	resp := handleGraphQLRequestScoped(ctx, env, 1, json.RawMessage(argsRaw), []string{"subA"})
@@ -100,7 +109,7 @@ func TestHandleGraphQLRequestScoped_MutationRejected(t *testing.T) {
 // TestHandleGraphQLRequestScoped_AdminFieldRejected: fed ctx + admin root field → rejected.
 func TestHandleGraphQLRequestScoped_AdminFieldRejected(t *testing.T) {
 	env := &fedGQLEnv{federatedEnabled: true}
-	ctx := contextWithFederationAuth(context.Background(), "kid1", []string{"subA"})
+	ctx := contextWithFederationAuth(context.Background(), federationAuth{KID: "kid1", AllowedSubgraphs: []string{"subA"}})
 	argsRaw, _ := json.Marshal(GraphQLRequestArguments{Query: `{ admin { users { id } } }`})
 
 	resp := handleGraphQLRequestScoped(ctx, env, 1, json.RawMessage(argsRaw), []string{"subA"})
@@ -126,7 +135,7 @@ func TestHandleGraphQLRequestScoped_ValidQueryCallsScopedNotAdmin(t *testing.T) 
 		},
 		// graphqlFunc is nil → panic if called (security assertion via fedGQLEnv.GraphQLRequest)
 	}
-	ctx := contextWithFederationAuth(context.Background(), "kid1", allowedSubgraphs)
+	ctx := contextWithFederationAuth(context.Background(), federationAuth{KID: "kid1", AllowedSubgraphs: allowedSubgraphs})
 	argsRaw, _ := json.Marshal(GraphQLRequestArguments{Query: `{ note(path: "x") { title } }`})
 
 	resp := handleGraphQLRequestScoped(ctx, env, 1, json.RawMessage(argsRaw), allowedSubgraphs)

@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	ErrFedAuthUnknownKid = errors.New("federation auth unknown kid")
-	ErrFedAuthBadSig     = errors.New("federation auth bad signature")
-	ErrFedAuthExpired    = errors.New("federation auth expired")
-	ErrFedAuthFutureIAT  = errors.New("federation auth future iat")
-	ErrFedAuthRevoked    = errors.New("federation auth revoked")
+	ErrFedAuthUnknownKid  = errors.New("federation auth unknown kid")
+	ErrFedAuthBadSig      = errors.New("federation auth bad signature")
+	ErrFedAuthExpired     = errors.New("federation auth expired")
+	ErrFedAuthFutureIAT   = errors.New("federation auth future iat")
+	ErrFedAuthBodyChanged = errors.New("federation auth body does not match the signature")
 )
 
 const federationJWTSkew = 5 * time.Second
@@ -32,6 +32,21 @@ type federationVerifyEnv interface {
 	FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error)
 	ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error)
 	DecryptData([]byte) ([]byte, error)
+	ClearFederationSecretPrev(ctx context.Context, id int64) error
+}
+
+// federationAuth is what a verified inbound call carries into the handlers.
+//
+// SecretID and BodyBound exist for one caller each and are not decoration.
+// The rotate handler writes to the row it authenticated against rather than
+// looking one up again, and it refuses a request whose body the signature does
+// not cover — a key in unsigned arguments is a key anything on the connection
+// can replace inside the 30-second window.
+type federationAuth struct {
+	KID              string
+	AllowedSubgraphs []string
+	SecretID         int64
+	BodyBound        bool
 }
 
 type federationJWTHeader struct {
@@ -45,13 +60,14 @@ type federationJWTClaims struct {
 	Iat int64  `json:"iat"`
 	Exp int64  `json:"exp"`
 	Rid string `json:"rid"`
+	Bh  string `json:"bh,omitempty"`
 }
 
-func signOutbound(secret []byte, kid, iss, rid string) (string, error) {
-	return signOutboundAt(secret, kid, iss, rid, time.Now(), 30*time.Second)
+func signOutbound(secret []byte, kid, iss, rid string, body []byte) (string, error) {
+	return signOutboundAt(secret, kid, iss, rid, time.Now(), 30*time.Second, body)
 }
 
-func signOutboundAt(secret []byte, kid, iss, rid string, issuedAt time.Time, ttl time.Duration) (string, error) {
+func signOutboundAt(secret []byte, kid, iss, rid string, issuedAt time.Time, ttl time.Duration, body []byte) (string, error) {
 	header := federationJWTHeader{
 		Alg: "HS256",
 		Typ: "JWT",
@@ -62,6 +78,7 @@ func signOutboundAt(secret []byte, kid, iss, rid string, issuedAt time.Time, ttl
 		Iat: issuedAt.Unix(),
 		Exp: issuedAt.Add(ttl).Unix(),
 		Rid: rid,
+		Bh:  bodyDigest(body),
 	}
 
 	headerJSON, err := json.Marshal(header)
@@ -80,50 +97,104 @@ func signOutboundAt(secret []byte, kid, iss, rid string, issuedAt time.Time, ttl
 	return unsigned + "." + base64.RawURLEncoding.EncodeToString(signature), nil
 }
 
-func verifyInbound(ctx context.Context, env federationVerifyEnv, token string) (string, []string, error) {
+func verifyInbound(ctx context.Context, env federationVerifyEnv, token string, body []byte) (federationAuth, error) {
 	header, claims, unsigned, signature, err := parseFederationJWT(token)
 	if err != nil {
-		return "", nil, err
+		return federationAuth{}, err
 	}
 	if header.Alg != "HS256" || header.Kid == "" {
-		return "", nil, ErrFedAuthBadSig
+		return federationAuth{}, ErrFedAuthBadSig
 	}
 
 	secretRow, ok, err := env.FederationSecretByKID(ctx, header.Kid)
 	if err != nil {
-		return "", nil, fmt.Errorf("get federation secret by kid: %w", err)
+		return federationAuth{}, fmt.Errorf("get federation secret by kid: %w", err)
 	}
 	if !ok {
-		return "", nil, ErrFedAuthUnknownKid
-	}
-	if secretRow.RevokedAt != nil {
-		return "", nil, ErrFedAuthRevoked
+		return federationAuth{}, ErrFedAuthUnknownKid
 	}
 
-	secret, err := env.DecryptData(secretRow.SecretCrypt)
+	matched, usedPrevious, err := matchFederationSecret(env, secretRow, unsigned, signature)
 	if err != nil {
-		return "", nil, fmt.Errorf("decrypt federation secret: %w", err)
+		return federationAuth{}, err
 	}
-
-	expected := hmacSHA256(secret, []byte(unsigned))
-	if subtle.ConstantTimeCompare(signature, expected) != 1 {
-		return "", nil, ErrFedAuthBadSig
+	if !matched {
+		return federationAuth{}, ErrFedAuthBadSig
 	}
 
 	now := time.Now().Unix()
 	if claims.Exp < now-int64(federationJWTSkew.Seconds()) {
-		return "", nil, ErrFedAuthExpired
+		return federationAuth{}, ErrFedAuthExpired
 	}
 	if claims.Iat > now+int64(federationJWTSkew.Seconds()) {
-		return "", nil, ErrFedAuthFutureIAT
+		return federationAuth{}, ErrFedAuthFutureIAT
+	}
+
+	// A peer that predates body binding sends no bh and is authenticated as
+	// before; one that sends it has to have sent the body it signed. Only the
+	// calls that need the guarantee insist on its presence — see BodyBound.
+	if claims.Bh != "" {
+		digest := sha256.Sum256(body)
+		if subtle.ConstantTimeCompare([]byte(claims.Bh), []byte(base64.RawURLEncoding.EncodeToString(digest[:]))) != 1 {
+			return federationAuth{}, ErrFedAuthBodyChanged
+		}
 	}
 
 	allowedSubgraphs, err := env.ListFederationSecretSubgraphsByKID(ctx, header.Kid)
 	if err != nil {
-		return "", nil, fmt.Errorf("list federation secret subgraphs by kid: %w", err)
+		return federationAuth{}, fmt.Errorf("list federation secret subgraphs by kid: %w", err)
 	}
 
-	return header.Kid, allowedSubgraphs, nil
+	// The peer signed with the current key, so it holds it, so the one it
+	// rotated away from has nothing left to cover. Retiring it here rather than
+	// on a timer is what keeps the two-key state to the milliseconds around a
+	// rotation instead of the whole grace window.
+	if !usedPrevious && len(secretRow.PrevSecretCrypt) > 0 {
+		if clearErr := env.ClearFederationSecretPrev(ctx, secretRow.ID); clearErr != nil {
+			return federationAuth{}, fmt.Errorf("clear federation previous secret: %w", clearErr)
+		}
+	}
+
+	return federationAuth{
+		KID:              header.Kid,
+		AllowedSubgraphs: allowedSubgraphs,
+		SecretID:         secretRow.ID,
+		BodyBound:        claims.Bh != "",
+	}, nil
+}
+
+// matchFederationSecret tries the current key and then, inside the grace window,
+// the one the pairing rotated away from. Reporting which matched is what lets
+// the caller retire the old key on the first call that proves it is unneeded.
+func matchFederationSecret(
+	env federationVerifyEnv,
+	row db.FederationSecret,
+	unsigned string,
+	signature []byte,
+) (bool, bool, error) {
+	secret, err := env.DecryptData(row.SecretCrypt)
+	if err != nil {
+		return false, false, fmt.Errorf("decrypt federation secret: %w", err)
+	}
+	if subtle.ConstantTimeCompare(signature, hmacSHA256(secret, []byte(unsigned))) == 1 {
+		return true, false, nil
+	}
+
+	if len(row.PrevSecretCrypt) == 0 || row.RotatedAt == nil {
+		return false, false, nil
+	}
+	if time.Since(*row.RotatedAt) > model.RotationGrace {
+		return false, false, nil
+	}
+
+	previous, err := env.DecryptData(row.PrevSecretCrypt)
+	if err != nil {
+		return false, false, fmt.Errorf("decrypt federation previous secret: %w", err)
+	}
+	if subtle.ConstantTimeCompare(signature, hmacSHA256(previous, []byte(unsigned))) == 1 {
+		return true, true, nil
+	}
+	return false, false, nil
 }
 
 func parseFederationJWT(token string) (federationJWTHeader, federationJWTClaims, string, []byte, error) {
@@ -236,4 +307,16 @@ func notConfiguredMessage(kbID string) string {
 			kbID,
 		)
 	}
+}
+
+// bodyDigest is what a signature has to cover for the body to be authenticated.
+// Empty for no body, so a caller with nothing to bind sends no bh and a verifier
+// has nothing to check — which is also how a peer that predates body binding
+// looks.
+func bodyDigest(body []byte) string {
+	if len(body) == 0 {
+		return ""
+	}
+	digest := sha256.Sum256(body)
+	return base64.RawURLEncoding.EncodeToString(digest[:])
 }

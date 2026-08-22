@@ -49,6 +49,17 @@ func (e *gqlRequestEnv) SiteConfig(_ context.Context) model.SiteConfig { panic("
 func (e *gqlRequestEnv) PublicURL() string                             { panic("unexpected") }
 func (e *gqlRequestEnv) NoteURL(_ *model.NoteView) string              { panic("unexpected") }
 func (e *gqlRequestEnv) Logger() logger.Logger                         { return &logger.DummyLogger{} }
+func (e *gqlRequestEnv) AuditLogger() logger.Logger                    { return &logger.DummyLogger{} }
+func (e *gqlRequestEnv) EncryptData(_ []byte) ([]byte, error)          { panic("unexpected") }
+func (e *gqlRequestEnv) ClearFederationSecretPrev(_ context.Context, _ int64) error {
+	panic("unexpected")
+}
+func (e *gqlRequestEnv) FederationSecretByID(_ context.Context, _ int64) (db.FederationSecret, error) {
+	panic("unexpected")
+}
+func (e *gqlRequestEnv) RotateFederationSecret(_ context.Context, _ db.RotateFederationSecretParams) error {
+	panic("unexpected")
+}
 func (e *gqlRequestEnv) FederationSecretByKBURL(_ context.Context, _ string) (db.FederationSecret, bool, error) {
 	panic("unexpected")
 }

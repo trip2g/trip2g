@@ -148,6 +148,17 @@ func (q *WriteQueries) CleanupOrphanedAPIKeyLogIPs(ctx context.Context) error {
 	return err
 }
 
+const clearFederationSecretPrev = `-- name: ClearFederationSecretPrev :exec
+update federation_secrets
+   set prev_secret_crypt = null
+ where id = ?
+`
+
+func (q *WriteQueries) ClearFederationSecretPrev(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, clearFederationSecretPrev, id)
+	return err
+}
+
 const clearPatreonCredentialsWebhookSecret = `-- name: ClearPatreonCredentialsWebhookSecret :exec
 update patreon_credentials
 set webhook_secret = null
@@ -1358,7 +1369,7 @@ func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context,
 const insertFederationSecret = `-- name: InsertFederationSecret :one
 insert into federation_secrets (kid, secret_crypt, kb_url, description, created_by)
 values (?, ?, ?, ?, ?)
-returning id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at
+returning id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at
 `
 
 type InsertFederationSecretParams struct {
@@ -1387,6 +1398,8 @@ func (q *WriteQueries) InsertFederationSecret(ctx context.Context, arg InsertFed
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
 	)
 	return i, err
 }
@@ -3317,6 +3330,24 @@ func (q *WriteQueries) RevokeUserToken(ctx context.Context, arg RevokeUserTokenP
 		&i.RevokedAt,
 	)
 	return i, err
+}
+
+const rotateFederationSecret = `-- name: RotateFederationSecret :exec
+update federation_secrets
+   set prev_secret_crypt = secret_crypt,
+       secret_crypt = ?,
+       rotated_at = current_timestamp
+ where id = ?
+`
+
+type RotateFederationSecretParams struct {
+	SecretCrypt []byte `json:"secret_crypt"`
+	ID          int64  `json:"id"`
+}
+
+func (q *WriteQueries) RotateFederationSecret(ctx context.Context, arg RotateFederationSecretParams) error {
+	_, err := q.db.ExecContext(ctx, rotateFederationSecret, arg.SecretCrypt, arg.ID)
+	return err
 }
 
 const setActiveGitHubOAuthCredentials = `-- name: SetActiveGitHubOAuthCredentials :exec

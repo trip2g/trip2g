@@ -465,6 +465,7 @@ type AdminMutationResolver interface {
 	CreateInboundFederationSecret(ctx context.Context, obj *model1.AdminMutation, input model.CreateInboundFederationSecretInput) (model.CreateInboundFederationSecretOrErrorPayload, error)
 	CreateOutboundFederationSecret(ctx context.Context, obj *model1.AdminMutation, input model.CreateOutboundFederationSecretInput) (model.CreateOutboundFederationSecretOrErrorPayload, error)
 	RevokeFederationSecret(ctx context.Context, obj *model1.AdminMutation, id int64) (model.RevokeFederationSecretOrErrorPayload, error)
+	RotateFederationSecret(ctx context.Context, obj *model1.AdminMutation, kid string) (model.RotateFederationSecretOrErrorPayload, error)
 	AddFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.AddFederationSecretSubgraphInput) (model.AddFederationSecretSubgraphOrErrorPayload, error)
 	RemoveFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error)
 	RenderLayout(ctx context.Context, obj *model1.AdminMutation, input model.RenderLayoutInput) (*model.RenderLayoutPayload, error)
@@ -4696,6 +4697,7 @@ type AdminMutation {
   createInboundFederationSecret(input: CreateInboundFederationSecretInput!): CreateInboundFederationSecretOrErrorPayload!
   createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload!
   revokeFederationSecret(id: Int64!): RevokeFederationSecretOrErrorPayload!
+  rotateFederationSecret(kid: String!): RotateFederationSecretOrErrorPayload!
   addFederationSecretSubgraph(input: AddFederationSecretSubgraphInput!): AddFederationSecretSubgraphOrErrorPayload!
   removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
 
@@ -5017,6 +5019,12 @@ input CreateOutboundFederationSecretInput {
   secretHex: String!
   kbURL: String!
   description: String
+  # Replace the handed-over key with a fresh one before storing it, so the bytes
+  # that travelled out of band stop being the live credential. On by default.
+  # Turn it off for a peer that cannot rotate — a public base or an adapter —
+  # and for one that has to be installed while unreachable: with it on, no live
+  # peer means no row.
+  rotate: Boolean
 }
 
 type CreateOutboundFederationSecretPayload {
@@ -5025,6 +5033,16 @@ type CreateOutboundFederationSecretPayload {
 }
 
 union CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSecretPayload | ErrorPayload
+
+#
+# rotateFederationSecret
+#
+
+type RotateFederationSecretPayload {
+  kid: String!
+}
+
+union RotateFederationSecretOrErrorPayload = RotateFederationSecretPayload | ErrorPayload
 
 #
 # revokeFederationSecret
@@ -5829,6 +5847,17 @@ func (ec *executionContext) field_AdminMutation_revokeFederationSecret_args(ctx 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_rotateFederationSecret_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "kid", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["kid"] = arg0
 	return args, nil
 }
 
@@ -19531,6 +19560,47 @@ func (ec *executionContext) fieldContext_AdminMutation_revokeFederationSecret(ct
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_revokeFederationSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_rotateFederationSecret(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_rotateFederationSecret,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().RotateFederationSecret(ctx, obj, fc.Args["kid"].(string))
+		},
+		nil,
+		ec.marshalNRotateFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRotateFederationSecretOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_rotateFederationSecret(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RotateFederationSecretOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_rotateFederationSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -36763,6 +36833,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createOutboundFederationSecret(ctx, field)
 			case "revokeFederationSecret":
 				return ec.fieldContext_AdminMutation_revokeFederationSecret(ctx, field)
+			case "rotateFederationSecret":
+				return ec.fieldContext_AdminMutation_rotateFederationSecret(ctx, field)
 			case "addFederationSecretSubgraph":
 				return ec.fieldContext_AdminMutation_addFederationSecretSubgraph(ctx, field)
 			case "removeFederationSecretSubgraph":
@@ -41562,6 +41634,35 @@ func (ec *executionContext) fieldContext_RevokeUserTokenPayload_token(_ context.
 				return ec.fieldContext_UserToken_revokedAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RotateFederationSecretPayload_kid(ctx context.Context, field graphql.CollectedField, obj *model.RotateFederationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RotateFederationSecretPayload_kid,
+		func(ctx context.Context) (any, error) {
+			return obj.Kid, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RotateFederationSecretPayload_kid(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RotateFederationSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -49844,7 +49945,7 @@ func (ec *executionContext) unmarshalInputCreateOutboundFederationSecretInput(ct
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"kid", "secretHex", "kbURL", "description"}
+	fieldsInOrder := [...]string{"kid", "secretHex", "kbURL", "description", "rotate"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -49879,6 +49980,13 @@ func (ec *executionContext) unmarshalInputCreateOutboundFederationSecretInput(ct
 				return it, err
 			}
 			it.Description = data
+		case "rotate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rotate"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rotate = data
 		}
 	}
 
@@ -55221,6 +55329,29 @@ func (ec *executionContext) _RevokeUserTokenOrErrorPayload(ctx context.Context, 
 			return graphql.Null
 		}
 		return ec._RevokeUserTokenPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RotateFederationSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RotateFederationSecretOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RotateFederationSecretPayload:
+		return ec._RotateFederationSecretPayload(ctx, sel, &obj)
+	case *model.RotateFederationSecretPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RotateFederationSecretPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -65428,6 +65559,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_revokeFederationSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "rotateFederationSecret":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_rotateFederationSecret(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -76686,7 +76853,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -80479,6 +80646,45 @@ func (ec *executionContext) _RevokeUserTokenPayload(ctx context.Context, sel ast
 			out.Values[i] = graphql.MarshalString("RevokeUserTokenPayload")
 		case "token":
 			out.Values[i] = ec._RevokeUserTokenPayload_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var rotateFederationSecretPayloadImplementors = []string{"RotateFederationSecretPayload", "RotateFederationSecretOrErrorPayload"}
+
+func (ec *executionContext) _RotateFederationSecretPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RotateFederationSecretPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, rotateFederationSecretPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RotateFederationSecretPayload")
+		case "kid":
+			out.Values[i] = ec._RotateFederationSecretPayload_kid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -90927,6 +91133,16 @@ func (ec *executionContext) unmarshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐR
 
 func (ec *executionContext) marshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v model.Role) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNRotateFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRotateFederationSecretOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RotateFederationSecretOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RotateFederationSecretOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRunCronJobInput2trip2gᚋinternalᚋgraphᚋmodelᚐRunCronJobInput(ctx context.Context, v any) (model.RunCronJobInput, error) {

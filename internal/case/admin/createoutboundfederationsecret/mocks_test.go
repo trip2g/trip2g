@@ -8,6 +8,8 @@ import (
 	"sync"
 	"trip2g/internal/case/admin/createoutboundfederationsecret"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
 
@@ -21,14 +23,38 @@ var _ createoutboundfederationsecret.Env = &EnvMock{}
 //
 //		// make and configure a mocked createoutboundfederationsecret.Env
 //		mockedEnv := &EnvMock{
+//			AuditLoggerFunc: func() logger.Logger {
+//				panic("mock out the AuditLogger method")
+//			},
+//			ClearFederationSecretPrevFunc: func(ctx context.Context, id int64) error {
+//				panic("mock out the ClearFederationSecretPrev method")
+//			},
 //			CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentAdminUserToken method")
+//			},
+//			DecryptDataFunc: func(bytes []byte) ([]byte, error) {
+//				panic("mock out the DecryptData method")
 //			},
 //			EncryptDataFunc: func(plaintext []byte) ([]byte, error) {
 //				panic("mock out the EncryptData method")
 //			},
+//			FederationAllowsPlainHTTPFunc: func() bool {
+//				panic("mock out the FederationAllowsPlainHTTP method")
+//			},
+//			FederationPeerClientFunc: func(peer appmodel.FederationPeer) appmodel.Federation {
+//				panic("mock out the FederationPeerClient method")
+//			},
 //			InsertFederationSecretFunc: func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
 //				panic("mock out the InsertFederationSecret method")
+//			},
+//			OutboundFederationSecretByKIDFunc: func(ctx context.Context, kid string) (db.FederationSecret, error) {
+//				panic("mock out the OutboundFederationSecretByKID method")
+//			},
+//			PublicURLFunc: func() string {
+//				panic("mock out the PublicURL method")
+//			},
+//			RotateFederationSecretFunc: func(ctx context.Context, arg db.RotateFederationSecretParams) error {
+//				panic("mock out the RotateFederationSecret method")
 //			},
 //		}
 //
@@ -37,26 +63,73 @@ var _ createoutboundfederationsecret.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// AuditLoggerFunc mocks the AuditLogger method.
+	AuditLoggerFunc func() logger.Logger
+
+	// ClearFederationSecretPrevFunc mocks the ClearFederationSecretPrev method.
+	ClearFederationSecretPrevFunc func(ctx context.Context, id int64) error
+
 	// CurrentAdminUserTokenFunc mocks the CurrentAdminUserToken method.
 	CurrentAdminUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
+
+	// DecryptDataFunc mocks the DecryptData method.
+	DecryptDataFunc func(bytes []byte) ([]byte, error)
 
 	// EncryptDataFunc mocks the EncryptData method.
 	EncryptDataFunc func(plaintext []byte) ([]byte, error)
 
+	// FederationAllowsPlainHTTPFunc mocks the FederationAllowsPlainHTTP method.
+	FederationAllowsPlainHTTPFunc func() bool
+
+	// FederationPeerClientFunc mocks the FederationPeerClient method.
+	FederationPeerClientFunc func(peer appmodel.FederationPeer) appmodel.Federation
+
 	// InsertFederationSecretFunc mocks the InsertFederationSecret method.
 	InsertFederationSecretFunc func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error)
 
+	// OutboundFederationSecretByKIDFunc mocks the OutboundFederationSecretByKID method.
+	OutboundFederationSecretByKIDFunc func(ctx context.Context, kid string) (db.FederationSecret, error)
+
+	// PublicURLFunc mocks the PublicURL method.
+	PublicURLFunc func() string
+
+	// RotateFederationSecretFunc mocks the RotateFederationSecret method.
+	RotateFederationSecretFunc func(ctx context.Context, arg db.RotateFederationSecretParams) error
+
 	// calls tracks calls to the methods.
 	calls struct {
+		// AuditLogger holds details about calls to the AuditLogger method.
+		AuditLogger []struct {
+		}
+		// ClearFederationSecretPrev holds details about calls to the ClearFederationSecretPrev method.
+		ClearFederationSecretPrev []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 		// CurrentAdminUserToken holds details about calls to the CurrentAdminUserToken method.
 		CurrentAdminUserToken []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// DecryptData holds details about calls to the DecryptData method.
+		DecryptData []struct {
+			// Bytes is the bytes argument value.
+			Bytes []byte
+		}
 		// EncryptData holds details about calls to the EncryptData method.
 		EncryptData []struct {
 			// Plaintext is the plaintext argument value.
 			Plaintext []byte
+		}
+		// FederationAllowsPlainHTTP holds details about calls to the FederationAllowsPlainHTTP method.
+		FederationAllowsPlainHTTP []struct {
+		}
+		// FederationPeerClient holds details about calls to the FederationPeerClient method.
+		FederationPeerClient []struct {
+			// Peer is the peer argument value.
+			Peer appmodel.FederationPeer
 		}
 		// InsertFederationSecret holds details about calls to the InsertFederationSecret method.
 		InsertFederationSecret []struct {
@@ -65,10 +138,98 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertFederationSecretParams
 		}
+		// OutboundFederationSecretByKID holds details about calls to the OutboundFederationSecretByKID method.
+		OutboundFederationSecretByKID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Kid is the kid argument value.
+			Kid string
+		}
+		// PublicURL holds details about calls to the PublicURL method.
+		PublicURL []struct {
+		}
+		// RotateFederationSecret holds details about calls to the RotateFederationSecret method.
+		RotateFederationSecret []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.RotateFederationSecretParams
+		}
 	}
-	lockCurrentAdminUserToken  sync.RWMutex
-	lockEncryptData            sync.RWMutex
-	lockInsertFederationSecret sync.RWMutex
+	lockAuditLogger                   sync.RWMutex
+	lockClearFederationSecretPrev     sync.RWMutex
+	lockCurrentAdminUserToken         sync.RWMutex
+	lockDecryptData                   sync.RWMutex
+	lockEncryptData                   sync.RWMutex
+	lockFederationAllowsPlainHTTP     sync.RWMutex
+	lockFederationPeerClient          sync.RWMutex
+	lockInsertFederationSecret        sync.RWMutex
+	lockOutboundFederationSecretByKID sync.RWMutex
+	lockPublicURL                     sync.RWMutex
+	lockRotateFederationSecret        sync.RWMutex
+}
+
+// AuditLogger calls AuditLoggerFunc.
+func (mock *EnvMock) AuditLogger() logger.Logger {
+	if mock.AuditLoggerFunc == nil {
+		panic("EnvMock.AuditLoggerFunc: method is nil but Env.AuditLogger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockAuditLogger.Lock()
+	mock.calls.AuditLogger = append(mock.calls.AuditLogger, callInfo)
+	mock.lockAuditLogger.Unlock()
+	return mock.AuditLoggerFunc()
+}
+
+// AuditLoggerCalls gets all the calls that were made to AuditLogger.
+// Check the length with:
+//
+//	len(mockedEnv.AuditLoggerCalls())
+func (mock *EnvMock) AuditLoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockAuditLogger.RLock()
+	calls = mock.calls.AuditLogger
+	mock.lockAuditLogger.RUnlock()
+	return calls
+}
+
+// ClearFederationSecretPrev calls ClearFederationSecretPrevFunc.
+func (mock *EnvMock) ClearFederationSecretPrev(ctx context.Context, id int64) error {
+	if mock.ClearFederationSecretPrevFunc == nil {
+		panic("EnvMock.ClearFederationSecretPrevFunc: method is nil but Env.ClearFederationSecretPrev was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockClearFederationSecretPrev.Lock()
+	mock.calls.ClearFederationSecretPrev = append(mock.calls.ClearFederationSecretPrev, callInfo)
+	mock.lockClearFederationSecretPrev.Unlock()
+	return mock.ClearFederationSecretPrevFunc(ctx, id)
+}
+
+// ClearFederationSecretPrevCalls gets all the calls that were made to ClearFederationSecretPrev.
+// Check the length with:
+//
+//	len(mockedEnv.ClearFederationSecretPrevCalls())
+func (mock *EnvMock) ClearFederationSecretPrevCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockClearFederationSecretPrev.RLock()
+	calls = mock.calls.ClearFederationSecretPrev
+	mock.lockClearFederationSecretPrev.RUnlock()
+	return calls
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -103,6 +264,38 @@ func (mock *EnvMock) CurrentAdminUserTokenCalls() []struct {
 	return calls
 }
 
+// DecryptData calls DecryptDataFunc.
+func (mock *EnvMock) DecryptData(bytes []byte) ([]byte, error) {
+	if mock.DecryptDataFunc == nil {
+		panic("EnvMock.DecryptDataFunc: method is nil but Env.DecryptData was just called")
+	}
+	callInfo := struct {
+		Bytes []byte
+	}{
+		Bytes: bytes,
+	}
+	mock.lockDecryptData.Lock()
+	mock.calls.DecryptData = append(mock.calls.DecryptData, callInfo)
+	mock.lockDecryptData.Unlock()
+	return mock.DecryptDataFunc(bytes)
+}
+
+// DecryptDataCalls gets all the calls that were made to DecryptData.
+// Check the length with:
+//
+//	len(mockedEnv.DecryptDataCalls())
+func (mock *EnvMock) DecryptDataCalls() []struct {
+	Bytes []byte
+} {
+	var calls []struct {
+		Bytes []byte
+	}
+	mock.lockDecryptData.RLock()
+	calls = mock.calls.DecryptData
+	mock.lockDecryptData.RUnlock()
+	return calls
+}
+
 // EncryptData calls EncryptDataFunc.
 func (mock *EnvMock) EncryptData(plaintext []byte) ([]byte, error) {
 	if mock.EncryptDataFunc == nil {
@@ -132,6 +325,65 @@ func (mock *EnvMock) EncryptDataCalls() []struct {
 	mock.lockEncryptData.RLock()
 	calls = mock.calls.EncryptData
 	mock.lockEncryptData.RUnlock()
+	return calls
+}
+
+// FederationAllowsPlainHTTP calls FederationAllowsPlainHTTPFunc.
+func (mock *EnvMock) FederationAllowsPlainHTTP() bool {
+	if mock.FederationAllowsPlainHTTPFunc == nil {
+		panic("EnvMock.FederationAllowsPlainHTTPFunc: method is nil but Env.FederationAllowsPlainHTTP was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockFederationAllowsPlainHTTP.Lock()
+	mock.calls.FederationAllowsPlainHTTP = append(mock.calls.FederationAllowsPlainHTTP, callInfo)
+	mock.lockFederationAllowsPlainHTTP.Unlock()
+	return mock.FederationAllowsPlainHTTPFunc()
+}
+
+// FederationAllowsPlainHTTPCalls gets all the calls that were made to FederationAllowsPlainHTTP.
+// Check the length with:
+//
+//	len(mockedEnv.FederationAllowsPlainHTTPCalls())
+func (mock *EnvMock) FederationAllowsPlainHTTPCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockFederationAllowsPlainHTTP.RLock()
+	calls = mock.calls.FederationAllowsPlainHTTP
+	mock.lockFederationAllowsPlainHTTP.RUnlock()
+	return calls
+}
+
+// FederationPeerClient calls FederationPeerClientFunc.
+func (mock *EnvMock) FederationPeerClient(peer appmodel.FederationPeer) appmodel.Federation {
+	if mock.FederationPeerClientFunc == nil {
+		panic("EnvMock.FederationPeerClientFunc: method is nil but Env.FederationPeerClient was just called")
+	}
+	callInfo := struct {
+		Peer appmodel.FederationPeer
+	}{
+		Peer: peer,
+	}
+	mock.lockFederationPeerClient.Lock()
+	mock.calls.FederationPeerClient = append(mock.calls.FederationPeerClient, callInfo)
+	mock.lockFederationPeerClient.Unlock()
+	return mock.FederationPeerClientFunc(peer)
+}
+
+// FederationPeerClientCalls gets all the calls that were made to FederationPeerClient.
+// Check the length with:
+//
+//	len(mockedEnv.FederationPeerClientCalls())
+func (mock *EnvMock) FederationPeerClientCalls() []struct {
+	Peer appmodel.FederationPeer
+} {
+	var calls []struct {
+		Peer appmodel.FederationPeer
+	}
+	mock.lockFederationPeerClient.RLock()
+	calls = mock.calls.FederationPeerClient
+	mock.lockFederationPeerClient.RUnlock()
 	return calls
 }
 
@@ -168,5 +420,104 @@ func (mock *EnvMock) InsertFederationSecretCalls() []struct {
 	mock.lockInsertFederationSecret.RLock()
 	calls = mock.calls.InsertFederationSecret
 	mock.lockInsertFederationSecret.RUnlock()
+	return calls
+}
+
+// OutboundFederationSecretByKID calls OutboundFederationSecretByKIDFunc.
+func (mock *EnvMock) OutboundFederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, error) {
+	if mock.OutboundFederationSecretByKIDFunc == nil {
+		panic("EnvMock.OutboundFederationSecretByKIDFunc: method is nil but Env.OutboundFederationSecretByKID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Kid string
+	}{
+		Ctx: ctx,
+		Kid: kid,
+	}
+	mock.lockOutboundFederationSecretByKID.Lock()
+	mock.calls.OutboundFederationSecretByKID = append(mock.calls.OutboundFederationSecretByKID, callInfo)
+	mock.lockOutboundFederationSecretByKID.Unlock()
+	return mock.OutboundFederationSecretByKIDFunc(ctx, kid)
+}
+
+// OutboundFederationSecretByKIDCalls gets all the calls that were made to OutboundFederationSecretByKID.
+// Check the length with:
+//
+//	len(mockedEnv.OutboundFederationSecretByKIDCalls())
+func (mock *EnvMock) OutboundFederationSecretByKIDCalls() []struct {
+	Ctx context.Context
+	Kid string
+} {
+	var calls []struct {
+		Ctx context.Context
+		Kid string
+	}
+	mock.lockOutboundFederationSecretByKID.RLock()
+	calls = mock.calls.OutboundFederationSecretByKID
+	mock.lockOutboundFederationSecretByKID.RUnlock()
+	return calls
+}
+
+// PublicURL calls PublicURLFunc.
+func (mock *EnvMock) PublicURL() string {
+	if mock.PublicURLFunc == nil {
+		panic("EnvMock.PublicURLFunc: method is nil but Env.PublicURL was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockPublicURL.Lock()
+	mock.calls.PublicURL = append(mock.calls.PublicURL, callInfo)
+	mock.lockPublicURL.Unlock()
+	return mock.PublicURLFunc()
+}
+
+// PublicURLCalls gets all the calls that were made to PublicURL.
+// Check the length with:
+//
+//	len(mockedEnv.PublicURLCalls())
+func (mock *EnvMock) PublicURLCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockPublicURL.RLock()
+	calls = mock.calls.PublicURL
+	mock.lockPublicURL.RUnlock()
+	return calls
+}
+
+// RotateFederationSecret calls RotateFederationSecretFunc.
+func (mock *EnvMock) RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) error {
+	if mock.RotateFederationSecretFunc == nil {
+		panic("EnvMock.RotateFederationSecretFunc: method is nil but Env.RotateFederationSecret was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.RotateFederationSecretParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockRotateFederationSecret.Lock()
+	mock.calls.RotateFederationSecret = append(mock.calls.RotateFederationSecret, callInfo)
+	mock.lockRotateFederationSecret.Unlock()
+	return mock.RotateFederationSecretFunc(ctx, arg)
+}
+
+// RotateFederationSecretCalls gets all the calls that were made to RotateFederationSecret.
+// Check the length with:
+//
+//	len(mockedEnv.RotateFederationSecretCalls())
+func (mock *EnvMock) RotateFederationSecretCalls() []struct {
+	Ctx context.Context
+	Arg db.RotateFederationSecretParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.RotateFederationSecretParams
+	}
+	mock.lockRotateFederationSecret.RLock()
+	calls = mock.calls.RotateFederationSecret
+	mock.lockRotateFederationSecret.RUnlock()
 	return calls
 }

@@ -3495,6 +3495,7 @@ type AdminMutation {
   createInboundFederationSecret(input: CreateInboundFederationSecretInput!): CreateInboundFederationSecretOrErrorPayload!
   createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload!
   revokeFederationSecret(id: Int64!): RevokeFederationSecretOrErrorPayload!
+  rotateFederationSecret(kid: String!): RotateFederationSecretOrErrorPayload!
   addFederationSecretSubgraph(input: AddFederationSecretSubgraphInput!): AddFederationSecretSubgraphOrErrorPayload!
   removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
 
@@ -3816,6 +3817,12 @@ input CreateOutboundFederationSecretInput {
   secretHex: String!
   kbURL: String!
   description: String
+  # Replace the handed-over key with a fresh one before storing it, so the bytes
+  # that travelled out of band stop being the live credential. On by default.
+  # Turn it off for a peer that cannot rotate — a public base or an adapter —
+  # and for one that has to be installed while unreachable: with it on, no live
+  # peer means no row.
+  rotate: Boolean
 }
 
 type CreateOutboundFederationSecretPayload {
@@ -3824,6 +3831,16 @@ type CreateOutboundFederationSecretPayload {
 }
 
 union CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSecretPayload | ErrorPayload
+
+#
+# rotateFederationSecret
+#
+
+type RotateFederationSecretPayload {
+  kid: String!
+}
+
+union RotateFederationSecretOrErrorPayload = RotateFederationSecretPayload | ErrorPayload
 
 #
 # revokeFederationSecret

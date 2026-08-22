@@ -80,6 +80,7 @@ import (
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/revokefederationsecret"
 	adminrevokeusertoken "trip2g/internal/case/admin/revokeusertoken"
+	"trip2g/internal/case/admin/rotatefederationsecret"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
@@ -1355,6 +1356,11 @@ func (r *adminMutationResolver) CreateOutboundFederationSecret(ctx context.Conte
 // RevokeFederationSecret is the resolver for the revokeFederationSecret field.
 func (r *adminMutationResolver) RevokeFederationSecret(ctx context.Context, obj *appmodel.AdminMutation, id int64) (model.RevokeFederationSecretOrErrorPayload, error) {
 	return revokefederationsecret.Resolve(ctx, r.env(ctx), id)
+}
+
+// RotateFederationSecret is the resolver for the rotateFederationSecret field.
+func (r *adminMutationResolver) RotateFederationSecret(ctx context.Context, obj *appmodel.AdminMutation, kid string) (model.RotateFederationSecretOrErrorPayload, error) {
+	return rotatefederationsecret.Resolve(ctx, r.env(ctx), kid)
 }
 
 // AddFederationSecretSubgraph is the resolver for the addFederationSecretSubgraph field.
