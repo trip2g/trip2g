@@ -58,13 +58,21 @@ namespace $.$$ {
 			return this.row( id ).subgraphIds.map( ( value: any ) => Number( value ) )
 		}
 
-		// Scope belongs to an inbound key. On an outbound one the number would be
-		// whatever an inbound key with the same kid happens to grant — the scope
-		// table keys on kid, not on the row — and reading that as "what this key
-		// carries" is exactly backwards.
+		// Two different numbers under one heading, because the question differs by
+		// direction. An inbound key carries scope this instance granted, and that
+		// is a local count. An outbound key carries none of its own: what it may
+		// read was decided on the peer, so the only truthful number comes from
+		// asking the peer. Showing the local count there would report what an
+		// inbound key with the same kid happens to grant, which is backwards.
+		@$mol_mem_key
 		override row_subgraph_count( id: any ): string {
-			if ( this.row( id ).kbUrl ) return '—'
-			return this.row( id ).subgraphCount.toString()
+			const row = this.row( id )
+			if ( !row.kbUrl ) return row.subgraphCount.toString()
+
+			const res = $trip2g_admin_federation_show_scope({ kid: row.kid })
+			if ( res.admin.data.__typename === 'ErrorPayload' ) return '?'
+
+			return res.admin.data.subgraphs.length.toString()
 		}
 
 		override row_created_at( id: any ): string {
