@@ -86,11 +86,12 @@ func handleRotateSecret(ctx context.Context, env Env, id any, argsRaw json.RawMe
 	}
 
 	rotateParams := db.RotateFederationSecretParams{
-		SecretCrypt: encrypted,
-		ID:          row.ID,
+		NewSecretCrypt:      encrypted,
+		ID:                  row.ID,
+		ExpectedSecretCrypt: row.SecretCrypt,
 	}
 
-	err = env.RotateFederationSecret(ctx, rotateParams)
+	_, err = env.RotateFederationSecret(ctx, rotateParams)
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, "Rotation failed: "+err.Error())
 	}

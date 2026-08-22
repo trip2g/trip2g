@@ -48,9 +48,9 @@ func (e *rotateEnvStub) ListFederationSecretSubgraphsByKID(context.Context, stri
 	return nil, nil
 }
 
-func (e *rotateEnvStub) RotateFederationSecret(_ context.Context, arg db.RotateFederationSecretParams) error {
+func (e *rotateEnvStub) RotateFederationSecret(_ context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 	e.rotated = &arg
-	return nil
+	return 1, nil
 }
 
 func (e *rotateEnvStub) ClearFederationSecretPrev(_ context.Context, arg db.ClearFederationSecretPrevParams) error {
@@ -97,7 +97,8 @@ func TestRotateSecretReplacesTheKey(t *testing.T) {
 	require.Nil(t, resp.Error)
 	require.NotNil(t, env.rotated, "the key was not stored")
 	require.Equal(t, int64(7), env.rotated.ID)
-	require.Equal(t, fresh, env.rotated.SecretCrypt)
+	require.Equal(t, fresh, env.rotated.NewSecretCrypt)
+	require.Equal(t, current, env.rotated.ExpectedSecretCrypt)
 }
 
 // A peer whose response was lost retries with the same key. Answering success

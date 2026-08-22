@@ -122,7 +122,7 @@ func (a *app) MCPMetrics() *metrics.MCPMetrics {
 	return a.mcpMetrics
 }
 
-func (a *app) RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) error {
+func (a *app) RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 	return a.WriteQueries.RotateFederationSecret(ctx, arg)
 }
 

@@ -64,7 +64,7 @@ func (e *fedGQLEnv) ClearFederationSecretPrev(_ context.Context, _ db.ClearFeder
 func (e *fedGQLEnv) FederationSecretByID(_ context.Context, _ int64) (db.FederationSecret, error) {
 	panic("unexpected")
 }
-func (e *fedGQLEnv) RotateFederationSecret(_ context.Context, _ db.RotateFederationSecretParams) error {
+func (e *fedGQLEnv) RotateFederationSecret(_ context.Context, _ db.RotateFederationSecretParams) (int64, error) {
 	panic("unexpected")
 }
 func (e *fedGQLEnv) FederationSecretByKBURL(_ context.Context, _ string) (db.FederationSecret, bool, error) {

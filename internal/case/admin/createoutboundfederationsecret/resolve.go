@@ -18,9 +18,7 @@ import (
 
 type Env interface {
 	InsertFederationSecret(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error)
-	RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) error
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
-	EncryptData(plaintext []byte) ([]byte, error)
 	rotatefederationsecret.Env
 }
 
@@ -54,12 +52,22 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	peerSecret := secret
 	rotated := false
 	if input.Rotate == nil || *input.Rotate {
+		fresh, mintErr := rotatefederationsecret.NewSecret()
+		if mintErr != nil {
+			return nil, mintErr
+		}
+
 		peer := appmodel.FederationPeer{KBURL: input.KbURL, KID: input.Kid, Secret: secret}
 
-		fresh, exchangeErr := rotatefederationsecret.Exchange(ctx, env, peer)
-		if exchangeErr != nil {
-			//nolint:nilerr // intentional: a peer that refuses is an answer an operator acts on, not a fault
-			return &model.ErrorPayload{Message: exchangeErr.Error()}, nil
+		// Nothing is stored unless the peer confirmed. At install there is no
+		// link to protect yet, so silence and refusal lead to the same place —
+		// ask the other operator for a fresh handover and try again, which costs
+		// them one mutation. That is cheaper than a row resting on the key that
+		// travelled through a chat.
+		proposeErr := rotatefederationsecret.Propose(ctx, env, peer, fresh)
+		if proposeErr != nil {
+			//nolint:nilerr // intentional: a peer that will not confirm is an answer an operator acts on, not a fault
+			return &model.ErrorPayload{Message: proposeErr.Error()}, nil
 		}
 		peerSecret = fresh
 		rotated = true
@@ -103,11 +111,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		}
 
 		rotateParams := db.RotateFederationSecretParams{
-			SecretCrypt: rotatedCrypt,
-			ID:          row.ID,
+			NewSecretCrypt:      rotatedCrypt,
+			ID:                  row.ID,
+			ExpectedSecretCrypt: row.SecretCrypt,
 		}
 
-		err = env.RotateFederationSecret(ctx, rotateParams)
+		_, err = env.RotateFederationSecret(ctx, rotateParams)
 		if err != nil {
 			return nil, fmt.Errorf("failed to store rotated secret: %w", err)
 		}

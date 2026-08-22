@@ -140,16 +140,31 @@ func TestClearFederationSecretPrevIsConditional(t *testing.T) {
 	require.NoError(t, err)
 
 	// current = k2, prev = k1. A request reads this state and decides to retire k1.
-	require.NoError(t, writeQueries.RotateFederationSecret(ctx, db.RotateFederationSecretParams{
-		SecretCrypt: []byte("k2"),
-		ID:          row.ID,
-	}))
+	affected, err := writeQueries.RotateFederationSecret(ctx, db.RotateFederationSecretParams{
+		NewSecretCrypt:      []byte("k2"),
+		ID:                  row.ID,
+		ExpectedSecretCrypt: []byte("k1"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), affected)
 
 	// A second rotation lands first: current = k3, prev = k2.
-	require.NoError(t, writeQueries.RotateFederationSecret(ctx, db.RotateFederationSecretParams{
-		SecretCrypt: []byte("k3"),
-		ID:          row.ID,
-	}))
+	affected, err = writeQueries.RotateFederationSecret(ctx, db.RotateFederationSecretParams{
+		NewSecretCrypt:      []byte("k3"),
+		ID:                  row.ID,
+		ExpectedSecretCrypt: []byte("k2"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), affected)
+
+	// A rotation racing on the row it already read moves nothing.
+	affected, err = writeQueries.RotateFederationSecret(ctx, db.RotateFederationSecretParams{
+		NewSecretCrypt:      []byte("k4"),
+		ID:                  row.ID,
+		ExpectedSecretCrypt: []byte("k1"),
+	})
+	require.NoError(t, err)
+	require.Zero(t, affected, "a stale rotation overwrote a row that had already moved")
 
 	// The stale decision now executes, naming the key it actually saw.
 	require.NoError(t, writeQueries.ClearFederationSecretPrev(ctx, db.ClearFederationSecretPrevParams{

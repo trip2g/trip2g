@@ -1242,12 +1242,13 @@ update federation_secrets
    set revoked_at = current_timestamp
  where id = ?;
 
--- name: RotateFederationSecret :exec
+-- name: RotateFederationSecret :execrows
 update federation_secrets
    set prev_secret_crypt = secret_crypt,
-       secret_crypt = ?,
+       secret_crypt = sqlc.arg(new_secret_crypt),
        rotated_at = current_timestamp
- where id = ?;
+ where id = sqlc.arg(id)
+   and secret_crypt = sqlc.arg(expected_secret_crypt);
 
 -- name: ClearFederationSecretPrev :exec
 update federation_secrets

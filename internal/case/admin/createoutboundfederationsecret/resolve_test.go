@@ -232,10 +232,10 @@ func TestResolveRotatesByDefault(t *testing.T) {
 			"the row starts on the handed-over key, which the rotation below then moves off")
 		return db.FederationSecret{ID: 10, Kid: arg.Kid}, nil
 	}
-	mock.RotateFederationSecretFunc = func(ctx context.Context, arg db.RotateFederationSecretParams) error {
+	mock.RotateFederationSecretFunc = func(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 		require.Equal(t, int64(10), arg.ID)
-		require.Equal(t, append([]byte("enc:"), proposed...), arg.SecretCrypt)
-		return nil
+		require.Equal(t, append([]byte("enc:"), proposed...), arg.NewSecretCrypt)
+		return 1, nil
 	}
 	mock.FederationPeerClientFunc = func(peer appmodel.FederationPeer) appmodel.Federation {
 		return &peerStub{

@@ -113,7 +113,7 @@ var _ mcp.Env = &EnvMock{}
 //			ResolveAPIKeyFunc: func(ctx context.Context, value string, action string) (*db.ApiKey, error) {
 //				panic("mock out the ResolveAPIKey method")
 //			},
-//			RotateFederationSecretFunc: func(ctx context.Context, arg db.RotateFederationSecretParams) error {
+//			RotateFederationSecretFunc: func(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 //				panic("mock out the RotateFederationSecret method")
 //			},
 //			SearchLatestNotesFunc: func(query string) ([]model.SearchResult, error) {
@@ -223,7 +223,7 @@ type EnvMock struct {
 	ResolveAPIKeyFunc func(ctx context.Context, value string, action string) (*db.ApiKey, error)
 
 	// RotateFederationSecretFunc mocks the RotateFederationSecret method.
-	RotateFederationSecretFunc func(ctx context.Context, arg db.RotateFederationSecretParams) error
+	RotateFederationSecretFunc func(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error)
 
 	// SearchLatestNotesFunc mocks the SearchLatestNotes method.
 	SearchLatestNotesFunc func(query string) ([]model.SearchResult, error)
@@ -1358,7 +1358,7 @@ func (mock *EnvMock) ResolveAPIKeyCalls() []struct {
 }
 
 // RotateFederationSecret calls RotateFederationSecretFunc.
-func (mock *EnvMock) RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) error {
+func (mock *EnvMock) RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 	if mock.RotateFederationSecretFunc == nil {
 		panic("EnvMock.RotateFederationSecretFunc: method is nil but Env.RotateFederationSecret was just called")
 	}

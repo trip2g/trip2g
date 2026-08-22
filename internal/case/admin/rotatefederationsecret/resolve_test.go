@@ -28,6 +28,7 @@ type envStub struct {
 	cleared []db.ClearFederationSecretPrevParams
 
 	allowPlainHTTP bool
+	rotateBlocked  bool
 	// Every peer the case built, in order: the rotation first, then the probe.
 	// Keeping only the last would hide which key each call was signed with.
 	seenPeers []model.FederationPeer
@@ -40,9 +41,12 @@ func (e *envStub) OutboundFederationSecretByKID(context.Context, string) (db.Fed
 	return e.row, nil
 }
 
-func (e *envStub) RotateFederationSecret(_ context.Context, arg db.RotateFederationSecretParams) error {
+func (e *envStub) RotateFederationSecret(_ context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 	e.rotated = &arg
-	return nil
+	if e.rotateBlocked {
+		return 0, nil
+	}
+	return 1, nil
 }
 
 func (e *envStub) ClearFederationSecretPrev(_ context.Context, arg db.ClearFederationSecretPrevParams) error {
@@ -118,7 +122,7 @@ func TestResolveStoresWhatThePeerAccepted(t *testing.T) {
 	require.IsType(t, &graphmodel.RotateFederationSecretPayload{}, payload)
 
 	require.Equal(t, []byte("current-key"), env.seenPeers[0].Secret,
-		"the rotation is authorised by the key being replaced")
+		"the rotation is authorised by the key the peer still holds")
 	require.Equal(t, env.peer.proposed, env.seenPeers[1].Secret,
 		"the probe has to prove the NEW key verifies")
 	require.Empty(t, env.seenPeers[1].PrevSecret,
@@ -126,7 +130,8 @@ func TestResolveStoresWhatThePeerAccepted(t *testing.T) {
 	require.Len(t, env.peer.proposed, 32)
 	require.NotNil(t, env.rotated)
 	require.Equal(t, int64(7), env.rotated.ID)
-	require.Equal(t, append([]byte("enc:"), env.peer.proposed...), env.rotated.SecretCrypt)
+	require.Equal(t, append([]byte("enc:"), env.peer.proposed...), env.rotated.NewSecretCrypt)
+	require.Equal(t, []byte("enc:current-key"), env.rotated.ExpectedSecretCrypt)
 }
 
 // The probe is what closes the two-key window, and it names the stored
@@ -156,22 +161,10 @@ func TestResolveKeepsBothKeysWhenTheProbeDoesNot(t *testing.T) {
 	require.Empty(t, env.cleared, "a silent probe retired the key the peer may still be using")
 }
 
-func TestResolveAnswersWhenThePeerRefuses(t *testing.T) {
-	t.Parallel()
-
-	env := &envStub{row: liveRow(), peer: &peerStub{rotateErr: errors.New("connection refused")}}
-
-	payload, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
-
-	require.NoError(t, err)
-	require.IsType(t, &graphmodel.ErrorPayload{}, payload)
-	require.Nil(t, env.rotated, "the key moved on a rotation the peer never took")
-}
-
-// The peer answering with an error result is a refusal too — an old peer that
-// does not know the tool replies method-not-found rather than failing the
-// transport.
-func TestResolveAnswersWhenThePeerReportsAnError(t *testing.T) {
+// A peer that ANSWERED no demonstrably still holds the old key. Moving this side
+// off it would leave the link running on the previous key until the grace closes
+// and then dead — from a rotation that never happened.
+func TestResolveRecordsNothingWhenThePeerRefuses(t *testing.T) {
 	t.Parallel()
 
 	env := &envStub{row: liveRow(), peer: &peerStub{
@@ -184,10 +177,23 @@ func TestResolveAnswersWhenThePeerReportsAnError(t *testing.T) {
 	payload, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
 
 	require.NoError(t, err)
-	errPayload, ok := payload.(*graphmodel.ErrorPayload)
-	require.True(t, ok)
-	require.Contains(t, errPayload.Message, "Method not found")
-	require.Nil(t, env.rotated)
+	require.IsType(t, &graphmodel.ErrorPayload{}, payload)
+	require.Nil(t, env.rotated, "this side moved off a key the peer said it kept")
+}
+
+// Silence is the other outcome and needs the opposite treatment: the peer may
+// have committed before the answer was lost, so the proposal is kept and a retry
+// re-proposes it.
+func TestResolveKeepsTheProposalWhenThePeerIsSilent(t *testing.T) {
+	t.Parallel()
+
+	env := &envStub{row: liveRow(), peer: &peerStub{rotateErr: errors.New("timeout")}}
+
+	payload, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
+
+	require.NoError(t, err)
+	require.IsType(t, &graphmodel.ErrorPayload{}, payload)
+	require.NotNil(t, env.rotated, "the peer may hold a key this side never wrote down")
 }
 
 func TestResolveAnswersForAnUnknownKid(t *testing.T) {
@@ -203,28 +209,10 @@ func TestResolveAnswersForAnUnknownKid(t *testing.T) {
 	require.Contains(t, errPayload.Message, "ghost")
 }
 
-// A rotation whose response was lost left this side still calling the old key
-// current. Carrying both is what lets the next rotation reach a peer that has
-// already moved on.
-func TestResolveCarriesThePreviousKeyInsideTheGrace(t *testing.T) {
-	t.Parallel()
-
-	row := liveRow()
-	rotatedAt := time.Now()
-	row.PrevSecretCrypt = []byte("enc:older-key")
-	row.RotatedAt = &rotatedAt
-
-	env := &envStub{row: row, peer: &peerStub{searchAnswers: true}}
-
-	_, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
-
-	require.NoError(t, err)
-	require.Equal(t, []byte("older-key"), env.seenPeers[0].PrevSecret)
-}
-
-// Outside the window the peer has stopped accepting it too, so offering it
-// would buy a refused request per call and nothing else.
-func TestResolveDropsThePreviousKeyAfterTheGrace(t *testing.T) {
+// A proposal older than the grace window is not a retry any more: the peer has
+// stopped accepting that key, so this is a fresh rotation and the expired key is
+// not carried into it.
+func TestResolveStartsFreshAfterTheGrace(t *testing.T) {
 	t.Parallel()
 
 	row := liveRow()
@@ -237,19 +225,21 @@ func TestResolveDropsThePreviousKeyAfterTheGrace(t *testing.T) {
 	_, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
 
 	require.NoError(t, err)
-	require.Empty(t, env.seenPeers[0].PrevSecret)
+	require.NotNil(t, env.rotated, "an expired proposal was re-proposed instead of replaced")
+	require.NotEqual(t, []byte("older-key"), env.peer.proposed, "an expired proposal was re-proposed")
+	require.Empty(t, env.seenPeers[0].PrevSecret, "an expired key was still offered to the peer")
 }
 
 // Rotation puts a fresh key on the wire. Over plain http to a stranger it would
 // move the secret from one channel nobody controls to another, while leaving the
 // operator believing the first one is now safe.
-func TestExchangeRefusesPlainHTTP(t *testing.T) {
+func TestProposeRefusesPlainHTTP(t *testing.T) {
 	t.Parallel()
 
 	env := &envStub{peer: &peerStub{}}
 	peer := model.FederationPeer{KBURL: "http://peer.example/_system/mcp", KID: "peer", Secret: []byte("k")}
 
-	_, err := rotatefederationsecret.Exchange(context.Background(), env, peer)
+	err := rotatefederationsecret.Propose(context.Background(), env, peer, make([]byte, 32))
 
 	require.ErrorIs(t, err, rotatefederationsecret.ErrInsecureURL)
 	require.Nil(t, env.peer.proposed, "a key was put on the wire the guard was meant to stop")
@@ -257,30 +247,71 @@ func TestExchangeRefusesPlainHTTP(t *testing.T) {
 
 // Unless the deployment has already said it federates over addresses that are
 // not on the public internet, where there is no third party on the path.
-func TestExchangeAllowsPlainHTTPWhereTheDeploymentSaysSo(t *testing.T) {
+func TestProposeAllowsPlainHTTPWhereTheDeploymentSaysSo(t *testing.T) {
 	t.Parallel()
 
 	env := &envStub{peer: &peerStub{}, allowPlainHTTP: true}
 	peer := model.FederationPeer{KBURL: "http://peer.example/_system/mcp", KID: "peer", Secret: []byte("k")}
 
-	secret, err := rotatefederationsecret.Exchange(context.Background(), env, peer)
+	err := rotatefederationsecret.Propose(context.Background(), env, peer, make([]byte, 32))
 
 	require.NoError(t, err)
-	require.Len(t, secret, 32)
+	require.Len(t, env.peer.proposed, 32)
 }
 
-// Two rotations must not propose the same key.
-func TestExchangeMintsAFreshKeyEachTime(t *testing.T) {
+// Two mints must not produce the same key.
+func TestNewSecretIsFreshEachTime(t *testing.T) {
 	t.Parallel()
 
-	env := &envStub{peer: &peerStub{}}
-	peer := model.FederationPeer{KBURL: "https://peer.example/_system/mcp", KID: "peer", Secret: []byte("k")}
-
-	first, err := rotatefederationsecret.Exchange(context.Background(), env, peer)
+	first, err := rotatefederationsecret.NewSecret()
 	require.NoError(t, err)
 
-	second, err := rotatefederationsecret.Exchange(context.Background(), env, peer)
+	second, err := rotatefederationsecret.NewSecret()
 	require.NoError(t, err)
 
+	require.Len(t, first, 32)
 	require.NotEqual(t, first, second)
+}
+
+// And a retry re-proposes that same key rather than minting another, which is
+// what a peer that already applied it answers as a no-op.
+func TestResolveReproposesAStagedKey(t *testing.T) {
+	t.Parallel()
+
+	row := liveRow()
+	rotatedAt := time.Now()
+	row.SecretCrypt = []byte("enc:staged-key")
+	row.PrevSecretCrypt = []byte("enc:older-key")
+	row.RotatedAt = &rotatedAt
+
+	env := &envStub{row: row, peer: &peerStub{searchAnswers: true}}
+
+	_, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
+
+	require.NoError(t, err)
+	require.Nil(t, env.rotated, "a retry minted a second key instead of re-proposing the staged one")
+	require.Equal(t, []byte("staged-key"), env.peer.proposed)
+	require.Equal(t, []byte("older-key"), env.seenPeers[0].PrevSecret,
+		"the retry must still reach a peer that never learned of the staged key")
+	require.Equal(t, []byte("staged-key"), env.seenPeers[0].Secret)
+}
+
+// A rotation that raced this one has already moved the row. The peer is asked
+// first — that ordering is what lets a refusal cost nothing — so by the time the
+// race is visible the peer may hold this key too. What must not happen is
+// writing over the row blind: the winner's key would be lost and the two sides
+// would hold no key in common. The loser is told, and the pairing keeps working
+// on the keys the winner recorded.
+func TestResolveRefusesToRaceAnotherRotation(t *testing.T) {
+	t.Parallel()
+
+	env := &envStub{row: liveRow(), peer: &peerStub{}, rotateBlocked: true}
+
+	payload, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
+
+	require.NoError(t, err)
+	errPayload, ok := payload.(*graphmodel.ErrorPayload)
+	require.True(t, ok)
+	require.Contains(t, errPayload.Message, "in flight")
+	require.Empty(t, env.cleared, "the loser retired a key it does not know the state of")
 }

@@ -4695,9 +4695,15 @@ type AdminMutation {
 
   # Federation secret mutations
   createInboundFederationSecret(input: CreateInboundFederationSecretInput!): CreateInboundFederationSecretOrErrorPayload!
-  createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload!
+  # @skipTx: both call a peer over HTTP, and the request tx (BEGIN IMMEDIATE)
+  # holds the SQLite write lock for the whole request — so the call would keep
+  # every other write on this instance waiting for as long as the peer takes.
+  # Against a peer that is this instance it is not merely slow but a deadlock:
+  # the inbound rotate_secret needs the write lock its own caller is holding,
+  # and the call dies at the client timeout. Same reasoning as runCronJob below.
+  createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload! @skipTx
   revokeFederationSecret(id: Int64!): RevokeFederationSecretOrErrorPayload!
-  rotateFederationSecret(kid: String!): RotateFederationSecretOrErrorPayload!
+  rotateFederationSecret(kid: String!): RotateFederationSecretOrErrorPayload! @skipTx
   addFederationSecretSubgraph(input: AddFederationSecretSubgraphInput!): AddFederationSecretSubgraphOrErrorPayload!
   removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
 
@@ -19494,7 +19500,20 @@ func (ec *executionContext) _AdminMutation_createOutboundFederationSecret(ctx co
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.AdminMutation().CreateOutboundFederationSecret(ctx, obj, fc.Args["input"].(model.CreateOutboundFederationSecretInput))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.SkipTx == nil {
+					var zeroVal model.CreateOutboundFederationSecretOrErrorPayload
+					return zeroVal, errors.New("directive skipTx is not implemented")
+				}
+				return ec.directives.SkipTx(ctx, obj, directive0)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNCreateOutboundFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOutboundFederationSecretOrErrorPayload,
 		true,
 		true,
@@ -19576,7 +19595,20 @@ func (ec *executionContext) _AdminMutation_rotateFederationSecret(ctx context.Co
 			fc := graphql.GetFieldContext(ctx)
 			return ec.resolvers.AdminMutation().RotateFederationSecret(ctx, obj, fc.Args["kid"].(string))
 		},
-		nil,
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.SkipTx == nil {
+					var zeroVal model.RotateFederationSecretOrErrorPayload
+					return zeroVal, errors.New("directive skipTx is not implemented")
+				}
+				return ec.directives.SkipTx(ctx, obj, directive0)
+			}
+
+			next = directive1
+			return next
+		},
 		ec.marshalNRotateFederationSecretOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRotateFederationSecretOrErrorPayload,
 		true,
 		true,

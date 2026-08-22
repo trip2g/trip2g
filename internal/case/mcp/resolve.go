@@ -58,7 +58,7 @@ type Env interface {
 	ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error)
 	ClearFederationSecretPrev(ctx context.Context, arg db.ClearFederationSecretPrevParams) error
 	FederationSecretByID(ctx context.Context, id int64) (db.FederationSecret, error)
-	RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) error
+	RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error)
 	EncryptData([]byte) ([]byte, error)
 	AuditLogger() logger.Logger
 	DecryptData([]byte) ([]byte, error)

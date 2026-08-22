@@ -3338,22 +3338,27 @@ func (q *WriteQueries) RevokeUserToken(ctx context.Context, arg RevokeUserTokenP
 	return i, err
 }
 
-const rotateFederationSecret = `-- name: RotateFederationSecret :exec
+const rotateFederationSecret = `-- name: RotateFederationSecret :execrows
 update federation_secrets
    set prev_secret_crypt = secret_crypt,
-       secret_crypt = ?,
+       secret_crypt = ?1,
        rotated_at = current_timestamp
- where id = ?
+ where id = ?2
+   and secret_crypt = ?3
 `
 
 type RotateFederationSecretParams struct {
-	SecretCrypt []byte `json:"secret_crypt"`
-	ID          int64  `json:"id"`
+	NewSecretCrypt      []byte `json:"new_secret_crypt"`
+	ID                  int64  `json:"id"`
+	ExpectedSecretCrypt []byte `json:"expected_secret_crypt"`
 }
 
-func (q *WriteQueries) RotateFederationSecret(ctx context.Context, arg RotateFederationSecretParams) error {
-	_, err := q.db.ExecContext(ctx, rotateFederationSecret, arg.SecretCrypt, arg.ID)
-	return err
+func (q *WriteQueries) RotateFederationSecret(ctx context.Context, arg RotateFederationSecretParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, rotateFederationSecret, arg.NewSecretCrypt, arg.ID, arg.ExpectedSecretCrypt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const setActiveGitHubOAuthCredentials = `-- name: SetActiveGitHubOAuthCredentials :exec
@@ -5257,11 +5262,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-  *Queries
+	*Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-  return &WriteQueries{
-    Queries: New(db),
-  }
+	return &WriteQueries{
+		Queries: New(db),
+	}
 }

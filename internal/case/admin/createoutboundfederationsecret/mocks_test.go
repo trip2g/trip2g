@@ -35,7 +35,7 @@ var _ createoutboundfederationsecret.Env = &EnvMock{}
 //			DecryptDataFunc: func(bytes []byte) ([]byte, error) {
 //				panic("mock out the DecryptData method")
 //			},
-//			EncryptDataFunc: func(plaintext []byte) ([]byte, error) {
+//			EncryptDataFunc: func(bytes []byte) ([]byte, error) {
 //				panic("mock out the EncryptData method")
 //			},
 //			FederationAllowsPlainHTTPFunc: func() bool {
@@ -53,7 +53,7 @@ var _ createoutboundfederationsecret.Env = &EnvMock{}
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
 //			},
-//			RotateFederationSecretFunc: func(ctx context.Context, arg db.RotateFederationSecretParams) error {
+//			RotateFederationSecretFunc: func(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 //				panic("mock out the RotateFederationSecret method")
 //			},
 //		}
@@ -76,7 +76,7 @@ type EnvMock struct {
 	DecryptDataFunc func(bytes []byte) ([]byte, error)
 
 	// EncryptDataFunc mocks the EncryptData method.
-	EncryptDataFunc func(plaintext []byte) ([]byte, error)
+	EncryptDataFunc func(bytes []byte) ([]byte, error)
 
 	// FederationAllowsPlainHTTPFunc mocks the FederationAllowsPlainHTTP method.
 	FederationAllowsPlainHTTPFunc func() bool
@@ -94,7 +94,7 @@ type EnvMock struct {
 	PublicURLFunc func() string
 
 	// RotateFederationSecretFunc mocks the RotateFederationSecret method.
-	RotateFederationSecretFunc func(ctx context.Context, arg db.RotateFederationSecretParams) error
+	RotateFederationSecretFunc func(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -120,8 +120,8 @@ type EnvMock struct {
 		}
 		// EncryptData holds details about calls to the EncryptData method.
 		EncryptData []struct {
-			// Plaintext is the plaintext argument value.
-			Plaintext []byte
+			// Bytes is the bytes argument value.
+			Bytes []byte
 		}
 		// FederationAllowsPlainHTTP holds details about calls to the FederationAllowsPlainHTTP method.
 		FederationAllowsPlainHTTP []struct {
@@ -297,19 +297,19 @@ func (mock *EnvMock) DecryptDataCalls() []struct {
 }
 
 // EncryptData calls EncryptDataFunc.
-func (mock *EnvMock) EncryptData(plaintext []byte) ([]byte, error) {
+func (mock *EnvMock) EncryptData(bytes []byte) ([]byte, error) {
 	if mock.EncryptDataFunc == nil {
 		panic("EnvMock.EncryptDataFunc: method is nil but Env.EncryptData was just called")
 	}
 	callInfo := struct {
-		Plaintext []byte
+		Bytes []byte
 	}{
-		Plaintext: plaintext,
+		Bytes: bytes,
 	}
 	mock.lockEncryptData.Lock()
 	mock.calls.EncryptData = append(mock.calls.EncryptData, callInfo)
 	mock.lockEncryptData.Unlock()
-	return mock.EncryptDataFunc(plaintext)
+	return mock.EncryptDataFunc(bytes)
 }
 
 // EncryptDataCalls gets all the calls that were made to EncryptData.
@@ -317,10 +317,10 @@ func (mock *EnvMock) EncryptData(plaintext []byte) ([]byte, error) {
 //
 //	len(mockedEnv.EncryptDataCalls())
 func (mock *EnvMock) EncryptDataCalls() []struct {
-	Plaintext []byte
+	Bytes []byte
 } {
 	var calls []struct {
-		Plaintext []byte
+		Bytes []byte
 	}
 	mock.lockEncryptData.RLock()
 	calls = mock.calls.EncryptData
@@ -487,7 +487,7 @@ func (mock *EnvMock) PublicURLCalls() []struct {
 }
 
 // RotateFederationSecret calls RotateFederationSecretFunc.
-func (mock *EnvMock) RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) error {
+func (mock *EnvMock) RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 	if mock.RotateFederationSecretFunc == nil {
 		panic("EnvMock.RotateFederationSecretFunc: method is nil but Env.RotateFederationSecret was just called")
 	}
