@@ -17,11 +17,28 @@ namespace $.$$ {
 
 		// Asked of the peer, because only the peer knows: scope is granted on its
 		// side and nothing about it is recorded here. Reporting a local guess would
-		// be worse than reporting nothing — a pairing scoped to nothing answers
-		// every search with an empty result, which is indistinguishable from a
-		// query that matched nothing unless someone says which it is.
+		// be worse than reporting nothing, since a pairing scoped to nothing
+		// answers every search with an empty result and that is indistinguishable
+		// from a query which matched nothing unless someone says which it is.
 		@$mol_mem
-		peer_scope(): string {
+		peer_scope_items(): readonly { name: string, about: string }[] {
+			if (this.direction() !== 'outbound') return []
+
+			const res = $trip2g_admin_federation_show_scope({ kid: this.kid() })
+
+			if (res.admin.data.__typename === 'ErrorPayload') return []
+
+			return res.admin.data.subgraphs.map( item => ({
+				name: item.name,
+				about: item.humanDescription,
+			}) )
+		}
+
+		// The one line that replaces the table when there is no table to draw. The
+		// two cases it covers are the ones an operator most needs told apart: the
+		// peer would not answer, and the peer answered that this key sees nothing.
+		@$mol_mem
+		peer_scope_status(): string {
 			if (this.direction() !== 'outbound') return ''
 
 			const res = $trip2g_admin_federation_show_scope({ kid: this.kid() })
@@ -29,18 +46,30 @@ namespace $.$$ {
 			if (res.admin.data.__typename === 'ErrorPayload') {
 				return res.admin.data.message
 			}
-
-			const subgraphs = res.admin.data.subgraphs
-			if (subgraphs.length === 0) {
-				return 'nothing — the peer authenticates this key but grants it no subgraph, so every search through it comes back empty'
+			if (res.admin.data.subgraphs.length === 0) {
+				return 'nothing: the peer authenticates this key but grants it no subgraph, so every search through it comes back empty'
 			}
 
-			// The peer's own words for what each subgraph is. A name on its own is
-			// a slug, and reading meaning into someone else's slug is the guess
-			// this whole exchange exists to remove.
-			return subgraphs
-				.map( s => s.humanDescription ? `${ s.name } — ${ s.humanDescription }` : s.name )
-				.join( '\n' )
+			return ''
+		}
+
+		@$mol_mem
+		peer_scopes(): readonly any[] {
+			const items = this.peer_scope_items()
+			if (items.length === 0) return [this.OutboundScopeStatus()]
+
+			return items.map( ( _, index ) => this.OutboundScopeItem( index ) )
+		}
+
+		peer_scope_name( index: number ): string {
+			return this.peer_scope_items()[index].name
+		}
+
+		// Blank rather than a placeholder: the owner of that subgraph has not
+		// written what it is, and inventing a description here would put words in
+		// their mouth on their peer's screen.
+		peer_scope_about( index: number ): string {
+			return this.peer_scope_items()[index].about
 		}
 
 		// Said in words rather than left blank: an empty cell reads as "unknown",

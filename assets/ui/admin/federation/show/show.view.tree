@@ -42,5 +42,17 @@ $trip2g_admin_federation_show $mol_page
 			ids? <=> subgraph_ids? /number
 	OutboundScopeNote $mol_labeler
 		title @ \Granted by the peer
-		Content <= OutboundScopeCell $trip2g_admin_cell
-			content <= peer_scope \
+		Content <= OutboundScopeCell $mol_list
+			rows <= peer_scopes /
+	OutboundScopeItem* $mol_row
+		sub /
+			<= OutboundScopeName* $mol_labeler
+				title @ \Subgraph
+				Content <= OutboundScopeNameCell* $trip2g_admin_cell
+					content <= peer_scope_name* \
+			<= OutboundScopeAbout* $mol_labeler
+				title @ \What it is
+				Content <= OutboundScopeAboutCell* $trip2g_admin_cell
+					content <= peer_scope_about* \
+	OutboundScopeStatus $mol_view
+		sub / <= peer_scope_status \
