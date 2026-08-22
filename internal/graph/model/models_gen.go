@@ -1335,6 +1335,7 @@ type CreateInboundFederationSecretPayload struct {
 	ID        int64  `json:"id"`
 	Kid       string `json:"kid"`
 	SecretHex string `json:"secretHex"`
+	Key       string `json:"key"`
 }
 
 func (CreateInboundFederationSecretPayload) IsCreateInboundFederationSecretOrErrorPayload() {}
@@ -1381,9 +1382,10 @@ type CreateOfferPayload struct {
 func (CreateOfferPayload) IsCreateOfferOrErrorPayload() {}
 
 type CreateOutboundFederationSecretInput struct {
-	Kid         string  `json:"kid"`
-	SecretHex   string  `json:"secretHex"`
-	KbURL       string  `json:"kbURL"`
+	Key         *string `json:"key,omitempty"`
+	Kid         *string `json:"kid,omitempty"`
+	SecretHex   *string `json:"secretHex,omitempty"`
+	KbURL       *string `json:"kbURL,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Rotate      *bool   `json:"rotate,omitempty"`
 }

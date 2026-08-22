@@ -21,6 +21,7 @@ namespace $.$$ {
 			}
 
 			if (res.admin.data.__typename === 'CreateInboundFederationSecretPayload') {
+				this.handover_key( res.admin.data.key )
 				this.secret_hex( res.admin.data.secretHex )
 				return
 			}

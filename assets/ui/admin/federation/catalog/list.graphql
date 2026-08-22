@@ -10,6 +10,7 @@ query {
 			revokedAt
 			rotatedAt
 			subgraphCount
+			subgraphIds
 		}
 	}
 }

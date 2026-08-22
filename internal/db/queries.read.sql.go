@@ -5194,6 +5194,36 @@ func (q *Queries) ListEnabledWebhooks(ctx context.Context) ([]ChangeWebhook, err
 	return items, nil
 }
 
+const listFederationSecretSubgraphIDsByKID = `-- name: ListFederationSecretSubgraphIDsByKID :many
+select fss.subgraph_id
+  from federation_secret_subgraphs fss
+ where fss.kid = ?
+ order by fss.subgraph_id
+`
+
+func (q *Queries) ListFederationSecretSubgraphIDsByKID(ctx context.Context, kid string) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listFederationSecretSubgraphIDsByKID, kid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var subgraph_id int64
+		if err := rows.Scan(&subgraph_id); err != nil {
+			return nil, err
+		}
+		items = append(items, subgraph_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFederationSecretSubgraphsByKID = `-- name: ListFederationSecretSubgraphsByKID :many
 select s.name
   from federation_secret_subgraphs fss

@@ -7,6 +7,7 @@ $trip2g_admin_federation_show $mol_page
 	rotated_at \
 	direction \
 	rotated_label \
+	granted_subgraph_ids /number
 	body /
 		<= Info $mol_view
 			sub /

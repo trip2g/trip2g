@@ -16,6 +16,7 @@ $trip2g_admin_federation_catalog $trip2g_admin_catalog
 		kb_url <= row_kb_url* \
 		rotated_at <= row_rotated_at* \
 		direction <= row_direction* \
+		granted_subgraph_ids <= row_subgraph_ids* /number
 	AddInboundForm $trip2g_admin_federation_inbound
 	AddOutboundForm $trip2g_admin_federation_outbound
 	menu_link_content* / <= SecretItem* $mol_view

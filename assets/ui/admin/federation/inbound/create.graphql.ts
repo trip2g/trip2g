@@ -6,7 +6,7 @@ export type trip2g_admin_federation_inbound_createMutationVariables = Exact<{
 }>;
 
 
-export type trip2g_admin_federation_inbound_createMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateInboundFederationSecretPayload', id: any, kid: string, secretHex: string } | { __typename: 'ErrorPayload', message: string } } };
+export type trip2g_admin_federation_inbound_createMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename: 'CreateInboundFederationSecretPayload', id: any, kid: string, secretHex: string, key: string } | { __typename: 'ErrorPayload', message: string } } };
 
 
 export function $trip2g_admin_federation_inbound_create(variables: trip2g_admin_federation_inbound_createMutationVariables, opts?: { revalidate?: boolean }): trip2g_admin_federation_inbound_createMutation {
@@ -21,6 +21,7 @@ export function $trip2g_admin_federation_inbound_create(variables: trip2g_admin_
         id
         kid
         secretHex
+        key
       }
     }
   }

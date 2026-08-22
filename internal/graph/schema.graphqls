@@ -3795,6 +3795,10 @@ type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSec
   # it was created with — for an outbound secret, the one handed over out of band.
   rotatedAt: Time
   subgraphCount: Int64!
+  # The subgraphs this key may surface, so a reader can see what is granted and
+  # not only how many. Without it the admin can add access and never take it
+  # away: an editor cannot deselect what it was never shown.
+  subgraphIds: [Int64!]! @goField(forceResolver: true)
 }
 
 #
@@ -3813,6 +3817,14 @@ type CreateInboundFederationSecretPayload {
   id: Int64!
   kid: String!
   secretHex: String!
+  # The three values above plus this instance's own address, packed into one
+  # string for the other operator to paste into createOutboundFederationSecret.
+  # They are a set — a kid without its secret is useless, a secret against the
+  # wrong address authenticates nothing — and copying them one at a time across a
+  # chat is where one gets dropped or transposed. This is an envelope and not a
+  # protection: the secret inside is plain, so it still travels over a channel
+  # you would trust with a password.
+  key: String!
 }
 
 union CreateInboundFederationSecretOrErrorPayload = CreateInboundFederationSecretPayload | ErrorPayload
@@ -3822,9 +3834,14 @@ union CreateInboundFederationSecretOrErrorPayload = CreateInboundFederationSecre
 #
 
 input CreateOutboundFederationSecretInput {
-  kid: String!
-  secretHex: String!
-  kbURL: String!
+  # The packed key from the other side's createInboundFederationSecret. Supply it
+  # INSTEAD of kid, secretHex and kbURL — one field that cannot be half-copied
+  # rather than three that can. When it is given the three below are ignored.
+  key: String
+
+  kid: String
+  secretHex: String
+  kbURL: String
   description: String
   # Replace the handed-over key with a fresh one before storing it, so the bytes
   # that travelled out of band stop being the live credential. On by default.

@@ -8,6 +8,7 @@ import (
 
 	"trip2g/internal/case/admin/createoutboundfederationsecret"
 	"trip2g/internal/db"
+	"trip2g/internal/federationkey"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	appmodel "trip2g/internal/model"
@@ -40,9 +41,9 @@ func TestResolve(t *testing.T) {
 		{
 			name: "success",
 			input: model.CreateOutboundFederationSecretInput{
-				Kid:       "peer-kid",
-				SecretHex: validSecret(),
-				KbURL:     "https://peer.example.com",
+				Kid:       ptr("peer-kid"),
+				SecretHex: ptr(validSecret()),
+				KbURL:     ptr("https://peer.example.com"),
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
@@ -66,9 +67,9 @@ func TestResolve(t *testing.T) {
 		{
 			name: "validation error - empty kid",
 			input: model.CreateOutboundFederationSecretInput{
-				Kid:       "",
-				SecretHex: validSecret(),
-				KbURL:     "https://peer.example.com",
+				Kid:       ptr(""),
+				SecretHex: ptr(validSecret()),
+				KbURL:     ptr("https://peer.example.com"),
 			},
 			mockFunc: func() *envMock { return &envMock{} },
 			wantType: "error",
@@ -76,9 +77,9 @@ func TestResolve(t *testing.T) {
 		{
 			name: "validation error - empty secretHex",
 			input: model.CreateOutboundFederationSecretInput{
-				Kid:       "peer-kid",
-				SecretHex: "",
-				KbURL:     "https://peer.example.com",
+				Kid:       ptr("peer-kid"),
+				SecretHex: ptr(""),
+				KbURL:     ptr("https://peer.example.com"),
 			},
 			mockFunc: func() *envMock { return &envMock{} },
 			wantType: "error",
@@ -86,9 +87,9 @@ func TestResolve(t *testing.T) {
 		{
 			name: "validation error - empty kbURL",
 			input: model.CreateOutboundFederationSecretInput{
-				Kid:       "peer-kid",
-				SecretHex: validSecret(),
-				KbURL:     "",
+				Kid:       ptr("peer-kid"),
+				SecretHex: ptr(validSecret()),
+				KbURL:     ptr(""),
 			},
 			mockFunc: func() *envMock { return &envMock{} },
 			wantType: "error",
@@ -96,9 +97,9 @@ func TestResolve(t *testing.T) {
 		{
 			name: "invalid hex - wrong length",
 			input: model.CreateOutboundFederationSecretInput{
-				Kid:       "peer-kid",
-				SecretHex: "aabbccdd",
-				KbURL:     "https://peer.example.com",
+				Kid:       ptr("peer-kid"),
+				SecretHex: ptr("aabbccdd"),
+				KbURL:     ptr("https://peer.example.com"),
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
@@ -108,14 +109,14 @@ func TestResolve(t *testing.T) {
 				return mock
 			},
 			wantType: "error",
-			wantMsg:  "secretHex must be exactly 32 bytes (64 hex characters)",
+			wantMsg:  "the secret must be exactly 32 bytes (64 hex characters)",
 		},
 		{
 			name: "invalid hex - not hex",
 			input: model.CreateOutboundFederationSecretInput{
-				Kid:       "peer-kid",
-				SecretHex: "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
-				KbURL:     "https://peer.example.com",
+				Kid:       ptr("peer-kid"),
+				SecretHex: ptr("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"),
+				KbURL:     ptr("https://peer.example.com"),
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
@@ -125,14 +126,14 @@ func TestResolve(t *testing.T) {
 				return mock
 			},
 			wantType: "error",
-			wantMsg:  "secretHex must be exactly 32 bytes (64 hex characters)",
+			wantMsg:  "the secret must be exactly 32 bytes (64 hex characters)",
 		},
 		{
 			name: "auth error",
 			input: model.CreateOutboundFederationSecretInput{
-				Kid:       "peer-kid",
-				SecretHex: validSecret(),
-				KbURL:     "https://peer.example.com",
+				Kid:       ptr("peer-kid"),
+				SecretHex: ptr(validSecret()),
+				KbURL:     ptr("https://peer.example.com"),
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
@@ -146,9 +147,9 @@ func TestResolve(t *testing.T) {
 		{
 			name: "unique violation",
 			input: model.CreateOutboundFederationSecretInput{
-				Kid:       "peer-kid",
-				SecretHex: validSecret(),
-				KbURL:     "https://peer.example.com",
+				Kid:       ptr("peer-kid"),
+				SecretHex: ptr(validSecret()),
+				KbURL:     ptr("https://peer.example.com"),
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
@@ -191,7 +192,7 @@ func TestResolve(t *testing.T) {
 				p, ok := got.(*model.CreateOutboundFederationSecretPayload)
 				require.True(t, ok, "expected CreateOutboundFederationSecretPayload")
 				require.NotZero(t, p.ID)
-				require.Equal(t, tt.input.Kid, p.Kid)
+				require.Equal(t, *tt.input.Kid, p.Kid)
 			case "error":
 				ep, ok := got.(*model.ErrorPayload)
 				require.True(t, ok, "expected ErrorPayload")
@@ -251,9 +252,9 @@ func TestResolveRotatesByDefault(t *testing.T) {
 	}
 
 	input := model.CreateOutboundFederationSecretInput{
-		Kid:       "peer-kid",
-		SecretHex: validSecret(),
-		KbURL:     "https://peer.example.com",
+		Kid:       ptr("peer-kid"),
+		SecretHex: ptr(validSecret()),
+		KbURL:     ptr("https://peer.example.com"),
 	}
 
 	payload, err := createoutboundfederationsecret.Resolve(context.Background(), mock, input)
@@ -281,9 +282,9 @@ func TestResolveWritesNothingWhenThePeerRefuses(t *testing.T) {
 	}
 
 	input := model.CreateOutboundFederationSecretInput{
-		Kid:       "peer-kid",
-		SecretHex: validSecret(),
-		KbURL:     "https://peer.example.com",
+		Kid:       ptr("peer-kid"),
+		SecretHex: ptr(validSecret()),
+		KbURL:     ptr("https://peer.example.com"),
 	}
 
 	payload, err := createoutboundfederationsecret.Resolve(context.Background(), mock, input)
@@ -306,9 +307,9 @@ func TestResolveRefusesPlainHTTP(t *testing.T) {
 	}
 
 	input := model.CreateOutboundFederationSecretInput{
-		Kid:       "peer-kid",
-		SecretHex: validSecret(),
-		KbURL:     "http://peer.example.com",
+		Kid:       ptr("peer-kid"),
+		SecretHex: ptr(validSecret()),
+		KbURL:     ptr("http://peer.example.com"),
 	}
 
 	payload, err := createoutboundfederationsecret.Resolve(context.Background(), mock, input)
@@ -339,4 +340,50 @@ func (p *peerStub) RotateSecret(_ context.Context, params appmodel.MCPRotateSecr
 
 func (p *peerStub) Search(_ context.Context, _ appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
 	return appmodel.FederationResult{IsError: true}, nil
+}
+
+// The packed key exists so an operator copies one value instead of three. It has
+// to produce exactly the pairing the other side described.
+func TestResolveAcceptsAPackedKey(t *testing.T) {
+	t.Parallel()
+
+	key, err := federationkey.Encode(federationkey.Handover{
+		KID:       "peer-kid",
+		KBURL:     "https://peer.example.com/_system/mcp",
+		SecretHex: validSecret(),
+	})
+	require.NoError(t, err)
+
+	mock := &envMock{}
+	mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+		return &usertoken.Data{ID: 1}, nil
+	}
+	mock.EncryptDataFunc = func(plaintext []byte) ([]byte, error) { return plaintext, nil }
+	mock.InsertFederationSecretFunc = func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
+		require.Equal(t, "peer-kid", arg.Kid)
+		require.Equal(t, "https://peer.example.com/_system/mcp", *arg.KbUrl)
+		return db.FederationSecret{ID: 10, Kid: arg.Kid}, nil
+	}
+
+	payload, err := createoutboundfederationsecret.Resolve(context.Background(), mock, model.CreateOutboundFederationSecretInput{
+		Key:    ptr(key),
+		Rotate: ptr(false),
+	})
+
+	require.NoError(t, err)
+	require.IsType(t, &model.CreateOutboundFederationSecretPayload{}, payload)
+}
+
+// Neither a key nor the three fields is a request that cannot be answered, and
+// saying which is missing is the difference between one retry and three.
+func TestResolveRefusesWithNeitherKeyNorFields(t *testing.T) {
+	t.Parallel()
+
+	payload, err := createoutboundfederationsecret.Resolve(context.Background(), &envMock{},
+		model.CreateOutboundFederationSecretInput{Rotate: ptr(false)})
+
+	require.NoError(t, err)
+	errPayload, ok := payload.(*model.ErrorPayload)
+	require.True(t, ok)
+	require.Contains(t, errPayload.Message, "kid")
 }

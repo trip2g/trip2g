@@ -14,10 +14,14 @@ namespace $.$$ {
 			return !this.revoked()
 		}
 
+		// The editor has to start from what is actually granted. Starting from an
+		// empty list showed every key as having no access however many it had, and
+		// made removal impossible: the diff below can only take away what it was
+		// shown in the first place.
 		@$mol_mem
 		override subgraph_ids( next?: readonly number[] ): readonly number[] {
 			if (next === undefined) {
-				return []
+				return this.granted_subgraph_ids()
 			}
 
 			const prev = this.subgraph_ids()

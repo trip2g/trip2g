@@ -446,6 +446,7 @@ export type AdminFederationSecret = {
   revokedAt?: Maybe<Scalars['Time']['output']>;
   rotatedAt?: Maybe<Scalars['Time']['output']>;
   subgraphCount: Scalars['Int64']['output'];
+  subgraphIds: Array<Scalars['Int64']['output']>;
 };
 
 export type AdminFormBoolValue = {
@@ -2492,6 +2493,7 @@ export type CreateInboundFederationSecretOrErrorPayload = CreateInboundFederatio
 export type CreateInboundFederationSecretPayload = {
   __typename?: 'CreateInboundFederationSecretPayload';
   id: Scalars['Int64']['output'];
+  key: Scalars['String']['output'];
   kid: Scalars['String']['output'];
   secretHex: Scalars['String']['output'];
 };
@@ -2542,10 +2544,11 @@ export type CreateOfferPayload = {
 
 export type CreateOutboundFederationSecretInput = {
   description?: InputMaybe<Scalars['String']['input']>;
-  kbURL: Scalars['String']['input'];
-  kid: Scalars['String']['input'];
+  kbURL?: InputMaybe<Scalars['String']['input']>;
+  key?: InputMaybe<Scalars['String']['input']>;
+  kid?: InputMaybe<Scalars['String']['input']>;
   rotate?: InputMaybe<Scalars['Boolean']['input']>;
-  secretHex: Scalars['String']['input'];
+  secretHex?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSecretPayload | ErrorPayload;

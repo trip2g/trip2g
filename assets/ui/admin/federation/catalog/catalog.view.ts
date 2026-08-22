@@ -54,6 +54,10 @@ namespace $.$$ {
 			return this.row( id ).rotatedAt ?? ''
 		}
 
+		override row_subgraph_ids( id: any ): readonly number[] {
+			return this.row( id ).subgraphIds.map( ( value: any ) => Number( value ) )
+		}
+
 		override row_subgraph_count( id: any ): string {
 			return this.row( id ).subgraphCount.toString()
 		}

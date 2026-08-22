@@ -678,6 +678,11 @@ func (r *adminDeliveryTraceResolver) TotalCosts(ctx context.Context, obj *db.Lis
 	return sumCosts(raws), nil
 }
 
+// SubgraphIds is the resolver for the subgraphIds field.
+func (r *adminFederationSecretResolver) SubgraphIds(ctx context.Context, obj *db.ListFederationSecretsRow) ([]int64, error) {
+	return r.env(ctx).ListFederationSecretSubgraphIDsByKID(ctx, obj.Kid)
+}
+
 // Note is the resolver for the note field.
 func (r *adminFormNoteResolver) Note(ctx context.Context, obj *model.AdminFormNote) (*appmodel.NoteView, error) {
 	return r.env(ctx).LatestNoteViews().GetByPathID(obj.PathID), nil
@@ -3823,6 +3828,11 @@ func (r *Resolver) AdminDeliveryTrace() generated.AdminDeliveryTraceResolver {
 	return &adminDeliveryTraceResolver{r}
 }
 
+// AdminFederationSecret returns generated.AdminFederationSecretResolver implementation.
+func (r *Resolver) AdminFederationSecret() generated.AdminFederationSecretResolver {
+	return &adminFederationSecretResolver{r}
+}
+
 // AdminFormNote returns generated.AdminFormNoteResolver implementation.
 func (r *Resolver) AdminFormNote() generated.AdminFormNoteResolver { return &adminFormNoteResolver{r} }
 
@@ -4277,6 +4287,7 @@ type adminCronWebhookResolver struct{ *Resolver }
 type adminCronWebhookDeliveriesConnectionResolver struct{ *Resolver }
 type adminCronWebhooksConnectionResolver struct{ *Resolver }
 type adminDeliveryTraceResolver struct{ *Resolver }
+type adminFederationSecretResolver struct{ *Resolver }
 type adminFormNoteResolver struct{ *Resolver }
 type adminFormSubmitsConnectionResolver struct{ *Resolver }
 type adminFrontmatterPatchResolver struct{ *Resolver }

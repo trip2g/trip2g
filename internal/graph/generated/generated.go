@@ -73,6 +73,7 @@ type ResolverRoot interface {
 	AdminCronWebhookDeliveriesConnection() AdminCronWebhookDeliveriesConnectionResolver
 	AdminCronWebhooksConnection() AdminCronWebhooksConnectionResolver
 	AdminDeliveryTrace() AdminDeliveryTraceResolver
+	AdminFederationSecret() AdminFederationSecretResolver
 	AdminFormNote() AdminFormNoteResolver
 	AdminFormSubmitsConnection() AdminFormSubmitsConnectionResolver
 	AdminFrontmatterPatch() AdminFrontmatterPatchResolver
@@ -317,6 +318,9 @@ type AdminDeliveryTraceResolver interface {
 	LastAt(ctx context.Context, obj *db.ListDeliveryTracesRow) (*time.Time, error)
 
 	TotalCosts(ctx context.Context, obj *db.ListDeliveryTracesRow) ([]model.AdminCost, error)
+}
+type AdminFederationSecretResolver interface {
+	SubgraphIds(ctx context.Context, obj *db.ListFederationSecretsRow) ([]int64, error)
 }
 type AdminFormNoteResolver interface {
 	Note(ctx context.Context, obj *model.AdminFormNote) (*model1.NoteView, error)
@@ -4997,6 +5001,10 @@ type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSec
   # it was created with — for an outbound secret, the one handed over out of band.
   rotatedAt: Time
   subgraphCount: Int64!
+  # The subgraphs this key may surface, so a reader can see what is granted and
+  # not only how many. Without it the admin can add access and never take it
+  # away: an editor cannot deselect what it was never shown.
+  subgraphIds: [Int64!]! @goField(forceResolver: true)
 }
 
 #
@@ -5015,6 +5023,14 @@ type CreateInboundFederationSecretPayload {
   id: Int64!
   kid: String!
   secretHex: String!
+  # The three values above plus this instance's own address, packed into one
+  # string for the other operator to paste into createOutboundFederationSecret.
+  # They are a set — a kid without its secret is useless, a secret against the
+  # wrong address authenticates nothing — and copying them one at a time across a
+  # chat is where one gets dropped or transposed. This is an envelope and not a
+  # protection: the secret inside is plain, so it still travels over a channel
+  # you would trust with a password.
+  key: String!
 }
 
 union CreateInboundFederationSecretOrErrorPayload = CreateInboundFederationSecretPayload | ErrorPayload
@@ -5024,9 +5040,14 @@ union CreateInboundFederationSecretOrErrorPayload = CreateInboundFederationSecre
 #
 
 input CreateOutboundFederationSecretInput {
-  kid: String!
-  secretHex: String!
-  kbURL: String!
+  # The packed key from the other side's createInboundFederationSecret. Supply it
+  # INSTEAD of kid, secretHex and kbURL — one field that cannot be half-copied
+  # rather than three that can. When it is given the three below are ignored.
+  key: String
+
+  kid: String
+  secretHex: String
+  kbURL: String
   description: String
   # Replace the handed-over key with a fresh one before storing it, so the bytes
   # that travelled out of band stop being the live credential. On by default.
@@ -13584,6 +13605,35 @@ func (ec *executionContext) fieldContext_AdminFederationSecret_subgraphCount(_ c
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_subgraphIds(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_subgraphIds,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminFederationSecret().SubgraphIds(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt642ᚕint64ᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_subgraphIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
@@ -24668,6 +24718,8 @@ func (ec *executionContext) fieldContext_AdminQuery_federationSecrets(_ context.
 				return ec.fieldContext_AdminFederationSecret_rotatedAt(ctx, field)
 			case "subgraphCount":
 				return ec.fieldContext_AdminFederationSecret_subgraphCount(ctx, field)
+			case "subgraphIds":
+				return ec.fieldContext_AdminFederationSecret_subgraphIds(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminFederationSecret", field.Name)
 		},
@@ -33728,6 +33780,35 @@ func (ec *executionContext) _CreateInboundFederationSecretPayload_secretHex(ctx 
 }
 
 func (ec *executionContext) fieldContext_CreateInboundFederationSecretPayload_secretHex(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateInboundFederationSecretPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateInboundFederationSecretPayload_key(ctx context.Context, field graphql.CollectedField, obj *model.CreateInboundFederationSecretPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateInboundFederationSecretPayload_key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateInboundFederationSecretPayload_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "CreateInboundFederationSecretPayload",
 		Field:      field,
@@ -50011,30 +50092,37 @@ func (ec *executionContext) unmarshalInputCreateOutboundFederationSecretInput(ct
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"kid", "secretHex", "kbURL", "description", "rotate"}
+	fieldsInOrder := [...]string{"key", "kid", "secretHex", "kbURL", "description", "rotate"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
 		case "kid":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kid"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Kid = data
 		case "secretHex":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secretHex"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.SecretHex = data
 		case "kbURL":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kbURL"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -60611,12 +60699,12 @@ func (ec *executionContext) _AdminFederationSecret(ctx context.Context, sel ast.
 		case "id":
 			out.Values[i] = ec._AdminFederationSecret_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "kid":
 			out.Values[i] = ec._AdminFederationSecret_kid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "kbUrl":
 			out.Values[i] = ec._AdminFederationSecret_kbUrl(ctx, field, obj)
@@ -60625,12 +60713,12 @@ func (ec *executionContext) _AdminFederationSecret(ctx context.Context, sel ast.
 		case "createdAt":
 			out.Values[i] = ec._AdminFederationSecret_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "createdBy":
 			out.Values[i] = ec._AdminFederationSecret_createdBy(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "revokedAt":
 			out.Values[i] = ec._AdminFederationSecret_revokedAt(ctx, field, obj)
@@ -60639,8 +60727,44 @@ func (ec *executionContext) _AdminFederationSecret(ctx context.Context, sel ast.
 		case "subgraphCount":
 			out.Values[i] = ec._AdminFederationSecret_subgraphCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "subgraphIds":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminFederationSecret_subgraphIds(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -75675,6 +75799,11 @@ func (ec *executionContext) _CreateInboundFederationSecretPayload(ctx context.Co
 			}
 		case "secretHex":
 			out.Values[i] = ec._CreateInboundFederationSecretPayload_secretHex(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "key":
+			out.Values[i] = ec._CreateInboundFederationSecretPayload_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
