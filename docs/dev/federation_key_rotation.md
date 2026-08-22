@@ -183,11 +183,21 @@ rotation.
 
 ## Guards
 
-- **HTTPS only.** The new key travels on the wire, and the hub does not enforce
-  TLS (see "Limits and known constraints" in the user documentation). Over
-  `http://` rotation would move the secret from one channel nobody controls to
-  another, while leaving the operator believing the first one is now safe. A
-  rotation call against a non-`https` `kb_url` is refused rather than downgraded.
+- **HTTPS, unless the deployment already says otherwise.** The new key travels
+  on the wire, and the hub does not enforce TLS (see "Limits and known
+  constraints" in the user documentation). Over `http://` to a stranger,
+  rotation would move the secret from one channel nobody controls to another
+  while leaving the operator believing the first is now safe — so a rotation
+  call against a non-`https` `kb_url` is refused by default.
+
+  The exception is not a new switch. `DevMode || MCPFederationAllowPrivate` is
+  already the predicate that decides whether federation may dial addresses that
+  are not on the public internet (`cmd/server/boot.go`, where it builds the
+  federation client), and it is the same situation: an internal address rarely
+  has a certificate, and there is no third party on a loopback or a bridge to
+  read the exchange. Rotation reuses that condition rather than inventing a
+  second notion of "this deployment is not the open internet". Where it is
+  false, the refusal stands.
 - **The SSRF-safe dialer.** This makes the server POST to an address supplied in
   a mutation, so it goes through the same client the federation calls already
   use (`ssrfsafe.DialTimeout`, `internal/federation/client.go`), not a fresh one.
