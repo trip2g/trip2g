@@ -23,6 +23,12 @@ $trip2g_admin_federation_outbound $mol_page
 					bid <= kb_url_bid \
 					Content <= kb_url_control $mol_string
 						value? <=> kb_url? \
+				<= Rotate_field $mol_form_field
+					name @ \Replace the key before storing it
+					hint @ \On by default. The key you were sent has been through a chat, so this asks the peer to adopt a fresh one and stores that instead. Turn it off only for a peer that cannot rotate: a public base, or an adapter.
+					bid <= rotate_bid \
+					Content <= rotate_control $mol_check_box
+						checked? <=> rotate? true
 				<= Description_field $mol_form_field
 					name @ \Description
 					bid <= description_bid \
