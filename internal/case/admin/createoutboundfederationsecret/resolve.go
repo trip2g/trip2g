@@ -113,12 +113,11 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		}
 
 		confirmPeer := appmodel.FederationPeer{
-			KBURL:      input.KbURL,
-			KID:        input.Kid,
-			Secret:     peerSecret,
-			PrevSecret: secret,
+			KBURL:  input.KbURL,
+			KID:    input.Kid,
+			Secret: peerSecret,
 		}
-		rotatefederationsecret.Confirm(ctx, env, row.ID, confirmPeer)
+		rotatefederationsecret.Confirm(ctx, env, row.ID, row.SecretCrypt, confirmPeer)
 	}
 
 	payload := model.CreateOutboundFederationSecretPayload{

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -21,10 +22,12 @@ import (
 // asked to do. Everything the handler must not touch panics.
 type rotateEnvStub struct {
 	Env
-	row      db.FederationSecret
-	rotated  *db.RotateFederationSecretParams
-	cleared  []int64
-	notFound bool
+	row         db.FederationSecret
+	rotated     *db.RotateFederationSecretParams
+	cleared     []int64
+	clearedWith []db.ClearFederationSecretPrevParams
+	clearErr    error
+	notFound    bool
 }
 
 func (e *rotateEnvStub) FederationSecretByID(context.Context, int64) (db.FederationSecret, error) {
@@ -50,10 +53,16 @@ func (e *rotateEnvStub) RotateFederationSecret(_ context.Context, arg db.RotateF
 	return nil
 }
 
-func (e *rotateEnvStub) ClearFederationSecretPrev(_ context.Context, id int64) error {
-	e.cleared = append(e.cleared, id)
+func (e *rotateEnvStub) ClearFederationSecretPrev(_ context.Context, arg db.ClearFederationSecretPrevParams) error {
+	e.clearedWith = append(e.clearedWith, arg)
+	if e.clearErr != nil {
+		return e.clearErr
+	}
+	e.cleared = append(e.cleared, arg.ID)
 	return nil
 }
+
+func (e *rotateEnvStub) Logger() logger.Logger { return &logger.DummyLogger{} }
 
 func (e *rotateEnvStub) Features() features.Features              { return features.Features{} }
 func (e *rotateEnvStub) FederationMaxDepth() int                  { return 3 }
@@ -259,4 +268,57 @@ func TestRotateSecretIsNotAdvertised(t *testing.T) {
 	for _, tool := range builtinTools(contextWithMCPAPIKeyAuth(context.Background(), true), env) {
 		require.NotEqual(t, model.RotateSecretTool, tool.Name, "rotation is advertised in tools/list")
 	}
+}
+
+// The clear names the key this request actually saw, so a rotation that lands
+// between the read and the write leaves a different previous key staged and the
+// stale clear does nothing.
+func TestVerifyInboundRetiresOnlyTheKeyItObserved(t *testing.T) {
+	current := []byte("00000000000000000000000000000002")
+	previous := []byte("00000000000000000000000000000001")
+	rotatedAt := time.Now()
+
+	token, err := signOutbound(current, "peer", "https://hub.local", "rid", nil)
+	require.NoError(t, err)
+
+	env := &rotateEnvStub{row: db.FederationSecret{
+		ID:              7,
+		Kid:             "peer",
+		SecretCrypt:     current,
+		PrevSecretCrypt: previous,
+		RotatedAt:       &rotatedAt,
+	}}
+
+	_, err = verifyInbound(context.Background(), env, token, nil)
+
+	require.NoError(t, err)
+	require.Equal(t, []db.ClearFederationSecretPrevParams{{ID: 7, PrevSecretCrypt: previous}}, env.clearedWith)
+}
+
+// Retiring the old key is housekeeping. A search that happens to fall inside a
+// grace window must not come back as an authentication failure because a
+// bookkeeping write did not land.
+func TestVerifyInboundSurvivesAFailedRetire(t *testing.T) {
+	current := []byte("00000000000000000000000000000002")
+	previous := []byte("00000000000000000000000000000001")
+	rotatedAt := time.Now()
+
+	token, err := signOutbound(current, "peer", "https://hub.local", "rid", nil)
+	require.NoError(t, err)
+
+	env := &rotateEnvStub{
+		clearErr: errors.New("database is locked"),
+		row: db.FederationSecret{
+			ID:              7,
+			Kid:             "peer",
+			SecretCrypt:     current,
+			PrevSecretCrypt: previous,
+			RotatedAt:       &rotatedAt,
+		},
+	}
+
+	auth, err := verifyInbound(context.Background(), env, token, nil)
+
+	require.NoError(t, err)
+	require.Equal(t, "peer", auth.KID)
 }

@@ -35,7 +35,7 @@ var _ mcp.Env = &EnvMock{}
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
-//			ClearFederationSecretPrevFunc: func(ctx context.Context, id int64) error {
+//			ClearFederationSecretPrevFunc: func(ctx context.Context, arg db.ClearFederationSecretPrevParams) error {
 //				panic("mock out the ClearFederationSecretPrev method")
 //			},
 //			DecryptDataFunc: func(bytes []byte) ([]byte, error) {
@@ -145,7 +145,7 @@ type EnvMock struct {
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
 	// ClearFederationSecretPrevFunc mocks the ClearFederationSecretPrev method.
-	ClearFederationSecretPrevFunc func(ctx context.Context, id int64) error
+	ClearFederationSecretPrevFunc func(ctx context.Context, arg db.ClearFederationSecretPrevParams) error
 
 	// DecryptDataFunc mocks the DecryptData method.
 	DecryptDataFunc func(bytes []byte) ([]byte, error)
@@ -258,8 +258,8 @@ type EnvMock struct {
 		ClearFederationSecretPrev []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// ID is the id argument value.
-			ID int64
+			// Arg is the arg argument value.
+			Arg db.ClearFederationSecretPrevParams
 		}
 		// DecryptData holds details about calls to the DecryptData method.
 		DecryptData []struct {
@@ -544,21 +544,21 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 }
 
 // ClearFederationSecretPrev calls ClearFederationSecretPrevFunc.
-func (mock *EnvMock) ClearFederationSecretPrev(ctx context.Context, id int64) error {
+func (mock *EnvMock) ClearFederationSecretPrev(ctx context.Context, arg db.ClearFederationSecretPrevParams) error {
 	if mock.ClearFederationSecretPrevFunc == nil {
 		panic("EnvMock.ClearFederationSecretPrevFunc: method is nil but Env.ClearFederationSecretPrev was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
-		ID  int64
+		Arg db.ClearFederationSecretPrevParams
 	}{
 		Ctx: ctx,
-		ID:  id,
+		Arg: arg,
 	}
 	mock.lockClearFederationSecretPrev.Lock()
 	mock.calls.ClearFederationSecretPrev = append(mock.calls.ClearFederationSecretPrev, callInfo)
 	mock.lockClearFederationSecretPrev.Unlock()
-	return mock.ClearFederationSecretPrevFunc(ctx, id)
+	return mock.ClearFederationSecretPrevFunc(ctx, arg)
 }
 
 // ClearFederationSecretPrevCalls gets all the calls that were made to ClearFederationSecretPrev.
@@ -567,11 +567,11 @@ func (mock *EnvMock) ClearFederationSecretPrev(ctx context.Context, id int64) er
 //	len(mockedEnv.ClearFederationSecretPrevCalls())
 func (mock *EnvMock) ClearFederationSecretPrevCalls() []struct {
 	Ctx context.Context
-	ID  int64
+	Arg db.ClearFederationSecretPrevParams
 } {
 	var calls []struct {
 		Ctx context.Context
-		ID  int64
+		Arg db.ClearFederationSecretPrevParams
 	}
 	mock.lockClearFederationSecretPrev.RLock()
 	calls = mock.calls.ClearFederationSecretPrev

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 
 	"github.com/stretchr/testify/require"
 )
@@ -23,8 +24,12 @@ func (m federationVerifyEnvMock) FederationSecretByKID(context.Context, string) 
 	return m.secret, true, nil
 }
 
-func (m federationVerifyEnvMock) ClearFederationSecretPrev(context.Context, int64) error {
+func (m federationVerifyEnvMock) ClearFederationSecretPrev(context.Context, db.ClearFederationSecretPrevParams) error {
 	return nil
+}
+
+func (m federationVerifyEnvMock) Logger() logger.Logger {
+	return &logger.DummyLogger{}
 }
 
 func (m federationVerifyEnvMock) ListFederationSecretSubgraphsByKID(context.Context, string) ([]string, error) {

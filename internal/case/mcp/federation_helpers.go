@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
 
@@ -32,7 +33,8 @@ type federationVerifyEnv interface {
 	FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error)
 	ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error)
 	DecryptData([]byte) ([]byte, error)
-	ClearFederationSecretPrev(ctx context.Context, id int64) error
+	ClearFederationSecretPrev(ctx context.Context, arg db.ClearFederationSecretPrevParams) error
+	Logger() logger.Logger
 }
 
 // federationAuth is what a verified inbound call carries into the handlers.
@@ -149,9 +151,24 @@ func verifyInbound(ctx context.Context, env federationVerifyEnv, token string, b
 	// rotated away from has nothing left to cover. Retiring it here rather than
 	// on a timer is what keeps the two-key state to the milliseconds around a
 	// rotation instead of the whole grace window.
+	//
+	// Conditional on the value this request read, and best effort. Both matter,
+	// for the same reason: the decision was made from a row that another request
+	// may have moved on since. A rotation racing this one leaves a *different*
+	// previous key staged, and a clear keyed on the id alone would wipe it —
+	// taking with it the key that rotation's own lost-response retry depends on.
+	// A stale clear has to be a no-op, and a housekeeping write that fails has
+	// no business turning someone's search into an authentication error.
 	if !usedPrevious && len(secretRow.PrevSecretCrypt) > 0 {
-		if clearErr := env.ClearFederationSecretPrev(ctx, secretRow.ID); clearErr != nil {
-			return federationAuth{}, fmt.Errorf("clear federation previous secret: %w", clearErr)
+		clearParams := db.ClearFederationSecretPrevParams{
+			ID:              secretRow.ID,
+			PrevSecretCrypt: secretRow.PrevSecretCrypt,
+		}
+
+		clearErr := env.ClearFederationSecretPrev(ctx, clearParams)
+		if clearErr != nil {
+			env.Logger().Warn("mcp:federation: failed to retire a rotated key",
+				"kid", header.Kid, "secretID", secretRow.ID, "error", clearErr)
 		}
 	}
 

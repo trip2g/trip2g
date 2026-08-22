@@ -51,7 +51,7 @@ func (e *gqlRequestEnv) NoteURL(_ *model.NoteView) string              { panic("
 func (e *gqlRequestEnv) Logger() logger.Logger                         { return &logger.DummyLogger{} }
 func (e *gqlRequestEnv) AuditLogger() logger.Logger                    { return &logger.DummyLogger{} }
 func (e *gqlRequestEnv) EncryptData(_ []byte) ([]byte, error)          { panic("unexpected") }
-func (e *gqlRequestEnv) ClearFederationSecretPrev(_ context.Context, _ int64) error {
+func (e *gqlRequestEnv) ClearFederationSecretPrev(_ context.Context, _ db.ClearFederationSecretPrevParams) error {
 	panic("unexpected")
 }
 func (e *gqlRequestEnv) FederationSecretByID(_ context.Context, _ int64) (db.FederationSecret, error) {

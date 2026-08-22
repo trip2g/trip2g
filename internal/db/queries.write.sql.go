@@ -152,10 +152,16 @@ const clearFederationSecretPrev = `-- name: ClearFederationSecretPrev :exec
 update federation_secrets
    set prev_secret_crypt = null
  where id = ?
+   and prev_secret_crypt = ?
 `
 
-func (q *WriteQueries) ClearFederationSecretPrev(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, clearFederationSecretPrev, id)
+type ClearFederationSecretPrevParams struct {
+	ID              int64  `json:"id"`
+	PrevSecretCrypt []byte `json:"prev_secret_crypt"`
+}
+
+func (q *WriteQueries) ClearFederationSecretPrev(ctx context.Context, arg ClearFederationSecretPrevParams) error {
+	_, err := q.db.ExecContext(ctx, clearFederationSecretPrev, arg.ID, arg.PrevSecretCrypt)
 	return err
 }
 

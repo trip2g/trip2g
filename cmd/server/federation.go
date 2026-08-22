@@ -126,8 +126,8 @@ func (a *app) RotateFederationSecret(ctx context.Context, arg db.RotateFederatio
 	return a.WriteQueries.RotateFederationSecret(ctx, arg)
 }
 
-func (a *app) ClearFederationSecretPrev(ctx context.Context, id int64) error {
-	return a.WriteQueries.ClearFederationSecretPrev(ctx, id)
+func (a *app) ClearFederationSecretPrev(ctx context.Context, arg db.ClearFederationSecretPrevParams) error {
+	return a.WriteQueries.ClearFederationSecretPrev(ctx, arg)
 }
 
 // FederationPeerClient builds a client for a peer described by the caller rather

@@ -38,7 +38,7 @@ var ErrInsecureURL = errors.New("rotation needs an https peer address")
 type Env interface {
 	OutboundFederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, error)
 	RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) error
-	ClearFederationSecretPrev(ctx context.Context, id int64) error
+	ClearFederationSecretPrev(ctx context.Context, arg db.ClearFederationSecretPrevParams) error
 	FederationPeerClient(peer model.FederationPeer) model.Federation
 	EncryptData([]byte) ([]byte, error)
 	DecryptData([]byte) ([]byte, error)
@@ -124,12 +124,14 @@ func Resolve(ctx context.Context, env Env, kid string) (Payload, error) {
 
 	env.AuditLogger().Info("federation secret rotated", "kid", kid, "secretID", row.ID, "kbURL", *row.KbUrl)
 
-	Confirm(ctx, env, row.ID, model.FederationPeer{
-		KBID:       peer.KBID,
-		KBURL:      peer.KBURL,
-		KID:        peer.KID,
-		Secret:     secret,
-		PrevSecret: peer.Secret,
+	// row.SecretCrypt is what the rotation just moved into prev_secret_crypt —
+	// the stored ciphertext, not a re-encryption of the same key, which would
+	// not compare equal if encryption is not deterministic.
+	Confirm(ctx, env, row.ID, row.SecretCrypt, model.FederationPeer{
+		KBID:   peer.KBID,
+		KBURL:  peer.KBURL,
+		KID:    peer.KID,
+		Secret: secret,
 	})
 
 	return &graphmodel.RotateFederationSecretPayload{Kid: kid}, nil
@@ -138,20 +140,29 @@ func Resolve(ctx context.Context, env Env, kid string) (Payload, error) {
 // Confirm asks the peer one cheap question with the new key and, if it answers,
 // drops the key the pairing rotated away from.
 //
-// Best effort on purpose, and never a decision: a probe that does not come back
-// leaves both keys in place, because it cannot tell a peer that refused the
-// rotation from one that was busy for a second. The grace window retires the old
-// key on its own; this only makes the usual case immediate instead of waiting
-// for it.
-func Confirm(ctx context.Context, env Env, secretID int64, peer model.FederationPeer) {
+// The probe carries the new key ALONE. An ordinary client falls back to the
+// previous key on an auth refusal, which is right for traffic and wrong here:
+// the fallback would make a peer that never applied the rotation answer
+// successfully, and this would then retire the only key that peer still accepts
+// — leaving a link that cannot heal. What is being proved is specifically that
+// the new key verifies.
+//
+// Best effort otherwise, and never a decision the other way: a probe that does
+// not come back leaves both keys in place, because it cannot tell a peer that
+// refused from one that was busy for a second. The grace window retires the old
+// key on its own; this only makes the usual case immediate.
+func Confirm(ctx context.Context, env Env, secretID int64, retired []byte, peer model.FederationPeer) {
 	peer.Issuer = env.PublicURL()
+	peer.PrevSecret = nil
 
 	result, err := env.FederationPeerClient(peer).Search(ctx, model.MCPSearchParams{Query: "ok", Limit: 1})
 	if err != nil || result.IsError {
 		return
 	}
 
-	clearErr := env.ClearFederationSecretPrev(ctx, secretID)
+	clearParams := db.ClearFederationSecretPrevParams{ID: secretID, PrevSecretCrypt: retired}
+
+	clearErr := env.ClearFederationSecretPrev(ctx, clearParams)
 	if clearErr != nil {
 		env.AuditLogger().Error("failed to retire the rotated federation key", "secretID", secretID, "error", clearErr)
 	}

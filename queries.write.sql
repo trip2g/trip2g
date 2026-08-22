@@ -1252,7 +1252,8 @@ update federation_secrets
 -- name: ClearFederationSecretPrev :exec
 update federation_secrets
    set prev_secret_crypt = null
- where id = ?;
+ where id = ?
+   and prev_secret_crypt = ?;
 
 -- name: InsertFederationSecretSubgraph :exec
 insert into federation_secret_subgraphs (kid, subgraph_id, created_by)
