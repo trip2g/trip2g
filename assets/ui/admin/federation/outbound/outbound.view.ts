@@ -10,11 +10,13 @@ namespace $.$$ {
 			const res = $trip2g_admin_federation_outbound_create({
 				input: key ? {
 					key,
+					rotate: this.rotate(),
 					description: this.description() || null,
 				} : {
 					kid: this.kid(),
 					secretHex: this.secret_hex(),
 					kbURL: this.kb_url(),
+					rotate: this.rotate(),
 					description: this.description() || null,
 				},
 			})

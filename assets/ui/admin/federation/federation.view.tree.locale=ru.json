@@ -34,5 +34,7 @@
 	"$trip2g_admin_federation_show_OutboundScopeNote_title": "Выдано пиром",
 	"$trip2g_admin_federation_button_rotate_title": "Ротировать ключ",
 	"$trip2g_admin_federation_show_OutboundScopeName_title": "Подграф",
-	"$trip2g_admin_federation_show_OutboundScopeAbout_title": "Что это"
+	"$trip2g_admin_federation_show_OutboundScopeAbout_title": "Что это",
+	"$trip2g_admin_federation_outbound_Rotate_field_name": "Заменить ключ перед сохранением",
+	"$trip2g_admin_federation_outbound_Rotate_field_hint": "По умолчанию включено. Присланный ключ уже прошёл через чат, поэтому хаб просит пира принять свежий и сохраняет именно его. Выключайте только для пира, который ротацию не умеет: публичной базы или адаптера."
 }
