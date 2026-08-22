@@ -3588,9 +3588,9 @@ func (q *WriteQueries) UnhideNotePath(ctx context.Context, value string) error {
 
 const updateAdminSubgraph = `-- name: UpdateAdminSubgraph :one
 update subgraphs
-   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?, require_signin = ?
+   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?, require_signin = ?, human_description = ?
  where id = ?
-returning id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin
+returning id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description
 `
 
 type UpdateAdminSubgraphParams struct {
@@ -3598,6 +3598,7 @@ type UpdateAdminSubgraphParams struct {
 	Hidden                          bool    `json:"hidden"`
 	ShowUnsubgraphNotesForPaidUsers *bool   `json:"show_unsubgraph_notes_for_paid_users"`
 	RequireSignin                   bool    `json:"require_signin"`
+	HumanDescription                string  `json:"human_description"`
 	ID                              int64   `json:"id"`
 }
 
@@ -3607,6 +3608,7 @@ func (q *WriteQueries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminS
 		arg.Hidden,
 		arg.ShowUnsubgraphNotesForPaidUsers,
 		arg.RequireSignin,
+		arg.HumanDescription,
 		arg.ID,
 	)
 	var i Subgraph
@@ -3618,6 +3620,7 @@ func (q *WriteQueries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminS
 		&i.Hidden,
 		&i.ShowUnsubgraphNotesForPaidUsers,
 		&i.RequireSignin,
+		&i.HumanDescription,
 	)
 	return i, err
 }

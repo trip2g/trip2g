@@ -231,6 +231,13 @@ select s.name
  where fss.kid = ?
  order by s.name;
 
+-- name: ListFederationSecretScopeByKID :many
+select s.name, s.human_description
+  from federation_secret_subgraphs fss
+  join subgraphs s on s.id = fss.subgraph_id
+ where fss.kid = ?
+ order by s.name;
+
 -- name: ListFederationSecretSubgraphIDsByKID :many
 select fss.subgraph_id
   from federation_secret_subgraphs fss

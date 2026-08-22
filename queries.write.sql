@@ -99,7 +99,7 @@ on conflict(name) do update set hidden = false;
 
 -- name: UpdateAdminSubgraph :one
 update subgraphs
-   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?, require_signin = ?
+   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?, require_signin = ?, human_description = ?
  where id = ?
 returning *;
 

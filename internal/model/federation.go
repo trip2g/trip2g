@@ -20,7 +20,7 @@ type Federation interface {
 	GraphQLRequest(ctx context.Context, params MCPGraphQLParams) (FederationResult, error)
 	Instructions(ctx context.Context) (FederationResult, error)
 	RotateSecret(ctx context.Context, params MCPRotateSecretParams) (FederationResult, error)
-	GrantedScope(ctx context.Context) (FederationResult, error)
+	GrantedScope(ctx context.Context) (FederationScope, error)
 	FederatedInstructions(ctx context.Context, params MCPInstructionsParams) (FederationResult, error)
 }
 
@@ -57,16 +57,6 @@ const FederationAuthErrorCode = -32001
 // should reach for on its own initiative.
 const RotateSecretTool = "rotate_secret"
 
-// GrantedScopeTool lets a peer ask what it is allowed to see here.
-//
-// Only the base knows the answer — scope is granted on its side and recorded
-// against the kid — so the asking side either asks or guesses. Guessing is what
-// produces the worst failure this feature has: a link that authenticates, answers,
-// and returns nothing, with no way to tell "scoped to nothing" from "nothing
-// matched". Unlisted like the rotation, for the same reason: it is control-plane,
-// and an advertised tool is one a model calls on its own initiative.
-const GrantedScopeTool = "granted_scope"
-
 // RotationGrace is how long a base keeps accepting the key a pairing rotated
 // away from. It covers a response lost after the base committed and requests
 // already in flight, and nothing longer: after the very first rotation the
@@ -74,6 +64,20 @@ const GrantedScopeTool = "granted_scope"
 // an outage would keep alive exactly what rotation exists to kill. A successful
 // call with the new key clears it sooner, which is the normal path.
 const RotationGrace = 5 * time.Minute
+
+// FederationScope is what a peer says this pairing may read there, as the
+// pairing-description endpoint reports it.
+type FederationScope struct {
+	Version   int                   `json:"version"`
+	KID       string                `json:"kid"`
+	Subgraphs []FederationScopeItem `json:"subgraphs"`
+	Rotation  bool                  `json:"rotation"`
+}
+
+type FederationScopeItem struct {
+	Name             string `json:"name"`
+	HumanDescription string `json:"human_description"`
+}
 
 type FederationResult struct {
 	Content           []FederationContent `json:"content"`

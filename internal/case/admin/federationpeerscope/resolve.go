@@ -10,10 +10,9 @@ package federationpeerscope
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 
+	"trip2g/internal/case/system/federationdescribe"
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/model"
@@ -44,45 +43,30 @@ func Resolve(ctx context.Context, env Env, kid string) (Payload, error) {
 		return nil, err
 	}
 
-	result, err := env.FederationPeerClient(peer).GrantedScope(ctx)
+	scope, err := env.FederationPeerClient(peer).GrantedScope(ctx)
 	if err != nil {
-		//nolint:nilerr // intentional: an unreachable peer is what an operator came here to find out
-		return &graphmodel.ErrorPayload{Message: "the peer did not answer: " + err.Error()}, nil
+		//nolint:nilerr // intentional: a peer that will not describe itself is what an operator came here to find out
+		return &graphmodel.ErrorPayload{Message: "the peer did not describe the pairing: " + err.Error()}, nil
 	}
-	if result.IsError {
-		return &graphmodel.ErrorPayload{Message: "the peer does not report its scope: " + firstText(result)}, nil
-	}
-
-	subgraphs, err := readSubgraphs(result)
-	if err != nil {
-		//nolint:nilerr // intentional: an answer this side cannot read is a fact about the peer, not a fault here
-		return &graphmodel.ErrorPayload{Message: err.Error()}, nil
+	if scope.Version != federationdescribe.Version {
+		return &graphmodel.ErrorPayload{
+			Message: fmt.Sprintf("the peer describes pairings in a format this instance does not read (version %d)", scope.Version),
+		}, nil
 	}
 
-	return &graphmodel.FederationPeerScopePayload{Kid: kid, Subgraphs: subgraphs}, nil
-}
-
-// readSubgraphs takes the structured answer and nothing else. The text beside it
-// is for a human reading a tool call; parsing that instead would make this agree
-// with the peer only for as long as its phrasing holds.
-func readSubgraphs(result model.FederationResult) ([]string, error) {
-	if len(result.StructuredContent) == 0 {
-		return nil, errors.New("the peer answered without a structured scope; it is probably an older trip2g")
+	subgraphs := make([]graphmodel.FederationPeerScopeSubgraph, 0, len(scope.Subgraphs))
+	for _, item := range scope.Subgraphs {
+		subgraphs = append(subgraphs, graphmodel.FederationPeerScopeSubgraph{
+			Name:             item.Name,
+			HumanDescription: item.HumanDescription,
+		})
 	}
 
-	var payload struct {
-		Subgraphs []string `json:"subgraphs"`
-	}
-
-	err := json.Unmarshal(result.StructuredContent, &payload)
-	if err != nil {
-		return nil, fmt.Errorf("the peer's answer could not be read: %w", err)
-	}
-	if payload.Subgraphs == nil {
-		return []string{}, nil
-	}
-
-	return payload.Subgraphs, nil
+	return &graphmodel.FederationPeerScopePayload{
+		Kid:       kid,
+		Subgraphs: subgraphs,
+		Rotation:  scope.Rotation,
+	}, nil
 }
 
 func peerFromRow(env Env, row db.FederationSecret) (model.FederationPeer, error) {
@@ -110,13 +94,4 @@ func peerFromRow(env Env, row db.FederationSecret) (model.FederationPeer, error)
 	}
 
 	return peer, nil
-}
-
-func firstText(result model.FederationResult) string {
-	for _, item := range result.Content {
-		if item.Text != "" {
-			return item.Text
-		}
-	}
-	return "no reason given"
 }

@@ -110,6 +110,10 @@ type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
   color: String
   hidden: Boolean!
   requireSignin: Boolean!
+  # What this subgraph is, in a sentence. Reaches a federated peer beside the
+  # name, so a peer granted access is told what it was given instead of reading
+  # meaning into a slug.
+  humanDescription: String!
   createdAt: Time!
 }
 
@@ -2271,6 +2275,10 @@ input UpdateSubgraphInput {
   color: String!
   hidden: Boolean!
   requireSignin: Boolean!
+  # What this subgraph is, in a sentence. Travels to a federated peer along with
+  # the subgraph's name, so a peer granted access can be told what it was given
+  # rather than left to read meaning into a slug.
+  humanDescription: String!
 }
 
 type UpdateSubgraphPayload {
@@ -3866,11 +3874,19 @@ union CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSec
 # federationPeerScope
 #
 
+type FederationPeerScopeSubgraph {
+  name: String!
+  humanDescription: String!
+}
+
 type FederationPeerScopePayload {
   kid: String!
   # Empty is a real answer: the pairing is authenticated but scoped to nothing,
   # which is why a search through it comes back empty.
-  subgraphs: [String!]!
+  subgraphs: [FederationPeerScopeSubgraph!]!
+  # Whether the peer can replace this pairing's key. A peer that cannot is one an
+  # operator should install with rotation off rather than discover by a refusal.
+  rotation: Boolean!
 }
 
 union FederationPeerScopeOrErrorPayload = FederationPeerScopePayload | ErrorPayload

@@ -1858,6 +1858,7 @@ export type AdminSubgraph = {
   color?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Time']['output'];
   hidden: Scalars['Boolean']['output'];
+  humanDescription: Scalars['String']['output'];
   id: Scalars['Int64']['output'];
   name: Scalars['String']['output'];
   requireSignin: Scalars['Boolean']['output'];
@@ -2860,7 +2861,14 @@ export type FederationPeerScopeOrErrorPayload = ErrorPayload | FederationPeerSco
 export type FederationPeerScopePayload = {
   __typename?: 'FederationPeerScopePayload';
   kid: Scalars['String']['output'];
-  subgraphs: Array<Scalars['String']['output']>;
+  rotation: Scalars['Boolean']['output'];
+  subgraphs: Array<FederationPeerScopeSubgraph>;
+};
+
+export type FederationPeerScopeSubgraph = {
+  __typename?: 'FederationPeerScopeSubgraph';
+  humanDescription: Scalars['String']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type FieldMessage = {
@@ -4322,6 +4330,7 @@ export type UpdateRedirectPayload = {
 export type UpdateSubgraphInput = {
   color: Scalars['String']['input'];
   hidden: Scalars['Boolean']['input'];
+  humanDescription: Scalars['String']['input'];
   id: Scalars['Int64']['input'];
   requireSignin: Scalars['Boolean']['input'];
 };

@@ -7,7 +7,11 @@ query ($kid: String!) {
 			}
 			... on FederationPeerScopePayload {
 				kid
-				subgraphs
+				subgraphs {
+					name
+					humanDescription
+				}
+				rotation
 			}
 		}
 	}

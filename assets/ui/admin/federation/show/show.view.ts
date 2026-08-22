@@ -35,7 +35,12 @@ namespace $.$$ {
 				return 'nothing — the peer authenticates this key but grants it no subgraph, so every search through it comes back empty'
 			}
 
-			return subgraphs.join(', ')
+			// The peer's own words for what each subgraph is. A name on its own is
+			// a slug, and reading meaning into someone else's slug is the guess
+			// this whole exchange exists to remove.
+			return subgraphs
+				.map( s => s.humanDescription ? `${ s.name } — ${ s.humanDescription }` : s.name )
+				.join( '\n' )
 		}
 
 		// Said in words rather than left blank: an empty cell reads as "unknown",

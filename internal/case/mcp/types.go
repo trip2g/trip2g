@@ -200,8 +200,3 @@ const (
 type RotateSecretArguments struct {
 	SecretHex string `json:"secret_hex"`
 }
-
-// GrantedScopePayload is what a peer is told it may see here.
-type GrantedScopePayload struct {
-	Subgraphs []string `json:"subgraphs"`
-}

@@ -1317,6 +1317,10 @@ type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
   color: String
   hidden: Boolean!
   requireSignin: Boolean!
+  # What this subgraph is, in a sentence. Reaches a federated peer beside the
+  # name, so a peer granted access is told what it was given instead of reading
+  # meaning into a slug.
+  humanDescription: String!
   createdAt: Time!
 }
 
@@ -3478,6 +3482,10 @@ input UpdateSubgraphInput {
   color: String!
   hidden: Boolean!
   requireSignin: Boolean!
+  # What this subgraph is, in a sentence. Travels to a federated peer along with
+  # the subgraph's name, so a peer granted access can be told what it was given
+  # rather than left to read meaning into a slug.
+  humanDescription: String!
 }
 
 type UpdateSubgraphPayload {
@@ -5073,11 +5081,19 @@ union CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSec
 # federationPeerScope
 #
 
+type FederationPeerScopeSubgraph {
+  name: String!
+  humanDescription: String!
+}
+
 type FederationPeerScopePayload {
   kid: String!
   # Empty is a real answer: the pairing is authenticated but scoped to nothing,
   # which is why a search through it comes back empty.
-  subgraphs: [String!]!
+  subgraphs: [FederationPeerScopeSubgraph!]!
+  # Whether the peer can replace this pairing's key. A peer that cannot is one an
+  # operator should install with rotation off rather than discover by a refusal.
+  rotation: Boolean!
 }
 
 union FederationPeerScopeOrErrorPayload = FederationPeerScopePayload | ErrorPayload
@@ -9282,6 +9298,8 @@ func (ec *executionContext) fieldContext_AdminBoostyTier_subgraphs(_ context.Con
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -21487,6 +21505,8 @@ func (ec *executionContext) fieldContext_AdminOffer_subgraphs(_ context.Context,
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -22626,6 +22646,8 @@ func (ec *executionContext) fieldContext_AdminPatreonTier_subgraphs(_ context.Co
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -25033,6 +25055,8 @@ func (ec *executionContext) fieldContext_AdminQuery_subgraph(ctx context.Context
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -27910,6 +27934,35 @@ func (ec *executionContext) fieldContext_AdminSubgraph_requireSignin(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminSubgraph_humanDescription(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminSubgraph_humanDescription,
+		func(ctx context.Context) (any, error) {
+			return obj.HumanDescription, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminSubgraph_humanDescription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminSubgraph",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminSubgraph_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27973,6 +28026,8 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -29993,6 +30048,8 @@ func (ec *executionContext) fieldContext_AdminTgBotChatSubgraphInvite_subgraph(_
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -30472,6 +30529,8 @@ func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_subgraph(_ co
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -31738,6 +31797,8 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccess_subgraph(_ cont
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -35271,7 +35332,7 @@ func (ec *executionContext) _FederationPeerScopePayload_subgraphs(ctx context.Co
 			return obj.Subgraphs, nil
 		},
 		nil,
-		ec.marshalNString2ᚕstringᚄ,
+		ec.marshalNFederationPeerScopeSubgraph2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFederationPeerScopeSubgraphᚄ,
 		true,
 		true,
 	)
@@ -35280,6 +35341,99 @@ func (ec *executionContext) _FederationPeerScopePayload_subgraphs(ctx context.Co
 func (ec *executionContext) fieldContext_FederationPeerScopePayload_subgraphs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FederationPeerScopePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_FederationPeerScopeSubgraph_name(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_FederationPeerScopeSubgraph_humanDescription(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FederationPeerScopeSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FederationPeerScopePayload_rotation(ctx context.Context, field graphql.CollectedField, obj *model.FederationPeerScopePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FederationPeerScopePayload_rotation,
+		func(ctx context.Context) (any, error) {
+			return obj.Rotation, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FederationPeerScopePayload_rotation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FederationPeerScopePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FederationPeerScopeSubgraph_name(ctx context.Context, field graphql.CollectedField, obj *model.FederationPeerScopeSubgraph) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FederationPeerScopeSubgraph_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FederationPeerScopeSubgraph_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FederationPeerScopeSubgraph",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FederationPeerScopeSubgraph_humanDescription(ctx context.Context, field graphql.CollectedField, obj *model.FederationPeerScopeSubgraph) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FederationPeerScopeSubgraph_humanDescription,
+		func(ctx context.Context) (any, error) {
+			return obj.HumanDescription, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FederationPeerScopeSubgraph_humanDescription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FederationPeerScopeSubgraph",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -45384,6 +45538,8 @@ func (ec *executionContext) fieldContext_UpdateSubgraphPayload_subgraph(_ contex
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "humanDescription":
+				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
@@ -53523,7 +53679,7 @@ func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "color", "hidden", "requireSignin"}
+	fieldsInOrder := [...]string{"id", "color", "hidden", "requireSignin", "humanDescription"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -53558,6 +53714,13 @@ func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Contex
 				return it, err
 			}
 			it.RequireSignin = data
+		case "humanDescription":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("humanDescription"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HumanDescription = data
 		}
 	}
 
@@ -71820,6 +71983,11 @@ func (ec *executionContext) _AdminSubgraph(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "humanDescription":
+			out.Values[i] = ec._AdminSubgraph_humanDescription(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createdAt":
 			out.Values[i] = ec._AdminSubgraph_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -77332,6 +77500,55 @@ func (ec *executionContext) _FederationPeerScopePayload(ctx context.Context, sel
 			}
 		case "subgraphs":
 			out.Values[i] = ec._FederationPeerScopePayload_subgraphs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rotation":
+			out.Values[i] = ec._FederationPeerScopePayload_rotation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var federationPeerScopeSubgraphImplementors = []string{"FederationPeerScopeSubgraph"}
+
+func (ec *executionContext) _FederationPeerScopeSubgraph(ctx context.Context, sel ast.SelectionSet, obj *model.FederationPeerScopeSubgraph) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, federationPeerScopeSubgraphImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FederationPeerScopeSubgraph")
+		case "name":
+			out.Values[i] = ec._FederationPeerScopeSubgraph_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "humanDescription":
+			out.Values[i] = ec._FederationPeerScopeSubgraph_humanDescription(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -89940,6 +90157,54 @@ func (ec *executionContext) marshalNFederationPeerScopeOrErrorPayload2trip2gᚋi
 		return graphql.Null
 	}
 	return ec._FederationPeerScopeOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNFederationPeerScopeSubgraph2trip2gᚋinternalᚋgraphᚋmodelᚐFederationPeerScopeSubgraph(ctx context.Context, sel ast.SelectionSet, v model.FederationPeerScopeSubgraph) graphql.Marshaler {
+	return ec._FederationPeerScopeSubgraph(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFederationPeerScopeSubgraph2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFederationPeerScopeSubgraphᚄ(ctx context.Context, sel ast.SelectionSet, v []model.FederationPeerScopeSubgraph) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNFederationPeerScopeSubgraph2trip2gᚋinternalᚋgraphᚋmodelᚐFederationPeerScopeSubgraph(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model.FieldMessage) graphql.Marshaler {

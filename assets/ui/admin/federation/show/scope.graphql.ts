@@ -6,7 +6,7 @@ export type trip2g_admin_federation_show_scopeQueryVariables = Exact<{
 }>;
 
 
-export type trip2g_admin_federation_show_scopeQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'FederationPeerScopePayload', kid: string, subgraphs: Array<string> } } };
+export type trip2g_admin_federation_show_scopeQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'FederationPeerScopePayload', kid: string, rotation: boolean, subgraphs: Array<{ __typename?: 'FederationPeerScopeSubgraph', name: string, humanDescription: string }> } } };
 
 
 export function $trip2g_admin_federation_show_scope(variables: trip2g_admin_federation_show_scopeQueryVariables, opts?: { revalidate?: boolean }): trip2g_admin_federation_show_scopeQuery {
@@ -19,7 +19,11 @@ export function $trip2g_admin_federation_show_scope(variables: trip2g_admin_fede
       }
       ... on FederationPeerScopePayload {
         kid
-        subgraphs
+        subgraphs {
+          name
+          humanDescription
+        }
+        rotation
       }
     }
   }

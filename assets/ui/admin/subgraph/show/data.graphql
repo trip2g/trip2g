@@ -4,6 +4,7 @@ query ($id: Int64!) {
 			id
 			name
 			color
+			humanDescription
 			hidden
 			requireSignin
 		}

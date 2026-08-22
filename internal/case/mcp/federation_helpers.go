@@ -29,6 +29,24 @@ const federationJWTSkew = 5 * time.Second
 
 const contentTypeText = "text"
 
+// FederationVerifyEnv is what verifying a peer's bearer needs. Exported because
+// the pairing-description endpoint lives in its own package — it answers a
+// different question from the tool surface — and must accept exactly the same
+// credential rather than a second reading of it.
+type FederationVerifyEnv = federationVerifyEnv
+
+// VerifyFederationBearer reports the pairing a peer's JWT authenticated as, or
+// why it did not. The body is passed so a signature that covers one is checked
+// against it; a request without a body passes nil, and a token that binds
+// nothing is accepted as before.
+func VerifyFederationBearer(ctx context.Context, env FederationVerifyEnv, token string, body []byte) (string, error) {
+	auth, err := verifyInbound(ctx, env, token, body)
+	if err != nil {
+		return "", err
+	}
+	return auth.KID, nil
+}
+
 type federationVerifyEnv interface {
 	FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error)
 	ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error)

@@ -84,7 +84,7 @@ func (m *federationMock) RotateSecret(context.Context, appmodel.MCPRotateSecretP
 	panic("unexpected RotateSecret call")
 }
 
-func (m *federationMock) GrantedScope(context.Context) (appmodel.FederationResult, error) {
+func (m *federationMock) GrantedScope(context.Context) (appmodel.FederationScope, error) {
 	panic("unexpected GrantedScope call")
 }
 

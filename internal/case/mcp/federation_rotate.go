@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
-	"strings"
 
 	"trip2g/internal/db"
 	"trip2g/internal/model"
@@ -19,9 +18,6 @@ const federationSecretBytes = 32
 // rotateSecretToolName mirrors model.RotateSecretTool so the dispatch table and
 // the client cannot drift apart.
 const rotateSecretToolName = model.RotateSecretTool
-
-// grantedScopeToolName mirrors model.GrantedScopeTool for the same reason.
-const grantedScopeToolName = model.GrantedScopeTool
 
 // handleRotateSecret replaces the calling pairing's shared key with the one it
 // carries.
@@ -112,37 +108,4 @@ func isZeroBytes(value []byte) bool {
 		}
 	}
 	return true
-}
-
-// handleGrantedScope answers the calling pairing with the subgraphs it may see.
-//
-// The answer is already in hand: verifyInbound resolved it to decide what this
-// request may read, so this returns that and touches nothing. It is the same
-// list the filter uses, which is the point — a peer asking what it is allowed to
-// see has to be told what it is actually allowed to see, not a second opinion
-// assembled separately.
-//
-// Empty is a real answer and not an error: a kid with no rows granted is
-// anonymous-equivalent, and saying so is what distinguishes "scoped to nothing"
-// from "nothing matched your query" — the two failures that look identical from
-// the asking side.
-func handleGrantedScope(ctx context.Context, _ Env, id any, _ json.RawMessage) Response {
-	auth, ok := federationAuthFromContext(ctx)
-	if !ok {
-		return errorResponse(id, ErrCodeMethodNotFound, "Method not found: "+grantedScopeToolName)
-	}
-
-	payload := GrantedScopePayload{Subgraphs: auth.AllowedSubgraphs}
-	if payload.Subgraphs == nil {
-		payload.Subgraphs = []string{}
-	}
-
-	return successResponse(id, structuredToolResult(describeScope(payload.Subgraphs), payload))
-}
-
-func describeScope(subgraphs []string) string {
-	if len(subgraphs) == 0 {
-		return "no subgraphs granted"
-	}
-	return strings.Join(subgraphs, ", ")
 }

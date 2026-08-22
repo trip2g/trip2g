@@ -1891,11 +1891,17 @@ func (ErrorPayload) IsRemoveFederationSecretSubgraphOrErrorPayload() {}
 func (ErrorPayload) IsMarkFormSubmitProcessedOrErrorPayload() {}
 
 type FederationPeerScopePayload struct {
-	Kid       string   `json:"kid"`
-	Subgraphs []string `json:"subgraphs"`
+	Kid       string                        `json:"kid"`
+	Subgraphs []FederationPeerScopeSubgraph `json:"subgraphs"`
+	Rotation  bool                          `json:"rotation"`
 }
 
 func (FederationPeerScopePayload) IsFederationPeerScopeOrErrorPayload() {}
+
+type FederationPeerScopeSubgraph struct {
+	Name             string `json:"name"`
+	HumanDescription string `json:"humanDescription"`
+}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -2888,10 +2894,11 @@ type UpdateRedirectPayload struct {
 func (UpdateRedirectPayload) IsUpdateRedirectOrErrorPayload() {}
 
 type UpdateSubgraphInput struct {
-	ID            int64  `json:"id"`
-	Color         string `json:"color"`
-	Hidden        bool   `json:"hidden"`
-	RequireSignin bool   `json:"requireSignin"`
+	ID               int64  `json:"id"`
+	Color            string `json:"color"`
+	Hidden           bool   `json:"hidden"`
+	RequireSignin    bool   `json:"requireSignin"`
+	HumanDescription string `json:"humanDescription"`
 }
 
 type UpdateSubgraphPayload struct {

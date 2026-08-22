@@ -170,7 +170,24 @@ func (c *Client) send(ctx context.Context, body []byte, rid string, secret []byt
 	return resp, nil
 }
 
+// get is postJSON's read-only sibling: same client, same dialer, same limits,
+// no body to send and none to sign.
+func (c *Client) get(ctx context.Context, url string, headers map[string]string, timeout time.Duration) ([]byte, error) {
+	return c.do(ctx, fasthttp.MethodGet, url, nil, headers, timeout)
+}
+
 func (c *Client) postJSON(ctx context.Context, url string, body []byte, headers map[string]string, timeout time.Duration) ([]byte, error) {
+	return c.do(ctx, fasthttp.MethodPost, url, body, headers, timeout)
+}
+
+func (c *Client) do(
+	ctx context.Context,
+	method string,
+	url string,
+	body []byte,
+	headers map[string]string,
+	timeout time.Duration,
+) ([]byte, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -183,13 +200,15 @@ func (c *Client) postJSON(ctx context.Context, url string, body []byte, headers 
 	defer fasthttp.ReleaseResponse(resp)
 
 	req.SetRequestURI(url)
-	req.Header.SetMethod(fasthttp.MethodPost)
+	req.Header.SetMethod(method)
 	req.Header.SetContentType("application/json")
 	// MCP Streamable HTTP requires clients to accept both media types; a peer
 	// rejects the request outright without this.
 	req.Header.Set("Accept", "application/json, text/event-stream")
 	req.Header.Set("User-Agent", userAgent)
-	req.SetBody(body)
+	if len(body) > 0 {
+		req.SetBody(body)
+	}
 
 	for key, value := range headers {
 		req.Header.Set(key, value)
@@ -257,9 +276,49 @@ func hmacSHA256(secret, payload []byte) []byte {
 	return mac.Sum(nil)
 }
 
-// GrantedScope asks the peer which of its subgraphs this pairing may see.
-func (c *Client) GrantedScope(ctx context.Context) (model.FederationResult, error) {
-	return c.callTool(ctx, model.GrantedScopeTool, nil)
+// GrantedScope asks the peer to describe the pairing this side holds.
+//
+// A GET beside the tool endpoint rather than a tool on it: the question is about
+// the pairing, not the content, and it grows by fields rather than by methods.
+// It carries no body, so the signature binds none.
+func (c *Client) GrantedScope(ctx context.Context) (model.FederationScope, error) {
+	if c == nil || c.peer.KBURL == "" {
+		return model.FederationScope{}, errors.New("federation peer url is empty")
+	}
+
+	rid := strconv.FormatInt(time.Now().UnixNano(), 10)
+
+	raw, err := c.describe(ctx, rid, c.peer.Secret)
+	// The peer holds the key this side rotated away from, which is what an
+	// unconfirmed rotation looks like from here. One retry, not a loop.
+	if err != nil && len(c.peer.PrevSecret) > 0 {
+		raw, err = c.describe(ctx, rid, c.peer.PrevSecret)
+	}
+	if err != nil {
+		return model.FederationScope{}, err
+	}
+
+	var scope model.FederationScope
+	err = json.Unmarshal(raw, &scope)
+	if err != nil {
+		return model.FederationScope{}, fmt.Errorf("decode federation description: %w", err)
+	}
+
+	return scope, nil
+}
+
+func (c *Client) describe(ctx context.Context, rid string, secret []byte) ([]byte, error) {
+	headers := map[string]string{"X-MCP-Federation-Depth": strconv.Itoa(c.peer.Depth + 1)}
+
+	if len(secret) > 0 && c.peer.KID != "" {
+		token, err := signOutbound(secret, c.peer.KID, c.peer.Issuer, rid, nil)
+		if err != nil {
+			return nil, fmt.Errorf("sign federation request: %w", err)
+		}
+		headers["Authorization"] = "Bearer " + token
+	}
+
+	return c.get(ctx, c.peer.KBURL+"/federation", headers, c.timeout)
 }
 
 // RotateSecret asks the peer to replace this pairing's shared key with the one

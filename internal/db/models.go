@@ -654,6 +654,7 @@ type Subgraph struct {
 	Hidden                          bool      `json:"hidden"`
 	ShowUnsubgraphNotesForPaidUsers *bool     `json:"show_unsubgraph_notes_for_paid_users"`
 	RequireSignin                   bool      `json:"require_signin"`
+	HumanDescription                string    `json:"human_description"`
 }
 
 type TelegramAccount struct {
