@@ -35,10 +35,8 @@ $trip2g_admin_federation_catalog $trip2g_admin_catalog
 						title @ \Direction
 						Content <= DirectionCell* $trip2g_admin_cell
 							content <= row_direction* \
-					<= KbUrl* $mol_labeler
-						title @ \KB URL
-						Content <= KbUrlCell* $trip2g_admin_cell
-							content <= row_kb_url* \
+					<= KbUrl* $trip2g_admin_labeler_url
+						value <= row_kb_url* \
 					<= SubgraphCount* $mol_labeler
 						title @ \Subgraphs
 						Content <= SubgraphCountCell* $trip2g_admin_cell

@@ -8,8 +8,14 @@ $trip2g_admin_federation_show $mol_page
 	direction \
 	rotated_label \
 	granted_subgraph_ids /number
+	tools /
+		<= RevokeButton $trip2g_admin_federation_button_revoke
+			id <= secret_id
+			visible <= can_revoke false
 	body /
 		<= Info $mol_view
+			style *
+				flexDirection \column
 			sub /
 				<= Kid_labeler $mol_labeler
 					title \Key ID
@@ -27,12 +33,7 @@ $trip2g_admin_federation_show $mol_page
 					title \Last Rotated
 					Content <= RotatedCell $trip2g_admin_cell
 						content <= rotated_label
-				<= SubgraphsSection $mol_view
-					sub /
-						<= SubgraphsTitle $mol_view
-							sub / \Subgraph Access
-						<= SubgraphList $trip2g_admin_subgraph_select_list
-							ids? <=> subgraph_ids? /number
-				<= RevokeButton $trip2g_admin_federation_button_revoke
-					id <= secret_id
-					visible <= can_revoke false
+				<= SubgraphsSection_labeler $mol_labeler
+					title \Subgraph Access
+					Content <= SubgraphList $trip2g_admin_subgraph_select_list
+						ids? <=> subgraph_ids? /number

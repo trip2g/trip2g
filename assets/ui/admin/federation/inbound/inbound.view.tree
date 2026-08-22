@@ -1,6 +1,8 @@
 $trip2g_admin_federation_inbound $mol_page
 	title @ \Add Inbound Secret
 	SecretHexView $mol_view
+		style *
+			flexDirection \column
 		sub /
 			<= Key_labeler $mol_labeler
 				title @ \Handover key — send this one value (shown once)
