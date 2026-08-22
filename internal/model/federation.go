@@ -20,6 +20,7 @@ type Federation interface {
 	GraphQLRequest(ctx context.Context, params MCPGraphQLParams) (FederationResult, error)
 	Instructions(ctx context.Context) (FederationResult, error)
 	RotateSecret(ctx context.Context, params MCPRotateSecretParams) (FederationResult, error)
+	GrantedScope(ctx context.Context) (FederationResult, error)
 	FederatedInstructions(ctx context.Context, params MCPInstructionsParams) (FederationResult, error)
 }
 
@@ -55,6 +56,16 @@ const FederationAuthErrorCode = -32001
 // an LLM agent reads, and rotation is neither content nor something a model
 // should reach for on its own initiative.
 const RotateSecretTool = "rotate_secret"
+
+// GrantedScopeTool lets a peer ask what it is allowed to see here.
+//
+// Only the base knows the answer — scope is granted on its side and recorded
+// against the kid — so the asking side either asks or guesses. Guessing is what
+// produces the worst failure this feature has: a link that authenticates, answers,
+// and returns nothing, with no way to tell "scoped to nothing" from "nothing
+// matched". Unlisted like the rotation, for the same reason: it is control-plane,
+// and an advertised tool is one a model calls on its own initiative.
+const GrantedScopeTool = "granted_scope"
 
 // RotationGrace is how long a base keeps accepting the key a pairing rotated
 // away from. It covers a response lost after the base committed and requests

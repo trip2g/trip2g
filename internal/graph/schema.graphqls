@@ -1300,6 +1300,10 @@ type AdminQuery {
   gitHubOAuthCredentials(id: Int!): AdminGitHubOAuthCredentials
 
   federationSecrets: [AdminFederationSecret!]!
+  # What a peer says this pairing may read there. Only the peer knows — scope is
+  # granted on its side — so this asks it over the wire rather than reporting
+  # something local that would only ever be a guess.
+  federationPeerScope(kid: String!): FederationPeerScopeOrErrorPayload!
 
   secretKeys(filter: SecretKeysFilter): [String!]!
 
@@ -3857,6 +3861,19 @@ type CreateOutboundFederationSecretPayload {
 }
 
 union CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSecretPayload | ErrorPayload
+
+#
+# federationPeerScope
+#
+
+type FederationPeerScopePayload {
+  kid: String!
+  # Empty is a real answer: the pairing is authenticated but scoped to nothing,
+  # which is why a search through it comes back empty.
+  subgraphs: [String!]!
+}
+
+union FederationPeerScopeOrErrorPayload = FederationPeerScopePayload | ErrorPayload
 
 #
 # rotateFederationSecret

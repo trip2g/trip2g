@@ -257,6 +257,11 @@ func hmacSHA256(secret, payload []byte) []byte {
 	return mac.Sum(nil)
 }
 
+// GrantedScope asks the peer which of its subgraphs this pairing may see.
+func (c *Client) GrantedScope(ctx context.Context) (model.FederationResult, error) {
+	return c.callTool(ctx, model.GrantedScopeTool, nil)
+}
+
 // RotateSecret asks the peer to replace this pairing's shared key with the one
 // carried here. It signs like every other call — current key first, previous on
 // an auth refusal — which is what makes a retry after a lost response reach a

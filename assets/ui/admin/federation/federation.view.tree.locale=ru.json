@@ -31,6 +31,6 @@
 	"$trip2g_admin_federation_show_KbUrl_labeler_title": "URL базы знаний",
 	"$trip2g_admin_federation_show_Rotated_labeler_title": "Последняя ротация",
 	"$trip2g_admin_federation_show_SubgraphsSection_labeler_title": "Доступ к подграфам",
-	"$trip2g_admin_federation_show_OutboundScopeNote_title": "Доступ к подграфам",
-	"$trip2g_admin_federation_show_outbound_scope_note": "Выдаётся пиром на его стороне. У исходящего ключа своего доступа нет."
+	"$trip2g_admin_federation_show_OutboundScopeNote_title": "Выдано пиром",
+	"$trip2g_admin_federation_button_rotate_title": "Ротировать ключ"
 }

@@ -15,6 +15,29 @@ namespace $.$$ {
 			return [...super.info_sub(), scope]
 		}
 
+		// Asked of the peer, because only the peer knows: scope is granted on its
+		// side and nothing about it is recorded here. Reporting a local guess would
+		// be worse than reporting nothing — a pairing scoped to nothing answers
+		// every search with an empty result, which is indistinguishable from a
+		// query that matched nothing unless someone says which it is.
+		@$mol_mem
+		peer_scope(): string {
+			if (this.direction() !== 'outbound') return ''
+
+			const res = $trip2g_admin_federation_show_scope({ kid: this.kid() })
+
+			if (res.admin.data.__typename === 'ErrorPayload') {
+				return res.admin.data.message
+			}
+
+			const subgraphs = res.admin.data.subgraphs
+			if (subgraphs.length === 0) {
+				return 'nothing — the peer authenticates this key but grants it no subgraph, so every search through it comes back empty'
+			}
+
+			return subgraphs.join(', ')
+		}
+
 		// Said in words rather than left blank: an empty cell reads as "unknown",
 		// and the difference between "never rotated" and "rotated at" is the whole
 		// question of whether the key that was handed over is still the live one.
@@ -27,6 +50,14 @@ namespace $.$$ {
 		@$mol_mem
 		override can_revoke(): boolean {
 			return !this.revoked()
+		}
+
+		// Rotation is this instance asking a peer to adopt a new key, so it exists
+		// only where there is a peer to ask. An inbound row is the other side's
+		// credential for calling here; rotating it is their move, not ours.
+		@$mol_mem
+		can_rotate(): boolean {
+			return this.direction() === 'outbound' && !this.revoked()
 		}
 
 		// The editor has to start from what is actually granted. Starting from an

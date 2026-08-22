@@ -578,6 +578,7 @@ type AdminQueryResolver interface {
 	AllGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitHubOAuthCredentialsConnection, error)
 	GitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GithubOauthCredential, error)
 	FederationSecrets(ctx context.Context, obj *model1.AdminQuery) ([]db.ListFederationSecretsRow, error)
+	FederationPeerScope(ctx context.Context, obj *model1.AdminQuery, kid string) (model.FederationPeerScopeOrErrorPayload, error)
 	SecretKeys(ctx context.Context, obj *model1.AdminQuery, filter *model.SecretKeysFilter) ([]string, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	AuditLogs(ctx context.Context, obj *model1.AdminQuery, filter model.AdminAuditLogsFilterInput) (*model.AdminAuditLogsConnection, error)
@@ -2506,6 +2507,10 @@ type AdminQuery {
   gitHubOAuthCredentials(id: Int!): AdminGitHubOAuthCredentials
 
   federationSecrets: [AdminFederationSecret!]!
+  # What a peer says this pairing may read there. Only the peer knows — scope is
+  # granted on its side — so this asks it over the wire rather than reporting
+  # something local that would only ever be a guess.
+  federationPeerScope(kid: String!): FederationPeerScopeOrErrorPayload!
 
   secretKeys(filter: SecretKeysFilter): [String!]!
 
@@ -5065,6 +5070,19 @@ type CreateOutboundFederationSecretPayload {
 union CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSecretPayload | ErrorPayload
 
 #
+# federationPeerScope
+#
+
+type FederationPeerScopePayload {
+  kid: String!
+  # Empty is a real answer: the pairing is authenticated but scoped to nothing,
+  # which is why a search through it comes back empty.
+  subgraphs: [String!]!
+}
+
+union FederationPeerScopeOrErrorPayload = FederationPeerScopePayload | ErrorPayload
+
+#
 # rotateFederationSecret
 #
 
@@ -6525,6 +6543,17 @@ func (ec *executionContext) field_AdminQuery_deliveryTraces_args(ctx context.Con
 		return nil, err
 	}
 	args["withEmpty"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_federationPeerScope_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "kid", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["kid"] = arg0
 	return args, nil
 }
 
@@ -24727,6 +24756,47 @@ func (ec *executionContext) fieldContext_AdminQuery_federationSecrets(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_federationPeerScope(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_federationPeerScope,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().FederationPeerScope(ctx, obj, fc.Args["kid"].(string))
+		},
+		nil,
+		ec.marshalNFederationPeerScopeOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐFederationPeerScopeOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_federationPeerScope(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type FederationPeerScopeOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_federationPeerScope_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_secretKeys(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -35162,6 +35232,64 @@ func (ec *executionContext) fieldContext_ErrorPayload_byFields(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _FederationPeerScopePayload_kid(ctx context.Context, field graphql.CollectedField, obj *model.FederationPeerScopePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FederationPeerScopePayload_kid,
+		func(ctx context.Context) (any, error) {
+			return obj.Kid, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FederationPeerScopePayload_kid(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FederationPeerScopePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FederationPeerScopePayload_subgraphs(ctx context.Context, field graphql.CollectedField, obj *model.FederationPeerScopePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FederationPeerScopePayload_subgraphs,
+		func(ctx context.Context) (any, error) {
+			return obj.Subgraphs, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_FederationPeerScopePayload_subgraphs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FederationPeerScopePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FieldMessage_name(ctx context.Context, field graphql.CollectedField, obj *model.FieldMessage) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40093,6 +40221,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_gitHubOAuthCredentials(ctx, field)
 			case "federationSecrets":
 				return ec.fieldContext_AdminQuery_federationSecrets(ctx, field)
+			case "federationPeerScope":
+				return ec.fieldContext_AdminQuery_federationPeerScope(ctx, field)
 			case "secretKeys":
 				return ec.fieldContext_AdminQuery_secretKeys(ctx, field)
 			case "apiKeyLogs":
@@ -55014,6 +55144,29 @@ func (ec *executionContext) _EnableApiKeyOrErrorPayload(ctx context.Context, sel
 	}
 }
 
+func (ec *executionContext) _FederationPeerScopeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.FederationPeerScopeOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.FederationPeerScopePayload:
+		return ec._FederationPeerScopePayload(ctx, sel, &obj)
+	case *model.FederationPeerScopePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._FederationPeerScopePayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _GenerateTgAttachCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.GenerateTgAttachCodeOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -69446,6 +69599,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "federationPeerScope":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_federationPeerScope(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "secretKeys":
 			field := field
 
@@ -77050,7 +77239,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "FederationPeerScopeOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -77101,6 +77290,50 @@ func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._ErrorPayload_byFields(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var federationPeerScopePayloadImplementors = []string{"FederationPeerScopePayload", "FederationPeerScopeOrErrorPayload"}
+
+func (ec *executionContext) _FederationPeerScopePayload(ctx context.Context, sel ast.SelectionSet, obj *model.FederationPeerScopePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, federationPeerScopePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FederationPeerScopePayload")
+		case "kid":
+			out.Values[i] = ec._FederationPeerScopePayload_kid(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subgraphs":
+			out.Values[i] = ec._FederationPeerScopePayload_subgraphs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -89697,6 +89930,16 @@ func (ec *executionContext) marshalNEnableApiKeyOrErrorPayload2trip2gᚋinternal
 		return graphql.Null
 	}
 	return ec._EnableApiKeyOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNFederationPeerScopeOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐFederationPeerScopeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.FederationPeerScopeOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FederationPeerScopeOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model.FieldMessage) graphql.Marshaler {

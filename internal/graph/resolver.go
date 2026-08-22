@@ -51,6 +51,7 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/enableapikey"
+	"trip2g/internal/case/admin/federationpeerscope"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/listsecretkeys"
@@ -402,6 +403,7 @@ type Env interface {
 	// Federation secrets
 	ListFederationSecretSubgraphIDsByKID(ctx context.Context, kid string) ([]int64, error)
 	rotatefederationsecret.Env
+	federationpeerscope.Env
 	createinboundfederationsecret.Env
 	createoutboundfederationsecret.Env
 	revokefederationsecret.Env

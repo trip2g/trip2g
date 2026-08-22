@@ -204,6 +204,7 @@ func builtinToolHandlers() map[string]toolHandler {
 		"federated_expand":          handleFederatedExpand,
 		"federated_instructions":    handleFederatedInstructions,
 		rotateSecretToolName:        handleRotateSecret,
+		grantedScopeToolName:        handleGrantedScope,
 		"federated_graphql_request": handleFederatedGraphQLRequest,
 		"graphql_introspection": func(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 			if !mcpAdminToolsEnabled(ctx) {

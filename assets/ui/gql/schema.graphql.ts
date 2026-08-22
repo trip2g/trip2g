@@ -1469,6 +1469,7 @@ export type AdminQuery = {
   deliveryLogs: Array<AdminDeliveryLog>;
   deliveryTrace: Array<AdminTraceDelivery>;
   deliveryTraces: Array<AdminDeliveryTrace>;
+  federationPeerScope: FederationPeerScopeOrErrorPayload;
   federationSecrets: Array<AdminFederationSecret>;
   formNotes: Array<AdminFormNote>;
   formSubmits: AdminFormSubmitsConnection;
@@ -1595,6 +1596,11 @@ export type AdminQuerydeliveryTraceArgs = {
 export type AdminQuerydeliveryTracesArgs = {
   limit?: InputMaybe<Scalars['Int64']['input']>;
   withEmpty?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type AdminQueryfederationPeerScopeArgs = {
+  kid: Scalars['String']['input'];
 };
 
 
@@ -2847,6 +2853,14 @@ export type ErrorPayload = {
   __typename?: 'ErrorPayload';
   byFields: Array<FieldMessage>;
   message: Scalars['String']['output'];
+};
+
+export type FederationPeerScopeOrErrorPayload = ErrorPayload | FederationPeerScopePayload;
+
+export type FederationPeerScopePayload = {
+  __typename?: 'FederationPeerScopePayload';
+  kid: Scalars['String']['output'];
+  subgraphs: Array<Scalars['String']['output']>;
 };
 
 export type FieldMessage = {

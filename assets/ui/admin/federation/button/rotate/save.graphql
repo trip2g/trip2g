@@ -1,0 +1,13 @@
+mutation ($kid: String!) {
+	admin {
+		data: rotateFederationSecret(kid: $kid) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on RotateFederationSecretPayload {
+				kid
+			}
+		}
+	}
+}

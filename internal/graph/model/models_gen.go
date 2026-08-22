@@ -254,6 +254,10 @@ type EnableAPIKeyOrErrorPayload interface {
 	IsEnableAPIKeyOrErrorPayload()
 }
 
+type FederationPeerScopeOrErrorPayload interface {
+	IsFederationPeerScopeOrErrorPayload()
+}
+
 type GenerateTgAttachCodeOrErrorPayload interface {
 	IsGenerateTgAttachCodeOrErrorPayload()
 }
@@ -1874,6 +1878,8 @@ func (ErrorPayload) IsCreateInboundFederationSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateOutboundFederationSecretOrErrorPayload() {}
 
+func (ErrorPayload) IsFederationPeerScopeOrErrorPayload() {}
+
 func (ErrorPayload) IsRotateFederationSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsRevokeFederationSecretOrErrorPayload() {}
@@ -1883,6 +1889,13 @@ func (ErrorPayload) IsAddFederationSecretSubgraphOrErrorPayload() {}
 func (ErrorPayload) IsRemoveFederationSecretSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsMarkFormSubmitProcessedOrErrorPayload() {}
+
+type FederationPeerScopePayload struct {
+	Kid       string   `json:"kid"`
+	Subgraphs []string `json:"subgraphs"`
+}
+
+func (FederationPeerScopePayload) IsFederationPeerScopeOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`

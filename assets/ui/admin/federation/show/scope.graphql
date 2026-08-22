@@ -1,0 +1,14 @@
+query ($kid: String!) {
+	admin {
+		data: federationPeerScope(kid: $kid) {
+			__typename
+			... on ErrorPayload {
+				message
+			}
+			... on FederationPeerScopePayload {
+				kid
+				subgraphs
+			}
+		}
+	}
+}

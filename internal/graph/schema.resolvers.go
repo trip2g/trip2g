@@ -64,6 +64,7 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/enableapikey"
+	"trip2g/internal/case/admin/federationpeerscope"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/listsecretkeys"
@@ -1882,6 +1883,11 @@ func (r *adminQueryResolver) GitHubOAuthCredentials(ctx context.Context, obj *ap
 // FederationSecrets is the resolver for the federationSecrets field.
 func (r *adminQueryResolver) FederationSecrets(ctx context.Context, obj *appmodel.AdminQuery) ([]db.ListFederationSecretsRow, error) {
 	return listfederationsecrets.Resolve(ctx, r.env(ctx))
+}
+
+// FederationPeerScope is the resolver for the federationPeerScope field.
+func (r *adminQueryResolver) FederationPeerScope(ctx context.Context, obj *appmodel.AdminQuery, kid string) (model.FederationPeerScopeOrErrorPayload, error) {
+	return federationpeerscope.Resolve(ctx, r.env(ctx), kid)
 }
 
 // SecretKeys is the resolver for the secretKeys field.
