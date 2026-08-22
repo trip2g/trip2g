@@ -24,7 +24,13 @@ namespace $.$$ {
 			}
 
 			if (res.admin.data.__typename === 'CreateOutboundFederationSecretPayload') {
+				// Straight to the row that was just created. The form has nothing
+				// left to show — unlike the inbound one, which holds the only copy
+				// of the handover key and must stay put — and leaving the operator
+				// on an empty form is what makes a successful add read as nothing
+				// having happened.
 				this.result( `Created: ${ res.admin.data.kid }` )
+				this.$.$mol_state_arg.value( 'id', `key${ res.admin.data.id }` )
 				return
 			}
 

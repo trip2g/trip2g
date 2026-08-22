@@ -9,7 +9,7 @@ $trip2g_admin_federation_inbound $mol_page
 				Content <= KeyCell $trip2g_admin_cell
 					content <= handover_key? \
 			<= Key_hint $mol_view
-				sub / @ \It packs the key id, this instance's address and the secret. The other operator pastes it into Add Outbound. Send it over a channel you would trust with a password.
+				sub / <= key_hint @ \Packs the key id, the address of this instance and the secret. The other operator pastes it into Add Outbound. Send it over a channel you would trust with a password.
 			<= Buttons $mol_row
 				sub /
 					<= Copy_key $mol_button_copy
