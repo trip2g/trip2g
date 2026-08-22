@@ -22,6 +22,7 @@ import (
 	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
 	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
+	federationdescribefederationdescribe "trip2g/internal/case/system/federationdescribe"
 	federationtopologyfederationtopology "trip2g/internal/case/system/federationtopology"
 )
 
@@ -47,6 +48,7 @@ var endpoints = []Endpoint{
 	&renderpreviewrenderpreview.Endpoint{},
 	&renderpreviewrenderpreview.GetEndpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
+	&federationdescribefederationdescribe.Endpoint{},
 	&federationtopologyfederationtopology.Endpoint{},
 }
 
@@ -68,6 +70,7 @@ type RoutesEnv interface {
 	renderlayoutpreviewrenderlayoutpreview.Env
 	renderpreviewrenderpreview.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
+	federationdescribefederationdescribe.Env
 	federationtopologyfederationtopology.Env
 }
 

@@ -99,7 +99,7 @@ on conflict(name) do update set hidden = false;
 
 -- name: UpdateAdminSubgraph :one
 update subgraphs
-   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?, require_signin = ?
+   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?, require_signin = ?, human_description = ?
  where id = ?
 returning *;
 
@@ -1241,6 +1241,20 @@ returning *;
 update federation_secrets
    set revoked_at = current_timestamp
  where id = ?;
+
+-- name: RotateFederationSecret :execrows
+update federation_secrets
+   set prev_secret_crypt = secret_crypt,
+       secret_crypt = sqlc.arg(new_secret_crypt),
+       rotated_at = current_timestamp
+ where id = sqlc.arg(id)
+   and secret_crypt = sqlc.arg(expected_secret_crypt);
+
+-- name: ClearFederationSecretPrev :exec
+update federation_secrets
+   set prev_secret_crypt = null
+ where id = ?
+   and prev_secret_crypt = ?;
 
 -- name: InsertFederationSecretSubgraph :exec
 insert into federation_secret_subgraphs (kid, subgraph_id, created_by)

@@ -64,3 +64,11 @@ type MCPExpandParams struct {
 	Href    string   `json:"href,omitempty"`
 	TocPath []string `json:"toc_path,omitempty"`
 }
+
+// MCPRotateSecretParams carries one federation key replacement. There is no kid
+// field on purpose: the pairing being rotated is whichever one signed the call,
+// read from the verified JWT. A kid taken from the arguments would let any valid
+// peer rotate another pairing's key.
+type MCPRotateSecretParams struct {
+	SecretHex string `json:"secret_hex"`
+}

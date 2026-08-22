@@ -1,11 +1,31 @@
 $trip2g_admin_federation_inbound $mol_page
 	title @ \Add Inbound Secret
 	SecretHexView $mol_view
+		style *
+			flexDirection \column
 		sub /
+			<= Key_labeler $mol_labeler
+				title @ \Handover key — send this one value (shown once)
+				Content <= KeyCell $trip2g_admin_cell
+					content <= handover_key? \
+			<= Key_hint $mol_view
+				sub / <= key_hint @ \Packs the key id, the address of this instance and the secret. The other operator pastes it into Add Outbound. Send it over a channel you would trust with a password.
+			<= Buttons $mol_row
+				sub /
+					<= Copy_key $mol_button_copy
+						title @ \Copy handover key
+						text <= handover_key
+					<= Copy_secret $mol_button_copy
+						title @ \Copy secret only
+						text <= secret_hex
 			<= SecretHex_labeler $mol_labeler
-				title @ \Secret (copy now — shown once)
+				title @ \Secret, on its own
 				Content <= SecretHexCell $trip2g_admin_cell
 					content <= secret_hex? \
+			<= Kid_out_labeler $mol_labeler
+				title @ \Key ID
+				Content <= KidOutCell $trip2g_admin_cell
+					content <= kid
 	body /
 		<= Form $mol_form
 			body /

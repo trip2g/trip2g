@@ -64,6 +64,7 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/enableapikey"
+	"trip2g/internal/case/admin/federationpeerscope"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/listsecretkeys"
@@ -80,6 +81,7 @@ import (
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/revokefederationsecret"
 	adminrevokeusertoken "trip2g/internal/case/admin/revokeusertoken"
+	"trip2g/internal/case/admin/rotatefederationsecret"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
@@ -675,6 +677,11 @@ func (r *adminDeliveryTraceResolver) TotalCosts(ctx context.Context, obj *db.Lis
 		return nil, err
 	}
 	return sumCosts(raws), nil
+}
+
+// SubgraphIds is the resolver for the subgraphIds field.
+func (r *adminFederationSecretResolver) SubgraphIds(ctx context.Context, obj *db.ListFederationSecretsRow) ([]int64, error) {
+	return r.env(ctx).ListFederationSecretSubgraphIDsByKID(ctx, obj.Kid)
 }
 
 // Note is the resolver for the note field.
@@ -1357,6 +1364,11 @@ func (r *adminMutationResolver) RevokeFederationSecret(ctx context.Context, obj 
 	return revokefederationsecret.Resolve(ctx, r.env(ctx), id)
 }
 
+// RotateFederationSecret is the resolver for the rotateFederationSecret field.
+func (r *adminMutationResolver) RotateFederationSecret(ctx context.Context, obj *appmodel.AdminMutation, kid string) (model.RotateFederationSecretOrErrorPayload, error) {
+	return rotatefederationsecret.Resolve(ctx, r.env(ctx), kid)
+}
+
 // AddFederationSecretSubgraph is the resolver for the addFederationSecretSubgraph field.
 func (r *adminMutationResolver) AddFederationSecretSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input model.AddFederationSecretSubgraphInput) (model.AddFederationSecretSubgraphOrErrorPayload, error) {
 	return addfederationsecretsubgraph.Resolve(ctx, r.env(ctx), input)
@@ -1871,6 +1883,11 @@ func (r *adminQueryResolver) GitHubOAuthCredentials(ctx context.Context, obj *ap
 // FederationSecrets is the resolver for the federationSecrets field.
 func (r *adminQueryResolver) FederationSecrets(ctx context.Context, obj *appmodel.AdminQuery) ([]db.ListFederationSecretsRow, error) {
 	return listfederationsecrets.Resolve(ctx, r.env(ctx))
+}
+
+// FederationPeerScope is the resolver for the federationPeerScope field.
+func (r *adminQueryResolver) FederationPeerScope(ctx context.Context, obj *appmodel.AdminQuery, kid string) (model.FederationPeerScopeOrErrorPayload, error) {
+	return federationpeerscope.Resolve(ctx, r.env(ctx), kid)
 }
 
 // SecretKeys is the resolver for the secretKeys field.
@@ -3817,6 +3834,11 @@ func (r *Resolver) AdminDeliveryTrace() generated.AdminDeliveryTraceResolver {
 	return &adminDeliveryTraceResolver{r}
 }
 
+// AdminFederationSecret returns generated.AdminFederationSecretResolver implementation.
+func (r *Resolver) AdminFederationSecret() generated.AdminFederationSecretResolver {
+	return &adminFederationSecretResolver{r}
+}
+
 // AdminFormNote returns generated.AdminFormNoteResolver implementation.
 func (r *Resolver) AdminFormNote() generated.AdminFormNoteResolver { return &adminFormNoteResolver{r} }
 
@@ -4271,6 +4293,7 @@ type adminCronWebhookResolver struct{ *Resolver }
 type adminCronWebhookDeliveriesConnectionResolver struct{ *Resolver }
 type adminCronWebhooksConnectionResolver struct{ *Resolver }
 type adminDeliveryTraceResolver struct{ *Resolver }
+type adminFederationSecretResolver struct{ *Resolver }
 type adminFormNoteResolver struct{ *Resolver }
 type adminFormSubmitsConnectionResolver struct{ *Resolver }
 type adminFrontmatterPatchResolver struct{ *Resolver }

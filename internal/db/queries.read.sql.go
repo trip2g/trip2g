@@ -1411,8 +1411,31 @@ func (q *Queries) DeliveryLogs(ctx context.Context, arg DeliveryLogsParams) ([]*
 	return items, nil
 }
 
+const federationSecretByID = `-- name: FederationSecretByID :one
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
+ where id = ?
+`
+
+func (q *Queries) FederationSecretByID(ctx context.Context, id int64) (FederationSecret, error) {
+	row := q.db.QueryRowContext(ctx, federationSecretByID, id)
+	var i FederationSecret
+	err := row.Scan(
+		&i.ID,
+		&i.Kid,
+		&i.SecretCrypt,
+		&i.KbUrl,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
+	)
+	return i, err
+}
+
 const federationSecretByKBURL = `-- name: FederationSecretByKBURL :one
-select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at from federation_secrets
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
  where kb_url = ?
    and revoked_at is null
  order by created_at desc, id desc
@@ -1431,12 +1454,14 @@ func (q *Queries) FederationSecretByKBURL(ctx context.Context, kbUrl *string) (F
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
 	)
 	return i, err
 }
 
 const federationSecretByKID = `-- name: FederationSecretByKID :one
-select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at from federation_secrets
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
  where kid = ?
    and kb_url is null
    and revoked_at is null
@@ -1456,6 +1481,8 @@ func (q *Queries) FederationSecretByKID(ctx context.Context, kid string) (Federa
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
 	)
 	return i, err
 }
@@ -2587,7 +2614,7 @@ func (q *Queries) GetSecret(ctx context.Context, key string) (Secret, error) {
 }
 
 const getSubgraphsByBoostyTierID = `-- name: GetSubgraphsByBoostyTierID :many
-select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin
+select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description
 from subgraphs s
 join boosty_tier_subgraphs bts on s.id = bts.subgraph_id
 where bts.tier_id = ?
@@ -2610,6 +2637,7 @@ func (q *Queries) GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) 
 			&i.Hidden,
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
+			&i.HumanDescription,
 		); err != nil {
 			return nil, err
 		}
@@ -2625,7 +2653,7 @@ func (q *Queries) GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) 
 }
 
 const getSubgraphsByTierID = `-- name: GetSubgraphsByTierID :many
-select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin
+select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description
 from subgraphs s
 join patreon_tier_subgraphs pts on s.id = pts.subgraph_id
 where pts.tier_id = ?
@@ -2649,6 +2677,7 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 			&i.Hidden,
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
+			&i.HumanDescription,
 		); err != nil {
 			return nil, err
 		}
@@ -3509,7 +3538,7 @@ func (q *Queries) ListActiveSubgraphNamesByUserID(ctx context.Context, userID in
 }
 
 const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
-select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin
+select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description
   from user_subgraph_accesses a
   join subgraphs s on a.subgraph_id = s.id
  where user_id = ?
@@ -3535,6 +3564,7 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 			&i.Hidden,
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
+			&i.HumanDescription,
 		); err != nil {
 			return nil, err
 		}
@@ -4038,7 +4068,7 @@ func (q *Queries) ListAllReleases(ctx context.Context) ([]Release, error) {
 }
 
 const listAllSubgraphs = `-- name: ListAllSubgraphs :many
-select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin from subgraphs order by id
+select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description from subgraphs order by id
 `
 
 func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
@@ -4058,6 +4088,7 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 			&i.Hidden,
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
+			&i.HumanDescription,
 		); err != nil {
 			return nil, err
 		}
@@ -5167,6 +5198,72 @@ func (q *Queries) ListEnabledWebhooks(ctx context.Context) ([]ChangeWebhook, err
 	return items, nil
 }
 
+const listFederationSecretScopeByKID = `-- name: ListFederationSecretScopeByKID :many
+select s.name, s.human_description
+  from federation_secret_subgraphs fss
+  join subgraphs s on s.id = fss.subgraph_id
+ where fss.kid = ?
+ order by s.name
+`
+
+type ListFederationSecretScopeByKIDRow struct {
+	Name             string `json:"name"`
+	HumanDescription string `json:"human_description"`
+}
+
+func (q *Queries) ListFederationSecretScopeByKID(ctx context.Context, kid string) ([]ListFederationSecretScopeByKIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listFederationSecretScopeByKID, kid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFederationSecretScopeByKIDRow
+	for rows.Next() {
+		var i ListFederationSecretScopeByKIDRow
+		if err := rows.Scan(&i.Name, &i.HumanDescription); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFederationSecretSubgraphIDsByKID = `-- name: ListFederationSecretSubgraphIDsByKID :many
+select fss.subgraph_id
+  from federation_secret_subgraphs fss
+ where fss.kid = ?
+ order by fss.subgraph_id
+`
+
+func (q *Queries) ListFederationSecretSubgraphIDsByKID(ctx context.Context, kid string) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listFederationSecretSubgraphIDsByKID, kid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var subgraph_id int64
+		if err := rows.Scan(&subgraph_id); err != nil {
+			return nil, err
+		}
+		items = append(items, subgraph_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFederationSecretSubgraphsByKID = `-- name: ListFederationSecretSubgraphsByKID :many
 select s.name
   from federation_secret_subgraphs fss
@@ -5208,6 +5305,7 @@ select
   fs.created_at,
   fs.created_by,
   fs.revoked_at,
+  fs.rotated_at,
   count(fss.subgraph_id) as subgraph_count
 from federation_secrets fs
 left join federation_secret_subgraphs fss on fss.kid = fs.kid
@@ -5224,6 +5322,7 @@ type ListFederationSecretsRow struct {
 	CreatedAt     time.Time  `json:"created_at"`
 	CreatedBy     int64      `json:"created_by"`
 	RevokedAt     *time.Time `json:"revoked_at"`
+	RotatedAt     *time.Time `json:"rotated_at"`
 	SubgraphCount int64      `json:"subgraph_count"`
 }
 
@@ -5245,6 +5344,7 @@ func (q *Queries) ListFederationSecrets(ctx context.Context) ([]ListFederationSe
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.RevokedAt,
+			&i.RotatedAt,
 			&i.SubgraphCount,
 		); err != nil {
 			return nil, err
@@ -5894,7 +5994,7 @@ func (q *Queries) ListSubgraphIDsByOfferID(ctx context.Context, offerID int64) (
 }
 
 const listSubgraphsByOfferID = `-- name: ListSubgraphsByOfferID :many
-select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin
+select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description
   from subgraphs s
   join offer_subgraphs os on s.id = os.subgraph_id
  where os.offer_id = ?
@@ -5918,6 +6018,7 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 			&i.Hidden,
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
+			&i.HumanDescription,
 		); err != nil {
 			return nil, err
 		}
@@ -6505,7 +6606,7 @@ func (q *Queries) ListTelegramPublishTagsByNoteID(ctx context.Context, notePathI
 }
 
 const listTgBotChatSubgraphAccesses = `-- name: ListTgBotChatSubgraphAccesses :many
-select tg_bot_chat_subgraph_accesses.chat_id, tg_bot_chat_subgraph_accesses.user_id, tg_bot_chat_subgraph_accesses.subgraph_id, tg_bot_chat_subgraph_accesses.created_at, tg_bot_chat_subgraph_accesses.joined_at, subgraphs.id, subgraphs.name, subgraphs.color, subgraphs.created_at, subgraphs.hidden, subgraphs.show_unsubgraph_notes_for_paid_users, subgraphs.require_signin, tg_bot_chats.id, tg_bot_chats.telegram_id, tg_bot_chats.chat_type, tg_bot_chats.chat_title, tg_bot_chats.added_at, tg_bot_chats.removed_at, tg_bot_chats.can_invite, tg_bot_chats.bot_id
+select tg_bot_chat_subgraph_accesses.chat_id, tg_bot_chat_subgraph_accesses.user_id, tg_bot_chat_subgraph_accesses.subgraph_id, tg_bot_chat_subgraph_accesses.created_at, tg_bot_chat_subgraph_accesses.joined_at, subgraphs.id, subgraphs.name, subgraphs.color, subgraphs.created_at, subgraphs.hidden, subgraphs.show_unsubgraph_notes_for_paid_users, subgraphs.require_signin, subgraphs.human_description, tg_bot_chats.id, tg_bot_chats.telegram_id, tg_bot_chats.chat_type, tg_bot_chats.chat_title, tg_bot_chats.added_at, tg_bot_chats.removed_at, tg_bot_chats.can_invite, tg_bot_chats.bot_id
   from tg_bot_chat_subgraph_accesses
   join subgraphs on tg_bot_chat_subgraph_accesses.subgraph_id = subgraphs.id
   join tg_bot_chats on tg_bot_chat_subgraph_accesses.chat_id = tg_bot_chats.id
@@ -6547,6 +6648,7 @@ func (q *Queries) ListTgBotChatSubgraphAccesses(ctx context.Context, arg ListTgB
 			&i.Subgraph.Hidden,
 			&i.Subgraph.ShowUnsubgraphNotesForPaidUsers,
 			&i.Subgraph.RequireSignin,
+			&i.Subgraph.HumanDescription,
 			&i.TgBotChat.ID,
 			&i.TgBotChat.TelegramID,
 			&i.TgBotChat.ChatType,
@@ -7382,6 +7484,33 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 	return i, err
 }
 
+const outboundFederationSecretByKID = `-- name: OutboundFederationSecretByKID :one
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
+ where kid = ?
+   and kb_url is not null
+   and revoked_at is null
+ order by created_at desc, id desc
+ limit 1
+`
+
+func (q *Queries) OutboundFederationSecretByKID(ctx context.Context, kid string) (FederationSecret, error) {
+	row := q.db.QueryRowContext(ctx, outboundFederationSecretByKID, kid)
+	var i FederationSecret
+	err := row.Scan(
+		&i.ID,
+		&i.Kid,
+		&i.SecretCrypt,
+		&i.KbUrl,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
+	)
+	return i, err
+}
+
 const patreonCredentials = `-- name: PatreonCredentials :one
 select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret
   from patreon_credentials
@@ -7517,7 +7646,7 @@ func (q *Queries) ReleaseByID(ctx context.Context, id int64) (Release, error) {
 }
 
 const subgraphByID = `-- name: SubgraphByID :one
-select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin from subgraphs where id = ?
+select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description from subgraphs where id = ?
 `
 
 func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) {
@@ -7531,12 +7660,13 @@ func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) 
 		&i.Hidden,
 		&i.ShowUnsubgraphNotesForPaidUsers,
 		&i.RequireSignin,
+		&i.HumanDescription,
 	)
 	return i, err
 }
 
 const subgraphByName = `-- name: SubgraphByName :one
-select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin from subgraphs where name = ?
+select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description from subgraphs where name = ?
 `
 
 func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, error) {
@@ -7550,6 +7680,7 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 		&i.Hidden,
 		&i.ShowUnsubgraphNotesForPaidUsers,
 		&i.RequireSignin,
+		&i.HumanDescription,
 	)
 	return i, err
 }

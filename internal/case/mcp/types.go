@@ -194,3 +194,9 @@ const (
 	ErrCodeInvalidParams  = -32602
 	ErrCodeInternal       = -32603
 )
+
+// RotateSecretArguments is the whole of a rotation request. No kid: the pairing
+// is the one whose key signed the call.
+type RotateSecretArguments struct {
+	SecretHex string `json:"secret_hex"`
+}

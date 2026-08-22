@@ -105,19 +105,34 @@ sequenceDiagram
     participant A as Asker
     participant B as Base
 
-    Note over A: N = 32 random bytes
-    A->>A: prev := current, current := N
-    A->>B: rotate(N), signed with prev
+    Note over A: N = 32 random bytes, not yet stored
+    A->>B: rotate(N), signed with the key B holds
     Note over B: the kid comes from the JWT, never from an argument
     B->>B: prev := current, current := N, rotated_at := now
     B->>B: audit: rotated kid
     B-->>A: ok
+    A->>A: prev := current, current := N, rotated_at := now
     Note over A,B: the probe, immediately
-    A->>B: search — JWT signed with N
+    A->>B: search — JWT signed with N alone
     B->>B: verified against current, so prev := null
     B-->>A: ok
     A->>A: prev := null
 ```
+
+The asker asks before it writes, and what it writes depends on the answer. Three
+answers, three different things known:
+
+| The peer | What is known | What the asker records |
+|---|---|---|
+| confirms | it holds N | N as current, the old key as previous |
+| answers a refusal | it still holds the old key | nothing — moving off a key the peer kept would kill the link when the grace closes |
+| says nothing | either | N as current, because the peer may hold it |
+
+The third row is why the proposal is recorded on silence and why a retry
+re-proposes the *same* key rather than minting another: a peer that already
+applied it answers the repeat as a no-op, and a peer that never heard the first
+attempt applies it now. Minting a fresh key per attempt would leave nobody
+holding what the peer has.
 
 The probe is what closes the window rather than a timer. A rotation that
 verifies on the next call clears the old key on the base within milliseconds, so
@@ -136,13 +151,23 @@ stateDiagram-v2
 
 | What happened | Base holds | Asker holds | What heals it |
 |---|---|---|---|
-| Response lost after the base committed | current = N, prev = old | current = N, prev = old | nothing to heal: the asker already signs with N and it verifies |
-| The call never reached the base | current = old, prev = null | current = N, prev = old | the asker's call with N fails, it retries with old, which verifies; the rotation is attempted again |
-| The base committed, the asker crashed before writing | current = N, prev = old | current = old | the asker signs with old, which the base still accepts as previous, and rotates again |
-| Grace elapsed with no successful call | current = N, prev refused | current = old | the link is down until an operator re-establishes it — the case the grace window is sized to prevent |
+| Response lost after the base committed | current = N, prev = old | current = N, prev = old | nothing to heal: the asker signs with N and it verifies |
+| The call never reached the base | current = old, prev = null | current = N, prev = old | the asker's call with N is refused, it retries with old, which verifies; repeating the rotation re-proposes N and the base applies it |
+| The base committed, the asker crashed before writing | current = N, prev = old | current = old | the asker signs with old, which the base still accepts as previous; repeating the rotation mints a fresh key, which the base applies |
+| Two rotations of one pairing at once | the winner's pair | the winner's pair | the loser is refused at its own write and told so; nothing on either side is overwritten |
+| Grace elapsed with no successful call | current = N, prev refused | current = N | the link is down until an operator re-establishes it — the case the grace window is sized to prevent |
 
 Nothing in this table requires an operator except the last row, and nothing
-requires a second round trip.
+requires a second round trip. The first three are the same act repeated: run the
+rotation again and it converges, because the proposal is remembered rather than
+re-minted.
+
+**Install is the exception, deliberately.** With rotation on,
+`createOutboundFederationSecret` records nothing unless the peer confirmed —
+including on silence, where the operator path would keep the proposal. There is
+no link to protect yet, so the cheaper failure is to ask the other operator for a
+fresh handover; the expensive one would be a row resting on the key that
+travelled through a chat.
 
 **A failed probe decides nothing.** If it does not come back — a timeout, a
 momentary 500, anything — the asker keeps both keys and retries later. The probe
@@ -237,6 +262,18 @@ new key after a crash without storing it — and let anyone holding the key from
 the chat compute the next one, which is the thing being defended against.
 
 ## Not covered
+
+**The grace window is a window of seizure, not only of healing.** A rotation
+verified against the *previous* key is honoured — it has to be, or the "asker
+crashed before writing" row above could not recover. So for as long as the
+previous key is accepted, whoever holds it can rotate the pairing to a key of
+their own. The probe normally closes that in milliseconds; a lost probe leaves it
+open for the grace. It is the same trade as accepting the previous key at all,
+and it is bounded by the same clock.
+
+**The scheduler named among the callers is not built.** Rotation on a period
+needs an operator-facing interval, which is a separate decision; the primitive
+and the two manual callers do not wait for it.
 
 The base cannot tell an operator that someone *else* used the handover first. A
 call signed with neither key is indistinguishable from any other bad signature,

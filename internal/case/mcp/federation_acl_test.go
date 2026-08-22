@@ -92,7 +92,7 @@ func TestAccessibleKBNotesFederatedPeerKeepsItsSubgraphScope(t *testing.T) {
 			return false, errors.New("CanReadNote must not decide for a federated peer")
 		},
 	}
-	ctx := contextWithFederationAuth(context.Background(), "peer", []string{"shared"})
+	ctx := contextWithFederationAuth(context.Background(), federationAuth{KID: "peer", AllowedSubgraphs: []string{"shared"}})
 
 	got, err := accessibleKBNotes(ctx, env)
 

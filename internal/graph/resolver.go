@@ -51,6 +51,7 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/enableapikey"
+	"trip2g/internal/case/admin/federationpeerscope"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
 	"trip2g/internal/case/admin/listsecretkeys"
@@ -67,6 +68,7 @@ import (
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/revokefederationsecret"
 	adminrevokeusertoken "trip2g/internal/case/admin/revokeusertoken"
+	"trip2g/internal/case/admin/rotatefederationsecret"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
@@ -399,6 +401,9 @@ type Env interface {
 	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 
 	// Federation secrets
+	ListFederationSecretSubgraphIDsByKID(ctx context.Context, kid string) ([]int64, error)
+	rotatefederationsecret.Env
+	federationpeerscope.Env
 	createinboundfederationsecret.Env
 	createoutboundfederationsecret.Env
 	revokefederationsecret.Env

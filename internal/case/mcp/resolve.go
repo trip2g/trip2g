@@ -56,6 +56,11 @@ type Env interface {
 	FederationSecretByKBURL(ctx context.Context, kbURL string) (db.FederationSecret, bool, error)
 	FederationSecretByKID(ctx context.Context, kid string) (db.FederationSecret, bool, error)
 	ListFederationSecretSubgraphsByKID(ctx context.Context, kid string) ([]string, error)
+	ClearFederationSecretPrev(ctx context.Context, arg db.ClearFederationSecretPrevParams) error
+	FederationSecretByID(ctx context.Context, id int64) (db.FederationSecret, error)
+	RotateFederationSecret(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error)
+	EncryptData([]byte) ([]byte, error)
+	AuditLogger() logger.Logger
 	DecryptData([]byte) ([]byte, error)
 	FederationMaxDepth() int
 	FederatedFanoutConcurrency() int
@@ -198,6 +203,7 @@ func builtinToolHandlers() map[string]toolHandler {
 		"federated_note_html":       handleFederatedNoteHTML,
 		"federated_expand":          handleFederatedExpand,
 		"federated_instructions":    handleFederatedInstructions,
+		rotateSecretToolName:        handleRotateSecret,
 		"federated_graphql_request": handleFederatedGraphQLRequest,
 		"graphql_introspection": func(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
 			if !mcpAdminToolsEnabled(ctx) {
@@ -335,12 +341,16 @@ type federationAuthContextKey struct{}
 type federationAuthContext struct {
 	KID              string
 	AllowedSubgraphs []string
+	SecretID         int64
+	BodyBound        bool
 }
 
-func contextWithFederationAuth(ctx context.Context, kid string, allowedSubgraphs []string) context.Context {
+func contextWithFederationAuth(ctx context.Context, auth federationAuth) context.Context {
 	return context.WithValue(ctx, federationAuthContextKey{}, federationAuthContext{
-		KID:              kid,
-		AllowedSubgraphs: append([]string(nil), allowedSubgraphs...),
+		KID:              auth.KID,
+		AllowedSubgraphs: append([]string(nil), auth.AllowedSubgraphs...),
+		SecretID:         auth.SecretID,
+		BodyBound:        auth.BodyBound,
 	})
 }
 

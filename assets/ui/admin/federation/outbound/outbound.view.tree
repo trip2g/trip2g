@@ -3,6 +3,11 @@ $trip2g_admin_federation_outbound $mol_page
 	body /
 		<= Form $mol_form
 			body /
+				<= Key_field $mol_form_field
+					name @ \Handover key (paste this instead of the three below)
+					bid <= key_bid \
+					Content <= key_control $mol_string
+						value? <=> handover_key? \
 				<= Kid_field $mol_form_field
 					name @ \Key ID (kid)
 					bid <= kid_bid \

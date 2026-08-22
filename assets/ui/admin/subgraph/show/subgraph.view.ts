@@ -16,6 +16,15 @@ namespace $.$$ {
 		}
 
 		@$mol_mem
+		subgraph_human_description(next?: string): string {
+			if (next !== undefined) {
+				return next
+			}
+
+			return this.data().humanDescription || ''
+		}
+
+		@$mol_mem
 		subgraph_color(next?: string): string {
 			if (next !== undefined) {
 				return next
@@ -49,6 +58,7 @@ namespace $.$$ {
 					color: this.subgraph_color(),
 					hidden: this.subgraph_hidden(),
 					requireSignin: this.subgraph_require_signin(),
+					humanDescription: this.subgraph_human_description(),
 				},
 			})
 

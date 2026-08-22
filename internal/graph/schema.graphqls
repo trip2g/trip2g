@@ -110,6 +110,10 @@ type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
   color: String
   hidden: Boolean!
   requireSignin: Boolean!
+  # What this subgraph is, in a sentence. Reaches a federated peer beside the
+  # name, so a peer granted access is told what it was given instead of reading
+  # meaning into a slug.
+  humanDescription: String!
   createdAt: Time!
 }
 
@@ -1300,6 +1304,10 @@ type AdminQuery {
   gitHubOAuthCredentials(id: Int!): AdminGitHubOAuthCredentials
 
   federationSecrets: [AdminFederationSecret!]!
+  # What a peer says this pairing may read there. Only the peer knows — scope is
+  # granted on its side — so this asks it over the wire rather than reporting
+  # something local that would only ever be a guess.
+  federationPeerScope(kid: String!): FederationPeerScopeOrErrorPayload!
 
   secretKeys(filter: SecretKeysFilter): [String!]!
 
@@ -2267,6 +2275,10 @@ input UpdateSubgraphInput {
   color: String!
   hidden: Boolean!
   requireSignin: Boolean!
+  # What this subgraph is, in a sentence. Travels to a federated peer along with
+  # the subgraph's name, so a peer granted access can be told what it was given
+  # rather than left to read meaning into a slug.
+  humanDescription: String!
 }
 
 type UpdateSubgraphPayload {
@@ -3493,8 +3505,15 @@ type AdminMutation {
 
   # Federation secret mutations
   createInboundFederationSecret(input: CreateInboundFederationSecretInput!): CreateInboundFederationSecretOrErrorPayload!
-  createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload!
+  # @skipTx: both call a peer over HTTP, and the request tx (BEGIN IMMEDIATE)
+  # holds the SQLite write lock for the whole request — so the call would keep
+  # every other write on this instance waiting for as long as the peer takes.
+  # Against a peer that is this instance it is not merely slow but a deadlock:
+  # the inbound rotate_secret needs the write lock its own caller is holding,
+  # and the call dies at the client timeout. Same reasoning as runCronJob below.
+  createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload! @skipTx
   revokeFederationSecret(id: Int64!): RevokeFederationSecretOrErrorPayload!
+  rotateFederationSecret(kid: String!): RotateFederationSecretOrErrorPayload! @skipTx
   addFederationSecretSubgraph(input: AddFederationSecretSubgraphInput!): AddFederationSecretSubgraphOrErrorPayload!
   removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
 
@@ -3784,7 +3803,14 @@ type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSec
   createdAt: Time!
   createdBy: Int64!
   revokedAt: Time
+  # When this pairing's key was last replaced. Null means it still holds the key
+  # it was created with — for an outbound secret, the one handed over out of band.
+  rotatedAt: Time
   subgraphCount: Int64!
+  # The subgraphs this key may surface, so a reader can see what is granted and
+  # not only how many. Without it the admin can add access and never take it
+  # away: an editor cannot deselect what it was never shown.
+  subgraphIds: [Int64!]! @goField(forceResolver: true)
 }
 
 #
@@ -3803,6 +3829,14 @@ type CreateInboundFederationSecretPayload {
   id: Int64!
   kid: String!
   secretHex: String!
+  # The three values above plus this instance's own address, packed into one
+  # string for the other operator to paste into createOutboundFederationSecret.
+  # They are a set — a kid without its secret is useless, a secret against the
+  # wrong address authenticates nothing — and copying them one at a time across a
+  # chat is where one gets dropped or transposed. This is an envelope and not a
+  # protection: the secret inside is plain, so it still travels over a channel
+  # you would trust with a password.
+  key: String!
 }
 
 union CreateInboundFederationSecretOrErrorPayload = CreateInboundFederationSecretPayload | ErrorPayload
@@ -3812,10 +3846,21 @@ union CreateInboundFederationSecretOrErrorPayload = CreateInboundFederationSecre
 #
 
 input CreateOutboundFederationSecretInput {
-  kid: String!
-  secretHex: String!
-  kbURL: String!
+  # The packed key from the other side's createInboundFederationSecret. Supply it
+  # INSTEAD of kid, secretHex and kbURL — one field that cannot be half-copied
+  # rather than three that can. When it is given the three below are ignored.
+  key: String
+
+  kid: String
+  secretHex: String
+  kbURL: String
   description: String
+  # Replace the handed-over key with a fresh one before storing it, so the bytes
+  # that travelled out of band stop being the live credential. On by default.
+  # Turn it off for a peer that cannot rotate — a public base or an adapter —
+  # and for one that has to be installed while unreachable: with it on, no live
+  # peer means no row.
+  rotate: Boolean
 }
 
 type CreateOutboundFederationSecretPayload {
@@ -3824,6 +3869,37 @@ type CreateOutboundFederationSecretPayload {
 }
 
 union CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSecretPayload | ErrorPayload
+
+#
+# federationPeerScope
+#
+
+type FederationPeerScopeSubgraph {
+  name: String!
+  humanDescription: String!
+}
+
+type FederationPeerScopePayload {
+  kid: String!
+  # Empty is a real answer: the pairing is authenticated but scoped to nothing,
+  # which is why a search through it comes back empty.
+  subgraphs: [FederationPeerScopeSubgraph!]!
+  # Whether the peer can replace this pairing's key. A peer that cannot is one an
+  # operator should install with rotation off rather than discover by a refusal.
+  rotation: Boolean!
+}
+
+union FederationPeerScopeOrErrorPayload = FederationPeerScopePayload | ErrorPayload
+
+#
+# rotateFederationSecret
+#
+
+type RotateFederationSecretPayload {
+  kid: String!
+}
+
+union RotateFederationSecretOrErrorPayload = RotateFederationSecretPayload | ErrorPayload
 
 #
 # revokeFederationSecret

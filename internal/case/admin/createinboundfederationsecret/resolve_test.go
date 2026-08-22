@@ -31,6 +31,7 @@ func TestResolve(t *testing.T) {
 			input: model.CreateInboundFederationSecretInput{Kid: "my-key-id"},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
@@ -53,6 +54,7 @@ func TestResolve(t *testing.T) {
 			input: model.CreateInboundFederationSecretInput{Kid: "my-key-id", Description: strPtr("test desc")},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
@@ -81,6 +83,7 @@ func TestResolve(t *testing.T) {
 			input: model.CreateInboundFederationSecretInput{Kid: "my-key-id"},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return nil, errors.New("unauthorized")
 				}
@@ -93,6 +96,7 @@ func TestResolve(t *testing.T) {
 			input: model.CreateInboundFederationSecretInput{Kid: "my-key-id"},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
@@ -108,6 +112,7 @@ func TestResolve(t *testing.T) {
 			input: model.CreateInboundFederationSecretInput{Kid: "duplicate-kid"},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
@@ -130,6 +135,7 @@ func TestResolve(t *testing.T) {
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
@@ -154,6 +160,7 @@ func TestResolve(t *testing.T) {
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
@@ -169,6 +176,7 @@ func TestResolve(t *testing.T) {
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
@@ -181,6 +189,7 @@ func TestResolve(t *testing.T) {
 			input: model.CreateInboundFederationSecretInput{Kid: "my-key-id"},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}

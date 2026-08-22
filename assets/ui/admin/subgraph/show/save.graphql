@@ -6,6 +6,7 @@ mutation ($input: UpdateSubgraphInput!) {
 				subgraph {
 					id
 					color
+					humanDescription
 				}
 			}
 			... on ErrorPayload {

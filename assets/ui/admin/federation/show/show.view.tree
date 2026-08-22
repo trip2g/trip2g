@@ -1,26 +1,58 @@
 $trip2g_admin_federation_show $mol_page
-	title \Federation Secret
+	title @ \Federation Secret
 	secret_id 0
 	revoked false
 	kid \
 	kb_url \
+	rotated_at \
+	direction \
+	rotated_label \
+	granted_subgraph_ids /number
+	tools <= card_tools /
+		<= RotateButton $trip2g_admin_federation_button_rotate
+			kid <= kid
+			visible <= can_rotate false
+		<= RevokeButton $trip2g_admin_federation_button_revoke
+			id <= secret_id
+			visible <= can_revoke false
 	body /
 		<= Info $mol_view
-			sub /
+			style *
+				flexDirection \column
+			sub <= info_sub /
 				<= Kid_labeler $mol_labeler
-					title \Key ID
+					title @ \Key ID
 					Content <= KidCell $trip2g_admin_cell
 						content <= kid
+				<= Direction_labeler $mol_labeler
+					title @ \Direction
+					Content <= DirectionCell $trip2g_admin_cell
+						content <= direction
 				<= KbUrl_labeler $mol_labeler
-					title \KB URL
+					title @ \KB URL
 					Content <= KbUrlCell $trip2g_admin_cell
 						content <= kb_url
-				<= SubgraphsSection $mol_view
-					sub /
-						<= SubgraphsTitle $mol_view
-							sub / \Subgraph Access
-						<= SubgraphList $trip2g_admin_subgraph_select_list
-							ids? <=> subgraph_ids? /number
-				<= RevokeButton $trip2g_admin_federation_button_revoke
-					id <= secret_id
-					visible <= can_revoke false
+				<= Rotated_labeler $mol_labeler
+					title @ \Last Rotated
+					Content <= RotatedCell $trip2g_admin_cell
+						content <= rotated_label
+	SubgraphsSection_labeler $mol_labeler
+		title @ \Subgraph Access
+		Content <= SubgraphList $trip2g_admin_subgraph_select_list
+			ids? <=> subgraph_ids? /number
+	OutboundScopeNote $mol_labeler
+		title @ \Granted by the peer
+		Content <= OutboundScopeCell $mol_list
+			rows <= peer_scopes /
+	OutboundScopeItem* $mol_row
+		sub /
+			<= OutboundScopeName* $mol_labeler
+				title @ \Subgraph
+				Content <= OutboundScopeNameCell* $trip2g_admin_cell
+					content <= peer_scope_name* \
+			<= OutboundScopeAbout* $mol_labeler
+				title @ \What it is
+				Content <= OutboundScopeAboutCell* $trip2g_admin_cell
+					content <= peer_scope_about* \
+	OutboundScopeStatus $mol_view
+		sub / <= peer_scope_status \

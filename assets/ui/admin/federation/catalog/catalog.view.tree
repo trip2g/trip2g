@@ -12,6 +12,11 @@ $trip2g_admin_federation_catalog $trip2g_admin_catalog
 	Content* $trip2g_admin_federation_show
 		secret_id <= row_id* 0
 		revoked <= row_revoked* false
+		kid <= row_kid* \kid
+		kb_url <= row_kb_url* \
+		rotated_at <= row_rotated_at* \
+		direction <= row_direction* \
+		granted_subgraph_ids <= row_subgraph_ids* /number
 	AddInboundForm $trip2g_admin_federation_inbound
 	AddOutboundForm $trip2g_admin_federation_outbound
 	menu_link_content* / <= SecretItem* $mol_view
@@ -26,10 +31,12 @@ $trip2g_admin_federation_catalog $trip2g_admin_catalog
 						title @ \Key ID
 						Content <= KidCell* $trip2g_admin_cell
 							content <= row_kid* \kid
-					<= KbUrl* $mol_labeler
-						title @ \KB URL
-						Content <= KbUrlCell* $trip2g_admin_cell
-							content <= row_kb_url* \
+					<= Direction* $mol_labeler
+						title @ \Direction
+						Content <= DirectionCell* $trip2g_admin_cell
+							content <= row_direction* \
+					<= KbUrl* $trip2g_admin_labeler_url
+						value <= row_kb_url* \
 					<= SubgraphCount* $mol_labeler
 						title @ \Subgraphs
 						Content <= SubgraphCountCell* $trip2g_admin_cell
@@ -37,6 +44,9 @@ $trip2g_admin_federation_catalog $trip2g_admin_catalog
 					<= CreatedAt* $trip2g_admin_labeler_moment
 						title @ \Created At
 						value <= row_created_at* \
+					<= RotatedAt* $trip2g_admin_labeler_moment
+						title @ \Rotated At
+						value <= row_rotated_at* \
 					<= RevokedAt* $trip2g_admin_labeler_moment
 						title @ \Revoked At
 						value <= row_revoked_at* \

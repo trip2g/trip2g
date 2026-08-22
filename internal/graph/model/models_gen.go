@@ -254,6 +254,10 @@ type EnableAPIKeyOrErrorPayload interface {
 	IsEnableAPIKeyOrErrorPayload()
 }
 
+type FederationPeerScopeOrErrorPayload interface {
+	IsFederationPeerScopeOrErrorPayload()
+}
+
 type GenerateTgAttachCodeOrErrorPayload interface {
 	IsGenerateTgAttachCodeOrErrorPayload()
 }
@@ -332,6 +336,10 @@ type RevokeFederationSecretOrErrorPayload interface {
 
 type RevokeUserTokenOrErrorPayload interface {
 	IsRevokeUserTokenOrErrorPayload()
+}
+
+type RotateFederationSecretOrErrorPayload interface {
+	IsRotateFederationSecretOrErrorPayload()
 }
 
 type RunCronJobOrErrorPayload interface {
@@ -1331,6 +1339,7 @@ type CreateInboundFederationSecretPayload struct {
 	ID        int64  `json:"id"`
 	Kid       string `json:"kid"`
 	SecretHex string `json:"secretHex"`
+	Key       string `json:"key"`
 }
 
 func (CreateInboundFederationSecretPayload) IsCreateInboundFederationSecretOrErrorPayload() {}
@@ -1377,10 +1386,12 @@ type CreateOfferPayload struct {
 func (CreateOfferPayload) IsCreateOfferOrErrorPayload() {}
 
 type CreateOutboundFederationSecretInput struct {
-	Kid         string  `json:"kid"`
-	SecretHex   string  `json:"secretHex"`
-	KbURL       string  `json:"kbURL"`
+	Key         *string `json:"key,omitempty"`
+	Kid         *string `json:"kid,omitempty"`
+	SecretHex   *string `json:"secretHex,omitempty"`
+	KbURL       *string `json:"kbURL,omitempty"`
 	Description *string `json:"description,omitempty"`
+	Rotate      *bool   `json:"rotate,omitempty"`
 }
 
 type CreateOutboundFederationSecretPayload struct {
@@ -1867,6 +1878,10 @@ func (ErrorPayload) IsCreateInboundFederationSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateOutboundFederationSecretOrErrorPayload() {}
 
+func (ErrorPayload) IsFederationPeerScopeOrErrorPayload() {}
+
+func (ErrorPayload) IsRotateFederationSecretOrErrorPayload() {}
+
 func (ErrorPayload) IsRevokeFederationSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsAddFederationSecretSubgraphOrErrorPayload() {}
@@ -1874,6 +1889,19 @@ func (ErrorPayload) IsAddFederationSecretSubgraphOrErrorPayload() {}
 func (ErrorPayload) IsRemoveFederationSecretSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsMarkFormSubmitProcessedOrErrorPayload() {}
+
+type FederationPeerScopePayload struct {
+	Kid       string                        `json:"kid"`
+	Subgraphs []FederationPeerScopeSubgraph `json:"subgraphs"`
+	Rotation  bool                          `json:"rotation"`
+}
+
+func (FederationPeerScopePayload) IsFederationPeerScopeOrErrorPayload() {}
+
+type FederationPeerScopeSubgraph struct {
+	Name             string `json:"name"`
+	HumanDescription string `json:"humanDescription"`
+}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -2356,6 +2384,12 @@ type RevokeUserTokenPayload struct {
 }
 
 func (RevokeUserTokenPayload) IsRevokeUserTokenOrErrorPayload() {}
+
+type RotateFederationSecretPayload struct {
+	Kid string `json:"kid"`
+}
+
+func (RotateFederationSecretPayload) IsRotateFederationSecretOrErrorPayload() {}
 
 type RunCronJobInput struct {
 	ID int64 `json:"id"`
@@ -2860,10 +2894,11 @@ type UpdateRedirectPayload struct {
 func (UpdateRedirectPayload) IsUpdateRedirectOrErrorPayload() {}
 
 type UpdateSubgraphInput struct {
-	ID            int64  `json:"id"`
-	Color         string `json:"color"`
-	Hidden        bool   `json:"hidden"`
-	RequireSignin bool   `json:"requireSignin"`
+	ID               int64  `json:"id"`
+	Color            string `json:"color"`
+	Hidden           bool   `json:"hidden"`
+	RequireSignin    bool   `json:"requireSignin"`
+	HumanDescription string `json:"humanDescription"`
 }
 
 type UpdateSubgraphPayload struct {

@@ -80,6 +80,14 @@ func (m *federationMock) FederatedExpand(ctx context.Context, params appmodel.MC
 	return m.federatedExpandFunc(ctx, params)
 }
 
+func (m *federationMock) RotateSecret(context.Context, appmodel.MCPRotateSecretParams) (appmodel.FederationResult, error) {
+	panic("unexpected RotateSecret call")
+}
+
+func (m *federationMock) GrantedScope(context.Context) (appmodel.FederationScope, error) {
+	panic("unexpected GrantedScope call")
+}
+
 func (m *federationMock) Instructions(ctx context.Context) (appmodel.FederationResult, error) {
 	if m.instructionsFunc == nil {
 		panic("unexpected Instructions call")

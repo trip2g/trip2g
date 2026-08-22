@@ -8,6 +8,12 @@ $trip2g_admin_subgraph_show $mol_page
 					title \Name
 					Content <= Name $trip2g_admin_cell
 						content <= subgraph_name
+				<= Human_description_field $mol_form_field
+					name @ \What this subgraph is
+					hint @ \One sentence. A peer granted access to it is shown this, and a slug on its own tells them nothing.
+					bid <= human_description_bid \
+					Content <= human_description_control $mol_string
+						value? <=> subgraph_human_description? \
 				<= Color_field $mol_form_field
 					name \Color
 					bid <= color_bid \

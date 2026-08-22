@@ -119,3 +119,71 @@ func TestFederationSecretQueries(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"team-status"}, subgraphs)
 }
+
+// The retire-on-verify write decides from a row read earlier in the same
+// request, so a rotation that lands in between must not have its freshly staged
+// previous key wiped by that stale decision — the staged key is exactly what the
+// rotation's own lost-response retry depends on.
+func TestClearFederationSecretPrevIsConditional(t *testing.T) {
+	conn, queries, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	writeQueries := db.NewWriteQueries(conn)
+	adminUserID := insertTestAdminUser(t, conn)
+
+	row, err := writeQueries.InsertFederationSecret(ctx, db.InsertFederationSecretParams{
+		Kid:         "peer",
+		SecretCrypt: []byte("k1"),
+		CreatedBy:   adminUserID,
+	})
+	require.NoError(t, err)
+
+	// current = k2, prev = k1. A request reads this state and decides to retire k1.
+	affected, err := writeQueries.RotateFederationSecret(ctx, db.RotateFederationSecretParams{
+		NewSecretCrypt:      []byte("k2"),
+		ID:                  row.ID,
+		ExpectedSecretCrypt: []byte("k1"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), affected)
+
+	// A second rotation lands first: current = k3, prev = k2.
+	affected, err = writeQueries.RotateFederationSecret(ctx, db.RotateFederationSecretParams{
+		NewSecretCrypt:      []byte("k3"),
+		ID:                  row.ID,
+		ExpectedSecretCrypt: []byte("k2"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), affected)
+
+	// A rotation racing on the row it already read moves nothing.
+	affected, err = writeQueries.RotateFederationSecret(ctx, db.RotateFederationSecretParams{
+		NewSecretCrypt:      []byte("k4"),
+		ID:                  row.ID,
+		ExpectedSecretCrypt: []byte("k1"),
+	})
+	require.NoError(t, err)
+	require.Zero(t, affected, "a stale rotation overwrote a row that had already moved")
+
+	// The stale decision now executes, naming the key it actually saw.
+	require.NoError(t, writeQueries.ClearFederationSecretPrev(ctx, db.ClearFederationSecretPrevParams{
+		ID:              row.ID,
+		PrevSecretCrypt: []byte("k1"),
+	}))
+
+	after, err := queries.FederationSecretByID(ctx, row.ID)
+	require.NoError(t, err)
+	require.Equal(t, []byte("k2"), after.PrevSecretCrypt,
+		"a stale clear wiped the key the newer rotation staged for its own healing window")
+
+	// Naming what is actually there still retires it.
+	require.NoError(t, writeQueries.ClearFederationSecretPrev(ctx, db.ClearFederationSecretPrevParams{
+		ID:              row.ID,
+		PrevSecretCrypt: []byte("k2"),
+	}))
+
+	after, err = queries.FederationSecretByID(ctx, row.ID)
+	require.NoError(t, err)
+	require.Nil(t, after.PrevSecretCrypt)
+}

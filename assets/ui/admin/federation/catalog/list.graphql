@@ -8,7 +8,9 @@ query {
 			createdAt
 			createdBy
 			revokedAt
+			rotatedAt
 			subgraphCount
+			subgraphIds
 		}
 	}
 }

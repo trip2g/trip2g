@@ -1,0 +1,5 @@
+$trip2g_admin_federation_button_rotate $mol_button_major
+	kid \
+	visible true
+	title @ \Rotate key
+	click?event <=> handle_click? null

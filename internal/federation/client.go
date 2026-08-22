@@ -112,26 +112,22 @@ func (c *Client) callTool(ctx context.Context, name string, args any) (model.Fed
 		return model.FederationResult{}, fmt.Errorf("marshal federation request: %w", err)
 	}
 
-	headers := map[string]string{
-		"X-MCP-Federation-Depth": strconv.Itoa(c.peer.Depth + 1),
-	}
-	if len(c.peer.Secret) > 0 && c.peer.KID != "" {
-		token, signErr := signOutbound(c.peer.Secret, c.peer.KID, c.peer.Issuer, rid)
-		if signErr != nil {
-			return model.FederationResult{}, fmt.Errorf("sign federation request: %w", signErr)
-		}
-		headers["Authorization"] = "Bearer " + token
-	}
-
-	raw, err := c.postJSON(ctx, c.peer.KBURL, body, headers, c.timeout)
+	resp, err := c.send(ctx, body, rid, c.peer.Secret)
 	if err != nil {
 		return model.FederationResult{}, err
 	}
 
-	var resp rpcResponse
-	if e := easyjson.Unmarshal(raw, &resp); e != nil {
-		return model.FederationResult{}, fmt.Errorf("decode federation response: %w", e)
+	// The peer holds a key this side does not think is current, which is what a
+	// rotation looks like from either end until one call has confirmed it. The
+	// previous key is the only other one it can be, so this is a single retry,
+	// not a loop.
+	if resp.Error != nil && resp.Error.Code == model.FederationAuthErrorCode && len(c.peer.PrevSecret) > 0 {
+		resp, err = c.send(ctx, body, rid, c.peer.PrevSecret)
+		if err != nil {
+			return model.FederationResult{}, err
+		}
 	}
+
 	if resp.Error != nil {
 		return model.FederationResult{}, fmt.Errorf("federation rpc error %d: %s", resp.Error.Code, resp.Error.Message)
 	}
@@ -146,7 +142,52 @@ func (c *Client) callTool(ctx context.Context, name string, args any) (model.Fed
 	}, nil
 }
 
+// send posts one already-marshalled request signed with the given key. The body
+// is signed rather than merely accompanied by a signature, so the same bytes
+// have to arrive for the peer to accept them.
+func (c *Client) send(ctx context.Context, body []byte, rid string, secret []byte) (rpcResponse, error) {
+	headers := map[string]string{
+		"X-MCP-Federation-Depth": strconv.Itoa(c.peer.Depth + 1),
+	}
+	if len(secret) > 0 && c.peer.KID != "" {
+		token, err := signOutbound(secret, c.peer.KID, c.peer.Issuer, rid, body)
+		if err != nil {
+			return rpcResponse{}, fmt.Errorf("sign federation request: %w", err)
+		}
+		headers["Authorization"] = "Bearer " + token
+	}
+
+	raw, err := c.postJSON(ctx, c.peer.KBURL, body, headers, c.timeout)
+	if err != nil {
+		return rpcResponse{}, err
+	}
+
+	var resp rpcResponse
+	err = easyjson.Unmarshal(raw, &resp)
+	if err != nil {
+		return rpcResponse{}, fmt.Errorf("decode federation response: %w", err)
+	}
+	return resp, nil
+}
+
+// get is postJSON's read-only sibling: same client, same dialer, same limits,
+// no body to send and none to sign.
+func (c *Client) get(ctx context.Context, url string, headers map[string]string, timeout time.Duration) ([]byte, error) {
+	return c.do(ctx, fasthttp.MethodGet, url, nil, headers, timeout)
+}
+
 func (c *Client) postJSON(ctx context.Context, url string, body []byte, headers map[string]string, timeout time.Duration) ([]byte, error) {
+	return c.do(ctx, fasthttp.MethodPost, url, body, headers, timeout)
+}
+
+func (c *Client) do(
+	ctx context.Context,
+	method string,
+	url string,
+	body []byte,
+	headers map[string]string,
+	timeout time.Duration,
+) ([]byte, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -159,13 +200,15 @@ func (c *Client) postJSON(ctx context.Context, url string, body []byte, headers 
 	defer fasthttp.ReleaseResponse(resp)
 
 	req.SetRequestURI(url)
-	req.Header.SetMethod(fasthttp.MethodPost)
+	req.Header.SetMethod(method)
 	req.Header.SetContentType("application/json")
 	// MCP Streamable HTTP requires clients to accept both media types; a peer
 	// rejects the request outright without this.
 	req.Header.Set("Accept", "application/json, text/event-stream")
 	req.Header.Set("User-Agent", userAgent)
-	req.SetBody(body)
+	if len(body) > 0 {
+		req.SetBody(body)
+	}
 
 	for key, value := range headers {
 		req.Header.Set(key, value)
@@ -196,19 +239,26 @@ type jwtClaims struct {
 	Iat int64  `json:"iat"`
 	Exp int64  `json:"exp"`
 	Rid string `json:"rid"`
+	// Bh binds the request body to the signature. Without it the JWT authorises
+	// a caller and says nothing about what they sent, so anything able to touch
+	// the connection can rewrite the arguments inside the 30-second window. That
+	// is untidy for a search and fatal for a call that carries a key.
+	Bh string `json:"bh,omitempty"`
 }
 
-func signOutbound(secret []byte, kid, iss, rid string) (string, error) {
+func signOutbound(secret []byte, kid, iss, rid string, body []byte) (string, error) {
 	issuedAt := time.Now()
 	headerJSON, err := json.Marshal(jwtHeader{Alg: "HS256", Typ: "JWT", KID: kid})
 	if err != nil {
 		return "", fmt.Errorf("marshal jwt header: %w", err)
 	}
+	digest := sha256.Sum256(body)
 	claimsJSON, err := json.Marshal(jwtClaims{
 		Iss: iss,
 		Iat: issuedAt.Unix(),
 		Exp: issuedAt.Add(30 * time.Second).Unix(),
 		Rid: rid,
+		Bh:  base64.RawURLEncoding.EncodeToString(digest[:]),
 	})
 	if err != nil {
 		return "", fmt.Errorf("marshal jwt claims: %w", err)
@@ -224,4 +274,57 @@ func hmacSHA256(secret, payload []byte) []byte {
 	mac := hmac.New(sha256.New, secret)
 	mac.Write(payload)
 	return mac.Sum(nil)
+}
+
+// GrantedScope asks the peer to describe the pairing this side holds.
+//
+// A GET beside the tool endpoint rather than a tool on it: the question is about
+// the pairing, not the content, and it grows by fields rather than by methods.
+// It carries no body, so the signature binds none.
+func (c *Client) GrantedScope(ctx context.Context) (model.FederationScope, error) {
+	if c == nil || c.peer.KBURL == "" {
+		return model.FederationScope{}, errors.New("federation peer url is empty")
+	}
+
+	rid := strconv.FormatInt(time.Now().UnixNano(), 10)
+
+	raw, err := c.describe(ctx, rid, c.peer.Secret)
+	// The peer holds the key this side rotated away from, which is what an
+	// unconfirmed rotation looks like from here. One retry, not a loop.
+	if err != nil && len(c.peer.PrevSecret) > 0 {
+		raw, err = c.describe(ctx, rid, c.peer.PrevSecret)
+	}
+	if err != nil {
+		return model.FederationScope{}, err
+	}
+
+	var scope model.FederationScope
+	err = json.Unmarshal(raw, &scope)
+	if err != nil {
+		return model.FederationScope{}, fmt.Errorf("decode federation description: %w", err)
+	}
+
+	return scope, nil
+}
+
+func (c *Client) describe(ctx context.Context, rid string, secret []byte) ([]byte, error) {
+	headers := map[string]string{"X-MCP-Federation-Depth": strconv.Itoa(c.peer.Depth + 1)}
+
+	if len(secret) > 0 && c.peer.KID != "" {
+		token, err := signOutbound(secret, c.peer.KID, c.peer.Issuer, rid, nil)
+		if err != nil {
+			return nil, fmt.Errorf("sign federation request: %w", err)
+		}
+		headers["Authorization"] = "Bearer " + token
+	}
+
+	return c.get(ctx, c.peer.KBURL+"/federation", headers, c.timeout)
+}
+
+// RotateSecret asks the peer to replace this pairing's shared key with the one
+// carried here. It signs like every other call — current key first, previous on
+// an auth refusal — which is what makes a retry after a lost response reach a
+// peer that already applied the change.
+func (c *Client) RotateSecret(ctx context.Context, params model.MCPRotateSecretParams) (model.FederationResult, error) {
+	return c.callTool(ctx, model.RotateSecretTool, params)
 }

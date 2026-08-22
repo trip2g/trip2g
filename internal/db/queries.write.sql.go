@@ -148,6 +148,23 @@ func (q *WriteQueries) CleanupOrphanedAPIKeyLogIPs(ctx context.Context) error {
 	return err
 }
 
+const clearFederationSecretPrev = `-- name: ClearFederationSecretPrev :exec
+update federation_secrets
+   set prev_secret_crypt = null
+ where id = ?
+   and prev_secret_crypt = ?
+`
+
+type ClearFederationSecretPrevParams struct {
+	ID              int64  `json:"id"`
+	PrevSecretCrypt []byte `json:"prev_secret_crypt"`
+}
+
+func (q *WriteQueries) ClearFederationSecretPrev(ctx context.Context, arg ClearFederationSecretPrevParams) error {
+	_, err := q.db.ExecContext(ctx, clearFederationSecretPrev, arg.ID, arg.PrevSecretCrypt)
+	return err
+}
+
 const clearPatreonCredentialsWebhookSecret = `-- name: ClearPatreonCredentialsWebhookSecret :exec
 update patreon_credentials
 set webhook_secret = null
@@ -1358,7 +1375,7 @@ func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context,
 const insertFederationSecret = `-- name: InsertFederationSecret :one
 insert into federation_secrets (kid, secret_crypt, kb_url, description, created_by)
 values (?, ?, ?, ?, ?)
-returning id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at
+returning id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at
 `
 
 type InsertFederationSecretParams struct {
@@ -1387,6 +1404,8 @@ func (q *WriteQueries) InsertFederationSecret(ctx context.Context, arg InsertFed
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.RevokedAt,
+		&i.PrevSecretCrypt,
+		&i.RotatedAt,
 	)
 	return i, err
 }
@@ -3319,6 +3338,29 @@ func (q *WriteQueries) RevokeUserToken(ctx context.Context, arg RevokeUserTokenP
 	return i, err
 }
 
+const rotateFederationSecret = `-- name: RotateFederationSecret :execrows
+update federation_secrets
+   set prev_secret_crypt = secret_crypt,
+       secret_crypt = ?1,
+       rotated_at = current_timestamp
+ where id = ?2
+   and secret_crypt = ?3
+`
+
+type RotateFederationSecretParams struct {
+	NewSecretCrypt      []byte `json:"new_secret_crypt"`
+	ID                  int64  `json:"id"`
+	ExpectedSecretCrypt []byte `json:"expected_secret_crypt"`
+}
+
+func (q *WriteQueries) RotateFederationSecret(ctx context.Context, arg RotateFederationSecretParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, rotateFederationSecret, arg.NewSecretCrypt, arg.ID, arg.ExpectedSecretCrypt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const setActiveGitHubOAuthCredentials = `-- name: SetActiveGitHubOAuthCredentials :exec
 update github_oauth_credentials set active = (id = ?)
 `
@@ -3546,9 +3588,9 @@ func (q *WriteQueries) UnhideNotePath(ctx context.Context, value string) error {
 
 const updateAdminSubgraph = `-- name: UpdateAdminSubgraph :one
 update subgraphs
-   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?, require_signin = ?
+   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?, require_signin = ?, human_description = ?
  where id = ?
-returning id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin
+returning id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description
 `
 
 type UpdateAdminSubgraphParams struct {
@@ -3556,6 +3598,7 @@ type UpdateAdminSubgraphParams struct {
 	Hidden                          bool    `json:"hidden"`
 	ShowUnsubgraphNotesForPaidUsers *bool   `json:"show_unsubgraph_notes_for_paid_users"`
 	RequireSignin                   bool    `json:"require_signin"`
+	HumanDescription                string  `json:"human_description"`
 	ID                              int64   `json:"id"`
 }
 
@@ -3565,6 +3608,7 @@ func (q *WriteQueries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminS
 		arg.Hidden,
 		arg.ShowUnsubgraphNotesForPaidUsers,
 		arg.RequireSignin,
+		arg.HumanDescription,
 		arg.ID,
 	)
 	var i Subgraph
@@ -3576,6 +3620,7 @@ func (q *WriteQueries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminS
 		&i.Hidden,
 		&i.ShowUnsubgraphNotesForPaidUsers,
 		&i.RequireSignin,
+		&i.HumanDescription,
 	)
 	return i, err
 }

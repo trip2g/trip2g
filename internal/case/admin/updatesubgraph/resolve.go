@@ -21,8 +21,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	params := db.UpdateAdminSubgraphParams{
 		ID: input.ID,
 
-		Hidden:        input.Hidden,
-		RequireSignin: input.RequireSignin,
+		Hidden:           input.Hidden,
+		RequireSignin:    input.RequireSignin,
+		HumanDescription: input.HumanDescription,
 	}
 
 	if input.Color != "" {

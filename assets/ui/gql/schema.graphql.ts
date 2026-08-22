@@ -444,7 +444,9 @@ export type AdminFederationSecret = {
   kbUrl?: Maybe<Scalars['String']['output']>;
   kid: Scalars['String']['output'];
   revokedAt?: Maybe<Scalars['Time']['output']>;
+  rotatedAt?: Maybe<Scalars['Time']['output']>;
   subgraphCount: Scalars['Int64']['output'];
+  subgraphIds: Array<Scalars['Int64']['output']>;
 };
 
 export type AdminFormBoolValue = {
@@ -676,6 +678,7 @@ export type AdminMutation = {
   restoreBoostyCredentials: RestoreBoostyCredentialsOrErrorPayload;
   restorePatreonCredentials: RestorePatreonCredentialsOrErrorPayload;
   revokeFederationSecret: RevokeFederationSecretOrErrorPayload;
+  rotateFederationSecret: RotateFederationSecretOrErrorPayload;
   runCronJob: RunCronJobOrErrorPayload;
   sendTelegramPublishNoteNow: SendTelegramPublishNoteNowOrErrorPayload;
   setActiveGitHubOAuthCredentials: SetActiveGitHubOAuthCredentialsOrErrorPayload;
@@ -1025,6 +1028,11 @@ export type AdminMutationrestorePatreonCredentialsArgs = {
 
 export type AdminMutationrevokeFederationSecretArgs = {
   id: Scalars['Int64']['input'];
+};
+
+
+export type AdminMutationrotateFederationSecretArgs = {
+  kid: Scalars['String']['input'];
 };
 
 
@@ -1461,6 +1469,7 @@ export type AdminQuery = {
   deliveryLogs: Array<AdminDeliveryLog>;
   deliveryTrace: Array<AdminTraceDelivery>;
   deliveryTraces: Array<AdminDeliveryTrace>;
+  federationPeerScope: FederationPeerScopeOrErrorPayload;
   federationSecrets: Array<AdminFederationSecret>;
   formNotes: Array<AdminFormNote>;
   formSubmits: AdminFormSubmitsConnection;
@@ -1587,6 +1596,11 @@ export type AdminQuerydeliveryTraceArgs = {
 export type AdminQuerydeliveryTracesArgs = {
   limit?: InputMaybe<Scalars['Int64']['input']>;
   withEmpty?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type AdminQueryfederationPeerScopeArgs = {
+  kid: Scalars['String']['input'];
 };
 
 
@@ -1844,6 +1858,7 @@ export type AdminSubgraph = {
   color?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Time']['output'];
   hidden: Scalars['Boolean']['output'];
+  humanDescription: Scalars['String']['output'];
   id: Scalars['Int64']['output'];
   name: Scalars['String']['output'];
   requireSignin: Scalars['Boolean']['output'];
@@ -2485,6 +2500,7 @@ export type CreateInboundFederationSecretOrErrorPayload = CreateInboundFederatio
 export type CreateInboundFederationSecretPayload = {
   __typename?: 'CreateInboundFederationSecretPayload';
   id: Scalars['Int64']['output'];
+  key: Scalars['String']['output'];
   kid: Scalars['String']['output'];
   secretHex: Scalars['String']['output'];
 };
@@ -2535,9 +2551,11 @@ export type CreateOfferPayload = {
 
 export type CreateOutboundFederationSecretInput = {
   description?: InputMaybe<Scalars['String']['input']>;
-  kbURL: Scalars['String']['input'];
-  kid: Scalars['String']['input'];
-  secretHex: Scalars['String']['input'];
+  kbURL?: InputMaybe<Scalars['String']['input']>;
+  key?: InputMaybe<Scalars['String']['input']>;
+  kid?: InputMaybe<Scalars['String']['input']>;
+  rotate?: InputMaybe<Scalars['Boolean']['input']>;
+  secretHex?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateOutboundFederationSecretOrErrorPayload = CreateOutboundFederationSecretPayload | ErrorPayload;
@@ -2836,6 +2854,21 @@ export type ErrorPayload = {
   __typename?: 'ErrorPayload';
   byFields: Array<FieldMessage>;
   message: Scalars['String']['output'];
+};
+
+export type FederationPeerScopeOrErrorPayload = ErrorPayload | FederationPeerScopePayload;
+
+export type FederationPeerScopePayload = {
+  __typename?: 'FederationPeerScopePayload';
+  kid: Scalars['String']['output'];
+  rotation: Scalars['Boolean']['output'];
+  subgraphs: Array<FederationPeerScopeSubgraph>;
+};
+
+export type FederationPeerScopeSubgraph = {
+  __typename?: 'FederationPeerScopeSubgraph';
+  humanDescription: Scalars['String']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type FieldMessage = {
@@ -3657,6 +3690,13 @@ export enum Role {
   USER = 'USER'
 }
 
+export type RotateFederationSecretOrErrorPayload = ErrorPayload | RotateFederationSecretPayload;
+
+export type RotateFederationSecretPayload = {
+  __typename?: 'RotateFederationSecretPayload';
+  kid: Scalars['String']['output'];
+};
+
 export type RunCronJobInput = {
   id: Scalars['Int64']['input'];
 };
@@ -3676,6 +3716,13 @@ export type SearchConnection = {
 
 export type SearchInput = {
   query: Scalars['String']['input'];
+  /**
+   * Run the second-stage cross-encoder reranker for this search. Omit to use the
+   * instance default (vector_search.reranker.default). Ignored when no reranker
+   * is configured. Reranking is linear in candidates and slow on CPU, so it is
+   * opt-in by default.
+   */
+  rerank?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export enum SearchMatchOrigin {
@@ -4283,6 +4330,7 @@ export type UpdateRedirectPayload = {
 export type UpdateSubgraphInput = {
   color: Scalars['String']['input'];
   hidden: Scalars['Boolean']['input'];
+  humanDescription: Scalars['String']['input'];
   id: Scalars['Int64']['input'];
   requireSignin: Scalars['Boolean']['input'];
 };

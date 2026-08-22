@@ -6,7 +6,7 @@ export type trip2g_admin_subgraph_show_saveMutationVariables = Exact<{
 }>;
 
 
-export type trip2g_admin_subgraph_show_saveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateSubgraphPayload', subgraph: { __typename?: 'AdminSubgraph', id: any, color?: string | null } } } };
+export type trip2g_admin_subgraph_show_saveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', payload: { __typename: 'ErrorPayload', message: string } | { __typename: 'UpdateSubgraphPayload', subgraph: { __typename?: 'AdminSubgraph', id: any, color?: string | null, humanDescription: string } } } };
 
 
 export function $trip2g_admin_subgraph_show_save(variables: trip2g_admin_subgraph_show_saveMutationVariables, opts?: { revalidate?: boolean }): trip2g_admin_subgraph_show_saveMutation {
@@ -18,6 +18,7 @@ export function $trip2g_admin_subgraph_show_save(variables: trip2g_admin_subgrap
         subgraph {
           id
           color
+          humanDescription
         }
       }
       ... on ErrorPayload {

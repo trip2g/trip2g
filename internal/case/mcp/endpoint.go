@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/model"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
@@ -357,12 +358,16 @@ func authenticateAnonymousRequest(ctx context.Context, req *appreq.Request, env 
 	if !isBearerToken || token == "" {
 		return ctx, authAnonymous, nil
 	}
-	kid, allowedSubgraphs, verifyErr := verifyInbound(req.Req, env, token)
+	auth, verifyErr := verifyInbound(req.Req, env, token, req.Req.Request.Body())
 	if verifyErr != nil {
-		resp := errorResponse(id, ErrCodeInternal, "Federation auth failed: "+verifyErr.Error())
+		// A dedicated code, not the generic internal one: a caller holding the
+		// key this pairing rotated away from has to be able to tell "not the key
+		// you think" from every other failure, which is what makes its single
+		// retry with the previous key precise instead of blind.
+		resp := errorResponse(id, model.FederationAuthErrorCode, "Federation auth failed: "+verifyErr.Error())
 		return ctx, authFederation, &resp
 	}
-	return contextWithFederationAuth(ctx, kid, allowedSubgraphs), authFederation, nil
+	return contextWithFederationAuth(ctx, auth), authFederation, nil
 }
 
 func writeJSONResponse(req *appreq.Request, resp Response) (interface{}, error) {

@@ -195,6 +195,18 @@ select * from federation_secrets
  order by created_at desc, id desc
  limit 1;
 
+-- name: OutboundFederationSecretByKID :one
+select * from federation_secrets
+ where kid = ?
+   and kb_url is not null
+   and revoked_at is null
+ order by created_at desc, id desc
+ limit 1;
+
+-- name: FederationSecretByID :one
+select * from federation_secrets
+ where id = ?;
+
 -- name: ListFederationSecrets :many
 select
   fs.id,
@@ -205,6 +217,7 @@ select
   fs.created_at,
   fs.created_by,
   fs.revoked_at,
+  fs.rotated_at,
   count(fss.subgraph_id) as subgraph_count
 from federation_secrets fs
 left join federation_secret_subgraphs fss on fss.kid = fs.kid
@@ -217,6 +230,19 @@ select s.name
   join subgraphs s on s.id = fss.subgraph_id
  where fss.kid = ?
  order by s.name;
+
+-- name: ListFederationSecretScopeByKID :many
+select s.name, s.human_description
+  from federation_secret_subgraphs fss
+  join subgraphs s on s.id = fss.subgraph_id
+ where fss.kid = ?
+ order by s.name;
+
+-- name: ListFederationSecretSubgraphIDsByKID :many
+select fss.subgraph_id
+  from federation_secret_subgraphs fss
+ where fss.kid = ?
+ order by fss.subgraph_id;
 
 -- name: ListAllFederationSecretScopes :many
 select fss.kid, s.id as subgraph_id, s.name as subgraph_name
