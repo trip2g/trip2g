@@ -444,6 +444,7 @@ export type AdminFederationSecret = {
   kbUrl?: Maybe<Scalars['String']['output']>;
   kid: Scalars['String']['output'];
   revokedAt?: Maybe<Scalars['Time']['output']>;
+  rotatedAt?: Maybe<Scalars['Time']['output']>;
   subgraphCount: Scalars['Int64']['output'];
 };
 
@@ -676,6 +677,7 @@ export type AdminMutation = {
   restoreBoostyCredentials: RestoreBoostyCredentialsOrErrorPayload;
   restorePatreonCredentials: RestorePatreonCredentialsOrErrorPayload;
   revokeFederationSecret: RevokeFederationSecretOrErrorPayload;
+  rotateFederationSecret: RotateFederationSecretOrErrorPayload;
   runCronJob: RunCronJobOrErrorPayload;
   sendTelegramPublishNoteNow: SendTelegramPublishNoteNowOrErrorPayload;
   setActiveGitHubOAuthCredentials: SetActiveGitHubOAuthCredentialsOrErrorPayload;
@@ -1025,6 +1027,11 @@ export type AdminMutationrestorePatreonCredentialsArgs = {
 
 export type AdminMutationrevokeFederationSecretArgs = {
   id: Scalars['Int64']['input'];
+};
+
+
+export type AdminMutationrotateFederationSecretArgs = {
+  kid: Scalars['String']['input'];
 };
 
 
@@ -2537,6 +2544,7 @@ export type CreateOutboundFederationSecretInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   kbURL: Scalars['String']['input'];
   kid: Scalars['String']['input'];
+  rotate?: InputMaybe<Scalars['Boolean']['input']>;
   secretHex: Scalars['String']['input'];
 };
 
@@ -3657,6 +3665,13 @@ export enum Role {
   USER = 'USER'
 }
 
+export type RotateFederationSecretOrErrorPayload = ErrorPayload | RotateFederationSecretPayload;
+
+export type RotateFederationSecretPayload = {
+  __typename?: 'RotateFederationSecretPayload';
+  kid: Scalars['String']['output'];
+};
+
 export type RunCronJobInput = {
   id: Scalars['Int64']['input'];
 };
@@ -3676,6 +3691,13 @@ export type SearchConnection = {
 
 export type SearchInput = {
   query: Scalars['String']['input'];
+  /**
+   * Run the second-stage cross-encoder reranker for this search. Omit to use the
+   * instance default (vector_search.reranker.default). Ignored when no reranker
+   * is configured. Reranking is linear in candidates and slow on CPU, so it is
+   * opt-in by default.
+   */
+  rerank?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export enum SearchMatchOrigin {

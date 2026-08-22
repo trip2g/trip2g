@@ -40,6 +40,20 @@ namespace $.$$ {
 			return this.row( id ).kbUrl ?? '—'
 		}
 
+		// kb_url is the direction: a null one is a key a peer signs with to call
+		// here, a filled one is a key this instance signs with to call out. The
+		// column exists because that is the first thing an operator needs to know
+		// about a row and a dash in the URL column does not say it.
+		override row_direction( id: any ): string {
+			return this.row( id ).kbUrl ? 'outbound' : 'inbound'
+		}
+
+		// Empty means the pairing still holds the key it was created with — for an
+		// outbound secret, the one that travelled out of band.
+		override row_rotated_at( id: any ): string {
+			return this.row( id ).rotatedAt ?? ''
+		}
+
 		override row_subgraph_count( id: any ): string {
 			return this.row( id ).subgraphCount.toString()
 		}

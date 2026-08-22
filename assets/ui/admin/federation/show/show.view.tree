@@ -4,6 +4,9 @@ $trip2g_admin_federation_show $mol_page
 	revoked false
 	kid \
 	kb_url \
+	rotated_at \
+	direction \
+	rotated_label \
 	body /
 		<= Info $mol_view
 			sub /
@@ -11,10 +14,18 @@ $trip2g_admin_federation_show $mol_page
 					title \Key ID
 					Content <= KidCell $trip2g_admin_cell
 						content <= kid
+				<= Direction_labeler $mol_labeler
+					title \Direction
+					Content <= DirectionCell $trip2g_admin_cell
+						content <= direction
 				<= KbUrl_labeler $mol_labeler
 					title \KB URL
 					Content <= KbUrlCell $trip2g_admin_cell
 						content <= kb_url
+				<= Rotated_labeler $mol_labeler
+					title \Last Rotated
+					Content <= RotatedCell $trip2g_admin_cell
+						content <= rotated_label
 				<= SubgraphsSection $mol_view
 					sub /
 						<= SubgraphsTitle $mol_view

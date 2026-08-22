@@ -3791,6 +3791,9 @@ type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSec
   createdAt: Time!
   createdBy: Int64!
   revokedAt: Time
+  # When this pairing's key was last replaced. Null means it still holds the key
+  # it was created with — for an outbound secret, the one handed over out of band.
+  rotatedAt: Time
   subgraphCount: Int64!
 }
 

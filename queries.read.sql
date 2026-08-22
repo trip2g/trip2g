@@ -217,6 +217,7 @@ select
   fs.created_at,
   fs.created_by,
   fs.revoked_at,
+  fs.rotated_at,
   count(fss.subgraph_id) as subgraph_count
 from federation_secrets fs
 left join federation_secret_subgraphs fss on fss.kid = fs.kid

@@ -4,7 +4,7 @@ namespace $ {
 export type trip2g_admin_federation_catalog_listQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type trip2g_admin_federation_catalog_listQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', federationSecrets: Array<{ __typename?: 'AdminFederationSecret', id: any, kid: string, kbUrl?: string | null, description?: string | null, createdAt: any, createdBy: any, revokedAt?: any | null, subgraphCount: any }> } };
+export type trip2g_admin_federation_catalog_listQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', federationSecrets: Array<{ __typename?: 'AdminFederationSecret', id: any, kid: string, kbUrl?: string | null, description?: string | null, createdAt: any, createdBy: any, revokedAt?: any | null, rotatedAt?: any | null, subgraphCount: any }> } };
 
 
 export function $trip2g_admin_federation_catalog_list(opts?: { revalidate?: boolean }): trip2g_admin_federation_catalog_listQuery {
@@ -18,6 +18,7 @@ export function $trip2g_admin_federation_catalog_list(opts?: { revalidate?: bool
       createdAt
       createdBy
       revokedAt
+      rotatedAt
       subgraphCount
     }
   }

@@ -5235,6 +5235,7 @@ select
   fs.created_at,
   fs.created_by,
   fs.revoked_at,
+  fs.rotated_at,
   count(fss.subgraph_id) as subgraph_count
 from federation_secrets fs
 left join federation_secret_subgraphs fss on fss.kid = fs.kid
@@ -5251,6 +5252,7 @@ type ListFederationSecretsRow struct {
 	CreatedAt     time.Time  `json:"created_at"`
 	CreatedBy     int64      `json:"created_by"`
 	RevokedAt     *time.Time `json:"revoked_at"`
+	RotatedAt     *time.Time `json:"rotated_at"`
 	SubgraphCount int64      `json:"subgraph_count"`
 }
 
@@ -5272,6 +5274,7 @@ func (q *Queries) ListFederationSecrets(ctx context.Context) ([]ListFederationSe
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.RevokedAt,
+			&i.RotatedAt,
 			&i.SubgraphCount,
 		); err != nil {
 			return nil, err

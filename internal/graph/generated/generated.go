@@ -4993,6 +4993,9 @@ type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSec
   createdAt: Time!
   createdBy: Int64!
   revokedAt: Time
+  # When this pairing's key was last replaced. Null means it still holds the key
+  # it was created with — for an outbound secret, the one handed over out of band.
+  rotatedAt: Time
   subgraphCount: Int64!
 }
 
@@ -13518,6 +13521,35 @@ func (ec *executionContext) _AdminFederationSecret_revokedAt(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_AdminFederationSecret_revokedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminFederationSecret_rotatedAt(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_rotatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.RotatedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_rotatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminFederationSecret",
 		Field:      field,
@@ -24632,6 +24664,8 @@ func (ec *executionContext) fieldContext_AdminQuery_federationSecrets(_ context.
 				return ec.fieldContext_AdminFederationSecret_createdBy(ctx, field)
 			case "revokedAt":
 				return ec.fieldContext_AdminFederationSecret_revokedAt(ctx, field)
+			case "rotatedAt":
+				return ec.fieldContext_AdminFederationSecret_rotatedAt(ctx, field)
 			case "subgraphCount":
 				return ec.fieldContext_AdminFederationSecret_subgraphCount(ctx, field)
 			}
@@ -60600,6 +60634,8 @@ func (ec *executionContext) _AdminFederationSecret(ctx context.Context, sel ast.
 			}
 		case "revokedAt":
 			out.Values[i] = ec._AdminFederationSecret_revokedAt(ctx, field, obj)
+		case "rotatedAt":
+			out.Values[i] = ec._AdminFederationSecret_rotatedAt(ctx, field, obj)
 		case "subgraphCount":
 			out.Values[i] = ec._AdminFederationSecret_subgraphCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
