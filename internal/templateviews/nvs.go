@@ -11,17 +11,32 @@ import (
 type NVS struct {
 	nvs            *model.NoteViews
 	defaultVersion string
+	domainHost     string
 }
 
-// NewNVS creates a new template NVS wrapper.
+// NewNVS creates a new template NVS wrapper for the main domain.
 func NewNVS(nvs *model.NoteViews, defaultVersion string) *NVS {
+	return NewNVSWithDomain(nvs, defaultVersion, "")
+}
+
+// NewNVSWithDomain creates a template NVS wrapper bound to the host the page
+// is being served on. Notes it returns render that host's HTML, so a header,
+// footer or sidebar resolves its links exactly as the page body does.
+func NewNVSWithDomain(nvs *model.NoteViews, defaultVersion, domainHost string) *NVS {
 	if nvs == nil {
 		return nil
 	}
 	return &NVS{
 		nvs:            nvs,
 		defaultVersion: defaultVersion,
+		domainHost:     domainHost,
 	}
+}
+
+// wrap builds a Note carrying this NVS's host, so every note reached through
+// the wrapper renders for the same domain as the page around it.
+func (n *NVS) wrap(nv *model.NoteView) *Note {
+	return NewNoteWithDomain(nv, n.domainHost)
 }
 
 // ByPath returns a note by its file path (e.g., "/_sidebar.md", "_sidebar.md").
@@ -39,7 +54,7 @@ func (n *NVS) ByPath(path string) *Note {
 		return nil
 	}
 
-	return NewNote(nv)
+	return n.wrap(nv)
 }
 
 // ByPermalink returns a note by its permalink (e.g., "/docs", "/about").
@@ -54,7 +69,7 @@ func (n *NVS) ByPermalink(permalink string) *Note {
 		return nil
 	}
 
-	return NewNote(nv)
+	return n.wrap(nv)
 }
 
 // ByWikilink resolves a wikilink target using Obsidian's algorithm:
@@ -70,11 +85,11 @@ func (n *NVS) ByWikilink(target string) *Note {
 	if strings.Contains(target, "/") {
 		permalink := "/" + strings.ToLower(strings.ReplaceAll(target, " ", "_"))
 		if nv, ok := n.nvs.Map[permalink]; ok {
-			return NewNote(nv)
+			return n.wrap(nv)
 		}
 		pathKey := strings.ReplaceAll(target, " ", "_") + ".md"
 		if nv, ok := n.nvs.PathMap[pathKey]; ok {
-			return NewNote(nv)
+			return n.wrap(nv)
 		}
 		return nil
 	}
@@ -83,7 +98,7 @@ func (n *NVS) ByWikilink(target string) *Note {
 	key := strings.ToLower(strings.ReplaceAll(target, " ", "_"))
 	candidates := n.nvs.BasenameMap[key]
 	if len(candidates) == 1 {
-		return NewNote(candidates[0])
+		return n.wrap(candidates[0])
 	}
 	if len(candidates) > 1 {
 		// Shortest path from root wins (Obsidian priority).
@@ -96,7 +111,7 @@ func (n *NVS) ByWikilink(target string) *Note {
 				shortestDepth = depth
 			}
 		}
-		return NewNote(shortest)
+		return n.wrap(shortest)
 	}
 
 	return nil
@@ -111,7 +126,7 @@ func (n *NVS) Sidebars(note *Note) []*Note {
 	sidebars := n.nvs.Sidebars(note.nv)
 	result := make([]*Note, 0, len(sidebars))
 	for _, s := range sidebars {
-		result = append(result, NewNote(s))
+		result = append(result, n.wrap(s))
 	}
 	return result
 }
@@ -125,7 +140,7 @@ func (n *NVS) HomePages(note *Note) []*Note {
 	homePages := n.nvs.HomePages(note.nv)
 	result := make([]*Note, 0, len(homePages))
 	for _, hp := range homePages {
-		result = append(result, NewNote(hp))
+		result = append(result, n.wrap(hp))
 	}
 	return result
 }
@@ -139,7 +154,7 @@ func (n *NVS) BackLinks(note *Note) []*Note {
 	result := make([]*Note, 0, len(note.nv.InLinks))
 	for path := range note.nv.InLinks {
 		if linked := n.nvs.GetByPath(path); linked != nil && !linked.IsSystem() {
-			result = append(result, NewNote(linked))
+			result = append(result, n.wrap(linked))
 		}
 	}
 	return result
@@ -159,7 +174,7 @@ func (n *NVS) OutLinks(note *Note) []*Note {
 		}
 		seen[permalink] = struct{}{}
 		if linked := n.nvs.GetByPath(permalink); linked != nil {
-			result = append(result, NewNote(linked))
+			result = append(result, n.wrap(linked))
 		}
 	}
 	return result
@@ -182,7 +197,7 @@ func (n *NVS) List() []*Note {
 	visible := n.nvs.VisibleList()
 	result := make([]*Note, 0, len(visible))
 	for _, nv := range visible {
-		result = append(result, NewNote(nv))
+		result = append(result, n.wrap(nv))
 	}
 	return result
 }

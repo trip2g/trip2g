@@ -82,7 +82,16 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	// 301 redirect for non-canonical URL variants (alternate transliteration methods).
-	if resp.Note != nil && resp.Note.AlternatePermalinks != nil && request.Path != resp.Note.Permalink {
+	//
+	// Only when the reader actually arrived by one of those variants. A path
+	// that merely differs from the permalink is not a variant: a note reached
+	// through its own route: frontmatter is served at a path of the author's
+	// choosing, and redirecting it away is both surprising and, on a custom
+	// domain, fatal -- the permalink is not routed there, so the redirect
+	// lands on a 404. Before this test the two cases were indistinguishable,
+	// and which one a note got depended on whether its filename happened to
+	// contain characters the transliterator rewrites.
+	if resp.Note != nil && isAlternatePermalink(resp.Note, request.Path) {
 		redirectURL := resp.Note.PermalinkEncoded()
 		if qs := req.Req.URI().QueryString(); len(qs) > 0 {
 			redirectURL += "?" + string(qs)
@@ -396,7 +405,7 @@ func renderLayout(
 
 	vars := make(jet.VarMap)
 	vars["note"] = reflect.ValueOf(resp.NoteView)
-	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
+	vars["nvs"] = reflect.ValueOf(templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost))
 	vars["title"] = reflect.ValueOf(resp.Title)
 	vars["publicURL"] = reflect.ValueOf(env.PublicURL())
 
@@ -682,7 +691,7 @@ func buildDefaultTemplateCtx(
 
 	dtCtx := &defaulttemplate.Ctx{
 		Note:            resp.NoteView,
-		Notes:           templateviews.NewNVS(resp.Notes, resp.DefaultVersion),
+		Notes:           templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost),
 		Title:           layoutParams.Title,
 		JSURLs:          jsURLs,
 		LocaleHashes:    env.UserLocaleHashes(),
@@ -728,4 +737,23 @@ func buildDefaultTemplateCtx(
 	}
 
 	return dtCtx
+}
+
+// isAlternatePermalink reports whether path is one of the note's superseded
+// permalink spellings -- the variants produced by the other transliteration
+// methods -- as opposed to the canonical permalink or any other path the note
+// answers at.
+func isAlternatePermalink(note *model.NoteView, path string) bool {
+	if note.AlternatePermalinks == nil || path == note.Permalink {
+		return false
+	}
+	if path == note.PermalinkOriginal {
+		return true
+	}
+	for _, variant := range note.AlternatePermalinks {
+		if path == variant {
+			return true
+		}
+	}
+	return false
 }

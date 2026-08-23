@@ -96,7 +96,7 @@ func (q *NoteQuery) All() []*Note {
 		if q.public && !nv.IsPubliclyReadable() {
 			continue
 		}
-		notes = append(notes, NewNote(nv))
+		notes = append(notes, q.nvs.wrap(nv))
 	}
 
 	// Step 2: Sort

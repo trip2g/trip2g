@@ -222,7 +222,7 @@ func buildUserSpaceHelper(
 
 	h := newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.UserToken.IsAdmin(), resp.Title, resp.NoteView)
 	h.cssURLs = cssURLs
-	h.nvs = templateviews.NewNVS(resp.Notes, resp.DefaultVersion)
+	h.nvs = templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost)
 	if resp.Notes != nil {
 		h.layoutSections = resp.Notes.LayoutSections
 	}

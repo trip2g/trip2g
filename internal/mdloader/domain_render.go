@@ -34,19 +34,28 @@ func (ldr *loader) generateDomainHTMLs() {
 		if p.Ast() == nil {
 			continue
 		}
-		// Pass 1: custom domain re-render for notes with explicit custom domain routes.
-		if hasCustomDomainRoutes(p) {
-			for _, host := range ldr.uniqueHostsForNote(p) {
-				domainLinks, domainNoteIndex := ldr.buildDomainResolvedLinks(p, host)
-				if domainLinks == nil {
-					// No differences from main domain -- skip re-render.
-					continue
-				}
+		// Pass 1: custom domain re-render.
+		//
+		// A note with its own routes is rendered for the hosts it lives on.
+		// A note without any -- a shared header, footer or sidebar -- is
+		// rendered for every configured host, because it is served as part of
+		// pages that do live there, and its links have to resolve the way the
+		// body's do. Without this the chrome keeps the main-domain rendering
+		// and points back at the reader's own host with an absolute URL.
+		hosts := ldr.uniqueHostsForNote(p)
+		if len(hosts) == 0 {
+			hosts = domainHosts
+		}
+		for _, host := range hosts {
+			domainLinks, domainNoteIndex := ldr.buildDomainResolvedLinks(p, host)
+			if domainLinks == nil {
+				// No differences from main domain -- skip re-render.
+				continue
+			}
 
-				if err := ldr.generateDomainHTML(p, host, domainLinks, domainNoteIndex); err != nil {
-					ldr.log.Warn("failed to generate domain HTML",
-						"path", p.Path, "host", host, "error", err)
-				}
+			if err := ldr.generateDomainHTML(p, host, domainLinks, domainNoteIndex); err != nil {
+				ldr.log.Warn("failed to generate domain HTML",
+					"path", p.Path, "host", host, "error", err)
 			}
 		}
 
@@ -218,15 +227,4 @@ func (ldr *loader) generateDomainHTML(
 	// TODO(v2): DomainFreeHTML -- also re-render FreeHTML for custom domain context.
 
 	return nil
-}
-
-// hasCustomDomainRoutes returns true if the note has at least one route
-// with a non-empty Host (custom domain, not a main-domain alias).
-func hasCustomDomainRoutes(n *model.NoteView) bool {
-	for _, r := range n.Routes {
-		if r.Host != "" {
-			return true
-		}
-	}
-	return false
 }
