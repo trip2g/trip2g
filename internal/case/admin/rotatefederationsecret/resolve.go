@@ -93,6 +93,10 @@ func Propose(ctx context.Context, env Env, peer model.FederationPeer, secret []b
 	params := model.MCPRotateSecretParams{SecretHex: hex.EncodeToString(secret)}
 
 	result, err := env.FederationPeerClient(peer).RotateSecret(ctx, params)
+	var rpcErr *model.FederationRPCError
+	if errors.As(err, &rpcErr) && answeredWithoutExecuting(rpcErr.Code) {
+		return fmt.Errorf("%w: %w", ErrPeerRefused, rpcErr)
+	}
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrPeerSilent, err)
 	}
@@ -101,6 +105,21 @@ func Propose(ctx context.Context, env Env, peer model.FederationPeer, secret []b
 	}
 
 	return nil
+}
+
+// answeredWithoutExecuting reports whether a JSON-RPC code proves the peer
+// never ran the call: the request was unparseable, malformed, unauthenticated,
+// or named a method it does not have. Any of them means the peer still holds
+// only the old key. An internal error proves nothing — the peer may have
+// failed after committing — so it stays on the silence path. The values are
+// the protocol's (JSON-RPC 2.0 §5.1), redeclared rather than importing the MCP
+// surface for four integers.
+func answeredWithoutExecuting(code int) bool {
+	switch code {
+	case -32700, -32600, -32601, -32602, model.FederationAuthErrorCode:
+		return true
+	}
+	return false
 }
 
 // Resolve rotates a pairing that is already installed.

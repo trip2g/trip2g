@@ -159,6 +159,27 @@ func TestClientDoesNotRetryWithoutAPreviousKey(t *testing.T) {
 	require.Equal(t, 1, calls)
 }
 
+// A JSON-RPC error is an answer — the peer heard the call and named a reason —
+// where a transport failure proves nothing reached it. Callers that record
+// opposite outcomes for the two (key rotation) need the code and message typed.
+func TestClientTypesAJSONRPCErrorAnswer(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":"1","error":{"code":-32601,"message":"Method not found: rotate_secret"}}`))
+	}))
+	defer server.Close()
+
+	peer := model.FederationPeer{KBURL: server.URL, KID: "kid-1", Secret: []byte("secret")}
+
+	_, err := federation.NewClient(peer, &fasthttp.Client{}, true).
+		RotateSecret(context.Background(), model.MCPRotateSecretParams{SecretHex: "00"})
+
+	var rpcErr *model.FederationRPCError
+	require.ErrorAs(t, err, &rpcErr)
+	require.Equal(t, -32601, rpcErr.Code)
+	require.Contains(t, rpcErr.Message, "rotate_secret")
+}
+
 // The signature covers the body, so the arguments a peer verifies are the ones
 // that were sent — the property a call carrying a key depends on.
 func TestClientSignsTheBody(t *testing.T) {

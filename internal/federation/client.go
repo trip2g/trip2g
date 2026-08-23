@@ -129,7 +129,7 @@ func (c *Client) callTool(ctx context.Context, name string, args any) (model.Fed
 	}
 
 	if resp.Error != nil {
-		return model.FederationResult{}, fmt.Errorf("federation rpc error %d: %s", resp.Error.Code, resp.Error.Message)
+		return model.FederationResult{}, &model.FederationRPCError{Code: resp.Error.Code, Message: resp.Error.Message}
 	}
 	content := make([]model.FederationContent, len(resp.Result.Content))
 	for i, c := range resp.Result.Content {

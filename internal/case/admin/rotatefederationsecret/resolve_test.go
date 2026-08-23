@@ -181,6 +181,46 @@ func TestResolveRecordsNothingWhenThePeerRefuses(t *testing.T) {
 	require.Nil(t, env.rotated, "this side moved off a key the peer said it kept")
 }
 
+// The real transport answers a refusal as a typed JSON-RPC error, never as an
+// IsError tool result. A code the peer sends before executing anything proves
+// it still holds only the old key; an internal error proves nothing — the peer
+// may have failed after committing — so it stays on the silence path.
+func TestResolveClassifiesRPCAnswers(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		code     int
+		recorded bool
+	}{
+		{"parse error is a refusal", -32700, false},
+		{"invalid request is a refusal", -32600, false},
+		{"method not found is a refusal", -32601, false},
+		{"invalid params is a refusal", -32602, false},
+		{"auth failure is a refusal", model.FederationAuthErrorCode, false},
+		{"internal error is silence", -32603, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			env := &envStub{row: liveRow(), peer: &peerStub{
+				rotateErr: &model.FederationRPCError{Code: tt.code, Message: "answered"},
+			}}
+
+			payload, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
+
+			require.NoError(t, err)
+			require.IsType(t, &graphmodel.ErrorPayload{}, payload)
+			if tt.recorded {
+				require.NotNil(t, env.rotated, "the peer may have committed before the answer was lost")
+			} else {
+				require.Nil(t, env.rotated, "the peer answered without executing, so it still holds only the old key")
+			}
+		})
+	}
+}
+
 // Silence is the other outcome and needs the opposite treatment: the peer may
 // have committed before the answer was lost, so the proposal is kept and a retry
 // re-proposes it.
