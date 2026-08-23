@@ -222,7 +222,7 @@ func (c *Client) do(
 		return nil, fmt.Errorf("post json: %w", err)
 	}
 	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
-		return nil, fmt.Errorf("post json: status %d", resp.StatusCode())
+		return nil, &model.FederationHTTPError{Status: resp.StatusCode()}
 	}
 
 	return append([]byte(nil), resp.Body()...), nil

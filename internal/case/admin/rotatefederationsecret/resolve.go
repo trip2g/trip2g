@@ -93,9 +93,8 @@ func Propose(ctx context.Context, env Env, peer model.FederationPeer, secret []b
 	params := model.MCPRotateSecretParams{SecretHex: hex.EncodeToString(secret)}
 
 	result, err := env.FederationPeerClient(peer).RotateSecret(ctx, params)
-	var rpcErr *model.FederationRPCError
-	if errors.As(err, &rpcErr) && answeredWithoutExecuting(rpcErr.Code) {
-		return fmt.Errorf("%w: %w", ErrPeerRefused, rpcErr)
+	if answeredWithoutExecuting(err) {
+		return fmt.Errorf("%w: %w", ErrPeerRefused, err)
 	}
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrPeerSilent, err)
@@ -107,18 +106,35 @@ func Propose(ctx context.Context, env Env, peer model.FederationPeer, secret []b
 	return nil
 }
 
-// answeredWithoutExecuting reports whether a JSON-RPC code proves the peer
-// never ran the call: the request was unparseable, malformed, unauthenticated,
-// or named a method it does not have. Any of them means the peer still holds
-// only the old key. An internal error proves nothing — the peer may have
-// failed after committing — so it stays on the silence path. The values are
-// the protocol's (JSON-RPC 2.0 §5.1), redeclared rather than importing the MCP
-// surface for four integers.
-func answeredWithoutExecuting(code int) bool {
-	switch code {
-	case -32700, -32600, -32601, -32602, model.FederationAuthErrorCode:
-		return true
+// answeredWithoutExecuting reports whether an answer proves the peer never ran
+// the call, which is what makes a refusal: the peer still holds only the old
+// key. Two layers can answer. A JSON-RPC error whose code says the request was
+// unparseable, malformed, unauthenticated or named a method the peer does not
+// have — the first four codes are the protocol's (JSON-RPC 2.0 §5.1), the auth
+// one is trip2g's own. Or an HTTP status refused before any JSON-RPC was
+// dispatched — a proxy that would not route it, an adapter without the
+// endpoint. Everything ambiguous stays silence: an internal error, a timeout
+// or a 5xx may have come AFTER the peer committed, and recording on ambiguity
+// heals on retry where discarding a committed key does not.
+func answeredWithoutExecuting(err error) bool {
+	var rpcErr *model.FederationRPCError
+	if errors.As(err, &rpcErr) {
+		switch rpcErr.Code {
+		case -32700, -32600, -32601, -32602, model.FederationAuthErrorCode:
+			return true
+		}
+		return false
 	}
+
+	var httpErr *model.FederationHTTPError
+	if errors.As(err, &httpErr) {
+		switch httpErr.Status {
+		case 400, 401, 403, 404, 405, 501:
+			return true
+		}
+		return false
+	}
+
 	return false
 }
 
