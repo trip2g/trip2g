@@ -30,16 +30,19 @@ var ErrUnsupportedVersion = errors.New("federation key version is not supported"
 
 // Handover is what the side that owns the knowledge tells the side that wants it.
 //
-// KBID is a suggestion, not an instruction: it is the slug the asking side will
-// address this base by, and only that side's vault records it. It rides along
-// because the person doing the wiring needs it for the KB-note and would
-// otherwise have to be told separately.
+// KBID and About are suggestions, not instructions: the slug the asking side
+// will address this base by and the sentence saying when it is worth asking,
+// both recorded only in that side's vault. They ride along because the person
+// doing the wiring needs them and would otherwise have to be told separately —
+// which is how a base ends up installed under a hostname nobody recognises,
+// described by nothing.
 type Handover struct {
 	Version   int    `json:"v"`
 	KID       string `json:"kid"`
 	KBURL     string `json:"kb_url"`
 	SecretHex string `json:"secret_hex"`
 	KBID      string `json:"kb_id,omitempty"`
+	About     string `json:"about,omitempty"`
 }
 
 // Encode packs a handover into the string an operator copies.

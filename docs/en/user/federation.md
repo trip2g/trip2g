@@ -54,7 +54,7 @@ The hub stores no remote content. It holds your notes plus routing metadata: KB-
 
 **Federation secret:** a shared HMAC key that authenticates your hub to a private peer (and vice versa). Public bases need no secret at all.
 
-**Handover key:** one base64 string holding three things that only work together: the key ID, the `/_system/mcp` address of the instance that issued it, and the secret. It is what one operator sends the other. It is an envelope, not protection. The secret inside is plain, so the key still has to travel over a channel you would trust with a password.
+**Handover key:** one base64 string holding the three things that only work together — the key ID, the `/_system/mcp` address of the instance that issued it, and the secret — plus two the issuer names for the other side's convenience: the base id they will address it by and one line saying when it is worth asking. It is what one operator sends the other, and the only thing they send. It is an envelope, not protection. The secret inside is plain, so the key still has to travel over a channel you would trust with a password.
 
 **kb_id:** a short slug identifying a peer, used when you want to target a specific base instead of fanning out across all of them. Defaults to the URL hostname; you can override it with `mcp_federation_kb_id`.
 
@@ -100,9 +100,15 @@ sequenceDiagram
 
 **Step 1: Bob issues a key for you.**
 
-Bob opens Admin → Federation → Add Inbound, types a short key ID (`alice-2026`) and an optional description, and clicks Generate Secret. The page then shows the handover key with a Copy button, and the raw secret separately below it. Neither is shown again once he navigates away.
+Bob opens Admin → Federation → Add Inbound, types a short key ID (`alice-2026`), and clicks Generate Secret. Three fields beside it are optional and worth filling:
 
-Bob sends you the handover key over a channel he would trust with a password. A direct Telegram message is fine. He does not need to send anything else: the key already carries his address and his key ID, so there is no second field for either of you to drop or transpose.
+- **Description** — why this key exists. It is read on Bob's own page and travels nowhere.
+- **Base id for the other side** — the slug you will address his base by (`bob`). Left empty, it defaults to his hostname.
+- **When to ask this base** — one line that becomes the "use when" of your KB-note, and with it the thing that tells your agent months later whether to search there.
+
+The page then shows the handover key with a Copy button, and the raw secret separately below it. Neither is shown again once he navigates away.
+
+Bob sends you the handover key over a channel he would trust with a password. A direct Telegram message is fine. He does not need to send anything else, and neither of you has a second value to drop or transpose.
 
 **Step 2: You install it.**
 
@@ -115,6 +121,8 @@ Before the row is stored, your hub calls Bob's and replaces the handed-over secr
 A new inbound key starts with access to nothing. Bob opens the key's row in his admin and picks subgraphs under Subgraph Access. Until he does, your searches through that key authenticate and come back empty, which looks exactly like a query that matched nothing.
 
 **Step 4: Create the KB-note.**
+
+Both values come out of the handover key, along with the "use when" line if Bob filled it in.
 
 ```yaml
 ---

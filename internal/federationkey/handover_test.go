@@ -17,7 +17,8 @@ func TestRoundTrip(t *testing.T) {
 		KID:       "alice-2026",
 		KBURL:     "https://bob.team.io/_system/mcp",
 		SecretHex: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
-		KBID:      "bob.team.io",
+		KBID:      "bob-team",
+		About:     "Bob's work-status updates and our shared design notes",
 	}
 
 	key, err := federationkey.Encode(handover)
@@ -30,6 +31,7 @@ func TestRoundTrip(t *testing.T) {
 	require.Equal(t, handover.KBURL, decoded.KBURL)
 	require.Equal(t, handover.SecretHex, decoded.SecretHex)
 	require.Equal(t, handover.KBID, decoded.KBID)
+	require.Equal(t, handover.About, decoded.About)
 }
 
 // A key travels through a chat window and a clipboard, both of which introduce

@@ -13,6 +13,8 @@ namespace $.$$ {
 				input: {
 					kid: this.kid(),
 					description: this.description() || null,
+					kbID: this.kb_id() || null,
+					about: this.about() || null,
 				},
 			})
 

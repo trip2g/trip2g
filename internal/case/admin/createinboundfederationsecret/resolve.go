@@ -84,7 +84,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		KID:       row.Kid,
 		KBURL:     strings.TrimRight(env.PublicURL(), "/") + mcpPath,
 		SecretHex: hex.EncodeToString(secret),
-		KBID:      suggestedKBID(env.PublicURL()),
+		KBID:      text(input.KbID, suggestedKBID(env.PublicURL())),
+		About:     text(input.About, ""),
 	}
 
 	key, err := federationkey.Encode(handover)
@@ -100,6 +101,16 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	return &payload, nil
+}
+
+// text reads an optional field, falling back when it is absent or blank. Blank
+// counts as absent because a form submits an untouched field as an empty string,
+// and a key packed with one would name the base "" on the other side.
+func text(value *string, fallback string) string {
+	if value == nil || strings.TrimSpace(*value) == "" {
+		return fallback
+	}
+	return strings.TrimSpace(*value)
 }
 
 // resolveSecret returns the 32-byte secret to store: caller-supplied hex if

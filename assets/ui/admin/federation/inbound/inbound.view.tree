@@ -36,9 +36,22 @@ $trip2g_admin_federation_inbound $mol_page
 						value? <=> kid? \
 				<= Description_field $mol_form_field
 					name @ \Description
+					hint @ \Why this key exists. Read here, on this page, and nowhere else.
 					bid <= description_bid \
 					Content <= description_control $mol_string
 						value? <=> description? \
+				<= KbId_field $mol_form_field
+					name @ \Base id for the other side
+					hint @ \The slug they will address this base by. Defaults to this instance's hostname.
+					bid <= kb_id_bid \
+					Content <= kb_id_control $mol_string
+						value? <=> kb_id? \
+				<= About_field $mol_form_field
+					name @ \When to ask this base
+					hint @ \One line, packed into the key. It becomes the "use when" of their KB-note, which is what tells them later whether to search here.
+					bid <= about_bid \
+					Content <= about_control $mol_string
+						value? <=> about? \
 			buttons /
 				<= Submit $mol_button_major
 					title @ \Generate Secret

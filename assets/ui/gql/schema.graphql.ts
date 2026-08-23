@@ -2490,7 +2490,9 @@ export type CreateHtmlInjectionPayload = {
 };
 
 export type CreateInboundFederationSecretInput = {
+  about?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
+  kbID?: InputMaybe<Scalars['String']['input']>;
   kid: Scalars['String']['input'];
   secretHex?: InputMaybe<Scalars['String']['input']>;
 };

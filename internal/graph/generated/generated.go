@@ -5030,6 +5030,14 @@ input CreateInboundFederationSecretInput {
   # Optional 64-char hex (32 bytes). If empty, server generates a random secret.
   # Allows scripted bootstrap (e.g. e2e tests) to use a deterministic key.
   secretHex: String
+  # The slug the other side will address this base by, packed into the key.
+  # Defaults to this instance's hostname, which is also what trip2g falls back to
+  # when a KB-note names no mcp_federation_kb_id.
+  kbID: String
+  # One line saying when this base is worth asking, packed into the key so it
+  # reaches the other side's KB-note. Unlike description, which says why the key
+  # exists and is read here, this is read there.
+  about: String
 }
 
 type CreateInboundFederationSecretPayload {
@@ -50179,7 +50187,7 @@ func (ec *executionContext) unmarshalInputCreateInboundFederationSecretInput(ctx
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"kid", "description", "secretHex"}
+	fieldsInOrder := [...]string{"kid", "description", "secretHex", "kbID", "about"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -50207,6 +50215,20 @@ func (ec *executionContext) unmarshalInputCreateInboundFederationSecretInput(ctx
 				return it, err
 			}
 			it.SecretHex = data
+		case "kbID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("kbID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KbID = data
+		case "about":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("about"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.About = data
 		}
 	}
 

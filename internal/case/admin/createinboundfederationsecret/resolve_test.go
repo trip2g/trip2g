@@ -7,6 +7,7 @@ import (
 
 	"trip2g/internal/case/admin/createinboundfederationsecret"
 	"trip2g/internal/db"
+	"trip2g/internal/federationkey"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/usertoken"
 
@@ -236,3 +237,70 @@ func TestResolve(t *testing.T) {
 }
 
 func strPtr(s string) *string { return &s }
+
+// The key is what the other operator pastes, so what the issuing side named has
+// to survive the packing. Asserted by decoding rather than by reading the
+// payload's other fields: a kb_id that reaches the admin page but not the key is
+// a slug nobody downstream ever sees.
+func TestResolvePacksWhatTheIssuerNamed(t *testing.T) {
+	t.Parallel()
+
+	input := model.CreateInboundFederationSecretInput{
+		Kid:   "alice-2026",
+		KbID:  strPtr("bob-team"),
+		About: strPtr("Bob's work-status updates"),
+	}
+
+	got, err := createinboundfederationsecret.Resolve(context.Background(), packingEnv(t), input)
+	require.NoError(t, err)
+
+	payload, ok := got.(*model.CreateInboundFederationSecretPayload)
+	require.True(t, ok)
+
+	decoded, err := federationkey.Decode(payload.Key)
+	require.NoError(t, err)
+	require.Equal(t, "alice-2026", decoded.KID)
+	require.Equal(t, "https://base.example/_system/mcp", decoded.KBURL)
+	require.Equal(t, payload.SecretHex, decoded.SecretHex)
+	require.Equal(t, "bob-team", decoded.KBID)
+	require.Equal(t, "Bob's work-status updates", decoded.About)
+}
+
+// Naming the slug is optional, and the fallback is the hostname because that is
+// also what trip2g uses when a KB-note names no mcp_federation_kb_id — the
+// suggestion and the default agree, so an operator who ignores the field gets
+// the same base id either way.
+func TestResolveFallsBackToTheHostname(t *testing.T) {
+	t.Parallel()
+
+	input := model.CreateInboundFederationSecretInput{Kid: "alice-2026"}
+
+	got, err := createinboundfederationsecret.Resolve(context.Background(), packingEnv(t), input)
+	require.NoError(t, err)
+
+	payload, ok := got.(*model.CreateInboundFederationSecretPayload)
+	require.True(t, ok)
+
+	decoded, err := federationkey.Decode(payload.Key)
+	require.NoError(t, err)
+	require.Equal(t, "base.example", decoded.KBID)
+	require.Empty(t, decoded.About)
+}
+
+func packingEnv(t *testing.T) *envMock {
+	t.Helper()
+
+	mock := &envMock{}
+	mock.PublicURLFunc = func() string { return "https://base.example" }
+	mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+		return &usertoken.Data{ID: 1}, nil
+	}
+	mock.EncryptDataFunc = func(plaintext []byte) ([]byte, error) {
+		return []byte("encrypted"), nil
+	}
+	mock.InsertFederationSecretFunc = func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
+		return db.FederationSecret{ID: 60, Kid: arg.Kid}, nil
+	}
+
+	return mock
+}

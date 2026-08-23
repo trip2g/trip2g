@@ -1333,6 +1333,8 @@ type CreateInboundFederationSecretInput struct {
 	Kid         string  `json:"kid"`
 	Description *string `json:"description,omitempty"`
 	SecretHex   *string `json:"secretHex,omitempty"`
+	KbID        *string `json:"kbID,omitempty"`
+	About       *string `json:"about,omitempty"`
 }
 
 type CreateInboundFederationSecretPayload struct {
