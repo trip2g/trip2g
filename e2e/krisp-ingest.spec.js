@@ -144,7 +144,10 @@ test.describe.serial('Krisp cron ingest (dockerized)', () => {
       .toBeTruthy();
   });
 
-  test('triggerCronWebhook → python ingest → transcripts/<id>.md written with meeting content', async ({ request }) => {
+  // "cron trigger", not "triggerCronWebhook": the main e2e sweep excludes
+  // titles matching "Webhook" (those run in their own phase), and the mutation
+  // name in the title silently dropped this spec from every run.
+  test('cron trigger → python ingest → transcripts/<id>.md written with meeting content', async ({ request }) => {
     // Find the cron webhook registered by fleet.
     const wh = await gqlAdmin(request, cookie, `
       query { admin { allCronWebhooks { nodes { id description } } } }
