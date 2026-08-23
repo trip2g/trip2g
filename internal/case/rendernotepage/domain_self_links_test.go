@@ -17,6 +17,9 @@ import (
 //
 // Body and chrome are rendered through different paths, so this asserts the
 // property of the whole response rather than of one element in it.
+//
+// Navigation only: rel=canonical, og:url and JSON-LD are absolute by their
+// own specifications and are excluded on purpose.
 func TestServedPage_HasNoAbsoluteLinksToItsOwnHost(t *testing.T) {
 	const host = "docs.example.com"
 
@@ -47,7 +50,7 @@ func TestServedPage_HasNoAbsoluteLinksToItsOwnHost(t *testing.T) {
 
 	page := string(body(t, ctx))
 
-	selfAbsolute := regexp.MustCompile(`href="https?://` + regexp.QuoteMeta(host) + `[/"]`)
+	selfAbsolute := regexp.MustCompile(`<a\b[^>]*href="https?://` + regexp.QuoteMeta(host) + `[/"]`)
 	found := selfAbsolute.FindAllString(page, -1)
 	require.Empty(t, found,
 		"page served on %s links back to %s with an absolute URL: %v", host, host, found)
