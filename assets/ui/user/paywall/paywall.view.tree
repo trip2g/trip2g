@@ -4,10 +4,16 @@ $trip2g_user_paywall $mol_view
 	minimal_width 0
 	plugins /
 		<= Theme $mol_theme_auto
+	message_closed @ \Ask the owner of this knowledge base for access, or sign in.
+	message_offers @ \Ask the owner of this knowledge base for access, sign in, or buy access below.
 	sub /
-		\Эта страница доступна только для подписчиков.
+		<= Title $mol_view
+			sub / <= title @ \This page is closed
 		<= Message $mol_view
 			sub / <= message \
+		<= Auth $trip2g_auth
+			reload_me <= reload_page null
+			AppView <= Signed_in $mol_view
 		<= PurchaseItems $trip2g_user_paywall_activepurchases
 			subgraphs <= subgraphs
 		<= Offers $trip2g_user_paywall_offers
