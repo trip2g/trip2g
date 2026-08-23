@@ -11,21 +11,16 @@ namespace $.$$ {
 			if (!el.dataset.subgraphs) {
 				return []
 			}
-			console.log(el.dataset.subgraphs)
 
 			return this.$.$mol_json_from_string(el.dataset.subgraphs) as string[]
 		}
 
 		override message(): string {
-			let val = 'Пожалуйста, авторизуйтесь'
+			return this.subgraphs().length > 0 ? this.message_offers() : this.message_closed()
+		}
 
-			if (this.subgraphs().length > 0) {
-				val += ` или рассмотрите покупку подписки.`
-			} else {
-				val += '.'
-			}
-
-			return val
+		reload_page() {
+			window.location.reload()
 		}
 	}
 }

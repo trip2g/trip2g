@@ -15,6 +15,12 @@ import (
 
 func ptr[T any](v T) *T { return &v }
 
+func configBool(values map[string]bool) func(context.Context, string) (db.GetLatestConfigBoolRow, error) {
+	return func(_ context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
+		return db.GetLatestConfigBoolRow{Value: values[valueID]}, nil
+	}
+}
+
 func viewsWith(note *appmodel.NoteView) *appmodel.NoteViews {
 	nv := &appmodel.NoteViews{Map: map[string]*appmodel.NoteView{}}
 	if note != nil {
@@ -91,10 +97,8 @@ func TestResolve_LiveSelectionAndSubgraphFallback(t *testing.T) {
 func TestResolve_WaitlistWithBot(t *testing.T) {
 	note := &appmodel.NoteView{PathID: 42, SubgraphNames: []string{"g1"}}
 	env := &vieweroffers.EnvMock{
-		GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-			return db.GetLatestConfigBoolRow{Value: false}, nil
-		},
-		LiveNoteViewsFunc: func() *appmodel.NoteViews { return viewsWith(note) },
+		GetLatestConfigBoolFunc: configBool(map[string]bool{"show_waitlists": true}),
+		LiveNoteViewsFunc:       func() *appmodel.NoteViews { return viewsWith(note) },
 		ListActiveOffersBySubgraphNamesFunc: func(ctx context.Context, subgraphs []string) ([]db.Offer, error) {
 			return nil, nil
 		},
@@ -114,10 +118,8 @@ func TestResolve_WaitlistWithBot(t *testing.T) {
 func TestResolve_WaitlistWithoutBots(t *testing.T) {
 	note := &appmodel.NoteView{PathID: 42, SubgraphNames: []string{"g1"}}
 	env := &vieweroffers.EnvMock{
-		GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-			return db.GetLatestConfigBoolRow{Value: false}, nil
-		},
-		LiveNoteViewsFunc: func() *appmodel.NoteViews { return viewsWith(note) },
+		GetLatestConfigBoolFunc: configBool(map[string]bool{"show_waitlists": true}),
+		LiveNoteViewsFunc:       func() *appmodel.NoteViews { return viewsWith(note) },
 		ListActiveOffersBySubgraphNamesFunc: func(ctx context.Context, subgraphs []string) ([]db.Offer, error) {
 			return nil, nil
 		},
@@ -146,5 +148,19 @@ func TestResolve_OffersError(t *testing.T) {
 	}
 	out, err := vieweroffers.Resolve(context.Background(), env, model.ViewerOffersFilter{PageID: ptr(int64(5))})
 	require.Error(t, err)
+	require.Nil(t, out)
+}
+
+func TestResolve_WaitlistDisabled(t *testing.T) {
+	note := &appmodel.NoteView{PathID: 42, SubgraphNames: []string{"g1"}}
+	env := &vieweroffers.EnvMock{
+		GetLatestConfigBoolFunc: configBool(nil),
+		LiveNoteViewsFunc:       func() *appmodel.NoteViews { return viewsWith(note) },
+		ListActiveOffersBySubgraphNamesFunc: func(ctx context.Context, subgraphs []string) ([]db.Offer, error) {
+			return nil, nil
+		},
+	}
+	out, err := vieweroffers.Resolve(context.Background(), env, model.ViewerOffersFilter{PageID: ptr(int64(42))})
+	require.NoError(t, err)
 	require.Nil(t, out)
 }

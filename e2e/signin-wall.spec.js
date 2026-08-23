@@ -13,6 +13,8 @@ test.describe('Sign-in Wall', () => {
   let subgraphColor = '';
   /** @type {boolean} */
   let subgraphHidden = false;
+  /** @type {string} */
+  let subgraphDescription = '';
 
   test.beforeAll(async ({ request }) => {
     adminToken = await graphqlSignIn(request);
@@ -31,6 +33,7 @@ test.describe('Sign-in Wall', () => {
                 color
                 hidden
                 requireSignin
+                humanDescription
               }
             }
           }
@@ -47,6 +50,7 @@ test.describe('Sign-in Wall', () => {
       subgraphId = sg.id;
       subgraphColor = sg.color ?? '';
       subgraphHidden = sg.hidden ?? false;
+      subgraphDescription = sg.humanDescription ?? '';
 
       // Set requireSignin=true on the signin_required subgraph
       const updateResponse = await request.post('/_system/graphql', {
@@ -69,6 +73,7 @@ test.describe('Sign-in Wall', () => {
               color: subgraphColor,
               hidden: subgraphHidden,
               requireSignin: true,
+              humanDescription: subgraphDescription,
             }
           }
         }

@@ -59,6 +59,18 @@ func Resolve(ctx context.Context, env Env, filter model.ViewerOffersFilter) (mod
 		return &model.ActiveOffers{Nodes: offers}, nil
 	}
 
+	// Nothing to sell: only sites that opted into wait lists collect contacts here.
+	showWaitlists := false
+
+	entry, cfgErr := env.GetLatestConfigBool(ctx, "show_waitlists")
+	if cfgErr == nil {
+		showWaitlists = entry.Value
+	}
+
+	if !showWaitlists {
+		return nil, nil
+	}
+
 	wl := model.SubgraphWaitList{
 		EmailAllowed: true,
 	}

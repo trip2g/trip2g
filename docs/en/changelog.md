@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Closed pages say they are closed, and offer sign-in instead of a wait list
+
+- **What.** A page a visitor has no access to now reads "This page is closed", tells them to ask the owner of the knowledge base for access, and shows the sign-in form right there. The wait-list block (Telegram bot, e-mail field) is off by default and appears only if you turn on the new **show_waitlists** config value; it still shows only when nothing is on sale.
+- **Why.** The wait-list e-mail field was the only input on the page, while the text above it said "please sign in" — visitors typed their sign-in address into a wait list and waited for a letter that was never coming. Most knowledge bases are closed to keep them private, not to sell access later.
+- **How.** Nothing to do: closed pages get the new text and the sign-in form automatically. If you do collect contacts while offers are not ready, set **show_waitlists** to true in Admin → System → Config.
+
 ### Obsidian on the phone: open a note on the site, and close the warnings view (plugin v0.11.0)
 
 - **What.** The note's `...` menu now has **Open on site** and **Copy site link** (only for notes that are actually published), plus a new **Open published URL in browser** command. The sync warnings view got a **Close** button, and its toolbar buttons are large enough to hit with a thumb.

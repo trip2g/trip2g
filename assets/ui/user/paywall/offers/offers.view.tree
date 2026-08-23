@@ -11,15 +11,15 @@ $trip2g_user_paywall_offers $mol_view
 		handle_email? <=> buy_by_email? null
 	EmailExists $mol_view
 		sub /
-			\У вас уже есть аккаунт и возможно купленный контент. Пожалуйста, авторизуйтесь, чтобы мы все проверили.
+			<= email_exists_message @ \You already have an account and possibly bought content. Please sign in so we can check.
 			<= ShowSignIn $mol_button_major
-				title \SignIn
+				title @ \Sign in
 				click? <=> to_sign_in? null
 	Waiting $mol_view
 		sub /
-			\Ждем оплаты заказа... Если окно не открылось, нажмите на кнопку ниже.
+			<= waiting_message @ \Waiting for the payment... If the window did not open, use the button below.
 			<= open_payment_page_button $mol_button_major
-				title \Open payment page
+				title @ \Open payment page
 				click? <=> to_payment_page? null
 	SignIn $trip2g_auth
 		entered_email? <=> current_email? \
@@ -40,7 +40,7 @@ $trip2g_user_paywall_offers_enter_email $mol_form
 				value? <=> email? \hello2@example.com
 	buttons /
 		<= BuyButton $mol_button_major
-			title \Enter
+			title @ \Enter
 			click? <=> submit? null
 		<= RequestResult $mol_status
 			message <= result? \
@@ -57,6 +57,6 @@ $trip2g_user_paywall_offers_list $mol_view
 				sub / <= row_description* \
 			<= row_formatted_price* \
 			<= BuyButton* $mol_button_major
-				title \Купить
+				title @ \Buy
 				click?event <=> buy*?
 	sub <= list_items /$mol_view

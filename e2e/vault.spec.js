@@ -118,8 +118,9 @@ test.describe('Test Vault', () => {
     // Check title is visible
     await expect(page.locator('h1.content__title').first()).toContainText('Premium Content with Preview');
 
-    // Page without free flag should show subscription message
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).toBeVisible();
+    // Page without free flag should show the wall. Its copy is $mol and localized,
+    // so assert on the server-rendered wrapper — the text lives in paywall.spec.js.
+    await expect(page.locator('div.paywall-page')).toBeVisible();
   });
 
   test('table of contents page renders', async ({ page }) => {
@@ -165,8 +166,9 @@ test.describe('Test Vault', () => {
     // Check title is visible
     await expect(page.locator('h1.content__title').first()).toContainText('Complex Content Example');
 
-    // Page without free flag should show subscription message
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).toBeVisible();
+    // Page without free flag should show the wall. Its copy is $mol and localized,
+    // so assert on the server-rendered wrapper — the text lives in paywall.spec.js.
+    await expect(page.locator('div.paywall-page')).toBeVisible();
   });
 
   test('navigation between pages works', async ({ page }) => {
@@ -186,8 +188,9 @@ test.describe('Test Vault', () => {
     // Check title is visible
     await expect(page.locator('h1').first()).toContainText('Premium Course Home');
 
-    // Page without free flag should show subscription message
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).toBeVisible();
+    // Page without free flag should show the wall. Its copy is $mol and localized,
+    // so assert on the server-rendered wrapper — the text lives in paywall.spec.js.
+    await expect(page.locator('div.paywall-page')).toBeVisible();
   });
 });
 
@@ -706,8 +709,8 @@ test.describe('Frontmatter Patches', () => {
 
     await expect(page.locator('h1').first()).toContainText('Simple Patch Test');
 
-    // Page should be free (no subscription message)
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+    // Page should be free (no paywall)
+    await expect(page.locator('div.paywall-page')).not.toBeVisible();
 
     // Content should be visible
     await expect(page.getByText('simple frontmatter patch')).toBeVisible();
@@ -719,7 +722,7 @@ test.describe('Frontmatter Patches', () => {
     await expect(page.locator('h1').first()).toContainText('Chained Patch Test');
 
     // Page should be free (priority 20 patch)
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+    await expect(page.locator('div.paywall-page')).not.toBeVisible();
 
     // Content should be visible
     await expect(page.getByText('patch chaining with different priorities')).toBeVisible();
@@ -734,7 +737,7 @@ test.describe('Frontmatter Patches', () => {
     await expect(page.locator('h1').first()).toContainText('Conditional Patch Test');
 
     // Page should be free (from frontmatter)
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+    await expect(page.locator('div.paywall-page')).not.toBeVisible();
 
     // Content should be visible
     await expect(page.getByText('conditional jsonnet logic')).toBeVisible();
@@ -746,7 +749,7 @@ test.describe('Frontmatter Patches', () => {
     await expect(page.locator('h1').first()).toContainText('Has Layout Test');
 
     // Page should be free
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+    await expect(page.locator('div.paywall-page')).not.toBeVisible();
 
     // Content should be visible - use partial text match to avoid backtick issues
     await expect(page.getByText('already has', { exact: false })).toBeVisible();
@@ -759,7 +762,7 @@ test.describe('Frontmatter Patches', () => {
     await expect(page.locator('h1').first()).toContainText('Excluded Patch Test');
 
     // Page should NOT be free (patch was excluded)
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).toBeVisible();
+    await expect(page.locator('div.paywall-page')).toBeVisible();
 
     // free field should remain false (original value)
   });
@@ -771,7 +774,7 @@ test.describe('Frontmatter Patches', () => {
     await expect(page.locator('h1').first()).toContainText('Title Template Test — Test Site');
 
     // Page should be free
-    await expect(page.getByText('Эта страница доступна только для подписчиков')).not.toBeVisible();
+    await expect(page.locator('div.paywall-page')).not.toBeVisible();
 
     // Content should be visible
     await expect(page.getByText('title template patch')).toBeVisible();

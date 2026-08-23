@@ -51,6 +51,7 @@ const (
 const (
 	ConfigShowDraftVersions      = "show_draft_versions"
 	ConfigEnableNotFoundTracking = "enable_not_found_tracking"
+	ConfigShowWaitlists          = "show_waitlists"
 )
 
 // Int config IDs.
@@ -120,6 +121,14 @@ var (
 			},
 			Default:   false,
 			SetupFunc: func(cfg *model.SiteConfig, v bool) { cfg.EnableNotFoundTracking = v },
+		},
+		ConfigShowWaitlists: {
+			ConfigMeta: ConfigMeta{
+				ID:          ConfigShowWaitlists,
+				Description: "Offer a wait list (Telegram bot, e-mail) on closed pages when nothing is on sale.",
+			},
+			Default:   false,
+			SetupFunc: func(cfg *model.SiteConfig, v bool) { cfg.ShowWaitlists = v },
 		},
 	}
 

@@ -1,0 +1,8 @@
+{
+	"$trip2g_user_paywall_offers_email_exists_message": "У вас уже есть аккаунт и, возможно, купленный контент. Войдите, чтобы мы всё проверили.",
+	"$trip2g_user_paywall_offers_ShowSignIn_title": "Войти",
+	"$trip2g_user_paywall_offers_waiting_message": "Ждём оплаты заказа... Если окно не открылось, нажмите кнопку ниже.",
+	"$trip2g_user_paywall_offers_open_payment_page_button_title": "Открыть страницу оплаты",
+	"$trip2g_user_paywall_offers_enter_email_BuyButton_title": "Продолжить",
+	"$trip2g_user_paywall_offers_list_BuyButton_title": "Купить"
+}
