@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -179,6 +180,55 @@ func TestResolveRecordsNothingWhenThePeerRefuses(t *testing.T) {
 	require.NoError(t, err)
 	require.IsType(t, &graphmodel.ErrorPayload{}, payload)
 	require.Nil(t, env.rotated, "this side moved off a key the peer said it kept")
+}
+
+// The real transport answers a refusal as a typed JSON-RPC or HTTP error,
+// never as an IsError tool result. An answer that precedes execution proves
+// the peer still holds only the old key; anything ambiguous — an internal
+// error, a 5xx, an unknown code — may have come after the peer committed, so
+// it stays on the silence path.
+func TestResolveClassifiesAnswers(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		rotateErr error
+		recorded  bool
+	}{
+		{"parse error is a refusal", &model.FederationRPCError{Code: -32700, Message: "answered"}, false},
+		{"invalid request is a refusal", &model.FederationRPCError{Code: -32600, Message: "answered"}, false},
+		{"method not found is a refusal", &model.FederationRPCError{Code: -32601, Message: "answered"}, false},
+		{"invalid params is a refusal", &model.FederationRPCError{Code: -32602, Message: "answered"}, false},
+		{"auth failure is a refusal", &model.FederationRPCError{Code: model.FederationAuthErrorCode, Message: "answered"}, false},
+		{"a wrapped refusal is still a refusal", fmt.Errorf("call rotate_secret: %w", &model.FederationRPCError{Code: -32601, Message: "answered"}), false},
+		{"internal error is silence", &model.FederationRPCError{Code: -32603, Message: "answered"}, true},
+		{"an unknown code is silence", &model.FederationRPCError{Code: -32000, Message: "answered"}, true},
+		{"http not found is a refusal", &model.FederationHTTPError{Status: 404}, false},
+		{"http method not allowed is a refusal", &model.FederationHTTPError{Status: 405}, false},
+		{"http bad gateway is silence", &model.FederationHTTPError{Status: 502}, true},
+		{"http too many requests is silence", &model.FederationHTTPError{Status: 429}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			env := &envStub{row: liveRow(), peer: &peerStub{rotateErr: tt.rotateErr}}
+
+			payload, err := rotatefederationsecret.Resolve(context.Background(), env, "peer")
+
+			require.NoError(t, err)
+			errPayload, ok := payload.(*graphmodel.ErrorPayload)
+			require.True(t, ok)
+			require.Empty(t, env.cleared, "nothing was confirmed, so nothing may be retired")
+			if tt.recorded {
+				require.NotNil(t, env.rotated, "the peer may have committed before the answer was lost")
+			} else {
+				require.Nil(t, env.rotated, "the peer answered without executing, so it still holds only the old key")
+				require.Contains(t, errPayload.Message, tt.rotateErr.Error(),
+					"the operator acts on WHY the peer said no")
+			}
+		})
+	}
 }
 
 // Silence is the other outcome and needs the opposite treatment: the peer may

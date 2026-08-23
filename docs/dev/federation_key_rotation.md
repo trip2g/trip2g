@@ -134,6 +134,14 @@ applied it answers the repeat as a no-op, and a peer that never heard the first
 attempt applies it now. Minting a fresh key per attempt would leave nobody
 holding what the peer has.
 
+A refusal is an answer that proves the call never executed, at either layer: a
+JSON-RPC error coded -32700, -32600, -32601 or -32602 (the protocol's
+pre-execution codes) or -32001 (trip2g's auth code), or an HTTP status refused
+before dispatch — 400, 401, 403, 404, 405, 501. Everything ambiguous is
+silence: an internal error (-32603), a timeout, any 5xx may have arrived after
+the peer committed, and recording on ambiguity heals on retry where discarding
+a committed key does not.
+
 The probe is what closes the window rather than a timer. A rotation that
 verifies on the next call clears the old key on the base within milliseconds, so
 the state where two keys are accepted is an exception, not a resting state.
