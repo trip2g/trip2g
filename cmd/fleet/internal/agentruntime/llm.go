@@ -41,6 +41,12 @@ type ChatResult struct {
 	ToolCalls        []ToolCall
 	PromptTokens     int
 	CompletionTokens int
+
+	// CachedPromptTokens is the share of PromptTokens the provider served from
+	// its prompt cache — a subset of PromptTokens, never spend on top of it.
+	// Zero when the provider reports no breakdown, which is not evidence of a
+	// miss: most local runtimes cache and say nothing.
+	CachedPromptTokens int
 }
 
 // LLM is the provider-independent chat surface the executor depends on. The

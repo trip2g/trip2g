@@ -84,7 +84,7 @@ count. That keeps the execution core free of a metrics dependency.
 |---|---|
 | `fleet_runs_total{role,status}` | `completed` \| `capped` \| `max_steps` \| `error` |
 | `fleet_run_steps{role}` / `fleet_run_duration_seconds{role}` | drift toward the step ceiling precedes hitting it |
-| `fleet_llm_tokens_total{model,role,kind}` | one series answers both cost-per-model and cost-per-role |
+| `fleet_llm_tokens_total{model,role,kind}` | kind = `prompt` \| `completion` \| `cached`; one series answers both cost-per-model and cost-per-role. `cached` is the share of `prompt` the provider served from its prompt cache — a subset, not spend on top, so never sum the kinds |
 | `fleet_tool_calls_total{tool,outcome}` | `ok` \| `denied` \| `invalid_args` \| `error` \| `apply_failed` \| `not_permitted` |
 | `fleet_denials_total{kind}` | `read` \| `write` \| `not_permitted`; a steady rate usually means misconfigured patterns |
 | `fleet_apply_failures_total{role,tool}` | under `HardFailApply` each one kills its run |

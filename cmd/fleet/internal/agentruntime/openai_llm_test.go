@@ -120,3 +120,34 @@ func TestOpenAILLM_PlainChatOmitsBudget(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, hasBudget)
 }
+
+// cachedCompletion carries the usage breakdown every OpenAI-compatible
+// provider with prefix caching reports: cached_tokens is the share of
+// prompt_tokens that was served from cache, not spend on top of it.
+const cachedCompletion = `{"id":"1","object":"chat.completion","choices":[{"index":0,"message":{"role":"assistant","content":"hi"},"finish_reason":"stop"}],"usage":{"prompt_tokens":2048,"completion_tokens":3,"total_tokens":2051,"prompt_tokens_details":{"cached_tokens":1920}}}`
+
+// TestOpenAILLM_ReportsCachedPromptTokens: the cache-hit share is read off the
+// usage breakdown so cache effectiveness is measurable on any provider that
+// reports it, with no provider-specific request field.
+func TestOpenAILLM_ReportsCachedPromptTokens(t *testing.T) {
+	llm, _ := llmStubServer(t, func(int, map[string]any) (int, string) {
+		return http.StatusOK, cachedCompletion
+	})
+
+	res, err := llm.Chat(context.Background(), "test-model", []Message{{Role: RoleUser, Content: "x"}}, nil)
+	require.NoError(t, err)
+	require.Equal(t, 2048, res.PromptTokens)
+	require.Equal(t, 1920, res.CachedPromptTokens)
+}
+
+// TestOpenAILLM_CachedPromptTokensAbsentIsZero: a provider that omits the
+// breakdown (most local runtimes) must not crash the call.
+func TestOpenAILLM_CachedPromptTokensAbsentIsZero(t *testing.T) {
+	llm, _ := llmStubServer(t, func(int, map[string]any) (int, string) {
+		return http.StatusOK, okCompletion
+	})
+
+	res, err := llm.Chat(context.Background(), "test-model", []Message{{Role: RoleUser, Content: "x"}}, nil)
+	require.NoError(t, err)
+	require.Zero(t, res.CachedPromptTokens)
+}

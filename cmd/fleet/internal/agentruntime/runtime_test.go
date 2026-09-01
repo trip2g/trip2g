@@ -726,3 +726,67 @@ func TestRun_LogsUnpermittedTool(t *testing.T) {
 	require.NotEmpty(t, got["reason"])
 	require.Equal(t, "warn", res.Logs[0].Level)
 }
+
+// systemPromptFor runs a one-step agent and returns the system prompt it built.
+func systemPromptFor(t *testing.T, in Input) string {
+	t.Helper()
+	llm := &stubLLM{script: []ChatResult{
+		{ToolCalls: []ToolCall{toolCall("1", toolFinish, map[string]any{"answer": "ok"})}},
+	}}
+	in.LLM, in.KB = llm, newMemKB(nil)
+	in.Model, in.MaxTokens, in.MaxSteps = "m", 1000, 5
+	_, err := Run(context.Background(), in)
+	require.NoError(t, err)
+	require.NotEmpty(t, llm.seen)
+	require.Equal(t, RoleSystem, llm.seen[0].Role)
+	return llm.seen[0].Content
+}
+
+// TestRun_SystemPromptPutsInstructionLast pins the prompt-cache layout: the
+// per-delivery instruction is the LAST thing in the system prompt, so two
+// deliveries of the same role share every byte before it. A provider with
+// automatic prefix caching can only reuse a prefix that is actually shared;
+// leading with the instruction would leave nothing to reuse.
+func TestRun_SystemPromptPutsInstructionLast(t *testing.T) {
+	base := Input{ReadPatterns: []string{"boards/**"}, WritePatterns: []string{"boards/**"}}
+
+	a := base
+	a.Instruction = "FIRST-DELIVERY-INSTRUCTION"
+	b := base
+	b.Instruction = "SECOND-DELIVERY-INSTRUCTION"
+
+	promptA := systemPromptFor(t, a)
+	promptB := systemPromptFor(t, b)
+
+	require.True(t, strings.HasSuffix(promptA, "FIRST-DELIVERY-INSTRUCTION"),
+		"instruction must be last in the prompt, got:\n%s", promptA)
+
+	shared := commonPrefix(promptA, promptB)
+	require.Contains(t, shared, "boards/**", "the role's scope must sit inside the shared prefix")
+	require.Contains(t, shared, "Rules:", "the static rules must sit inside the shared prefix")
+	require.Len(t, shared, len(promptA)-len("FIRST-DELIVERY-INSTRUCTION"),
+		"everything except the instruction must be shared between deliveries")
+}
+
+// commonPrefix returns the longest prefix a and b share.
+func commonPrefix(a, b string) string {
+	n := min(len(a), len(b))
+	i := 0
+	for i < n && a[i] == b[i] {
+		i++
+	}
+	return a[:i]
+}
+
+// TestRun_SystemPromptDoesNotNameUnofferedTools: a role whose allowlist omits
+// the write tools must not read about them in its prompt. Advertising a tool
+// the runtime will refuse buys nothing but tokens and not_permitted denials.
+func TestRun_SystemPromptDoesNotNameUnofferedTools(t *testing.T) {
+	prompt := systemPromptFor(t, Input{
+		Instruction:  "summarize",
+		ReadPatterns: []string{"boards/**"},
+		Tools:        []string{toolSearch, toolFinish},
+	})
+	require.NotContains(t, prompt, toolWriteNote)
+	require.NotContains(t, prompt, toolPatchNote)
+}
