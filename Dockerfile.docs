@@ -6,7 +6,7 @@ FROM ${TRIP2G_IMAGE}
 RUN apk add --no-cache nodejs unzip
 
 ENV LISTEN_ADDR=0.0.0.0:8080 \
-    INTERNAL_LISTEN_ADDR=:8081 \
+    INTERNAL_LISTEN_ADDR=127.0.0.1:8081 \
     PUBLIC_URL=http://127.0.0.1:8080 \
     DB_FILE=/data/data.sqlite3 \
     STORAGE_BACKEND=local \
