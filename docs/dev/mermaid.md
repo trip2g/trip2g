@@ -146,8 +146,7 @@ npm run mermaid        # builds assets/mermaid.js + mermaid.min.js + beautifulme
 ```
 
 All three outputs are committed artifacts (like `chart.js` / `echarts.min.js`).
-`npm run build` (tsc + vite) does not build the widget bundles — run the script
-after editing `assets/mermaid/src/*`.
+Run the script after editing `assets/mermaid/src/*`.
 
 ## Files
 

@@ -324,7 +324,6 @@ regenerated `views.html.go` (the generated `StreamUnsupportedFile` lives at
   ```json
   "canvas": "node assets/canvas/esbuild.browser.mjs"
   ```
-  **Not** `npm run build` (that's tsc + vite for the $mol admin app).
 
 - `assets/embed.go` — add `canvas.js` to the `//go:embed` list
   (`embed.go:8`, alongside `mermaid.js`). The built `canvas.js` is a committed

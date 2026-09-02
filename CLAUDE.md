@@ -25,7 +25,6 @@ Go monolith + $mol frontend + SQLite + GraphQL (gqlgen).
 | `make sqlc` | After editing `queries.read.sql` / `queries.write.sql` (repo root; generated into `internal/db/`) |
 | `npm run graphqlgen` | After GraphQL schema changes (frontend types) |
 | `npm run toc` | After editing `assets/toc/src/index.ts` |
-| `npm run build` | TypeScript + Vite build |
 | `npm run test:e2e` | E2E tests (Playwright) |
 | `make air` | Dev server with hot reload |
 | `cd docs && node ../obsidian-sync/dist/trip2g-sync.mjs --folder .` | Sync the `docs/` vault (e.g. `docs/demo`) to the local instance after editing demo notes/assets. Auto-discovers the API key from `.obsidian/plugins/trip2g/data.json`, so it must run **from the vault root** — no key needed. Add `--dry-run` to preview. Requires `dist/` to be built (`npm run build` inside `obsidian-sync/`). |

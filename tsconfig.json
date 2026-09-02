@@ -1,3 +1,6 @@
+// Not a tsc project: nothing runs tsc here. esbuild reads these compilerOptions
+// when bundling the assets/*/src widgets, so "strict" is what puts "use strict"
+// at the top of the committed bundles.
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -20,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["assets/*/src"]
 }
