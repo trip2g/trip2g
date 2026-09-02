@@ -54,6 +54,11 @@ test-results/
 docs/
 README.md
 CLAUDE.md
+# Dockerfile.docs bakes the user docs into an image
+!docs/en/user
+!docs/ru/user
+!docs/patches
+!scripts/docs-image-entrypoint.sh
 
 # Demo video assets (mp4/gif/mkv — not needed in build)
 docs/demo-video/

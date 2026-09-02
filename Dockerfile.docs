@@ -1,0 +1,24 @@
+# A trip2g instance with a vault baked in: `docker run` and the site is up,
+# no volume, no sign-in, no sync client. Rebuild the image to change content.
+ARG TRIP2G_IMAGE=ghcr.io/trip2g/trip2g:latest
+FROM ${TRIP2G_IMAGE}
+
+RUN apk add --no-cache nodejs unzip
+
+ENV LISTEN_ADDR=0.0.0.0:8080 \
+    INTERNAL_LISTEN_ADDR=:8081 \
+    PUBLIC_URL=http://127.0.0.1:8080 \
+    DB_FILE=/data/data.sqlite3 \
+    STORAGE_BACKEND=local \
+    STORAGE_LOCAL_DIR=/data/storage \
+    OWNER_EMAIL=docs@localhost
+
+# The vault: replace these lines with your own folder. Frontmatter patches
+# under patches/ mark every note free, so anonymous readers and MCP clients
+# see the whole site.
+COPY docs/en/user /vault/en/user
+COPY docs/ru/user /vault/ru/user
+COPY docs/patches /vault/patches
+COPY scripts/docs-image-entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]

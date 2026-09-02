@@ -11,6 +11,7 @@ title: "Навигация"
 - [[ru/user/hosting|Хостинг]]
 - [[ru/user/selfhosted|Self-hosted]]
 - [[ru/user/fly|Развёртывание на fly.io]]
+- [[ru/user/docs-image|База знаний в одном контейнере]]
 - [[ru/user/Свойства заметок|Свойства заметок]]
 - [[ru/user/markdown|Markdown]]
 - [[ru/user/wikilink-resolution|Разрешение вики-ссылок]]
