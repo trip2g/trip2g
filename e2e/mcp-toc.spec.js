@@ -6,7 +6,8 @@
  * 1. Rendered HTML contains <div data-header data-level> wrappers for headings
  * 2. note_html accepts toc_path and returns only that section's HTML
  * 3. note_html falls back to full HTML when toc_path doesn't match
- * 4. expand walks the TOC tree (top-level, then children of a node) for navigation
+ * 4. expand walks the TOC tree (top-level, then children of a node) for navigation,
+ *    and returns a section without subsections in full (what note_html gives)
  * 5. search matches include toc_path pointing to the section containing the snippet
  * 6. search results no longer carry the flat toc[] (structure comes from expand)
  *
@@ -192,12 +193,60 @@ test.describe('MCP TOC', () => {
     expect(children[0].has_children).toBeFalsy();
   });
 
-  test('expand of a leaf section returns no children', async () => {
-    const payload = await toolCall(apiContext, 'expand', {
-      path: NOTE_PATH,
-      toc_path: ['Introduction'],
-    });
+  test('expand of a leaf section returns the section itself, same as note_html', async () => {
+    // A section without subsections has nothing left to expand: the read is
+    // answered in the same call instead of a nudge to call note_html with the
+    // very same arguments (the recorded walk burned three steps that way).
+    const args = { path: NOTE_PATH, toc_path: ['Introduction'] };
+    const [expanded, viaNoteHTML] = await Promise.all([
+      mcpCall(apiContext, 'tools/call', { name: 'expand', arguments: args }),
+      toolCallText(apiContext, 'note_html', args),
+    ]);
+
+    const text = expanded.content?.[0]?.text ?? '';
+    expect(text).toContain('Table of Contents widget');
+    expect(text).not.toContain('data-header="Main Section"');
+    expect(text).not.toContain('has no subsections');
+    expect(text).toBe(viaNoteHTML);
+
+    const payload = expanded.structuredContent;
+    expect(payload.note_path).toBe(NOTE_PATH);
+    expect(payload.toc_path).toEqual(['Introduction']);
     expect(payload.children ?? []).toHaveLength(0);
+    expect(payload.section_html).toBe(viaNoteHTML);
+  });
+
+  test('expand of a section with subsections lists them, not the body', async () => {
+    const result = await mcpCall(apiContext, 'tools/call', {
+      name: 'expand',
+      arguments: { path: NOTE_PATH, toc_path: ['Main Section'] },
+    });
+
+    const text = result.content?.[0]?.text ?? '';
+    expect(text).toContain('Subsection');
+    expect(text).not.toContain('Nested subsection content');
+    expect(text).not.toContain('Main content goes here');
+
+    const payload = result.structuredContent;
+    expect(payload.children.map((c) => c.title)).toEqual(['Subsection']);
+    expect(payload.section_html).toBeUndefined();
+  });
+
+  test('expand with an unknown toc_path fails loud, same as note_html', async () => {
+    const res = await apiContext.post(MCP_URL, {
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+      data: {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: 'expand', arguments: { path: NOTE_PATH, toc_path: ['__nonexistent_xyzzy__'] } },
+      },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.error).toBeDefined();
+    expect(body.error.message).toContain('section not found for toc_path');
+    expect(body.error.message).toContain('top-level sections: Introduction, Main Section, Conclusion');
   });
 
   // ── search: toc_path on matches ──────────────────────────────────────────────
