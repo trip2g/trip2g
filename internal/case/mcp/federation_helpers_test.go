@@ -177,6 +177,36 @@ func TestNotConfiguredMessage(t *testing.T) {
 				`hub "philosophers" has no base "ghost"`,
 				`federated_search(kb_id="philosophers", query="ghost")`,
 			},
+			wantMissing: []string{"connected directly"},
+		},
+		{
+			// The walk that motivates the second sentence: told what philosophers
+			// federates, the agent never looked past that list, and the base it
+			// wanted was connected to the hub it was talking to.
+			name: "miss reported by a hub also names the local hub's own bases",
+			status: FederationStatusPayload{
+				KBID:           "philosophers/marcus-aurelius",
+				Hub:            "philosophers",
+				ConnectedKBIDs: []string{"philosophers/epictetus"},
+				LocalKBIDs:     []string{"markavrelii", "philosophers", "minionschool"},
+			},
+			want: []string{
+				`Bases connected under "philosophers": philosophers/epictetus.`,
+				`Bases connected directly to this hub: markavrelii, philosophers, minionschool.`,
+			},
+		},
+		{
+			name: "miss reported by a hub that sent no list still names the local bases",
+			status: FederationStatusPayload{
+				KBID:       "philosophers/ghost",
+				Hub:        "philosophers",
+				LocalKBIDs: []string{"markavrelii", "philosophers"},
+			},
+			want: []string{
+				`hub "philosophers" has no base "ghost"`,
+				`Bases connected directly to this hub: markavrelii, philosophers.`,
+				`federated_search(kb_id="philosophers", query="ghost")`,
+			},
 		},
 	}
 	for _, tt := range tests {

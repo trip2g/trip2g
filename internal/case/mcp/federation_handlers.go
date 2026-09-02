@@ -52,7 +52,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 			}
 		}
 		m.ObserveFanoutBases(touched)
-		return successResponse(id, aggregateFederationResults(results, skipped))
+		return successResponse(id, aggregateFederationResults(results, skipped, kbIDs(kbs)))
 	}
 
 	kb, rest := findFederationKB(kbs, args.KBID)
@@ -79,7 +79,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
-	rewriteFederatedResponse(kb.ID, &result)
+	rewriteFederatedResponse(kb.ID, kbIDs(kbs), &result)
 	return successResponse(id, federationResultToToolResult(result))
 }
 
@@ -140,7 +140,7 @@ func federatedSingleKBResult(
 	}
 	// A peer answering "not configured" names the kb_id in its own frame; the
 	// caller must see it in theirs, same as on the fan-out path.
-	rewriteFederatedResponse(kb.ID, &result)
+	rewriteFederatedResponse(kb.ID, kbIDs(kbs), &result)
 	return result, nil
 }
 
@@ -294,14 +294,25 @@ func segmentCount(kbID string) int {
 // this on the way back) can say what exists instead of what was sent.
 func federationNotConfiguredResponse(id any, kbID string, kbs []*model.MCPFederationNote) Response {
 	payload := FederationStatusPayload{
-		Status: "federation_not_configured",
-		KBID:   kbID,
-	}
-	for _, kb := range kbs {
-		payload.ConnectedKBIDs = append(payload.ConnectedKBIDs, kb.ID)
+		Status:         "federation_not_configured",
+		KBID:           kbID,
+		ConnectedKBIDs: kbIDs(kbs),
 	}
 	payload.Message = notConfiguredMessage(payload)
 	return successResponse(id, structuredToolResult(payload.Message, payload))
+}
+
+// kbIDs lists the bases as the caller may address them; kbs has already been
+// filtered by what the caller may read.
+func kbIDs(kbs []*model.MCPFederationNote) []string {
+	if len(kbs) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(kbs))
+	for _, kb := range kbs {
+		ids = append(ids, kb.ID)
+	}
+	return ids
 }
 
 // forwarded strips the hub's routing token from a federated call's arguments so

@@ -15,12 +15,13 @@ import (
 )
 
 type federationMock struct {
-	searchFunc          func(ctx context.Context, params appmodel.MCPSearchParams) (appmodel.FederationResult, error)
-	federatedSearchFunc func(ctx context.Context, params appmodel.MCPSearchParams) (appmodel.FederationResult, error)
-	noteHTMLFunc        func(ctx context.Context, params appmodel.MCPNoteHTMLParams) (appmodel.FederationResult, error)
-	similarFunc         func(ctx context.Context, params appmodel.MCPSimilarParams) (appmodel.FederationResult, error)
-	expandFunc          func(ctx context.Context, params appmodel.MCPExpandParams) (appmodel.FederationResult, error)
-	federatedExpandFunc func(ctx context.Context, params appmodel.MCPExpandParams) (appmodel.FederationResult, error)
+	searchFunc            func(ctx context.Context, params appmodel.MCPSearchParams) (appmodel.FederationResult, error)
+	federatedSearchFunc   func(ctx context.Context, params appmodel.MCPSearchParams) (appmodel.FederationResult, error)
+	noteHTMLFunc          func(ctx context.Context, params appmodel.MCPNoteHTMLParams) (appmodel.FederationResult, error)
+	federatedNoteHTMLFunc func(ctx context.Context, params appmodel.MCPNoteHTMLParams) (appmodel.FederationResult, error)
+	similarFunc           func(ctx context.Context, params appmodel.MCPSimilarParams) (appmodel.FederationResult, error)
+	expandFunc            func(ctx context.Context, params appmodel.MCPExpandParams) (appmodel.FederationResult, error)
+	federatedExpandFunc   func(ctx context.Context, params appmodel.MCPExpandParams) (appmodel.FederationResult, error)
 
 	instructionsFunc          func(ctx context.Context) (appmodel.FederationResult, error)
 	federatedInstructionsFunc func(ctx context.Context, params appmodel.MCPInstructionsParams) (appmodel.FederationResult, error)
@@ -59,7 +60,10 @@ func (m *federationMock) FederatedSimilar(ctx context.Context, params appmodel.M
 }
 
 func (m *federationMock) FederatedNoteHTML(ctx context.Context, params appmodel.MCPNoteHTMLParams) (appmodel.FederationResult, error) {
-	panic("unexpected FederatedNoteHTML call")
+	if m.federatedNoteHTMLFunc == nil {
+		panic("unexpected FederatedNoteHTML call")
+	}
+	return m.federatedNoteHTMLFunc(ctx, params)
 }
 
 func (m *federationMock) GraphQLRequest(ctx context.Context, params appmodel.MCPGraphQLParams) (appmodel.FederationResult, error) {
