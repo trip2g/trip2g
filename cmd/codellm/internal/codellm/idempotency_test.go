@@ -2,11 +2,15 @@ package codellm
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -145,6 +149,126 @@ func TestIdempotency_ConcurrentReplayWaitsForInFlight(t *testing.T) {
 	require.Equal(t, http.StatusOK, first.Code, first.Body.String())
 	require.Equal(t, first.Body.Bytes(), replay.Body.Bytes())
 	require.Equal(t, 1, runs())
+}
+
+// TestIdempotency_CancelledFirstRequestReplaysItsFailure is the headline
+// scenario: the client connection drops mid-block. The request ctx is
+// cancelled, the child is killed, the 422 is recorded, and the retry under
+// the same key gets that 422 — the block never runs a second time.
+func TestIdempotency_CancelledFirstRequestReplaysItsFailure(t *testing.T) {
+	srv := newTestServer()
+	gate := filepath.Join(t.TempDir(), "go")
+	block, runs := countingBlock(t, `while [ ! -f "`+gate+`" ]; do sleep 0.02; done; `+okContract)
+	msgs := []goopenai.ChatCompletionMessage{block}
+
+	handler := srv.Handler()
+	serve := func(req *http.Request) chan *httptest.ResponseRecorder {
+		ch := make(chan *httptest.ResponseRecorder, 1)
+		go func() {
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			ch <- rec
+		}()
+		return ch
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	firstCh := serve(keyedRequest(t, "key-x", msgs).WithContext(ctx))
+	require.Eventually(t, func() bool {
+		srv.replays.mu.Lock()
+		defer srv.replays.mu.Unlock()
+		return len(srv.replays.entries) == 1 && runs() == 1
+	}, 2*time.Second, 5*time.Millisecond, "first request must be executing")
+
+	replayCh := serve(keyedRequest(t, "key-x", msgs))
+	select {
+	case <-replayCh:
+		t.Fatal("replay must wait for the in-flight execution")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	cancel()
+	first := <-firstCh
+	replay := <-replayCh
+	require.Equal(t, http.StatusUnprocessableEntity, first.Code, first.Body.String())
+	require.Equal(t, http.StatusUnprocessableEntity, replay.Code)
+	require.Equal(t, first.Body.Bytes(), replay.Body.Bytes())
+	require.Equal(t, 1, runs(), "the retry must not re-execute the block")
+}
+
+// TestIdempotency_WaiterCancelledGetsAnError: a replay that gives up while
+// the first request is still running gets an explicit 503, not an empty 200.
+func TestIdempotency_WaiterCancelledGetsAnError(t *testing.T) {
+	srv := newTestServer()
+	gate := filepath.Join(t.TempDir(), "go")
+	block, _ := countingBlock(t, `while [ ! -f "`+gate+`" ]; do sleep 0.02; done; `+okContract)
+	msgs := []goopenai.ChatCompletionMessage{block}
+
+	handler := srv.Handler()
+	firstReq := keyedRequest(t, "key-w", msgs)
+	firstCh := make(chan *httptest.ResponseRecorder, 1)
+	go func() {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, firstReq)
+		firstCh <- rec
+	}()
+	require.Eventually(t, func() bool {
+		srv.replays.mu.Lock()
+		defer srv.replays.mu.Unlock()
+		return len(srv.replays.entries) == 1
+	}, 2*time.Second, 5*time.Millisecond)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, keyedRequest(t, "key-w", msgs).WithContext(ctx))
+	require.Equal(t, http.StatusServiceUnavailable, rec.Code)
+	require.Contains(t, rec.Body.String(), "server_error")
+
+	require.NoError(t, os.WriteFile(gate, nil, 0o600))
+	require.Equal(t, http.StatusOK, (<-firstCh).Code)
+}
+
+// TestIdempotency_PanicCompletesTheEntry: a panic inside the completion must
+// not leave the key in flight forever. The replay gets a 500 promptly, and the
+// completion ran only once.
+func TestIdempotency_PanicCompletesTheEntry(t *testing.T) {
+	srv := newTestServer()
+	var calls atomic.Int32
+	serve := srv.chat
+	srv.chat = func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			panic("boom")
+		}
+		serve(w, r)
+	}
+	// A real server so net/http recovers the panic the way production does.
+	ts := httptest.NewServer(srv.Handler())
+	ts.Config.ErrorLog = slog.NewLogLogger(slog.NewTextHandler(io.Discard, nil), slog.LevelError)
+	t.Cleanup(ts.Close)
+	msgs := []goopenai.ChatCompletionMessage{bashBody(okContract)}
+	client := &http.Client{Timeout: 2 * time.Second}
+
+	req := keyedRequest(t, "key-p", msgs)
+	post := func() (*http.Response, error) {
+		body, err := json.Marshal(goopenai.ChatCompletionRequest{Model: "codellm", Messages: msgs})
+		require.NoError(t, err)
+		r, err := http.NewRequestWithContext(context.Background(), http.MethodPost, ts.URL+req.URL.Path, bytes.NewReader(body))
+		require.NoError(t, err)
+		r.Header.Set(idempotencyKeyHeader, "key-p")
+		return client.Do(r)
+	}
+
+	resp, err := post()
+	if err == nil {
+		resp.Body.Close()
+	}
+	replay, err := post()
+	require.NoError(t, err, "replay must not hang on the never-completed entry")
+	defer replay.Body.Close()
+	require.Equal(t, http.StatusInternalServerError, replay.StatusCode)
+	require.Equal(t, int32(1), calls.Load(), "replay must not run the completion again")
 }
 
 // TestIdempotency_ExpiredEntryExecutesAgain: past the TTL the key is

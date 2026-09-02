@@ -186,6 +186,8 @@ func (w *authStatusWriter) Unwrap() http.ResponseWriter { return w.ResponseWrite
 type Server struct {
 	cfg     Config
 	replays *replayStore
+	// chat is serveChatCompletion; a field so a test can make it fail.
+	chat func(http.ResponseWriter, *http.Request)
 }
 
 type blockRunner struct{ cfg Config }
@@ -223,7 +225,9 @@ func New(cfg Config) *Server {
 	if cfg.SealPath == "" {
 		cfg.SealPath = DefaultSealPath
 	}
-	return &Server{cfg: cfg, replays: newReplayStore()}
+	s := &Server{cfg: cfg, replays: newReplayStore()}
+	s.chat = s.serveChatCompletion
+	return s
 }
 
 // Handler returns the HTTP handler for the service. The BROWSER-facing
@@ -261,13 +265,12 @@ func (s *Server) Handler() http.Handler {
 func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	key := r.Header.Get(idempotencyKeyHeader)
 	if key == "" {
-		s.serveChatCompletion(w, r)
+		s.chat(w, r)
 		return
 	}
 	entry, owner := s.replays.claim(key)
 	if owner {
-		rec := newReplayRecorder()
-		s.serveChatCompletion(rec, r)
+		rec := s.recordChat(entry, r)
 		s.replays.complete(entry, rec)
 		entry.serve(w)
 		return
@@ -275,10 +278,30 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	select {
 	case <-entry.done:
 	case <-r.Context().Done():
+		writeError(w, http.StatusServiceUnavailable, "server_error",
+			"request cancelled while waiting for the in-flight execution under this Idempotency-Key")
 		return
 	}
 	s.cfg.Metrics.RecordReplay()
 	entry.serve(w)
+}
+
+// recordChat runs the completion into a recorder. A panic must not leave the
+// entry in flight forever (sweep only drops completed entries and a waiter
+// would block until its own deadline), so it is recorded as a 500 before the
+// panic continues to net/http's recovery.
+func (s *Server) recordChat(entry *replayEntry, r *http.Request) *replayRecorder {
+	rec := newReplayRecorder()
+	defer func() {
+		if p := recover(); p != nil {
+			failed := newReplayRecorder()
+			writeError(failed, http.StatusInternalServerError, "server_error", "chat completion panicked")
+			s.replays.complete(entry, failed)
+			panic(p)
+		}
+	}()
+	s.chat(rec, r)
+	return rec
 }
 
 // serveChatCompletion is the OpenAI-compatible surface. It decodes the chat
