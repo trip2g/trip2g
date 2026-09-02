@@ -285,27 +285,33 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	payload := buildSearchPayload(args.Query, results, env.NoteURL, chunks, limit, detailLimit)
 	metricsFromContext(ctx).ObserveSearchResults("search", len(payload.Results))
 
-	// Format response
-	var sb strings.Builder
-	if len(payload.Results) == 0 {
-		sb.WriteString("No results found for: " + args.Query)
-	} else {
-		sb.WriteString(fmt.Sprintf("Found %d notes:\n\n", len(payload.Results)))
-		for i, r := range payload.Results {
-			sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n   %s\n", i+1, r.Title, r.NotePath, r.URL))
-			if len(r.Matches) > 0 {
-				sb.WriteString(fmt.Sprintf("   %s\n", r.Matches[0].Snippet))
-				if r.Matches[0].MatchID != "" {
-					sb.WriteString(fmt.Sprintf("   match_id: %s\n", r.Matches[0].MatchID))
-				}
-			}
-			sb.WriteString("\n")
-		}
-	}
-
 	log.Debug("search completed", "query", args.Query, "results", len(results))
 
-	return successResponse(id, structuredToolResult(sb.String(), payload))
+	return successResponse(id, structuredToolResult(searchResultsText(args.Query, payload.Results), payload))
+}
+
+// searchResultsText renders the text block of a search response: what a client
+// that never reads the structured payload has to navigate by.
+func searchResultsText(query string, results []SearchResultItem) string {
+	if len(results) == 0 {
+		return "No results found for: " + query
+	}
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "Found %d notes:\n\n", len(results))
+	for i, r := range results {
+		fmt.Fprintf(&sb, "%d. %s\n   %s\n   %s\n", i+1, r.Title, r.NotePath, r.URL)
+		if r.Kind == kindFederationKB {
+			sb.WriteString("   kind: " + kindFederationKB + " · " + federationPointerHint(r.KBID) + "\n")
+		}
+		if len(r.Matches) > 0 {
+			fmt.Fprintf(&sb, "   %s\n", r.Matches[0].Snippet)
+			if r.Matches[0].MatchID != "" {
+				fmt.Fprintf(&sb, "   match_id: %s\n", r.Matches[0].MatchID)
+			}
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
 }
 
 func filterSearchResults(ctx context.Context, env Env, results []model.SearchResult) ([]model.SearchResult, error) {
@@ -563,7 +569,7 @@ func searchResultItemFromNote(note *model.NoteView, score float64, noteURL func(
 		Score:    score,
 	}
 	if kb := model.NewMCPFederationNote(note); kb != nil {
-		item.Kind = "federation_kb"
+		item.Kind = kindFederationKB
 		// A pointer note's own address, relative to this hub. Federation hops
 		// prefix their local segment onto it on the way back to the caller.
 		item.KBID = kb.ID
@@ -574,6 +580,30 @@ func searchResultItemFromNote(note *model.NoteView, score float64, noteURL func(
 		}
 	}
 	return item
+}
+
+const kindFederationKB = "federation_kb"
+
+// pointerHintMark is the part of a pointer hint that follows the kb_id; the
+// hop rewrite keys on it to find the id it has to compose.
+const pointerHintMark = " → federated_search(kb_id="
+
+// federationPointerHint is the one line of text that tells a client which
+// kb_id a pointer note stands for and what to call with it. Text-only clients
+// never see the structured payload, so search, similar and note_html all print
+// it, and a hop rewrites it into the caller's frame (prefixPointerHints).
+func federationPointerHint(kbID string) string {
+	return fmt.Sprintf("kb_id: %s%s%q)", kbID, pointerHintMark, kbID)
+}
+
+// pointerNoteText prepends the pointer hint to the text content of a note that
+// is a federation pointer, so opening the note reveals how to address the base.
+func pointerNoteText(note *model.NoteView, text string) string {
+	kb := model.NewMCPFederationNote(note)
+	if kb == nil {
+		return text
+	}
+	return "federation pointer · " + federationPointerHint(kb.ID) + "\n\n" + text
 }
 
 func federationAgentInstruction(kbID string) string {
@@ -652,7 +682,11 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		sb.WriteString(fmt.Sprintf("Found %d similar notes:\n\n", len(results)))
 		for i, r := range results {
 			note := r.Note.NoteView
-			sb.WriteString(fmt.Sprintf("%d. %s (%.2f)\n   %s\n   %s\n\n", i+1, note.Title, r.Score, note.Path, env.NoteURL(note)))
+			sb.WriteString(fmt.Sprintf("%d. %s (%.2f)\n   %s\n   %s\n", i+1, note.Title, r.Score, note.Path, env.NoteURL(note)))
+			if kb := model.NewMCPFederationNote(note); kb != nil {
+				sb.WriteString("   kind: " + kindFederationKB + " · " + federationPointerHint(kb.ID) + "\n")
+			}
+			sb.WriteString("\n")
 		}
 	}
 
@@ -722,6 +756,12 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 			return errorResponse(id, ErrCodeInvalidParams,
 				fmt.Sprintf("pid %q is not a note id; note ids are numbers from search results — chunk refs like \"p36:c2\" go in match_id", args.PID.Raw))
 		}
+		if args.MatchID != "" {
+			return errorResponse(id, ErrCodeInvalidParams, fmt.Sprintf(
+				"Note not found: match_id %q does not resolve here; ids from federated_search results belong to that base — "+
+					"open them with federated_note_html(kb_id=<result.kb_id>, match_id=%q)",
+				args.MatchID, args.MatchID))
+		}
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
 	canRead, err := canReadMCPNote(ctx, env, note)
@@ -736,27 +776,27 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 
 	log.Debug("note html retrieved", "path", note.Path, "pid", note.PathID)
 
-	// A pointer miss must never silently dump the full note: that converts a
-	// ~300-token read into the whole-note anti-pattern. Fail loud and cheap.
-	if args.MatchID != "" {
-		if focused, ok := focusedChunkWindow(note, args.MatchID, env.LatestNoteChunks()); ok {
-			return successResponse(id, textToolResult(focused))
-		}
-		if len(args.TocPath) == 0 {
-			log.Warn("match_id did not resolve", "path", note.Path, "match_id", args.MatchID)
-			return errorResponse(id, ErrCodeInvalidParams,
-				fmt.Sprintf("no focused window for match_id %q; %s", args.MatchID, topLevelSectionsNudge(note)))
-		}
-	}
-
+	// An explicit toc_path is navigation and wins over a match_id replayed
+	// from an earlier call; otherwise the same chunk comes back on every read.
 	if len(args.TocPath) > 0 {
 		sectionHTML := sectionHTMLByTocPath(string(note.HTML), args.TocPath)
 		if sectionHTML != "" {
-			return successResponse(id, textToolResult(sectionHTML))
+			return successResponse(id, textToolResult(pointerNoteText(note, sectionHTML)))
 		}
 		log.Warn("toc_path did not resolve", "path", note.Path, "toc_path", args.TocPath)
 		return errorResponse(id, ErrCodeInvalidParams,
 			fmt.Sprintf("section not found for toc_path [%s]; %s", strings.Join(args.TocPath, " > "), topLevelSectionsNudge(note)))
+	}
+
+	// A pointer miss must never silently dump the full note: that converts a
+	// ~300-token read into the whole-note anti-pattern. Fail loud and cheap.
+	if args.MatchID != "" {
+		if focused, ok := focusedChunkWindow(note, args.MatchID, env.LatestNoteChunks()); ok {
+			return successResponse(id, textToolResult(pointerNoteText(note, focused)))
+		}
+		log.Warn("match_id did not resolve", "path", note.Path, "match_id", args.MatchID)
+		return errorResponse(id, ErrCodeInvalidParams,
+			fmt.Sprintf("no focused window for match_id %q; %s", args.MatchID, topLevelSectionsNudge(note)))
 	}
 
 	// A resolved note with no rendered content must fail loud: silent empty
@@ -767,7 +807,7 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 			fmt.Sprintf("note %q resolved but has no rendered content", note.Path))
 	}
 
-	return successResponse(id, textToolResult(string(note.HTML)))
+	return successResponse(id, textToolResult(pointerNoteText(note, string(note.HTML))))
 }
 
 // topLevelSectionsNudge is the cheap (~30 token) expand-shaped hint returned on

@@ -26,13 +26,13 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
 	if len(kbs) == 0 {
-		return federationNotConfiguredResponse(id, args.KBID)
+		return federationNotConfiguredResponse(id, args.KBID, kbs)
 	}
 
 	if args.KBID == "" {
 		selected := selectFederationKBs(kbs, "", args.KBIDs)
 		if len(selected) == 0 {
-			return federationNotConfiguredResponse(id, "")
+			return federationNotConfiguredResponse(id, "", kbs)
 		}
 		// The limit only caps blind fan-outs; explicit kb_ids targeting is precise.
 		var skipped []*model.MCPFederationNote
@@ -57,7 +57,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 
 	kb, rest := findFederationKB(kbs, args.KBID)
 	if kb == nil {
-		return federationNotConfiguredResponse(id, args.KBID)
+		return federationNotConfiguredResponse(id, args.KBID, kbs)
 	}
 	var client model.Federation
 	client, err = env.FederationClient(ctx, kb.ID)
@@ -118,12 +118,12 @@ func federatedSingleKBResult(
 		return model.FederationResult{}, &resp
 	}
 	if len(kbs) == 0 {
-		resp := federationNotConfiguredResponse(id, kbID)
+		resp := federationNotConfiguredResponse(id, kbID, kbs)
 		return model.FederationResult{}, &resp
 	}
 	kb, rest := findFederationKB(kbs, kbID)
 	if kb == nil {
-		resp := federationNotConfiguredResponse(id, kbID)
+		resp := federationNotConfiguredResponse(id, kbID, kbs)
 		return model.FederationResult{}, &resp
 	}
 	// Bound the hop like the fan-out path does. Without a deadline a peer that
@@ -289,14 +289,19 @@ func segmentCount(kbID string) int {
 	return n
 }
 
-func federationNotConfiguredResponse(id any, kbID string) Response {
-	message := notConfiguredMessage(kbID)
+// federationNotConfiguredResponse answers a kb_id this hub cannot route. The
+// bases it can route to travel with it, so the caller (or the hop rewriting
+// this on the way back) can say what exists instead of what was sent.
+func federationNotConfiguredResponse(id any, kbID string, kbs []*model.MCPFederationNote) Response {
 	payload := FederationStatusPayload{
-		Status:  "federation_not_configured",
-		KBID:    kbID,
-		Message: message,
+		Status: "federation_not_configured",
+		KBID:   kbID,
 	}
-	return successResponse(id, structuredToolResult(message, payload))
+	for _, kb := range kbs {
+		payload.ConnectedKBIDs = append(payload.ConnectedKBIDs, kb.ID)
+	}
+	payload.Message = notConfiguredMessage(payload)
+	return successResponse(id, structuredToolResult(payload.Message, payload))
 }
 
 // forwarded strips the hub's routing token from a federated call's arguments so

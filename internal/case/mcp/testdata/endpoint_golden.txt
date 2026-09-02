@@ -224,7 +224,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Wins over match_id when both are given. Without either the whole note comes back."
             }
           },
           "required": [
@@ -351,7 +351,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand. Wins over match_id when both are given: match_id is only used when toc_path is absent."
             }
           }
         },
@@ -551,7 +551,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Wins over match_id when both are given. Without either the whole note comes back."
             }
           },
           "required": [
@@ -714,7 +714,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand. Wins over match_id when both are given: match_id is only used when toc_path is absent."
             }
           }
         },
@@ -920,7 +920,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Wins over match_id when both are given. Without either the whole note comes back."
             }
           },
           "required": [
@@ -1047,7 +1047,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand. Wins over match_id when both are given: match_id is only used when toc_path is absent."
             }
           }
         },
@@ -1557,13 +1557,16 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "Federation is not configured for kb_id \"ghost\". If \"ghost\" lives under a hub, address it as \u003chub\u003e/ghost (bases reached through a hub are addressed \u003chub\u003e/\u003cbase\u003e)."
+        "text": "Federation is not configured for kb_id \"ghost\": no connected base on this hub is named \"ghost\". Connected bases: peer. If \"ghost\" lives under one of them, address it as \u003chub\u003e/ghost (bases reached through a hub are addressed \u003chub\u003e/\u003cbase\u003e)."
       }
     ],
     "structuredContent": {
       "status": "federation_not_configured",
       "kb_id": "ghost",
-      "message": "Federation is not configured for kb_id \"ghost\". If \"ghost\" lives under a hub, address it as \u003chub\u003e/ghost (bases reached through a hub are addressed \u003chub\u003e/\u003cbase\u003e)."
+      "connected_kb_ids": [
+        "peer"
+      ],
+      "message": "Federation is not configured for kb_id \"ghost\": no connected base on this hub is named \"ghost\". Connected bases: peer. If \"ghost\" lives under one of them, address it as \u003chub\u003e/ghost (bases reached through a hub are addressed \u003chub\u003e/\u003cbase\u003e)."
     }
   }
 }
@@ -1872,7 +1875,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Wins over match_id when both are given. Without either the whole note comes back."
             }
           },
           "required": [
@@ -1999,7 +2002,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand. Wins over match_id when both are given: match_id is only used when toc_path is absent."
             }
           }
         },
@@ -2199,7 +2202,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Wins over match_id when both are given. Without either the whole note comes back."
             }
           },
           "required": [
@@ -2326,7 +2329,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand. Wins over match_id when both are given: match_id is only used when toc_path is absent."
             }
           }
         },
@@ -2537,7 +2540,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Wins over match_id when both are given. Without either the whole note comes back."
             }
           },
           "required": [
@@ -2664,7 +2667,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand."
+              "description": "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand. Wins over match_id when both are given: match_id is only used when toc_path is absent."
             }
           }
         },

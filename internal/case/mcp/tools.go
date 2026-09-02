@@ -119,7 +119,7 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 					"context_words": {Type: "number", Description: "Optional future hint for expanding focused reads"},
 					"toc_path": {
 						Type:        "array",
-						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand.",
+						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a search match, or a child path from expand. Wins over match_id when both are given: match_id is only used when toc_path is absent.",
 						Items:       &Property{Type: "string"},
 					},
 				},
@@ -246,7 +246,7 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 					},
 					"toc_path": {
 						Type:        "array",
-						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Without it the whole note comes back.",
+						Description: "Breadcrumb path to a specific section, e.g. [\"Chapter 1\", \"Introduction\"]. Use toc_path from a federated_search match, or a child path from federated_expand. Wins over match_id when both are given. Without either the whole note comes back.",
 						Items:       &Property{Type: "string"},
 					},
 				},

@@ -79,10 +79,16 @@ type PayloadContext struct {
 	KBInstructions map[string]string `json:"kb_instructions,omitempty"`
 }
 
+// FederationStatusPayload reports a kb_id that resolved to nothing. Hub is the
+// hub that reported the miss, ConnectedKBIDs the bases it does have; both are
+// in the caller's frame, each hop prefixing its own segment on the way back.
+// An empty Hub means this hub reported the miss itself.
 type FederationStatusPayload struct {
-	Status  string `json:"status"`
-	KBID    string `json:"kb_id,omitempty"`
-	Message string `json:"message,omitempty"`
+	Status         string   `json:"status"`
+	KBID           string   `json:"kb_id,omitempty"`
+	Hub            string   `json:"hub,omitempty"`
+	ConnectedKBIDs []string `json:"connected_kb_ids,omitempty"`
+	Message        string   `json:"message,omitempty"`
 }
 
 type FederatedCallPayload struct {

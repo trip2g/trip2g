@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -287,18 +288,53 @@ func prefixKBID(localSegment string, items []SearchResultItem) {
 		} else {
 			items[i].KBID = localSegment + "/" + items[i].KBID
 		}
-		if items[i].Federation != nil && items[i].Federation.KBID != "" {
-			items[i].Federation.KBID = localSegment + "/" + items[i].Federation.KBID
+		if ref := items[i].Federation; ref != nil && ref.KBID != "" {
+			composed := localSegment + "/" + ref.KBID
+			if ref.AgentInstruction == federationAgentInstruction(ref.KBID) {
+				ref.AgentInstruction = federationAgentInstruction(composed)
+			}
+			ref.KBID = composed
 		}
 	}
 }
 
+// prefixPointerHints rewrites the pointer hint lines in a text block into the
+// caller's frame. The hint is the one line a text-only client sees a kb_id in,
+// so it has to compose across hops like the structured kb_id does. Only a line
+// that is exactly what federationPointerHint renders is touched.
+func prefixPointerHints(localSegment, text string) string {
+	if !strings.Contains(text, pointerHintMark) {
+		return text
+	}
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		start := strings.Index(line, "kb_id: ")
+		mark := strings.Index(line, pointerHintMark)
+		if start < 0 || mark < start {
+			continue
+		}
+		kbID := line[start+len("kb_id: ") : mark]
+		if line[start:] != federationPointerHint(kbID) {
+			continue
+		}
+		lines[i] = line[:start] + federationPointerHint(localSegment+"/"+kbID)
+	}
+	return strings.Join(lines, "\n")
+}
+
 // rewriteFederatedResponse rewrites a federated response returned by the child
 // reached through localSegment into this hub's frame. Search results get their
-// kb_id prefixed; a not-configured status carries a prefixable hint so the
-// suggested address composes across every hop back to the root.
+// kb_id prefixed, the pointer hint lines in the text with them; a not-configured
+// status gets the hub, its bases and the kb_id prefixed so the message names
+// what exists in the caller's frame.
 func rewriteFederatedResponse(localSegment string, result *model.FederationResult) {
-	if result == nil || len(result.StructuredContent) == 0 {
+	if result == nil {
+		return
+	}
+	for i := range result.Content {
+		result.Content[i].Text = prefixPointerHints(localSegment, result.Content[i].Text)
+	}
+	if len(result.StructuredContent) == 0 {
 		return
 	}
 
@@ -306,7 +342,15 @@ func rewriteFederatedResponse(localSegment string, result *model.FederationResul
 	if err := json.Unmarshal(result.StructuredContent, &status); err == nil &&
 		status.Status == "federation_not_configured" && status.KBID != "" {
 		status.KBID = localSegment + "/" + status.KBID
-		status.Message = notConfiguredMessage(status.KBID)
+		if status.Hub == "" {
+			status.Hub = localSegment
+		} else {
+			status.Hub = localSegment + "/" + status.Hub
+		}
+		for i := range status.ConnectedKBIDs {
+			status.ConnectedKBIDs[i] = localSegment + "/" + status.ConnectedKBIDs[i]
+		}
+		status.Message = notConfiguredMessage(status)
 		if encoded, e := json.Marshal(status); e == nil {
 			result.StructuredContent = encoded
 			result.Content = []model.FederationContent{{Type: contentTypeText, Text: status.Message}}
@@ -323,25 +367,60 @@ func rewriteFederatedResponse(localSegment string, result *model.FederationResul
 	}
 }
 
-// notConfiguredMessage renders the not-configured hint. A flat kb_id may live
-// under a hub, so the hint tells the caller how nested bases are addressed; a
-// composed (already nested) kb_id is stated verbatim as the address to use.
-func notConfiguredMessage(kbID string) string {
-	switch {
-	case kbID == "":
-		return "Federation is not configured for this hub. No KB-notes were found. To enable federation, create a note with mcp_federation_kb_url frontmatter pointing to another MCP endpoint."
-	case strings.Contains(kbID, "/"):
-		return fmt.Sprintf(
-			"Federation is not configured for kb_id %q. Bases reached through a hub are addressed <hub>/<base> — address this base as %q.",
-			kbID, kbID)
-	default:
-		return fmt.Sprintf(
-			"Federation is not configured for kb_id %q. If %q lives under a hub, address it as <hub>/%s (bases reached through a hub are addressed <hub>/<base>).",
-			kbID,
-			kbID,
-			kbID,
-		)
+// notConfiguredMessage explains a kb_id that resolved to nothing: which
+// segment is unknown, which bases exist at that point in the caller's frame,
+// and the likeliest address when a later segment names one of them.
+func notConfiguredMessage(status FederationStatusPayload) string {
+	connected := status.ConnectedKBIDs
+	if status.KBID == "" {
+		if len(connected) == 0 {
+			return "Federation is not configured for this hub. No KB-notes were found. To enable federation, create a note with mcp_federation_kb_url frontmatter pointing to another MCP endpoint."
+		}
+		return fmt.Sprintf("None of the requested kb_ids names a connected base on this hub. Connected bases: %s.",
+			strings.Join(connected, ", "))
 	}
+
+	prefix := ""
+	if status.Hub != "" {
+		prefix = status.Hub + "/"
+	}
+	unknown, rest := splitKBID(strings.TrimPrefix(status.KBID, prefix))
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "Federation is not configured for kb_id %q: ", status.KBID)
+	switch {
+	case status.Hub != "":
+		fmt.Fprintf(&sb, "hub %q has no base %q.", status.Hub, unknown)
+	case len(connected) == 0:
+		sb.WriteString("this hub has no connected bases.")
+		return sb.String()
+	default:
+		fmt.Fprintf(&sb, "no connected base on this hub is named %q.", unknown)
+	}
+	if len(connected) > 0 {
+		if status.Hub != "" {
+			fmt.Fprintf(&sb, " Bases connected under %q: %s.", status.Hub, strings.Join(connected, ", "))
+		} else {
+			fmt.Fprintf(&sb, " Connected bases: %s.", strings.Join(connected, ", "))
+		}
+	}
+
+	// A guessed prefix in front of a real base is the common mistake; name it.
+	for _, seg := range strings.Split(rest, "/") {
+		if seg != "" && slices.Contains(connected, prefix+seg) {
+			fmt.Fprintf(&sb, " %q is a connected base — address it as kb_id=%q.", prefix+seg, prefix+seg)
+			return sb.String()
+		}
+	}
+	switch {
+	case status.Hub == "" && rest == "":
+		fmt.Fprintf(&sb, " If %q lives under one of them, address it as <hub>/%s (bases reached through a hub are addressed <hub>/<base>).",
+			unknown, unknown)
+	case status.Hub != "" && len(connected) == 0:
+		fmt.Fprintf(&sb, " To find its kb_id, search the hub for it: federated_search(kb_id=%q, query=%q) — the pointer card prints the kb_id to use.",
+			status.Hub, unknown)
+	}
+	return sb.String()
 }
 
 // bodyDigest is what a signature has to cover for the body to be authenticated.
