@@ -249,8 +249,9 @@ func goldenEnv() *EnvMock {
 		PathID:    10,
 		Title:     "Doc",
 		Permalink: "/doc",
-		HTML:      "<h2 id=\"alpha\">Alpha</h2>\n<p>alpha body</p>\n<h2 id=\"beta\">Beta</h2>\n<p>beta body</p>",
-		Content:   []byte("# Doc\n\n## Alpha\n\nalpha body\n\n## Beta\n\nbeta body\n"),
+		HTML: "<div data-header=\"Alpha\" data-level=\"2\"><h2 id=\"alpha\">Alpha</h2>\n<p>alpha body</p>\n</div>" +
+			"<div data-header=\"Beta\" data-level=\"2\"><h2 id=\"beta\">Beta</h2>\n<p>beta body</p>\n</div>",
+		Content: []byte("# Doc\n\n## Alpha\n\nalpha body\n\n## Beta\n\nbeta body\n"),
 		Headings: appmodel.NoteViewHeadings{
 			{Text: "Alpha", Level: 2, ID: "alpha"},
 			{Text: "Beta", Level: 2, ID: "beta"},

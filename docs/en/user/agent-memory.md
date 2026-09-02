@@ -236,7 +236,7 @@ The full MCP endpoint (used directly or through the adapter) exposes:
 | Tool | What it does |
 |------|--------------|
 | `search(query)` | Vector or full-text search across all memory notes. Returns slim snippets: heading breadcrumb and `toc_path` per match, not the full note |
-| `expand(pid, toc_path?)` | Walk a note's table of contents one level at a time. Returns direct children of a TOC node for drill-down |
+| `expand(pid, toc_path?)` | Walk a note's table of contents one level at a time. Returns direct children of a TOC node for drill-down; a section without subsections is returned in full |
 | `note_html(path, toc_path?)` | Read a full note or a specific section identified by `toc_path` |
 | `similar(path)` | Find notes similar to a given note |
 
@@ -320,10 +320,11 @@ Once notes are synced, the agent retrieves memory through the MCP tools in three
 
 2. expand(pid=N)                     # survey top-level structure
    expand(pid=N, toc_path=[...])    # drill into the right branch
-   → repeat until leaf (has_children: false)
+   → repeat until leaf (has_children: false); expanding a leaf returns
+     its content (same as note_html), a parent returns its children
 
 3. note_html(pid=N, toc_path=[...])
-   → read only the needed section
+   → read a section whose path you already have
 ```
 
 If `search` already returns an exact `toc_path` for the match, skip `expand` and call `note_html` directly with that path. The adapter handles this automatically.

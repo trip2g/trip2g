@@ -779,13 +779,11 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 	// An explicit toc_path is navigation and wins over a match_id replayed
 	// from an earlier call; otherwise the same chunk comes back on every read.
 	if len(args.TocPath) > 0 {
-		sectionHTML := sectionHTMLByTocPath(string(note.HTML), args.TocPath)
-		if sectionHTML != "" {
-			return successResponse(id, textToolResult(pointerNoteText(note, sectionHTML)))
+		if _, text, ok := sectionRead(note, args.TocPath); ok {
+			return successResponse(id, textToolResult(text))
 		}
 		log.Warn("toc_path did not resolve", "path", note.Path, "toc_path", args.TocPath)
-		return errorResponse(id, ErrCodeInvalidParams,
-			fmt.Sprintf("section not found for toc_path [%s]; %s", strings.Join(args.TocPath, " > "), topLevelSectionsNudge(note)))
+		return errorResponse(id, ErrCodeInvalidParams, sectionNotFoundMessage(note, args.TocPath))
 	}
 
 	// A pointer miss must never silently dump the full note: that converts a
@@ -808,6 +806,21 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 	}
 
 	return successResponse(id, textToolResult(pointerNoteText(note, string(note.HTML))))
+}
+
+// sectionRead is the one way a section is read by toc_path: note_html and a
+// leaf expand return exactly this text, so the two never drift apart.
+// It returns the section HTML and the text the caller answers with.
+func sectionRead(note *model.NoteView, tocPath []string) (string, string, bool) {
+	sectionHTML := sectionHTMLByTocPath(string(note.HTML), tocPath)
+	if sectionHTML == "" {
+		return "", "", false
+	}
+	return sectionHTML, pointerNoteText(note, sectionHTML), true
+}
+
+func sectionNotFoundMessage(note *model.NoteView, tocPath []string) string {
+	return fmt.Sprintf("section not found for toc_path [%s]; %s", strings.Join(tocPath, " > "), topLevelSectionsNudge(note))
 }
 
 // topLevelSectionsNudge is the cheap (~30 token) expand-shaped hint returned on
@@ -864,6 +877,20 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		TocPath:  args.TocPath,
 		Children: children,
 	}
+	// A section with no subsections is a leaf: the only thing left to do with
+	// it is read it, so answer the read here instead of nudging the agent into
+	// a note_html call with the very same arguments. A path that names no
+	// section fails loud, same as note_html.
+	if len(children) == 0 && len(args.TocPath) > 0 {
+		sectionHTML, text, ok := sectionRead(note, args.TocPath)
+		if !ok {
+			log.Warn("toc_path did not resolve", "path", note.Path, "toc_path", args.TocPath)
+			return errorResponse(id, ErrCodeInvalidParams, sectionNotFoundMessage(note, args.TocPath))
+		}
+		payload.SectionHTML = sectionHTML
+		log.Debug("expand read a leaf", "path", note.Path, "toc_path", args.TocPath)
+		return successResponse(id, structuredToolResult(text, payload))
+	}
 	log.Debug("expand completed", "path", note.Path, "toc_path", args.TocPath, "children", len(children))
 	return successResponse(id, structuredToolResult(expandSummary(note, args.TocPath, children), payload))
 }
@@ -877,7 +904,7 @@ func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode
 	}
 	var sb strings.Builder
 	if len(children) == 0 {
-		fmt.Fprintf(&sb, "%s — %q has no subsections (leaf). Read it with note_html(toc_path).", note.Title, where)
+		fmt.Fprintf(&sb, "%s — %q has no sections; read the note with note_html without toc_path.", note.Title, where)
 		return sb.String()
 	}
 	fmt.Fprintf(&sb, "%s — %q, %d subsection(s):\n", note.Title, where, len(children))

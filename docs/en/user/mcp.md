@@ -26,7 +26,7 @@ sequenceDiagram
 | Method | Description |
 |--------|-------------|
 | `search(query)` | Vector search across the knowledge base. Returns slim snippets — a heading breadcrumb and a precise `toc_path` per match, not the full table of contents |
-| `expand(pid, toc_path?)` | Walk a note's table of contents level by level. Returns the direct children of a TOC node so you can drill down without loading the note. See [[en/user/expand]] for a detailed explanation |
+| `expand(pid, toc_path?)` | Walk a note's table of contents level by level. Returns the direct children of a TOC node so you can drill down without loading the note; a section without subsections is returned in full. See [[en/user/expand]] for a detailed explanation |
 | `note_html(path, toc_path?)` | Full note or a specific section |
 | `similar(path)` | Notes similar to the given note |
 | `instructions()` | Author-defined AI instructions |
@@ -77,7 +77,13 @@ Each child node has:
 - `title` — the heading text.
 - `level` — the heading level (1–6).
 - `path` — the full breadcrumb to this node; pass it back as `toc_path` to expand it further or to read it with `note_html`.
-- `has_children` — whether this node has subsections of its own. Use it to decide whether to keep drilling down with `expand` or to read the leaf with `note_html`.
+- `has_children` — whether this node has subsections of its own.
+
+What `expand` returns depends on the section named by `toc_path`:
+
+- A section with subsections returns the list of its children, as above.
+- A section without subsections returns its content — the same text `note_html(path, toc_path)` would give, plus `section_html` in the payload — so a client does not need a second call to read a leaf.
+- There is no flag to turn this off, and a client that only wants structure never needs one: the parent's listing already marks each child with `has_children`, so it stops descending at `has_children: false`.
 
 #### `note_html` — retrieve a single section
 
@@ -96,15 +102,15 @@ Long notes can cost many tokens if loaded in full. The `toc_path` and `expand` m
 **How it works:**
 
 - `search` returns slim matches — each carries a heading breadcrumb (approximate location) and a `toc_path` (the breadcrumb of the innermost section containing the match). It does **not** return the document's full table of contents.
-- `expand` walks the TOC one level at a time. Each child reports `has_children`, so you can drill down only where you need to.
+- `expand` walks the TOC one level at a time. Each child reports `has_children`, so you can drill down only where you need to; a leaf comes back in full.
 - `note_html` accepts `toc_path` — pass any `path` from a search match or an `expand` child to receive only that section's HTML, not the entire note.
 
 **Recommended workflow:**
 
 1. `search(query)` — get slim matches with a heading breadcrumb and `matches[].toc_path` (match location).
 2. `note_html(pid=N, toc_path=match.toc_path)` — load only the matched section. *Or*, to explore the note's structure first:
-3. `expand(pid=N)` — list top-level sections, then `expand(pid=N, toc_path=[...])` to drill into a section, following `has_children`.
-4. `note_html(pid=N, toc_path=[...])` — read the exact leaf section you found.
+3. `expand(pid=N)` — list top-level sections, then `expand(pid=N, toc_path=[...])` to drill into a section, following `has_children`. Expanding a leaf returns it in full.
+4. `note_html(pid=N, toc_path=[...])` — read a section whose path you already have.
 
 For searching and retrieving notes across federated peer bases, see [[en/user/federation]]. Federated bases expose the same drill-down: `federated_search` → `federated_expand` → `federated_note_html`. The `federated_expand` interface mirrors [[en/user/expand|expand]] applied to a remote knowledge base.
 

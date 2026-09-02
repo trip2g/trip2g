@@ -88,7 +88,10 @@ type FederationStatusPayload struct {
 	KBID           string   `json:"kb_id,omitempty"`
 	Hub            string   `json:"hub,omitempty"`
 	ConnectedKBIDs []string `json:"connected_kb_ids,omitempty"`
-	Message        string   `json:"message,omitempty"`
+	// LocalKBIDs is set when the miss came back through a peer: the bases this
+	// hub connects directly, so a caller can see past the peer's own list.
+	LocalKBIDs []string `json:"local_kb_ids,omitempty"`
+	Message    string   `json:"message,omitempty"`
 }
 
 type FederatedCallPayload struct {
@@ -175,6 +178,9 @@ type ExpandPayload struct {
 	NotePath string    `json:"note_path"`
 	TocPath  []string  `json:"toc_path,omitempty"`
 	Children []TOCNode `json:"children"`
+	// SectionHTML is the section itself when toc_path names a leaf: there is
+	// nothing further to expand, so the read is answered in the same call.
+	SectionHTML string `json:"section_html,omitempty"`
 }
 
 type GraphQLIntrospectionArguments struct {

@@ -101,7 +101,8 @@ The recommended agent workflow for a trip2g knowledge base:
 
 4. If you need a sibling section,
    expand(pid=N, toc_path=[...]) lists that level's sections
-   → navigate without a second search call
+   → navigate without a second search call; a section without
+     subsections comes back as content, same as note_html
 ```
 
 This workflow is described in full in [[mcp|MCP server]].

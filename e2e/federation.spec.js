@@ -169,6 +169,61 @@ test.describe.serial('Federation', () => {
     expect(text.toLowerCase()).toMatch(/not.*(found|configured)/);
   });
 
+  test('federated_search behind the peer names both the peer bases and the hub bases', async () => {
+    // The peer answers "not configured" in its own frame; the hub rewrites it
+    // into the caller's and appends its own directly-connected bases, so the
+    // caller is not left believing the peer's list is everything there is.
+    const result = await mcpCall(hubRequest, HUB_MCP, 'tools/call', {
+      name: 'federated_search',
+      arguments: { kb_id: 'peer/ghost-kb', query: 'anything' },
+    });
+
+    expect(result.error).toBeUndefined();
+    const text = result.result.content[0].text;
+    expect(text).toContain('Federation is not configured for kb_id "peer/ghost-kb"');
+    expect(text).toContain('hub "peer" has no base "ghost-kb"');
+    expect(text).toContain('Bases connected directly to this hub: peer');
+
+    const status = result.result.structuredContent;
+    expect(status.status).toBe('federation_not_configured');
+    expect(status.kb_id).toBe('peer/ghost-kb');
+    expect(status.hub).toBe('peer');
+    // The peer's own list in the caller's frame: the seed vault federates the
+    // hub back as "hub", so it arrives as peer/hub. An anonymous caller sees
+    // only the hub's free KB-note (peer), not the subgraph-gated peer2/peer3.
+    expect(status.connected_kb_ids).toEqual(['peer/hub']);
+    expect(text).toContain('Bases connected under "peer": peer/hub');
+    expect(status.local_kb_ids).toEqual(['peer']);
+    expect(status.message).toBe(text);
+  });
+
+  test('federated_expand of a leaf section returns it through the peer', async () => {
+    const args = { kb_id: 'peer', path: 'expand-steps.md', toc_path: ['Boot the server'] };
+    const [expanded, viaNoteHTML] = await Promise.all([
+      mcpCall(hubRequest, HUB_MCP, 'tools/call', { name: 'federated_expand', arguments: args }),
+      mcpCall(hubRequest, HUB_MCP, 'tools/call', { name: 'federated_note_html', arguments: args }),
+    ]);
+
+    expect(expanded.error).toBeUndefined();
+    const text = expanded.result.content[0].text;
+    expect(text).toContain('expand-leaf-sentinel-boot');
+    expect(text).not.toContain('expand-leaf-sentinel-logs');
+    expect(text).toBe(viaNoteHTML.result.content[0].text);
+
+    const payload = expanded.result.structuredContent;
+    expect(payload.note_path).toBe('expand-steps.md');
+    expect(payload.children ?? []).toHaveLength(0);
+    expect(payload.section_html).toContain('expand-leaf-sentinel-boot');
+
+    // A section with subsections still lists them instead of its body.
+    const parent = await mcpCall(hubRequest, HUB_MCP, 'tools/call', {
+      name: 'federated_expand',
+      arguments: { kb_id: 'peer', path: 'expand-steps.md', toc_path: ['Verify the install'] },
+    });
+    expect(parent.result.structuredContent.children.map((c) => c.title)).toEqual(['Check the server logs']);
+    expect(parent.result.content[0].text).not.toContain('expand-leaf-sentinel-logs');
+  });
+
   test('revoke outbound secret blocks federation', async () => {
     console.log({ id: outboundSecretId })
     // Revoke the outbound secret on the hub

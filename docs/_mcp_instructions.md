@@ -8,7 +8,7 @@ free: true
 
 This base is the trip2g documentation: user guides under `en/user/` and `ru/user/`, changelog, developer docs under `dev/`, design plans under `plans/`. The `demo/` folder is a Meditations showcase, not trip2g docs.
 
-Core loop: `search` → read one section with `note_html(toc_path=...)` → navigate structure with `expand` when the pointer misses. Details per tool below.
+Core loop: `search` → read one section with `note_html(toc_path=...)` → navigate structure with `expand` when the pointer misses. `expand` on a section without subsections returns that section in full, so a descent ends in the read. Details per tool below.
 
 ## search
 
@@ -39,9 +39,10 @@ Query tips: use content words from the question ("private federation peer HMAC s
 `expand(pid | note_id | path | href, toc_path?)` — progressive disclosure of a note's table of contents.
 
 - No `toc_path` (or `[]`): the top-level sections.
-- With `toc_path`: that section's direct subsections.
-- Each child: `title`, `level`, `path` (ready to pass on), `has_children`.
-- Descend until a leaf (`has_children: false`), then `note_html(toc_path=child.path)`.
+- With `toc_path` naming a section that has subsections: its direct subsections. Each child: `title`, `level`, `path` (ready to pass on), `has_children`.
+- With `toc_path` naming a section that has no subsections: the section's content — the same text `note_html(path, toc_path)` returns, plus `section_html` in the payload. No second call is needed to read a leaf.
+- There is no flag to turn that off, and you never need one: the parent's listing already marks each child with `has_children`, so a client that only wants structure stops at `has_children: false` instead of expanding further.
+- Descend by `path` until the answer is content. `note_html(toc_path=...)` is for a section whose path you already have.
 - Use it to survey a note's structure before reading, and to recover from a `toc_path` miss.
 
 ## similar

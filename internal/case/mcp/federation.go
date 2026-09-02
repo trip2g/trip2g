@@ -148,7 +148,7 @@ func federationResultToToolResult(result model.FederationResult) CallToolResult 
 	}
 }
 
-func aggregateFederationResults(results []ProxiedResult, skipped []*model.MCPFederationNote) CallToolResult {
+func aggregateFederationResults(results []ProxiedResult, skipped []*model.MCPFederationNote, localKBIDs []string) CallToolResult {
 	payload := FederatedCallPayload{}
 	for _, kb := range skipped {
 		payload.Skipped = append(payload.Skipped, FederatedCallSkipped{
@@ -171,7 +171,7 @@ func aggregateFederationResults(results []ProxiedResult, skipped []*model.MCPFed
 		}
 		// Stamp each direct peer's results into this hub's frame before aggregating.
 		if kbID != "" {
-			rewriteFederatedResponse(kbID, &result.Result)
+			rewriteFederatedResponse(kbID, localKBIDs, &result.Result)
 		}
 		payload.Results = append(payload.Results, FederatedCallResult{
 			KBID:    kbID,

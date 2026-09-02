@@ -127,7 +127,7 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 		},
 		{
 			Name:        "expand",
-			Description: "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(path=..., toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+			Description: "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. A section with subsections lists them; a section without subsections is returned in full (what note_html gives for that toc_path, plus section_html in the payload), so no second call is needed to read a leaf. This cannot be turned off, and a client that wants only structure never triggers it: has_children on each listed child says where descending would turn into reading.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
@@ -255,7 +255,7 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 		},
 		{
 			Name:        "federated_expand",
-			Description: "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+			Description: "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{

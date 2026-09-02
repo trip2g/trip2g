@@ -326,8 +326,9 @@ func prefixPointerHints(localSegment, text string) string {
 // reached through localSegment into this hub's frame. Search results get their
 // kb_id prefixed, the pointer hint lines in the text with them; a not-configured
 // status gets the hub, its bases and the kb_id prefixed so the message names
-// what exists in the caller's frame.
-func rewriteFederatedResponse(localSegment string, result *model.FederationResult) {
+// what exists in the caller's frame, and localKBIDs — the bases this hub
+// connects directly, as the caller may see them — added as the second level.
+func rewriteFederatedResponse(localSegment string, localKBIDs []string, result *model.FederationResult) {
 	if result == nil {
 		return
 	}
@@ -350,6 +351,7 @@ func rewriteFederatedResponse(localSegment string, result *model.FederationResul
 		for i := range status.ConnectedKBIDs {
 			status.ConnectedKBIDs[i] = localSegment + "/" + status.ConnectedKBIDs[i]
 		}
+		status.LocalKBIDs = localKBIDs
 		status.Message = notConfiguredMessage(status)
 		if encoded, e := json.Marshal(status); e == nil {
 			result.StructuredContent = encoded
@@ -369,7 +371,9 @@ func rewriteFederatedResponse(localSegment string, result *model.FederationResul
 
 // notConfiguredMessage explains a kb_id that resolved to nothing: which
 // segment is unknown, which bases exist at that point in the caller's frame,
-// and the likeliest address when a later segment names one of them.
+// the likeliest address when a later segment names one of them, and — for a
+// miss reported by a peer — which bases this hub connects directly, so the
+// peer's list is not mistaken for everything there is.
 func notConfiguredMessage(status FederationStatusPayload) string {
 	connected := status.ConnectedKBIDs
 	if status.KBID == "" {
@@ -403,6 +407,9 @@ func notConfiguredMessage(status FederationStatusPayload) string {
 		} else {
 			fmt.Fprintf(&sb, " Connected bases: %s.", strings.Join(connected, ", "))
 		}
+	}
+	if status.Hub != "" && len(status.LocalKBIDs) > 0 {
+		fmt.Fprintf(&sb, " Bases connected directly to this hub: %s.", strings.Join(status.LocalKBIDs, ", "))
 	}
 
 	// A guessed prefix in front of a real base is the common mistake; name it.

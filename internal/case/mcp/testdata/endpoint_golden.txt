@@ -104,7 +104,7 @@ HTTP 200 application/json
         "name": "code-review"
       },
       {
-        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(path=..., toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. A section with subsections lists them; a section without subsections is returned in full (what note_html gives for that toc_path, plus section_html in the payload), so no second call is needed to read a leaf. This cannot be turned off, and a client that wants only structure never triggers it: has_children on each listed child says where descending would turn into reading.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -136,7 +136,7 @@ HTTP 200 application/json
         "name": "expand"
       },
       {
-        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -431,7 +431,7 @@ HTTP 200 application/json
         "name": "code-review"
       },
       {
-        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(path=..., toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. A section with subsections lists them; a section without subsections is returned in full (what note_html gives for that toc_path, plus section_html in the payload), so no second call is needed to read a leaf. This cannot be turned off, and a client that wants only structure never triggers it: has_children on each listed child says where descending would turn into reading.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -463,7 +463,7 @@ HTTP 200 application/json
         "name": "expand"
       },
       {
-        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -800,7 +800,7 @@ HTTP 200 application/json
         "name": "code-review"
       },
       {
-        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(path=..., toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. A section with subsections lists them; a section without subsections is returned in full (what note_html gives for that toc_path, plus section_html in the payload), so no second call is needed to read a leaf. This cannot be turned off, and a client that wants only structure never triggers it: has_children on each listed child says where descending would turn into reading.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -832,7 +832,7 @@ HTTP 200 application/json
         "name": "expand"
       },
       {
-        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -1142,7 +1142,11 @@ HTTP 200 application/json
           "matches": [
             {
               "snippet": "alpha body",
-              "context_words": 10
+              "context_words": 10,
+              "toc_path": [
+                "Alpha"
+              ],
+              "section_url": "https://golden.test/doc#alpha"
             }
           ]
         },
@@ -1196,7 +1200,11 @@ HTTP 200 application/json
           "matches": [
             {
               "snippet": "alpha body",
-              "context_words": 10
+              "context_words": 10,
+              "toc_path": [
+                "Alpha"
+              ],
+              "section_url": "https://golden.test/doc#alpha"
             }
           ]
         },
@@ -1245,7 +1253,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e"
+        "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e"
       }
     ]
   }
@@ -1260,7 +1268,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e"
+        "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e"
       }
     ]
   }
@@ -1275,7 +1283,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e"
+        "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e"
       }
     ]
   }
@@ -1297,9 +1305,13 @@ HTTP 200 application/json
 {
   "jsonrpc": "2.0",
   "id": 4,
-  "error": {
-    "code": -32602,
-    "message": "section not found for toc_path [Beta]; top-level sections: Alpha, Beta — navigate with expand or note_html(toc_path=[...])"
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n"
+      }
+    ]
   }
 }
 
@@ -1356,7 +1368,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "Doc — \"top level\", 2 subsection(s):\n- Alpha\n- Beta\n"
+        "text": "Doc — \"top level\", 2 subsection(s):\n- Alpha — alpha body\n- Beta — beta body\n"
       }
     ],
     "structuredContent": {
@@ -1369,7 +1381,8 @@ HTTP 200 application/json
           "path": [
             "Alpha"
           ],
-          "has_children": false
+          "has_children": false,
+          "preview": "alpha body"
         },
         {
           "title": "Beta",
@@ -1377,7 +1390,8 @@ HTTP 200 application/json
           "path": [
             "Beta"
           ],
-          "has_children": false
+          "has_children": false,
+          "preview": "beta body"
         }
       ]
     }
@@ -1393,7 +1407,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "Doc — \"Beta\" has no subsections (leaf). Read it with note_html(toc_path)."
+        "text": "\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n"
       }
     ],
     "structuredContent": {
@@ -1402,7 +1416,8 @@ HTTP 200 application/json
       "toc_path": [
         "Beta"
       ],
-      "children": []
+      "children": [],
+      "section_html": "\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n"
     }
   }
 }
@@ -1755,7 +1770,7 @@ HTTP 200 application/json
         "name": "code-review"
       },
       {
-        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(path=..., toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. A section with subsections lists them; a section without subsections is returned in full (what note_html gives for that toc_path, plus section_html in the payload), so no second call is needed to read a leaf. This cannot be turned off, and a client that wants only structure never triggers it: has_children on each listed child says where descending would turn into reading.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -1787,7 +1802,7 @@ HTTP 200 application/json
         "name": "expand"
       },
       {
-        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -2082,7 +2097,7 @@ HTTP 200 application/json
         "name": "code-review"
       },
       {
-        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(path=..., toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. A section with subsections lists them; a section without subsections is returned in full (what note_html gives for that toc_path, plus section_html in the payload), so no second call is needed to read a leaf. This cannot be turned off, and a client that wants only structure never triggers it: has_children on each listed child says where descending would turn into reading.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -2114,7 +2129,7 @@ HTTP 200 application/json
         "name": "expand"
       },
       {
-        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -2420,7 +2435,7 @@ HTTP 200 application/json
         "name": "code-review"
       },
       {
-        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. Drill down with expand, then read a leaf with note_html(path=..., toc_path=[...]) — no need to load the whole note or its full flat TOC.",
+        "description": "Walk a note's table of contents level by level (progressive disclosure). Canonical call: expand(path=<result.note_path>, toc_path=[...]) — copy path verbatim from a search result's note_path field. Returns the direct children of a TOC node: omit toc_path (or pass []) for the top-level sections, or pass a toc_path to list that section's subsections. Each child has title, level, path, and has_children. A section with subsections lists them; a section without subsections is returned in full (what note_html gives for that toc_path, plus section_html in the payload), so no second call is needed to read a leaf. This cannot be turned off, and a client that wants only structure never triggers it: has_children on each listed child says where descending would turn into reading.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -2452,7 +2467,7 @@ HTTP 200 application/json
         "name": "expand"
       },
       {
-        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections.",
+        "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
         "inputSchema": {
           "type": "object",
           "properties": {

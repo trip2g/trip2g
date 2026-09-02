@@ -360,3 +360,84 @@ func TestFederatedSearchNotConfiguredThroughHopWithoutListPointsAtHubSearch(t *t
 	require.Contains(t, text, `hub "philosophers" has no base "ghost"`)
 	require.Contains(t, text, `federated_search(kb_id="philosophers", query="ghost")`)
 }
+
+// multiPeerEnv is a hub with several directly-connected bases. The caller may
+// not read the KB-note of "secret", so that base must never be named to them.
+func multiPeerEnv(fed *federationMock) *EnvMock {
+	nvs := appmodel.NewNoteViews()
+	for i, id := range []string{"markavrelii", "philosophers", "secret"} {
+		nvs.MCPFederationNotes = append(nvs.MCPFederationNotes, appmodel.NewMCPFederationNote(&appmodel.NoteView{
+			PathID:             int64(100 + i),
+			Path:               "hub/" + id + ".md",
+			MCPFederationKBURL: "https://" + id + ".example/_system/mcp",
+			MCPFederationKBID:  id,
+		}))
+	}
+	return &EnvMock{
+		FeaturesFunc:               func() features.Features { return features.Features{} },
+		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
+		CanReadNoteFunc: func(_ context.Context, n *appmodel.NoteView) (bool, error) {
+			return n.Path != "hub/secret.md", nil
+		},
+		FederationClientFunc:   func(context.Context, string) (appmodel.Federation, error) { return fed, nil },
+		FederationMaxDepthFunc: func() int { return 3 },
+	}
+}
+
+// A miss reported by a peer names both levels: what the peer federates, and
+// what this hub connects directly — in the walk that motivates this, the base
+// the agent wanted was on the second list and it never got to see it.
+func TestFederatedNotConfiguredThroughHopNamesLocalBases(t *testing.T) {
+	notConfigured := appmodel.FederationResult{
+		Content: []appmodel.FederationContent{{Type: "text", Text: "not configured"}},
+		StructuredContent: json.RawMessage(`{"status":"federation_not_configured","kb_id":"marcus-aurelius",` +
+			`"connected_kb_ids":["epictetus"]}`),
+	}
+	fed := &federationMock{
+		federatedSearchFunc: func(context.Context, appmodel.MCPSearchParams) (appmodel.FederationResult, error) {
+			return notConfigured, nil
+		},
+		federatedNoteHTMLFunc: func(context.Context, appmodel.MCPNoteHTMLParams) (appmodel.FederationResult, error) {
+			return notConfigured, nil
+		},
+	}
+
+	tests := []struct {
+		tool string
+		args string
+	}{
+		{tool: "federated_search", args: `{"query":"x","kb_id":"philosophers/marcus-aurelius"}`},
+		{tool: "federated_note_html", args: `{"path":"a.md","kb_id":"philosophers/marcus-aurelius"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tool, func(t *testing.T) {
+			resp := callTool(t, multiPeerEnv(fed), tt.tool, tt.args)
+
+			require.Nil(t, resp.Error)
+			result := resp.Result.(mcp.CallToolResult)
+			text := result.Content[0].Text
+			require.Contains(t, text, `hub "philosophers" has no base "marcus-aurelius"`)
+			require.Contains(t, text, `Bases connected under "philosophers": philosophers/epictetus.`)
+			require.Contains(t, text, `Bases connected directly to this hub: markavrelii, philosophers.`)
+			require.NotContains(t, text, "secret")
+			status := decodePayload[mcp.FederationStatusPayload](t, result)
+			require.Equal(t, []string{"philosophers/epictetus"}, status.ConnectedKBIDs)
+			require.Equal(t, []string{"markavrelii", "philosophers"}, status.LocalKBIDs)
+			require.Equal(t, text, status.Message)
+		})
+	}
+}
+
+// The local miss keeps one list: the hub's own bases are the connected ones.
+func TestFederatedNotConfiguredLocallyCarriesNoSecondList(t *testing.T) {
+	resp := callTool(t, multiPeerEnv(&federationMock{}), "federated_search", `{"query":"x","kb_id":"ghost"}`)
+
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.NotContains(t, result.Content[0].Text, "connected directly")
+	status := decodePayload[mcp.FederationStatusPayload](t, result)
+	require.Equal(t, []string{"markavrelii", "philosophers"}, status.ConnectedKBIDs)
+	require.Empty(t, status.LocalKBIDs)
+}
