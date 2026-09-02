@@ -64,7 +64,7 @@ func TestUnsealBag_OpensDeclaredFields(t *testing.T) {
 		"depth":  1,
 	})
 
-	out, opened, err := unsealBag(bag, mapEnv{"SEAL_KEY": testKey}, nil)
+	out, opened, err := unsealBag(bag, mapEnv{"SEAL_KEY": testKey}, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, []string{"krisp-token-value"}, opened)
 
@@ -88,7 +88,7 @@ func TestUnsealBag_PreservesUnknownFields(t *testing.T) {
 		"changed_files": []any{},
 	})
 
-	out, _, err := unsealBag(bag, mapEnv{}, nil)
+	out, _, err := unsealBag(bag, mapEnv{}, nil, nil)
 	require.NoError(t, err)
 
 	var got map[string]any
@@ -99,7 +99,7 @@ func TestUnsealBag_PreservesUnknownFields(t *testing.T) {
 func TestUnsealBag_NoDeclarationIsANoOp(t *testing.T) {
 	bag := bagJSON(t, map[string]any{"frontmatter": map[string]string{"a": "b"}})
 
-	out, opened, err := unsealBag(bag, mapEnv{}, nil)
+	out, opened, err := unsealBag(bag, mapEnv{}, nil, nil)
 	require.NoError(t, err)
 	require.Empty(t, opened)
 
@@ -116,7 +116,7 @@ func TestUnsealBag_CustomEnvKey(t *testing.T) {
 		"unseal_env_key": "SEAL_KEY_V2",
 	})
 
-	_, opened, err := unsealBag(bag, mapEnv{"SEAL_KEY_V2": testKey}, nil)
+	_, opened, err := unsealBag(bag, mapEnv{"SEAL_KEY_V2": testKey}, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, []string{"v"}, opened)
 }
@@ -130,7 +130,7 @@ func TestUnsealBag_MissingFieldIsAnError(t *testing.T) {
 		"unseal":      []string{"absent"},
 	})
 
-	_, _, err := unsealBag(bag, mapEnv{"SEAL_KEY": testKey}, nil)
+	_, _, err := unsealBag(bag, mapEnv{"SEAL_KEY": testKey}, nil, nil)
 	require.ErrorContains(t, err, "absent")
 }
 
@@ -141,7 +141,7 @@ func TestUnsealBag_UnknownEnvKeyIsAnError(t *testing.T) {
 		"unseal":      []string{"tok"},
 	})
 
-	_, _, err := unsealBag(bag, mapEnv{}, nil)
+	_, _, err := unsealBag(bag, mapEnv{}, nil, nil)
 	require.Error(t, err)
 }
 
@@ -155,7 +155,7 @@ func TestUnsealBag_ErrorDoesNotLeakEnvDetail(t *testing.T) {
 		"unseal":      []string{"tok"},
 	})
 
-	_, _, err := unsealBag(bag, mapEnv{"SEAL_KEY": "short"}, nil)
+	_, _, err := unsealBag(bag, mapEnv{"SEAL_KEY": "short"}, nil, nil)
 
 	require.Error(t, err)
 	require.NotContains(t, err.Error(), "32 bytes")
@@ -172,9 +172,49 @@ func TestUnsealBag_RefusesKeyExposedToChildren(t *testing.T) {
 		"unseal":      []string{"tok"},
 	})
 
-	_, _, err := unsealBag(bag, mapEnv{"SEAL_KEY": testKey}, []string{"SEAL_KEY"})
+	_, _, err := unsealBag(bag, mapEnv{"SEAL_KEY": testKey}, []string{"SEAL_KEY"}, nil)
 
 	require.ErrorIs(t, err, errSealKeyExposed)
+}
+
+// An operator prefix forwards every matching var into the child env, so a key
+// it covers is just as exposed as one listed by name. Startup only checks the
+// default name; a role-named key is only known here.
+func TestUnsealBag_RefusesKeyCoveredByExposedPrefix(t *testing.T) {
+	blob := sealWith(t, "v")
+
+	tests := []struct {
+		name     string
+		envKey   string
+		prefixes []string
+		wantErr  error
+	}{
+		{name: "role key under operator prefix", envKey: "KRISP_SEAL_KEY", prefixes: []string{"KRISP_"}, wantErr: errSealKeyExposed},
+		{name: "default key under operator prefix", envKey: "", prefixes: []string{"SEAL"}, wantErr: errSealKeyExposed},
+		{name: "prefix does not cover the key", envKey: "KRISP_SEAL_KEY", prefixes: []string{"OTHER_"}},
+		{name: "empty prefix covers nothing", envKey: "KRISP_SEAL_KEY", prefixes: []string{""}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := map[string]any{
+				"frontmatter": map[string]string{"tok": blob},
+				"unseal":      []string{"tok"},
+			}
+			if tt.envKey != "" {
+				doc["unseal_env_key"] = tt.envKey
+			}
+			env := mapEnv{"SEAL_KEY": testKey, "KRISP_SEAL_KEY": testKey}
+
+			_, opened, err := unsealBag(bagJSON(t, doc), env, nil, tt.prefixes)
+
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, []string{"v"}, opened)
+		})
+	}
 }
 
 func TestRedactSecrets(t *testing.T) {
@@ -203,7 +243,7 @@ func TestDataEncryptionCompat(t *testing.T) {
 func TestUnsealBag_NonJSONPassesThrough(t *testing.T) {
 	raw := []byte("hello, not json")
 
-	out, opened, err := unsealBag(raw, mapEnv{}, nil)
+	out, opened, err := unsealBag(raw, mapEnv{}, nil, nil)
 
 	require.NoError(t, err)
 	require.Empty(t, opened)

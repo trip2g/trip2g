@@ -94,9 +94,11 @@ func openSealed(key, blob string) (string, error) {
 // fleet and codellm are deployed separately, so a newer fleet may send fields
 // this build does not model, and a typed round trip would silently drop them.
 //
-// exposedToChild is the env allowlist the code child will receive; naming the
-// seal key there is a deploy mistake that must fail, not be worked around.
-func unsealBag(bag []byte, env envLookup, exposedToChild []string) ([]byte, []string, error) {
+// exposedNames and exposedPrefixes are the operator's env allowlist for the
+// code child; a seal key either one covers is a deploy mistake that must fail,
+// not be worked around. Startup only checks the default key name, so a role
+// naming its own key is checked here against the same predicate.
+func unsealBag(bag []byte, env envLookup, exposedNames, exposedPrefixes []string) ([]byte, []string, error) {
 	if len(bag) == 0 {
 		return bag, nil, nil
 	}
@@ -119,7 +121,7 @@ func unsealBag(bag []byte, env envLookup, exposedToChild []string) ([]byte, []st
 	if v, ok := doc["unseal_env_key"].(string); ok && strings.TrimSpace(v) != "" {
 		envKey = strings.TrimSpace(v)
 	}
-	if nameIsExposed(envKey, exposedToChild) {
+	if matchesAllowlist(envKey, exposedNames, exposedPrefixes) {
 		return nil, nil, fmt.Errorf("%w: %s", errSealKeyExposed, envKey)
 	}
 
@@ -148,18 +150,6 @@ func unsealBag(bag []byte, env envLookup, exposedToChild []string) ([]byte, []st
 		return nil, nil, fmt.Errorf("delivery bag: %w", err)
 	}
 	return out, opened, nil
-}
-
-// nameIsExposed reports whether name is on the child env allowlist. Only exact
-// names are checked here; prefixes are rejected at startup, where the operator
-// can act on them.
-func nameIsExposed(name string, exposed []string) bool {
-	for _, e := range exposed {
-		if e == name {
-			return true
-		}
-	}
-	return false
 }
 
 func stringSlice(v any) []string {
@@ -210,7 +200,7 @@ func (osEnv) get(name string) string { return os.Getenv(name) }
 // the default name can be checked here; a role naming its own key is checked
 // per run, since codellm learns those names only from notes.
 func ValidateSealKeyNotExposed(exposeEnv, exposeEnvPrefix []string) error {
-	if nameIsExposed(defaultSealEnvKey, exposeEnv) {
+	if matchesAllowlist(defaultSealEnvKey, exposeEnv, nil) {
 		return fmt.Errorf("%w: %s is in the expose-env allowlist", errSealKeyExposed, defaultSealEnvKey)
 	}
 	for _, p := range exposeEnvPrefix {
