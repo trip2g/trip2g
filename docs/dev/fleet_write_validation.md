@@ -43,6 +43,15 @@ Note the asymmetry to keep: `HardFailApply` makes an apply failure fatal for
 code roles (all-or-nothing), while real-LLM roles keep the soft, self-correctable
 path. A denial is not an apply failure and must stay soft in both.
 
+The `exec` tool follows the same rule for the batch of writes codellm returns:
+every change is validated before any is applied — each against what the earlier
+ones leave behind, so the role guard and the conditional patch see the note as
+it will be when the change runs — an out-of-scope path is trimmed and named in
+the tool result (`1 denied (secret/x.md: write denied: ...)`), and a patch whose
+find is absent or not unique refuses the whole batch as an apply failure. A run
+can therefore never end with half its writes committed and a success line in
+front of the model.
+
 ## Gap 2 — `strict`: lint what the model wrote before applying it
 
 Scope answers "may this path be written". Nothing answers "is this content

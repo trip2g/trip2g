@@ -147,30 +147,55 @@ func (s *ScopedKB) Search(ctx context.Context, query string) ([]Doc, error) {
 // The normalized path is forwarded to the KB so a slash-prefixed path can't
 // create a duplicate ghost document.
 func (s *ScopedKB) Write(ctx context.Context, path string, content string) error {
-	norm := normalizeScopePath(path)
-	if norm == "" || !webhookutil.MatchesAny(norm, s.writePatterns) {
-		return ErrWriteDenied
-	}
-	if !s.allowRoleAuthoring && declaresRole(content) {
-		return ErrRoleAuthoringDenied
+	norm, err := s.checkWrite(path, content)
+	if err != nil {
+		return err
 	}
 	return s.kb.Write(ctx, norm, content)
+}
+
+// checkWrite is Write's pre-flight — scope and the role guard — without the
+// write. It returns the normalized path the KB would receive.
+func (s *ScopedKB) checkWrite(path, content string) (string, error) {
+	norm, err := s.checkWriteScope(path)
+	if err != nil {
+		return "", err
+	}
+	if !s.allowRoleAuthoring && declaresRole(content) {
+		return "", ErrRoleAuthoringDenied
+	}
+	return norm, nil
+}
+
+// checkWriteScope normalizes path and denies it when outside write_patterns.
+func (s *ScopedKB) checkWriteScope(path string) (string, error) {
+	norm := normalizeScopePath(path)
+	if norm == "" || !webhookutil.MatchesAny(norm, s.writePatterns) {
+		return "", ErrWriteDenied
+	}
+	return norm, nil
 }
 
 // Patch applies a find/replace to the document at path, or returns
 // ErrWriteDenied if out of write scope. The normalized path is forwarded to
 // the KB, same as Write.
 func (s *ScopedKB) Patch(ctx context.Context, path, find, replace string) error {
-	norm := normalizeScopePath(path)
-	if norm == "" || !webhookutil.MatchesAny(norm, s.writePatterns) {
-		return ErrWriteDenied
-	}
-	verifiedHash, err := s.checkPatchNotRoleAuthoring(ctx, norm, find, replace)
+	norm, err := s.checkWriteScope(path)
 	if err != nil {
 		return err
 	}
-	if cp, ok := s.kb.(conditionalPatcher); ok && verifiedHash != nil {
-		return cp.PatchIfUnchanged(ctx, norm, find, replace, *verifiedHash)
+	verified, err := s.checkPatchNotRoleAuthoring(ctx, norm, find, replace)
+	if err != nil {
+		return err
+	}
+	return s.applyPatch(ctx, norm, find, replace, verified)
+}
+
+// applyPatch is Patch's second half: the edit itself, conditional on the
+// verified bytes when there are any and the KB can honour the condition.
+func (s *ScopedKB) applyPatch(ctx context.Context, norm, find, replace string, verified *string) error {
+	if cp, ok := s.kb.(conditionalPatcher); ok && verified != nil {
+		return cp.PatchIfUnchanged(ctx, norm, find, replace, contentHash(*verified))
 	}
 	return s.kb.Patch(ctx, norm, find, replace)
 }
@@ -206,21 +231,41 @@ func contentHash(content string) string {
 // The read goes through the underlying KB, not this ScopedKB, on purpose: a
 // role may hold write scope over a path without read scope, and the guard must
 // not be defeated by the role's own read_patterns.
-// It returns the hash of the exact bytes it verified, so the caller can make the
-// mutation conditional on them and close the window between checking and
-// patching. A nil hash means nothing was verified (the guard is off), not that
-// the content hashed to the empty string.
+// It returns the exact bytes it verified, so the caller can make the mutation
+// conditional on them and close the window between checking and patching. nil
+// means nothing was verified (the guard is off), not that the note was empty.
 func (s *ScopedKB) checkPatchNotRoleAuthoring(ctx context.Context, path, find, replace string) (*string, error) {
 	if s.allowRoleAuthoring {
 		return nil, nil
 	}
-	current, err := s.kb.Read(ctx, path)
+	current, err := s.readForPatch(ctx, path)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrRoleGuardUnverifiable, err)
+		return nil, err
 	}
-	if declaresRole(current) || declaresRole(applyPatchPreview(current, find, replace)) {
+	return s.guardPatch(current, find, replace)
+}
+
+// readForPatch reads the note a patch targets, through the underlying KB (see
+// checkPatchNotRoleAuthoring). With the guard on, a failed read is
+// ErrRoleGuardUnverifiable: the guard cannot run, so it fails closed.
+func (s *ScopedKB) readForPatch(ctx context.Context, path string) (string, error) {
+	current, err := s.kb.Read(ctx, path)
+	if err != nil && !s.allowRoleAuthoring {
+		return "", fmt.Errorf("%w: %w", ErrRoleGuardUnverifiable, err)
+	}
+	return current, err
+}
+
+// guardPatch is the role guard's decision on a patch to a note whose current
+// content is already in hand. It returns the bytes it verified, for the caller
+// to condition the patch on; nil when the guard is off.
+func (s *ScopedKB) guardPatch(current, find, replace string) (*string, error) {
+	if s.allowRoleAuthoring {
+		return nil, nil
+	}
+	patched, _ := applyPatchPreview(current, find, replace)
+	if declaresRole(current) || declaresRole(patched) {
 		return nil, ErrRoleAuthoringDenied
 	}
-	hash := contentHash(current)
-	return &hash, nil
+	return &current, nil
 }
