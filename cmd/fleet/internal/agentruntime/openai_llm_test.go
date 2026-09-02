@@ -151,3 +151,49 @@ func TestOpenAILLM_CachedPromptTokensAbsentIsZero(t *testing.T) {
 	require.NoError(t, err)
 	require.Zero(t, res.CachedPromptTokens)
 }
+
+// idempotencyStubServer records the Idempotency-Key header of every request and
+// fails the first two attempts of each call with a 500.
+func idempotencyStubServer(t *testing.T) (*OpenAILLM, *[]string) {
+	t.Helper()
+	var keys []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		keys = append(keys, r.Header.Get("Idempotency-Key"))
+		w.Header().Set("Content-Type", "application/json")
+		if len(keys)%llmMaxAttempts != 0 {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"error":{"message":"boom","type":"server_error"}}`)
+			return
+		}
+		fmt.Fprint(w, okCompletion)
+	}))
+	t.Cleanup(srv.Close)
+	return NewOpenAILLM("test-key", srv.URL+"/v1"), &keys
+}
+
+// TestOpenAILLM_IdempotencyKeyStableAcrossRetries: every attempt of one Chat
+// call carries the same non-empty Idempotency-Key, so a code-executing endpoint
+// can recognise a replay; a second call carries a different key.
+func TestOpenAILLM_IdempotencyKeyStableAcrossRetries(t *testing.T) {
+	llm, keys := idempotencyStubServer(t)
+	msgs := []Message{{Role: RoleUser, Content: "x"}}
+
+	_, err := llm.Chat(context.Background(), "test-model", msgs, nil)
+	require.NoError(t, err)
+	require.Len(t, *keys, llmMaxAttempts)
+	first := (*keys)[0]
+	require.NotEmpty(t, first)
+	for _, k := range *keys {
+		require.Equal(t, first, k, "all attempts of one call must share the key")
+	}
+
+	_, err = llm.ChatWithBudget(context.Background(), "test-model", msgs, nil, 10)
+	require.NoError(t, err)
+	require.Len(t, *keys, 2*llmMaxAttempts)
+	second := (*keys)[llmMaxAttempts]
+	require.NotEmpty(t, second)
+	require.NotEqual(t, first, second, "different calls must carry different keys")
+	for _, k := range (*keys)[llmMaxAttempts:] {
+		require.Equal(t, second, k)
+	}
+}

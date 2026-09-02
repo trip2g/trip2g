@@ -2,6 +2,8 @@ package agentruntime
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -69,7 +71,32 @@ func NewOpenAILLM(apiKey, baseURL string) *OpenAILLM {
 	if baseURL != "" {
 		cfg.BaseURL = baseURL
 	}
+	cfg.HTTPClient = idempotencyDoer{next: cfg.HTTPClient}
 	return &OpenAILLM{client: goopenai.NewClientWithConfig(cfg)}
+}
+
+// idempotencyKeyCtx carries one chat call's Idempotency-Key through the
+// request context, the only per-request channel go-openai offers.
+type idempotencyKeyCtx struct{}
+
+// idempotencyDoer stamps the Idempotency-Key header on every outgoing request.
+// Every attempt of one chat call carries the same key, so an endpoint that
+// executes code (codellm) can serve a retry from its record instead of running
+// the blocks again. OpenAI-compatible providers ignore the unknown header.
+type idempotencyDoer struct{ next goopenai.HTTPDoer }
+
+func (d idempotencyDoer) Do(req *http.Request) (*http.Response, error) {
+	if key, ok := req.Context().Value(idempotencyKeyCtx{}).(string); ok {
+		req.Header.Set("Idempotency-Key", key)
+	}
+	return d.next.Do(req)
+}
+
+func newIdempotencyKey() string {
+	var b [16]byte
+	// crypto/rand.Read never returns an error since Go 1.24.
+	_, _ = rand.Read(b[:])
+	return hex.EncodeToString(b[:])
 }
 
 // Chat issues one chat-completion request with the given tools.
@@ -93,6 +120,9 @@ func (l *OpenAILLM) chat(ctx context.Context, model string, messages []Message, 
 		req.MaxCompletionTokens = maxCompletionTokens
 	}
 
+	// One key per logical call, minted before the retry loop so every attempt
+	// replays under it.
+	ctx = context.WithValue(ctx, idempotencyKeyCtx{}, newIdempotencyKey())
 	started := time.Now()
 	resp, err := l.createWithRetry(ctx, req)
 	if err != nil {
