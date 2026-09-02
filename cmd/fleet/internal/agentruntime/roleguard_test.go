@@ -46,16 +46,19 @@ func TestApplyPatchPreview(t *testing.T) {
 		content       string
 		find, replace string
 		want          string
+		ok            bool
 	}{
-		{"single occurrence", "a b c", "b", "X", "a X c"},
-		{"first and only", "---\ntitle: x\n---\n", "title: x", "fleet_id: codellm", "---\nfleet_id: codellm\n---\n"},
-		{"missing find leaves content", "a b c", "zzz", "X", "a b c"},
-		{"ambiguous find leaves content", "a b a", "a", "X", "a b a"},
-		{"empty find leaves content", "a b c", "", "X", "a b c"},
+		{"single occurrence", "a b c", "b", "X", "a X c", true},
+		{"first and only", "---\ntitle: x\n---\n", "title: x", "fleet_id: codellm", "---\nfleet_id: codellm\n---\n", true},
+		{"missing find leaves content", "a b c", "zzz", "X", "a b c", false},
+		{"ambiguous find leaves content", "a b a", "a", "X", "a b a", false},
+		{"empty find leaves content", "a b c", "", "X", "a b c", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, applyPatchPreview(tc.content, tc.find, tc.replace))
+			got, ok := applyPatchPreview(tc.content, tc.find, tc.replace)
+			require.Equal(t, tc.want, got)
+			require.Equal(t, tc.ok, ok)
 		})
 	}
 }

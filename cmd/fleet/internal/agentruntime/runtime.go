@@ -37,8 +37,11 @@ const fleetInputMessageName = "fleet_input"
 // Built-in tools (search, read_note, write_note, patch_note, finish) are
 // handled by execTool's switch. Extension tools (exec, future MCP plug-ins)
 // register an invoker here via buildInvokers so the loop never needs a new
-// switch case. future: populate from MCP server descriptors, config, etc.
-type toolInvoker func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) string
+// switch case. It returns the textual result for the model plus the outcome,
+// the same contract as the built-in tools, so an extension write is metered
+// and hard-failed exactly like write_note/patch_note.
+// future: populate from MCP server descriptors, config, etc.
+type toolInvoker func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) (string, string)
 
 // Tool-call outcomes reported to Metrics. Only outcomeApplyFailed is a genuine
 // write failure; the rest stay soft and self-correctable.
@@ -366,11 +369,15 @@ func runToolCalls(ctx context.Context, in Input, tl toolLoop, calls []ToolCall) 
 			continue
 		}
 		started := time.Now()
+		denialsBefore := len(tl.res.Denials)
 		output, outcome := execTool(ctx, tl.scoped, tl.res, call, tl.invokers)
 		logToolCall(tl.res, tl.item, tl.step, call, outcome, output, time.Since(started))
 		if in.Metrics != nil {
 			in.Metrics.RecordToolCall(call.Name, outcome)
-			if outcome == outcomeDenied {
+			// One denial per refused write, not per call: an exec batch can
+			// refuse several, and still refuse some when its outcome is the
+			// apply failure that followed.
+			for range tl.res.Denials[denialsBefore:] {
 				in.Metrics.RecordDenial(denialForTool(call.Name))
 			}
 		}
@@ -418,8 +425,7 @@ func chatWithBudget(ctx context.Context, llm LLM, model string, messages []Messa
 // switch, forming the tool registry seam for exec and future MCP plug-ins.
 func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall, invokers map[string]toolInvoker) (string, string) {
 	if fn, ok := invokers[call.Name]; ok {
-		out := fn(ctx, scoped, res, call)
-		return out, outcomeFor(out)
+		return fn(ctx, scoped, res, call)
 	}
 	switch call.Name {
 	case toolSearch:
@@ -433,15 +439,6 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall,
 	default:
 		return "error: unknown tool " + call.Name, outcomeError
 	}
-}
-
-// outcomeFor classifies an extension tool's textual result: the registry seam
-// returns a string, and "error: ..." is its failure convention.
-func outcomeFor(output string) string {
-	if strings.HasPrefix(output, "error:") {
-		return outcomeError
-	}
-	return outcomeOK
 }
 
 // logToolCall appends one run-log entry for a finished tool call. The opaque
@@ -699,58 +696,138 @@ func buildInvokers(execLLM LLM) map[string]toolInvoker {
 // as a one-shot chat completion to execLLM (codellm), which executes the block
 // and returns the writes as write_note/patch_note tool calls plus finish(answer).
 // Those changes are applied via the scoped KB — same write_patterns enforcement
-// as write_note. Out-of-scope writes are denied and recorded, not silently
-// dropped. Program allowlisting and sandboxing are codellm-authoritative: a
-// disallowed program or failing block comes back as a deterministic error (422),
-// surfaced to the model as a soft tool error.
+// as write_note. Every change is validated before any is applied: out-of-scope
+// writes are trimmed, recorded and named in the result (a denial stays soft,
+// as for write_note), while a change that cannot apply — a bad or non-unique
+// patch find — refuses the whole batch as an apply failure, so a run cannot
+// end with half its writes committed. A KB failing after validation is an
+// apply failure too, with only the changes that landed reported. Program
+// allowlisting and sandboxing are codellm-authoritative: a disallowed program
+// or failing block comes back as a deterministic error (422), surfaced to the
+// model as a soft tool error.
 func makeExecInvoker(execLLM LLM) toolInvoker {
-	return func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) string {
+	return func(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) (string, string) {
 		var args struct {
 			Program string `json:"program"`
 			Code    string `json:"code"`
 		}
 		if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
-			return "error: invalid arguments: " + err.Error()
+			return "error: invalid arguments: " + err.Error(), outcomeInvalidArgs
 		}
 		body, err := fenceCodeBlock(args.Program, args.Code)
 		if err != nil {
-			return "error: " + err.Error()
+			return "error: " + err.Error(), outcomeInvalidArgs
 		}
 		// No fleet_input message: exec runs inline; the model already has context.
 		// No explicit timeout: the call is bounded by the parent run context.
 		chat, err := execLLM.Chat(ctx, execModel, []Message{{Role: RoleUser, Content: body}}, nil)
 		if err != nil {
-			return "error: " + err.Error()
+			return "error: " + err.Error(), outcomeError
 		}
 		changes, answer, perr := changesFromToolCalls(chat.ToolCalls)
 		if perr != nil {
-			return "error: " + perr.Error()
+			return "error: " + perr.Error(), outcomeError
 		}
-		nWritten := 0
+		batch := execBatch{scoped: scoped, content: map[string]string{}}
+		var prepared []preparedChange
+		var denied []string
 		for _, ch := range changes {
-			var applyErr error
-			switch ch.Kind {
-			case webhookutil.AgentChangeKindPatch:
-				applyErr = scoped.Patch(ctx, ch.Path, ch.Find, ch.Replace)
-			default: // AgentChangeKindWrite or empty
-				applyErr = scoped.Write(ctx, ch.Path, ch.Content)
-			}
-			if denial, ok := writeDenial(applyErr, "exec write", ch.Path); ok {
+			pc, verr := batch.prepare(ctx, ch)
+			if denial, ok := writeDenial(verr, "exec write", ch.Path); ok {
 				res.Denials = append(res.Denials, denial)
+				denied = append(denied, ch.Path+": "+verr.Error())
 				continue
 			}
-			if applyErr != nil {
-				return "error: apply " + ch.Path + ": " + applyErr.Error()
+			if verr != nil {
+				return "error: apply " + ch.Path + ": " + verr.Error(), outcomeApplyFailed
 			}
-			res.Changes = append(res.Changes, ch)
-			nWritten++
+			prepared = append(prepared, pc)
 		}
-		summary := fmt.Sprintf("ok: ran %s, %d write(s)", args.Program, nWritten)
+		for _, pc := range prepared {
+			if aerr := applyExecChange(ctx, scoped, pc); aerr != nil {
+				return "error: apply " + pc.change.Path + ": " + aerr.Error(), outcomeApplyFailed
+			}
+			res.Changes = append(res.Changes, pc.change)
+		}
+		summary := fmt.Sprintf("ok: ran %s, %d write(s)", args.Program, len(prepared))
+		outcome := outcomeOK
+		if len(denied) > 0 {
+			summary += fmt.Sprintf(", %d denied (%s)", len(denied), strings.Join(denied, ", "))
+			outcome = outcomeDenied
+		}
 		if answer != "" {
 			summary += "; " + answer
 		}
-		return summary
+		return summary, outcome
 	}
+}
+
+// preparedChange is an exec change that passed validation and is ready to
+// apply: the normalized path the KB receives and, for a patch, the note bytes
+// it was checked against, which the apply is conditioned on.
+type preparedChange struct {
+	change   webhookutil.AgentChange
+	path     string
+	verified *string
+}
+
+// execBatch validates the changes one exec call returned, in order, before any
+// is applied. content carries what each change leaves behind to the checks of
+// the later ones, so a patch after a write or patch of the same note is judged
+// — by the role guard, by the uniqueness of its find, and by the bytes its
+// conditional apply is pinned to — against what the KB will hold when it runs:
+// the same view applying one at a time would have given.
+//
+// Unlike Patch, the exec lane conditions every patch on the bytes it checked,
+// guard on or off: the uniqueness pre-check reads through remoteKB's overlay,
+// seeded once per delivery, so a stale overlay must fail loudly as a hash
+// mismatch rather than refuse (or pass) a patch the live note would not.
+type execBatch struct {
+	scoped  *ScopedKB
+	content map[string]string
+}
+
+// prepare runs Write's or Patch's own pre-flight on one change without
+// applying it. A patch must also find its match exactly once — what trip2g
+// would refuse server-side, after earlier changes had already landed.
+func (b *execBatch) prepare(ctx context.Context, ch webhookutil.AgentChange) (preparedChange, error) {
+	if ch.Kind != webhookutil.AgentChangeKindPatch {
+		norm, err := b.scoped.checkWrite(ch.Path, ch.Content)
+		if err != nil {
+			return preparedChange{}, err
+		}
+		b.content[norm] = ch.Content
+		return preparedChange{change: ch, path: norm}, nil
+	}
+	norm, err := b.scoped.checkWriteScope(ch.Path)
+	if err != nil {
+		return preparedChange{}, err
+	}
+	current, seen := b.content[norm]
+	if !seen {
+		current, err = b.scoped.kb.Read(ctx, norm)
+		if err != nil {
+			return preparedChange{}, err
+		}
+	}
+	if gerr := b.scoped.guardPatch(current, ch.Find, ch.Replace); gerr != nil {
+		return preparedChange{}, gerr
+	}
+	patched, ok := applyPatchPreview(current, ch.Find, ch.Replace)
+	if !ok {
+		return preparedChange{}, fmt.Errorf("patch find not found in %s: %q", ch.Path, ch.Find)
+	}
+	b.content[norm] = patched
+	return preparedChange{change: ch, path: norm, verified: &current}, nil
+}
+
+// applyExecChange is the second half of execBatch.prepare: the write or patch
+// itself, past the checks already made.
+func applyExecChange(ctx context.Context, scoped *ScopedKB, pc preparedChange) error {
+	if pc.change.Kind == webhookutil.AgentChangeKindPatch {
+		return scoped.applyPatch(ctx, pc.path, pc.change.Find, pc.change.Replace, pc.verified)
+	}
+	return scoped.kb.Write(ctx, pc.path, pc.change.Content)
 }
 
 // fenceCodeBlock wraps code in a ```program fenced block for the exec wire

@@ -98,15 +98,15 @@ func frontmatterBody(lines []string) string {
 // applyPatchPreview returns what the note would contain after a find/replace,
 // mirroring trip2g's server-side semantics exactly (updatenotes.applyPatch):
 // the match must be present and unique, otherwise the patch is rejected there
-// and the content is unchanged. Preview-only — the real edit stays atomic and
-// server-side; this never writes.
-func applyPatchPreview(content, find, replace string) string {
+// and the content is unchanged — reported as ok=false. Preview-only — the real
+// edit stays atomic and server-side; this never writes.
+func applyPatchPreview(content, find, replace string) (string, bool) {
 	idx := strings.Index(content, find)
 	if idx < 0 {
-		return content
+		return content, false
 	}
 	if strings.Contains(content[idx+len(find):], find) {
-		return content // ambiguous: trip2g reports PatchNotFound
+		return content, false // ambiguous: trip2g reports PatchNotFound
 	}
-	return content[:idx] + replace + content[idx+len(find):]
+	return content[:idx] + replace + content[idx+len(find):], true
 }
