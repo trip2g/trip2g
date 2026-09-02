@@ -39,9 +39,10 @@ Query tips: use content words from the question ("private federation peer HMAC s
 `expand(pid | note_id | path | href, toc_path?)` — progressive disclosure of a note's table of contents.
 
 - No `toc_path` (or `[]`): the top-level sections.
-- With `toc_path`: that section's direct subsections. A section without subsections is returned in full instead — the same text `note_html(toc_path=...)` gives, plus `section_html` in the payload.
-- Each child: `title`, `level`, `path` (ready to pass on), `has_children`.
-- Descend by `path`; the `expand` call that reaches a leaf (`has_children: false`) returns it, no separate `note_html` needed. `note_html(toc_path=...)` is for a section whose path you already have.
+- With `toc_path` naming a section that has subsections: its direct subsections. Each child: `title`, `level`, `path` (ready to pass on), `has_children`.
+- With `toc_path` naming a section that has no subsections: the section's content — the same text `note_html(path, toc_path)` returns, plus `section_html` in the payload. No second call is needed to read a leaf.
+- There is no flag to turn that off, and you never need one: the parent's listing already marks each child with `has_children`, so a client that only wants structure stops at `has_children: false` instead of expanding further.
+- Descend by `path` until the answer is content. `note_html(toc_path=...)` is for a section whose path you already have.
 - Use it to survey a note's structure before reading, and to recover from a `toc_path` miss.
 
 ## similar

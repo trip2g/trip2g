@@ -320,7 +320,8 @@ Once notes are synced, the agent retrieves memory through the MCP tools in three
 
 2. expand(pid=N)                     # survey top-level structure
    expand(pid=N, toc_path=[...])    # drill into the right branch
-   → repeat until leaf (has_children: false); the leaf comes back in full
+   → repeat until leaf (has_children: false); expanding a leaf returns
+     its content (same as note_html), a parent returns its children
 
 3. note_html(pid=N, toc_path=[...])
    → read a section whose path you already have

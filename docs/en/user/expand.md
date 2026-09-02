@@ -15,7 +15,13 @@ Why it matters: this is token economy in practice. Reading one section instead o
 - Omit `toc_path` (or pass `[]`) — get the **top-level sections**.
 - Pass a node's `toc_path` — get its **subsections**.
 
-Each child carries: `title`, `level`, `path` (the breadcrumb to pass on the next call), and `has_children` (whether it has further nesting). Descend until you reach a leaf (`has_children: false`). Expanding a leaf returns the section itself — the same text `note_html(toc_path=[...])` gives, plus `section_html` in the structured payload — so the descent ends in the read.
+Each child carries: `title`, `level`, `path` (the breadcrumb to pass on the next call), and `has_children` (whether it has further nesting).
+
+What comes back depends on the section named by `toc_path`:
+
+- A section **with subsections** returns the list of its children, as above.
+- A section **without subsections** returns its content — the same text `note_html(path, toc_path)` would give, plus `section_html` in the structured payload. A client does not need a second call to read a leaf: the descent ends in the read.
+- There is **no flag** to turn this off, and a client that only wants structure never needs one: the parent's listing already marks every child with `has_children`, so stop descending at `has_children: false` and nothing is read.
 
 **Arguments.** One note identifier (`pid`, `note_id`, `path`, or `href` — taken from `search` results) plus an optional `toc_path`:
 

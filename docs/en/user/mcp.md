@@ -77,7 +77,13 @@ Each child node has:
 - `title` — the heading text.
 - `level` — the heading level (1–6).
 - `path` — the full breadcrumb to this node; pass it back as `toc_path` to expand it further or to read it with `note_html`.
-- `has_children` — whether this node has subsections of its own. Expanding a leaf returns the section itself (the `note_html` text, plus `section_html` in the payload), so the descent ends in the read without a separate call.
+- `has_children` — whether this node has subsections of its own.
+
+What `expand` returns depends on the section named by `toc_path`:
+
+- A section with subsections returns the list of its children, as above.
+- A section without subsections returns its content — the same text `note_html(path, toc_path)` would give, plus `section_html` in the payload — so a client does not need a second call to read a leaf.
+- There is no flag to turn this off, and a client that only wants structure never needs one: the parent's listing already marks each child with `has_children`, so it stops descending at `has_children: false`.
 
 #### `note_html` — retrieve a single section
 

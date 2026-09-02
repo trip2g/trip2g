@@ -167,7 +167,7 @@ mcp_federation_kb_id: bob
 | `federated_search(query, kb_id?)` | Поиск по пирам (веерный или точечный) |
 | `federated_similar(note_id, kb_id)` | Похожие заметки у конкретного пира |
 | `federated_note_html(note_id, kb_id)` | Содержимое заметки у конкретного пира |
-| `federated_expand(kb_id, pid, toc_path?)` | Обход оглавления удалённой заметки у конкретного пира, тот же интерфейс, что [[ru/user/expand\|expand]], применённый к удалённой базе |
+| `federated_expand(kb_id, pid, toc_path?)` | Обход оглавления удалённой заметки у конкретного пира, тот же интерфейс, что [[ru/user/expand\|expand]], применённый к удалённой базе — раздел без подразделов приходит как содержимое, как его вернул бы `federated_note_html` |
 | `federated_instructions(kb_id)` | Инструкции самого пира, их читают перед поиском по нему |
 
 `federated_search` без `kb_id` веерно обращается ко всем доступным пирам параллельно и объединяет результаты. С `kb_id="bob"` обращается только к базе Боба. С `kb_ids=["bob","philosophy"]` обращается ровно к этим двум.

@@ -103,7 +103,8 @@ Liu et al., ["Lost in the Middle"](https://arxiv.org/abs/2307.03172) (TACL 2023)
 
 4. If you need a sibling section,
    expand(pid=N, toc_path=[...]) lists that level's sections
-   → pick one, read it with note_html(toc_path=[...])
+   → pick one; expand on a section without subsections returns
+     its content, same as note_html(toc_path=[...])
 ```
 
 Full MCP tool reference: [[mcp|MCP server]]. Section navigation details: [[Fuzzy Pointer]]. Level-by-level TOC walking: [[expand]].
