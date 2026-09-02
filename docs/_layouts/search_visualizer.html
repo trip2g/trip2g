@@ -536,7 +536,7 @@ function interpret(name, args, structured, text, dur, reasoning) {
     addEdge(sid, id, dur);
     if (name.endsWith('note_html')) {
       n.read = true;
-      n.meta.content = (text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000);
+      n.meta.content = stripHTML(text).replace(/\s+/g, ' ').trim().slice(0, 2000);
       n.meta.tocPath = args.toc_path;
     }
   }
@@ -658,16 +658,21 @@ function trimStructured(sc) {
   return out;
 }
 
+// Server messages quote literal placeholders like <hub>/<base>; a blanket
+// tag regex ate them. Strip only real HTML tags.
+const HTML_TAG = /<\/?(?:a|b|i|u|s|p|br|hr|em|strong|small|sup|sub|del|ins|mark|code|pre|span|div|section|article|header|footer|nav|aside|main|h[1-6]|ul|ol|li|dl|dt|dd|table|thead|tbody|tfoot|tr|td|th|blockquote|figure|figcaption|img|details|summary|svg|path|input|button|label)\b[^>]*>/gi;
+const stripHTML = t => (t || '').replace(HTML_TAG, ' ');
+
 /* ============================== engine ============================== */
 const SYS_TASK = `You explore a documentation knowledge graph through MCP tools and answer the user's question from what you actually read — never from memory.
 Loop: search(query) -> read only the matched section with note_html(pid, toc_path=[...]) -> expand(pid) if the pointer looks off. Use similar(pid) for neighbors.
-If a search result has kind "federation_kb", or local search finds nothing, use federated_search (pass kb_id to target one base; follow-up reads need federated_note_html/expand/similar with the same kb_id).
+If a search result has kind "federation_kb", or local search finds nothing, use federated_search (pass kb_id to target one base; follow-up reads need federated_note_html/expand/similar with the same kb_id). If you do not know a base's kb_id, call federated_search without kb_id to fan out: the [kb_id] headers in the response name the connected bases, then target one.
 Hub, index, and MOC pages are only POINTERS — the real concepts, principles, and verbatim quotes live in the leaf corpora, one level deeper. Do NOT answer from hub cards alone: DESCEND into the specific base with federated_search(kb_id="philosophers/<author>") (nested bases chain with "/"), then read the concept note there.
 To open any note, pass \`path\` (the note_path from a search result, e.g. "concepts/maska-i-glubina.md") or the result's \`match_id\`. NEVER invent a note_id — it is an internal integer, not a path; if you don't have one, omit it and use path.
 Before you answer, ask yourself: am I deep enough? If your evidence comes from a hub card, an index, a MOC, or a topics matrix, that is a POINTER or a summary — not the source. You are deep enough only when you have opened the actual concept or principle note inside a leaf corpus and read its verbatim text. If you are still on pointers, descend one more level and read the real note before answering.
 Think out loud briefly (1-2 sentences) before each tool call so an observer can follow your reasoning. Cite note URLs in the final answer. When you have enough, answer without calling more tools.
 You have exactly {N} tool-call steps for this walk. Budget them deliberately — plan to use most of them, and reserve enough steps to verify what you found before answering. A progress line will report how many steps remain; when it tells you to wrap up, produce your final answer.`;
-const SYS_WANDER = `You are a curious wanderer in a knowledge graph, with no task. Explore through MCP tools: start with a search on whatever genuinely intrigues you, then follow your curiosity — read sections (note_html with toc_path), check neighbors (similar), descend into federated bases (federated_search with kb_id; nested bases use "/" in kb_id). Prefer depth over breadth: follow one thread until it surprises you.
+const SYS_WANDER = `You are a curious wanderer in a knowledge graph, with no task. Explore through MCP tools: start with a search on whatever genuinely intrigues you, then follow your curiosity — read sections (note_html with toc_path), check neighbors (similar), descend into federated bases (federated_search with kb_id; nested bases use "/" in kb_id). If you do not know a base's kb_id, call federated_search without kb_id to fan out: the [kb_id] headers in the response name the connected bases, then target one. Prefer depth over breadth: follow one thread until it surprises you.
 Hub/index/MOC pages are only pointers — the real material lives one level deeper in the leaf corpora; descend with federated_search(kb_id="philosophers/<author>") and read there. To open a note pass \`path\` or a result's \`match_id\`, never invent note_id.
 Before each tool call, say in 1-2 sentences what pulls you there. You have exactly {N} tool-call steps — budget them deliberately and spend them going DEEP (descend into deeper corpora via the federated tools), not just wide. A progress line will report how many steps remain; when it tells you to wrap up, settle: stop calling tools and describe your final resting place — which note you ended on, the theme that emerged along the walk, and the most surprising connection you found.`;
 
@@ -750,9 +755,9 @@ async function runLive() {
         const text = err ? '' : contentText(result);
         const structured = err ? null : (result.structuredContent || null);
         const nodeId = err ? G.focus : interpret(tc.function.name, args, structured, text, ms, lastThought);
-        journalTool(tc.function.name, args, ms, err || text.replace(/<[^>]+>/g, ' ').slice(0, 220), nodeId, !!err);
+        journalTool(tc.function.name, args, ms, err || stripHTML(text).slice(0, 220), nodeId, !!err);
         trace.events.push({ t: 'tool', name: tc.function.name, args, ms, err,
-          result: err ? null : { text: text.replace(/<[^>]+>/g, ' ').slice(0, 400), structured: trimStructured(structured) } });
+          result: err ? null : { text: stripHTML(text).slice(0, 400), structured: trimStructured(structured) } });
         messages.push({ role: 'tool', tool_call_id: tc.id,
           content: err ? 'ERROR: ' + err : text.slice(0, 12000) });
         await sleep(Math.min(ms, CAP_MS) * 0.6);   // let the hop animation play

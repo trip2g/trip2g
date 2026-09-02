@@ -136,6 +136,8 @@ func TestFederatedSearchComposedNotConfiguredHint(t *testing.T) {
 	result := callFederatedSearch(t, env, `{"query":"x","kb_id":"philosophers/ghost"}`)
 
 	require.Contains(t, result.Content[0].Text, "philosophers/ghost")
+	// The old hint told the caller to resend exactly what it sent.
+	require.NotContains(t, result.Content[0].Text, "address this base as")
 	raw := result.StructuredContent.(json.RawMessage)
 	var status mcp.FederationStatusPayload
 	require.NoError(t, json.Unmarshal(raw, &status))
