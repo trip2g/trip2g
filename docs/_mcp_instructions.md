@@ -8,7 +8,7 @@ free: true
 
 This base is the trip2g documentation: user guides under `en/user/` and `ru/user/`, changelog, developer docs under `dev/`, design plans under `plans/`. The `demo/` folder is a Meditations showcase, not trip2g docs.
 
-Core loop: `search` → read one section with `note_html(toc_path=...)` → navigate structure with `expand` when the pointer misses. Details per tool below.
+Core loop: `search` → read one section with `note_html(toc_path=...)` → navigate structure with `expand` when the pointer misses. `expand` on a section without subsections returns that section in full, so a descent ends in the read. Details per tool below.
 
 ## search
 
@@ -39,9 +39,9 @@ Query tips: use content words from the question ("private federation peer HMAC s
 `expand(pid | note_id | path | href, toc_path?)` — progressive disclosure of a note's table of contents.
 
 - No `toc_path` (or `[]`): the top-level sections.
-- With `toc_path`: that section's direct subsections.
+- With `toc_path`: that section's direct subsections. A section without subsections is returned in full instead — the same text `note_html(toc_path=...)` gives, plus `section_html` in the payload.
 - Each child: `title`, `level`, `path` (ready to pass on), `has_children`.
-- Descend until a leaf (`has_children: false`), then `note_html(toc_path=child.path)`.
+- Descend by `path`; the `expand` call that reaches a leaf (`has_children: false`) returns it, no separate `note_html` needed. `note_html(toc_path=...)` is for a section whose path you already have.
 - Use it to survey a note's structure before reading, and to recover from a `toc_path` miss.
 
 ## similar

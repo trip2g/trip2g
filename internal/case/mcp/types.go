@@ -178,6 +178,9 @@ type ExpandPayload struct {
 	NotePath string    `json:"note_path"`
 	TocPath  []string  `json:"toc_path,omitempty"`
 	Children []TOCNode `json:"children"`
+	// SectionHTML is the section itself when toc_path names a leaf: there is
+	// nothing further to expand, so the read is answered in the same call.
+	SectionHTML string `json:"section_html,omitempty"`
 }
 
 type GraphQLIntrospectionArguments struct {

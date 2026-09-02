@@ -15,7 +15,7 @@ Why it matters: this is token economy in practice. Reading one section instead o
 - Omit `toc_path` (or pass `[]`) — get the **top-level sections**.
 - Pass a node's `toc_path` — get its **subsections**.
 
-Each child carries: `title`, `level`, `path` (the breadcrumb to pass on the next call), and `has_children` (whether it has further nesting). Descend until you reach a leaf (`has_children: false`), then read it via `note_html(toc_path=[...])`.
+Each child carries: `title`, `level`, `path` (the breadcrumb to pass on the next call), and `has_children` (whether it has further nesting). Descend until you reach a leaf (`has_children: false`). Expanding a leaf returns the section itself — the same text `note_html(toc_path=[...])` gives, plus `section_html` in the structured payload — so the descent ends in the read.
 
 **Arguments.** One note identifier (`pid`, `note_id`, `path`, or `href` — taken from `search` results) plus an optional `toc_path`:
 
@@ -23,7 +23,7 @@ Each child carries: `title`, `level`, `path` (the breadcrumb to pass on the next
 { "name": "expand", "arguments": { "pid": 42, "toc_path": ["Goroutines"] } }
 ```
 
-The response is a structured list of children plus a short text summary ("N subsection(s)" or "has no subsections (leaf)").
+The response is a structured list of children plus a short text summary ("N subsection(s)"); for a leaf it is the section content instead.
 
 ### Workflow
 
@@ -33,10 +33,10 @@ The response is a structured list of children plus a short text summary ("N subs
 
 2. expand(pid=N)                    # top-level TOC
    expand(pid=N, toc_path=[...])   # drill into the right branch
-   → repeat, picking the child by meaning, until leaf
+   → repeat, picking the child by meaning; a leaf comes back in full
 
 3. note_html(pid=N, toc_path=[...])
-   → read only the needed section
+   → read a section whose path you already have, without descending
 ```
 
 A shorter path: if `search` already returned an exact `matches[].toc_path`, read the section directly via `note_html(toc_path=...)`. Use `expand` when you want to **survey the structure** and navigate deeper without loading anything extra.
