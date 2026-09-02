@@ -19,7 +19,7 @@ Core loop: `search` → read one section with `note_html(toc_path=...)` → navi
 - Each result: `title`, `note_id`, `note_path`, `href`, `url`, `kind`, `score`.
 - Each match: `match_id`, `chunk_index`, `snippet`, `toc_path` — the breadcrumb of the section that matched, e.g. `["Adding a private peer (two-step exchange)"]`.
 - `note_id` (integer) and `note_path` (string) both identify the note; `note_html`, `expand`, and `similar` accept the id as either `pid` or `note_id`. Prefer copying `note_path` into their `path` argument — it is the more common, self-describing choice.
-- A result with `kind: "federation_kb"` is a pointer to a connected base — switch to `federated_search` with the `kb_id` it names.
+- A result with `kind: "federation_kb"` is a pointer to a connected base; its text line names the `kb_id` to send: `kind: federation_kb · kb_id: <id> → federated_search(kb_id="<id>")`. Copy it verbatim — it is already in your frame, even for a base reached through another hub.
 
 Query tips: use content words from the question ("private federation peer HMAC secret"), not full sentences. If nothing relevant comes back, rephrase once with synonyms before reaching for `federated_search`.
 
@@ -29,8 +29,10 @@ Query tips: use content words from the question ("private federation peer HMAC s
 
 - With `toc_path`: returns only that section's HTML. This is the default way to read.
 - With `match_id` (form `pN:cM` only): returns a focused text window around that chunk. Ids in the `pN:mM` form do not resolve — use the `toc_path` instead.
+- With both: `toc_path` wins. Drop a `match_id` copied from an earlier call when you navigate by section, or every read returns the same chunk.
 - With neither: returns the whole note. Do this only for notes `expand` shows to be sectionless.
-- Failure mode: a `toc_path` that matches no heading silently falls back to the whole note. A response far longer than one section means the pointer missed — recover via `expand`, do not retry blind.
+- Failure mode: a `toc_path` that matches no heading returns an error listing the top-level sections. Recover via `expand`, do not retry blind.
+- A note that is a federation pointer starts with `federation pointer · kb_id: <id> → federated_search(kb_id="<id>")` — that is the base to switch to.
 
 ## expand
 
@@ -58,7 +60,7 @@ This base can be connected to peer knowledge bases. The federated variants mirro
 
 Trigger: local `search` came up empty after one rephrase, or a local result had `kind: "federation_kb"`. Every search result now carries an absolute `kb_id` in the caller's frame — use it verbatim to open or re-search that result; keep passing it on every follow-up call.
 
-**Discovering connected bases.** For a browsable directory of the peers instead of blind fan-out, read the hub index: `search("hub")` or `note_html(path="en/hub/_index.md")`. It links one note per base (e.g. `en/hub/foragent.md`), and each of those names its `kb_id` in the frontmatter. Use that to pick a target for `federated_search(kb_id="foragent")` deliberately, rather than fanning out to every peer or waiting for a `kind: "federation_kb"` pointer to surface.
+**Discovering connected bases.** For a browsable directory of the peers instead of blind fan-out, read the hub index: `search("hub")` or `note_html(path="en/hub/_index.md")`. It links one note per base (e.g. `en/hub/foragent.md`); opening one with `note_html` prints its `kb_id` on the first line, and it shows up as a `kind: "federation_kb"` result when searched for. Use that to pick a target for `federated_search(kb_id="foragent")` deliberately. If you do not know a base's `kb_id` at all, call `federated_search` without `kb_id` to fan out: the `[kb_id]` headers in the response name the connected bases, then target one. A not-configured error lists the bases that do exist at the point where your `kb_id` stopped resolving — pick from that list rather than resending the same id.
 
 ## Efficiency rules
 
