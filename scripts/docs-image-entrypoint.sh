@@ -23,7 +23,7 @@ mkdir -p "$(dirname "$DB_FILE")" "$STORAGE_LOCAL_DIR"
 server=$!
 
 i=0
-until wget -q -O /dev/null "http://127.0.0.1${INTERNAL_LISTEN_ADDR}/readyz"; do
+until wget -q -O /dev/null "http://${INTERNAL_LISTEN_ADDR}/readyz"; do
     i=$((i + 1))
     if [ "$i" -gt 150 ]; then
         echo "trip2g-docs: trip2g did not come up" >&2
