@@ -66,12 +66,17 @@ func convertPoll(media *tg.MessageMediaPoll) string {
 	sb.WriteString("**\n\n")
 
 	for _, answer := range poll.Answers {
-		if correctOptions[string(answer.Option)] {
+		// Only pollAnswer carries Option; inputPollAnswer is send-only.
+		correct := false
+		if a, ok := answer.(*tg.PollAnswer); ok {
+			correct = correctOptions[string(a.Option)]
+		}
+		if correct {
 			sb.WriteString("- [x] ")
 		} else {
 			sb.WriteString("- [ ] ")
 		}
-		sb.WriteString(answer.Text.Text)
+		sb.WriteString(answer.GetText().Text)
 		sb.WriteString("\n")
 	}
 
