@@ -238,34 +238,25 @@ func (s *ScopedKB) checkPatchNotRoleAuthoring(ctx context.Context, path, find, r
 	if s.allowRoleAuthoring {
 		return nil, nil
 	}
-	current, err := s.readForPatch(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	return s.guardPatch(current, find, replace)
-}
-
-// readForPatch reads the note a patch targets, through the underlying KB (see
-// checkPatchNotRoleAuthoring). With the guard on, a failed read is
-// ErrRoleGuardUnverifiable: the guard cannot run, so it fails closed.
-func (s *ScopedKB) readForPatch(ctx context.Context, path string) (string, error) {
 	current, err := s.kb.Read(ctx, path)
-	if err != nil && !s.allowRoleAuthoring {
-		return "", fmt.Errorf("%w: %w", ErrRoleGuardUnverifiable, err)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrRoleGuardUnverifiable, err)
 	}
-	return current, err
+	if gerr := s.guardPatch(current, find, replace); gerr != nil {
+		return nil, gerr
+	}
+	return &current, nil
 }
 
 // guardPatch is the role guard's decision on a patch to a note whose current
-// content is already in hand. It returns the bytes it verified, for the caller
-// to condition the patch on; nil when the guard is off.
-func (s *ScopedKB) guardPatch(current, find, replace string) (*string, error) {
+// content is already in hand. Off, it allows everything.
+func (s *ScopedKB) guardPatch(current, find, replace string) error {
 	if s.allowRoleAuthoring {
-		return nil, nil
+		return nil
 	}
 	patched, _ := applyPatchPreview(current, find, replace)
 	if declaresRole(current) || declaresRole(patched) {
-		return nil, ErrRoleAuthoringDenied
+		return ErrRoleAuthoringDenied
 	}
-	return &current, nil
+	return nil
 }

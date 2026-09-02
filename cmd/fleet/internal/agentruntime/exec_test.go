@@ -378,10 +378,12 @@ func TestRun_ExecToolBatchCannotMintRoleNoteAcrossPatches(t *testing.T) {
 		}},
 	}
 
-	res, _ := runWithExec(t, kb, []string{"notes/**"}, "bash", "run", exec)
+	res, llm := runWithExec(t, kb, []string{"notes/**"}, "bash", "run", exec)
 
 	require.Len(t, res.Changes, 1)
 	require.Equal(t, []string{"exec write notes/r.md: role note (fleet_id) — agents may not author roles"}, res.Denials)
+	require.Contains(t, execResult(llm), "1 denied (notes/r.md: "+ErrRoleAuthoringDenied.Error()+")",
+		"the model must be told why the second patch was refused")
 	require.Equal(t, "---\nfleet_yd: c\n---\nbody", kb.docs["notes/r.md"])
 	require.False(t, declaresRole(kb.docs["notes/r.md"]), "the batch must not leave a role note behind")
 }
@@ -408,6 +410,84 @@ func TestRun_ExecToolBatchPinsPatchToContentItLeaves(t *testing.T) {
 	require.Len(t, res.Changes, 2)
 	require.True(t, kb.gotCalled, "a hash-capable KB must get the conditional patch")
 	require.Equal(t, contentHash("v1\n"), kb.gotHash)
+}
+
+// TestRun_ExecToolDenialDoesNotHardFailRun asserts a denial stays soft in every
+// mode: an exec batch that is refused only by scope completes the run under
+// HardFailApply, which is reserved for genuine apply failures.
+func TestRun_ExecToolDenialDoesNotHardFailRun(t *testing.T) {
+	kb := newMemKB(nil)
+	exec := &execStub{
+		res: ChatResult{ToolCalls: []ToolCall{
+			toolCall("c0", toolWriteNote, map[string]any{"path": "secret/x.md", "content": "leak"}),
+			toolCall("c1", toolFinish, map[string]any{"answer": "tried"}),
+		}},
+	}
+	m := newFakeMetrics()
+	in, llm := execInput(kb, []string{"notes/**"}, "bash", "echo leak", exec)
+	in.Metrics = m
+	in.HardFailApply = true
+
+	res, err := Run(context.Background(), in)
+	require.NoError(t, err)
+
+	require.Equal(t, StatusCompleted, res.Status)
+	require.Empty(t, res.Changes)
+	require.Equal(t, []string{"exec write secret/x.md"}, res.Denials)
+	require.Empty(t, m.applies, "a denial is not an apply failure")
+	require.Equal(t, "ok: ran bash, 0 write(s), 1 denied (secret/x.md: write denied: path outside write scope); tried", execResult(llm))
+}
+
+// TestRun_ExecToolGuardOffPatchStaysConditional asserts the exec lane pins a
+// patch to the bytes it checked even with the role guard off: the uniqueness
+// pre-check reads through an overlay that may be stale, so the apply must fail
+// loudly on a hash mismatch rather than silently trust that read.
+func TestRun_ExecToolGuardOffPatchStaysConditional(t *testing.T) {
+	const body = "hello world\n"
+	kb := &conditionalKB{KB: newMemKB(map[string]string{"notes/p.md": body})}
+	exec := &execStub{
+		res: ChatResult{ToolCalls: []ToolCall{
+			toolCall("c0", toolPatchNote, map[string]any{"path": "notes/p.md", "find": "world", "replace": "there"}),
+			toolCall("c1", toolFinish, map[string]any{"answer": ""}),
+		}},
+	}
+	in, llm := execInput(kb, []string{"notes/**"}, "bash", "run", exec)
+	in.AllowRoleAuthoring = true
+
+	res, err := Run(context.Background(), in)
+	require.NoError(t, err)
+
+	require.Equal(t, "ok: ran bash, 1 write(s)", execResult(llm))
+	require.Len(t, res.Changes, 1)
+	require.True(t, kb.gotCalled, "the conditional patch must be used with the guard off")
+	require.False(t, kb.plainCall)
+	require.Equal(t, contentHash(body), kb.gotHash)
+}
+
+// TestRun_ExecToolGuardOffReadFailureIsApplyFailure asserts that with the
+// guard off, a patch to a note the pre-check cannot read is an apply failure
+// carrying the KB's own reason — not a role-guard accusation.
+func TestRun_ExecToolGuardOffReadFailureIsApplyFailure(t *testing.T) {
+	kb := newMemKB(nil)
+	exec := &execStub{
+		res: ChatResult{ToolCalls: []ToolCall{
+			toolCall("c0", toolPatchNote, map[string]any{"path": "notes/missing.md", "find": "a", "replace": "b"}),
+			toolCall("c1", toolFinish, map[string]any{"answer": ""}),
+		}},
+	}
+	m := newFakeMetrics()
+	in, llm := execInput(kb, []string{"notes/**"}, "bash", "run", exec)
+	in.AllowRoleAuthoring = true
+	in.Metrics = m
+
+	res, err := Run(context.Background(), in)
+	require.NoError(t, err)
+
+	require.Empty(t, res.Changes)
+	require.Empty(t, res.Denials)
+	require.Equal(t, []string{toolExec}, m.applies)
+	require.Equal(t, outcomeApplyFailed, m.tools[toolExec])
+	require.Equal(t, "error: apply notes/missing.md: not found", execResult(llm))
 }
 
 // TestRun_ExecToolEndpointError asserts an error from the exec endpoint (e.g.

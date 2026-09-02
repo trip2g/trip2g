@@ -757,7 +757,7 @@ func makeExecInvoker(execLLM LLM) toolInvoker {
 
 // preparedChange is an exec change that passed validation and is ready to
 // apply: the normalized path the KB receives and, for a patch, the note bytes
-// the role guard verified (nil when the guard is off).
+// it was checked against, which the apply is conditioned on.
 type preparedChange struct {
 	change   webhookutil.AgentChange
 	path     string
@@ -770,6 +770,11 @@ type preparedChange struct {
 // — by the role guard, by the uniqueness of its find, and by the bytes its
 // conditional apply is pinned to — against what the KB will hold when it runs:
 // the same view applying one at a time would have given.
+//
+// Unlike Patch, the exec lane conditions every patch on the bytes it checked,
+// guard on or off: the uniqueness pre-check reads through remoteKB's overlay,
+// seeded once per delivery, so a stale overlay must fail loudly as a hash
+// mismatch rather than refuse (or pass) a patch the live note would not.
 type execBatch struct {
 	scoped  *ScopedKB
 	content map[string]string
@@ -793,21 +798,20 @@ func (b *execBatch) prepare(ctx context.Context, ch webhookutil.AgentChange) (pr
 	}
 	current, seen := b.content[norm]
 	if !seen {
-		current, err = b.scoped.readForPatch(ctx, norm)
+		current, err = b.scoped.kb.Read(ctx, norm)
 		if err != nil {
 			return preparedChange{}, err
 		}
 	}
-	verified, err := b.scoped.guardPatch(current, ch.Find, ch.Replace)
-	if err != nil {
-		return preparedChange{}, err
+	if gerr := b.scoped.guardPatch(current, ch.Find, ch.Replace); gerr != nil {
+		return preparedChange{}, gerr
 	}
 	patched, ok := applyPatchPreview(current, ch.Find, ch.Replace)
 	if !ok {
-		return preparedChange{}, fmt.Errorf("patch find must occur exactly once in %s", ch.Path)
+		return preparedChange{}, fmt.Errorf("patch find not found in %s: %q", ch.Path, ch.Find)
 	}
 	b.content[norm] = patched
-	return preparedChange{change: ch, path: norm, verified: verified}, nil
+	return preparedChange{change: ch, path: norm, verified: &current}, nil
 }
 
 // applyExecChange is the second half of execBatch.prepare: the write or patch
