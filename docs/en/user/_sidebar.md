@@ -11,6 +11,7 @@ title: "Navigation"
 - [[en/user/hosting|Hosting options]]
 - [[en/user/selfhosted|Self-hosted deployment]]
 - [[en/user/fly|Deploy on fly.io]]
+- [[en/user/docs-image|A knowledge base in one container]]
 - [[en/user/cli|CLI sync tool]]
 - [[en/user/markdown|Markdown syntax]]
 - [[en/user/wikilink-resolution|Wikilink resolution]]
