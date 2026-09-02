@@ -619,8 +619,7 @@ so no `lib.ts` global like mermaid's `echarts.min.js`. Theme: follow
 //go:embed ... mermaid.js mermaid.min.js codeblock.js base.js ...
 ```
 
-`npm run base` builds the artifact. **Not** `npm run build` (that's tsc+vite for
-the $mol admin app, per the mermaid doc and CLAUDE.md). Commit `assets/base.js`.
+`npm run base` builds the artifact. Commit `assets/base.js`.
 
 ### Templates + CSS
 

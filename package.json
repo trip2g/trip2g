@@ -1,12 +1,7 @@
 {
   "scripts": {
-    "start": "npx @tailwindcss/cli -i ./assets/styles.css -o ./assets/output.css",
-    "trip2g-css": "npx tailwindcss -c ./demo/_layouts/trip2g.tailwind.config.js -o ./demo/_layouts/trip2g.css --watch",
-    "dev": "vite",
     "codegen:ui": "graphql-codegen --config assets/codegen/ui/graphqlgen.js",
     "codegen:ui:watch": "graphql-codegen --config assets/codegen/ui/graphqlgen.js --watch",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
     "test:e2e": "./scripts/test-e2e.sh",
     "test:e2e:ui": "./scripts/test-e2e.sh --ui",
     "test:e2e:headed": "./scripts/test-e2e.sh --headed",
@@ -23,7 +18,6 @@
   "dependencies": {
     "@mostlylucid/mermaid-enhancements": "^1.0.0",
     "@types/change-case": "^0.0.30",
-    "@types/jsdom": "^27.0.0",
     "beautiful-mermaid": "^1.1.3",
     "change-case": "^5.4.4",
     "echarts": "^6.1.0",
@@ -33,7 +27,6 @@
     "graphology-layout-forceatlas2": "^0.10.1",
     "graphql": "^16.10.0",
     "highlight.js": "^11.11.1",
-    "jsdom": "^28.0.0",
     "mermaid": "^11.15.0",
     "sigma": "^3.0.1",
     "sourcemap-codec": "^1.4.8"
@@ -42,15 +35,10 @@
     "@graphql-codegen/cli": "^5.0.5",
     "@picocss/pico": "^2.1.1",
     "@playwright/test": "^1.49.0",
-    "@tailwindcss/cli": "^4.1.12",
-    "@tailwindcss/typography": "^0.5.16",
     "daisyui": "^5.0.35",
     "esbuild-sass-plugin": "^3.7.0",
     "graphql-codegen-persisted-query-ids": "^0.2.0",
     "sass": "^1.97.3",
-    "tailwindcss": "^4.1.12",
-    "tsx": "^4.22.2",
-    "typescript": "~5.7.2",
-    "vite": "^6.2.0"
+    "tsx": "^4.22.2"
   }
 }

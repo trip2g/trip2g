@@ -273,7 +273,6 @@ Mirror the mermaid widget build (`docs/dev/mermaid.md` "Build"):
 |---|---|
 | `npm run webmcp` | After editing `assets/webmcp/src/*` — builds `assets/webmcp.js` (add this script to `package.json`, mirroring `npm run mermaid`) |
 | `go generate ./internal/defaulttemplate/...` | Only if `views.html` is touched (Option B without template edits needs none) |
-| `npm run build` | TS typecheck + Vite (does **not** build the widget bundle) |
 | `npm run test:e2e` | Playwright E2E (see tests below) |
 
 `assets/webmcp.js` is a committed artifact, like `mermaid.js` / `chart.js`.
