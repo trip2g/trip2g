@@ -14,6 +14,6 @@ Boot body sentinel: expand-leaf-sentinel-boot.
 
 ## Verify the install
 
-### Check the logs
+### Check the server logs
 
 Logs body sentinel: expand-leaf-sentinel-logs.

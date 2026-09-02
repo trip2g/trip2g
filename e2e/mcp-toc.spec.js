@@ -222,10 +222,13 @@ test.describe('MCP TOC', () => {
       arguments: { path: NOTE_PATH, toc_path: ['Main Section'] },
     });
 
+    // The listing may preview a short child title's opening words; what it
+    // must not carry is the section body itself.
     const text = result.content?.[0]?.text ?? '';
-    expect(text).toContain('Subsection');
-    expect(text).not.toContain('Nested subsection content');
+    expect(text).toContain('1 subsection(s)');
+    expect(text).toContain('- Subsection');
     expect(text).not.toContain('Main content goes here');
+    expect(text).not.toContain('<p>');
 
     const payload = result.structuredContent;
     expect(payload.children.map((c) => c.title)).toEqual(['Subsection']);

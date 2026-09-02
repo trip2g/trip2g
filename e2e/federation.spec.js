@@ -220,7 +220,7 @@ test.describe.serial('Federation', () => {
       name: 'federated_expand',
       arguments: { kb_id: 'peer', path: 'expand-steps.md', toc_path: ['Verify the install'] },
     });
-    expect(parent.result.structuredContent.children.map((c) => c.title)).toEqual(['Check the logs']);
+    expect(parent.result.structuredContent.children.map((c) => c.title)).toEqual(['Check the server logs']);
     expect(parent.result.content[0].text).not.toContain('expand-leaf-sentinel-logs');
   });
 
