@@ -16,8 +16,6 @@ this one peer: `federated_search(kb_id="philosophers")` searches the hub itself
 (cards, topic matrix); a specific corpus is addressed through it with a nested
 id, e.g. `federated_search(kb_id="philosophers/nietzsche")`.
 
-**Base:** https://philosophers.2pub.me · `kb_id: philosophers`
-
 ## Corpora
 
 Each line is one author's corpus and the `kb_id` to send from here:

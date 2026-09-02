@@ -14,8 +14,6 @@ lang_redirect: "[[en/hub/philosophers]]"
 тем); конкретный корпус адресуется через него вложенным id, например
 `federated_search(kb_id="philosophers/nietzsche")`.
 
-**База:** https://philosophers.2pub.me · `kb_id: philosophers`
-
 ## Корпуса
 
 Каждая строка — корпус одного автора и `kb_id`, который нужно отправить отсюда:

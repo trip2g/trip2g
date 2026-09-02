@@ -12,8 +12,6 @@ mcp_federation_kb_id: markavrelii
 Our own knowledge base of Marcus Aurelius's **Meditations**, running on trip2g and
 federated into this hub.
 
-**Base:** https://markavrelii.2pub.me · `kb_id: markavrelii`
-
 It holds the full text of all **12 books in three languages — Russian, English,
 and Greek** — alongside scholarly commentary (Jan Unt), thematic chains, a
 decision map, and extracted Stoic principles. Use it to quote or ground answers in

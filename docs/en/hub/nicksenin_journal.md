@@ -12,8 +12,6 @@ mcp_federation_kb_id: nicksenin_journal
 A public knowledge base run by Nikolai Senin on trip2g, included in this hub with
 his permission.
 
-**Base:** https://journal.nicksenin.com · `kb_id: nicksenin_journal`
-
 Right now it is a single-purpose navigator: a curated, simplified index over
 filtered case studies from the **Code with Claude 2026** conference. Use it when
 you want to find or explore those talks and cases.
