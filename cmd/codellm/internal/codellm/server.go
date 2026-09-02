@@ -280,7 +280,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	// this process: it is resolved from codellm's OWN environment and the
 	// plaintext goes into the bag, not into the child's env, so a role can only
 	// read the secrets its own note declared.
-	bag, secrets, unsealErr := unsealBag(bag, osEnv{}, s.cfg.ExposeEnv)
+	bag, secrets, unsealErr := unsealBag(bag, osEnv{}, s.cfg.ExposeEnv, s.cfg.ExposeEnvPrefix)
 	if unsealErr != nil {
 		s.cfg.Metrics.RecordExecError(unsealErr)
 		writeError(w, http.StatusUnprocessableEntity, "unseal_error", unsealErr.Error())
