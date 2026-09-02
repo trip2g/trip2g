@@ -104,6 +104,9 @@ func (l *OpenAILLM) chat(ctx context.Context, model string, messages []Message, 
 		PromptTokens:     resp.Usage.PromptTokens,
 		CompletionTokens: resp.Usage.CompletionTokens,
 	}
+	if d := resp.Usage.PromptTokensDetails; d != nil {
+		out.CachedPromptTokens = d.CachedTokens
+	}
 	if len(resp.Choices) == 0 {
 		// A 200 with no choices is a provider-side failure, not a success: record
 		// it as one before handing ErrEmptyCompletion back.

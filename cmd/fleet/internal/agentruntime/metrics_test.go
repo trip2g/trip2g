@@ -49,10 +49,26 @@ func (f *fakeMetrics) RecordDenial(kind string) { f.denials = append(f.denials, 
 func (f *fakeMetrics) RecordApplyFailure(_, tool string) { f.applies = append(f.applies, tool) }
 
 // totalTokens sums the recorded spend, mirroring what Result.TokensUsed counts.
+// The cached kind is deliberately excluded: it is a share of the prompt tokens
+// already counted, not spend on top of them.
 func (f *fakeMetrics) totalTokens() int {
 	sum := 0
 	for _, t := range f.tokens {
+		if t.kind == tokenKindCached {
+			continue
+		}
 		sum += t.n
+	}
+	return sum
+}
+
+// tokensOfKind sums the recorded tokens of one kind.
+func (f *fakeMetrics) tokensOfKind(kind string) int {
+	sum := 0
+	for _, t := range f.tokens {
+		if t.kind == kind {
+			sum += t.n
+		}
 	}
 	return sum
 }
@@ -316,4 +332,29 @@ func TestOpenAILLM_EmptyCompletionIsNotSuccess(t *testing.T) {
 	_, err := llm.Chat(context.Background(), "test-model", []Message{{Role: RoleUser, Content: "x"}}, nil)
 	require.ErrorIs(t, err, ErrEmptyCompletion)
 	require.Equal(t, []string{"llm|test-model|empty_completion"}, rec.requests)
+}
+
+// TestRun_RecordsCachedPromptTokens: the cache-hit share is reported as its own
+// kind and must NOT inflate the run's spend — it is part of the prompt tokens
+// already counted, so double-counting it would make the budget bind early.
+func TestRun_RecordsCachedPromptTokens(t *testing.T) {
+	llm := &stubLLM{script: []ChatResult{
+		{
+			ToolCalls:          []ToolCall{toolCall("1", toolFinish, map[string]any{"answer": "ok"})},
+			PromptTokens:       100,
+			CompletionTokens:   10,
+			CachedPromptTokens: 80,
+		},
+	}}
+	m := newFakeMetrics()
+
+	res, err := Run(context.Background(), Input{
+		Instruction: "go", Model: "m", Role: "roles/r.md",
+		MaxTokens: 1000, MaxSteps: 5,
+		Metrics: m, LLM: llm, KB: newMemKB(nil),
+	})
+	require.NoError(t, err)
+	require.Equal(t, 110, res.TokensUsed)
+	require.Equal(t, 80, m.tokensOfKind(tokenKindCached))
+	require.Equal(t, res.TokensUsed, m.totalTokens())
 }

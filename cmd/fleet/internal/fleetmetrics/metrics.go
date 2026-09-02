@@ -145,7 +145,7 @@ func (m *Metrics) initRun() {
 	}, []string{roleLabel})
 	m.tokens = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "fleet_llm_tokens_total",
-		Help: "LLM tokens spent, by model, role and kind (prompt|completion). A codellm-backed fleet reports zero: it executes code, it does not infer",
+		Help: "LLM tokens spent, by model, role and kind (prompt|completion|cached). cached is the share of prompt served from the provider's prompt cache — a subset of prompt, not spend on top of it, so do not sum the kinds. A codellm-backed fleet reports zero: it executes code, it does not infer",
 	}, []string{modelLabel, roleLabel, "kind"})
 	m.toolCalls = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "fleet_tool_calls_total",

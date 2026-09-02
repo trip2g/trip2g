@@ -63,6 +63,10 @@ const (
 	statusErrorForRun   = "error"
 	tokenKindPrompt     = "prompt"
 	tokenKindCompletion = "completion"
+	// tokenKindCached is the share of tokenKindPrompt the provider served from
+	// its prompt cache. It is a subset of the prompt tokens, so it is reported
+	// but never added to the run's spend.
+	tokenKindCached = "cached"
 	// unknownTool is the label stand-in for a tool name the model invented. The
 	// name is attacker-controllable, so it must never reach a metric label.
 	unknownTool = "unknown"
@@ -160,25 +164,27 @@ type Result struct {
 	Logs []webhookutil.AgentLog `json:"logs,omitempty"`
 }
 
-const systemPromptTemplate = `You are a scoped trip2g micro-agent. Follow the instruction below.
+// systemPromptTemplate is ordered most-stable-first so a provider with prefix
+// caching can reuse it: the static preamble is identical for every run, the
+// scope is fixed per role, and the per-delivery instruction comes last. Leading
+// with the instruction — as this once did — leaves no shared prefix at all.
+//
+// The tools are deliberately NOT restated here: they already reach the model as
+// the request's tool schemas, and a second prose copy both costs tokens on every
+// step and drifts from the role's actual allowlist, inviting calls the runtime
+// will only refuse.
+const systemPromptTemplate = `You are a scoped trip2g micro-agent. The tools you were given are the only ones you have.
 
-Instruction:
-%s
+Rules:
+- Reads or writes outside scope are rejected by the runtime; do not retry them.
+- When done, call finish with a concise answer. Do not invent paths you have not seen.
 
 Access scope (enforced by the runtime, not negotiable):
 - You may read paths matching: %s
 - You may write paths matching: %s
 
-Tools:
-- search(query): find documents within your read scope.
-- read_note(path): read a document's content (read scope only).
-- write_note(path, content): create or replace a document (write scope only).
-- patch_note(path, find, replace): surgically edit a document (write scope only). Fails if find is absent or occurs more than once; include enough surrounding context to make the match unique.
-- finish(answer): end the run with your final answer/summary.
-
-Rules:
-- Reads or writes outside scope are rejected by the runtime; do not retry them.
-- When done, call finish with a concise answer. Do not invent paths you have not seen.`
+Instruction:
+%s`
 
 // Run executes the instruction through the LLM tool-call loop, enforcing scope
 // and the token hard-cap, and returns the answer plus any in-scope changes. It
@@ -242,9 +248,9 @@ func run(ctx context.Context, in Input, res *Result) error {
 			Role: RoleSystem,
 			Content: fmt.Sprintf(
 				systemPromptTemplate,
-				in.Instruction,
 				formatPatterns(in.ReadPatterns),
 				formatPatterns(in.WritePatterns),
+				in.Instruction,
 			),
 		},
 	}
@@ -275,6 +281,7 @@ func run(ctx context.Context, in Input, res *Result) error {
 		if in.Metrics != nil {
 			in.Metrics.RecordTokens(in.Model, in.Role, tokenKindPrompt, chat.PromptTokens)
 			in.Metrics.RecordTokens(in.Model, in.Role, tokenKindCompletion, chat.CompletionTokens)
+			in.Metrics.RecordTokens(in.Model, in.Role, tokenKindCached, chat.CachedPromptTokens)
 		}
 
 		// No tool calls means the model returned a final answer.
@@ -874,7 +881,7 @@ func toolDefs(execEnabled bool) []ToolDef {
 		},
 		{
 			Name:        toolPatchNote,
-			Description: "Apply a surgical find→replace edit to a document (write scope only). Preserves surrounding content.",
+			Description: "Apply a surgical find→replace edit to a document (write scope only). Preserves surrounding content. Fails if find is absent or occurs more than once, so include enough surrounding context to make the match unique.",
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
