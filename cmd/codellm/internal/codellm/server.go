@@ -184,7 +184,10 @@ func (w *authStatusWriter) Unwrap() http.ResponseWriter { return w.ResponseWrite
 
 // Server is the codellm HTTP service.
 type Server struct {
-	cfg Config
+	cfg     Config
+	replays *replayStore
+	// chat is serveChatCompletion; a field so a test can make it fail.
+	chat func(http.ResponseWriter, *http.Request)
 }
 
 type blockRunner struct{ cfg Config }
@@ -222,7 +225,9 @@ func New(cfg Config) *Server {
 	if cfg.SealPath == "" {
 		cfg.SealPath = DefaultSealPath
 	}
-	return &Server{cfg: cfg}
+	s := &Server{cfg: cfg, replays: newReplayStore()}
+	s.chat = s.serveChatCompletion
+	return s
 }
 
 // Handler returns the HTTP handler for the service. The BROWSER-facing
@@ -252,11 +257,58 @@ func (s *Server) Handler() http.Handler {
 	return mux
 }
 
-// handleChatCompletions is the OpenAI-compatible surface. It decodes the chat
+// handleChatCompletions is the Idempotency-Key gate in front of the chat
+// completion. Without the header every request executes; with it, the first
+// request under a key executes and records its response (success or error),
+// and every later request under that key — including one that arrives while
+// the first is still running — is served that record without executing again.
+func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
+	key := r.Header.Get(idempotencyKeyHeader)
+	if key == "" {
+		s.chat(w, r)
+		return
+	}
+	entry, owner := s.replays.claim(key)
+	if owner {
+		rec := s.recordChat(entry, r)
+		s.replays.complete(entry, rec)
+		entry.serve(w)
+		return
+	}
+	select {
+	case <-entry.done:
+	case <-r.Context().Done():
+		writeError(w, http.StatusServiceUnavailable, "server_error",
+			"request cancelled while waiting for the in-flight execution under this Idempotency-Key")
+		return
+	}
+	s.cfg.Metrics.RecordReplay()
+	entry.serve(w)
+}
+
+// recordChat runs the completion into a recorder. A panic must not leave the
+// entry in flight forever (sweep only drops completed entries and a waiter
+// would block until its own deadline), so it is recorded as a 500 before the
+// panic continues to net/http's recovery.
+func (s *Server) recordChat(entry *replayEntry, r *http.Request) *replayRecorder {
+	rec := newReplayRecorder()
+	defer func() {
+		if p := recover(); p != nil {
+			failed := newReplayRecorder()
+			writeError(failed, http.StatusInternalServerError, "server_error", "chat completion panicked")
+			s.replays.complete(entry, failed)
+			panic(p)
+		}
+	}()
+	s.chat(rec, r)
+	return rec
+}
+
+// serveChatCompletion is the OpenAI-compatible surface. It decodes the chat
 // request, extracts the markdown-with-code and the delivery bag, executes the
 // fenced blocks, and returns the writes as tool_calls ending in exactly one
 // finish. Execution/parse failures are a deterministic 422 (not retried).
-func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
+func (s *Server) serveChatCompletion(w http.ResponseWriter, r *http.Request) {
 	// Auth is composed entirely in cfg.Auth (BrowserAuth): the api_key check and
 	// the browser cookie gate are both decided before this handler runs. A second
 	// TokenCheck here would be contradictory — it would REQUIRE the key on a

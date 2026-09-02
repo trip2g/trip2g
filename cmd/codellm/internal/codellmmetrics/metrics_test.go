@@ -109,6 +109,7 @@ func TestNilMetrics_IsSafe(t *testing.T) {
 		m.RecordAuth(LaneAPIKey, Allowed)
 		m.RecordBlock(coderun.BlockStats{})
 		m.RecordExecError(errors.New("boom"))
+		m.RecordReplay()
 		m.ObserveRequestBlocks(2)
 		m.RecordChange("write")
 		m.SetConfigInfo("native", "false", "python")

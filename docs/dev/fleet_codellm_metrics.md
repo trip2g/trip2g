@@ -57,6 +57,7 @@ is a fleet metric and a codellm-backed fleet reports zero on it.
 | `codellm_block_stdout_truncated_total{program}` | stdout hit the cap and the overflow was dropped; downstream this reads as a parse error |
 | `codellm_sandbox_fallbacks_total{reason}` | a `besteffort` policy degraded to unsandboxed execution. Enforcing mode refuses instead, and shows up as `codellm_exec_errors_total{kind="sandbox_refused"}` |
 | `codellm_exec_errors_total{kind}` | every failed run, whether or not a child ran: `no_blocks`, `unknown_fence`, `disallowed_program`, `unknown_program`, `sandbox_refused`, `setup_failed`, `start_failed`, `timeout`, `nonzero_exit`, `parse_error`, `internal`, `unclassified` |
+| `codellm_exec_replays_total` | completions served from the `Idempotency-Key` record instead of executing again — fleet retried a call. The other side of `fleet_llm_retries_total` on whichever lane points at codellm: `exec` (`--exec-base-url`) or `llm` when the whole fleet's `--llm-base-url` is codellm |
 | `codellm_request_blocks` | blocks executed per request |
 | `codellm_changes_total{kind}` | `write` \| `patch` |
 | `codellm_config_info{sandbox_mode,sandbox_network,allowed_programs}` | always 1; the posture this process runs with |

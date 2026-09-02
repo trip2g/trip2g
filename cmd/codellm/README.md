@@ -269,6 +269,10 @@ duration and peak RSS, stdout size plus a truncation counter, and
 `codellm_exec_errors_total{kind}`, which classifies every failed run — from a
 disallowed program that never reached a child to a timeout or an unparseable
 stdout. `codellm_sandbox_fallbacks_total` is the one to watch: it means a
-`besteffort` policy ran code unsandboxed.
+`besteffort` policy ran code unsandboxed. `codellm_exec_replays_total` counts
+chat completions served from the `Idempotency-Key` record: fleet sends one key
+per call and repeats it on every retry, so a retried call gets the recorded
+response instead of running its blocks again (`docs/dev/codellm_extraction.md`,
+"Retries").
 
 Full catalog, the fleet's side, and what to alert on: `docs/dev/fleet_codellm_metrics.md`.

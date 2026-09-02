@@ -37,6 +37,7 @@ type Metrics struct {
 	inFlight  prometheus.Gauge
 	auth      *prometheus.CounterVec
 	execError *prometheus.CounterVec
+	replays   prometheus.Counter
 
 	blocks          *prometheus.CounterVec
 	blockExitCodes  *prometheus.CounterVec
@@ -77,6 +78,10 @@ func New() *Metrics {
 			Name: "codellm_exec_errors_total",
 			Help: "Code-execution failures by kind (unknown_fence, disallowed_program, sandbox_refused, timeout, parse_error, ...)",
 		}, []string{"kind"}),
+		replays: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "codellm_exec_replays_total",
+			Help: "Chat completions served from the Idempotency-Key record instead of executing the blocks again (a client retried a call)",
+		}),
 		blocks: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "codellm_blocks_total",
 			Help: "Executed code blocks by interpreter and outcome (ok|nonzero_exit|timeout|start_failed)",
@@ -126,7 +131,7 @@ func New() *Metrics {
 	m.reg.MustRegister(
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
-		m.requests, m.duration, m.inFlight, m.auth, m.execError,
+		m.requests, m.duration, m.inFlight, m.auth, m.execError, m.replays,
 		m.blocks, m.blockExitCodes, m.blockDuration, m.blockMaxRSS,
 		m.blockStdout, m.blockTruncated, m.sandboxFallback, m.requestBlocks,
 		m.changes, m.configInfo,
@@ -239,6 +244,14 @@ func (m *Metrics) RecordExecError(err error) {
 		return
 	}
 	m.execError.WithLabelValues(coderun.ErrorKind(err)).Inc()
+}
+
+// RecordReplay counts one completion served from the Idempotency-Key record.
+func (m *Metrics) RecordReplay() {
+	if m == nil {
+		return
+	}
+	m.replays.Inc()
 }
 
 // ObserveRequestBlocks records how many blocks one request executed.

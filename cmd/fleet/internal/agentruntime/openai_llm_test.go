@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -150,4 +151,61 @@ func TestOpenAILLM_CachedPromptTokensAbsentIsZero(t *testing.T) {
 	res, err := llm.Chat(context.Background(), "test-model", []Message{{Role: RoleUser, Content: "x"}}, nil)
 	require.NoError(t, err)
 	require.Zero(t, res.CachedPromptTokens)
+}
+
+// idempotencyStubServer records the Idempotency-Key header of every request and
+// fails the first two attempts of each call with a 500. keys returns a snapshot.
+func idempotencyStubServer(t *testing.T) (*OpenAILLM, func() []string) {
+	t.Helper()
+	var mu sync.Mutex
+	var keys []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		keys = append(keys, r.Header.Get("Idempotency-Key"))
+		n := len(keys)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if n%llmMaxAttempts != 0 {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"error":{"message":"boom","type":"server_error"}}`)
+			return
+		}
+		fmt.Fprint(w, okCompletion)
+	}))
+	t.Cleanup(srv.Close)
+	snapshot := func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), keys...)
+	}
+	return NewOpenAILLM("test-key", srv.URL+"/v1"), snapshot
+}
+
+// TestOpenAILLM_IdempotencyKeyStableAcrossRetries: every attempt of one Chat
+// call carries the same non-empty Idempotency-Key, so a code-executing endpoint
+// can recognise a replay; a second call carries a different key.
+func TestOpenAILLM_IdempotencyKeyStableAcrossRetries(t *testing.T) {
+	llm, keys := idempotencyStubServer(t)
+	msgs := []Message{{Role: RoleUser, Content: "x"}}
+
+	_, err := llm.Chat(context.Background(), "test-model", msgs, nil)
+	require.NoError(t, err)
+	got := keys()
+	require.Len(t, got, llmMaxAttempts)
+	first := got[0]
+	require.NotEmpty(t, first)
+	for _, k := range got {
+		require.Equal(t, first, k, "all attempts of one call must share the key")
+	}
+
+	_, err = llm.ChatWithBudget(context.Background(), "test-model", msgs, nil, 10)
+	require.NoError(t, err)
+	got = keys()
+	require.Len(t, got, 2*llmMaxAttempts)
+	second := got[llmMaxAttempts]
+	require.NotEmpty(t, second)
+	require.NotEqual(t, first, second, "different calls must carry different keys")
+	for _, k := range got[llmMaxAttempts:] {
+		require.Equal(t, second, k)
+	}
 }
