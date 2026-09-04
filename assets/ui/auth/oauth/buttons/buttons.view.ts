@@ -1,8 +1,13 @@
 namespace $.$$ {
 	export class $trip2g_auth_oauth_buttons extends $.$trip2g_auth_oauth_buttons {
+		redirect_url() {
+			const here = new URL( this.$.$mol_state_arg.href() )
+			return here.pathname + here.search + here.hash
+		}
+
 		@$mol_mem
 		oauth_urls() {
-			const redirectUrl = this.$.$mol_state_arg.href()
+			const redirectUrl = this.redirect_url()
 			try {
 				return $trip2g_auth_oauth_buttons_urls({ input: { redirectUrl } })
 			} catch {
