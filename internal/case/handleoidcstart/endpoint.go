@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/appresp"
 	"trip2g/internal/db"
 	"trip2g/internal/oauthstate"
 	"trip2g/internal/oidcauth"
@@ -27,7 +28,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	// Load credentials from DB
 	creds, err := env.GetActiveOIDCCredentials(ctx)
 	if err != nil || creds.ClientID == "" {
-		req.Req.Redirect("/?berror=oauth_not_configured", http.StatusFound)
+		appresp.Redirect(req.Req, "/?berror=oauth_not_configured", http.StatusFound)
 		return nil, nil //nolint:nilerr // error handled via redirect, not returned
 	}
 
@@ -57,7 +58,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	// Discover OIDC endpoints from issuer
 	endpoints, err := oidcauth.Discover(creds.Issuer)
 	if err != nil {
-		req.Req.Redirect("/?berror=oauth_not_configured", http.StatusFound)
+		appresp.Redirect(req.Req, "/?berror=oauth_not_configured", http.StatusFound)
 		return nil, nil //nolint:nilerr // error handled via redirect, not returned
 	}
 
@@ -66,7 +67,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	// Redirect to OIDC provider
 	authURL := oidcauth.BuildAuthURL(endpoints.AuthorizationEndpoint, creds.ClientID, callbackURL, state, creds.Scopes, nonce)
-	req.Req.Redirect(authURL, http.StatusFound)
+	appresp.Redirect(req.Req, authURL, http.StatusFound)
 
 	return nil, nil
 }

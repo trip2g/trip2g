@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/appresp"
 	"trip2g/internal/db"
 	"trip2g/internal/githubauth"
 	"trip2g/internal/oauthstate"
@@ -25,7 +26,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	// Load credentials from DB
 	creds, err := env.GetActiveGitHubOAuthCredentials(ctx)
 	if err != nil || creds.ClientID == "" {
-		req.Req.Redirect("/?berror=oauth_not_configured", http.StatusFound)
+		appresp.Redirect(req.Req, "/?berror=oauth_not_configured", http.StatusFound)
 		return nil, nil //nolint:nilerr // error handled via redirect, not returned
 	}
 
@@ -47,7 +48,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	// Redirect to GitHub OAuth
 	authURL := githubauth.BuildAuthURL(creds.ClientID, callbackURL, state)
-	req.Req.Redirect(authURL, http.StatusFound)
+	appresp.Redirect(req.Req, authURL, http.StatusFound)
 
 	return nil, nil
 }

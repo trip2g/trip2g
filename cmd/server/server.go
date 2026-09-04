@@ -13,6 +13,7 @@ import (
 	"time"
 	"trip2g/internal/acmecache"
 	"trip2g/internal/appreq"
+	"trip2g/internal/appresp"
 	"trip2g/internal/case/signinbyhat"
 	"trip2g/internal/metrics"
 	"trip2g/internal/noteloader"
@@ -95,7 +96,7 @@ func (a *app) startServer() { //nolint:gocognit // server startup wiring
 				query.Del("hat")
 				parsedURL.RawQuery = query.Encode()
 
-				ctx.Redirect(parsedURL.String(), http.StatusFound)
+				appresp.Redirect(ctx, parsedURL.String(), http.StatusFound)
 				return
 			}
 		}
