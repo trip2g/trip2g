@@ -33,6 +33,13 @@ func TestSafeRedirect(t *testing.T) {
 		// absolute URLs elsewhere must be rejected
 		{"other host", "https://evil.com", "/"},
 		{"other host with path", "http://evil.com/steal", "/"},
+		// The host matches and the path is protocol-relative, so reducing the
+		// URL to that path hands back "//evil.com" — a Location the browser
+		// reads as another origin. The same shape the relative branch has
+		// always refused.
+		{"own host, protocol-relative path", "https://app.example.com//evil.com", "/"},
+		{"own host, protocol-relative path with more", "https://app.example.com//evil.com/steal?a=1", "/"},
+		{"own host, backslash path", "https://app.example.com/\\evil.com", "/%5Cevil.com"},
 		{"userinfo disguise", "https://app.example.com@evil.com/steal", "/"},
 		{"host as prefix", "https://app.example.com.evil.com/steal", "/"},
 		// protocol-relative

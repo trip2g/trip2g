@@ -33,43 +33,48 @@ type State struct {
 
 // safeRedirect ensures the redirect target is a same-origin relative path.
 // An absolute URL on host — what the frontend sends, since it reads
-// location.href — is reduced to its path; anything pointing elsewhere becomes
-// "/" so OAuth login cannot be turned into open-redirect phishing.
+// location.href — is reduced to its path first; then the one rule below
+// decides, so no shape can reach the browser without passing it.
 func safeRedirect(host, redirect string) string {
-	if redirect == "" {
-		return "/"
-	}
-
 	if scheme.MatchString(redirect) {
-		return ownOriginPath(host, redirect)
+		redirect = ownOriginPath(host, redirect)
 	}
 
-	// Must start with a single slash and not be protocol-relative (//host).
-	if redirect[0] != '/' || (len(redirect) > 1 && redirect[1] == '/') {
+	return relativePath(redirect)
+}
+
+var scheme = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+
+// relativePath is the whole decision: a path on this site, or "/". Everything
+// reaches it, including what ownOriginPath has just reduced — an absolute URL
+// on our own host can still carry "//evil.com" as its path, and answering with
+// that path is a Location the browser reads as another origin.
+func relativePath(redirect string) string {
+	if redirect == "" || redirect[0] != '/' {
 		return "/"
 	}
-	// Reject backslash variants that some browsers normalise to /.
-	if len(redirect) > 1 && redirect[1] == '\\' {
+
+	// Protocol-relative (//host), and the backslash variants some browsers
+	// normalise into it.
+	if len(redirect) > 1 && (redirect[1] == '/' || redirect[1] == '\\') {
 		return "/"
 	}
 
 	return redirect
 }
 
-var scheme = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
-
-// ownOriginPath keeps the path of an absolute URL that names this very host,
-// and refuses every other one. The scheme is not compared: behind a
-// TLS-terminating proxy the page and the request disagree about it, and the
-// answer is a path either way.
+// ownOriginPath reduces an absolute URL that names this very host to its path,
+// and answers "" for every other one, which relativePath turns into "/". The
+// scheme is not compared: behind a TLS-terminating proxy the page and the
+// request disagree about it, and the answer is a path either way.
 func ownOriginPath(host, redirect string) string {
 	if host == "" {
-		return "/"
+		return ""
 	}
 
 	target, err := url.Parse(redirect)
-	if err != nil || target.Host != host || target.EscapedPath() == "" {
-		return "/"
+	if err != nil || target.Host != host {
+		return ""
 	}
 
 	path := target.EscapedPath()
