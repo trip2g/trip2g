@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"time"
 
+	"trip2g/internal/appresp"
+
 	"github.com/valyala/fasthttp"
 )
 
@@ -33,38 +35,21 @@ type State struct {
 
 // safeRedirect ensures the redirect target is a same-origin relative path.
 // An absolute URL on host — what the frontend sends, since it reads
-// location.href — is reduced to its path first; then the one rule below
-// decides, so no shape can reach the browser without passing it.
+// location.href — is reduced to its path first, and appresp.SamePath then
+// decides. A path can itself be another origin, so that rule is the one every
+// shape passes and this package does not keep a second copy of it.
 func safeRedirect(host, redirect string) string {
 	if scheme.MatchString(redirect) {
 		redirect = ownOriginPath(host, redirect)
 	}
 
-	return relativePath(redirect)
+	return appresp.SamePath(redirect)
 }
 
 var scheme = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 
-// relativePath is the whole decision: a path on this site, or "/". Everything
-// reaches it, including what ownOriginPath has just reduced — an absolute URL
-// on our own host can still carry "//evil.com" as its path, and answering with
-// that path is a Location the browser reads as another origin.
-func relativePath(redirect string) string {
-	if redirect == "" || redirect[0] != '/' {
-		return "/"
-	}
-
-	// Protocol-relative (//host), and the backslash variants some browsers
-	// normalise into it.
-	if len(redirect) > 1 && (redirect[1] == '/' || redirect[1] == '\\') {
-		return "/"
-	}
-
-	return redirect
-}
-
 // ownOriginPath reduces an absolute URL that names this very host to its path,
-// and answers "" for every other one, which relativePath turns into "/". The
+// and answers "" for every other one, which SamePath turns into "/". The
 // scheme is not compared: behind a TLS-terminating proxy the page and the
 // request disagree about it, and the answer is a path either way.
 func ownOriginPath(host, redirect string) string {
