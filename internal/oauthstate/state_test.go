@@ -10,32 +10,65 @@ import (
 )
 
 func TestSafeRedirect(t *testing.T) {
+	const host = "app.example.com"
+
 	cases := []struct {
+		name string
 		in   string
 		want string
 	}{
-		{"", "/"},
-		{"/", "/"},
-		{"/dashboard", "/dashboard"},
-		{"/settings/profile", "/settings/profile"},
-		// absolute URLs must be rejected
-		{"https://evil.com", "/"},
-		{"http://evil.com/steal", "/"},
+		{"empty", "", "/"},
+		{"root", "/", "/"},
+		{"path", "/dashboard", "/dashboard"},
+		{"nested path", "/settings/profile", "/settings/profile"},
+		// an absolute URL on our own host is reduced to its path: the frontend
+		// sends location.href, and losing the path there sends every sign-in
+		// back to the root instead of the page it started on
+		{"own host", "https://app.example.com/boards/x", "/boards/x"},
+		{"own host over http", "http://app.example.com/boards/x", "/boards/x"},
+		{"own host with query", "https://app.example.com/boards/x?tab=2", "/boards/x?tab=2"},
+		{"own host with fragment", "https://app.example.com/boards/x#!userspace=open", "/boards/x#!userspace=open"},
+		{"own host bare", "https://app.example.com", "/"},
+		{"own host with port", "https://app.example.com:8443/boards/x", "/"},
+		// absolute URLs elsewhere must be rejected
+		{"other host", "https://evil.com", "/"},
+		{"other host with path", "http://evil.com/steal", "/"},
+		{"userinfo disguise", "https://app.example.com@evil.com/steal", "/"},
+		{"host as prefix", "https://app.example.com.evil.com/steal", "/"},
 		// protocol-relative
-		{"//evil.com", "/"},
-		{"//evil.com/path", "/"},
+		{"protocol relative", "//evil.com", "/"},
+		{"protocol relative with path", "//evil.com/path", "/"},
 		// backslash variants some browsers normalise
-		{"/\\evil.com", "/"},
+		{"backslash", "/\\evil.com", "/"},
 		// no leading slash
-		{"evil.com", "/"},
-		{"relative/path", "/"},
+		{"bare host", "evil.com", "/"},
+		{"relative", "relative/path", "/"},
 	}
 
 	for _, tc := range cases {
-		t.Run(tc.in, func(t *testing.T) {
-			require.Equal(t, tc.want, safeRedirect(tc.in))
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, safeRedirect(host, tc.in))
 		})
 	}
+}
+
+func TestSafeRedirectWithoutHostRejectsAbsolute(t *testing.T) {
+	require.Equal(t, "/", safeRedirect("", "https://app.example.com/boards/x"))
+}
+
+func TestGenerateKeepsOwnOriginPath(t *testing.T) {
+	var ctx fasthttp.RequestCtx
+	ctx.Request.SetHost("app.example.com")
+
+	encoded, err := Generate(&ctx, "https://app.example.com/boards/x#!userspace=open", true)
+	require.NoError(t, err)
+
+	raw, err := base64.URLEncoding.DecodeString(encoded)
+	require.NoError(t, err)
+
+	var s State
+	require.NoError(t, json.Unmarshal(raw, &s))
+	require.Equal(t, "/boards/x#!userspace=open", s.Redirect)
 }
 
 // csrfNonceFromState pulls the CSRF nonce out of an encoded state blob so the

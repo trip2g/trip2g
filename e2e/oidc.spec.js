@@ -101,6 +101,26 @@ test.describe.serial('OIDC SSO login', () => {
     expect(await sessionCookie(page)).toBeTruthy();
   });
 
+  test('login returns to the page it started on', async ({ page, request, baseURL }) => {
+    await createOidcCred(request, adminToken, idp.issuer, { autoProvision: false });
+    idp.setUser({ email: 'existing-oidc@example.com', email_verified: true });
+
+    const relative = new URL(await login(page, '/some/deep/page?tab=2'));
+    expect(relative.pathname + relative.search).toBe('/some/deep/page?tab=2');
+    expect(await sessionCookie(page)).toBeTruthy();
+
+    // The frontend reads location.href, so the redirect arrives absolute; an
+    // absolute URL on our own origin must keep its path rather than collapse
+    // to the root.
+    const absolute = new URL(await login(page, `${baseURL}/some/deep/page`));
+    expect(absolute.pathname).toBe('/some/deep/page');
+
+    // Anywhere else is still refused, which is what safeRedirect is for.
+    const elsewhere = new URL(await login(page, 'https://evil.example.com/steal'));
+    expect(elsewhere.host).toBe(new URL(baseURL).host);
+    expect(elsewhere.pathname).toBe('/');
+  });
+
   test('missing UserInfo verification falls back to matching signed ID token', async ({ page, request }) => {
     await createOidcCred(request, adminToken, idp.issuer, { autoProvision: false });
     idp.setUser({ email: 'existing-oidc@example.com', email_verified: undefined });

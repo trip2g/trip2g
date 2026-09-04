@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -30,21 +32,56 @@ type State struct {
 }
 
 // safeRedirect ensures the redirect target is a same-origin relative path.
-// It rejects absolute URLs (http://, https://) and protocol-relative URLs (//)
-// to prevent open-redirect phishing after OAuth login.
-func safeRedirect(redirect string) string {
+// An absolute URL on host — what the frontend sends, since it reads
+// location.href — is reduced to its path; anything pointing elsewhere becomes
+// "/" so OAuth login cannot be turned into open-redirect phishing.
+func safeRedirect(host, redirect string) string {
 	if redirect == "" {
 		return "/"
 	}
+
+	if scheme.MatchString(redirect) {
+		return ownOriginPath(host, redirect)
+	}
+
 	// Must start with a single slash and not be protocol-relative (//host).
-	if len(redirect) < 1 || redirect[0] != '/' || (len(redirect) > 1 && redirect[1] == '/') {
+	if redirect[0] != '/' || (len(redirect) > 1 && redirect[1] == '/') {
 		return "/"
 	}
 	// Reject backslash variants that some browsers normalise to /.
 	if len(redirect) > 1 && redirect[1] == '\\' {
 		return "/"
 	}
+
 	return redirect
+}
+
+var scheme = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+
+// ownOriginPath keeps the path of an absolute URL that names this very host,
+// and refuses every other one. The scheme is not compared: behind a
+// TLS-terminating proxy the page and the request disagree about it, and the
+// answer is a path either way.
+func ownOriginPath(host, redirect string) string {
+	if host == "" {
+		return "/"
+	}
+
+	target, err := url.Parse(redirect)
+	if err != nil || target.Host != host || target.EscapedPath() == "" {
+		return "/"
+	}
+
+	path := target.EscapedPath()
+	if target.RawQuery != "" {
+		path += "?" + target.RawQuery
+	}
+
+	if target.Fragment != "" {
+		path += "#" + target.EscapedFragment()
+	}
+
+	return path
 }
 
 // Generate creates new state, sets cookie, returns encoded state for OAuth URL.
@@ -60,7 +97,7 @@ func GenerateWithOIDCNonce(ctx *fasthttp.RequestCtx, redirect, oidcNonce string,
 }
 
 func generate(ctx *fasthttp.RequestCtx, redirect, oidcNonce string, insecure bool) (string, error) {
-	redirect = safeRedirect(redirect)
+	redirect = safeRedirect(string(ctx.Host()), redirect)
 	// Generate random nonce (16 bytes, hex encoded = 32 chars)
 	nonceBytes := make([]byte, 16)
 	_, err := rand.Read(nonceBytes)

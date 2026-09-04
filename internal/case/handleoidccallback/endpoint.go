@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/appresp"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/oauthstate"
@@ -44,7 +45,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		env.Logger().Info("oauth login failed: oauth not configured",
 			"provider", "oidc",
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_not_configured", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_not_configured", http.StatusFound)
 		return nil, nil //nolint:nilerr // error handled via redirect, not returned
 	}
 
@@ -55,7 +56,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"provider", "oidc",
 			"error", err.Error(),
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
 	}
 	clientSecret := string(clientSecretBytes)
@@ -66,7 +67,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"provider", "oidc",
 			"error", errorParam,
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
 	}
 
@@ -78,7 +79,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		env.Logger().Info("oauth login failed: invalid state",
 			"provider", "oidc",
 			"ip", clientIP)
-		ctx.Redirect("/?berror=invalid_state", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=invalid_state", http.StatusFound)
 		return nil, nil //nolint:nilerr // redirect response with error logged
 	}
 
@@ -89,7 +90,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"provider", "oidc",
 			"error", err.Error(),
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
 	}
 
@@ -103,7 +104,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"provider", "oidc",
 			"error", err.Error(),
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
 	}
 
@@ -123,7 +124,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"provider", "oidc",
 			"error", err.Error(),
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
 	}
 
@@ -132,7 +133,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		env.Logger().Info("oauth login failed: id_token/userinfo sub mismatch",
 			"provider", "oidc",
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
 	}
 
@@ -153,7 +154,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"berror", berr,
 			"reason", reason,
 			"ip", clientIP)
-		ctx.Redirect("/?berror="+berr, http.StatusFound)
+		appresp.Redirect(ctx, "/?berror="+berr, http.StatusFound)
 		return nil, nil
 	}
 
@@ -162,7 +163,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"provider", "oidc",
 			"error", err.Error(),
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
 	}
 	exists := err == nil
@@ -178,7 +179,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 				"provider", "oidc",
 				"email", userInfo.Email,
 				"ip", clientIP)
-			ctx.Redirect("/?berror="+pberr, http.StatusFound)
+			appresp.Redirect(ctx, "/?berror="+pberr, http.StatusFound)
 			return nil, nil
 		}
 
@@ -192,7 +193,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 				"provider", "oidc",
 				"error", err.Error(),
 				"ip", clientIP)
-			ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+			appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 			return nil, nil
 		}
 
@@ -210,7 +211,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"provider", "oidc",
 			"error", err.Error(),
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, nil
 	}
 
@@ -222,7 +223,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		"ip", clientIP)
 
 	// Redirect to saved URL
-	ctx.Redirect(redirect, http.StatusFound)
+	appresp.Redirect(ctx, redirect, http.StatusFound)
 	return nil, nil
 }
 
@@ -247,7 +248,7 @@ func verifyIDToken(
 			"provider", "oidc",
 			"error", err.Error(),
 			"ip", clientIP)
-		ctx.Redirect("/?berror=oauth_failed", http.StatusFound)
+		appresp.Redirect(ctx, "/?berror=oauth_failed", http.StatusFound)
 		return nil, false
 	}
 	return claims, true

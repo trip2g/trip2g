@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"trip2g/internal/appresp"
+
 	"github.com/valyala/fasthttp"
 )
 
@@ -39,7 +41,7 @@ func Process(ctx *fasthttp.RequestCtx, env Env) bool {
 	query.Del(QueryParam)
 	parsedURL.RawQuery = query.Encode()
 
-	ctx.Redirect(parsedURL.String(), http.StatusFound)
+	appresp.Redirect(ctx, parsedURL.String(), http.StatusFound)
 
 	return true
 }
