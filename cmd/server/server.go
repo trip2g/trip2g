@@ -96,7 +96,11 @@ func (a *app) startServer() { //nolint:gocognit // server startup wiring
 				query.Del("hat")
 				parsedURL.RawQuery = query.Encode()
 
-				appresp.Redirect(ctx, parsedURL.String(), http.StatusFound)
+				// RequestURI, not String: the target is this request's own URL
+				// with one parameter removed, so it has no business carrying a
+				// host. A request line may be absolute-form, and String() would
+				// then hand that host straight back as a redirect.
+				appresp.Redirect(ctx, parsedURL.RequestURI(), http.StatusFound)
 				return
 			}
 		}
