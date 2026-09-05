@@ -96,11 +96,12 @@ func (a *app) startServer() { //nolint:gocognit // server startup wiring
 				query.Del("hat")
 				parsedURL.RawQuery = query.Encode()
 
-				// RequestURI, not String: the target is this request's own URL
-				// with one parameter removed, so it has no business carrying a
-				// host. A request line may be absolute-form, and String() would
-				// then hand that host straight back as a redirect.
-				appresp.Redirect(ctx, parsedURL.RequestURI(), http.StatusFound)
+				// The target is this request's own URL with one parameter
+				// removed, so it has no business carrying a host. A request
+				// line may be absolute-form, and then RequestURI() is the path
+				// of that URL — which can be "//evil.com", another origin
+				// written as a path. SamePath is the rule that decides.
+				appresp.Redirect(ctx, appresp.SamePath(parsedURL.RequestURI()), http.StatusFound)
 				return
 			}
 		}
