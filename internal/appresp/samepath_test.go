@@ -19,12 +19,24 @@ func TestSamePath(t *testing.T) {
 		{"path with query", "/boards/x?tab=2", "/boards/x?tab=2"},
 		{"path with fragment", "/boards/x#!userspace=open", "/boards/x#!userspace=open"},
 		{"escaped backslash stays ours", "/%5Cevil.com", "/%5Cevil.com"},
+		{"escaped slash stays ours", "/%2F/evil.com", "/%2F/evil.com"},
 		{"protocol relative", "//evil.com", "/"},
 		{"protocol relative with path", "//evil.com/steal", "/"},
-		{"backslash browsers normalise", "/\\evil.com", "/"},
+		{"three slashes", "///evil.com", "/"},
+		{"backslash is escaped, not passed on", "/\\evil.com", "/%5Cevil.com"},
+		{"space is escaped", "/ /evil.com", "/%20/evil.com"},
 		{"absolute", "https://evil.com/steal", "/"},
+		{"opaque scheme", "javascript:alert(1)", "/"},
 		{"no leading slash", "evil.com", "/"},
 		{"scheme relative word", "relative/path", "/"},
+		// A browser strips ASCII tab, LF and CR from a URL before it parses it,
+		// so any of them beside the leading slash turns the value back into
+		// "//evil.com" in the one place it matters. CR LF in a header value is
+		// worse than a redirect. Refused as a class by parsing, rather than
+		// enumerated one character at a time.
+		{"tab the browser would strip", "/\t/evil.com", "/"},
+		{"newline the browser would strip", "/\n/evil.com", "/"},
+		{"header injection", "/\r\nSet-Cookie: a=1", "/"},
 	}
 
 	for _, tc := range cases {
