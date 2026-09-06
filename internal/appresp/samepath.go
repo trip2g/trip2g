@@ -26,7 +26,7 @@ func SamePath(target string) string {
 	}
 
 	path := parsed.EscapedPath()
-	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") {
+	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.HasPrefix(path, "/\\") {
 		return "/"
 	}
 
