@@ -45,8 +45,9 @@ func TestSafeRedirect(t *testing.T) {
 		// protocol-relative
 		{"protocol relative", "//evil.com", "/"},
 		{"protocol relative with path", "//evil.com/path", "/"},
-		// backslash variants some browsers normalise
-		{"backslash", "/\\evil.com", "/"},
+		// A backslash is escaped rather than refused: %5C is not normalised
+		// back into a slash by any browser, so the path stays ours.
+		{"backslash", "/\\evil.com", "/%5Cevil.com"},
 		// no leading slash
 		{"bare host", "evil.com", "/"},
 		{"relative", "relative/path", "/"},
