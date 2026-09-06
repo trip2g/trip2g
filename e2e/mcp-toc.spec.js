@@ -222,11 +222,16 @@ test.describe('MCP TOC', () => {
       arguments: { path: NOTE_PATH, toc_path: ['Main Section'] },
     });
 
-    // The listing may preview a short child title's opening words; what it
-    // must not carry is the section body itself.
+    // A bullet line is exactly the title an agent copies into toc_path, so a
+    // short child's preview goes on its own indented line underneath instead
+    // of trailing the title. What the listing must never carry is the body.
     const text = result.content?.[0]?.text ?? '';
+    const lines = text.split('\n');
     expect(text).toContain('1 subsection(s)');
-    expect(text).toContain('- Subsection');
+    expect(lines).toContain('- Subsection');
+    expect(lines[lines.indexOf('- Subsection') + 1]).toMatch(
+      /^ {4}preview: Nested subsection content/,
+    );
     expect(text).not.toContain('Main content goes here');
     expect(text).not.toContain('<p>');
 
