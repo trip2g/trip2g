@@ -32,6 +32,7 @@ title: "Навигация"
 - [[ru/thoughts/agent-team-reporting|Агент докладывает команде сам]]
 - [[ru/thoughts/agent-team-digest|Агент ведёт дневник команды]]
 - [[ru/thoughts/public-hub|Один эндпоинт, много баз знаний]]
+- [[ru/thoughts/small-mcp-errors|Мелкие ошибки MCP-сервера и кто за них платит]]
 
 **Инструменты**
 - [[ru/thoughts/patching-obsidian-canvas-on-minimal-linux|Чиним Obsidian Canvas на минимальном Linux]]
