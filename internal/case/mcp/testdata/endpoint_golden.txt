@@ -1368,7 +1368,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "Doc — \"top level\", 2 subsection(s):\n- Alpha — alpha body\n- Beta — beta body\n"
+        "text": "Doc — \"top level\", 2 subsection(s):\n- Alpha\n    preview: alpha body\n- Beta\n    preview: beta body\n"
       }
     ],
     "structuredContent": {
@@ -1442,7 +1442,7 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "Книга 10 — \"top level\", 2 subsection(s):\n- 1 — Душа моя, ужели ты никогда не будешь доброй и простой?\n- 2 — Замечай, чего требует твоя природа.\n"
+        "text": "Книга 10 — \"top level\", 2 subsection(s):\n- 1\n    preview: Душа моя, ужели ты никогда не будешь доброй и простой?\n- 2\n    preview: Замечай, чего требует твоя природа.\n"
       }
     ],
     "structuredContent": {

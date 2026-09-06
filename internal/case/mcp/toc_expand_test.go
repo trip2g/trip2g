@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"html/template"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -150,4 +151,71 @@ func TestSnippetBreadcrumbDropsTheTitleH1(t *testing.T) {
 		snippetTocPath(note, "maxims body", ""))
 	require.Equal(t, []string{"Reflections"},
 		snippetTocPath(note, "reflections body", ""))
+}
+
+// A one-line "- Title — preview" listing made the whole line look like the
+// title: a model copied "Prerequisites — Docker running locally Node.js …"
+// into toc_path and got "section not found". The bullet line now carries
+// nothing but the title, so copying it verbatim resolves.
+func TestExpandSummaryPutsThePreviewOnItsOwnLine(t *testing.T) {
+	note := &model.NoteView{Title: "Guide"}
+	tests := []struct {
+		name      string
+		children  []TOCNode
+		wantLines []string
+	}{
+		{
+			name:     "a child with a preview takes two lines",
+			children: []TOCNode{{Title: "Prerequisites", Preview: "Docker running locally Node.js 20+"}},
+			wantLines: []string{
+				"- Prerequisites",
+				"    preview: Docker running locally Node.js 20+",
+			},
+		},
+		{
+			name:      "a child without a preview takes one",
+			children:  []TOCNode{{Title: "A heading long enough to stand on its own"}},
+			wantLines: []string{"- A heading long enough to stand on its own"},
+		},
+		{
+			name:     "the has_children marker stays on the title line",
+			children: []TOCNode{{Title: "Setup", HasChildren: true, Preview: "pick a package manager"}},
+			wantLines: []string{
+				"- Setup (has subsections)",
+				"    preview: pick a package manager",
+			},
+		},
+		{
+			name: "children keep their own lines",
+			children: []TOCNode{
+				{Title: "1", Preview: "Душа моя, ужели ты никогда не будешь доброй?"},
+				{Title: "2", HasChildren: true},
+			},
+			wantLines: []string{
+				"- 1",
+				"    preview: Душа моя, ужели ты никогда не будешь доброй?",
+				"- 2 (has subsections)",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lines := strings.Split(strings.TrimRight(expandSummary(note, nil, tt.children), "\n"), "\n")
+			require.Equal(t, `Guide — "top level", `+strconv.Itoa(len(tt.children))+" subsection(s):", lines[0])
+			require.Equal(t, tt.wantLines, lines[1:])
+
+			// A bullet line is exactly the string an agent copies into toc_path,
+			// so no preview text may leak onto one.
+			for _, line := range lines[1:] {
+				if !strings.HasPrefix(line, "- ") {
+					continue
+				}
+				for _, c := range tt.children {
+					if c.Preview != "" {
+						require.NotContains(t, line, c.Preview)
+					}
+				}
+			}
+		})
+	}
 }

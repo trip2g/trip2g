@@ -913,11 +913,12 @@ func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode
 		if c.HasChildren {
 			marker = " (has subsections)"
 		}
-		preview := ""
+		// The preview goes on its own line so the bullet line is exactly the
+		// title an agent has to copy into toc_path.
+		fmt.Fprintf(&sb, "- %s%s\n", c.Title, marker)
 		if c.Preview != "" {
-			preview = " — " + c.Preview
+			fmt.Fprintf(&sb, "    preview: %s\n", c.Preview)
 		}
-		fmt.Fprintf(&sb, "- %s%s%s\n", c.Title, marker, preview)
 	}
 	return sb.String()
 }
