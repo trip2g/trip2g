@@ -27,6 +27,10 @@ EnvironmentFile=/etc/{{ item.service_name }}.env
 # See docs/dev/gc_tuning.md.
 Environment=GOGC={{ go_gc | default(100) }}
 Environment=GOMEMLIMIT={{ item.go_mem_limit | default(go_mem_limit_default) }}
+# Full-text index on disk instead of the heap (~350 MB less per 1000 notes,
+# reopen in ms instead of a rebuild at boot). One directory per instance; the
+# app creates <version>/<schema> below it. See docs/dev/search_index_on_disk.md.
+Environment=SEARCH_INDEX_PATH={{ data_dir }}/search/{{ item.service_name }}
 Restart=on-failure
 
 # Zero-downtime drain: SIGTERM makes the app flip /healthz to 503 immediately,

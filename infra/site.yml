@@ -56,6 +56,15 @@
         group: "{{ app_user }}"
         mode: '0750'
 
+    - name: Create per-instance search index dirs
+      file:
+        path: "{{ data_dir }}/search/{{ item.service_name }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0750'
+      loop: "{{ trip2g_services }}"
+
     - name: Download Litestream
       get_url:
         url: https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.deb
