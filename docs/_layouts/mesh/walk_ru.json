@@ -347,23 +347,23 @@
   "id": "q3",
   "task": "Как дать Claude Code постоянную память через trip2g?",
   "model": "openai/gpt-5.4-mini",
-  "calls": "8 вызовов",
-  "cost": "$0.014",
+  "calls": "12 вызовов",
+  "cost": "$0.019",
   "shape": "локальная документация",
   "events": [
    {
     "t": "think",
-    "text": "Сначала найду, есть ли в базе конкретная документация про trip2g и Claude Code, чтобы ответить по источнику, а не по памяти."
+    "text": "Сначала найду, что в базе знаний есть про Claude Code, trip2g и постоянную память, затем открою именно leaf-заметки, а не обзорные карточки."
    },
    {
     "t": "call",
     "name": "search",
-    "arg": "trip2g Claude Code постоянная память",
+    "arg": "Claude Code trip2g постоянная память",
     "kb": ""
    },
    {
     "t": "ret",
-    "ms": 1972,
+    "ms": 872,
     "n": 5,
     "items": [
      "Память агентов в сравнении: Mem0 vs MemG · trip2g.com",
@@ -371,23 +371,23 @@
     ]
    },
    {
+    "t": "think",
+    "text": "Вижу целевую заметку про постоянную память для Claude Code; открою её и проверю, не является ли она лишь обзором, а затем доберу точные инст"
+   },
+   {
     "t": "call",
-    "name": "search",
-    "arg": "Claude Code memory trip2g",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md",
     "kb": ""
    },
    {
     "t": "ret",
-    "ms": 1172,
-    "n": 5,
-    "items": [
-     "Persistent memory for Claude Code: a sel · trip2g.com",
-     "Постоянная память для Claude Code: self- · trip2g.com"
-    ]
+    "ms": 693,
+    "read": "которая федерирует вашу локальную память с публичной базой trip2g.com; тем же механизмом с"
    },
    {
     "t": "think",
-    "text": "Открою именно русскую статью про постоянную память для Claude Code и доберусь до раздела с пошаговой настройкой."
+    "text": "Нужно увидеть структуру заметки, чтобы найти раздел с пошаговой настройкой и, возможно, упоминание CLI/конфига Claude Code."
    },
    {
     "t": "call",
@@ -397,79 +397,131 @@
    },
    {
     "t": "ret",
-    "ms": 707,
-    "read": "Постоянная память для Claude Code: self-hosted настройка, которая переживает сессии — \"top"
+    "ms": 716,
+    "read": "MCP-сервер памяти: постоянная self-hosted память для ИИ-агентов — \"top level\", 6 subsectio"
    },
    {
     "t": "think",
-    "text": "Теперь открою шаги регистрации и проверки, чтобы извлечь точные команды и избежать пересказа по памяти."
+    "text": "Похоже, нужное — в разделе про markdown-путь trip2g, где обычно описывается подключение к Claude Code."
    },
    {
     "t": "call",
-    "name": "expand",
-    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 3. Зарегистрируйте серв",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Память как markdown: как ус",
     "kb": ""
    },
    {
     "t": "ret",
-    "ms": 682,
-    "read": "Постоянная память для Claude Code: self-hosted настройка, которая переживает сессии — \"Шаг"
+    "ms": 692,
+    "read": " Память как markdown: как устроен путь trip2g Схема простая: память — это папка .md -файло"
    },
    {
     "t": "call",
-    "name": "expand",
-    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 4. Проверьте",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › FAQ",
     "kb": ""
    },
    {
     "t": "ret",
-    "ms": 700,
-    "read": " Шаг 4. Проверьте Откройте новую сессию Claude Code и выполните: /mcp trip2g-memory должен"
-   },
-   {
-    "t": "call",
-    "name": "expand",
-    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 5. Научите Claude ей по",
-    "kb": ""
-   },
-   {
-    "t": "ret",
-    "ms": 685,
-    "read": " Шаг 5. Научите Claude ей пользоваться Память накапливается, только если агент в неё пишет"
+    "ms": 690,
+    "read": " FAQ Нужна ли векторная база? Нет. trip2g — один Go-бинарник с SQLite, векторный индекс вс"
    },
    {
     "t": "think",
-    "text": "Нужно увидеть саму команду регистрации и, если есть, рекомендуемый путь через stdio-адаптер."
+    "text": "Нужна точная пошаговая настройка для Claude Code, чтобы не пересказывать общее описание."
    },
    {
     "t": "call",
-    "name": "expand",
-    "arg": "ru/user/claude-code-persistent-memory.md › Путь А: stdio-адаптер (реко",
-    "kb": ""
-   },
-   {
-    "t": "ret",
-    "ms": 694,
-    "read": " Путь А: stdio-адаптер (рекомендуем) Адаптер сворачивает поиск, навигацию по оглавлению и "
-   },
-   {
-    "t": "think",
-    "text": "Проверю альтернативный HTTP-путь, чтобы ответ был полезным, если пользователь не хочет локальный адаптер."
-   },
-   {
-    "t": "call",
-    "name": "expand",
-    "arg": "ru/user/claude-code-persistent-memory.md › Путь Б: напрямую по HTTP",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Смотрите также",
     "kb": ""
    },
    {
     "t": "ret",
     "ms": 689,
-    "read": " Путь Б: напрямую по HTTP Claude Code умеет говорить с MCP-эндпоинтом и напрямую: claude m"
+    "read": " Смотрите также Долгосрочная память для ИИ-агентов — полное руководство по настройке Посто"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/agent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 691,
+    "read": "Разверните trip2g в Docker, подключите MCP-клиент агента, загрузите заметки. Агент будет ч"
+   },
+   {
+    "t": "think",
+    "text": "Уже видно общую схему, но надо прочитать сам туториал под Claude Code, чтобы ответить по шагам и не упустить конкретную конфигурацию."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Постоянная память для Claud",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 697,
+    "err": "MCP error -32602: section not found for toc_path [Постоянная память для Claude C"
+   },
+   {
+    "t": "think",
+    "text": "Похоже, сама заметка с туториалом только в ссылке, а не в этом документе; значит, нужно перейти по ссылке с pid 1320 и прочитать уже ту leaf"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 686,
+    "err": "MCP error -32602: no focused window for match_id \"p1323:c1\"; top-level sections:"
+   },
+   {
+    "t": "think",
+    "text": "Теперь у меня есть правильная leaf-заметка и список шагов."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 1. Поднимите сервер пам",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 689,
+    "read": " Шаг 1. Поднимите сервер памяти Одна команда из чекаута trip2g ( memcli лежит в репозитори"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 3. Зарегистрируйте серв",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 708,
+    "read": " Шаг 3. Зарегистрируйте сервер в Claude Code Два пути; для работы с памятью мы рекомендуем"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 5. Научите Claude ей по",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 692,
+    "read": " Шаг 5. Научите Claude ей пользоваться Память накапливается, только если агент в неё пишет"
    },
    {
     "t": "final",
-    "text": "Это внешняя MCP-память для Claude Code; рекомендуемый путь — stdio-адаптер.\n1. Поднимите memory server trip2g.\n2. Создайте токен доступа.\n3. Подключите MCP-сервер в Claude Code через stdio-адаптер.\n4. Проверьте командой /mcp: trip2g-memory должен быть подключён.\n5. Добавьте правило в CLAUDE.md, чтобы Claude писал факты в хранилище.\n\nИсточник: trip2g.com/ru/user/claude_code_persistent_memory"
+    "text": "1. Поднимите сервер памяти: node trip2g/cli/memcli/dist/memcli.js up --folder ./memory-vault\n2. Подключите его к Claude Code: через stdio-адаптер в .mcp.json (рекомендуется) или claude mcp add --transport http trip2g-memory http://localhost:24081/_system/mcp\n3. В CLAUDE.md добавьте правило: писать факты в ./memory-vault и искать в trip2g-memory перед повторным выводом\n\nИсточник: trip2g.com/ru/user/claude_code_persistent_memory"
    }
   ]
  }
