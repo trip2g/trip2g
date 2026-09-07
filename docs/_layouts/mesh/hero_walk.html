@@ -1,0 +1,196 @@
+{{ block _style_@lid() }}
+.@did {
+  padding: 64px 40px 48px;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 48px;
+  align-items: start;
+}
+.@did__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.@did__eyebrow::before { content: "// "; color: var(--accent); }
+/* Copy comes from the _index_hero note body: h1 = title, first p = subline, last p = tagline. */
+.@did__copy h1 {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: clamp(38px, 4.6vw, 58px);
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  margin: 18px 0 0;
+  max-width: 16ch;
+  text-wrap: balance;
+}
+.@did__copy h1 em { font-style: normal; color: var(--accent); }
+.@did__copy p {
+  margin: 26px 0 0;
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 48ch;
+  color: color-mix(in oklab, var(--fg) 85%, transparent);
+}
+.@did__copy p:last-child {
+  margin-top: 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 56ch;
+  color: var(--muted);
+}
+.@did__copy p:last-child::before { content: "// "; color: var(--accent); }
+.@did__cta-row { margin-top: 30px; display: flex; flex-wrap: wrap; }
+
+.@did__player {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--bg) 92%, #000);
+  display: flex; flex-direction: column;
+  min-height: 520px;
+  overflow: hidden;
+}
+.@did__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted);
+}
+.@did__live { display: inline-flex; align-items: center; gap: 7px; color: var(--accent); }
+.@did__live::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: blink 1.6s steps(2) infinite;
+}
+.@did__live--paused { color: var(--muted); }
+.@did__live--paused::before { background: var(--muted); animation: none; }
+.@did__dots { display: flex; gap: 6px; }
+.@did__dot {
+  width: 26px; height: 6px; border-radius: 3px;
+  background: var(--rule); border: 0; padding: 0; cursor: pointer;
+  transition: background 0.3s;
+}
+.@did__dot--on { background: var(--accent); }
+.@did__dot:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.@did__task {
+  padding: 14px 16px 10px;
+  font-family: var(--sans); font-size: 15px; font-weight: 600; line-height: 1.35;
+  border-bottom: 1px solid var(--rule);
+  display: flex; gap: 10px;
+}
+.@did__q { color: var(--accent); font-family: var(--mono); font-weight: 600; flex: none; }
+.@did__log {
+  flex: 1; padding: 12px 16px; overflow: hidden;
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 12.5px; line-height: 1.45;
+}
+.@did__ln {
+  display: grid; grid-template-columns: 18px 1fr; gap: 8px;
+  opacity: 0; transform: translateY(3px);
+  transition: opacity 0.25s, transform 0.25s;
+  word-break: break-word;
+}
+.@did__ln--on { opacity: 1; transform: none; }
+.@did__g { color: var(--muted-2); text-align: right; }
+.@did__ln--think { color: var(--muted); font-style: italic; }
+.@did__ln--call .@did__g { color: var(--accent); }
+.@did__name { color: var(--fg); font-weight: 600; }
+.@did__kb { color: var(--accent); }
+.@did__arg { color: color-mix(in oklab, var(--fg) 70%, transparent); }
+.@did__ln--ret .@did__g { color: var(--muted); }
+.@did__n { color: var(--fg); }
+.@did__ms { color: var(--muted-2); }
+.@did__dom { color: var(--accent); }
+.@did__ln--err .@did__body { color: oklch(0.8 0.15 60); }
+.@did__final {
+  border-top: 1px solid var(--rule);
+  padding: 12px 16px 14px;
+  font-family: var(--sans); font-size: 13.5px; line-height: 1.5;
+  white-space: pre-line; min-height: 60px;
+  color: color-mix(in oklab, var(--fg) 92%, transparent);
+}
+.@did__final-lbl {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent); display: block; margin-bottom: 6px;
+}
+.@did__final-txt--caret::after { content: "▍"; color: var(--accent); animation: blink 1s steps(2) infinite; }
+.@did__foot {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px dashed var(--rule);
+  font-size: 11px; color: var(--muted-2); letter-spacing: 0.06em;
+}
+.@did__foot a { color: var(--muted); text-decoration: none; }
+.@did__foot a:hover { color: var(--accent); }
+
+.@did__strip {
+  padding: 22px 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 48px; align-items: center;
+  border-bottom: 1px solid var(--rule);
+}
+.@did__strip-lead { font-family: var(--sans); font-size: 14px; color: var(--muted); max-width: 44ch; line-height: 1.5; }
+.@did__strip-lead strong { color: var(--fg); font-weight: 600; }
+.@did__strip-lead a { color: var(--accent); text-decoration: none; }
+.@did__strip-pre {
+  margin: 0; padding: 12px 14px;
+  border: 1px solid var(--rule); border-radius: 6px;
+  font-size: 12px; line-height: 1.5; overflow-x: auto;
+  color: color-mix(in oklab, var(--fg) 80%, transparent);
+}
+.@did__strip-pre b { color: var(--accent); font-weight: 500; }
+
+@media (max-width: 920px) {
+  .@did, .@did__strip { grid-template-columns: 1fr; gap: 28px; padding: 36px 20px 32px; }
+  .@did__strip { padding: 22px 20px; }
+  .@did__player { min-height: 460px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .@did__ln { transition: none; }
+  .@did__live::before, .@did__final-txt--caret::after { animation: none; }
+}
+{{ end }}
+
+{{ block @lid(lang="en", eyebrow="memory for agents · self-hosted · mcp", note="_index_hero.md", start_label="start →", start_href="/en/user/getting_started", agents_label="for AI agents →", agents_href="/simple", docs_label="docs", live_label="stdout · agent walk · trip2g.com/_system/mcp", paused_label="paused · hover to read · leave to resume", final_label="final answer", recorded_label="recorded sept 2026", walk_label="run your own walk →", strip_lead="Add the hub to any MCP client and ask a question. It searches every connected base and answers with sources.", strip_strong="Ask it yourself.", strip_link="MCP tools →") }}
+<section class="@did">
+  <div>
+    <div class="@did__eyebrow">{{ eyebrow }}</div>
+    <div class="@did__copy">
+      {{ yield mesh_section(path=note) }}
+    </div>
+    <div class="@did__cta-row">
+      {{yield mesh_button(label=start_label, href=start_href, variant="primary", modifier="@did__cta")}}
+      {{yield mesh_button(label=agents_label, href=agents_href, modifier="@did__cta")}}
+      {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="@did__cta")}}
+      {{yield mesh_button(label=docs_label, href="/"+lang+"/user", modifier="@did__cta")}}
+    </div>
+  </div>
+  {* asset() only registers static string literals; build a map so both
+     variants are discovered/uploaded, then pick one by lang at runtime,
+     falling back to en for any unexpected lang *}
+  {{ walks := map("en", asset("walk_en.json"), "ru", asset("walk_ru.json")) }}
+  <div class="@did__player" id="hero-walk" aria-label="Replay of an agent walking the hub"
+       data-src="{{ coalesce(walks[lang], walks["en"]) }}"
+       data-live="{{ live_label }}" data-paused="{{ paused_label }}"
+       data-final="{{ final_label }}" data-recorded="{{ recorded_label }}">
+    <div class="@did__head">
+      <span class="@did__live" id="hero-walk-live">{{ live_label }}</span>
+      <div class="@did__dots" id="hero-walk-dots" role="tablist" aria-label="scenarios"></div>
+    </div>
+    <div class="@did__task"><span class="@did__q">?</span><span id="hero-walk-task"></span></div>
+    <div class="@did__log" id="hero-walk-log"></div>
+    <div class="@did__final" id="hero-walk-final"></div>
+    <div class="@did__foot"><span id="hero-walk-meta"></span><a href="/{{ lang }}/user/mcp">{{ walk_label }}</a></div>
+  </div>
+  <script defer src="{{ asset("hero_walk.js") }}"></script>
+</section>
+<section class="@did__strip">
+  <div class="@did__strip-lead"><strong>{{ strip_strong }}</strong> {{ strip_lead }} <a href="/{{ lang }}/user/mcp">{{ strip_link }}</a></div>
+  <pre class="@did__strip-pre">{ "mcpServers": { "trip2g": { "url": <b>"https://trip2g.com/_system/mcp"</b> } } }</pre>
+</section>
+{{ end }}
