@@ -46,7 +46,7 @@ $trip2g_editor_pane $mol_view
 						<= save_text @ \Save {0} files
 			body <= editor_body /
 		<= right_sidebar_widget null $mol_view
-	ContentTextarea $trip2g_editor_pane_content
+	ContentTextarea $trip2g_editor_pane_textarea
 		value? <=> content?
 		hover? <=> handle_content_hover? null
 		click? <=> handle_content_click? null
@@ -100,7 +100,7 @@ $trip2g_editor_pane $mol_view
 	newfile_msg_exists @ \A file with this name already exists
 	newfile_msg_exists_remote @ \This file was just created elsewhere
 
-$trip2g_editor_pane_content $mol_textarea
+$trip2g_editor_pane_textarea $mol_textarea
 	click? null
 	event *
 		^
