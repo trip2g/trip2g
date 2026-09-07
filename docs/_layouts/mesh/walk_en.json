@@ -1,0 +1,506 @@
+[
+ {
+  "id": "q1",
+  "task": "What do Marcus Aurelius and Confucius say about getting out of bed in the morning?",
+  "model": "openai/gpt-5.4-mini",
+  "calls": "12 calls",
+  "cost": "$0.013",
+  "shape": "2 hubs · 3 domains",
+  "events": [
+   {
+    "t": "think",
+    "text": "I’ll look for the specific sayings in the knowledge base, then read the exact source notes rather than relying on memory."
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "Marcus Aurelius getting out of bed in the morning Confucius morning be",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 966,
+    "n": 5,
+    "items": [
+     "Marcus Aurelius — Meditations · trip2g.com",
+     "Philosophers Hub · trip2g.com"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "The results show a Marcus Aurelius federation base, but not Confucius yet."
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "Confucius getting out of bed morning bed",
+    "kb": "philosophers"
+   },
+   {
+    "t": "ret",
+    "ms": 879,
+    "n": 10,
+    "items": [
+     "Confucius — The Analects · philosophers.2pub.me",
+     "Конфуций — Лунь юй · philosophers.2pub.me"
+    ]
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "getting out of bed morning",
+    "kb": "markavrelii"
+   },
+   {
+    "t": "ret",
+    "ms": 921,
+    "n": 10,
+    "items": [
+     "Цепочки · markavrelii.2pub.me",
+     "Книга 05 · markavrelii.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "I have likely found the relevant passages: Marcus Aurelius in Book 5, and a Confucius analogue may be about “getting up” or morning conduct "
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "Книги/Книга 05.md",
+    "kb": "markavrelii"
+   },
+   {
+    "t": "ret",
+    "ms": 725,
+    "read": "[[Марк Аврелий]] · [[Размышления]] Книга пятая — о работе и о согласии с природой. Марк на"
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "en/hub/confucius.md",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 882,
+    "read": "ения Неба, нельзя быть благородным мужем» [20.3]. - [[xue]] — благородство делается учение"
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "morning rise bed Analects",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 862,
+    "n": 10,
+    "items": [
+     "Другие голоса: карта созвездия · confucius.2pub.me",
+     "xue · confucius.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "The Confucius search hit a concept note for learning, not yet a morning-bed line."
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "concepts/xue.md",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 756,
+    "read": "Учение — способ, которым делается человек: по природе люди близки, практикой расходятся. У"
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "principles/samovospitanie.md",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 755,
+    "read": "сие с природой .- epictetus goethe -. дело и мера vs воля к власти .- nietzsche tolstoy -."
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "rise early morning Analects 1.1 2.4 bed",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 865,
+    "n": 10,
+    "items": [
+     "Другие голоса: карта созвездия · confucius.2pub.me",
+     "xue · confucius.2pub.me"
+    ]
+   },
+   {
+    "t": "final",
+    "text": "Marcus Aurelius, Meditations 5.1: when you don't want to get up, remind yourself that you are rising to do a human's work, not to stay warm under the covers. Source: markavrelii.2pub.me/knigi/kniga_05\n\nConfucius has no literal \"get out of bed\" line. The closest verified source frames the morning as learning and self-cultivation, a practice kept up with perseverance. Source: confucius.2pub.me/concepts/xue"
+   }
+  ]
+ },
+ {
+  "id": "q2",
+  "task": "Where do Epictetus and Wattles disagree about what is in our control?",
+  "model": "openai/gpt-5.4-mini",
+  "calls": "11 calls",
+  "cost": "$0.017",
+  "shape": "2 hops · 3 domains",
+  "events": [
+   {
+    "t": "think",
+    "text": "I’ll look for the relevant Epictetus and Wattles notes, then open the actual concept sections rather than any hub summaries."
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "Epictetus what is in our control Wattles disagree control",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 1728,
+    "n": 5,
+    "items": [
+     "Marcus Aurelius — Meditations · trip2g.com",
+     "Declarativity · trip2g.com"
+    ]
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "Wattles control what is in our control Epictetus",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 927,
+    "n": 5,
+    "items": [
+     "Content Infrastructure for Human-AI Work · trip2g.com",
+     "Marcus Aurelius — Meditations · trip2g.com"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "I found a federation hub for Marcus Aurelius, which likely contains the Epictetus material."
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "control in our power what is in our control Epictetus",
+    "kb": "markavrelii"
+   },
+   {
+    "t": "ret",
+    "ms": 1073,
+    "n": 5,
+    "items": [
+     "→ Эпиктет · markavrelii.2pub.me",
+     "Книга 09 · markavrelii.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "I’ve found the Epictetus sub-corpus."
+   },
+   {
+    "t": "call",
+    "name": "federated_expand",
+    "arg": "peer-epictetus.md",
+    "kb": "markavrelii/epictetus"
+   },
+   {
+    "t": "ret",
+    "ms": 864,
+    "err": "MCP error -32603: federation rpc error -32603: federation rpc error -32602: Note"
+   },
+   {
+    "t": "think",
+    "text": "The pointer note didn’t open directly, so I’ll search within the Epictetus corpus for the exact “in our power” formulation and then read tha"
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "what is in our power control up to us prohairesis",
+    "kb": "markavrelii/epictetus"
+   },
+   {
+    "t": "ret",
+    "ms": 1033,
+    "n": 10,
+    "items": [
+     "Дихотомия контроля (τὰ ἐφ' ἡμῖν) · epictetus.2pub.me",
+     "Эпиктет — карта базы знаний · epictetus.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "I have the likely Epictetus concept."
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "concepts/dihotomiya-kontrolya.md",
+    "kb": "markavrelii/epictetus"
+   },
+   {
+    "t": "ret",
+    "ms": 797,
+    "read": "> Straightway then practise saying to every harsh appearance: You are an appearance, and i"
+   },
+   {
+    "t": "think",
+    "text": "Now I need Wattles."
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "Wattles control in our control what is in our control",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 1456,
+    "n": 10,
+    "items": [
+     "Content Infrastructure for Human-AI Work · trip2g.com",
+     "Let the model wander · trip2g.com"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "The generic search didn’t find Wattles directly."
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "Wattles",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 1044,
+    "n": 10,
+    "items": [
+     "Knowledge as a supply chain, not a landf · trip2g.com",
+     "trip2g · anatomy of 15 months · trip2g.com"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "Great, there’s a philosophers hub with Wattles."
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "control in our power what is in our control",
+    "kb": "philosophers/wattles"
+   },
+   {
+    "t": "ret",
+    "ms": 4669,
+    "n": 10,
+    "items": [
+     "Контраст для дебатов: Уоттлс против Эпик · wattles.2pub.me",
+     "Уоттлс — карта базы знаний · wattles.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "I have a direct contrast note."
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "concepts/epictetus-kontrast.md",
+    "kb": "philosophers/wattles"
+   },
+   {
+    "t": "ret",
+    "ms": 801,
+    "read": "Самый острый спор базы. **Своих корпусных цитат здесь нет** (`debate_bridge`): стоические "
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "principles/volyu-primenyay-tolko-k-sebe.md",
+    "kb": "philosophers/wattles"
+   },
+   {
+    "t": "ret",
+    "ms": 819,
+    "read": "**Принцип:** Силу воли применяют не к людям и вещам, а к самому себе — чтобы держать ум на"
+   },
+   {
+    "t": "final",
+    "text": "They disagree on whether anything external is in our control.\n\nEpictetus: only judgments, choices, desires and aversions are up to us; body, wealth, reputation and outcomes are not. Source: epictetus.2pub.me/concepts/dihotomiya-kontrolya\n\nWattles pushes the boundary outward: external results can be brought about by thought joined with action, and the will is applied only to oneself. Source: wattles.2pub.me/concepts/epictetus-kontrast"
+   }
+  ]
+ },
+ {
+  "id": "q3",
+  "task": "How do I give Claude Code a persistent memory with trip2g?",
+  "model": "openai/gpt-5.4-mini",
+  "calls": "10 calls",
+  "cost": "$0.014",
+  "shape": "local docs",
+  "events": [
+   {
+    "t": "think",
+    "text": "I’ll search the knowledge base for trip2g and Claude Code memory, then open the most relevant leaf note rather than relying on any hub/index"
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "trip2g Claude Code persistent memory",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 1168,
+    "n": 5,
+    "items": [
+     "MCP memory server: persistent, self-host · trip2g.com",
+     "Agent memory compared: Mem0 vs MemGPT (L · trip2g.com"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "The search result already points to a dedicated setup guide, so I’ll open that leaf note and read the actual steps for Claude Code."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "en/user/agent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 703,
+    "read": "Self-host trip2g in Docker, point your agent's MCP client at it, sync your notes in, and y"
+   },
+   {
+    "t": "think",
+    "text": "I have the general setup, but I need the precise Claude Code instructions and any command snippets, so I’ll search within the note set for t"
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "persistent memory for Claude Code trip2g tutorial",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 862,
+    "n": 5,
+    "items": [
+     "MCP memory server: persistent, self-host · trip2g.com",
+     "Persistent memory for Claude Code: a sel · trip2g.com"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "That looks like the exact guide, so I’ll open it and extract the setup steps instead of inferring from the snippet."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "en/user/claude-code-persistent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 690,
+    "read": "Every new Claude Code session starts blank. You explain the project layout again, the deci"
+   },
+   {
+    "t": "think",
+    "text": "The note says native memory may be enough, but the user asked specifically about trip2g, so I’ll read the sections that likely cover when an"
+   },
+   {
+    "t": "call",
+    "name": "expand",
+    "arg": "en/user/claude-code-persistent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 791,
+    "read": "Persistent memory for Claude Code: a self-hosted setup that survives sessions — \"top level"
+   },
+   {
+    "t": "think",
+    "text": "Now I have the structure, so I’ll read the concrete setup steps for booting, token creation, registration, verification, and usage."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "en/user/claude-code-persistent-memory.md › Step 1. Boot the memory ser",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 690,
+    "read": " Step 1. Boot the memory server One command from a trip2g checkout ( memcli ships prebuilt"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "en/user/claude-code-persistent-memory.md › Step 2. Create an access to",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 700,
+    "read": " Step 2. Create an access token The MCP adapter authenticates with a personal token: Open "
+   },
+   {
+    "t": "call",
+    "name": "expand",
+    "arg": "en/user/claude-code-persistent-memory.md › Step 3. Register the server",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 692,
+    "read": "Persistent memory for Claude Code: a self-hosted setup that survives sessions — \"Step 3. R"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "en/user/claude-code-persistent-memory.md › Step 4. Verify",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 695,
+    "read": " Step 4. Verify Start a new Claude Code session and run: /mcp trip2g-memory should be list"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "en/user/claude-code-persistent-memory.md › Step 5. Teach Claude to use",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 730,
+    "read": " Step 5. Teach Claude to use it Memory only compounds if the agent writes to it. Add rules"
+   },
+   {
+    "t": "final",
+    "text": "1. Boot the memory server: node trip2g/cli/memcli/dist/memcli.js up --folder ./memory-vault\n2. Create a personal token at http://localhost:24081 → User → Tokens\n3. Register the server in Claude Code through the stdio adapter\n4. Verify with /mcp: trip2g-memory should be connected\n5. Add a rule to CLAUDE.md so Claude writes durable facts into the vault\n\nSource: trip2g.com/en/user/claude_code_persistent_memory"
+   }
+  ]
+ }
+]

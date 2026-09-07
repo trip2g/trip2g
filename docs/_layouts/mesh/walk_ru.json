@@ -1,0 +1,528 @@
+[
+ {
+  "id": "q1",
+  "task": "Что Марк Аврелий и Конфуций говорят о том, как вставать по утрам?",
+  "model": "openai/gpt-5.4-mini",
+  "calls": "10 вызовов",
+  "cost": "$0.018",
+  "shape": "2 хаба · 3 домена",
+  "events": [
+   {
+    "t": "think",
+    "text": "Сначала найду в базе тексты Марка Аврелия и Конфуция о раннем подъёме, затем открою именно эти разделы, чтобы ответить по первоисточникам."
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "morning rise wake up get up early bed morning rising",
+    "kb": "philosophers/marcus-aurelius"
+   },
+   {
+    "t": "ret",
+    "ms": 817,
+    "err": "Federation is not configured for kb_id \"philosophers/marcus-aurelius\": hub \"philosophers\" "
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "morning rise wake up get up early bed morning rising",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 1171,
+    "n": 5,
+    "items": [
+     "tian · confucius.2pub.me",
+     "ritual-i-forma · confucius.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "По Конфуцию уже есть релевантные принципы о дисциплине и ритуале; теперь найду именно утреннее вставание у Марка Аврелия в его собственной б"
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "morning get up early bed wake up laziness bed dawn",
+    "kb": "markavrelii"
+   },
+   {
+    "t": "ret",
+    "ms": 949,
+    "n": 5,
+    "items": [
+     "Цепочки · markavrelii.2pub.me",
+     "Книга 05 · markavrelii.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "Нужно открыть сам раздел у Марка Аврелия, где есть утренний совет, и параллельно уточнить у Конфуция раздел про самовоспитание/ритуал, чтобы"
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "Книги/Книга 05.md",
+    "kb": "markavrelii"
+   },
+   {
+    "t": "ret",
+    "ms": 729,
+    "read": "[[Марк Аврелий]] · [[Размышления]] Книга пятая — о работе и о согласии с природой. Марк на"
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "principles/samovospitanie.md",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 798,
+    "err": "MCP error -32603: federation rpc error -32603: federation rpc error -32602: no f"
+   },
+   {
+    "t": "think",
+    "text": "Конфуцийский раздел оказался без секций, значит нужно читать его целиком; затем, если нужно, по похожим заметкам проверю, не есть ли более п"
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "principles/samovospitanie.md",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 771,
+    "read": " Позиции Конфуция: отношение к себе. Каждая формулировка — рабочий перевод составителя; до"
+   },
+   {
+    "t": "think",
+    "text": "У Конфуция это не прямой совет “вставать рано”, а принцип внутренней дисциплины и самопроверки; всё же проверю похожие заметки на более букв"
+   },
+   {
+    "t": "call",
+    "name": "similar",
+    "arg": "principles/samovospitanie.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 693,
+    "err": "MCP error -32602: Source note not found"
+   },
+   {
+    "t": "think",
+    "text": "Проверю ещё через поиск внутри Конфуция по утру и подъёму; если ничего прямого нет, ответ построю как сравнение прямого текста Марка Аврелия"
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "morning early rise get up dawn sleep bed",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 950,
+    "n": 10,
+    "items": [
+     "tian · confucius.2pub.me",
+     "ritual-i-forma · confucius.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "Нужен ещё один проверочный шаг: открою конфуцианский принцип о ритуале, поскольку там может быть ближайшая норма про начало дня и порядок, в"
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "principles/ritual-i-forma.md",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 760,
+    "read": "Позиции Конфуция: форма поведения как часть истины. **Форма — не украшение: без неё достои"
+   },
+   {
+    "t": "think",
+    "text": "Теперь достаточно: у Марка Аврелия есть прямой совет про подъём на рассвете, а у Конфуция — общий принцип дисциплины через li и самопроверку"
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "rise early morning wake at dawn morning arises bed not sleep",
+    "kb": "philosophers/confucius"
+   },
+   {
+    "t": "ret",
+    "ms": 903,
+    "n": 10,
+    "items": [
+     "tian · confucius.2pub.me",
+     "ming · confucius.2pub.me"
+    ]
+   },
+   {
+    "t": "final",
+    "text": "Марк Аврелий, «Размышления» 5.1: когда не хочется вставать на рассвете, напомни себе, что встаёшь для человеческого дела, а не ради тепла под одеялом. Источник: markavrelii.2pub.me/knigi/kniga_05\n\nУ Конфуция прямой команды «вставай рано» нет. Ближайшее: собирай себя через ритуал (li), самопроверку и самовоспитание; утро — часть правильной формы жизни. Источники: confucius.2pub.me/principles/samovospitanie, confucius.2pub.me/principles/ritual_i_forma"
+   }
+  ]
+ },
+ {
+  "id": "q2",
+  "task": "В чём Эпиктет и Уоттлс расходятся насчёт того, что в нашей власти?",
+  "model": "openai/gpt-5.4-mini",
+  "calls": "10 вызовов",
+  "cost": "$0.015",
+  "shape": "2 перехода · 3 домена",
+  "events": [
+   {
+    "t": "think",
+    "text": "Сначала найду у Эпиктета явный разбор «в нашей власти» и отдельно посмотрю, как Уоттлс формулирует этот пункт, чтобы сравнить их прямо по те"
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "Эпиктет что в нашей власти Epictetus in our power what is up to us",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 1934,
+    "n": 5,
+    "items": [
+     "Отпусти модель погулять · trip2g.com",
+     "Знание как цепочка поставок, а не свалка · trip2g.com"
+    ]
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "Уоттлс что в нашей власти what is in our power wattle stoicism",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 933,
+    "n": 5,
+    "items": [
+     "Знание как цепочка поставок, а не свалка · trip2g.com",
+     "Marcus Aurelius — Meditations · trip2g.com"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "Нужен именно leaf-материал, а не хаб-карточка."
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "what is in our power up to us Epictetus Watttles",
+    "kb": "markavrelii"
+   },
+   {
+    "t": "ret",
+    "ms": 856,
+    "n": 5,
+    "items": [
+     "Мнится зависящим от нас · markavrelii.2pub.me",
+     "→ Эпиктет · markavrelii.2pub.me"
+    ]
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "Wattles is in our power Epictetus",
+    "kb": "markavrelii"
+   },
+   {
+    "t": "ret",
+    "ms": 850,
+    "n": 5,
+    "items": [
+     "Книга 08 · markavrelii.2pub.me",
+     "Книга 11 · markavrelii.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "Теперь у меня есть подсказка на комментарий и соседний корпус Эпиктета."
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "Комментарии Яна Унта/Мнится зависящим от нас.md",
+    "kb": "markavrelii"
+   },
+   {
+    "t": "ret",
+    "ms": 727,
+    "read": " Размышления · Марк Аврелий Сохранено рукописное чтение со стоическим выражением (ср. 8, 7"
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "what is up to us Enchiridion 1",
+    "kb": "markavrelii/epictetus"
+   },
+   {
+    "t": "ret",
+    "ms": 1013,
+    "n": 5,
+    "items": [
+     "Философия — это дела, а не теоремы · epictetus.2pub.me",
+     "Цепочка: от дихотомии к свободе · epictetus.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "У Эпиктета, похоже, есть прямой принцип."
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "principles/razlichay-podvlastnoe.md",
+    "kb": "markavrelii/epictetus"
+   },
+   {
+    "t": "ret",
+    "ms": 810,
+    "read": " Различай подвластное и неподвластное — и живи только в первом Принцип: Раздели всё на то,"
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "Wattles",
+    "kb": "markavrelii/epictetus"
+   },
+   {
+    "t": "ret",
+    "ms": 813,
+    "n": 10,
+    "items": [
+     "Другие голоса: карта созвездия · epictetus.2pub.me",
+     "QUOTE_AUTHENTICITY — fake/floating quote · epictetus.2pub.me"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "В базе Эпиктета Уоттлс не всплыл по прямому поиску, значит попробую найти его как внешнее сравнение в соседних заметках."
+   },
+   {
+    "t": "call",
+    "name": "federated_note_html",
+    "arg": "see-also.md",
+    "kb": "markavrelii/epictetus"
+   },
+   {
+    "t": "ret",
+    "ms": 857,
+    "read": " Другие голоса: карта созвездия Каждый автор живёт в отдельной базе (инстансе). Стрелка = "
+   },
+   {
+    "t": "call",
+    "name": "federated_search",
+    "arg": "Robert C. Wattles",
+    "kb": "markavrelii/epictetus"
+   },
+   {
+    "t": "ret",
+    "ms": 844,
+    "n": 10,
+    "items": [
+     "Другие голоса: карта созвездия · epictetus.2pub.me",
+     "Впечатления и согласие (φαντασία / συγκα · epictetus.2pub.me"
+    ]
+   },
+   {
+    "t": "final",
+    "text": "Расходятся по границе контроля.\n\nЭпиктет: в нашей власти только внутреннее — суждение, желание, побуждение, уклонение; тело, имущество, слава и исход — нет. Источник: epictetus.2pub.me/principles/razlichay-podvlastnoe\n\nУоттлс почти снимает границу: внешнее можно вызвать правильной мыслью, соединённой с действием, а волю применять только к себе. Источник (карта спора): epictetus.2pub.me/see_also"
+   }
+  ]
+ },
+ {
+  "id": "q3",
+  "task": "Как дать Claude Code постоянную память через trip2g?",
+  "model": "openai/gpt-5.4-mini",
+  "calls": "12 вызовов",
+  "cost": "$0.019",
+  "shape": "локальная документация",
+  "events": [
+   {
+    "t": "think",
+    "text": "Сначала найду, что в базе знаний есть про Claude Code, trip2g и постоянную память, затем открою именно leaf-заметки, а не обзорные карточки."
+   },
+   {
+    "t": "call",
+    "name": "search",
+    "arg": "Claude Code trip2g постоянная память",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 872,
+    "n": 5,
+    "items": [
+     "Память агентов в сравнении: Mem0 vs MemG · trip2g.com",
+     "MCP-сервер памяти: постоянная self-hoste · trip2g.com"
+    ]
+   },
+   {
+    "t": "think",
+    "text": "Вижу целевую заметку про постоянную память для Claude Code; открою её и проверю, не является ли она лишь обзором, а затем доберу точные инст"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 693,
+    "read": "которая федерирует вашу локальную память с публичной базой trip2g.com; тем же механизмом с"
+   },
+   {
+    "t": "think",
+    "text": "Нужно увидеть структуру заметки, чтобы найти раздел с пошаговой настройкой и, возможно, упоминание CLI/конфига Claude Code."
+   },
+   {
+    "t": "call",
+    "name": "expand",
+    "arg": "ru/user/claude-code-persistent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 716,
+    "read": "MCP-сервер памяти: постоянная self-hosted память для ИИ-агентов — \"top level\", 6 subsectio"
+   },
+   {
+    "t": "think",
+    "text": "Похоже, нужное — в разделе про markdown-путь trip2g, где обычно описывается подключение к Claude Code."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Память как markdown: как ус",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 692,
+    "read": " Память как markdown: как устроен путь trip2g Схема простая: память — это папка .md -файло"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › FAQ",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 690,
+    "read": " FAQ Нужна ли векторная база? Нет. trip2g — один Go-бинарник с SQLite, векторный индекс вс"
+   },
+   {
+    "t": "think",
+    "text": "Нужна точная пошаговая настройка для Claude Code, чтобы не пересказывать общее описание."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Смотрите также",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 689,
+    "read": " Смотрите также Долгосрочная память для ИИ-агентов — полное руководство по настройке Посто"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/agent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 691,
+    "read": "Разверните trip2g в Docker, подключите MCP-клиент агента, загрузите заметки. Агент будет ч"
+   },
+   {
+    "t": "think",
+    "text": "Уже видно общую схему, но надо прочитать сам туториал под Claude Code, чтобы ответить по шагам и не упустить конкретную конфигурацию."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Постоянная память для Claud",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 697,
+    "err": "MCP error -32602: section not found for toc_path [Постоянная память для Claude C"
+   },
+   {
+    "t": "think",
+    "text": "Похоже, сама заметка с туториалом только в ссылке, а не в этом документе; значит, нужно перейти по ссылке с pid 1320 и прочитать уже ту leaf"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 686,
+    "err": "MCP error -32602: no focused window for match_id \"p1323:c1\"; top-level sections:"
+   },
+   {
+    "t": "think",
+    "text": "Теперь у меня есть правильная leaf-заметка и список шагов."
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 1. Поднимите сервер пам",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 689,
+    "read": " Шаг 1. Поднимите сервер памяти Одна команда из чекаута trip2g ( memcli лежит в репозитори"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 3. Зарегистрируйте серв",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 708,
+    "read": " Шаг 3. Зарегистрируйте сервер в Claude Code Два пути; для работы с памятью мы рекомендуем"
+   },
+   {
+    "t": "call",
+    "name": "note_html",
+    "arg": "ru/user/claude-code-persistent-memory.md › Шаг 5. Научите Claude ей по",
+    "kb": ""
+   },
+   {
+    "t": "ret",
+    "ms": 692,
+    "read": " Шаг 5. Научите Claude ей пользоваться Память накапливается, только если агент в неё пишет"
+   },
+   {
+    "t": "final",
+    "text": "1. Поднимите сервер памяти: node trip2g/cli/memcli/dist/memcli.js up --folder ./memory-vault\n2. Подключите его к Claude Code: через stdio-адаптер в .mcp.json (рекомендуется) или claude mcp add --transport http trip2g-memory http://localhost:24081/_system/mcp\n3. В CLAUDE.md добавьте правило: писать факты в ./memory-vault и искать в trip2g-memory перед повторным выводом\n\nИсточник: trip2g.com/ru/user/claude_code_persistent_memory"
+   }
+  ]
+ }
+]

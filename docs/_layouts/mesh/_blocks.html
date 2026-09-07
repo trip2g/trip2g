@@ -4,20 +4,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Title / description / og_image come from the _index note frontmatter. -->
+  <!-- Title / description / og_image come from the _index note frontmatter.
+       URLs are made absolute against publicURL (PUBLIC_URL); crawlers and link
+       unfurlers reject relative canonical / og values. -->
+  {{ lang := note.M().GetString("lang", "en") }}
   {{ ogTitle := note.Title() }}
   {{ ogDesc := note.Description() }}
   {{ ogImage := note.OGImageURL() }}
   {{ if !ogImage }}{{ ogImage = asset("og.png") }}{{ end }}
+  {{ ogImage = abs_url(publicURL, ogImage) }}
+  {{ pageURL := abs_url(publicURL, note.Permalink()) }}
+  {{ homeURL := abs_url(publicURL, "/") }}
+  {{ ruURL := abs_url(publicURL, "/ru") }}
   <title>{{ ogTitle }}</title>
   <meta name="description" content="{{ ogDesc }}">
+  <link rel="canonical" href="{{ pageURL }}">
+  <link rel="alternate" hreflang="en" href="{{ homeURL }}">
+  <link rel="alternate" hreflang="ru" href="{{ ruURL }}">
+  <link rel="alternate" hreflang="x-default" href="{{ homeURL }}">
   <meta property="og:type" content="website">
   <meta property="og:title" content="{{ ogTitle }}">
   <meta property="og:description" content="{{ ogDesc }}">
   <meta property="og:image" content="{{ ogImage }}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:url" content="{{ note.Permalink() }}">
+  <meta property="og:image:width" content="1731">
+  <meta property="og:image:height" content="909">
+  <meta property="og:url" content="{{ pageURL }}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{ ogTitle }}">
   <meta name="twitter:description" content="{{ ogDesc }}">
@@ -153,6 +164,49 @@
       .wrap { overflow: hidden; }
     }
   </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": {{ json_str(homeURL + "#organization") | unsafe }},
+        "name": "trip2g",
+        "url": {{ json_str(homeURL) | unsafe }},
+        "logo": {
+          "@type": "ImageObject",
+          "url": {{ json_str(abs_url(publicURL, asset("logo.svg"))) | unsafe }},
+          "width": 669,
+          "height": 269
+        },
+        "sameAs": ["https://github.com/trip2g/trip2g", "https://t.me/+WuOzft-W9rw2ZGUy"]
+      },
+      {
+        "@type": "WebSite",
+        "@id": {{ json_str(pageURL + "#website") | unsafe }},
+        "name": "trip2g",
+        "url": {{ json_str(pageURL) | unsafe }},
+        "inLanguage": {{ json_str(lang) | unsafe }},
+        "publisher": { "@id": {{ json_str(homeURL + "#organization") | unsafe }} }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": {{ json_str(homeURL + "#software") | unsafe }},
+        "name": "trip2g",
+        "url": {{ json_str(homeURL) | unsafe }},
+        "description": {{ json_str(ogDesc) | unsafe }},
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux, Docker",
+        "license": "https://github.com/trip2g/trip2g/blob/main/LICENSE",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "softwareHelp": {{ json_str(abs_url(publicURL, "/" + lang + "/user")) | unsafe }},
+        "downloadUrl": "https://github.com/trip2g/trip2g",
+        "publisher": { "@id": {{ json_str(homeURL + "#organization") | unsafe }} }
+      }
+    ]
+  }
+  </script>
   <style>{{ yield_blocks("_style_mesh_") }}</style>
   {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 </head>

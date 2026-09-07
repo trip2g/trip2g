@@ -1,12 +1,12 @@
 ---
 free: true
 lang: en
-title: "Publish your Obsidian vault as a website"
-description: "Publish your Obsidian vault as a website in under a minute. Paid content, custom templates, and an MCP endpoint for agents."
+title: "Memory for your agent that you can open in Obsidian"
+description: "Your agent writes notes, you read them in Obsidian, readers see a website. One hub routes questions across connected bases over MCP."
 ---
 
-# Publish your Obsidian vault as a website in under a minute.
+# Memory for your agent that you can open in *Obsidian*.
 
-Write in Obsidian, press Sync, your notes are live pages with working wikilinks. The same hub handles paid content and speaks MCP, so agents can query everything you publish.
+Your agent writes notes. You read and edit them in Obsidian. Readers see the same notes as a website. The agent asks one hub, and the hub routes the question across connected bases, yours and other people's.
 
-A Markdown Operating System: one note, served to a human as a page and to an agent as a syscall.
+one note: a page for a human, a tool call for an agent

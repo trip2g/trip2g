@@ -32,94 +32,34 @@
 .@did__nav-link:hover { background: var(--accent); color: var(--bg); }
 .@did__nav-link--key { color: var(--muted); }
 
-.@did__overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(14,14,12,0.88);
-  z-index: 1000;
-  align-items: center; justify-content: center;
-}
-.@did__overlay--open { display: flex; }
-.@did__dialog {
-  background: var(--bg); border: 1px solid var(--fg);
-  max-width: 560px; width: 90%;
-  padding: 40px 48px;
-  font-family: var(--mono);
-  position: relative;
-}
-.@did__dialog-eyebrow {
-  font-size: 10px; letter-spacing: 0.16em;
-  color: var(--accent); margin-bottom: 20px;
-}
-.@did__dialog-title {
-  font-family: var(--sans); font-size: 22px; font-weight: 700;
-  letter-spacing: -0.015em; margin-bottom: 8px;
-}
-.@did__dialog-sub {
-  font-family: var(--sans); font-size: 14px;
-  color: var(--muted); margin-bottom: 28px;
-}
-.@did__snippet { border: 1px solid var(--rule); margin-bottom: 24px; }
-.@did__snippet-head {
-  padding: 10px 16px;
-  border-bottom: 1px dashed var(--rule);
-  font-size: 10px; letter-spacing: 0.12em; color: var(--muted);
-  display: flex; justify-content: space-between; align-items: center;
-}
-.@did__snippet-copy {
-  background: var(--accent); color: var(--bg);
-  border: 0; padding: 4px 12px;
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
-  cursor: pointer;
-}
-.@did__snippet-body {
-  padding: 16px 18px; font-size: 14px; color: var(--fg);
-}
-.@did__close {
-  position: absolute; top: 16px; right: 20px;
-  cursor: pointer; color: var(--muted);
-  font-size: 12px; letter-spacing: 0.1em;
-}
-
 @media (max-width: 900px) {
-  .@did { flex-wrap: nowrap; overflow: hidden; }
+  .@did { flex-wrap: wrap; }
+  .@did__prompt { flex: 1; }
+  .@did__pill { border-right: 0; }
+  .@did__pill--version { display: none; }
   .@did__spacer { display: none; }
-  .@did__nav-link { display: none; }
-  .@did__nav-link:last-child { display: block; padding: 10px 14px; }
+  .@did__nav { width: 100%; border-top: 1px solid var(--rule); }
+  .@did__nav-link { flex: 1; padding: 10px 6px; text-align: center; white-space: nowrap; }
+}
+@media (max-width: 600px) {
+  .@did__nav-link--secondary { display: none; }
 }
 {{ end }}
 
-{{ block @lid(lang="en", pill_status="demo network · 10 bases online", docs_label="Docs", usecases_label="Use cases", philosophy_label="Philosophy", start_label="start →", start_href="/en/user/getting_started", dialog_eyebrow="// YOUR AGENT IS WAITING", dialog_title="Add this to your agent.", dialog_sub="Then ask it anything about trip2g — faster than reading this page.", snippet_label="// agent prompt", copy_label="copy", copy_done="copied ✓", agents_label="for AI agents →", agents_href="/simple") }}
+{{ block @lid(lang="en", pill_status="demo network · 10 bases online", docs_label="Docs", usecases_label="Use cases", philosophy_label="Philosophy", start_label="start →", start_href="/en/user/getting_started") }}
 <header class="@did">
   <div class="@did__prompt">$ <b>trip2g</b></div>
   <div class="@did__pill"><span class="@did__pill-dot"></span>{{ pill_status }}</div>
-  <a class="@did__pill" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
+  <a class="@did__pill @did__pill--version" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
   <div class="@did__spacer"></div>
   <nav class="@did__nav">
-    <a href="#" class="@did__nav-link @did__nav-link--key" onclick="document.getElementById('mcp-hint').classList.add('@did__overlay--open'); return false;">⌘K</a>
     <a href="/{{ lang }}/user" class="@did__nav-link">{{ docs_label }}</a>
-    <a href="/{{ lang }}/user/use_cases" class="@did__nav-link">{{ usecases_label }}</a>
-    <a href="/{{ lang }}/thoughts" class="@did__nav-link">{{ philosophy_label }}</a>
+    <a href="/{{ lang }}/user/use_cases" class="@did__nav-link @did__nav-link--secondary">{{ usecases_label }}</a>
+    <a href="/{{ lang }}/thoughts" class="@did__nav-link @did__nav-link--secondary">{{ philosophy_label }}</a>
     <a href="/" class="@did__nav-link{{ if lang == "en" }} @did__nav-link--key{{ end }}">EN</a>
     <a href="/ru" class="@did__nav-link{{ if lang == "ru" }} @did__nav-link--key{{ end }}">RU</a>
     <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" class="@did__nav-link">★ star us</a>
     <a href="{{ start_href }}" class="@did__nav-link">{{ start_label }}</a>
   </nav>
 </header>
-<div id="mcp-hint" class="@did__overlay" onclick="if(event.target===this)this.classList.remove('@did__overlay--open')">
-  <div class="@did__dialog">
-    <div class="@did__dialog-eyebrow">{{ dialog_eyebrow }}</div>
-    <div class="@did__dialog-title">{{ dialog_title }}</div>
-    <div class="@did__dialog-sub">{{ dialog_sub }}</div>
-    <div class="@did__snippet">
-      <div class="@did__snippet-head">
-        <span>{{ snippet_label }}</span>
-        <button class="@did__snippet-copy" onclick="navigator.clipboard.writeText('mcp:add https://trip2g.com/_system/mcp'); this.textContent='{{ copy_done }}'; setTimeout(()=>this.textContent='{{ copy_label }}',1800)">{{ copy_label }}</button>
-      </div>
-      <div class="@did__snippet-body">mcp:add https://trip2g.com/_system/mcp</div>
-    </div>
-    {{yield mesh_button(label=agents_label, href=agents_href, modifier="@did__cta")}}
-    <div class="@did__close" onclick="document.getElementById('mcp-hint').classList.remove('@did__overlay--open')">[ esc ]</div>
-  </div>
-</div>
 {{ end }}
