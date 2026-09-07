@@ -14,7 +14,7 @@ listings/search and off standalone URLs):
 
 | Note | Rendered into |
 |------|---------------|
-| `_index_hero.md` / `ru/_index_hero.md` | hero left column (`hero.html`) |
+| `_index_hero.md` / `ru/_index_hero.md` | hero left column (`hero_walk.html`) |
 | `_index_getting_started.md` / `ru/_index_getting_started.md` | "0 → live site" steps (`how.html`) |
 | `_index_capabilities.md` / `ru/_index_capabilities.md` | 6-capability grid (`capabilities.html`) |
 | `_index_payoff.md` / `ru/_index_payoff.md` | federation payoff band (`network.html`) |
@@ -65,8 +65,9 @@ translatable strings as parameters with **English defaults**; `index.html` yield
 
 | File | Block | Description |
 |------|-------|-------------|
-| `bar.html` | `mesh_bar` | Top navigation bar with ⌘K MCP hint modal |
-| `hero.html` | `mesh_hero` | Type-led hero: copy from the `_index_hero` note + CTA row |
+| `bar.html` | `mesh_bar` | Top navigation bar; wraps into a two-row layout under 900px |
+| `hero_walk.html` | `mesh_hero_walk` | First screen: copy from the `_index_hero` note + CTA row on the left, a terminal-style player on the right that replays real recorded agent walks over MCP (`hero_walk.js`, scenarios in `walk_en.json` / `walk_ru.json`), followed by the "ask it yourself" strip with the MCP client config |
+| `hero_hub.html` | `mesh_hero_hub` | "markdown in · everything out" animation bound to a voice-over (`hero_hub.js`, `hero_vo_*.mp3`) |
 | `how.html` | `mesh_how` | "0 → live site" steps from the `_index_getting_started` note |
 | `capabilities.html` | `mesh_capabilities` | 6-card capability grid, copy from the `_index_capabilities` note |
 | `network.html` | `mesh_network` | Federation payoff (`_index_payoff` note) + animated graph and trace frames |
@@ -196,7 +197,7 @@ Pick the components you need from the table above, yield them in order. Only `_b
 
 {{ yield index_layout() content }}
   {{ yield mesh_bar() }}
-  {{ yield mesh_hero() }}
+  {{ yield mesh_hero_walk() }}
   {{ yield mesh_try_now() }}
   {{ yield mesh_foot() }}
   <style>{{ yield_blocks("_style_mesh_") }}</style>
@@ -216,7 +217,7 @@ You can also add custom sections inline between yields using the shared blocks f
 
 ### How BEM components work here
 
-Each component file (`bar.html`, `hero.html`, etc.) is a self-contained BEM block:
+Each component file (`bar.html`, `hero_walk.html`, etc.) is a self-contained BEM block:
 
 ```
 {{ block _style_@lid() }}          ← CSS for this component, scoped to .@did
