@@ -5,17 +5,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Title / description / og_image come from the _index note frontmatter.
-       URLs are made absolute against publicURL (PUBLIC_URL); crawlers and link
-       unfurlers reject relative canonical / og values. -->
+       Canonical, hreflang and og values must be absolute: publicURL (PUBLIC_URL,
+       no trailing slash) is prefixed to the site-relative paths. -->
   {{ lang := note.M().GetString("lang", "en") }}
   {{ ogTitle := note.Title() }}
   {{ ogDesc := note.Description() }}
   {{ ogImage := note.OGImageURL() }}
   {{ if !ogImage }}{{ ogImage = asset("og.png") }}{{ end }}
-  {{ ogImage = abs_url(publicURL, ogImage) }}
-  {{ pageURL := abs_url(publicURL, note.Permalink()) }}
-  {{ homeURL := abs_url(publicURL, "/") }}
-  {{ ruURL := abs_url(publicURL, "/ru") }}
+  {{ if hasPrefix(ogImage, "/") }}{{ ogImage = publicURL + ogImage }}{{ end }}
+  {{ pageURL := publicURL + note.Permalink() }}
+  {{ homeURL := publicURL + "/" }}
+  {{ ruURL := publicURL + "/ru" }}
   <title>{{ ogTitle }}</title>
   <meta name="description" content="{{ ogDesc }}">
   <link rel="canonical" href="{{ pageURL }}">
@@ -170,12 +170,12 @@
     "@graph": [
       {
         "@type": "Organization",
-        "@id": {{ json_str(homeURL + "#organization") | unsafe }},
+        "@id": {{ writeJson(homeURL + "#organization") }},
         "name": "trip2g",
-        "url": {{ json_str(homeURL) | unsafe }},
+        "url": {{ writeJson(homeURL) }},
         "logo": {
           "@type": "ImageObject",
-          "url": {{ json_str(abs_url(publicURL, asset("logo.svg"))) | unsafe }},
+          "url": {{ writeJson(publicURL + asset("logo.svg")) }},
           "width": 669,
           "height": 269
         },
@@ -183,26 +183,26 @@
       },
       {
         "@type": "WebSite",
-        "@id": {{ json_str(pageURL + "#website") | unsafe }},
+        "@id": {{ writeJson(pageURL + "#website") }},
         "name": "trip2g",
-        "url": {{ json_str(pageURL) | unsafe }},
-        "inLanguage": {{ json_str(lang) | unsafe }},
-        "publisher": { "@id": {{ json_str(homeURL + "#organization") | unsafe }} }
+        "url": {{ writeJson(pageURL) }},
+        "inLanguage": {{ writeJson(lang) }},
+        "publisher": { "@id": {{ writeJson(homeURL + "#organization") }} }
       },
       {
         "@type": "SoftwareApplication",
-        "@id": {{ json_str(homeURL + "#software") | unsafe }},
+        "@id": {{ writeJson(homeURL + "#software") }},
         "name": "trip2g",
-        "url": {{ json_str(homeURL) | unsafe }},
-        "description": {{ json_str(ogDesc) | unsafe }},
+        "url": {{ writeJson(homeURL) }},
+        "description": {{ writeJson(ogDesc) }},
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Docker",
         "license": "https://github.com/trip2g/trip2g/blob/main/LICENSE",
         "isAccessibleForFree": true,
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-        "softwareHelp": {{ json_str(abs_url(publicURL, "/" + lang + "/user")) | unsafe }},
+        "softwareHelp": {{ writeJson(publicURL + "/" + lang + "/user") }},
         "downloadUrl": "https://github.com/trip2g/trip2g",
-        "publisher": { "@id": {{ json_str(homeURL + "#organization") | unsafe }} }
+        "publisher": { "@id": {{ writeJson(homeURL + "#organization") }} }
       }
     ]
   }
