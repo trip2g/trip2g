@@ -539,3 +539,91 @@ func TestResolve_ScopedToken(t *testing.T) {
 		})
 	}
 }
+
+// TestResolve_ExistingAssetSkipsLoader pins the early-skip order: an asset
+// already stored under the same absolute path + hash is linked to the version
+// without consulting NoteVersionAssetPaths (which parses the note), while a new
+// asset still goes through it exactly once.
+func TestResolve_ExistingAssetSkipsLoader(t *testing.T) {
+	testContent := []byte("asset bytes")
+	testHash := calcHash(testContent)
+
+	input := model.UploadNoteAssetInput{
+		NoteID:       42,
+		Path:         "images/pic.png",
+		AbsolutePath: "/abs/images/pic.png",
+		Sha256Hash:   testHash,
+		File: graphql.Upload{
+			File:     bytes.NewReader(testContent),
+			Filename: "pic.png",
+			Size:     int64(len(testContent)),
+		},
+	}
+
+	tests := []struct {
+		name          string
+		existing      bool
+		wantLoader    int
+		wantSkipped   bool
+		wantLinked    int
+		wantErrorText string
+	}{
+		{
+			name:        "existing asset links without loading the note",
+			existing:    true,
+			wantLoader:  0,
+			wantSkipped: true,
+			wantLinked:  1,
+		},
+		{
+			name:          "new asset is validated against the note exactly once",
+			existing:      false,
+			wantLoader:    1,
+			wantErrorText: "unknown asset path",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := &EnvMock{
+				LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
+				NoteVersionAssetPathsFunc: func(_ context.Context, _ int64) (map[string]struct{}, error) {
+					return map[string]struct{}{"images/other.png": {}}, nil
+				},
+				NoteAssetByPathAndHashFunc: func(_ context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
+					require.Equal(t, input.AbsolutePath, arg.AbsolutePath)
+					require.Equal(t, testHash, arg.Sha256Hash)
+					if tt.existing {
+						return db.NoteAsset{ID: 7}, nil
+					}
+					return db.NoteAsset{}, sql.ErrNoRows
+				},
+				NoteAssetExistsFunc: func(_ context.Context, _ db.NoteAsset) (bool, error) { return true, nil },
+				UpsertNoteVersionAssetFunc: func(_ context.Context, arg db.UpsertNoteVersionAssetParams) error {
+					require.Equal(t, db.UpsertNoteVersionAssetParams{AssetID: 7, VersionID: 42, Path: "images/pic.png"}, arg)
+					return nil
+				},
+				PrepareLatestNotesFunc: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+					return &appmodel.NoteViews{}, nil
+				},
+			}
+
+			result, err := uploadnoteasset.Resolve(context.Background(), env, input)
+			require.NoError(t, err)
+
+			require.Len(t, env.NoteVersionAssetPathsCalls(), tt.wantLoader)
+			require.Len(t, env.UpsertNoteVersionAssetCalls(), tt.wantLinked)
+
+			if tt.wantErrorText != "" {
+				ep, ok := result.(*model.ErrorPayload)
+				require.True(t, ok, "expected *ErrorPayload, got %T", result)
+				require.Contains(t, ep.Message, tt.wantErrorText)
+				require.Empty(t, env.CreateNoteAssetCalls())
+				return
+			}
+			p, ok := result.(*model.UploadNoteAssetPayload)
+			require.True(t, ok, "expected *UploadNoteAssetPayload, got %T", result)
+			require.Equal(t, tt.wantSkipped, p.UploadSkipped)
+		})
+	}
+}
