@@ -1,8 +1,8 @@
 ---
 layout: mesh/index
 lang: en
-title: "Publish your Obsidian vault as a website — trip2g"
-description: "Publish your Obsidian vault as a website in under a minute. Paid content, custom templates, and an MCP endpoint for agents."
+title: "Memory for your agent that you can open in Obsidian — trip2g"
+description: "Your agent writes notes, you read them in Obsidian, readers see a website. One hub routes questions across connected bases over MCP."
 og_image: og.png
 lang_redirect: "[[ru/_index]]"
 forms:

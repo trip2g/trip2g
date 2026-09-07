@@ -1,6 +1,7 @@
 package layoutloader
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -579,6 +580,25 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, pa
 			}
 		}
 		return a.Get(n - 1)
+	})
+
+	// abs_url makes a site-relative path absolute against the public origin
+	// (model.AbsoluteURL semantics): abs_url(publicURL, note.Permalink()).
+	// Absolute inputs pass through; an empty base leaves the path relative.
+	views.AddGlobalFunc("abs_url", func(a jet.Arguments) reflect.Value {
+		a.RequireNumOfArguments("abs_url", 2, 2)
+		return reflect.ValueOf(model.AbsoluteURL(a.Get(0).String(), a.Get(1).String()))
+	})
+
+	// json_str encodes a value as JSON text (HTML-safe escaping) for use inside
+	// <script type="application/ld+json">: {{ json_str(desc) | unsafe }}.
+	views.AddGlobalFunc("json_str", func(a jet.Arguments) reflect.Value {
+		a.RequireNumOfArguments("json_str", 1, 1)
+		b, err := json.Marshal(a.Get(0).Interface())
+		if err != nil {
+			a.Panicf("json_str: %v", err)
+		}
+		return reflect.ValueOf(string(b))
 	})
 
 	// yield_blocks is registered with a mutable slice pointer so the second pass

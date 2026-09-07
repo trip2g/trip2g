@@ -1,8 +1,8 @@
 ---
 layout: mesh/ru_index
 lang: ru
-title: "Опубликуйте хранилище Obsidian как сайт — trip2g"
-description: "Опубликуйте хранилище Obsidian как сайт за минуту. Платный доступ, свои шаблоны и MCP-эндпоинт для агентов."
+title: "Память для агента, которую вы читаете в Obsidian — trip2g"
+description: "Агент пишет заметки, вы читаете их в Obsidian, читатели видят сайт. Один хаб отвечает на вопросы по всем подключённым базам через MCP."
 og_image: og.png
 lang_redirect: "[[_index]]"
 forms:
