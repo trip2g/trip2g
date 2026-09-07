@@ -210,8 +210,6 @@ func makeLatestNoteLoaderWrapper(a *app) *latestNoteLoaderEnv {
 type singleNoteLoaderEnv struct {
 	*app
 	versionID int64
-
-	latestLoader *latestNoteLoaderEnv
 }
 
 func (e *singleNoteLoaderEnv) env(ctx context.Context) *app {
@@ -232,9 +230,12 @@ func (e *singleNoteLoaderEnv) RawNotes(ctx context.Context) ([]noteloader.RawNot
 		return nil, fmt.Errorf("failed to get note by version ID %d: %w", e.versionID, err)
 	}
 
-	// TODO: fix it. the layout can have dependency on multiple layout files. So we need to load all of them.
+	// A layout may import or yield blocks from other layout files, and its
+	// asset() calls are scanned through those imports, so load the layout
+	// files together — but never the notes, which cost a markdown parse and a
+	// frontmatter-patch run each.
 	if strings.HasPrefix(note.Path, "_layouts/") {
-		return e.latestLoader.RawNotes(ctx)
+		return e.rawLayoutNotes(ctx)
 	}
 
 	return []noteloader.RawNote{
@@ -246,6 +247,26 @@ func (e *singleNoteLoaderEnv) RawNotes(ctx context.Context) ([]noteloader.RawNot
 			CreatedAt: note.CreatedAt,
 		},
 	}, nil
+}
+
+func (e *singleNoteLoaderEnv) rawLayoutNotes(ctx context.Context) ([]noteloader.RawNote, error) {
+	notes, err := e.env(ctx).AllLatestLayoutNotes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get layout notes: %w", err)
+	}
+
+	res := make([]noteloader.RawNote, len(notes))
+	for i, note := range notes {
+		res[i] = noteloader.RawNote{
+			Path:      note.Path,
+			PathID:    note.PathID,
+			VersionID: note.VersionID,
+			Content:   note.Content,
+			CreatedAt: note.CreatedAt,
+		}
+	}
+
+	return res, nil
 }
 
 func (e *singleNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAsset, error) {
@@ -273,8 +294,7 @@ func (e *singleNoteLoaderEnv) RawNoteChunks(_ context.Context) ([]noteloader.Raw
 
 func makeSingleNoteLoaderWrapper(a *app, versionID int64) *singleNoteLoaderEnv {
 	return &singleNoteLoaderEnv{
-		app:          a,
-		versionID:    versionID,
-		latestLoader: makeLatestNoteLoaderWrapper(a),
+		app:       a,
+		versionID: versionID,
 	}
 }

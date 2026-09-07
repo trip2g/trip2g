@@ -36,6 +36,13 @@ select value as path, p.id as path_id, v.id as version_id, content, v.created_at
   left join note_version_embeddings e on v.id = e.version_id
  where p.hidden_by is null;
 
+-- name: AllLatestLayoutNotes :many
+-- glob rather than like: like would read the leading underscore as a wildcard.
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at
+  from note_paths p
+  join note_versions v on p.id = v.path_id and p.version_count = v.version
+ where p.hidden_by is null and p.value glob '_layouts/*';
+
 -- name: AllLatestNoteAssets :many
 with latest_versions as (
   select 
