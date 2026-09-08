@@ -69,34 +69,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return denied, nil
 	}
 
-	// Step 1: Validation
-	assetPaths, err := env.NoteVersionAssetPaths(ctx, input.NoteID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get note version asset paths: %w", err)
-	}
-
-	_, exists := assetPaths[input.Path]
-	if !exists {
-		names := []string{}
-
-		for name := range assetPaths {
-			names = append(names, name)
-		}
-
-		assets := strings.Join(names, ", ")
-
-		return &model.ErrorPayload{Message: fmt.Sprintf("unknown asset path %q for noteId=%d. Valid assets: %s", input.Path, input.NoteID, assets)}, nil
-	}
-
 	findAssetParams := db.NoteAssetByPathAndHashParams{
 		AbsolutePath: input.AbsolutePath,
 		Sha256Hash:   input.Sha256Hash,
 	}
 
-	fileName := translit.ToASCII(filepath.Base(input.Path))
-	fileName = reUnsafeChars.ReplaceAllString(fileName, "_")
-
-	// Step 2: Check if asset already exists
+	// The existence check comes first: it is one indexed row, while
+	// NoteVersionAssetPaths parses the note. The sync client resends every
+	// (note, asset) pair, so most calls end in the reuse branch below.
 	existingAsset, err := env.NoteAssetByPathAndHash(ctx, findAssetParams)
 	if err != nil && !db.IsNoFound(err) {
 		return nil, fmt.Errorf("failed to find note asset: %w", err)
@@ -110,6 +90,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// v3: uploads asset A again -> asset already exists, just create new link to v3
 	// This allows the same asset (by path+hash) to be used in multiple note versions
 	if !alreadyUploaded { //nolint:nestif // two logical paths: new upload vs asset reuse
+		unknown, pathsErr := unknownAssetPath(ctx, env, input)
+		if pathsErr != nil {
+			return nil, pathsErr
+		}
+		if unknown != nil {
+			return unknown, nil
+		}
+
 		limitMsg, limitErr := env.CheckStorageLimits(ctx, input.File.Size)
 		if limitErr != nil {
 			return nil, limitErr
@@ -118,6 +106,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		if limitMsg != "" {
 			return &model.ErrorPayload{Message: limitMsg}, nil
 		}
+
+		fileName := translit.ToASCII(filepath.Base(input.Path))
+		fileName = reUnsafeChars.ReplaceAllString(fileName, "_")
 
 		if uploadErr := uploadAndCreateAsset(ctx, env, input, fileName); uploadErr != nil {
 			return nil, uploadErr
@@ -165,6 +156,27 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	return &response, nil
+}
+
+// unknownAssetPath rejects an upload whose path the note version does not
+// reference. It parses the note, so it runs only for assets not stored yet.
+func unknownAssetPath(ctx context.Context, env Env, input Input) (*model.ErrorPayload, error) {
+	assetPaths, err := env.NoteVersionAssetPaths(ctx, input.NoteID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get note version asset paths: %w", err)
+	}
+
+	if _, exists := assetPaths[input.Path]; exists {
+		return nil, nil
+	}
+
+	names := make([]string, 0, len(assetPaths))
+	for name := range assetPaths {
+		names = append(names, name)
+	}
+
+	msg := fmt.Sprintf("unknown asset path %q for noteId=%d. Valid assets: %s", input.Path, input.NoteID, strings.Join(names, ", "))
+	return &model.ErrorPayload{Message: msg}, nil
 }
 
 func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName string) error {

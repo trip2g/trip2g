@@ -190,32 +190,26 @@ func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]s
 		return nil, fmt.Errorf("failed to load note version %d: %w", id, err)
 	}
 
-	nvs := loader.NoteViews()
-	layouts := loader.Layouts()
+	for _, layout := range loader.Layouts().Map {
+		if layout.VersionID != id {
+			continue
+		}
 
-	res := map[string]struct{}{}
-
-	if len(layouts.Map) > 0 {
-		for _, layout := range layouts.Map {
-			// TODO: fix it. the singleNoteLoaderEnv loads all notes for _layouts
-			if layout.VersionID != id {
-				continue
-			}
-
-			for _, asset := range layout.Assets {
-				res[asset.Path] = struct{}{}
-			}
+		res := make(map[string]struct{}, len(layout.Assets))
+		for _, asset := range layout.Assets {
+			res[asset.Path] = struct{}{}
 		}
 
 		return res, nil
 	}
 
-	if len(res) == 0 && len(nvs.List) > 0 {
-		return nvs.List[0].Assets, nil
+	for _, nv := range loader.NoteViews().List {
+		if nv.VersionID == id {
+			return nv.Assets, nil
+		}
 	}
 
-	// something strange happened
-	return nil, fmt.Errorf("unknown source type #%d not found", id)
+	return nil, fmt.Errorf("note version %d is not among the loaded notes", id)
 }
 
 func (a *app) AllNotePaths(ctx context.Context) ([]db.NotePath, error) {

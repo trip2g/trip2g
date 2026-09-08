@@ -413,6 +413,51 @@ func (q *Queries) AllLatestConfigStrings(ctx context.Context) ([]AllLatestConfig
 	return items, nil
 }
 
+const allLatestLayoutNotes = `-- name: AllLatestLayoutNotes :many
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at
+  from note_paths p
+  join note_versions v on p.id = v.path_id and p.version_count = v.version
+ where p.hidden_by is null and p.value glob '_layouts/*'
+`
+
+type AllLatestLayoutNotesRow struct {
+	Path      string    `json:"path"`
+	PathID    int64     `json:"path_id"`
+	VersionID int64     `json:"version_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// glob rather than like: like would read the leading underscore as a wildcard.
+func (q *Queries) AllLatestLayoutNotes(ctx context.Context) ([]AllLatestLayoutNotesRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLatestLayoutNotes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLatestLayoutNotesRow
+	for rows.Next() {
+		var i AllLatestLayoutNotesRow
+		if err := rows.Scan(
+			&i.Path,
+			&i.PathID,
+			&i.VersionID,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allLatestNoteAssets = `-- name: AllLatestNoteAssets :many
 with latest_versions as (
   select 
