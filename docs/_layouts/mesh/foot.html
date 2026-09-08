@@ -33,7 +33,7 @@
 }
 {{ end }}
 
-{{ block @lid(lang="en", about="Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.", start_label="start →", start_href="/en/user/getting_started", philosophy_label="Philosophy", docs_label="Docs", contact_label="Contact") }}
+{{ block @lid(lang="en", about="Open source knowledge network. Keep your notes — your agent finds answers across your bases and the people you trust.", start_label="start →", start_href="/en/user/getting_started", philosophy_label="Philosophy", docs_label="Docs", contact_label="Contact", community_label="telegram community") }}
 <footer class="@did">
   <div>
     <h4 class="@did__heading">// trip2g</h4>
@@ -67,12 +67,11 @@
     <ul class="@did__list">
       <li class="@did__item"><a class="@did__link" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener">github.com/trip2g</a></li>
       <li class="@did__item"><a class="@did__link" href="mailto:alexes.dev@gmail.com">alexes.dev@gmail.com</a></li>
-      <li class="@did__item"><a class="@did__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">@trip2g</a></li>
+      <li class="@did__item"><a class="@did__link" href="https://t.me/+WuOzft-W9rw2ZGUy" target="_blank" rel="noopener">{{ community_label }}</a></li>
     </ul>
   </div>
 </footer>
 <div class="@did__coda">
   <span>© trip2g.com · 2025–2026 · MIT</span>
-  <span>build 0.9.4 · sync 2026-04-30 09:14 UTC</span>
 </div>
 {{ end }}

@@ -1,12 +1,12 @@
 ---
 free: true
 lang: en
-title: "Memory for your agent that you can open in Obsidian"
-description: "Your agent writes notes, you read them in Obsidian, readers see a website. One hub routes questions across connected bases over MCP."
+title: "A website from your Obsidian, and memory for your agents"
+description: "Write notes in Obsidian, hit Sync — the notes become a website. The hub answers your agent's questions across every connected base over MCP."
 ---
 
-# Memory for your agent that you can open in *Obsidian*.
+# A website from your *Obsidian*. And memory for your agents.
 
-Your agent writes notes. You read and edit them in Obsidian. Readers see the same notes as a website. The agent asks one hub, and the hub routes the question across connected bases, yours and other people's.
+Write notes in Obsidian, hit Sync — the notes become a website. Add the hub's address to Claude Code or Cursor — your agent answers from your notes and cites the sources.
 
-one note: a page for a human, a tool call for an agent
+open source · MIT · one Go process on your own server

@@ -43,7 +43,7 @@
   color: var(--muted);
 }
 .@did__copy p:last-child::before { content: "// "; color: var(--accent); }
-.@did__cta-row { margin-top: 30px; display: flex; flex-wrap: wrap; }
+.@did__cta-row { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px; }
 
 .@did__player {
   border: 1px solid var(--rule);
@@ -150,13 +150,17 @@
   .@did__strip { padding: 22px 20px; }
   .@did__player { min-height: 460px; }
 }
+@media (max-width: 520px) {
+  .@did__cta-row { flex-direction: column; align-items: stretch; }
+  .@did__cta { text-align: center; }
+}
 @media (prefers-reduced-motion: reduce) {
   .@did__ln { transition: none; }
   .@did__live::before, .@did__final-txt--caret::after { animation: none; }
 }
 {{ end }}
 
-{{ block @lid(lang="en", eyebrow="memory for agents · self-hosted · mcp", note="_index_hero.md", start_label="start →", start_href="/en/user/getting_started", agents_label="for AI agents →", agents_href="/simple", docs_label="docs", live_label="stdout · agent walk · trip2g.com/_system/mcp", paused_label="paused · hover to read · leave to resume", final_label="final answer", recorded_label="recorded sept 2026", walk_label="run your own walk →", strip_lead="Add the hub to any MCP client and ask a question. It searches every connected base and answers with sources.", strip_strong="Ask it yourself.", strip_link="MCP tools →") }}
+{{ block @lid(lang="en", eyebrow="memory for agents · self-hosted · mcp", note="_index_hero.md", start_label="start →", start_href="/en/user/getting_started", live_label="stdout · agent walk · trip2g.com/_system/mcp", paused_label="paused · hover to read · leave to resume", final_label="final answer", recorded_label="recorded sept 2026", walk_label="run your own walk →", strip_lead="Add the hub to any MCP client and ask a question. It searches every connected base and answers with sources.", strip_strong="Ask it yourself.", strip_link="MCP tools →") }}
 <section class="@did">
   <div>
     <div class="@did__eyebrow">{{ eyebrow }}</div>
@@ -165,9 +169,7 @@
     </div>
     <div class="@did__cta-row">
       {{yield mesh_button(label=start_label, href=start_href, variant="primary", modifier="@did__cta")}}
-      {{yield mesh_button(label=agents_label, href=agents_href, modifier="@did__cta")}}
       {{yield mesh_button(label="github ↗", href="https://github.com/trip2g/trip2g", target="_blank", modifier="@did__cta")}}
-      {{yield mesh_button(label=docs_label, href="/"+lang+"/user", modifier="@did__cta")}}
     </div>
   </div>
   {* asset() only registers static string literals; build a map so both

@@ -10,15 +10,6 @@
   color: var(--accent); font-weight: 700; letter-spacing: 0.1em;
 }
 .@did__prompt b { color: var(--fg); }
-.@did__pill {
-  padding: 12px 16px; border-right: 1px solid var(--rule);
-  display: inline-flex; align-items: center; gap: 8px; color: var(--muted);
-}
-.@did__pill-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
-}
 .@did__spacer { flex: 1; border-right: 1px solid var(--rule); }
 .@did__nav { display: flex; }
 .@did__nav-link {
@@ -35,30 +26,20 @@
 @media (max-width: 900px) {
   .@did { flex-wrap: wrap; }
   .@did__prompt { flex: 1; }
-  .@did__pill { border-right: 0; }
-  .@did__pill--version { display: none; }
   .@did__spacer { display: none; }
   .@did__nav { width: 100%; border-top: 1px solid var(--rule); }
   .@did__nav-link { flex: 1; padding: 10px 6px; text-align: center; white-space: nowrap; }
 }
-@media (max-width: 600px) {
-  .@did__nav-link--secondary { display: none; }
-}
 {{ end }}
 
-{{ block @lid(lang="en", pill_status="demo network · 10 bases online", docs_label="Docs", usecases_label="Use cases", philosophy_label="Philosophy", start_label="start →", start_href="/en/user/getting_started") }}
+{{ block @lid(lang="en", docs_label="Docs", start_label="start →", start_href="/en/user/getting_started") }}
 <header class="@did">
   <div class="@did__prompt">$ <b>trip2g</b></div>
-  <div class="@did__pill"><span class="@did__pill-dot"></span>{{ pill_status }}</div>
-  <a class="@did__pill @did__pill--version" href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;">v0.3 · open source</a>
   <div class="@did__spacer"></div>
   <nav class="@did__nav">
     <a href="/{{ lang }}/user" class="@did__nav-link">{{ docs_label }}</a>
-    <a href="/{{ lang }}/user/use_cases" class="@did__nav-link @did__nav-link--secondary">{{ usecases_label }}</a>
-    <a href="/{{ lang }}/thoughts" class="@did__nav-link @did__nav-link--secondary">{{ philosophy_label }}</a>
     <a href="/" class="@did__nav-link{{ if lang == "en" }} @did__nav-link--key{{ end }}">EN</a>
     <a href="/ru" class="@did__nav-link{{ if lang == "ru" }} @did__nav-link--key{{ end }}">RU</a>
-    <a href="https://github.com/trip2g/trip2g" target="_blank" rel="noopener" class="@did__nav-link">★ star us</a>
     <a href="{{ start_href }}" class="@did__nav-link">{{ start_label }}</a>
   </nav>
 </header>

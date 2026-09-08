@@ -17,7 +17,7 @@ listings/search and off standalone URLs):
 | `_index_hero.md` / `ru/_index_hero.md` | hero left column (`hero_walk.html`) |
 | `_index_getting_started.md` / `ru/_index_getting_started.md` | "0 → live site" steps (`how.html`) |
 | `_index_capabilities.md` / `ru/_index_capabilities.md` | 6-capability grid (`capabilities.html`) |
-| `_index_payoff.md` / `ru/_index_payoff.md` | federation payoff band (`network.html`) |
+| `_index_payoff.md` / `ru/_index_payoff.md` | federation lead-in above the privacy section (`privacy.html`) |
 
 The layout pulls each note's rendered body with `{{ yield mesh_section(path="…") }}`, which calls
 `nvs.ByPath(path).HTMLString()`. The layout only supplies structure and CSS; edit the markdown
@@ -70,17 +70,8 @@ translatable strings as parameters with **English defaults**; `index.html` yield
 | `hero_hub.html` | `mesh_hero_hub` | "markdown in · everything out" animation bound to a voice-over (`hero_hub.js`, `hero_vo_*.mp3`) |
 | `how.html` | `mesh_how` | "0 → live site" steps from the `_index_getting_started` note |
 | `capabilities.html` | `mesh_capabilities` | 6-card capability grid, copy from the `_index_capabilities` note |
-| `network.html` | `mesh_network` | Federation payoff (`_index_payoff` note) + animated graph and trace frames |
-| `privacy.html` | `mesh_privacy` | Data privacy section with SVG diagram |
-| `philo.html` | `mesh_philo` | Philosophy blurb |
-| `matrix.html` | `mesh_matrix` | Red/blue pill matrix section |
-| `cases.html` | `mesh_cases` | 4 topology use-case cards |
-| `roadmap.html` | `mesh_roadmap` | Shipped / in-progress / planned columns |
-| `try_now.html` | `mesh_try_now` | Try-now section with prompt box and steps |
-| `newsletter.html` | `mesh_newsletter` | Newsletter signup — real form wired to the `newsletter` form on `_index.md` via `submitForm` (embeds `<script id="form-spec">` from `note.FormSpecJSON()`, Turnstile-aware) |
-| `docs_list.html` | `mesh_docs_list` | JS-populated `tree docs/` list |
-| `pricing.html` | `mesh_pricing` | 3 pricing cards |
-| `community.html` | `mesh_community` | Closed-community CTA (Russian only; no English twin — see Localization) |
+| `privacy.html` | `mesh_privacy` | Federation lead-in (`_index_payoff` note, optional `note` param) + data privacy section with SVG diagram |
+| `cases.html` | `mesh_cases` | Topology use-case cards; cards 3–4 render only when `h3`/`h4` are passed |
 | `foot.html` | `mesh_foot` | Footer with CTA and coda |
 
 ## Localization
@@ -110,8 +101,7 @@ the strings instead.
 
 **Genuinely different structure** (not just text) between EN and RU → a small
 `{{ if lang == "ru" }}…{{ end }}` around only the differing fragment, as a documented
-exception. `community.html` is Russian-only (no English counterpart), so it is a single
-`@lid` block with hardcoded Russian copy, yielded as `mesh_community()` from `ru_index.html`.
+exception.
 
 ## Shared blocks (`_blocks.html`)
 
@@ -123,8 +113,6 @@ Parameterized blocks available everywhere after `{{ import "_blocks" }}`:
 | `section_header` | `lhs`, `rhs` | Section heading with left and right labels |
 | `mesh_section` | `path` | Transcludes a hidden section note's rendered body by vault path via `nvs.ByPath(path).HTMLString()`. The landing copy lives in `_index_*.md` notes; the layout supplies only structure and style. |
 | `how_step` | `num`, `title` | Numbered step with `{{ yield content }}` |
-| `roadmap_col` | `title` | Roadmap column with `{{ yield content }}` |
-| `pricing_card` | `tag`, `title`, `price`, `period`, `cta_href`, `cta_class`, `cta_text`, `cls` | Pricing card with `{{ yield content }}` for feature list |
 
 ## CSS variables
 
@@ -295,7 +283,6 @@ _layouts/
     ├── nav.html            ← navigation component
     ├── hero.html           ← hero section
     ├── features.html       ← features grid
-    ├── pricing.html        ← pricing cards
     ├── footer.html         ← footer
     └── index.html          ← page: imports + yields + yield_blocks
 ```
