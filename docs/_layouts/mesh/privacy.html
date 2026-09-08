@@ -50,7 +50,7 @@
 }
 {{ end }}
 
-{{ block @lid(note="", title="Data lives where<br>you put it.", p1="trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics pixel, no shadow copy of your notes on someone else's box.", p2="Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.", k1="storage", v1="your disk · your S3 · or our 100MB sandbox", k2="access", v2="per-base toggle · pause anytime", k3="peers", v3="opt-in only · revocable trust", k4="network", v4="direct hub ⇄ hub · no relay", k5="code", v5="MIT · audit, fork, run") }}
+{{ block @lid(note="", title="Data lives where<br>you put it.", p1="trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics pixel, no shadow copy of your notes on someone else's box.", p2="Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.", k1="storage", v1="your disk · your S3 · your call", k2="access", v2="per-base toggle · pause anytime", k3="peers", v3="opt-in only · revocable trust", k4="network", v4="direct hub ⇄ hub · no relay", k5="code", v5="MIT · audit, fork, run") }}
 <section class="@did">
   <div class="@did__text">
     {{ if note }}<div class="@did__lead">{{ yield mesh_section(path=note) }}</div>{{ end }}

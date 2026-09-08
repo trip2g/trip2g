@@ -67,6 +67,7 @@ translatable strings as parameters with **English defaults**; `index.html` yield
 |------|-------|-------------|
 | `bar.html` | `mesh_bar` | Top navigation bar; wraps into a two-row layout under 900px |
 | `hero_walk.html` | `mesh_hero_walk` | First screen: copy from the `_index_hero` note + CTA row on the left, a terminal-style player on the right that replays real recorded agent walks over MCP (`hero_walk.js`, scenarios in `walk_en.json` / `walk_ru.json`), followed by the "ask it yourself" strip with the MCP client config |
+| `hero_hub.html` | `mesh_hero_hub` | "markdown in · everything out" animation bound to a voice-over (`hero_hub.js`, `hero_vo_*.mp3`) |
 | `how.html` | `mesh_how` | "0 → live site" steps from the `_index_getting_started` note |
 | `capabilities.html` | `mesh_capabilities` | 6-card capability grid, copy from the `_index_capabilities` note |
 | `privacy.html` | `mesh_privacy` | Federation lead-in (`_index_payoff` note, optional `note` param) + data privacy section with SVG diagram |

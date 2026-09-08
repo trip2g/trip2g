@@ -9,4 +9,4 @@ description: "Write notes in Obsidian, hit Sync — the notes become a website. 
 
 Write notes in Obsidian, hit Sync — the notes become a website. Add the hub's address to Claude Code or Cursor — your agent answers from your notes and cites the sources.
 
-open source · MIT · your own server or a free 100 MB sandbox
+open source · MIT · one Go process on your own server
