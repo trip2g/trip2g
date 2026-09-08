@@ -27,9 +27,17 @@ flowchart LR
 - Short queries with common words still work because text search anchors the results
 - Both Russian and English content is indexed; semantic search works across languages
 
+### Notes the searcher cannot read
+
+Search results are per-reader. A note the searcher has no access to — behind a paywall, in a subgraph they were never granted — is **not in their results at all**: no title, no address, no "closed" row. As far as that search is concerned, the note does not exist.
+
+The one exception is a subgraph marked **Teaser**. Its closed notes come back into the results by title and link, with the body replaced by "Закрытый материал.", sorted below everything the reader can actually read. Following the link still lands on the paywall. See [[en/user/subgraphs#teaser_subgraphs|Teaser subgraphs]] for the flag and the rule that decides it when a note sits in several subgraphs.
+
+This is a per-reader filter, not an index rule: the note stays indexed, and a reader with access finds it normally.
+
 ### Excluding notes from search
 
-Some notes are excluded from search automatically:
+Some notes are excluded from search for everyone, whatever their access:
 
 - Notes whose filename or any folder in the path starts with `_` (for example `_footer.md` or `_layouts/base.md`) are treated as system notes and never appear in search results.
 
@@ -56,7 +64,12 @@ flowchart TD
     U -->|Yes| EX[Excluded - system note]
     U -->|No| SF{search: false in frontmatter?<br/>direct or via frontmatter patch glob}
     SF -->|Yes| EX
-    SF -->|No| IDX[Indexed - appears in search]
+    SF -->|No| IDX[Indexed]
+    IDX --> CR{Can this reader read it?}
+    CR -->|Yes| SHOW[Appears in their results]
+    CR -->|No| TS{Every subgraph a teaser?}
+    TS -->|Yes| TEASE[Title and link only]
+    TS -->|No| SIL[Silent - not in their results]
 ```
 
 ### MCP server search

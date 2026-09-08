@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Closed notes are silent by default; a subgraph can opt into being a shop window
+
+- **What.** A note a visitor cannot read no longer shows up anywhere by title. Site search leaves it out of the results entirely, and the backlinks and outgoing-links widgets — which until now did no permission check at all — leave it out too. A new per-subgraph flag, **Teaser**, brings its notes back on both surfaces as title and link with the body replaced by "Закрытый материал.". Wall wins: a note is teased only if it belongs to at least one subgraph and *every* subgraph it belongs to has the flag; a note with no subgraph is never teased.
+- **Why.** The two surfaces disagreed. Search deliberately showed closed material as a teaser with no way to switch it off, while the backlinks widget leaked the title and address of notes in subgraphs the reader was never granted — a real gap for anyone using subgraphs to keep audiences apart. Now the subgraph decides, once, for both, and the safe answer is the default.
+- **How.** **Breaking for paid bases:** every existing subgraph starts with the flag off, so closed material that used to advertise itself in search disappears on upgrade. If you sell access and want those rows back, open Admin → Notes & Content → Subgraphs and check **Teaser** on the subgraphs in question. Who can read what does not change. See [[en/user/subgraphs#teaser_subgraphs|Teaser subgraphs]].
+
 ### Closed pages say they are closed, and offer sign-in instead of a wait list
 
 - **What.** A page a visitor has no access to now reads "This page is closed", tells them to ask the owner of the knowledge base for access, and shows the sign-in form right there. The wait-list block (Telegram bot, e-mail field) is off by default and appears only if you turn on the new **show_waitlists** config value; it still shows only when nothing is on sale.

@@ -24,7 +24,10 @@ How a user gains access to paid notes in trip2g. This document is generated for 
 subgraphs (
   id, name, color, hidden,
   show_unsubgraph_notes_for_paid_users,
-  require_signin                            -- auth-only access, no payment needed
+  require_signin,                           -- auth-only access, no payment needed
+  human_description,                        -- one sentence, travels to a federated peer
+  teaser                                    -- off: unreadable notes are silent in search
+                                            -- and link widgets; on: title + link only
 )
 
 offers (
@@ -225,6 +228,7 @@ canreadnote(note):
 
 Notes:
 - `require_signin` is the "auth-walled but free" mode: any logged-in user qualifies, no subscription needed.
+- `teaser` does not affect this check at all — it decides only what an *unreadable* note looks like to the reader who failed it. Off (the default): site search and the backlinks/outlinks widgets omit the note entirely. On: title and link, body replaced by the "Закрытый материал." placeholder. Wall wins — `model.NoteView.IsTeasable()` requires at least one subgraph and every one of them flagged. See `docs/en/user/subgraphs.md`, "Teaser subgraphs".
 - Notes without subgraphs are considered general knowledge and visible to any active paid user. The `show_unsubgraph_notes_for_paid_users` flag on a subgraph affects rendering; default true.
 - The check is intentionally simple and not optimised (see comment in source). Per-request cost is bounded because `ListActiveUserSubgraphs` runs once per page render.
 

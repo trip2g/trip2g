@@ -111,7 +111,7 @@ revokeFederationSecret(id: Int64!) -> { revokedId }   # select __typename if you
 
 **Subgraphs (read):**
 ```graphql
-allSubgraphs -> AdminSubgraphsConnection { nodes { id, name, color, hidden, requireSignin } }
+allSubgraphs -> AdminSubgraphsConnection { nodes { id, name, color, hidden, requireSignin, teaser, humanDescription } }
 ```
 A subgraph is **auto-created** when a note carrying `subgraph: <name>` reaches the instance (there is no separate create mutation). See §5.2.
 

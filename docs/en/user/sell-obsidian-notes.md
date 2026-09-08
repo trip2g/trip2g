@@ -36,6 +36,8 @@ A note is private unless it has `free: true` in its frontmatter. So you publish 
 
 A visitor who is not signed in sees a preview and a sign-in prompt. A signed-in subscriber with active access sees the full note. Nothing else to configure per note.
 
+A closed note is also invisible to that visitor everywhere else: it is not in their search results and not in the backlinks widget of pages that link to it. If you want the titles to advertise what is for sale, put those notes in a subgraph and mark it **Teaser** — see [[en/user/subgraphs#teaser_subgraphs|Teaser subgraphs]].
+
 Details and the exact access flow are in [[en/user/monetization|Monetization]].
 
 ### Ways to charge

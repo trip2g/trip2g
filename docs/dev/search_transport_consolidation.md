@@ -7,7 +7,7 @@ Status: **IMPLEMENTED** in PR #176 (merged 2026-07-11). Sections 1–3 describe 
 ## 0. Implemented architecture (PR #176)
 
 - **One core:** `sitesearch.Retrieve(ctx, env RetrieveEnv, query, useLatest) ([]model.SearchResult, merged bool, error)` (`internal/case/sitesearch/retrieve.go`) — text lane (bleve) + vector lane (dot similarity, dim-mismatch guard, deterministic tie-breaks) + RRF fusion + optional blended CE rerank.
-- **Site adapter:** `sitesearch.Resolve` = corpus choice (`ShowDraftVersions || admin` → latest) → `Retrieve` → scope/permission filter → "Закрытый материал." placeholders → post-ACL output caps.
+- **Site adapter:** `sitesearch.Resolve` = corpus choice (`ShowDraftVersions || admin` → latest) → `Retrieve` → scope/permission filter → unreadable notes dropped, or turned into "Закрытый материал." placeholders when the note is teasable → post-ACL output caps. (Placeholders were unconditional until the per-subgraph `teaser` flag landed; see `docs/en/user/subgraphs.md`.)
 - **MCP adapter:** `handleSearch` = corpus choice (`mcpAPIKeyAuthed` → latest; anonymous and federation-JWT clients → live) → `Retrieve` → `filterSearchResults`/`canReadMCPNote` → `buildSearchPayload` (`match_id`, `toc_path`).
 - The unused server-rendered `/search` page (`internal/case/rendersearchpage`) is **deleted**; GraphQL search remains the transport for the site widget and `notePaths(filter:{search})`.
 - Cross-transport parity is locked by `TestSearchRankingMatchesSiteSearch` plus golden retrieval tests (`internal/case/sitesearch/golden_test.go`); corpus selection and the dim guard have dedicated tests on both surfaces.

@@ -66,6 +66,15 @@ A note the visitor cannot read is silent. It does not appear in site search, and
 
 Sometimes that is not what you want. A paid course sells better when visitors can see the lesson titles. Check **Teaser** on the subgraph in Admin → Notes & Content → Subgraphs, and its closed notes come back into search and into the link widgets — title and link only, with the body replaced by "Закрытый материал." Following the link still lands on the paywall: the flag opens the shop window, not the door.
 
+**What a reader without access sees**, on both surfaces:
+
+| Subgraph | Site search | Backlinks / outgoing-links widget |
+|----------|-------------|-----------------------------------|
+| Teaser off (the default) | nothing — the note is not in the results at all | nothing — no row for the note |
+| Teaser on | title and link, body replaced by "Закрытый материал.", sorted below the readable results | title and link, in the list like any other note |
+
+Readers who *do* have access are unaffected: they see the note in full either way. So is an admin, who sees everything.
+
 **The wall wins.** A note is teased only if it belongs to at least one subgraph *and* every subgraph it belongs to is a teaser. One non-teaser subgraph in the list silences the note again, and a note with no subgraph at all is never teased.
 
 | Note | Shown by title? |
@@ -75,7 +84,7 @@ Sometimes that is not what you want. A paid course sells better when visitors ca
 | `subgraph: internal` — not a teaser | No |
 | no subgraph | No |
 
-**Upgrading an existing site.** Every subgraph starts without the flag, the ones you already have included. If your site relied on closed notes surfacing in search as "Закрытый материал." rows, they disappear on upgrade — check Teaser on those subgraphs to bring them back.
+**Upgrading an existing site.** Every subgraph starts with the flag off, the ones you already have included. Before this change, site search showed *every* closed note by title and link with a "Закрытый материал." body — there was no way to turn that off, and the backlinks widget showed closed notes in full with no permission check at all. If you sell access and rely on those search rows to advertise what is behind the paywall, they disappear the moment you upgrade: go to Admin → Notes & Content → Subgraphs and check **Teaser** on the subgraphs you want back in the shop window. Nothing else about access changes — who can read what is exactly as it was.
 
 ### Tag a whole folder
 

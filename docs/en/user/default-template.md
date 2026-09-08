@@ -209,6 +209,8 @@ right_sidebar: false
 - `[[PageName]]` — embed another note by title
 - `path/to/file.md` — embed a note by file path
 
+`Backlinks`, `inlinks` and `outlinks` list only notes the current reader may open. A note they have no access to is left out entirely — no title, no link — unless every subgraph it belongs to is marked **Teaser**, in which case it is listed like any other. See [[en/user/subgraphs#teaser_subgraphs|Teaser subgraphs]]. `similar` has always filtered this way.
+
 #### Complete example: documentation site
 
 A site with a shared default header and a separate sidebar for the API section.
