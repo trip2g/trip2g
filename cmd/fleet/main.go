@@ -682,6 +682,7 @@ func reportRoles(roles []fleet.Role, offered []string, defaultModel string) stri
 		}
 
 		fmt.Fprintf(&b, "%s\n", r.NotePath)
+		fmt.Fprintf(&b, "  enabled:         %t\n", !r.Disabled)
 		fmt.Fprintf(&b, "  mode:            %s\n", r.Mode)
 		fmt.Fprintf(&b, "  trigger_on:      %v -> onCreate=%t onUpdate=%t onRemove=%t\n",
 			r.TriggerOn,
@@ -696,10 +697,17 @@ func reportRoles(roles []fleet.Role, offered []string, defaultModel string) stri
 		fmt.Fprintf(&b, "  tools:           %v\n", r.Tools)
 		fmt.Fprintf(&b, "  for_each:        %s\n", forEach)
 		fmt.Fprintf(&b, "  timeout_seconds: %d%s\n", r.EffectiveTimeoutSeconds(), timeoutNote)
-		if verr := r.Validate(offered); verr != nil {
-			fmt.Fprintf(&b, "  STATUS: FLAGGED: %v\n", verr)
-		} else {
-			fmt.Fprint(&b, "  STATUS: OK\n")
+		switch {
+		case r.Disabled:
+			// Reported before Validate: a paused role registers nothing, so
+			// flagging its config would name a problem that cannot fire.
+			fmt.Fprint(&b, "  STATUS: DISABLED (enabled: false)\n")
+		default:
+			if verr := r.Validate(offered); verr != nil {
+				fmt.Fprintf(&b, "  STATUS: FLAGGED: %v\n", verr)
+			} else {
+				fmt.Fprint(&b, "  STATUS: OK\n")
+			}
 		}
 		b.WriteByte('\n')
 	}

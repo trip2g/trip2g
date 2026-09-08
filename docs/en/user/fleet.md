@@ -58,6 +58,7 @@ The keys, verified against the runtime:
 
 | Key | Meaning |
 |-----|---------|
+| `enabled` | `false` pauses the role: it leaves the registry, its webhooks are dropped on the next poll, and the note stays where it is. Absent means on. Anything but true/false is a parse error rather than a role left running |
 | `fleet_id` | which fleet claims this role. It also picks the kind of run: a fleet pointed at codellm executes the body as code, one pointed at a model runs it as prose. A role with no `fleet_id` is claimed by nobody and never runs |
 | `model`, `tools` | which model, which tools this role may call |
 | `read_patterns`, `write_patterns` | glob scopes the runtime enforces on every read and write |
@@ -81,6 +82,13 @@ Fleet validates every role at discovery time and refuses bad ones out loud: a ro
 **Cron triggers** run roles on a schedule via [[en/user/webhooks|cron webhooks]]: a nightly digest, a weekly link-checker, a poller that ingests an external source. `mode: both` combines the two in one role.
 
 You never register a webhook by hand. Fleet's reconcile loop creates, updates, and removes them on the hub to match the role notes it finds.
+
+**Pausing a role** is `enabled: false` in its frontmatter. The role leaves the
+registry on the next poll and the reconcile loop drops the webhooks it owned, so
+a cron role stops firing — the note, its history and its config stay where they
+are, and removing the line starts it again. Do not try to pause a cron role by
+writing a schedule that never comes due: an expression the runtime cannot place
+is not a promise that it never fires.
 
 ## Tools and scope
 
