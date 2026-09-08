@@ -323,7 +323,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		return fmt.Errorf("failed to load pages: %w", err)
 	}
 
-	// Enrich NoteSubgraphs with DB flags (require_signin).
+	// Enrich NoteSubgraphs with DB flags (require_signin, teaser).
 	dbSubgraphs, err := l.env.ListAllSubgraphs(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list subgraphs: %w", err)
@@ -333,15 +333,25 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		dbSubgraphMap[sg.Name] = sg
 	}
 	var requireSigninNames []string
+	var teaserNames []string
 	for name, noteSg := range nvs.Subgraphs {
 		if dbSg, ok := dbSubgraphMap[name]; ok {
 			noteSg.RequireSignin = dbSg.RequireSignin
+			noteSg.Teaser = dbSg.Teaser
 		}
 		if noteSg.RequireSignin {
 			requireSigninNames = append(requireSigninNames, name)
 		}
+		if noteSg.Teaser {
+			teaserNames = append(teaserNames, name)
+		}
 	}
-	l.log.Info("subgraphs enriched", "total", len(nvs.Subgraphs), "require_signin", requireSigninNames)
+	l.log.Info(
+		"subgraphs enriched",
+		"total", len(nvs.Subgraphs),
+		"require_signin", requireSigninNames,
+		"teaser", teaserNames,
+	)
 	l.log.Debug("load layouts")
 
 	layoutOptions := layoutloader.Options{

@@ -1862,6 +1862,7 @@ export type AdminSubgraph = {
   id: Scalars['Int64']['output'];
   name: Scalars['String']['output'];
   requireSignin: Scalars['Boolean']['output'];
+  teaser: Scalars['Boolean']['output'];
 };
 
 export type AdminSubgraphsConnection = {
@@ -4333,6 +4334,7 @@ export type UpdateSubgraphInput = {
   humanDescription: Scalars['String']['input'];
   id: Scalars['Int64']['input'];
   requireSignin: Scalars['Boolean']['input'];
+  teaser: Scalars['Boolean']['input'];
 };
 
 export type UpdateSubgraphOrErrorPayload = ErrorPayload | UpdateSubgraphPayload;

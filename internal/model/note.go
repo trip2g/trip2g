@@ -302,6 +302,10 @@ type NoteSubgraph struct {
 	Home          *NoteView
 	Sidebar       *NoteView
 	RequireSignin bool
+	// Teaser makes the subgraph a shop window: notes a viewer cannot read are
+	// still shown by title and URL in search and link widgets. Off by default —
+	// see docs/en/user/subgraphs.md, "Teaser subgraphs".
+	Teaser bool
 }
 
 type NoteViews struct {
@@ -1544,6 +1548,22 @@ func (n *NoteView) IsAnonymouslyReadable() bool {
 	}
 	for _, subgraph := range n.Subgraphs {
 		if subgraph != nil && subgraph.RequireSignin {
+			return false
+		}
+	}
+	return true
+}
+
+// IsTeasable reports whether an unreadable note may still be listed by title
+// and URL instead of being hidden outright. Wall wins: every subgraph the note
+// belongs to must be a teaser, and a note in no subgraph is never teasable.
+// See docs/en/user/subgraphs.md, "Teaser subgraphs".
+func (n *NoteView) IsTeasable() bool {
+	if n == nil || len(n.Subgraphs) == 0 {
+		return false
+	}
+	for _, subgraph := range n.Subgraphs {
+		if subgraph == nil || !subgraph.Teaser {
 			return false
 		}
 	}

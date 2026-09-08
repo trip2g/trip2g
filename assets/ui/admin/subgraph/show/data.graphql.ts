@@ -6,7 +6,7 @@ export type trip2g_admin_subgraph_show_dataQueryVariables = Exact<{
 }>;
 
 
-export type trip2g_admin_subgraph_show_dataQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', subgraph?: { __typename?: 'AdminSubgraph', id: any, name: string, color?: string | null, humanDescription: string, hidden: boolean, requireSignin: boolean } | null } };
+export type trip2g_admin_subgraph_show_dataQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', subgraph?: { __typename?: 'AdminSubgraph', id: any, name: string, color?: string | null, humanDescription: string, hidden: boolean, requireSignin: boolean, teaser: boolean } | null } };
 
 
 export function $trip2g_admin_subgraph_show_data(variables: trip2g_admin_subgraph_show_dataQueryVariables, opts?: { revalidate?: boolean }): trip2g_admin_subgraph_show_dataQuery {
@@ -19,6 +19,7 @@ export function $trip2g_admin_subgraph_show_data(variables: trip2g_admin_subgrap
       humanDescription
       hidden
       requireSignin
+      teaser
     }
   }
 }`, variables, opts) as trip2g_admin_subgraph_show_dataQuery

@@ -262,16 +262,38 @@ func anonSiteEnv(env *EnvMock) *EnvMock {
 	return env
 }
 
-// ACL layer: unreadable notes become "Закрытый материал." placeholders pushed
-// to the end, in fused-rank order, after the readable results.
+// putInSubgraphs places notes into subgraphs, so a test can pick which of them
+// are shop windows (teaser) and which are walls.
+func putInSubgraphs(env *EnvMock, sgs map[string]*appmodel.NoteSubgraph, paths ...string) {
+	names := make([]string, 0, len(sgs))
+	for name := range sgs {
+		names = append(names, name)
+	}
+	for _, path := range paths {
+		nv := env.LiveNoteViewsFunc().PathMap[path]
+		nv.SubgraphNames = names
+		nv.Subgraphs = sgs
+	}
+}
+
+func hideAAndC(env *EnvMock) *EnvMock {
+	env.CanReadNoteFunc = func(_ context.Context, nv *appmodel.NoteView) (bool, error) {
+		return nv.Path != "a.md" && nv.Path != "c.md", nil
+	}
+	return env
+}
+
+// ACL layer, teaser case: an unreadable note whose every subgraph is a teaser
+// becomes a "Закрытый материал." placeholder pushed to the end, in fused-rank
+// order, after the readable results.
 func TestGoldenResolve_ACLPlaceholders(t *testing.T) {
 	srv := newEmbeddingServer(t, []float32{1, 0})
 	defer srv.Close()
 
-	env := anonSiteEnv(goldenEnv(t, srv.URL))
-	env.CanReadNoteFunc = func(_ context.Context, nv *appmodel.NoteView) (bool, error) {
-		return nv.Path != "a.md" && nv.Path != "c.md", nil
-	}
+	env := hideAAndC(anonSiteEnv(goldenEnv(t, srv.URL)))
+	putInSubgraphs(env, map[string]*appmodel.NoteSubgraph{
+		"shop": {Name: "shop", Teaser: true},
+	}, "a.md", "c.md")
 
 	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
 	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
@@ -282,6 +304,58 @@ func TestGoldenResolve_ACLPlaceholders(t *testing.T) {
 		require.Nil(t, hidden.NoteView)
 		require.Equal(t, []string{"Закрытый материал."}, hidden.HighlightedContent)
 	}
+}
+
+// Default policy: an unreadable note in a subgraph without the teaser flag is
+// not mentioned at all — no title, no URL, no placeholder row.
+func TestGoldenResolve_UnreadableWithoutTeaserIsSilent(t *testing.T) {
+	srv := newEmbeddingServer(t, []float32{1, 0})
+	defer srv.Close()
+
+	env := hideAAndC(anonSiteEnv(goldenEnv(t, srv.URL)))
+	putInSubgraphs(env, map[string]*appmodel.NoteSubgraph{
+		"vault": {Name: "vault"},
+	}, "a.md", "c.md")
+
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"/b", "/d", "/e"}, urlsOf(conn.Nodes))
+}
+
+// A note with no subgraph at all is never teasable: the wall is the default
+// even when nobody configured a subgraph.
+func TestGoldenResolve_UnreadableWithoutSubgraphIsSilent(t *testing.T) {
+	srv := newEmbeddingServer(t, []float32{1, 0})
+	defer srv.Close()
+
+	env := hideAAndC(anonSiteEnv(goldenEnv(t, srv.URL)))
+
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"/b", "/d", "/e"}, urlsOf(conn.Nodes))
+}
+
+// Wall wins: one non-teaser subgraph is enough to silence a note that also
+// belongs to a teaser subgraph.
+func TestGoldenResolve_WallWinsOverTeaser(t *testing.T) {
+	srv := newEmbeddingServer(t, []float32{1, 0})
+	defer srv.Close()
+
+	env := hideAAndC(anonSiteEnv(goldenEnv(t, srv.URL)))
+	putInSubgraphs(env, map[string]*appmodel.NoteSubgraph{
+		"shop":  {Name: "shop", Teaser: true},
+		"vault": {Name: "vault"},
+	}, "a.md", "c.md")
+
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"/b", "/d", "/e"}, urlsOf(conn.Nodes))
 }
 
 // Capping layer: the hybrid cap (20) applies AFTER permission filtering, so

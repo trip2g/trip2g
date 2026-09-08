@@ -1317,6 +1317,9 @@ type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
   color: String
   hidden: Boolean!
   requireSignin: Boolean!
+  # Shop window: notes a viewer cannot read are still listed by title and URL in
+  # search and link widgets. Off by default — a closed note is silent instead.
+  teaser: Boolean!
   # What this subgraph is, in a sentence. Reaches a federated peer beside the
   # name, so a peer granted access is told what it was given instead of reading
   # meaning into a slug.
@@ -3482,6 +3485,9 @@ input UpdateSubgraphInput {
   color: String!
   hidden: Boolean!
   requireSignin: Boolean!
+  # Shop window: notes a viewer cannot read are still listed by title and URL in
+  # search and link widgets. Off by default — a closed note is silent instead.
+  teaser: Boolean!
   # What this subgraph is, in a sentence. Travels to a federated peer along with
   # the subgraph's name, so a peer granted access can be told what it was given
   # rather than left to read meaning into a slug.
@@ -9298,6 +9304,8 @@ func (ec *executionContext) fieldContext_AdminBoostyTier_subgraphs(_ context.Con
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -21505,6 +21513,8 @@ func (ec *executionContext) fieldContext_AdminOffer_subgraphs(_ context.Context,
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -22646,6 +22656,8 @@ func (ec *executionContext) fieldContext_AdminPatreonTier_subgraphs(_ context.Co
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -25055,6 +25067,8 @@ func (ec *executionContext) fieldContext_AdminQuery_subgraph(ctx context.Context
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -27934,6 +27948,35 @@ func (ec *executionContext) fieldContext_AdminSubgraph_requireSignin(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminSubgraph_teaser(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminSubgraph_teaser,
+		func(ctx context.Context) (any, error) {
+			return obj.Teaser, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminSubgraph_teaser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminSubgraph",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminSubgraph_humanDescription(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -28026,6 +28069,8 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -30048,6 +30093,8 @@ func (ec *executionContext) fieldContext_AdminTgBotChatSubgraphInvite_subgraph(_
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -30529,6 +30576,8 @@ func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_subgraph(_ co
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -31797,6 +31846,8 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccess_subgraph(_ cont
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -45538,6 +45589,8 @@ func (ec *executionContext) fieldContext_UpdateSubgraphPayload_subgraph(_ contex
 				return ec.fieldContext_AdminSubgraph_hidden(ctx, field)
 			case "requireSignin":
 				return ec.fieldContext_AdminSubgraph_requireSignin(ctx, field)
+			case "teaser":
+				return ec.fieldContext_AdminSubgraph_teaser(ctx, field)
 			case "humanDescription":
 				return ec.fieldContext_AdminSubgraph_humanDescription(ctx, field)
 			case "createdAt":
@@ -53679,7 +53732,7 @@ func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "color", "hidden", "requireSignin", "humanDescription"}
+	fieldsInOrder := [...]string{"id", "color", "hidden", "requireSignin", "teaser", "humanDescription"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -53714,6 +53767,13 @@ func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Contex
 				return it, err
 			}
 			it.RequireSignin = data
+		case "teaser":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teaser"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Teaser = data
 		case "humanDescription":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("humanDescription"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -71980,6 +72040,11 @@ func (ec *executionContext) _AdminSubgraph(ctx context.Context, sel ast.Selectio
 			}
 		case "requireSignin":
 			out.Values[i] = ec._AdminSubgraph_requireSignin(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "teaser":
+			out.Values[i] = ec._AdminSubgraph_teaser(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

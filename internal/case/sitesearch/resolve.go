@@ -45,38 +45,40 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	hiddenResults := []appmodel.SearchResult{}
 
 	for _, res := range results {
-		if res.NoteView != nil { //nolint:nestif // per-result auth checks require nil-guard, scope check, and read-pattern gate
-			// Fail-closed: scoped shortapitoken → enforce read_patterns strictly.
-			// Empty patterns + scoped = deny-all (not "no restriction").
-			if appreq.Scoped(ctx) {
-				rp := appreq.WebhookReadPatterns(ctx)
-				if len(rp) == 0 || !webhookutil.MatchesAny(res.NoteView.Path, rp) {
-					continue
-				}
-			}
-
-			if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
-				continue
-			}
-
-			canRead, readErr := env.CanReadNote(ctx, res.NoteView)
-			if readErr != nil {
-				return nil, fmt.Errorf("failed to check CanReadNote: %w", readErr)
-			}
-
-			if canRead {
-				conn.Nodes = append(conn.Nodes, res)
-				continue
-			}
-
-			croppedResult := appmodel.SearchResult{
-				HighlightedTitle:   res.HighlightedTitle,
-				URL:                res.URL,
-				HighlightedContent: []string{"Закрытый материал."},
-			}
-
-			hiddenResults = append(hiddenResults, croppedResult)
+		if res.NoteView == nil {
+			continue
 		}
+
+		if scopeDenies(ctx, res.NoteView) {
+			continue
+		}
+
+		if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
+			continue
+		}
+
+		canRead, readErr := env.CanReadNote(ctx, res.NoteView)
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to check CanReadNote: %w", readErr)
+		}
+
+		if canRead {
+			conn.Nodes = append(conn.Nodes, res)
+			continue
+		}
+
+		// Default is a wall: an unreadable note is not mentioned at all. Only a
+		// teaser subgraph turns it into a title-and-URL placeholder — see
+		// docs/en/user/subgraphs.md, "Teaser subgraphs".
+		if !res.NoteView.IsTeasable() {
+			continue
+		}
+
+		hiddenResults = append(hiddenResults, appmodel.SearchResult{
+			HighlightedTitle:   res.HighlightedTitle,
+			URL:                res.URL,
+			HighlightedContent: []string{"Закрытый материал."},
+		})
 	}
 
 	// Push hidden results to the end of the list
@@ -98,4 +100,15 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	}
 
 	return &conn, nil
+}
+
+// scopeDenies reports whether a scoped shortapitoken's read_patterns exclude
+// this note. Fail-closed: a scoped token with empty patterns denies everything,
+// rather than reading as "no restriction".
+func scopeDenies(ctx context.Context, note *appmodel.NoteView) bool {
+	if !appreq.Scoped(ctx) {
+		return false
+	}
+	rp := appreq.WebhookReadPatterns(ctx)
+	return len(rp) == 0 || !webhookutil.MatchesAny(note.Path, rp)
 }

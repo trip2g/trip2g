@@ -126,6 +126,7 @@ func (a *app) handleDebugLayoutsLatest(ctx *fasthttp.RequestCtx) bool {
 
 type debugSubgraphInfo struct {
 	RequireSignin bool `json:"require_signin"`
+	Teaser        bool `json:"teaser"`
 }
 
 func (a *app) handleDebugNvsSubgraphs(ctx *fasthttp.RequestCtx) bool {
@@ -140,7 +141,7 @@ func (a *app) handleDebugNvsSubgraphs(ctx *fasthttp.RequestCtx) bool {
 	toDebugMap := func(sgs map[string]*model.NoteSubgraph) map[string]debugSubgraphInfo {
 		m := make(map[string]debugSubgraphInfo, len(sgs))
 		for k, v := range sgs {
-			m[k] = debugSubgraphInfo{RequireSignin: v.RequireSignin}
+			m[k] = debugSubgraphInfo{RequireSignin: v.RequireSignin, Teaser: v.Teaser}
 		}
 		return m
 	}

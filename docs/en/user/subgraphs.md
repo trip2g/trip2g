@@ -49,7 +49,7 @@ So a note in a subgraph is closed by default. You open it per reader (a grant), 
 
 **1. Tag the notes.** Add `subgraph:` in Obsidian's properties panel or frontmatter, sync. You can also tag a whole folder at sync time: `--meta subgraph=team` (see [[en/user/advanced]]).
 
-**2. Configure the subgraph.** Admin → Notes & Content → Subgraphs. Each subgraph has a color, a Hidden flag, and **Require sign-in** — check it to open the subgraph to any authenticated user without a subscription.
+**2. Configure the subgraph.** Admin → Notes & Content → Subgraphs. Each subgraph has a color, a Hidden flag, **Require sign-in** — check it to open the subgraph to any authenticated user without a subscription — and **Teaser**, which decides whether closed notes are visible by title (see [Teaser subgraphs](#teaser-subgraphs) below).
 
 **3. Grant access.** Pick the route that fits:
 
@@ -59,6 +59,23 @@ So a note in a subgraph is closed by default. You open it per reader (a grant), 
 | Grant a person directly | Admin → Users, or the `createUserSubgraphAccess` mutation ([[en/user/user_management]]) |
 | Telegram group members | Bind a group to a subgraph in the bot settings — members get access automatically ([[en/user/telegram-access]]) |
 | A federated peer | Scope their inbound secret to the subgraph ([[en/user/federation]]) |
+
+### Teaser subgraphs
+
+A note the visitor cannot read is silent. It does not appear in site search, and it does not appear in the backlinks or outgoing-links widget of a page that links to it — no title, no address, no "closed" row. As far as that reader is concerned, the note does not exist.
+
+Sometimes that is not what you want. A paid course sells better when visitors can see the lesson titles. Check **Teaser** on the subgraph in Admin → Notes & Content → Subgraphs, and its closed notes come back into search and into the link widgets — title and link only, with the body replaced by "Закрытый материал." Following the link still lands on the paywall: the flag opens the shop window, not the door.
+
+**The wall wins.** A note is teased only if it belongs to at least one subgraph *and* every subgraph it belongs to is a teaser. One non-teaser subgraph in the list silences the note again, and a note with no subgraph at all is never teased.
+
+| Note | Shown by title? |
+|------|-----------------|
+| `subgraph: course` — teaser | Yes |
+| `subgraphs: [course, internal]` — `course` teaser, `internal` not | No |
+| `subgraph: internal` — not a teaser | No |
+| no subgraph | No |
+
+**Upgrading an existing site.** Every subgraph starts without the flag, the ones you already have included. If your site relied on closed notes surfacing in search as "Закрытый материал." rows, they disappear on upgrade — check Teaser on those subgraphs to bring them back.
 
 ### Tag a whole folder
 

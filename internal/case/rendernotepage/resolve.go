@@ -112,6 +112,10 @@ type Response struct {
 	NoteSubgraphs []string
 	UserSubgraphs []string
 
+	// access is this request's read predicate, handed to the template layer so
+	// widgets that list other notes can stay silent about closed ones.
+	access templateviews.NoteAccess
+
 	UserToken *usertoken.Data
 	UserRole  string
 	Time      int
@@ -201,6 +205,15 @@ func (e *SigninWallError) Error() string {
 
 var systemRE = regexp.MustCompile(`\/_`)
 
+// Access returns the viewer predicate for this render. The template layer uses
+// it to keep link widgets silent about notes the viewer cannot read.
+func (r *Response) Access() templateviews.NoteAccess {
+	if r == nil {
+		return nil
+	}
+	return r.access
+}
+
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	var notes *model.NoteViews
 
@@ -210,6 +223,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 
 	response.UserToken = request.UserToken
+	response.access = newNoteAccess(ctx, env, request.UserToken).canRead
 
 	isAdmin := request.UserToken.IsAdmin()
 

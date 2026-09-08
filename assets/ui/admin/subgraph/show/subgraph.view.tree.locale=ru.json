@@ -1,5 +1,7 @@
 {
 	"$trip2g_admin_subgraph_show_Require_signin_field_name": "Требовать авторизацию",
 	"$trip2g_admin_subgraph_show_Human_description_field_name": "Что это за подграф",
-	"$trip2g_admin_subgraph_show_Human_description_field_hint": "Одно предложение. Пир, которому выдали доступ, увидит именно это, а слаг сам по себе не говорит ему ничего."
+	"$trip2g_admin_subgraph_show_Human_description_field_hint": "Одно предложение. Пир, которому выдали доступ, увидит именно это, а слаг сам по себе не говорит ему ничего.",
+	"$trip2g_admin_subgraph_show_Teaser_field_name": "Витрина",
+	"$trip2g_admin_subgraph_show_Teaser_field_hint": "Показывать закрытые заметки этого подграфа в поиске и блоках ссылок — заголовком и ссылкой. Выключено: их не показывают вовсе."
 }

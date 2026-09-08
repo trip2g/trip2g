@@ -23,6 +23,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 		Hidden:           input.Hidden,
 		RequireSignin:    input.RequireSignin,
+		Teaser:           input.Teaser,
 		HumanDescription: input.HumanDescription,
 	}
 
@@ -35,7 +36,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to update subgraph: %w", err)
 	}
 
-	// Reload both note loaders so NoteSubgraph.RequireSignin is refreshed.
+	// Reload both note loaders so the NoteSubgraph flags are refreshed.
 	// PrepareLatestNotes updates the draft/admin view; PrepareLiveNotes updates
 	// the published view used by guest requests via LiveNoteViews().
 	if _, err = env.PrepareLatestNotes(ctx, true); err != nil {

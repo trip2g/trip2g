@@ -6,12 +6,18 @@ import (
 	"trip2g/internal/model"
 )
 
+// NoteAccess reports whether the current viewer may read a note. Built once per
+// request in rendernotepage; nil means "do not filter" (previews, smoke render,
+// tests) — see docs/en/user/subgraphs.md, "Teaser subgraphs".
+type NoteAccess func(*model.NoteView) bool
+
 // NVS wraps model.NoteViews for template usage.
 // Provides methods to access notes by path or permalink.
 type NVS struct {
 	nvs            *model.NoteViews
 	defaultVersion string
 	domainHost     string
+	access         NoteAccess
 }
 
 // NewNVS creates a new template NVS wrapper for the main domain.
@@ -31,6 +37,26 @@ func NewNVSWithDomain(nvs *model.NoteViews, defaultVersion, domainHost string) *
 		defaultVersion: defaultVersion,
 		domainHost:     domainHost,
 	}
+}
+
+// WithAccess binds the viewer's read predicate. Widgets that list other notes
+// (backlinks, outlinks) then stay silent about notes it rejects, unless every
+// subgraph the note belongs to is a teaser.
+func (n *NVS) WithAccess(access NoteAccess) *NVS {
+	if n == nil {
+		return nil
+	}
+	n.access = access
+	return n
+}
+
+// listable reports whether a note may appear in a widget list: readable by the
+// viewer, or teasable (title and URL only). Silence is the default.
+func (n *NVS) listable(nv *model.NoteView) bool {
+	if n.access == nil {
+		return true
+	}
+	return n.access(nv) || nv.IsTeasable()
 }
 
 // wrap builds a Note carrying this NVS's host, so every note reached through
@@ -153,7 +179,7 @@ func (n *NVS) BackLinks(note *Note) []*Note {
 
 	result := make([]*Note, 0, len(note.nv.InLinks))
 	for path := range note.nv.InLinks {
-		if linked := n.nvs.GetByPath(path); linked != nil && !linked.IsSystem() {
+		if linked := n.nvs.GetByPath(path); linked != nil && !linked.IsSystem() && n.listable(linked) {
 			result = append(result, n.wrap(linked))
 		}
 	}
@@ -173,7 +199,7 @@ func (n *NVS) OutLinks(note *Note) []*Note {
 			continue
 		}
 		seen[permalink] = struct{}{}
-		if linked := n.nvs.GetByPath(permalink); linked != nil {
+		if linked := n.nvs.GetByPath(permalink); linked != nil && n.listable(linked) {
 			result = append(result, n.wrap(linked))
 		}
 	}

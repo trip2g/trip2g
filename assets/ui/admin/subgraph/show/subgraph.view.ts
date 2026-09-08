@@ -51,6 +51,15 @@ namespace $.$$ {
 			return this.data().requireSignin
 		}
 
+		@$mol_mem
+		override subgraph_teaser(next?: boolean): boolean {
+			if (next !== undefined) {
+				return next
+			}
+
+			return this.data().teaser
+		}
+
 		submit() {
 			const res = $trip2g_admin_subgraph_show_save({
 				input: {
@@ -58,6 +67,7 @@ namespace $.$$ {
 					color: this.subgraph_color(),
 					hidden: this.subgraph_hidden(),
 					requireSignin: this.subgraph_require_signin(),
+					teaser: this.subgraph_teaser(),
 					humanDescription: this.subgraph_human_description(),
 				},
 			})

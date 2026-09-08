@@ -46,7 +46,7 @@ CREATE TABLE subgraphs (
   name text not null unique,
   color text,
   created_at datetime not null default current_timestamp
-, hidden boolean not null default false, show_unsubgraph_notes_for_paid_users boolean default true, require_signin boolean not null default false, human_description text not null default '');
+, hidden boolean not null default false, show_unsubgraph_notes_for_paid_users boolean default true, require_signin boolean not null default false, human_description text not null default '', teaser boolean not null default false);
 CREATE TABLE revokes (
   id integer primary key autoincrement,
   target_type text not null,
@@ -1013,4 +1013,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260820125621'),
   ('20260821014419'),
   ('20260822050102'),
-  ('20260822084659');
+  ('20260822084659'),
+  ('20260908103000');

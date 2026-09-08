@@ -2898,6 +2898,7 @@ type UpdateSubgraphInput struct {
 	Color            string `json:"color"`
 	Hidden           bool   `json:"hidden"`
 	RequireSignin    bool   `json:"requireSignin"`
+	Teaser           bool   `json:"teaser"`
 	HumanDescription string `json:"humanDescription"`
 }
 

@@ -405,7 +405,10 @@ func renderLayout(
 
 	vars := make(jet.VarMap)
 	vars["note"] = reflect.ValueOf(resp.NoteView)
-	vars["nvs"] = reflect.ValueOf(templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost))
+	vars["nvs"] = reflect.ValueOf(
+		templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost).
+			WithAccess(resp.access),
+	)
 	vars["title"] = reflect.ValueOf(resp.Title)
 	vars["publicURL"] = reflect.ValueOf(env.PublicURL())
 
@@ -690,8 +693,9 @@ func buildDefaultTemplateCtx(
 	}
 
 	dtCtx := &defaulttemplate.Ctx{
-		Note:            resp.NoteView,
-		Notes:           templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost),
+		Note: resp.NoteView,
+		Notes: templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost).
+			WithAccess(resp.access),
 		Title:           layoutParams.Title,
 		JSURLs:          jsURLs,
 		LocaleHashes:    env.UserLocaleHashes(),

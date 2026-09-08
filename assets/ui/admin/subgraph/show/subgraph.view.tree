@@ -29,6 +29,12 @@ $trip2g_admin_subgraph_show $mol_page
 					bid <= require_signin_bid \
 					Content <= require_signin_control $mol_check_box
 						checked? <=> subgraph_require_signin? false
+				<= Teaser_field $mol_form_field
+					name @ \Teaser
+					hint @ \Show closed notes of this subgraph by title and link in search and link widgets. Off: they are not shown at all.
+					bid <= teaser_bid \
+					Content <= teaser_control $mol_check_box
+						checked? <=> subgraph_teaser? false
 			buttons /
 				<= Submit $mol_button_major
 					title \Submit

@@ -110,6 +110,9 @@ type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
   color: String
   hidden: Boolean!
   requireSignin: Boolean!
+  # Shop window: notes a viewer cannot read are still listed by title and URL in
+  # search and link widgets. Off by default — a closed note is silent instead.
+  teaser: Boolean!
   # What this subgraph is, in a sentence. Reaches a federated peer beside the
   # name, so a peer granted access is told what it was given instead of reading
   # meaning into a slug.
@@ -2275,6 +2278,9 @@ input UpdateSubgraphInput {
   color: String!
   hidden: Boolean!
   requireSignin: Boolean!
+  # Shop window: notes a viewer cannot read are still listed by title and URL in
+  # search and link widgets. Off by default — a closed note is silent instead.
+  teaser: Boolean!
   # What this subgraph is, in a sentence. Travels to a federated peer along with
   # the subgraph's name, so a peer granted access can be told what it was given
   # rather than left to read meaning into a slug.

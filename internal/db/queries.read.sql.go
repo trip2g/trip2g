@@ -2659,7 +2659,7 @@ func (q *Queries) GetSecret(ctx context.Context, key string) (Secret, error) {
 }
 
 const getSubgraphsByBoostyTierID = `-- name: GetSubgraphsByBoostyTierID :many
-select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description
+select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description, s.teaser
 from subgraphs s
 join boosty_tier_subgraphs bts on s.id = bts.subgraph_id
 where bts.tier_id = ?
@@ -2683,6 +2683,7 @@ func (q *Queries) GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) 
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
 			&i.HumanDescription,
+			&i.Teaser,
 		); err != nil {
 			return nil, err
 		}
@@ -2698,7 +2699,7 @@ func (q *Queries) GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) 
 }
 
 const getSubgraphsByTierID = `-- name: GetSubgraphsByTierID :many
-select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description
+select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description, s.teaser
 from subgraphs s
 join patreon_tier_subgraphs pts on s.id = pts.subgraph_id
 where pts.tier_id = ?
@@ -2723,6 +2724,7 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
 			&i.HumanDescription,
+			&i.Teaser,
 		); err != nil {
 			return nil, err
 		}
@@ -3583,7 +3585,7 @@ func (q *Queries) ListActiveSubgraphNamesByUserID(ctx context.Context, userID in
 }
 
 const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
-select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description
+select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description, s.teaser
   from user_subgraph_accesses a
   join subgraphs s on a.subgraph_id = s.id
  where user_id = ?
@@ -3610,6 +3612,7 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
 			&i.HumanDescription,
+			&i.Teaser,
 		); err != nil {
 			return nil, err
 		}
@@ -4113,7 +4116,7 @@ func (q *Queries) ListAllReleases(ctx context.Context) ([]Release, error) {
 }
 
 const listAllSubgraphs = `-- name: ListAllSubgraphs :many
-select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description from subgraphs order by id
+select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description, teaser from subgraphs order by id
 `
 
 func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
@@ -4134,6 +4137,7 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
 			&i.HumanDescription,
+			&i.Teaser,
 		); err != nil {
 			return nil, err
 		}
@@ -6039,7 +6043,7 @@ func (q *Queries) ListSubgraphIDsByOfferID(ctx context.Context, offerID int64) (
 }
 
 const listSubgraphsByOfferID = `-- name: ListSubgraphsByOfferID :many
-select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description
+select s.id, s.name, s.color, s.created_at, s.hidden, s.show_unsubgraph_notes_for_paid_users, s.require_signin, s.human_description, s.teaser
   from subgraphs s
   join offer_subgraphs os on s.id = os.subgraph_id
  where os.offer_id = ?
@@ -6064,6 +6068,7 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 			&i.ShowUnsubgraphNotesForPaidUsers,
 			&i.RequireSignin,
 			&i.HumanDescription,
+			&i.Teaser,
 		); err != nil {
 			return nil, err
 		}
@@ -6651,7 +6656,7 @@ func (q *Queries) ListTelegramPublishTagsByNoteID(ctx context.Context, notePathI
 }
 
 const listTgBotChatSubgraphAccesses = `-- name: ListTgBotChatSubgraphAccesses :many
-select tg_bot_chat_subgraph_accesses.chat_id, tg_bot_chat_subgraph_accesses.user_id, tg_bot_chat_subgraph_accesses.subgraph_id, tg_bot_chat_subgraph_accesses.created_at, tg_bot_chat_subgraph_accesses.joined_at, subgraphs.id, subgraphs.name, subgraphs.color, subgraphs.created_at, subgraphs.hidden, subgraphs.show_unsubgraph_notes_for_paid_users, subgraphs.require_signin, subgraphs.human_description, tg_bot_chats.id, tg_bot_chats.telegram_id, tg_bot_chats.chat_type, tg_bot_chats.chat_title, tg_bot_chats.added_at, tg_bot_chats.removed_at, tg_bot_chats.can_invite, tg_bot_chats.bot_id
+select tg_bot_chat_subgraph_accesses.chat_id, tg_bot_chat_subgraph_accesses.user_id, tg_bot_chat_subgraph_accesses.subgraph_id, tg_bot_chat_subgraph_accesses.created_at, tg_bot_chat_subgraph_accesses.joined_at, subgraphs.id, subgraphs.name, subgraphs.color, subgraphs.created_at, subgraphs.hidden, subgraphs.show_unsubgraph_notes_for_paid_users, subgraphs.require_signin, subgraphs.human_description, subgraphs.teaser, tg_bot_chats.id, tg_bot_chats.telegram_id, tg_bot_chats.chat_type, tg_bot_chats.chat_title, tg_bot_chats.added_at, tg_bot_chats.removed_at, tg_bot_chats.can_invite, tg_bot_chats.bot_id
   from tg_bot_chat_subgraph_accesses
   join subgraphs on tg_bot_chat_subgraph_accesses.subgraph_id = subgraphs.id
   join tg_bot_chats on tg_bot_chat_subgraph_accesses.chat_id = tg_bot_chats.id
@@ -6694,6 +6699,7 @@ func (q *Queries) ListTgBotChatSubgraphAccesses(ctx context.Context, arg ListTgB
 			&i.Subgraph.ShowUnsubgraphNotesForPaidUsers,
 			&i.Subgraph.RequireSignin,
 			&i.Subgraph.HumanDescription,
+			&i.Subgraph.Teaser,
 			&i.TgBotChat.ID,
 			&i.TgBotChat.TelegramID,
 			&i.TgBotChat.ChatType,
@@ -7691,7 +7697,7 @@ func (q *Queries) ReleaseByID(ctx context.Context, id int64) (Release, error) {
 }
 
 const subgraphByID = `-- name: SubgraphByID :one
-select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description from subgraphs where id = ?
+select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description, teaser from subgraphs where id = ?
 `
 
 func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) {
@@ -7706,12 +7712,13 @@ func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) 
 		&i.ShowUnsubgraphNotesForPaidUsers,
 		&i.RequireSignin,
 		&i.HumanDescription,
+		&i.Teaser,
 	)
 	return i, err
 }
 
 const subgraphByName = `-- name: SubgraphByName :one
-select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description from subgraphs where name = ?
+select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description, teaser from subgraphs where name = ?
 `
 
 func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, error) {
@@ -7726,6 +7733,7 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 		&i.ShowUnsubgraphNotesForPaidUsers,
 		&i.RequireSignin,
 		&i.HumanDescription,
+		&i.Teaser,
 	)
 	return i, err
 }
