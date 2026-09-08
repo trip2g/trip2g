@@ -29,8 +29,8 @@ func NewDiscovery(gql graphql.Client, fleetID, agentsFolder string, offeredTools
 // this fleet's --fleet-id are processed. A role with an empty fleet_id is
 // skipped with a warning (untagged roles are never claimed — belonging to no
 // fleet keeps two fleets from both processing it). A role tagged for another
-// fleet is skipped silently. Invalid roles that match this fleet are excluded
-// and reported. DiscoverParsed stays unpartitioned for cross-fleet introspection.
+// fleet is skipped silently, as is a role paused with `enabled: false`. Invalid
+// roles that match this fleet are excluded and reported. DiscoverParsed stays unpartitioned for cross-fleet introspection.
 func (d *Discovery) DiscoverRoles(ctx context.Context) ([]Role, []error) {
 	parsed, errs := d.DiscoverParsed(ctx)
 	var roles []Role
@@ -43,6 +43,14 @@ func (d *Discovery) DiscoverRoles(ctx context.Context) ([]Role, []error) {
 		}
 		if role.FleetID != d.fleetID {
 			continue // belongs to another fleet
+		}
+		if role.Disabled {
+			// Paused by its own frontmatter. Silent, like a role of another
+			// fleet: a warning here would fire every poll and grade every cycle
+			// partial. What shows the pause is the registry it left — its
+			// webhooks are deleted by the next reconcile, so a cron role stops
+			// firing — and --dry-run, which reports it as DISABLED.
+			continue
 		}
 		if verr := role.Validate(d.offeredTools); verr != nil {
 			errs = append(errs, verr)

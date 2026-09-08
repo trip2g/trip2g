@@ -61,6 +61,52 @@ func roleNote(path, fleetID string) string {
 	]}}`
 }
 
+// TestDiscoverRoles_SkipsDisabledRolesSilently asserts the pause switch: a role
+// with `enabled: false` leaves the registry without an error, so the poll cycle
+// stays OK and the reconciler drops its webhooks on the next pass. Silence is
+// the point — a warning would fire every poll and grade every cycle partial for
+// a state the operator chose.
+func TestDiscoverRoles_SkipsDisabledRolesSilently(t *testing.T) {
+	resp := `{"notePaths":[
+		` + roleNote("roles/running.md", "f1") + `,
+		` + disabledRoleNote("roles/paused.md", "f1", "false") + `
+	]}`
+	gql := fakeAdminGQL(func(_ string, _ json.RawMessage) (string, error) { return resp, nil })
+
+	roles, errs := NewDiscovery(gql, "f1", "roles/", nil).DiscoverRoles(context.Background())
+
+	require.Len(t, roles, 1)
+	require.Equal(t, "roles/running.md", roles[0].NotePath)
+	require.Empty(t, errs, "a paused role is a choice, not a fault")
+}
+
+// TestDiscoverRoles_RefusesAnUnreadableEnabledValue asserts the loud half: a
+// value that is neither true nor false is a parse error, not a role left
+// quietly running.
+func TestDiscoverRoles_RefusesAnUnreadableEnabledValue(t *testing.T) {
+	resp := `{"notePaths":[` + disabledRoleNote("roles/typo.md", "f1", "nope") + `]}`
+	gql := fakeAdminGQL(func(_ string, _ json.RawMessage) (string, error) { return resp, nil })
+
+	roles, errs := NewDiscovery(gql, "f1", "roles/", nil).DiscoverRoles(context.Background())
+
+	require.Empty(t, roles)
+	require.Len(t, errs, 1)
+	require.Contains(t, errs[0].Error(), "roles/typo.md")
+	require.Contains(t, errs[0].Error(), "enabled")
+}
+
+// disabledRoleNote is roleNote plus an explicit `enabled` value, raw enough to
+// carry a malformed one.
+func disabledRoleNote(path, fleetID, enabled string) string {
+	return `{"value":"` + path + `","content":"Body.","latestNoteView":{"meta":[
+		{"key":"fleet_id","raw":"` + fleetID + `"},
+		{"key":"enabled","raw":"` + enabled + `"},
+		{"key":"mode","raw":"change"},
+		{"key":"trigger_include","raw":"[\"boards/**\"]"},
+		{"key":"trigger_on","raw":"[update]"}
+	]}}`
+}
+
 // TestDiscoverRoles_PartitionsByFleetID asserts the fleet_id partition:
 // only matching-fleet_id roles are processed; a mismatched role is skipped
 // silently; an untagged (empty fleet_id) role is skipped WITH an error/warning.

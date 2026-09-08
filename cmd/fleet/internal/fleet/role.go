@@ -30,6 +30,13 @@ type Role struct {
 	EnvPassthrough []string
 	EnvPrefix      []string
 
+	// Disabled is the role's own pause switch, written `enabled: false` in the
+	// frontmatter: it takes the role out of the registry without deleting the
+	// note. Stored inverted so the zero value is a role that runs — the same
+	// default the frontmatter has when it says nothing, and the one a Role
+	// built in code without ParseRole should get.
+	Disabled bool
+
 	FleetID        string // partition key: only the fleet whose --fleet-id matches processes this role
 	Model          string
 	Tools          []string
@@ -75,7 +82,11 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 		Concurrency:    strings.TrimSpace(m["concurrency"]),
 		ForEach:        strings.TrimSpace(m["for_each"]),
 	}
-	var err error
+	enabled, err := parseBoolDefaultTrue(m["enabled"])
+	if err != nil {
+		return Role{}, fmt.Errorf("enabled: %w", err)
+	}
+	r.Disabled = !enabled
 	if r.MaxTokens, err = parseIntOpt(m["max_tokens"]); err != nil {
 		return Role{}, fmt.Errorf("max_tokens: %w", err)
 	}
@@ -89,6 +100,24 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 		return Role{}, fmt.Errorf("timeout_seconds: %w", err)
 	}
 	return r, nil
+}
+
+// parseBoolDefaultTrue reads a frontmatter flag that defaults to on. It accepts
+// what a person writes in YAML (true/false, yes/no, on/off, 1/0) and refuses
+// anything else rather than guessing: a role silently left running because
+// `enabled: nope` did not parse is the failure this switch exists to prevent.
+func parseBoolDefaultTrue(raw string) (bool, error) {
+	v := strings.ToLower(strings.Trim(strings.TrimSpace(raw), `"'`))
+	switch v {
+	case "":
+		return true, nil
+	case "true", "yes", "on", "1", "t", "y":
+		return true, nil
+	case "false", "no", "off", "0", "f", "n":
+		return false, nil
+	default:
+		return false, fmt.Errorf("must be true or false, got %q", raw)
+	}
 }
 
 // copyMeta clones the frontmatter map. Discovery builds one map per note and

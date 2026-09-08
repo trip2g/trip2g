@@ -57,6 +57,33 @@ func TestRoleValidate_TimeoutSecondsNonNegative(t *testing.T) {
 	require.Contains(t, err.Error(), "timeout_seconds")
 }
 
+// A role note that says nothing about `enabled` runs: the default is on, and
+// the field is stored inverted so a Role built in code inherits that default
+// rather than a silent pause.
+func TestParseRole_EnabledDefaultsToOn(t *testing.T) {
+	for _, tc := range []struct {
+		raw      string
+		disabled bool
+	}{
+		{"", false},
+		{"true", false},
+		{"yes", false},
+		{"false", true},
+		{"no", true},
+		{"off", true},
+		{"False", true},
+		{`"false"`, true},
+	} {
+		r, err := ParseRole("roles/x.md", "body", map[string]string{"enabled": tc.raw, "mode": "change"})
+		require.NoError(t, err, tc.raw)
+		require.Equal(t, tc.disabled, r.Disabled, "enabled: %q", tc.raw)
+	}
+
+	_, err := ParseRole("roles/x.md", "body", map[string]string{"enabled": "maybe"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "enabled")
+}
+
 func TestParseRole_FlatFrontmatter(t *testing.T) {
 	r, err := ParseRole("roles/triage.md", "Triage the board.", meta(
 		"model", "gpt-4o-mini",
