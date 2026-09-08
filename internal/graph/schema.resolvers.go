@@ -2994,16 +2994,32 @@ func (r *noteViewResolver) Warnings(ctx context.Context, obj *appmodel.NoteView)
 }
 
 // InLinks is the resolver for the inLinks field.
+// NoteView exposes content and html, so every backlink must pass CanReadNote —
+// otherwise a reader of this note sees the body of notes in subgraphs they have
+// no access to. Unreadable ones are dropped silently: this is an edge listing,
+// not a search result.
 func (r *noteViewResolver) InLinks(ctx context.Context, obj *appmodel.NoteView) ([]appmodel.NoteView, error) {
 	res := []appmodel.NoteView{}
 
-	nvs := r.env(ctx).LatestNoteViews()
+	env := r.env(ctx)
+	nvs := env.LatestNoteViews()
 
 	for permalink := range obj.InLinks {
 		note := nvs.GetByPath(permalink)
-		if note != nil {
-			res = append(res, *note)
+		if note == nil {
+			continue
 		}
+
+		canRead, err := env.CanReadNote(ctx, note)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check CanReadNote: %w", err)
+		}
+
+		if !canRead {
+			continue
+		}
+
+		res = append(res, *note)
 	}
 
 	return res, nil
