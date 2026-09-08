@@ -60,79 +60,7 @@
     }
     .wrap { max-width: 1280px; margin: 0 auto; }
 
-    .eyebrow {
-      font-size: 11px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .eyebrow::before { content: "// "; color: var(--accent); }
-    .h1 {
-      font-family: var(--sans);
-      font-weight: 800;
-      font-size: 60px;
-      line-height: 0.96;
-      letter-spacing: -0.025em;
-      margin: 18px 0 0;
-    }
-    .h1 .hl {
-      background: var(--accent);
-      color: var(--bg);
-      font-family: var(--mono);
-      font-weight: 600;
-      font-size: 0.78em;
-      padding: 0 0.18em;
-    }
-    .blurb {
-      margin: 28px 0 0;
-      font-family: var(--sans);
-      font-size: 15px;
-      line-height: 1.55;
-      max-width: 46ch;
-      color: color-mix(in oklab, var(--fg) 85%, transparent);
-    }
-    .cta-row {
-      margin-top: 28px;
-      display: flex;
-    }
-
-    .frame {
-      border: 1px solid var(--rule);
-      background: rgba(245,245,242,0.02);
-      padding: 14px 16px;
-      display: grid;
-      grid-template-rows: auto 1fr;
-    }
-    .frame-head {
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      padding-bottom: 10px;
-      border-bottom: 1px dashed var(--rule);
-      margin-bottom: 10px;
-    }
-    .frame-head .live { color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
-    .frame-head .live::before {
-      content: ""; width: 6px; height: 6px; background: var(--accent);
-      animation: blink 1.4s steps(2) infinite;
-    }
     @keyframes blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0.2; } }
-
-    /* MESH GRAPH */
-    .graph-frame svg { width: 100%; height: auto; min-height: 320px; display: block; }
-    .trace-frame { min-height: 200px; }
-    .trace-stream {
-      font-size: 11.5px;
-      line-height: 1.55;
-      color: var(--muted);
-      max-height: 160px;
-      overflow: hidden;
-    }
-    .log-line { display: flex; gap: 12px; opacity: 0.18; transition: opacity 0.4s ease; }
-    .log-line.is-on { opacity: 1; color: var(--fg); }
-    .log-num { color: var(--accent); font-weight: 700; }
 
     /* SECTION HEADERS */
     .section {
@@ -146,20 +74,7 @@
     .section .lhs::before { content: "» "; color: var(--accent); }
     .section .rhs { color: var(--muted); }
 
-    /* GRAPH SVG STYLING */
-    .mg svg { --mg-bg: var(--bg); --mg-fg: var(--fg); --mg-muted: var(--muted-2); --mg-accent: var(--accent); }
-    .mg-pipe-base { stroke: var(--fg); stroke-width: 1; opacity: 0.32; }
-    .mg-pipe-flow {
-      stroke: var(--muted-2); stroke-width: 1;
-      stroke-dasharray: 5 7;
-      opacity: 0.5;
-      animation: dashflow 1.6s linear infinite;
-    }
-    .mg-pipe-flow.is-active { stroke: var(--accent); opacity: 0.9; }
-    @keyframes dashflow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -24; } }
-
     @media (max-width: 900px) {
-      .h1 { font-size: 38px; }
       .section { padding: 12px 20px; }
       .wrap { overflow: hidden; }
     }
@@ -215,7 +130,6 @@
     {{ yield content }}
   </div>
 
-  <script defer src="{{ asset("scripts.js") }}"></script>
   {{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
 </body>
 </html>
@@ -235,16 +149,6 @@
 {{ if sec }}{{ sec.HTMLString() | unsafe }}{{ end }}
 {{ end }}
 
-{{ block pricing_card(tag="", title="", price="", period="", cta_href="", cta_class="", cta_text="", cls="") }}
-<div class="price {{ cls }}">
-  <div class="price-tag">{{ tag }}</div>
-  <h3 class="price-h">{{ title }}</h3>
-  <div class="price-num">{{ price | unsafe }}<span>{{ period }}</span></div>
-  {{ yield content }}
-  {{ if cta_href }}{{yield mesh_button(label=cta_text, href=cta_href, variant=cta_class, modifier="mesh-pricing__cta")}}{{ end }}
-</div>
-{{ end }}
-
 {{ block how_step(num="", title="") }}
 <div class="step">
   <div class="step-num">{{ num }}</div>
@@ -253,9 +157,3 @@
 </div>
 {{ end }}
 
-{{ block roadmap_col(cls="", label="") }}
-<div class="col {{ cls }}">
-  <div class="col-h">{{ label }}</div>
-  {{ yield content }}
-</div>
-{{ end }}

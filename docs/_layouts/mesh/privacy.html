@@ -8,6 +8,12 @@
   padding: 36px 40px;
   border-right: 1px solid var(--rule);
 }
+.@did__lead p {
+  font-family: var(--sans); font-size: 17px; line-height: 1.5;
+  color: color-mix(in oklab, var(--fg) 92%, transparent);
+  margin: 0 0 20px; max-width: 44ch;
+}
+.@did__lead strong { color: var(--fg); }
 .@did__title {
   font-family: var(--sans);
   font-weight: 800; font-size: 32px; letter-spacing: -0.02em;
@@ -44,9 +50,10 @@
 }
 {{ end }}
 
-{{ block @lid(title="Data lives where<br>you put it.", p1="trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics pixel, no shadow copy of your notes on someone else's box.", p2="Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.", k1="storage", v1="your disk · your S3 · or our 100MB sandbox", k2="access", v2="per-base toggle · pause anytime", k3="peers", v3="opt-in only · revocable trust", k4="network", v4="direct hub ⇄ hub · no relay", k5="code", v5="MIT · audit, fork, run") }}
+{{ block @lid(note="", title="Data lives where<br>you put it.", p1="trip2g is a protocol, not a vendor. There's no central server you depend on, no analytics pixel, no shadow copy of your notes on someone else's box.", p2="Each hub owns its data and chooses — per connection and per base — what gets answered and what doesn't.", k1="storage", v1="your disk · your S3 · or our 100MB sandbox", k2="access", v2="per-base toggle · pause anytime", k3="peers", v3="opt-in only · revocable trust", k4="network", v4="direct hub ⇄ hub · no relay", k5="code", v5="MIT · audit, fork, run") }}
 <section class="@did">
   <div class="@did__text">
+    {{ if note }}<div class="@did__lead">{{ yield mesh_section(path=note) }}</div>{{ end }}
     <h2 class="@did__title">{{ title }}</h2>
     <p class="@did__p">
       {{ p1 }}

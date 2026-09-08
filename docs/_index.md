@@ -1,15 +1,9 @@
 ---
 layout: mesh/index
 lang: en
-title: "Memory for your agent that you can open in Obsidian — trip2g"
-description: "Your agent writes notes, you read them in Obsidian, readers see a website. One hub routes questions across connected bases over MCP."
+title: "A website from your Obsidian, and memory for your agents — trip2g"
+description: "Write notes in Obsidian, hit Sync — the notes become a website. The hub answers your agent's questions across every connected base over MCP."
 lang_redirect: "[[ru/_index]]"
-forms:
-  newsletter:
-    fields:
-      - name: email
-        type: email
-        required: true
 ---
 
 Everything is a note.
