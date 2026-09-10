@@ -280,7 +280,7 @@ func TestMaxStdoutBytesFromConfig(t *testing.T) {
 		Code:           code,
 		MaxStdoutBytes: 10,
 	})
-	require.NoError(t, err)
+	require.ErrorContains(t, err, "stdout limit exceeded (10 bytes)")
 	require.LessOrEqual(t, len(stdout), 10, "stdout must not exceed MaxStdoutBytes")
 }
 

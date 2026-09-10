@@ -7,26 +7,28 @@ import (
 
 // Block outcomes reported through CodeInput.Observe.
 const (
-	BlockOK          = "ok"
-	BlockNonZeroExit = "nonzero_exit"
-	BlockTimeout     = "timeout"
-	BlockStartFailed = "start_failed"
+	BlockOK                  = "ok"
+	BlockNonZeroExit         = "nonzero_exit"
+	BlockTimeout             = "timeout"
+	BlockStartFailed         = "start_failed"
+	BlockStdoutLimitExceeded = "stdout_limit_exceeded"
 )
 
 // Failure kinds carried by ExecError. They classify WHY a run failed without
 // the caller matching on message text.
 const (
-	KindNoBlocks          = "no_blocks"
-	KindUnknownFence      = "unknown_fence"
-	KindUnknownProgram    = "unknown_program"
-	KindDisallowedProgram = "disallowed_program"
-	KindSandboxRefused    = "sandbox_refused"
-	KindSetupFailed       = "setup_failed"
-	KindStartFailed       = "start_failed"
-	KindTimeout           = "timeout"
-	KindNonZeroExit       = "nonzero_exit"
-	KindParseError        = "parse_error"
-	KindInternal          = "internal"
+	KindNoBlocks            = "no_blocks"
+	KindUnknownFence        = "unknown_fence"
+	KindUnknownProgram      = "unknown_program"
+	KindDisallowedProgram   = "disallowed_program"
+	KindSandboxRefused      = "sandbox_refused"
+	KindSetupFailed         = "setup_failed"
+	KindStartFailed         = "start_failed"
+	KindTimeout             = "timeout"
+	KindNonZeroExit         = "nonzero_exit"
+	KindStdoutLimitExceeded = "stdout_limit_exceeded"
+	KindParseError          = "parse_error"
+	KindInternal            = "internal"
 	// KindUnclassified is what ErrorKind reports for an error that carries no
 	// kind of its own — never returned by coderun itself.
 	KindUnclassified = "unclassified"
@@ -38,7 +40,7 @@ const (
 type BlockStats struct {
 	Index    int
 	Program  string
-	Outcome  string // BlockOK | BlockNonZeroExit | BlockTimeout | BlockStartFailed
+	Outcome  string // one of the Block* outcomes
 	ExitCode int    // -1 when the child never produced an exit status
 
 	DurationMs  int64

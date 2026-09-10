@@ -49,7 +49,7 @@ type Config struct {
 	// Timeout bounds a single completion's code run; 0 = request-context bound.
 	Timeout time.Duration
 
-	// MaxStdoutBytes caps each block's captured stdout; 0 = 1 MiB default.
+	// MaxStdoutBytes limits final stdout and diagnostic captures; 0 = 10 MiB default.
 	MaxStdoutBytes int
 
 	// APIKey is codellm's own OpenAI-standard api_key — the same credential shape
@@ -117,7 +117,7 @@ func DefaultConfig() Config {
 		AllowedPrograms: splitCSV(DefaultAllowedPrograms),
 		Sandbox:         coderun.SandboxNative,
 		Timeout:         DefaultTimeout,
-		MaxStdoutBytes:  0,
+		MaxStdoutBytes:  coderun.DefaultMaxStdoutBytes,
 		Trip2gBaseURL:   DefaultTrip2gBaseURL,
 		SealPath:        DefaultSealPath,
 	}
@@ -215,7 +215,8 @@ func (c *Config) defineAndParseFlags(args []string) error {
 	fs.StringVar(&sandbox, "sandbox", sandbox, "sandbox mode: native | besteffort | off")
 	fs.BoolVar(&sandboxNetwork, "sandbox-network", sandboxNetwork, "allow network access from sandboxed blocks")
 	fs.DurationVar(&c.Timeout, "timeout", c.Timeout, "per-completion code-run timeout; 0 = request-context bound")
-	fs.IntVar(&c.MaxStdoutBytes, "max-stdout-bytes", c.MaxStdoutBytes, "stdout cap per code block; 0 = 1 MiB default")
+	fs.IntVar(&c.MaxStdoutBytes, "max-stdout-bytes", c.MaxStdoutBytes,
+		"final stdout limit in bytes (overflow fails the run); also caps diagnostic captures; 0 = 10 MiB default")
 	fs.StringVar(&c.APIKey, "api-key", c.APIKey, "codellm's OpenAI-standard api_key (Bearer); empty disables key auth")
 	fs.StringVar(&c.Trip2gBaseURL, "trip2g-url", c.Trip2gBaseURL, "base URL of the trip2g instance that answers viewer{role}")
 	fs.StringVar(&exposeEnv, "expose-env", exposeEnv,

@@ -3,6 +3,25 @@
 **Status:** Open design (not yet built, 2026-07-14). Sibling to `subprocess_agent.md`, `queues.md`, and the fleet agent-runtime code.
 **Builds on:** the fleet agent runtime (`internal/agentruntime`, `internal/fleet`, `cmd/fleet`) and the `process_isolation.md` sandbox research.
 
+## Current stdout limit
+
+The implemented `cmd/codellm` service defaults to **10 MiB (10,485,760 bytes)**
+of final stdout. Configure it at startup with `CODELLM_MAX_STDOUT_BYTES` or
+`--max-stdout-bytes` (the flag takes precedence). `0` selects the default;
+negative values are rejected. This is a configurable default, not a hard ceiling.
+
+Exactly the limit is accepted. More bytes fail execution with
+`stdout limit exceeded (<limit> bytes)`, even if the retained prefix is valid
+JSON. `/v1/chat/completions` returns HTTP 422 `code_execution_error`;
+GraphQL `runBlocks` returns `BlockErrorPayload` with the failing block index.
+Partial output is never returned as a successful result.
+
+The limit applies to a single block or the final block of the executed pipeline
+(including a debugger's selected prefix). Intermediate streams remain unbounded
+by this limit. Their debug captures and stderr retain only the first limit bytes
+without failing execution. Output is drained until children exit; exceeding the
+limit does not kill them. Existing timeout and non-zero-exit errors take precedence.
+
 ## TL;DR
 
 Today fleet runs code in-process: an `executor: code` role extracts fenced blocks from a rendered body and runs them under an in-process Linux sandbox (`internal/agentruntime/runcode.go` + `sandbox_linux.go`). We move that execution into a **standalone `codellm` service** that speaks the OpenAI `/v1/chat/completions` protocol and *pretends to be an LLM*: it receives chat messages containing markdown-with-code, executes the fenced blocks, and returns the writes as OpenAI **`tool_calls`** (`write_note`/`patch_note`/`finish`). Because fleet's `agentruntime.LLM` interface already talks to any OpenAI-compatible endpoint (`internal/agentruntime/llm.go:49`, `openai_llm.go`), a code role becomes an ordinary `executor: llm` run pointed at codellm's `base_url` — and fleet's existing scope enforcement (`ScopedKB` + `write_patterns`) applies the returned tool calls unchanged. codellm holds **no vault, no KB, no auth, no secrets** — that emptiness is the isolation win. The multi-block streaming pipeline and the block-by-block debug seam move inside codellm and stay steppable. The `runcode`/`sandbox`/`interpreters` subsystem leaves fleet.
