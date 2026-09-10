@@ -125,6 +125,16 @@ func FenceLangKnown(lang string) bool {
 	return ok
 }
 
+// DefaultMaxStdoutBytes is the final stdout limit when no override is set.
+const DefaultMaxStdoutBytes = 10 << 20
+
+func stdoutLimit(limit int) int {
+	if limit == 0 {
+		return DefaultMaxStdoutBytes
+	}
+	return limit
+}
+
 // CodeSpec is the parameters for one code-execution call.
 type CodeSpec struct {
 	Program        string         // canonical program name (python, bash, node, ...)
@@ -134,7 +144,7 @@ type CodeSpec struct {
 	Timeout        time.Duration  // per-run timeout; 0 = bounded by ctx only
 	EnvPassthrough []string       // exact parent env var names to forward to child
 	EnvPrefix      []string       // parent env var name prefixes to forward to child
-	MaxStdoutBytes int            // stdout cap; 0 → 1 MiB default
+	MaxStdoutBytes int            // stdout limit; 0 → DefaultMaxStdoutBytes
 	Sandbox        SandboxPolicy  // OS-level isolation; zero value = safe default (native)
 	Stats          *RunBlockStats // optional execution metrics sink
 }
@@ -177,9 +187,10 @@ type rawCodeChange struct {
 // JSON) so the child can read structured trigger data. The scoped write token
 // is not in the bag or the env.
 //
-// stdout is capped at MaxStdoutBytes (default 1 MiB); stderr is also captured for diagnostics.
-// Non-zero exit or context timeout returns an error; timedOut distinguishes
-// the two failure modes.
+// stdout exceeding MaxStdoutBytes (default 10 MiB) fails the run; stderr is
+// capped for diagnostics. Output is drained until the child exits. Non-zero
+// exit and context timeout take precedence over overflow; timedOut identifies
+// the timeout case.
 func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) {
 	interp, ok := currentRegistry().byName[spec.Program]
 	if !ok {
@@ -222,10 +233,7 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 	// or os.Environ() (exposes all secrets). The base is PATH + FLEET_INPUT only.
 	// Selective pass-through adds only explicitly declared vars/prefixes on top.
 	env := buildChildEnv(inputFile, interp, spec.EnvPassthrough, spec.EnvPrefix)
-	limit := spec.MaxStdoutBytes
-	if limit == 0 {
-		limit = 1 << 20
-	}
+	limit := stdoutLimit(spec.MaxStdoutBytes)
 
 	policy := spec.Sandbox.withDefaults(spec.Timeout)
 	sandboxed := policy.Mode != SandboxOff
@@ -289,7 +297,7 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 	errStr := errBuf.String()
 
 	timedOut := runCtx.Err() != nil
-	recordRunBlockStats(spec.Stats, runBlockOutcome(cmd, runErr, timedOut), cmd, elapsed, &outBuf, fallback)
+	recordRunBlockStats(spec.Stats, runBlockOutcome(cmd, runErr, timedOut, outBuf.Truncated()), cmd, elapsed, &outBuf, fallback)
 
 	if timedOut {
 		return outStr, errStr, true, &ExecError{Kind: KindTimeout, Err: errors.New("coderun: timed out")}
@@ -306,12 +314,15 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 		}
 		return outStr, errStr, false, execErrf(KindNonZeroExit, "coderun: non-zero exit: %s", msg)
 	}
+	if outBuf.Truncated() {
+		return outStr, errStr, false, execErrf(KindStdoutLimitExceeded, "coderun: stdout limit exceeded (%d bytes)", limit)
+	}
 	return outStr, errStr, false, nil
 }
 
 // runBlockOutcome classifies one finished child: a timeout, a child that never
-// started (no ProcessState), a non-zero exit, or a clean run.
-func runBlockOutcome(cmd *exec.Cmd, runErr error, timedOut bool) string {
+// started (no ProcessState), a non-zero exit, stdout overflow, or a clean run.
+func runBlockOutcome(cmd *exec.Cmd, runErr error, timedOut, stdoutTruncated bool) string {
 	switch {
 	case timedOut:
 		return BlockTimeout
@@ -319,6 +330,8 @@ func runBlockOutcome(cmd *exec.Cmd, runErr error, timedOut bool) string {
 		return BlockStartFailed
 	case runErr != nil:
 		return BlockNonZeroExit
+	case stdoutTruncated:
+		return BlockStdoutLimitExceeded
 	default:
 		return BlockOK
 	}
@@ -527,8 +540,9 @@ func resolveEnvVars(decls []envVar) []string {
 	return env
 }
 
-// limitedBuffer is an io.Writer that accumulates up to limit bytes and silently
-// discards the rest. Used to bound stdout/stderr capture.
+// limitedBuffer drains output while retaining at most limit bytes. Final stdout
+// callers must reject Truncated output; stderr and intermediate debug taps may
+// discard overflow without interrupting the pipeline.
 type limitedBuffer struct {
 	limit     int
 	data      []byte
@@ -552,7 +566,5 @@ func (b *limitedBuffer) Write(p []byte) (int, error) {
 
 func (b *limitedBuffer) String() string { return string(b.data) }
 
-// Truncated reports whether the writer dropped bytes past its limit. Silent
-// truncation shows up downstream as an unparseable stdout, so it is worth
-// surfacing on its own.
+// Truncated reports whether the writer dropped bytes past its limit.
 func (b *limitedBuffer) Truncated() bool { return b.truncated }

@@ -18,7 +18,7 @@ func TestGetArgs_Defaults(t *testing.T) {
 	require.Equal(t, coderun.SandboxNative, cfg.Sandbox)
 	require.False(t, cfg.SandboxNetwork)
 	require.Equal(t, DefaultTimeout, cfg.Timeout)
-	require.Equal(t, 0, cfg.MaxStdoutBytes)
+	require.Equal(t, 10<<20, cfg.MaxStdoutBytes)
 	require.Empty(t, cfg.APIKey)
 }
 
@@ -64,6 +64,19 @@ func TestGetArgs_NegativeTimeoutRejected(t *testing.T) {
 func TestGetArgs_NegativeMaxStdoutRejected(t *testing.T) {
 	_, err := GetArgs([]string{"-max-stdout-bytes", "-1"})
 	require.Error(t, err)
+}
+
+func TestGetArgs_MaxStdoutFlagOverridesEnv(t *testing.T) {
+	t.Setenv("CODELLM_MAX_STDOUT_BYTES", "1024")
+	for _, limit := range []string{"2048", "0"} {
+		cfg, err := GetArgs([]string{"--max-stdout-bytes", limit})
+		require.NoError(t, err)
+		if limit == "0" {
+			require.Zero(t, cfg.MaxStdoutBytes, "zero selects the executor's default")
+		} else {
+			require.Equal(t, 2048, cfg.MaxStdoutBytes)
+		}
+	}
 }
 
 func TestGetArgs_EmptyAllowedProgramsDisablesExecution(t *testing.T) {

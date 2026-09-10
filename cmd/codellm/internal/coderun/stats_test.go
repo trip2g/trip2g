@@ -56,9 +56,8 @@ func TestExec_ObserverReportsSuccess(t *testing.T) {
 	require.False(t, seen[0].StdoutTruncated)
 }
 
-// TestExec_ObserverReportsTruncation asserts stdout hitting MaxStdoutBytes is
-// reported as truncated: the overflow is dropped, and without this flag it only
-// surfaces later as a confusing parse error.
+// TestExec_ObserverReportsTruncation asserts stdout overflow is classified
+// before the captured output can be parsed.
 func TestExec_ObserverReportsTruncation(t *testing.T) {
 	var seen []BlockStats
 	_, _, err := ExecCode(context.Background(), CodeInput{
@@ -69,9 +68,10 @@ func TestExec_ObserverReportsTruncation(t *testing.T) {
 		Observe:         func(s BlockStats) { seen = append(seen, s) },
 	})
 
-	require.Error(t, err) // truncated stdout is no longer valid JSON
-	require.Equal(t, KindParseError, ErrorKind(err))
+	require.Error(t, err)
+	require.Equal(t, KindStdoutLimitExceeded, ErrorKind(err))
 	require.Len(t, seen, 1)
+	require.Equal(t, BlockStdoutLimitExceeded, seen[0].Outcome)
 	require.True(t, seen[0].StdoutTruncated)
 	require.Equal(t, 64, seen[0].StdoutBytes)
 }

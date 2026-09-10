@@ -65,7 +65,7 @@ type Config struct {
 	// each executed block gets the full native posture.
 	Sandbox coderun.SandboxPolicy
 
-	// MaxStdoutBytes caps each block's captured stdout; 0 → 1 MiB default.
+	// MaxStdoutBytes limits final stdout and diagnostic captures; 0 → 10 MiB default.
 	MaxStdoutBytes int
 
 	// ExposeEnv / ExposeEnvPrefix are the operator's allowlist of env var NAMES

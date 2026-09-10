@@ -27,7 +27,7 @@ type CodeInput struct {
 	Input           []byte        // delivery bag JSON written to $FLEET_INPUT
 	EnvPassthrough  []string      // exact parent env var names forwarded to child
 	EnvPrefix       []string      // parent env var name prefixes forwarded to child
-	MaxStdoutBytes  int           // stdout cap per code child; 0 → 1 MiB default
+	MaxStdoutBytes  int           // final stdout limit and diagnostic capture cap; 0 → DefaultMaxStdoutBytes
 	Sandbox         SandboxPolicy // OS-level isolation; zero value = safe default (native)
 
 	// Observe, when non-nil, receives one BlockStats per executed block (exit
@@ -88,10 +88,7 @@ func ExecBlocksDebug(ctx context.Context, in CodeInput, steps int) (string, []Bl
 	if err != nil {
 		return "", nil, err
 	}
-	limit := in.MaxStdoutBytes
-	if limit == 0 {
-		limit = 1 << 20
-	}
+	limit := stdoutLimit(in.MaxStdoutBytes)
 	if len(blocks) == 1 {
 		var out string
 		var debug []BlockDebug
@@ -130,10 +127,7 @@ func Exec(ctx context.Context, in CodeInput, capture bool) (ExecResult, error) {
 		return ExecResult{}, err
 	}
 
-	limit := in.MaxStdoutBytes
-	if limit == 0 {
-		limit = 1 << 20
-	}
+	limit := stdoutLimit(in.MaxStdoutBytes)
 
 	var stdout string
 	var debug []BlockDebug
@@ -172,7 +166,7 @@ func runSingleBlock(
 	})
 	observeSingleBlock(in.Observe, program, stats)
 	if runErr != nil {
-		return "", nil, fmt.Errorf("coderun: %w", runErr)
+		return "", nil, runErr
 	}
 	var debug []BlockDebug
 	if capture {
@@ -350,9 +344,11 @@ func classifyPipelineBlock(bb *builtBlock) string {
 		return BlockStartFailed
 	case bb.cmd.ProcessState.ExitCode() != 0:
 		return BlockNonZeroExit
-	default:
-		return BlockOK
 	}
+	if out, ok := bb.cmd.Stdout.(*limitedBuffer); ok && out.Truncated() {
+		return BlockStdoutLimitExceeded
+	}
+	return BlockOK
 }
 
 // runPipeline runs len(blocks) > 1 as a true streaming pipeline: block i's
@@ -500,6 +496,10 @@ func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPol
 	lastBuf, ok := built[n-1].cmd.Stdout.(*limitedBuffer)
 	if !ok || lastBuf == nil {
 		return "", stderrs, &ExecError{Kind: KindInternal, Err: errLastStdoutMissing}
+	}
+	if lastBuf.Truncated() {
+		return "", stderrs, execErrf(KindStdoutLimitExceeded,
+			"coderun: %sstdout limit exceeded (%d bytes)", blockPrefix(n-1, n), lastBuf.limit)
 	}
 	return lastBuf.String(), stderrs, nil
 }
