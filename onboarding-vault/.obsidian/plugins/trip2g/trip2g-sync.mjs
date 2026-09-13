@@ -4442,6 +4442,31 @@ async function createWatcher(folder, deps) {
 }
 __name(createWatcher, "createWatcher");
 
+// src/sync/cli/plan-summary.ts
+var CONFLICT_EFFECT = {
+  local: "local version wins, pushed to the server",
+  remote: "server version wins, overwrites the local file",
+  skip: "left untouched on both sides",
+  fail: "sync stops at the first one"
+};
+function formatPlanSummary(plan, conflictResolution) {
+  const rows = [
+    ["Unchanged", plan.unchanged, ""],
+    ["To push", plan.pushes.length, "uploaded to the server"],
+    ["Local only", plan.localOnly.length, "uploaded as new server notes"],
+    ["To pull", plan.pulls.length, "downloaded over the local file"],
+    ["Remote only", plan.remoteOnly.length, "downloaded as new local files"],
+    ["Conflicts", plan.conflicts.length, CONFLICT_EFFECT[conflictResolution]],
+    ["Local deleted", plan.localDeleted.length, "hidden on the server"],
+    ["Server deleted", plan.serverDeleted.length, "kept locally, state updated"]
+  ];
+  return rows.map(([label, count, effect]) => {
+    const head = `  ${`${label}:`.padEnd(16)}${count}`;
+    return count > 0 && effect ? `${head}  \u2014 ${effect}` : head;
+  });
+}
+__name(formatPlanSummary, "formatPlanSummary");
+
 // src/sync/cli/cmd.ts
 function readDataJson() {
   try {
@@ -4601,12 +4626,16 @@ Usage:
 
 Arguments:
   folder                   Local folder to sync (required)
-  prefix                   Remote path prefix (optional, for multi-repo setups)
+  prefix                   Remote path prefix (optional, for multi-repo setups).
+                           Not supported together with --two-way.
 
 Options:
   -u, --api-url <url>      GraphQL endpoint (default: $ENDPOINT or .obsidian/plugins/trip2g/data.json or http://localhost:8081/_system/graphql)
   -k, --api-key <key>      API key (default: $API_KEY)
-  -2, --two-way            Enable two-way sync (pull changes from server)
+  -2, --two-way            Enable two-way sync (pull changes from server).
+                           Notes that exist on the server but not locally are
+                           DOWNLOADED as new local files; they are reported on
+                           the "Remote only" line, not on "To pull".
   -w, --watch              Watch mode: stream live changes from server via SSE
                            (implies --two-way; prefix not allowed in this mode)
   -i, --include <glob>     Include only matching paths in live-pull (can be repeated).
@@ -4635,14 +4664,29 @@ Options:
                            notes left behind after a sync-state reset/replace
                            (they are classified remote_only and normally
                            ignored, so they are never hidden). Opt-in; without
-                           it behavior is 100% unchanged. Prints a loud summary
-                           before hiding and honors --dry-run. Refuses to run
-                           when the local tree is empty but the server has notes
-                           (partial/reset copy) unless --force is also given.
+                           it --prune itself does nothing -- note that a note
+                           deleted locally is still hidden on the server, with
+                           or without this flag (see Deletions below). Prints
+                           a loud summary before hiding and honors --dry-run.
+                           Refuses to run when the local tree is empty but the
+                           server has notes (partial/reset copy) unless --force
+                           is also given.
       --force              Allow --prune even when the local tree looks empty.
   -v, --verbose            Verbose output
   -n, --dry-run            Show what would be done without making changes
   -h, --help               Show this help
+
+Deletions:
+  Deleting a note locally and syncing HIDES it on the server. This needs no
+  flag and happens in both push-only and --two-way mode: once the sync state
+  knows a file, its absence reads as a deletion rather than as a file to fetch.
+  Before the state knows it, the same absence reads as a new server note and
+  the file is downloaded instead -- the same "rm" therefore has opposite
+  effects before and after the first sync. Check the "Local deleted" line, and
+  --dry-run, before syncing a tree you have removed files from.
+
+  A note deleted on the server is reported as "Server deleted"; the CLI keeps
+  the local copy.
 
 Subcommands:
   warnings                 Print note warnings as JSON
@@ -4825,14 +4869,9 @@ async function main() {
   }
   console.log("\n\u{1F4CB} Sync Plan:");
   console.log("-".repeat(40));
-  console.log(`  Unchanged:      ${filteredPlan.unchanged}`);
-  console.log(`  To push:        ${filteredPlan.pushes.length}`);
-  console.log(`  Local only:     ${filteredPlan.localOnly.length}`);
-  console.log(`  To pull:        ${filteredPlan.pulls.length}`);
-  console.log(`  Remote only:    ${filteredPlan.remoteOnly.length}`);
-  console.log(`  Conflicts:      ${filteredPlan.conflicts.length}`);
-  console.log(`  Local deleted:  ${filteredPlan.localDeleted.length}`);
-  console.log(`  Server deleted: ${filteredPlan.serverDeleted.length}`);
+  for (const line of formatPlanSummary(filteredPlan, args.conflictResolution)) {
+    console.log(line);
+  }
   console.log("-".repeat(40));
   if (args.verbose) {
     if (filteredPlan.pushes.length > 0) {
