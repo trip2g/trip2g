@@ -164,6 +164,7 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `telegram_e2e.md` | Telegram E2E testing |
 | `telegram_bot_vs_userbot.md` | Bot vs userbot: emoji and media limits |
 | `telegram_custom_emojies.md` | Custom emoji in Obsidian |
+| `telegram_instant_tags_rationale.md` | Why Instant Tags (preview channel) exist and why cheaper shapes were rejected |
 | `telegram_import.md` | Channel import plan |
 | `telegram_inbox_agent.md` | Inbox bot: Telegram → trip2g |
 | `telegram_publish_through_accounts.md` | Publishing through user accounts |
