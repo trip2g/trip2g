@@ -871,11 +871,16 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	}
 
 	children := tocChildren(note, args.TocPath)
+	total := len(children)
+	if args.Last > 0 && args.Last < total {
+		children = children[total-args.Last:]
+	}
 	payload := ExpandPayload{
-		NoteID:   note.PathID,
-		NotePath: note.Path,
-		TocPath:  args.TocPath,
-		Children: children,
+		NoteID:        note.PathID,
+		NotePath:      note.Path,
+		TocPath:       args.TocPath,
+		Children:      children,
+		TotalChildren: total,
 	}
 	// A section with no subsections is a leaf: the only thing left to do with
 	// it is read it, so answer the read here instead of nudging the agent into
@@ -891,13 +896,13 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		log.Debug("expand read a leaf", "path", note.Path, "toc_path", args.TocPath)
 		return successResponse(id, structuredToolResult(text, payload))
 	}
-	log.Debug("expand completed", "path", note.Path, "toc_path", args.TocPath, "children", len(children))
-	return successResponse(id, structuredToolResult(expandSummary(note, args.TocPath, children), payload))
+	log.Debug("expand completed", "path", note.Path, "toc_path", args.TocPath, "children", len(children), "total", total)
+	return successResponse(id, structuredToolResult(expandSummary(note, args.TocPath, children, total), payload))
 }
 
 // expandSummary renders a short human-readable view of an expand result for the
 // text content block; the structured payload carries the machine-readable tree.
-func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode) string {
+func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode, total int) string {
 	where := "top level"
 	if len(parentPath) > 0 {
 		where = strings.Join(parentPath, " > ")
@@ -907,7 +912,14 @@ func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode
 		fmt.Fprintf(&sb, "%s — %q has no sections; read the note with note_html without toc_path.", note.Title, where)
 		return sb.String()
 	}
-	fmt.Fprintf(&sb, "%s — %q, %d subsection(s):\n", note.Title, where, len(children))
+	if len(children) < total {
+		// Say it is partial in the line the caller reads first. A bounded
+		// listing that announces itself as the whole thing sends the caller
+		// away believing the older sections are not there.
+		fmt.Fprintf(&sb, "%s — %q, newest %d of %d subsection(s):\n", note.Title, where, len(children), total)
+	} else {
+		fmt.Fprintf(&sb, "%s — %q, %d subsection(s):\n", note.Title, where, len(children))
+	}
 	for _, c := range children {
 		marker := ""
 		if c.HasChildren {

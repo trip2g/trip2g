@@ -112,6 +112,13 @@ HTTP 200 application/json
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
             },
+            "last": {
+              "type": "number",
+              "items": {
+                "type": "string"
+              },
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+            },
             "note_id": {
               "type": "number",
               "description": "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path"
@@ -126,9 +133,6 @@ HTTP 200 application/json
             },
             "toc_path": {
               "type": "array",
-              "items": {
-                "type": "string"
-              },
               "description": "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level."
             }
           }
@@ -147,6 +151,10 @@ HTTP 200 application/json
             "kb_id": {
               "type": "string",
               "description": "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively). Federation nests up to 3 levels deep (kb_id path segments); a deeper path is rejected."
+            },
+            "last": {
+              "type": "number",
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
             },
             "note_id": {
               "type": "string",
@@ -439,6 +447,13 @@ HTTP 200 application/json
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
             },
+            "last": {
+              "type": "number",
+              "items": {
+                "type": "string"
+              },
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+            },
             "note_id": {
               "type": "number",
               "description": "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path"
@@ -453,9 +468,6 @@ HTTP 200 application/json
             },
             "toc_path": {
               "type": "array",
-              "items": {
-                "type": "string"
-              },
               "description": "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level."
             }
           }
@@ -474,6 +486,10 @@ HTTP 200 application/json
             "kb_id": {
               "type": "string",
               "description": "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively). Federation nests up to 3 levels deep (kb_id path segments); a deeper path is rejected."
+            },
+            "last": {
+              "type": "number",
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
             },
             "note_id": {
               "type": "string",
@@ -808,6 +824,13 @@ HTTP 200 application/json
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
             },
+            "last": {
+              "type": "number",
+              "items": {
+                "type": "string"
+              },
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+            },
             "note_id": {
               "type": "number",
               "description": "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path"
@@ -822,9 +845,6 @@ HTTP 200 application/json
             },
             "toc_path": {
               "type": "array",
-              "items": {
-                "type": "string"
-              },
               "description": "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level."
             }
           }
@@ -843,6 +863,10 @@ HTTP 200 application/json
             "kb_id": {
               "type": "string",
               "description": "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively). Federation nests up to 3 levels deep (kb_id path segments); a deeper path is rejected."
+            },
+            "last": {
+              "type": "number",
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
             },
             "note_id": {
               "type": "string",
@@ -1393,7 +1417,8 @@ HTTP 200 application/json
           "has_children": false,
           "preview": "beta body"
         }
-      ]
+      ],
+      "total_children": 2
     }
   }
 }
@@ -1417,6 +1442,7 @@ HTTP 200 application/json
         "Beta"
       ],
       "children": [],
+      "total_children": 0,
       "section_html": "\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n"
     }
   }
@@ -1467,7 +1493,8 @@ HTTP 200 application/json
           "has_children": false,
           "preview": "Замечай, чего требует твоя природа."
         }
-      ]
+      ],
+      "total_children": 2
     }
   }
 }
@@ -1778,6 +1805,13 @@ HTTP 200 application/json
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
             },
+            "last": {
+              "type": "number",
+              "items": {
+                "type": "string"
+              },
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+            },
             "note_id": {
               "type": "number",
               "description": "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path"
@@ -1792,9 +1826,6 @@ HTTP 200 application/json
             },
             "toc_path": {
               "type": "array",
-              "items": {
-                "type": "string"
-              },
               "description": "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level."
             }
           }
@@ -1813,6 +1844,10 @@ HTTP 200 application/json
             "kb_id": {
               "type": "string",
               "description": "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively). Federation nests up to 3 levels deep (kb_id path segments); a deeper path is rejected."
+            },
+            "last": {
+              "type": "number",
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
             },
             "note_id": {
               "type": "string",
@@ -2105,6 +2140,13 @@ HTTP 200 application/json
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
             },
+            "last": {
+              "type": "number",
+              "items": {
+                "type": "string"
+              },
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+            },
             "note_id": {
               "type": "number",
               "description": "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path"
@@ -2119,9 +2161,6 @@ HTTP 200 application/json
             },
             "toc_path": {
               "type": "array",
-              "items": {
-                "type": "string"
-              },
               "description": "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level."
             }
           }
@@ -2140,6 +2179,10 @@ HTTP 200 application/json
             "kb_id": {
               "type": "string",
               "description": "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively). Federation nests up to 3 levels deep (kb_id path segments); a deeper path is rejected."
+            },
+            "last": {
+              "type": "number",
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
             },
             "note_id": {
               "type": "string",
@@ -2443,6 +2486,13 @@ HTTP 200 application/json
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
             },
+            "last": {
+              "type": "number",
+              "items": {
+                "type": "string"
+              },
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+            },
             "note_id": {
               "type": "number",
               "description": "Same as pid: non-negative integer (uint64) note id, copied verbatim from a search result's note_id field. Not a path, slug, or match_id. Prefer path"
@@ -2457,9 +2507,6 @@ HTTP 200 application/json
             },
             "toc_path": {
               "type": "array",
-              "items": {
-                "type": "string"
-              },
               "description": "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level."
             }
           }
@@ -2478,6 +2525,10 @@ HTTP 200 application/json
             "kb_id": {
               "type": "string",
               "description": "Target knowledge base id; nested bases use '/' (e.g. \"philosophers/nietzsche\" routes through the 'philosophers' peer, recursively). Federation nests up to 3 levels deep (kb_id path segments); a deeper path is rejected."
+            },
+            "last": {
+              "type": "number",
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
             },
             "note_id": {
               "type": "string",

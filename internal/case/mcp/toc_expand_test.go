@@ -200,7 +200,7 @@ func TestExpandSummaryPutsThePreviewOnItsOwnLine(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lines := strings.Split(strings.TrimRight(expandSummary(note, nil, tt.children), "\n"), "\n")
+			lines := strings.Split(strings.TrimRight(expandSummary(note, nil, tt.children, len(tt.children)), "\n"), "\n")
 			require.Equal(t, `Guide — "top level", `+strconv.Itoa(len(tt.children))+" subsection(s):", lines[0])
 			require.Equal(t, tt.wantLines, lines[1:])
 
@@ -218,4 +218,44 @@ func TestExpandSummaryPutsThePreviewOnItsOwnLine(t *testing.T) {
 			}
 		})
 	}
+}
+
+// dailyLog is the shape a note takes when something appends a dated section to
+// it every day: a year of them, newest last, each holding a line or two. The
+// listing of such a note is the thing `last` exists to bound.
+func dailyLog(sections int) *model.NoteView {
+	note := &model.NoteView{Path: "log.md", PathID: 11, Title: "Log"}
+	var html strings.Builder
+	for i := range sections {
+		day := "2026-01-" + strconv.Itoa(i+1)
+		note.Headings = append(note.Headings, model.NoteViewHeading{Text: day, Level: 3, ID: day})
+		html.WriteString(`<div data-header="` + day + `" data-level="3"><h3>` + day + `</h3><p>what moved on ` + day + `</p></div>`)
+	}
+	note.HTML = template.HTML(html.String())
+	return note
+}
+
+func TestExpandSummaryBoundedListingSaysSo(t *testing.T) {
+	note := dailyLog(365)
+	all := tocChildren(note, nil)
+	require.Len(t, all, 365)
+
+	newest := all[len(all)-30:]
+	summary := expandSummary(note, nil, newest, len(all))
+
+	require.Contains(t, summary, "newest 30 of 365 subsection(s)",
+		"a bounded listing that reads as a complete one sends the caller away believing the rest is not there")
+	require.Contains(t, summary, "2026-01-365", "the newest section is the one the caller came for")
+	require.NotContains(t, summary, "2026-01-1\n", "the oldest sections are what was left out")
+}
+
+func TestExpandSummaryUnboundedListingIsUnchanged(t *testing.T) {
+	note := dailyLog(3)
+	all := tocChildren(note, nil)
+
+	summary := expandSummary(note, nil, all, len(all))
+
+	require.Contains(t, summary, "3 subsection(s)")
+	require.NotContains(t, summary, "newest",
+		"a listing that holds everything must not describe itself as a selection")
 }
