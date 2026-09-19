@@ -35,6 +35,7 @@ title: "Навигация"
 - [[ru/user/Публикация через аккаунты|Публикация через аккаунты]]
 - [[ru/user/Импорт из Telegram|Импорт из Telegram]]
 - [[ru/user/Кастомные эмодзи|Кастомные эмодзи]]
+- [[ru/user/telegram-instant|Предпросмотр в тестовом канале]]
 - [[ru/user/telegram_limits|Ограничения]]
 - [[ru/user/telegram-access|Доступ через группу]]
 

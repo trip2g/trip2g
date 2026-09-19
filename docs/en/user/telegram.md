@@ -81,9 +81,11 @@ The system matches these tags to channels configured in the admin panel. A note 
 
 Sync the note after adding the properties. The post will appear in the queue.
 
-### Publish instantly
+Set the tags before the first publish. Adding a tag to a note that is already published does not deliver it to the newly matched channel — publish state is tracked per note, not per channel. To reach the extra channel, open admin panel → **Telegram posts** → the post → Sent tab → **Reset**, then sync again. Reset deletes the post from every channel it already reached and re-sends it with new message IDs, so links to the old post break.
 
-Instant Tags bypass the schedule and publish immediately after sync.
+### Preview a post instantly
+
+Instant Tags exist for one job: see the finished post in a channel of your own before your readers see it. Give a private test channel an Instant Tag, and a note carrying that tag arrives there the moment you sync it, without waiting for the schedule.
 
 1. Open the admin panel → your bot
 2. Find the section **Publish to this groups**
@@ -91,7 +93,13 @@ Instant Tags bypass the schedule and publish immediately after sync.
 
 Notes with those tags publish to that channel as soon as they are synced.
 
-Use a separate test channel with Instant Tags to preview posts before publishing to your main channel.
+What to expect:
+
+- The note still needs both `telegram_publish_at` and `telegram_publish_tags`. Instant Tags change when a note is delivered, not whether it needs a date. A note missing either property is skipped.
+- Every sync of a changed note sends a new message to the test channel, and the earlier ones stay. Instant posts are never edited, so you get a fresh render each time — including media, which Telegram does not let an edit replace.
+- The preview does not use up the schedule. The note stays unpublished, and the real post goes out at its own time.
+
+Without Instant Tags: copy the note, give the copy a tag that only the test channel uses, and set its `telegram_publish_at` to a time in the past — yesterday's date is enough. The copy goes out on the next scheduler run. Nothing to configure, but the copy is a real note — it gets its own page on the site, and you keep the two versions in sync by hand.
 
 ### Check post status
 
