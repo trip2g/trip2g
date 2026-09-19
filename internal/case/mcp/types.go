@@ -183,6 +183,9 @@ type ExpandPayload struct {
 	// bounded listing without it, and a listing that looks complete when it is
 	// not is worse than no listing.
 	TotalChildren int `json:"total_children"`
+	// Omitted is how many children fall between the oldest and the newest when
+	// both bounds were given. Zero means Children is a continuous run.
+	Omitted int `json:"omitted,omitempty"`
 	// SectionHTML is the section itself when toc_path names a leaf: there is
 	// nothing further to expand, so the read is answered in the same call.
 	SectionHTML string `json:"section_html,omitempty"`

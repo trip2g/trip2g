@@ -26,7 +26,7 @@ sequenceDiagram
 | Method | Description |
 |--------|-------------|
 | `search(query)` | Vector search across the knowledge base. Returns slim snippets — a heading breadcrumb and a precise `toc_path` per match, not the full table of contents |
-| `expand(pid, toc_path?)` | Walk a note's table of contents level by level. Returns the direct children of a TOC node so you can drill down without loading the note; a section without subsections is returned in full. See [[en/user/expand]] for a detailed explanation |
+| `expand(pid, toc_path?, first?, last?)` | Walk a note's table of contents level by level. Returns the direct children of a TOC node so you can drill down without loading the note; a section without subsections is returned in full. `first` and `last` list only that many of the oldest and newest children, for a note whose sections run into the hundreds. See [[en/user/expand]] for a detailed explanation |
 | `note_html(path, toc_path?)` | Full note or a specific section |
 | `similar(path)` | Notes similar to the given note |
 | `instructions()` | Author-defined AI instructions |
@@ -61,6 +61,8 @@ It accepts a note reference (`pid`, `note_id`, `href`, or `path`) and an optiona
 ```
 expand(pid=42)                                  → top-level sections
 expand(pid=42, toc_path=["Chapter 1"])          → subsections of Chapter 1
+expand(pid=42, last=30)                         → the newest 30 sections
+expand(pid=42, first=5, last=30)                → both ends, middle unlisted
 ```
 
 Each child node has:

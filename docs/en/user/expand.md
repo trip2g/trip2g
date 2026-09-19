@@ -23,7 +23,7 @@ What comes back depends on the section named by `toc_path`:
 - A section **without subsections** returns its content — the same text `note_html(path, toc_path)` would give, plus `section_html` in the structured payload. A client does not need a second call to read a leaf: the descent ends in the read.
 - There is **no flag** to turn this off, and a client that only wants structure never needs one: the parent's listing already marks every child with `has_children`, so stop descending at `has_children: false` and nothing is read.
 
-**Arguments.** One note identifier (`pid`, `note_id`, `path`, or `href` — taken from `search` results) plus an optional `toc_path`:
+**Arguments.** One note identifier (`pid`, `note_id`, `path`, or `href` — taken from `search` results) plus optional `toc_path`, `first` and `last`:
 
 ```json
 { "name": "expand", "arguments": { "pid": 42, "toc_path": ["Goroutines"] } }
@@ -46,6 +46,25 @@ The response is a structured list of children plus a short text summary ("N subs
 ```
 
 A shorter path: if `search` already returned an exact `matches[].toc_path`, read the section directly via `note_html(toc_path=...)`. Use `expand` when you want to **survey the structure** and navigate deeper without loading anything extra.
+
+### A long listing: the ends only
+
+A note that gains a section a day carries hundreds of them after a year, and `expand` lists every one. On a note with 365 dated sections that answer is 41,700 characters — spent to learn the name of the latest.
+
+`first` and `last` take the ends instead:
+
+```json
+{ "name": "expand", "arguments": { "path": "log.md", "last": 30 } }
+{ "name": "expand", "arguments": { "path": "log.md", "first": 5, "last": 30 } }
+```
+
+- `last: N` — the newest N sections. Where the subject stands now.
+- `first: N` — the oldest N. How it started.
+- Both — the two ends, with the middle left unlisted.
+
+The summary says the listing is partial: `newest 30 of 365 subsection(s)`, and with both ends it puts `… 330 subsection(s) not listed …` between them. The structured payload says the same in numbers, `total_children` and `omitted`. A listing that looked whole would send you away believing the older sections are not there.
+
+Ends that meet or overlap are simply everything: no section comes back twice.
 
 ### Slim search
 

@@ -108,6 +108,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections. Pair it with last to get how a subject started and where it stands now, leaving out the middle; the summary marks the gap where it falls."
+            },
             "href": {
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
@@ -117,7 +121,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary, total_children and omitted say what was left out, so a bounded listing never reads as a complete one. Bounds that meet or overlap return everything rather than repeating a run."
             },
             "note_id": {
               "type": "number",
@@ -144,6 +148,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections, as expand does."
+            },
             "href": {
               "type": "string",
               "description": "String remote note href, copied verbatim from a federated_search result's href field"
@@ -154,7 +162,7 @@ HTTP 200 application/json
             },
             "last": {
               "type": "number",
-              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary, total_children and omitted say what was left out."
             },
             "note_id": {
               "type": "string",
@@ -443,6 +451,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections. Pair it with last to get how a subject started and where it stands now, leaving out the middle; the summary marks the gap where it falls."
+            },
             "href": {
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
@@ -452,7 +464,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary, total_children and omitted say what was left out, so a bounded listing never reads as a complete one. Bounds that meet or overlap return everything rather than repeating a run."
             },
             "note_id": {
               "type": "number",
@@ -479,6 +491,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections, as expand does."
+            },
             "href": {
               "type": "string",
               "description": "String remote note href, copied verbatim from a federated_search result's href field"
@@ -489,7 +505,7 @@ HTTP 200 application/json
             },
             "last": {
               "type": "number",
-              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary, total_children and omitted say what was left out."
             },
             "note_id": {
               "type": "string",
@@ -820,6 +836,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections. Pair it with last to get how a subject started and where it stands now, leaving out the middle; the summary marks the gap where it falls."
+            },
             "href": {
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
@@ -829,7 +849,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary, total_children and omitted say what was left out, so a bounded listing never reads as a complete one. Bounds that meet or overlap return everything rather than repeating a run."
             },
             "note_id": {
               "type": "number",
@@ -856,6 +876,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections, as expand does."
+            },
             "href": {
               "type": "string",
               "description": "String remote note href, copied verbatim from a federated_search result's href field"
@@ -866,7 +890,7 @@ HTTP 200 application/json
             },
             "last": {
               "type": "number",
-              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary, total_children and omitted say what was left out."
             },
             "note_id": {
               "type": "string",
@@ -1801,6 +1825,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections. Pair it with last to get how a subject started and where it stands now, leaving out the middle; the summary marks the gap where it falls."
+            },
             "href": {
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
@@ -1810,7 +1838,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary, total_children and omitted say what was left out, so a bounded listing never reads as a complete one. Bounds that meet or overlap return everything rather than repeating a run."
             },
             "note_id": {
               "type": "number",
@@ -1837,6 +1865,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections, as expand does."
+            },
             "href": {
               "type": "string",
               "description": "String remote note href, copied verbatim from a federated_search result's href field"
@@ -1847,7 +1879,7 @@ HTTP 200 application/json
             },
             "last": {
               "type": "number",
-              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary, total_children and omitted say what was left out."
             },
             "note_id": {
               "type": "string",
@@ -2136,6 +2168,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections. Pair it with last to get how a subject started and where it stands now, leaving out the middle; the summary marks the gap where it falls."
+            },
             "href": {
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
@@ -2145,7 +2181,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary, total_children and omitted say what was left out, so a bounded listing never reads as a complete one. Bounds that meet or overlap return everything rather than repeating a run."
             },
             "note_id": {
               "type": "number",
@@ -2172,6 +2208,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections, as expand does."
+            },
             "href": {
               "type": "string",
               "description": "String remote note href, copied verbatim from a federated_search result's href field"
@@ -2182,7 +2222,7 @@ HTTP 200 application/json
             },
             "last": {
               "type": "number",
-              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary, total_children and omitted say what was left out."
             },
             "note_id": {
               "type": "string",
@@ -2482,6 +2522,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections. Pair it with last to get how a subject started and where it stands now, leaving out the middle; the summary marks the gap where it falls."
+            },
             "href": {
               "type": "string",
               "description": "String note href, copied verbatim from a search result's href field"
@@ -2491,7 +2535,7 @@ HTTP 200 application/json
               "items": {
                 "type": "string"
               },
-              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary and total_children say how many were left out, so a bounded listing never reads as a complete one."
+              "description": "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary, total_children and omitted say what was left out, so a bounded listing never reads as a complete one. Bounds that meet or overlap return everything rather than repeating a run."
             },
             "note_id": {
               "type": "number",
@@ -2518,6 +2562,10 @@ HTTP 200 application/json
         "inputSchema": {
           "type": "object",
           "properties": {
+            "first": {
+              "type": "number",
+              "description": "List only this many of the oldest subsections, as expand does."
+            },
             "href": {
               "type": "string",
               "description": "String remote note href, copied verbatim from a federated_search result's href field"
@@ -2528,7 +2576,7 @@ HTTP 200 application/json
             },
             "last": {
               "type": "number",
-              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary and total_children say how many were left out."
+              "description": "List only this many of the newest subsections instead of all of them, as expand does. The summary, total_children and omitted say what was left out."
             },
             "note_id": {
               "type": "string",

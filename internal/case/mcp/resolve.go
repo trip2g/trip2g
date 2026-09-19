@@ -872,15 +872,14 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 
 	children := tocChildren(note, args.TocPath)
 	total := len(children)
-	if args.Last > 0 && args.Last < total {
-		children = children[total-args.Last:]
-	}
+	children, omitted := boundChildren(children, args.First, args.Last)
 	payload := ExpandPayload{
 		NoteID:        note.PathID,
 		NotePath:      note.Path,
 		TocPath:       args.TocPath,
 		Children:      children,
 		TotalChildren: total,
+		Omitted:       omitted,
 	}
 	// A section with no subsections is a leaf: the only thing left to do with
 	// it is read it, so answer the read here instead of nudging the agent into
@@ -896,13 +895,37 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		log.Debug("expand read a leaf", "path", note.Path, "toc_path", args.TocPath)
 		return successResponse(id, structuredToolResult(text, payload))
 	}
-	log.Debug("expand completed", "path", note.Path, "toc_path", args.TocPath, "children", len(children), "total", total)
-	return successResponse(id, structuredToolResult(expandSummary(note, args.TocPath, children, total), payload))
+	log.Debug("expand completed", "path", note.Path, "toc_path", args.TocPath, "children", len(children), "total", total, "omitted", omitted)
+	return successResponse(id, structuredToolResult(expandSummary(note, args.TocPath, children, total, args.First, omitted), payload))
+}
+
+// boundChildren keeps the oldest first and the newest last, and says how many
+// it left between them. Asking for more than there is asks for everything: two
+// bounds that meet or overlap leave no gap, so the listing comes back whole
+// rather than with a run repeated in it.
+func boundChildren(children []TOCNode, first, last int) ([]TOCNode, int) {
+	if first < 0 {
+		first = 0
+	}
+	if last < 0 {
+		last = 0
+	}
+	if first == 0 && last == 0 {
+		return children, 0
+	}
+	total := len(children)
+	if first+last >= total {
+		return children, 0
+	}
+	bounded := make([]TOCNode, 0, first+last)
+	bounded = append(bounded, children[:first]...)
+	bounded = append(bounded, children[total-last:]...)
+	return bounded, total - first - last
 }
 
 // expandSummary renders a short human-readable view of an expand result for the
 // text content block; the structured payload carries the machine-readable tree.
-func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode, total int) string {
+func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode, total, first, omitted int) string {
 	where := "top level"
 	if len(parentPath) > 0 {
 		where = strings.Join(parentPath, " > ")
@@ -912,15 +935,26 @@ func expandSummary(note *model.NoteView, parentPath []string, children []TOCNode
 		fmt.Fprintf(&sb, "%s — %q has no sections; read the note with note_html without toc_path.", note.Title, where)
 		return sb.String()
 	}
-	if len(children) < total {
+	switch {
+	case omitted == 0:
+		fmt.Fprintf(&sb, "%s — %q, %d subsection(s):\n", note.Title, where, len(children))
+	case first == 0:
 		// Say it is partial in the line the caller reads first. A bounded
 		// listing that announces itself as the whole thing sends the caller
 		// away believing the older sections are not there.
 		fmt.Fprintf(&sb, "%s — %q, newest %d of %d subsection(s):\n", note.Title, where, len(children), total)
-	} else {
-		fmt.Fprintf(&sb, "%s — %q, %d subsection(s):\n", note.Title, where, len(children))
+	case len(children) == first:
+		fmt.Fprintf(&sb, "%s — %q, oldest %d of %d subsection(s):\n", note.Title, where, first, total)
+	default:
+		fmt.Fprintf(&sb, "%s — %q, oldest %d and newest %d of %d subsection(s):\n",
+			note.Title, where, first, len(children)-first, total)
 	}
-	for _, c := range children {
+	for i, c := range children {
+		// The gap goes where it falls, so a reader walking the list sees the
+		// break rather than two dates that look consecutive and are not.
+		if omitted > 0 && first > 0 && i == first {
+			fmt.Fprintf(&sb, "- … %d subsection(s) not listed …\n", omitted)
+		}
 		marker := ""
 		if c.HasChildren {
 			marker = " (has subsections)"
