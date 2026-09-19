@@ -200,7 +200,7 @@ func TestExpandSummaryPutsThePreviewOnItsOwnLine(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lines := strings.Split(strings.TrimRight(expandSummary(note, nil, tt.children), "\n"), "\n")
+			lines := strings.Split(strings.TrimRight(expandSummary(note, nil, tt.children, len(tt.children), 0, 0), "\n"), "\n")
 			require.Equal(t, `Guide — "top level", `+strconv.Itoa(len(tt.children))+" subsection(s):", lines[0])
 			require.Equal(t, tt.wantLines, lines[1:])
 
@@ -218,4 +218,91 @@ func TestExpandSummaryPutsThePreviewOnItsOwnLine(t *testing.T) {
 			}
 		})
 	}
+}
+
+// dailyLog is the shape a note takes when something appends a dated section to
+// it every day: a year of them, newest last, each holding a line or two. The
+// listing of such a note is the thing `last` exists to bound.
+func dailyLog(sections int) *model.NoteView {
+	note := &model.NoteView{Path: "log.md", PathID: 11, Title: "Log"}
+	var html strings.Builder
+	for i := range sections {
+		day := "2026-01-" + strconv.Itoa(i+1)
+		note.Headings = append(note.Headings, model.NoteViewHeading{Text: day, Level: 3, ID: day})
+		html.WriteString(`<div data-header="` + day + `" data-level="3"><h3>` + day + `</h3><p>what moved on ` + day + `</p></div>`)
+	}
+	note.HTML = template.HTML(html.String())
+	return note
+}
+
+func TestBoundChildrenKeepsTheEndsAndCountsTheMiddle(t *testing.T) {
+	all := tocChildren(dailyLog(365), nil)
+	require.Len(t, all, 365)
+
+	for _, tt := range []struct {
+		name          string
+		first, last   int
+		wantLen       int
+		wantOmitted   int
+		wantFirstItem string
+		wantLastItem  string
+	}{
+		{"neither bound is everything", 0, 0, 365, 0, "2026-01-1", "2026-01-365"},
+		{"last alone keeps the newest", 0, 30, 30, 335, "2026-01-336", "2026-01-365"},
+		{"first alone keeps the oldest", 5, 0, 5, 360, "2026-01-1", "2026-01-5"},
+		{"both keep the ends", 5, 30, 35, 330, "2026-01-1", "2026-01-365"},
+		{"bounds that meet are everything", 100, 265, 365, 0, "2026-01-1", "2026-01-365"},
+		{"bounds that overlap are everything", 300, 300, 365, 0, "2026-01-1", "2026-01-365"},
+		{"a negative bound is no bound", -5, -5, 365, 0, "2026-01-1", "2026-01-365"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, omitted := boundChildren(all, tt.first, tt.last)
+
+			require.Len(t, got, tt.wantLen)
+			require.Equal(t, tt.wantOmitted, omitted)
+			require.Equal(t, tt.wantFirstItem, got[0].Title)
+			require.Equal(t, tt.wantLastItem, got[len(got)-1].Title)
+
+			seen := map[string]bool{}
+			for _, c := range got {
+				require.False(t, seen[c.Title], "a section must not be listed twice: %s", c.Title)
+				seen[c.Title] = true
+			}
+		})
+	}
+}
+
+func TestExpandSummarySaysWhichEndsItKept(t *testing.T) {
+	note := dailyLog(365)
+	all := tocChildren(note, nil)
+
+	newest, omitted := boundChildren(all, 0, 30)
+	summary := expandSummary(note, nil, newest, len(all), 0, omitted)
+	require.Contains(t, summary, "newest 30 of 365 subsection(s)",
+		"a bounded listing that reads as a complete one sends the caller away believing the rest is not there")
+	require.Contains(t, summary, "2026-01-365", "the newest section is the one the caller came for")
+
+	oldest, omitted := boundChildren(all, 5, 0)
+	summary = expandSummary(note, nil, oldest, len(all), 5, omitted)
+	require.Contains(t, summary, "oldest 5 of 365 subsection(s)")
+
+	ends, omitted := boundChildren(all, 5, 30)
+	summary = expandSummary(note, nil, ends, len(all), 5, omitted)
+	require.Contains(t, summary, "oldest 5 and newest 30 of 365 subsection(s)")
+	require.Contains(t, summary, "… 330 subsection(s) not listed …",
+		"the gap goes where it falls, or two dates that are a year apart read as consecutive")
+	require.Less(t, strings.Index(summary, "2026-01-5"), strings.Index(summary, "not listed"))
+	require.Less(t, strings.Index(summary, "not listed"), strings.Index(summary, "2026-01-336"))
+}
+
+func TestExpandSummaryUnboundedListingIsUnchanged(t *testing.T) {
+	note := dailyLog(3)
+	all := tocChildren(note, nil)
+
+	summary := expandSummary(note, nil, all, len(all), 0, 0)
+
+	require.Contains(t, summary, "3 subsection(s)")
+	require.NotContains(t, summary, "newest",
+		"a listing that holds everything must not describe itself as a selection")
+	require.NotContains(t, summary, "not listed")
 }

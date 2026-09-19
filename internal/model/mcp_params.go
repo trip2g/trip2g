@@ -63,6 +63,14 @@ type MCPExpandParams struct {
 	Path    string   `json:"path,omitempty"`
 	Href    string   `json:"href,omitempty"`
 	TocPath []string `json:"toc_path,omitempty"`
+	// First and Last bound the listing to that many of the oldest and newest
+	// children. A note whose sections are dated grows one section per day, and
+	// after a year the full listing is the bulk of what the caller is trying to
+	// avoid reading: the newest few are where the subject stands, the oldest
+	// few are how it started, and asking for both leaves out the middle.
+	// Together covering everything, they are simply everything.
+	First int `json:"first,omitempty"`
+	Last  int `json:"last,omitempty"`
 }
 
 // MCPRotateSecretParams carries one federation key replacement. There is no kid
