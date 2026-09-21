@@ -1,4 +1,5 @@
 query ($input: OAuthUrlInput!) {
+	emailSignInEnabled
 	googleAuthUrl(input: $input) {
 		authUrl
 	}
@@ -7,5 +8,6 @@ query ($input: OAuthUrlInput!) {
 	}
 	oidcAuthUrl(input: $input) {
 		authUrl
+		label
 	}
 }

@@ -3193,17 +3193,22 @@ func (r *queryResolver) GoogleAuthURL(ctx context.Context, input model.OAuthURLI
 // OidcAuthURL is the resolver for the oidcAuthUrl field.
 func (r *queryResolver) OidcAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error) {
 	dry := input.Dry != nil && *input.Dry
-	callbackURL, authURL, err := r.env(ctx).BuildOIDCAuthURL(ctx, input.RedirectURL, dry)
+	signIn, err := r.env(ctx).BuildOIDCAuthURL(ctx, input.RedirectURL, dry)
 	if err != nil {
 		return nil, err
 	}
 	var authURLPtr *string
-	if authURL != "" {
-		authURLPtr = &authURL
+	if signIn.AuthURL != "" {
+		authURLPtr = &signIn.AuthURL
+	}
+	var labelPtr *string
+	if signIn.Label != "" {
+		labelPtr = &signIn.Label
 	}
 	return &model.OAuthURLPayload{
 		AuthURL:     authURLPtr,
-		CallbackURL: callbackURL,
+		CallbackURL: signIn.CallbackURL,
+		Label:       labelPtr,
 	}, nil
 }
 
@@ -3222,6 +3227,11 @@ func (r *queryResolver) GithubAuthURL(ctx context.Context, input model.OAuthURLI
 		AuthURL:     authURLPtr,
 		CallbackURL: callbackURL,
 	}, nil
+}
+
+// EmailSignInEnabled is the resolver for the emailSignInEnabled field.
+func (r *queryResolver) EmailSignInEnabled(ctx context.Context) (bool, error) {
+	return r.env(ctx).EmailSignInEnabled(ctx), nil
 }
 
 // Admin is the resolver for the admin field.

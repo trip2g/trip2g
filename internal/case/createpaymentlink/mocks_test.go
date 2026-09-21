@@ -26,20 +26,11 @@ var _ createpaymentlink.Env = &EnvMock{}
 //			ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
 //				panic("mock out the ActiveOfferByPublicID method")
 //			},
-//			CountActiveSignInCodesFunc: func(ctx context.Context, userID int64) (int64, error) {
-//				panic("mock out the CountActiveSignInCodes method")
-//			},
 //			CreateNowpaymentsInvoiceFunc: func(params nowpayments.CreateInvoiceParams) (*nowpayments.CreateInvoiceResponse, error) {
 //				panic("mock out the CreateNowpaymentsInvoice method")
 //			},
-//			CreateSignInCodeFunc: func(ctx context.Context, userID int64) (string, error) {
-//				panic("mock out the CreateSignInCode method")
-//			},
 //			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentUserToken method")
-//			},
-//			EnqueueRequestSignInEmailFunc: func(ctx context.Context, email string, code string) error {
-//				panic("mock out the EnqueueRequestSignInEmail method")
 //			},
 //			GenerateHotAuthTokenFunc: func(ctx context.Context, data appmodel.HotAuthToken) (string, error) {
 //				panic("mock out the GenerateHotAuthToken method")
@@ -47,44 +38,20 @@ var _ createpaymentlink.Env = &EnvMock{}
 //			GeneratePurchaseIDFunc: func() string {
 //				panic("mock out the GeneratePurchaseID method")
 //			},
-//			IncrementAndCheckSigninCounterFunc: func() bool {
-//				panic("mock out the IncrementAndCheckSigninCounter method")
-//			},
 //			InsertPurchaseFunc: func(ctx context.Context, arg db.InsertPurchaseParams) error {
 //				panic("mock out the InsertPurchase method")
-//			},
-//			LogSignInCodesFunc: func() bool {
-//				panic("mock out the LogSignInCodes method")
-//			},
-//			MaxActiveSignInCodesFunc: func() int64 {
-//				panic("mock out the MaxActiveSignInCodes method")
 //			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
 //			},
-//			SMTPHostFunc: func() string {
-//				panic("mock out the SMTPHost method")
-//			},
 //			StorePurchaseTokenFunc: func(ctx context.Context, data appmodel.PurchaseToken) (string, error) {
 //				panic("mock out the StorePurchaseToken method")
-//			},
-//			TryToAutoRegisterUserFunc: func(ctx context.Context, email string) (*db.User, error) {
-//				panic("mock out the TryToAutoRegisterUser method")
-//			},
-//			TurnstileSiteKeyFunc: func() string {
-//				panic("mock out the TurnstileSiteKey method")
-//			},
-//			UserBanByUserIDFunc: func(ctx context.Context, userID int64) (*db.UserBan, error) {
-//				panic("mock out the UserBanByUserID method")
 //			},
 //			UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 //				panic("mock out the UserByEmail method")
 //			},
 //			UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 //				panic("mock out the UserByID method")
-//			},
-//			VerifyCaptchaFunc: func(ctx context.Context, token string, remoteIP string) error {
-//				panic("mock out the VerifyCaptcha method")
 //			},
 //		}
 //
@@ -96,20 +63,11 @@ type EnvMock struct {
 	// ActiveOfferByPublicIDFunc mocks the ActiveOfferByPublicID method.
 	ActiveOfferByPublicIDFunc func(ctx context.Context, id string) (db.Offer, error)
 
-	// CountActiveSignInCodesFunc mocks the CountActiveSignInCodes method.
-	CountActiveSignInCodesFunc func(ctx context.Context, userID int64) (int64, error)
-
 	// CreateNowpaymentsInvoiceFunc mocks the CreateNowpaymentsInvoice method.
 	CreateNowpaymentsInvoiceFunc func(params nowpayments.CreateInvoiceParams) (*nowpayments.CreateInvoiceResponse, error)
 
-	// CreateSignInCodeFunc mocks the CreateSignInCode method.
-	CreateSignInCodeFunc func(ctx context.Context, userID int64) (string, error)
-
 	// CurrentUserTokenFunc mocks the CurrentUserToken method.
 	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
-
-	// EnqueueRequestSignInEmailFunc mocks the EnqueueRequestSignInEmail method.
-	EnqueueRequestSignInEmailFunc func(ctx context.Context, email string, code string) error
 
 	// GenerateHotAuthTokenFunc mocks the GenerateHotAuthToken method.
 	GenerateHotAuthTokenFunc func(ctx context.Context, data appmodel.HotAuthToken) (string, error)
@@ -117,44 +75,20 @@ type EnvMock struct {
 	// GeneratePurchaseIDFunc mocks the GeneratePurchaseID method.
 	GeneratePurchaseIDFunc func() string
 
-	// IncrementAndCheckSigninCounterFunc mocks the IncrementAndCheckSigninCounter method.
-	IncrementAndCheckSigninCounterFunc func() bool
-
 	// InsertPurchaseFunc mocks the InsertPurchase method.
 	InsertPurchaseFunc func(ctx context.Context, arg db.InsertPurchaseParams) error
-
-	// LogSignInCodesFunc mocks the LogSignInCodes method.
-	LogSignInCodesFunc func() bool
-
-	// MaxActiveSignInCodesFunc mocks the MaxActiveSignInCodes method.
-	MaxActiveSignInCodesFunc func() int64
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
 
-	// SMTPHostFunc mocks the SMTPHost method.
-	SMTPHostFunc func() string
-
 	// StorePurchaseTokenFunc mocks the StorePurchaseToken method.
 	StorePurchaseTokenFunc func(ctx context.Context, data appmodel.PurchaseToken) (string, error)
-
-	// TryToAutoRegisterUserFunc mocks the TryToAutoRegisterUser method.
-	TryToAutoRegisterUserFunc func(ctx context.Context, email string) (*db.User, error)
-
-	// TurnstileSiteKeyFunc mocks the TurnstileSiteKey method.
-	TurnstileSiteKeyFunc func() string
-
-	// UserBanByUserIDFunc mocks the UserBanByUserID method.
-	UserBanByUserIDFunc func(ctx context.Context, userID int64) (*db.UserBan, error)
 
 	// UserByEmailFunc mocks the UserByEmail method.
 	UserByEmailFunc func(ctx context.Context, email string) (db.User, error)
 
 	// UserByIDFunc mocks the UserByID method.
 	UserByIDFunc func(ctx context.Context, id int64) (db.User, error)
-
-	// VerifyCaptchaFunc mocks the VerifyCaptcha method.
-	VerifyCaptchaFunc func(ctx context.Context, token string, remoteIP string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -165,38 +99,15 @@ type EnvMock struct {
 			// ID is the id argument value.
 			ID string
 		}
-		// CountActiveSignInCodes holds details about calls to the CountActiveSignInCodes method.
-		CountActiveSignInCodes []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// UserID is the userID argument value.
-			UserID int64
-		}
 		// CreateNowpaymentsInvoice holds details about calls to the CreateNowpaymentsInvoice method.
 		CreateNowpaymentsInvoice []struct {
 			// Params is the params argument value.
 			Params nowpayments.CreateInvoiceParams
 		}
-		// CreateSignInCode holds details about calls to the CreateSignInCode method.
-		CreateSignInCode []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// UserID is the userID argument value.
-			UserID int64
-		}
 		// CurrentUserToken holds details about calls to the CurrentUserToken method.
 		CurrentUserToken []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-		}
-		// EnqueueRequestSignInEmail holds details about calls to the EnqueueRequestSignInEmail method.
-		EnqueueRequestSignInEmail []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Email is the email argument value.
-			Email string
-			// Code is the code argument value.
-			Code string
 		}
 		// GenerateHotAuthToken holds details about calls to the GenerateHotAuthToken method.
 		GenerateHotAuthToken []struct {
@@ -208,9 +119,6 @@ type EnvMock struct {
 		// GeneratePurchaseID holds details about calls to the GeneratePurchaseID method.
 		GeneratePurchaseID []struct {
 		}
-		// IncrementAndCheckSigninCounter holds details about calls to the IncrementAndCheckSigninCounter method.
-		IncrementAndCheckSigninCounter []struct {
-		}
 		// InsertPurchase holds details about calls to the InsertPurchase method.
 		InsertPurchase []struct {
 			// Ctx is the ctx argument value.
@@ -218,17 +126,8 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertPurchaseParams
 		}
-		// LogSignInCodes holds details about calls to the LogSignInCodes method.
-		LogSignInCodes []struct {
-		}
-		// MaxActiveSignInCodes holds details about calls to the MaxActiveSignInCodes method.
-		MaxActiveSignInCodes []struct {
-		}
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
-		}
-		// SMTPHost holds details about calls to the SMTPHost method.
-		SMTPHost []struct {
 		}
 		// StorePurchaseToken holds details about calls to the StorePurchaseToken method.
 		StorePurchaseToken []struct {
@@ -236,23 +135,6 @@ type EnvMock struct {
 			Ctx context.Context
 			// Data is the data argument value.
 			Data appmodel.PurchaseToken
-		}
-		// TryToAutoRegisterUser holds details about calls to the TryToAutoRegisterUser method.
-		TryToAutoRegisterUser []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Email is the email argument value.
-			Email string
-		}
-		// TurnstileSiteKey holds details about calls to the TurnstileSiteKey method.
-		TurnstileSiteKey []struct {
-		}
-		// UserBanByUserID holds details about calls to the UserBanByUserID method.
-		UserBanByUserID []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// UserID is the userID argument value.
-			UserID int64
 		}
 		// UserByEmail holds details about calls to the UserByEmail method.
 		UserByEmail []struct {
@@ -268,37 +150,17 @@ type EnvMock struct {
 			// ID is the id argument value.
 			ID int64
 		}
-		// VerifyCaptcha holds details about calls to the VerifyCaptcha method.
-		VerifyCaptcha []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Token is the token argument value.
-			Token string
-			// RemoteIP is the remoteIP argument value.
-			RemoteIP string
-		}
 	}
-	lockActiveOfferByPublicID          sync.RWMutex
-	lockCountActiveSignInCodes         sync.RWMutex
-	lockCreateNowpaymentsInvoice       sync.RWMutex
-	lockCreateSignInCode               sync.RWMutex
-	lockCurrentUserToken               sync.RWMutex
-	lockEnqueueRequestSignInEmail      sync.RWMutex
-	lockGenerateHotAuthToken           sync.RWMutex
-	lockGeneratePurchaseID             sync.RWMutex
-	lockIncrementAndCheckSigninCounter sync.RWMutex
-	lockInsertPurchase                 sync.RWMutex
-	lockLogSignInCodes                 sync.RWMutex
-	lockMaxActiveSignInCodes           sync.RWMutex
-	lockPublicURL                      sync.RWMutex
-	lockSMTPHost                       sync.RWMutex
-	lockStorePurchaseToken             sync.RWMutex
-	lockTryToAutoRegisterUser          sync.RWMutex
-	lockTurnstileSiteKey               sync.RWMutex
-	lockUserBanByUserID                sync.RWMutex
-	lockUserByEmail                    sync.RWMutex
-	lockUserByID                       sync.RWMutex
-	lockVerifyCaptcha                  sync.RWMutex
+	lockActiveOfferByPublicID    sync.RWMutex
+	lockCreateNowpaymentsInvoice sync.RWMutex
+	lockCurrentUserToken         sync.RWMutex
+	lockGenerateHotAuthToken     sync.RWMutex
+	lockGeneratePurchaseID       sync.RWMutex
+	lockInsertPurchase           sync.RWMutex
+	lockPublicURL                sync.RWMutex
+	lockStorePurchaseToken       sync.RWMutex
+	lockUserByEmail              sync.RWMutex
+	lockUserByID                 sync.RWMutex
 }
 
 // ActiveOfferByPublicID calls ActiveOfferByPublicIDFunc.
@@ -337,42 +199,6 @@ func (mock *EnvMock) ActiveOfferByPublicIDCalls() []struct {
 	return calls
 }
 
-// CountActiveSignInCodes calls CountActiveSignInCodesFunc.
-func (mock *EnvMock) CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error) {
-	if mock.CountActiveSignInCodesFunc == nil {
-		panic("EnvMock.CountActiveSignInCodesFunc: method is nil but Env.CountActiveSignInCodes was just called")
-	}
-	callInfo := struct {
-		Ctx    context.Context
-		UserID int64
-	}{
-		Ctx:    ctx,
-		UserID: userID,
-	}
-	mock.lockCountActiveSignInCodes.Lock()
-	mock.calls.CountActiveSignInCodes = append(mock.calls.CountActiveSignInCodes, callInfo)
-	mock.lockCountActiveSignInCodes.Unlock()
-	return mock.CountActiveSignInCodesFunc(ctx, userID)
-}
-
-// CountActiveSignInCodesCalls gets all the calls that were made to CountActiveSignInCodes.
-// Check the length with:
-//
-//	len(mockedEnv.CountActiveSignInCodesCalls())
-func (mock *EnvMock) CountActiveSignInCodesCalls() []struct {
-	Ctx    context.Context
-	UserID int64
-} {
-	var calls []struct {
-		Ctx    context.Context
-		UserID int64
-	}
-	mock.lockCountActiveSignInCodes.RLock()
-	calls = mock.calls.CountActiveSignInCodes
-	mock.lockCountActiveSignInCodes.RUnlock()
-	return calls
-}
-
 // CreateNowpaymentsInvoice calls CreateNowpaymentsInvoiceFunc.
 func (mock *EnvMock) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (*nowpayments.CreateInvoiceResponse, error) {
 	if mock.CreateNowpaymentsInvoiceFunc == nil {
@@ -405,42 +231,6 @@ func (mock *EnvMock) CreateNowpaymentsInvoiceCalls() []struct {
 	return calls
 }
 
-// CreateSignInCode calls CreateSignInCodeFunc.
-func (mock *EnvMock) CreateSignInCode(ctx context.Context, userID int64) (string, error) {
-	if mock.CreateSignInCodeFunc == nil {
-		panic("EnvMock.CreateSignInCodeFunc: method is nil but Env.CreateSignInCode was just called")
-	}
-	callInfo := struct {
-		Ctx    context.Context
-		UserID int64
-	}{
-		Ctx:    ctx,
-		UserID: userID,
-	}
-	mock.lockCreateSignInCode.Lock()
-	mock.calls.CreateSignInCode = append(mock.calls.CreateSignInCode, callInfo)
-	mock.lockCreateSignInCode.Unlock()
-	return mock.CreateSignInCodeFunc(ctx, userID)
-}
-
-// CreateSignInCodeCalls gets all the calls that were made to CreateSignInCode.
-// Check the length with:
-//
-//	len(mockedEnv.CreateSignInCodeCalls())
-func (mock *EnvMock) CreateSignInCodeCalls() []struct {
-	Ctx    context.Context
-	UserID int64
-} {
-	var calls []struct {
-		Ctx    context.Context
-		UserID int64
-	}
-	mock.lockCreateSignInCode.RLock()
-	calls = mock.calls.CreateSignInCode
-	mock.lockCreateSignInCode.RUnlock()
-	return calls
-}
-
 // CurrentUserToken calls CurrentUserTokenFunc.
 func (mock *EnvMock) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
 	if mock.CurrentUserTokenFunc == nil {
@@ -470,46 +260,6 @@ func (mock *EnvMock) CurrentUserTokenCalls() []struct {
 	mock.lockCurrentUserToken.RLock()
 	calls = mock.calls.CurrentUserToken
 	mock.lockCurrentUserToken.RUnlock()
-	return calls
-}
-
-// EnqueueRequestSignInEmail calls EnqueueRequestSignInEmailFunc.
-func (mock *EnvMock) EnqueueRequestSignInEmail(ctx context.Context, email string, code string) error {
-	if mock.EnqueueRequestSignInEmailFunc == nil {
-		panic("EnvMock.EnqueueRequestSignInEmailFunc: method is nil but Env.EnqueueRequestSignInEmail was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Email string
-		Code  string
-	}{
-		Ctx:   ctx,
-		Email: email,
-		Code:  code,
-	}
-	mock.lockEnqueueRequestSignInEmail.Lock()
-	mock.calls.EnqueueRequestSignInEmail = append(mock.calls.EnqueueRequestSignInEmail, callInfo)
-	mock.lockEnqueueRequestSignInEmail.Unlock()
-	return mock.EnqueueRequestSignInEmailFunc(ctx, email, code)
-}
-
-// EnqueueRequestSignInEmailCalls gets all the calls that were made to EnqueueRequestSignInEmail.
-// Check the length with:
-//
-//	len(mockedEnv.EnqueueRequestSignInEmailCalls())
-func (mock *EnvMock) EnqueueRequestSignInEmailCalls() []struct {
-	Ctx   context.Context
-	Email string
-	Code  string
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Email string
-		Code  string
-	}
-	mock.lockEnqueueRequestSignInEmail.RLock()
-	calls = mock.calls.EnqueueRequestSignInEmail
-	mock.lockEnqueueRequestSignInEmail.RUnlock()
 	return calls
 }
 
@@ -576,33 +326,6 @@ func (mock *EnvMock) GeneratePurchaseIDCalls() []struct {
 	return calls
 }
 
-// IncrementAndCheckSigninCounter calls IncrementAndCheckSigninCounterFunc.
-func (mock *EnvMock) IncrementAndCheckSigninCounter() bool {
-	if mock.IncrementAndCheckSigninCounterFunc == nil {
-		panic("EnvMock.IncrementAndCheckSigninCounterFunc: method is nil but Env.IncrementAndCheckSigninCounter was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockIncrementAndCheckSigninCounter.Lock()
-	mock.calls.IncrementAndCheckSigninCounter = append(mock.calls.IncrementAndCheckSigninCounter, callInfo)
-	mock.lockIncrementAndCheckSigninCounter.Unlock()
-	return mock.IncrementAndCheckSigninCounterFunc()
-}
-
-// IncrementAndCheckSigninCounterCalls gets all the calls that were made to IncrementAndCheckSigninCounter.
-// Check the length with:
-//
-//	len(mockedEnv.IncrementAndCheckSigninCounterCalls())
-func (mock *EnvMock) IncrementAndCheckSigninCounterCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockIncrementAndCheckSigninCounter.RLock()
-	calls = mock.calls.IncrementAndCheckSigninCounter
-	mock.lockIncrementAndCheckSigninCounter.RUnlock()
-	return calls
-}
-
 // InsertPurchase calls InsertPurchaseFunc.
 func (mock *EnvMock) InsertPurchase(ctx context.Context, arg db.InsertPurchaseParams) error {
 	if mock.InsertPurchaseFunc == nil {
@@ -639,60 +362,6 @@ func (mock *EnvMock) InsertPurchaseCalls() []struct {
 	return calls
 }
 
-// LogSignInCodes calls LogSignInCodesFunc.
-func (mock *EnvMock) LogSignInCodes() bool {
-	if mock.LogSignInCodesFunc == nil {
-		panic("EnvMock.LogSignInCodesFunc: method is nil but Env.LogSignInCodes was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockLogSignInCodes.Lock()
-	mock.calls.LogSignInCodes = append(mock.calls.LogSignInCodes, callInfo)
-	mock.lockLogSignInCodes.Unlock()
-	return mock.LogSignInCodesFunc()
-}
-
-// LogSignInCodesCalls gets all the calls that were made to LogSignInCodes.
-// Check the length with:
-//
-//	len(mockedEnv.LogSignInCodesCalls())
-func (mock *EnvMock) LogSignInCodesCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockLogSignInCodes.RLock()
-	calls = mock.calls.LogSignInCodes
-	mock.lockLogSignInCodes.RUnlock()
-	return calls
-}
-
-// MaxActiveSignInCodes calls MaxActiveSignInCodesFunc.
-func (mock *EnvMock) MaxActiveSignInCodes() int64 {
-	if mock.MaxActiveSignInCodesFunc == nil {
-		panic("EnvMock.MaxActiveSignInCodesFunc: method is nil but Env.MaxActiveSignInCodes was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockMaxActiveSignInCodes.Lock()
-	mock.calls.MaxActiveSignInCodes = append(mock.calls.MaxActiveSignInCodes, callInfo)
-	mock.lockMaxActiveSignInCodes.Unlock()
-	return mock.MaxActiveSignInCodesFunc()
-}
-
-// MaxActiveSignInCodesCalls gets all the calls that were made to MaxActiveSignInCodes.
-// Check the length with:
-//
-//	len(mockedEnv.MaxActiveSignInCodesCalls())
-func (mock *EnvMock) MaxActiveSignInCodesCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockMaxActiveSignInCodes.RLock()
-	calls = mock.calls.MaxActiveSignInCodes
-	mock.lockMaxActiveSignInCodes.RUnlock()
-	return calls
-}
-
 // PublicURL calls PublicURLFunc.
 func (mock *EnvMock) PublicURL() string {
 	if mock.PublicURLFunc == nil {
@@ -717,33 +386,6 @@ func (mock *EnvMock) PublicURLCalls() []struct {
 	mock.lockPublicURL.RLock()
 	calls = mock.calls.PublicURL
 	mock.lockPublicURL.RUnlock()
-	return calls
-}
-
-// SMTPHost calls SMTPHostFunc.
-func (mock *EnvMock) SMTPHost() string {
-	if mock.SMTPHostFunc == nil {
-		panic("EnvMock.SMTPHostFunc: method is nil but Env.SMTPHost was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockSMTPHost.Lock()
-	mock.calls.SMTPHost = append(mock.calls.SMTPHost, callInfo)
-	mock.lockSMTPHost.Unlock()
-	return mock.SMTPHostFunc()
-}
-
-// SMTPHostCalls gets all the calls that were made to SMTPHost.
-// Check the length with:
-//
-//	len(mockedEnv.SMTPHostCalls())
-func (mock *EnvMock) SMTPHostCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockSMTPHost.RLock()
-	calls = mock.calls.SMTPHost
-	mock.lockSMTPHost.RUnlock()
 	return calls
 }
 
@@ -780,105 +422,6 @@ func (mock *EnvMock) StorePurchaseTokenCalls() []struct {
 	mock.lockStorePurchaseToken.RLock()
 	calls = mock.calls.StorePurchaseToken
 	mock.lockStorePurchaseToken.RUnlock()
-	return calls
-}
-
-// TryToAutoRegisterUser calls TryToAutoRegisterUserFunc.
-func (mock *EnvMock) TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error) {
-	if mock.TryToAutoRegisterUserFunc == nil {
-		panic("EnvMock.TryToAutoRegisterUserFunc: method is nil but Env.TryToAutoRegisterUser was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Email string
-	}{
-		Ctx:   ctx,
-		Email: email,
-	}
-	mock.lockTryToAutoRegisterUser.Lock()
-	mock.calls.TryToAutoRegisterUser = append(mock.calls.TryToAutoRegisterUser, callInfo)
-	mock.lockTryToAutoRegisterUser.Unlock()
-	return mock.TryToAutoRegisterUserFunc(ctx, email)
-}
-
-// TryToAutoRegisterUserCalls gets all the calls that were made to TryToAutoRegisterUser.
-// Check the length with:
-//
-//	len(mockedEnv.TryToAutoRegisterUserCalls())
-func (mock *EnvMock) TryToAutoRegisterUserCalls() []struct {
-	Ctx   context.Context
-	Email string
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Email string
-	}
-	mock.lockTryToAutoRegisterUser.RLock()
-	calls = mock.calls.TryToAutoRegisterUser
-	mock.lockTryToAutoRegisterUser.RUnlock()
-	return calls
-}
-
-// TurnstileSiteKey calls TurnstileSiteKeyFunc.
-func (mock *EnvMock) TurnstileSiteKey() string {
-	if mock.TurnstileSiteKeyFunc == nil {
-		panic("EnvMock.TurnstileSiteKeyFunc: method is nil but Env.TurnstileSiteKey was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockTurnstileSiteKey.Lock()
-	mock.calls.TurnstileSiteKey = append(mock.calls.TurnstileSiteKey, callInfo)
-	mock.lockTurnstileSiteKey.Unlock()
-	return mock.TurnstileSiteKeyFunc()
-}
-
-// TurnstileSiteKeyCalls gets all the calls that were made to TurnstileSiteKey.
-// Check the length with:
-//
-//	len(mockedEnv.TurnstileSiteKeyCalls())
-func (mock *EnvMock) TurnstileSiteKeyCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockTurnstileSiteKey.RLock()
-	calls = mock.calls.TurnstileSiteKey
-	mock.lockTurnstileSiteKey.RUnlock()
-	return calls
-}
-
-// UserBanByUserID calls UserBanByUserIDFunc.
-func (mock *EnvMock) UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error) {
-	if mock.UserBanByUserIDFunc == nil {
-		panic("EnvMock.UserBanByUserIDFunc: method is nil but Env.UserBanByUserID was just called")
-	}
-	callInfo := struct {
-		Ctx    context.Context
-		UserID int64
-	}{
-		Ctx:    ctx,
-		UserID: userID,
-	}
-	mock.lockUserBanByUserID.Lock()
-	mock.calls.UserBanByUserID = append(mock.calls.UserBanByUserID, callInfo)
-	mock.lockUserBanByUserID.Unlock()
-	return mock.UserBanByUserIDFunc(ctx, userID)
-}
-
-// UserBanByUserIDCalls gets all the calls that were made to UserBanByUserID.
-// Check the length with:
-//
-//	len(mockedEnv.UserBanByUserIDCalls())
-func (mock *EnvMock) UserBanByUserIDCalls() []struct {
-	Ctx    context.Context
-	UserID int64
-} {
-	var calls []struct {
-		Ctx    context.Context
-		UserID int64
-	}
-	mock.lockUserBanByUserID.RLock()
-	calls = mock.calls.UserBanByUserID
-	mock.lockUserBanByUserID.RUnlock()
 	return calls
 }
 
@@ -951,45 +494,5 @@ func (mock *EnvMock) UserByIDCalls() []struct {
 	mock.lockUserByID.RLock()
 	calls = mock.calls.UserByID
 	mock.lockUserByID.RUnlock()
-	return calls
-}
-
-// VerifyCaptcha calls VerifyCaptchaFunc.
-func (mock *EnvMock) VerifyCaptcha(ctx context.Context, token string, remoteIP string) error {
-	if mock.VerifyCaptchaFunc == nil {
-		panic("EnvMock.VerifyCaptchaFunc: method is nil but Env.VerifyCaptcha was just called")
-	}
-	callInfo := struct {
-		Ctx      context.Context
-		Token    string
-		RemoteIP string
-	}{
-		Ctx:      ctx,
-		Token:    token,
-		RemoteIP: remoteIP,
-	}
-	mock.lockVerifyCaptcha.Lock()
-	mock.calls.VerifyCaptcha = append(mock.calls.VerifyCaptcha, callInfo)
-	mock.lockVerifyCaptcha.Unlock()
-	return mock.VerifyCaptchaFunc(ctx, token, remoteIP)
-}
-
-// VerifyCaptchaCalls gets all the calls that were made to VerifyCaptcha.
-// Check the length with:
-//
-//	len(mockedEnv.VerifyCaptchaCalls())
-func (mock *EnvMock) VerifyCaptchaCalls() []struct {
-	Ctx      context.Context
-	Token    string
-	RemoteIP string
-} {
-	var calls []struct {
-		Ctx      context.Context
-		Token    string
-		RemoteIP string
-	}
-	mock.lockVerifyCaptcha.RLock()
-	calls = mock.calls.VerifyCaptcha
-	mock.lockVerifyCaptcha.RUnlock()
 	return calls
 }

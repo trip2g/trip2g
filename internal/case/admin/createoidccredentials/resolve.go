@@ -28,6 +28,7 @@ type Payload = model.CreateOIDCCredentialsOrErrorPayload
 func validateRequest(r *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(r,
 		ozzo.Field(&r.Name, ozzo.Required, ozzo.Length(1, 100)),
+		ozzo.Field(&r.DisplayName, ozzo.Length(0, 100)),
 		ozzo.Field(&r.Issuer, ozzo.Required, is.URL),
 		ozzo.Field(&r.ClientID, ozzo.Required, ozzo.Length(1, 200)),
 		ozzo.Field(&r.ClientSecret, ozzo.Required, ozzo.Length(10, 200)),
@@ -77,9 +78,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	if input.RequiredGroup != nil {
 		requiredGroup = *input.RequiredGroup
 	}
+	displayName := ""
+	if input.DisplayName != nil {
+		displayName = *input.DisplayName
+	}
 
 	params := db.InsertOIDCCredentialsParams{
 		Name:                  input.Name,
+		DisplayName:           displayName,
 		Issuer:                input.Issuer,
 		ClientID:              input.ClientID,
 		ClientSecretEncrypted: encryptedSecret,

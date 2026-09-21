@@ -7,5 +7,5 @@ $trip2g_auth_oauth_buttons $mol_view
 		title \GitHub
 		uri <= github_uri \
 	Oidc $mol_link
-		title @ \Sign in with SSO
+		title <= oidc_title @ \Sign in with SSO
 		uri <= oidc_uri \

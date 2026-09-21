@@ -18,6 +18,7 @@ import (
 // keeping database/sql import for sql.ErrNoRows check
 
 type Env interface {
+	EmailSignInEnabled(ctx context.Context) bool
 	VerifySignInCode(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error)
 	DeleteSignInCodesByUserID(ctx context.Context, userID int64) error
 	SetupUserToken(ctx context.Context, userID int64) (string, error)
@@ -37,6 +38,10 @@ func validateRequest(r *gmodel.SignInByEmailInput) *gmodel.ErrorPayload {
 }
 
 func Resolve(ctx context.Context, env Env, req gmodel.SignInByEmailInput) (gmodel.SignInOrErrorPayload, error) {
+	if !env.EmailSignInEnabled(ctx) {
+		return &gmodel.ErrorPayload{Message: "email_sign_in_disabled"}, nil
+	}
+
 	normalizeRequest(&req)
 
 	errorPayload := validateRequest(&req)

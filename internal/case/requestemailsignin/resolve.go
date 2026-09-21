@@ -14,6 +14,7 @@ import (
 )
 
 type Env interface {
+	EmailSignInEnabled(ctx context.Context) bool
 	EnqueueRequestSignInEmail(ctx context.Context, email string, code string) error
 	UserByEmail(ctx context.Context, email string) (db.User, error)
 	CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error)
@@ -43,6 +44,10 @@ func ValidateInput(req *model.RequestEmailSignInCodeInput) *model.ErrorPayload {
 type Input = model.RequestEmailSignInCodeInput
 
 func Resolve(ctx context.Context, env Env, input Input, remoteIP string) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+	if !env.EmailSignInEnabled(ctx) {
+		return &model.ErrorPayload{Message: "email_sign_in_disabled"}, nil
+	}
+
 	NormalizeInput(&input)
 
 	errPayload := ValidateInput(&input)

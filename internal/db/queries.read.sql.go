@@ -1709,7 +1709,7 @@ func (q *Queries) GetActiveGoogleOAuthCredentials(ctx context.Context) (GoogleOa
 }
 
 const getActiveOIDCCredentials = `-- name: GetActiveOIDCCredentials :one
-select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by from oidc_credentials where active = true limit 1
+select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by, display_name from oidc_credentials where active = true limit 1
 `
 
 func (q *Queries) GetActiveOIDCCredentials(ctx context.Context) (OidcCredential, error) {
@@ -1728,6 +1728,7 @@ func (q *Queries) GetActiveOIDCCredentials(ctx context.Context) (OidcCredential,
 		&i.Active,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.DisplayName,
 	)
 	return i, err
 }
@@ -2430,7 +2431,7 @@ func (q *Queries) GetNotesWithFormSubmits(ctx context.Context) ([]GetNotesWithFo
 }
 
 const getOIDCCredentials = `-- name: GetOIDCCredentials :one
-select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by from oidc_credentials where id = ?
+select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by, display_name from oidc_credentials where id = ?
 `
 
 func (q *Queries) GetOIDCCredentials(ctx context.Context, id int64) (OidcCredential, error) {
@@ -2449,6 +2450,7 @@ func (q *Queries) GetOIDCCredentials(ctx context.Context, id int64) (OidcCredent
 		&i.Active,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.DisplayName,
 	)
 	return i, err
 }
@@ -5818,7 +5820,7 @@ func (q *Queries) ListNotePathsLike(ctx context.Context, value string) ([]NotePa
 }
 
 const listOIDCCredentials = `-- name: ListOIDCCredentials :many
-select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by from oidc_credentials order by created_at desc
+select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by, display_name from oidc_credentials order by created_at desc
 `
 
 func (q *Queries) ListOIDCCredentials(ctx context.Context) ([]OidcCredential, error) {
@@ -5843,6 +5845,7 @@ func (q *Queries) ListOIDCCredentials(ctx context.Context) ([]OidcCredential, er
 			&i.Active,
 			&i.CreatedAt,
 			&i.CreatedBy,
+			&i.DisplayName,
 		); err != nil {
 			return nil, err
 		}

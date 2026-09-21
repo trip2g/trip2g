@@ -14,7 +14,7 @@
 	"$trip2g_auth_code_form_Back_title": "Назад",
 	"$trip2g_auth_code_form_Code_field_name": "Код",
 	"$trip2g_auth_code_form_Code_hint_title": "Мы отправили код на вашу почту. Введите его ниже.",
-	"$trip2g_auth_oauth_buttons_Oidc_title": "Войти через SSO",
+	"$trip2g_auth_oauth_buttons_oidc_title": "Войти через SSO",
 	"$trip2g_button_openemail_link_title": "Открыть почту",
 	"$trip2g_editor_Open_hint": "Открыть редактор",
 	"$trip2g_editor_diff_title": "Разница",

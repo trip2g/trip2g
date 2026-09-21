@@ -41,6 +41,15 @@ func (a *app) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
 	return a.SiteConfig(ctx), nil
 }
 
+// EmailSignInEnabled reports whether the email code login is offered. The env
+// flag is a ceiling the admin-editable config cannot lift.
+func (a *app) EmailSignInEnabled(ctx context.Context) bool {
+	if a.config.DisableEmailSignIn {
+		return false
+	}
+	return a.SiteConfig(ctx).EmailSignInEnabled
+}
+
 func (a *app) CurrentTx() *sql.Tx {
 	return a.currentTx
 }

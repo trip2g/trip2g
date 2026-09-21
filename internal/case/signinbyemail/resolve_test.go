@@ -27,7 +27,8 @@ func TestResolve(t *testing.T) {
 		{
 			name: "invalid code - sql.ErrNoRows returns code field error",
 			env: &EnvMock{
-				DevSignInBypassFunc: func(string) bool { return false },
+				EmailSignInEnabledFunc: func(context.Context) bool { return true },
+				DevSignInBypassFunc:    func(string) bool { return false },
 				VerifySignInCodeFunc: func(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error) {
 					return 0, sql.ErrNoRows
 				},
@@ -46,7 +47,8 @@ func TestResolve(t *testing.T) {
 		{
 			name: "system error propagated",
 			env: &EnvMock{
-				DevSignInBypassFunc: func(string) bool { return false },
+				EmailSignInEnabledFunc: func(context.Context) bool { return true },
+				DevSignInBypassFunc:    func(string) bool { return false },
 				VerifySignInCodeFunc: func(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error) {
 					return 0, errors.New("db connection lost")
 				},
@@ -61,7 +63,8 @@ func TestResolve(t *testing.T) {
 		{
 			name: "dev bypass - UserByEmail returns sql.ErrNoRows → code field error",
 			env: &EnvMock{
-				DevSignInBypassFunc: func(string) bool { return true },
+				EmailSignInEnabledFunc: func(context.Context) bool { return true },
+				DevSignInBypassFunc:    func(string) bool { return true },
 				UserByEmailFunc: func(_ context.Context, _ string) (db.User, error) {
 					return db.User{}, sql.ErrNoRows
 				},
@@ -102,7 +105,8 @@ func TestResolve(t *testing.T) {
 // DeleteSignInCodesByUserID is ever called.
 func TestDevBypass_Success(t *testing.T) {
 	mock := &EnvMock{
-		DevSignInBypassFunc: func(string) bool { return true },
+		EmailSignInEnabledFunc: func(context.Context) bool { return true },
+		DevSignInBypassFunc:    func(string) bool { return true },
 		UserByEmailFunc: func(_ context.Context, _ string) (db.User, error) {
 			return db.User{ID: 7}, nil
 		},
@@ -125,4 +129,24 @@ func TestDevBypass_Success(t *testing.T) {
 
 	require.Empty(t, mock.VerifySignInCodeCalls(), "VerifySignInCode must not be called in dev bypass")
 	require.Empty(t, mock.DeleteSignInCodesByUserIDCalls(), "DeleteSignInCodesByUserID must not be called in dev bypass")
+}
+
+// A disabled instance must refuse the sign-in itself, not just hide the form:
+// the dev bypass is checked after the switch, so a held code is worth nothing.
+func TestEmailSignInDisabled_Refuses(t *testing.T) {
+	mock := &EnvMock{
+		EmailSignInEnabledFunc: func(context.Context) bool { return false },
+	}
+
+	result, err := Resolve(context.Background(), mock, gmodel.SignInByEmailInput{
+		Email: "hello@example.com",
+		Code:  "111111",
+	})
+	require.NoError(t, err)
+
+	errPayload, ok := result.(*gmodel.ErrorPayload)
+	require.True(t, ok, "expected *gmodel.ErrorPayload, got %T", result)
+	require.Equal(t, "email_sign_in_disabled", errPayload.Message)
+	require.Empty(t, mock.VerifySignInCodeCalls(), "must not verify a code")
+	require.Empty(t, mock.SetupUserTokenCalls(), "must not mint a token")
 }

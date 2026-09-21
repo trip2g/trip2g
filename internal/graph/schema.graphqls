@@ -637,6 +637,11 @@ type AdminGoogleOAuthCredentialsConnection {
 type AdminOIDCCredentials @goModel(model: "trip2g/internal/db.OidcCredential") {
   id: Int64!
   name: String!
+
+  """
+  Label for the sign-in button. Empty falls back to the frontend's own wording.
+  """
+  displayName: String!
   issuer: String!
   clientId: String!
   scopes: String!
@@ -1634,6 +1639,12 @@ type OAuthUrlPayload {
   Callback URL that should be configured in OAuth provider settings.
   """
   callbackUrl: String!
+
+  """
+  Label for the sign-in button. Only OIDC fills it, and only when the provider
+  was given a display name; empty means the client keeps its own wording.
+  """
+  label: String
 }
 
 type Query {
@@ -1658,6 +1669,12 @@ type Query {
   Returns GitHub OAuth URLs for authentication.
   """
   githubAuthUrl(input: OAuthUrlInput!): OAuthUrlPayload!
+
+  """
+  Whether sign-in by email code is offered. False means the email form is not
+  shown and the sign-in mutations refuse.
+  """
+  emailSignInEnabled: Boolean!
 
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
@@ -2990,6 +3007,7 @@ union SetActiveGoogleOAuthCredentialsOrErrorPayload = SetActiveGoogleOAuthCreden
 
 input CreateOIDCCredentialsInput {
   name: String!
+  displayName: String
   issuer: String!
   clientId: String!
   clientSecret: String!

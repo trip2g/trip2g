@@ -17,6 +17,7 @@ func ptr(s string) *string { return &s }
 // fullFlowEnv returns an EnvMock wired for a successful sign-in (no ban, ≤3 codes, happy path).
 func fullFlowEnv(siteKey string) *EnvMock {
 	return &EnvMock{
+		EmailSignInEnabledFunc:             func(_ context.Context) bool { return true },
 		TurnstileSiteKeyFunc:               func() string { return siteKey },
 		IncrementAndCheckSigninCounterFunc: func() bool { return false },
 		UserByEmailFunc: func(_ context.Context, _ string) (db.User, error) {
@@ -160,4 +161,20 @@ func TestMaxActiveSignInCodes_AtLimitRejected(t *testing.T) {
 	require.True(t, ok, "count == limit must return ErrorPayload, got %T", result)
 	require.Equal(t, "too_many_sign_in_codes", errPayload.Message)
 	require.Empty(t, env.CreateSignInCodeCalls(), "must not create a code once the limit is reached")
+}
+
+// With email sign-in switched off the use case must refuse before it touches
+// the user lookup, so a disabled instance leaks nothing about who is registered.
+func TestEmailSignInDisabled_Refuses(t *testing.T) {
+	env := fullFlowEnv("")
+	env.EmailSignInEnabledFunc = func(_ context.Context) bool { return false }
+
+	result, err := Resolve(context.Background(), env, Input{Email: "user@example.com"}, "")
+	require.NoError(t, err)
+
+	errPayload, ok := result.(*model.ErrorPayload)
+	require.True(t, ok, "expected ErrorPayload, got %T", result)
+	require.Equal(t, "email_sign_in_disabled", errPayload.Message)
+	require.Empty(t, env.UserByEmailCalls(), "must not look the user up")
+	require.Empty(t, env.CreateSignInCodeCalls(), "must not create a code")
 }

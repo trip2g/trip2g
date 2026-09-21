@@ -11,6 +11,7 @@ type SiteConfig struct {
 	ShowDraftVersions      bool
 	EnableNotFoundTracking bool
 	ShowWaitlists          bool
+	EmailSignInEnabled     bool
 	VectorMinSimilarity    int // 1–1000, divide by 1000 to get float threshold
 	URLNormalizationMethod URLNormalizationMethod
 	WikilinkResolution     WikilinkResolution

@@ -838,6 +838,7 @@ type QueryResolver interface {
 	GoogleAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
 	OidcAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
 	GithubAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
+	EmailSignInEnabled(ctx context.Context) (bool, error)
 	Admin(ctx context.Context) (*model1.AdminQuery, error)
 	Note(ctx context.Context, input model.NoteInput) (*model.PublicNote, error)
 	Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
@@ -1844,6 +1845,11 @@ type AdminGoogleOAuthCredentialsConnection {
 type AdminOIDCCredentials @goModel(model: "trip2g/internal/db.OidcCredential") {
   id: Int64!
   name: String!
+
+  """
+  Label for the sign-in button. Empty falls back to the frontend's own wording.
+  """
+  displayName: String!
   issuer: String!
   clientId: String!
   scopes: String!
@@ -2841,6 +2847,12 @@ type OAuthUrlPayload {
   Callback URL that should be configured in OAuth provider settings.
   """
   callbackUrl: String!
+
+  """
+  Label for the sign-in button. Only OIDC fills it, and only when the provider
+  was given a display name; empty means the client keeps its own wording.
+  """
+  label: String
 }
 
 type Query {
@@ -2865,6 +2877,12 @@ type Query {
   Returns GitHub OAuth URLs for authentication.
   """
   githubAuthUrl(input: OAuthUrlInput!): OAuthUrlPayload!
+
+  """
+  Whether sign-in by email code is offered. False means the email form is not
+  shown and the sign-in mutations refuse.
+  """
+  emailSignInEnabled: Boolean!
 
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
@@ -4197,6 +4215,7 @@ union SetActiveGoogleOAuthCredentialsOrErrorPayload = SetActiveGoogleOAuthCreden
 
 input CreateOIDCCredentialsInput {
   name: String!
+  displayName: String
   issuer: String!
   clientId: String!
   clientSecret: String!
@@ -20913,6 +20932,35 @@ func (ec *executionContext) fieldContext_AdminOIDCCredentials_name(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminOIDCCredentials_displayName(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminOIDCCredentials_displayName,
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminOIDCCredentials_displayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOIDCCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminOIDCCredentials_issuer(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -21214,6 +21262,8 @@ func (ec *executionContext) fieldContext_AdminOIDCCredentialsConnection_nodes(_ 
 				return ec.fieldContext_AdminOIDCCredentials_id(ctx, field)
 			case "name":
 				return ec.fieldContext_AdminOIDCCredentials_name(ctx, field)
+			case "displayName":
+				return ec.fieldContext_AdminOIDCCredentials_displayName(ctx, field)
 			case "issuer":
 				return ec.fieldContext_AdminOIDCCredentials_issuer(ctx, field)
 			case "clientId":
@@ -24603,6 +24653,8 @@ func (ec *executionContext) fieldContext_AdminQuery_oidcCredentials(ctx context.
 				return ec.fieldContext_AdminOIDCCredentials_id(ctx, field)
 			case "name":
 				return ec.fieldContext_AdminOIDCCredentials_name(ctx, field)
+			case "displayName":
+				return ec.fieldContext_AdminOIDCCredentials_displayName(ctx, field)
 			case "issuer":
 				return ec.fieldContext_AdminOIDCCredentials_issuer(ctx, field)
 			case "clientId":
@@ -34019,6 +34071,8 @@ func (ec *executionContext) fieldContext_CreateOIDCCredentialsPayload_credential
 				return ec.fieldContext_AdminOIDCCredentials_id(ctx, field)
 			case "name":
 				return ec.fieldContext_AdminOIDCCredentials_name(ctx, field)
+			case "displayName":
+				return ec.fieldContext_AdminOIDCCredentials_displayName(ctx, field)
 			case "issuer":
 				return ec.fieldContext_AdminOIDCCredentials_issuer(ctx, field)
 			case "clientId":
@@ -39201,6 +39255,35 @@ func (ec *executionContext) fieldContext_OAuthUrlPayload_callbackUrl(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _OAuthUrlPayload_label(ctx context.Context, field graphql.CollectedField, obj *model.OAuthURLPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OAuthUrlPayload_label,
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OAuthUrlPayload_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OAuthUrlPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Offer_id(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40157,6 +40240,8 @@ func (ec *executionContext) fieldContext_Query_googleAuthUrl(ctx context.Context
 				return ec.fieldContext_OAuthUrlPayload_authUrl(ctx, field)
 			case "callbackUrl":
 				return ec.fieldContext_OAuthUrlPayload_callbackUrl(ctx, field)
+			case "label":
+				return ec.fieldContext_OAuthUrlPayload_label(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type OAuthUrlPayload", field.Name)
 		},
@@ -40204,6 +40289,8 @@ func (ec *executionContext) fieldContext_Query_oidcAuthUrl(ctx context.Context, 
 				return ec.fieldContext_OAuthUrlPayload_authUrl(ctx, field)
 			case "callbackUrl":
 				return ec.fieldContext_OAuthUrlPayload_callbackUrl(ctx, field)
+			case "label":
+				return ec.fieldContext_OAuthUrlPayload_label(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type OAuthUrlPayload", field.Name)
 		},
@@ -40251,6 +40338,8 @@ func (ec *executionContext) fieldContext_Query_githubAuthUrl(ctx context.Context
 				return ec.fieldContext_OAuthUrlPayload_authUrl(ctx, field)
 			case "callbackUrl":
 				return ec.fieldContext_OAuthUrlPayload_callbackUrl(ctx, field)
+			case "label":
+				return ec.fieldContext_OAuthUrlPayload_label(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type OAuthUrlPayload", field.Name)
 		},
@@ -40265,6 +40354,35 @@ func (ec *executionContext) fieldContext_Query_githubAuthUrl(ctx context.Context
 	if fc.Args, err = ec.field_Query_githubAuthUrl_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_emailSignInEnabled(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_emailSignInEnabled,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().EmailSignInEnabled(ctx)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_emailSignInEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -42563,6 +42681,8 @@ func (ec *executionContext) fieldContext_SetActiveOIDCCredentialsPayload_credent
 				return ec.fieldContext_AdminOIDCCredentials_id(ctx, field)
 			case "name":
 				return ec.fieldContext_AdminOIDCCredentials_name(ctx, field)
+			case "displayName":
+				return ec.fieldContext_AdminOIDCCredentials_displayName(ctx, field)
 			case "issuer":
 				return ec.fieldContext_AdminOIDCCredentials_issuer(ctx, field)
 			case "clientId":
@@ -50247,7 +50367,7 @@ func (ec *executionContext) unmarshalInputCreateOIDCCredentialsInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "issuer", "clientId", "clientSecret", "scopes", "autoProvision", "allowedEmailDomain", "requiredGroup"}
+	fieldsInOrder := [...]string{"name", "displayName", "issuer", "clientId", "clientSecret", "scopes", "autoProvision", "allowedEmailDomain", "requiredGroup"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -50261,6 +50381,13 @@ func (ec *executionContext) unmarshalInputCreateOIDCCredentialsInput(ctx context
 				return it, err
 			}
 			it.Name = data
+		case "displayName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayName = data
 		case "issuer":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("issuer"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -66982,6 +67109,11 @@ func (ec *executionContext) _AdminOIDCCredentials(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "displayName":
+			out.Values[i] = ec._AdminOIDCCredentials_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "issuer":
 			out.Values[i] = ec._AdminOIDCCredentials_issuer(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -79625,6 +79757,8 @@ func (ec *executionContext) _OAuthUrlPayload(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "label":
+			out.Values[i] = ec._OAuthUrlPayload_label(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -80284,6 +80418,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_githubAuthUrl(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "emailSignInEnabled":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_emailSignInEnabled(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

@@ -52,6 +52,7 @@ const (
 	ConfigShowDraftVersions      = "show_draft_versions"
 	ConfigEnableNotFoundTracking = "enable_not_found_tracking"
 	ConfigShowWaitlists          = "show_waitlists"
+	ConfigEmailSignInEnabled     = "email_signin_enabled"
 )
 
 // Int config IDs.
@@ -129,6 +130,14 @@ var (
 			},
 			Default:   false,
 			SetupFunc: func(cfg *model.SiteConfig, v bool) { cfg.ShowWaitlists = v },
+		},
+		ConfigEmailSignInEnabled: {
+			ConfigMeta: ConfigMeta{
+				ID:          ConfigEmailSignInEnabled,
+				Description: "Offer sign-in by email code. Has no effect when DISABLE_EMAIL_SIGNIN is set: that turns email sign-in off for good.",
+			},
+			Default:   true,
+			SetupFunc: func(cfg *model.SiteConfig, v bool) { cfg.EmailSignInEnabled = v },
 		},
 	}
 

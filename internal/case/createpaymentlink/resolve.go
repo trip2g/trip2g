@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 	"trip2g/internal/case/processnowpaymentsipn"
-	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
@@ -26,8 +25,6 @@ type Env interface {
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserByEmail(ctx context.Context, email string) (db.User, error)
 	StorePurchaseToken(ctx context.Context, data appmodel.PurchaseToken) (string, error)
-
-	requestemailsignin.Env
 }
 
 type Input = model.CreatePaymentLinkInput
