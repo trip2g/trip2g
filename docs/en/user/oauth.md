@@ -91,6 +91,18 @@ sequenceDiagram
 
 Once activated, the sign-in screen shows a **Sign in with Google** or **Sign in with GitHub** button next to the email field. Deactivating the provider removes the button; users fall back to email magic links.
 
+## Turning off sign-in by email
+
+The email field is the door trip2g keeps open by default, and dropping a provider sends everyone back to it. On an instance where accounts only ever come from a provider, that door opens for nobody: a reader who tries it gets a code for an account that does not exist, and blames you for it.
+
+Set `DISABLE_EMAIL_SIGNIN="true"` in the environment and trip2g stops offering it. The email field, its button and the captcha disappear from the sign-in screen, and the API refuses an email code outright — no client can ask for one behind the screen's back. Only the provider buttons remain.
+
+The admin config carries an `email_signin_enabled` switch for the same thing at runtime, without a restart. The environment variable is the stronger of the two: while it is set, the switch in the panel cannot bring email sign-in back.
+
+Before you set it, make sure at least one provider actually works. With email sign-in off and every provider failing, nobody can sign in, and that includes you.
+
+The Google and GitHub buttons always read "Sign in with Google" and "Sign in with GitHub" — the provider's own name is what a reader needs. An OIDC provider is the one that needs naming, since "SSO" names a protocol rather than a destination; see [[en/user/oidc]] for `OIDC_DISPLAY_NAME`.
+
 ## Security
 
 The Client Secret is stored encrypted in the database. Even if a database backup is exposed, the secrets remain unreadable without the encryption key.
