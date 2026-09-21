@@ -1356,6 +1356,7 @@ func (CreateNotFoundIgnoredPatternPayload) IsCreateNotFoundIgnoredPatternOrError
 
 type CreateOIDCCredentialsInput struct {
 	Name               string  `json:"name"`
+	DisplayName        *string `json:"displayName,omitempty"`
 	Issuer             string  `json:"issuer"`
 	ClientID           string  `json:"clientId"`
 	ClientSecret       string  `json:"clientSecret"`
@@ -2139,6 +2140,9 @@ type OAuthURLPayload struct {
 	AuthURL *string `json:"authUrl,omitempty"`
 	// Callback URL that should be configured in OAuth provider settings.
 	CallbackURL string `json:"callbackUrl"`
+	// Label for the sign-in button. Only OIDC fills it, and only when the provider
+	// was given a display name; empty means the client keeps its own wording.
+	Label *string `json:"label,omitempty"`
 }
 
 type PublicNote struct {

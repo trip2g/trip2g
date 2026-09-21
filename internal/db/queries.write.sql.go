@@ -1847,12 +1847,13 @@ func (q *WriteQueries) InsertNoteVersionFrontmatterKey(ctx context.Context, arg 
 }
 
 const insertOIDCCredentials = `-- name: InsertOIDCCredentials :one
-insert into oidc_credentials (name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_by)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by
+insert into oidc_credentials (name, display_name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by, display_name
 `
 
 type InsertOIDCCredentialsParams struct {
 	Name                  string `json:"name"`
+	DisplayName           string `json:"display_name"`
 	Issuer                string `json:"issuer"`
 	ClientID              string `json:"client_id"`
 	ClientSecretEncrypted []byte `json:"client_secret_encrypted"`
@@ -1867,6 +1868,7 @@ type InsertOIDCCredentialsParams struct {
 func (q *WriteQueries) InsertOIDCCredentials(ctx context.Context, arg InsertOIDCCredentialsParams) (OidcCredential, error) {
 	row := q.db.QueryRowContext(ctx, insertOIDCCredentials,
 		arg.Name,
+		arg.DisplayName,
 		arg.Issuer,
 		arg.ClientID,
 		arg.ClientSecretEncrypted,
@@ -1891,6 +1893,7 @@ func (q *WriteQueries) InsertOIDCCredentials(ctx context.Context, arg InsertOIDC
 		&i.Active,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.DisplayName,
 	)
 	return i, err
 }

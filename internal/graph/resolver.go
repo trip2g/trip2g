@@ -397,8 +397,9 @@ type Env interface {
 	ListOIDCCredentials(ctx context.Context) ([]db.OidcCredential, error)
 	ListGitHubOAuthCredentials(ctx context.Context) ([]db.GithubOauthCredential, error)
 	BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
-	BuildOIDCAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
+	BuildOIDCAuthURL(ctx context.Context, redirectURL string, dry bool) (model.OIDCSignIn, error)
 	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
+	EmailSignInEnabled(ctx context.Context) bool
 
 	// Federation secrets
 	ListFederationSecretSubgraphIDsByKID(ctx context.Context, kid string) ([]int64, error)

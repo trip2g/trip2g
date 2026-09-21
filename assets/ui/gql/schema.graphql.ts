@@ -1303,6 +1303,8 @@ export type AdminOIDCCredentials = {
   clientId: Scalars['String']['output'];
   createdAt: Scalars['Time']['output'];
   createdBy: AdminUser;
+  /** Label for the sign-in button. Empty falls back to the frontend's own wording. */
+  displayName: Scalars['String']['output'];
   id: Scalars['Int64']['output'];
   issuer: Scalars['String']['output'];
   name: Scalars['String']['output'];
@@ -2521,6 +2523,7 @@ export type CreateOIDCCredentialsInput = {
   autoProvision?: InputMaybe<Scalars['Boolean']['input']>;
   clientId: Scalars['String']['input'];
   clientSecret: Scalars['String']['input'];
+  displayName?: InputMaybe<Scalars['String']['input']>;
   issuer: Scalars['String']['input'];
   name: Scalars['String']['input'];
   requiredGroup?: InputMaybe<Scalars['String']['input']>;
@@ -3319,6 +3322,11 @@ export type OAuthUrlPayload = {
   authUrl?: Maybe<Scalars['String']['output']>;
   /** Callback URL that should be configured in OAuth provider settings. */
   callbackUrl: Scalars['String']['output'];
+  /**
+   * Label for the sign-in button. Only OIDC fills it, and only when the provider
+   * was given a display name; empty means the client keeps its own wording.
+   */
+  label?: Maybe<Scalars['String']['output']>;
 };
 
 export type Offer = {
@@ -3396,6 +3404,11 @@ export type PushedNoteAsset = {
 export type Query = {
   __typename?: 'Query';
   admin: AdminQuery;
+  /**
+   * Whether sign-in by email code is offered. False means the email form is not
+   * shown and the sign-in mutations refuse.
+   */
+  emailSignInEnabled: Scalars['Boolean']['output'];
   /** Returns GitHub OAuth URLs for authentication. */
   githubAuthUrl: OAuthUrlPayload;
   /** Returns Google OAuth URLs for authentication. */

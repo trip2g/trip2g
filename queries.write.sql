@@ -953,8 +953,8 @@ delete from google_oauth_credentials where id = ?;
 delete from github_oauth_credentials where id = ?;
 
 -- name: InsertOIDCCredentials :one
-insert into oidc_credentials (name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_by)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning *;
+insert into oidc_credentials (name, display_name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_by)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning *;
 
 -- name: SetActiveOIDCCredentials :exec
 update oidc_credentials set active = (id = ?);

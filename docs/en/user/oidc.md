@@ -123,9 +123,29 @@ Optional variables:
 OIDC_AUTO_PROVISION="true"          # create users on first login
 OIDC_ALLOWED_EMAIL_DOMAIN="company.com"   # restrict to this domain
 OIDC_REQUIRED_GROUP="trip2g-users"  # restrict to this group
+OIDC_DISPLAY_NAME="Sign in with Telegram"  # wording on the button
 ```
 
 While these variables are set, trip2g uses an **env-managed** provider built directly from them, and it always takes precedence over anything configured in the admin panel. It is **locked**: it can't be changed or deleted from the panel — such attempts are simply ignored. Remove the variables and restart to disable it.
+
+## Rename the sign-in button
+
+By default the button reads **"Sign in with SSO"**, which tells a reader nothing about where they are about to land. Give the provider a display name and the button says that instead:
+
+- env-managed provider: `OIDC_DISPLAY_NAME="Sign in with Telegram"`
+- admin-configured provider: the `displayName` field on the credentials
+
+The name is shown exactly as written, in every language — it is a proper name, not a translated phrase. Leave it empty and the default wording comes back.
+
+## Sign-in by email
+
+An instance that authenticates everyone through SSO has no use for the email code form, and leaving it on the screen only invites people to try a door that will not open for them.
+
+Set `DISABLE_EMAIL_SIGNIN="true"` and trip2g stops offering it: the email form disappears from the sign-in screen and the sign-in API refuses email codes outright. Only the SSO and OAuth buttons remain.
+
+There is also an `email_signin_enabled` switch in the admin config for the same thing at runtime. The environment variable is the stronger of the two — while it is set, the admin switch cannot bring email sign-in back.
+
+Before you set it, make sure SSO really works for you: with email sign-in off and the identity provider unreachable, nobody can sign in, and that includes you.
 
 ## Account policy
 

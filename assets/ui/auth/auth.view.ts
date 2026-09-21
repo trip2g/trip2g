@@ -69,6 +69,14 @@ namespace $.$$ {
 			return next ?? ''
 		}
 
+		// An instance can be set to SSO only, and then this form has nothing to
+		// offer: the mutations refuse an email sign-in too. Unknown counts as
+		// enabled, so a failed request leaves the usual door open.
+		@$mol_mem
+		email_enabled(): boolean {
+			return $trip2g_auth_methods_here()?.emailSignInEnabled ?? true
+		}
+
 		@$mol_mem
 		override email( next?: string ): string {
 			const defaultValue = this.$.$trip2g_settings.dev_value( 'hello@example.com' )
@@ -171,6 +179,10 @@ namespace $.$$ {
 				? items
 				: items.filter( item => item !== this.OAuth_error() )
 
+			if( !this.email_enabled() ) {
+				return filtered.filter( item => item !== this.Email_field() )
+			}
+
 			// Show captcha container when captcha is required
 			if( this.show_captcha() ) {
 				this.turnstile_loaded()
@@ -180,6 +192,12 @@ namespace $.$$ {
 			}
 
 			return filtered
+		}
+
+		override buttons() {
+			const items = super.buttons()
+			if( this.email_enabled() ) return items
+			return items.filter( item => item !== this.RequestCode() && item !== this.RequestResult() )
 		}
 	}
 

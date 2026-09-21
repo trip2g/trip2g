@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/githubauth"
 	"trip2g/internal/googleauth"
+	"trip2g/internal/model"
 	"trip2g/internal/oidcauth"
 )
 
@@ -33,6 +34,7 @@ func (a *app) envOIDCCredential() (db.OidcCredential, bool) {
 	return db.OidcCredential{
 		ID:                    0, // sentinel: virtual, env-managed (not in DB)
 		Name:                  "env",
+		DisplayName:           o.DisplayName,
 		Issuer:                o.Issuer,
 		ClientID:              o.ClientID,
 		ClientSecretEncrypted: enc,
@@ -97,30 +99,29 @@ func (a *app) BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bo
 	return callbackURL, authURL, nil
 }
 
-// BuildOIDCAuthURL returns (callbackURL, authURL, error).
-// callbackURL is always returned for admin UI display.
-// authURL is only returned if OIDC is configured (or dry=true for just getting callbackURL).
-//
-//nolint:nonamedreturns // named returns document the multiple string return values
-func (a *app) BuildOIDCAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error) {
+// BuildOIDCAuthURL describes the OIDC sign-in entry point. CallbackURL is always
+// filled for admin UI display; AuthURL and Label only when OIDC is configured
+// (dry=true asks for the callback URL alone).
+func (a *app) BuildOIDCAuthURL(ctx context.Context, redirectURL string, dry bool) (model.OIDCSignIn, error) {
 	publicURL := a.GetPublicURLForRequest(ctx)
-	callbackURL = fmt.Sprintf("%s/_system/auth/oidc/callback", publicURL)
+	signIn := model.OIDCSignIn{CallbackURL: fmt.Sprintf("%s/_system/auth/oidc/callback", publicURL)}
 
 	if dry {
-		return callbackURL, "", nil
+		return signIn, nil
 	}
 
 	creds, err := a.GetActiveOIDCCredentials(ctx)
 	if err != nil {
 		// No active credentials - OIDC not configured
-		return callbackURL, "", nil //nolint:nilerr // expected: missing credentials returns empty authURL
+		return signIn, nil //nolint:nilerr // expected: missing credentials returns an empty authURL
 	}
 	if creds.ClientID == "" {
-		return callbackURL, "", nil
+		return signIn, nil
 	}
 
-	authURL = fmt.Sprintf("%s/_system/auth/oidc?redirect=%s", publicURL, url.QueryEscape(redirectURL))
-	return callbackURL, authURL, nil
+	signIn.AuthURL = fmt.Sprintf("%s/_system/auth/oidc?redirect=%s", publicURL, url.QueryEscape(redirectURL))
+	signIn.Label = creds.DisplayName
+	return signIn, nil
 }
 
 // BuildGitHubAuthURL returns (callbackURL, authURL, error).

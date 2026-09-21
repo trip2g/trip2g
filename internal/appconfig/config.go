@@ -76,6 +76,12 @@ type Config struct {
 	LogLevel             string
 	MaxActiveSignInCodes int
 
+	// DisableEmailSignIn turns off the email code login for the whole instance.
+	// It is a ceiling, not a default: the admin-editable email_signin_enabled
+	// config cannot switch it back on. Meant for instances that authenticate
+	// through SSO only.
+	DisableEmailSignIn bool
+
 	ShutdownGracePeriod     time.Duration
 	ShutdownTimeout         time.Duration
 	WriterAcquireTimeout    time.Duration
@@ -205,6 +211,9 @@ type OIDCConfig struct {
 	AutoProvision      bool
 	AllowedEmailDomain string
 	RequiredGroup      string
+	// DisplayName labels the sign-in button. Empty leaves the frontend's own
+	// default wording.
+	DisplayName string
 }
 
 // SimpleBackupConfig holds simple backup system configuration.
@@ -505,7 +514,15 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.Turnstile.SiteKey, "turnstile-site-key", "", "Cloudflare Turnstile site key")
 	flag.StringVar(&c.Turnstile.SecretKey, "turnstile-secret-key", "", "Cloudflare Turnstile secret key")
 
-	// OIDC env-managed provider (OIDC_ISSUER / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET ...)
+	c.defineSignInFlags()
+
+	// Metrics
+	c.defineMetricsFlags()
+}
+
+// defineSignInFlags covers the env-managed OIDC provider (OIDC_ISSUER /
+// OIDC_CLIENT_ID / OIDC_CLIENT_SECRET ...) and the instance-wide email switch.
+func (c *Config) defineSignInFlags() {
 	flag.StringVar(&c.OIDC.Issuer, "oidc-issuer", "", "OIDC issuer URL for the env-managed provider")
 	flag.StringVar(&c.OIDC.ClientID, "oidc-client-id", "", "OIDC client id for the env-managed provider")
 	flag.StringVar(&c.OIDC.ClientSecret, "oidc-client-secret", "", "OIDC client secret for the env-managed provider")
@@ -513,9 +530,10 @@ func (c *Config) defineFlags() {
 	flag.BoolVar(&c.OIDC.AutoProvision, "oidc-auto-provision", false, "auto-create users on first OIDC login (env-managed provider)")
 	flag.StringVar(&c.OIDC.AllowedEmailDomain, "oidc-allowed-email-domain", "", "restrict OIDC logins to this email domain (env-managed provider)")
 	flag.StringVar(&c.OIDC.RequiredGroup, "oidc-required-group", "", "restrict OIDC logins to members of this group (env-managed provider)")
+	flag.StringVar(&c.OIDC.DisplayName, "oidc-display-name", "", "label for the SSO sign-in button (env-managed provider)")
 
-	// Metrics
-	c.defineMetricsFlags()
+	flag.BoolVar(&c.DisableEmailSignIn, "disable-email-signin", false,
+		"disable email code sign-in instance-wide; the admin config cannot re-enable it")
 }
 
 func (c *Config) defineServerFlags() {

@@ -533,6 +533,7 @@ type OidcCredential struct {
 	Active                bool      `json:"active"`
 	CreatedAt             time.Time `json:"created_at"`
 	CreatedBy             int64     `json:"created_by"`
+	DisplayName           string    `json:"display_name"`
 }
 
 type PatreonCampaign struct {

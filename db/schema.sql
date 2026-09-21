@@ -853,7 +853,7 @@ CREATE TABLE oidc_credentials (
     active boolean not null default false,
     created_at datetime not null default (datetime('now')),
     created_by integer not null references users(id)
-);
+, display_name text not null default '');
 CREATE INDEX idx_change_webhook_deliveries_inflight on change_webhook_deliveries(webhook_id, status);
 CREATE INDEX idx_cron_webhook_deliveries_inflight on cron_webhook_deliveries(cron_webhook_id, status);
 CREATE TABLE note_version_delivery_attribution (
@@ -1013,4 +1013,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260820125621'),
   ('20260821014419'),
   ('20260822050102'),
-  ('20260822084659');
+  ('20260822084659'),
+  ('20260921153702');
