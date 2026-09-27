@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### `noindex: true` keeps a page out of search engines and sitemap.xml
+
+- **What.** A new `noindex` note property. A note with `noindex: true` is left out of `sitemap.xml` (the main one and every custom domain's), out of RSS feeds and any `.Public()` listing in a layout, and carries no JSON-LD. Its page gets `<meta name="robots" content="noindex">` in the default template and an `X-Robots-Tag: noindex` header on every response, custom layouts included.
+- **Why.** A page meant for a direct link only — an offer, a draft, a demo — could print its own robots meta tag from a custom layout, but it still showed up in `sitemap.xml`, so its URL was public to anyone who read the sitemap.
+- **How.** Add `noindex: true` to the note's frontmatter, or set it for a folder with a frontmatter patch. It is not access control: anyone with the link can still open the page. See [[en/user/seo|SEO]].
+
 ### Closed pages say they are closed, and offer sign-in instead of a wait list
 
 - **What.** A page a visitor has no access to now reads "This page is closed", tells them to ask the owner of the knowledge base for access, and shows the sign-in form right there. The wait-list block (Telegram bot, e-mail field) is off by default and appears only if you turn on the new **show_waitlists** config value; it still shows only when nothing is on sale.

@@ -195,6 +195,7 @@ type NoteView struct {
 
 	Free          bool // without the paywall
 	ExcludeSearch bool // search: false in frontmatter
+	NoIndex       bool // noindex: true in frontmatter: kept out of search engines, sitemap.xml and feeds
 	Redirect      *string
 
 	Description *string // meta description for SEO
@@ -615,6 +616,8 @@ func (n *NoteView) ExtractMetaData() error {
 	if v, ok := n.RawMeta["search"].(bool); ok && !v {
 		n.ExcludeSearch = true
 	}
+
+	n.NoIndex = n.RawMeta["noindex"] == true
 
 	return nil
 }
@@ -1553,8 +1556,8 @@ func (n *NoteView) IsAnonymouslyReadable() bool {
 // IsPubliclyReadable reports whether a note may be exposed as an item through
 // an unauthenticated endpoint. Such endpoints (RSS, template feeds) have no
 // user context, so they must honor the same static gates as anonymous page
-// rendering rather than relying on Free alone, plus one more: system notes are
-// hidden from every listing.
+// rendering rather than relying on Free alone, plus two more: system notes and
+// noindex notes are hidden from every listing.
 func (n *NoteView) IsPubliclyReadable() bool {
-	return n.IsAnonymouslyReadable() && !n.IsSystem()
+	return n.IsAnonymouslyReadable() && !n.IsSystem() && !n.NoIndex
 }

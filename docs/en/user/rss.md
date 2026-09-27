@@ -29,7 +29,7 @@ rss_limit: 20
 ---
 ```
 
-Visit `/feed.xml` and the feed is live. Only publicly readable notes ever appear in it — free, not sign-in-gated, not system.
+Visit `/feed.xml` and the feed is live. Only publicly readable notes ever appear in it — free, not sign-in-gated, not system, not marked `noindex: true`.
 
 | Field | Purpose | Default |
 |-------|---------|---------|

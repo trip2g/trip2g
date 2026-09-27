@@ -288,12 +288,15 @@ func TestNoteQuery_Public(t *testing.T) {
 		Path: "blog/gated.md", Title: "Gated Post", Permalink: "/blog/gated", Free: true,
 		Subgraphs: map[string]*model.NoteSubgraph{"members": {RequireSignin: true}},
 	}
+	nvs.PathMap["blog/noindex.md"] = &model.NoteView{
+		Path: "blog/noindex.md", Title: "Noindex Post", Permalink: "/blog/noindex", Free: true, NoIndex: true,
+	}
 	q := templateviews.NewNVS(nvs, "live")
 
 	all := q.ByGlob("blog/*.md").All()
-	require.Len(t, all, 3, "without Public() all notes are returned")
+	require.Len(t, all, 4, "without Public() all notes are returned")
 
 	public := q.ByGlob("blog/*.md").Public().All()
-	require.Len(t, public, 1, "Public() drops paid and sign-in-gated notes")
+	require.Len(t, public, 1, "Public() drops paid, sign-in-gated and noindex notes")
 	require.Equal(t, "Free Post", public[0].Title())
 }

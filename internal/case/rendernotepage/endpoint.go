@@ -30,6 +30,23 @@ import (
 
 type Endpoint struct{}
 
+const noIndexRobots = "noindex"
+
+func noteMetaRobots(note *model.NoteView) string {
+	if note.NoIndex {
+		return noIndexRobots
+	}
+	return ""
+}
+
+// setNoIndexHeader sends X-Robots-Tag for a noindex note. Unlike the meta tag it
+// reaches custom layouts, content_type notes and cached responses alike.
+func setNoIndexHeader(ctx *fasthttp.RequestCtx, note *model.NoteView) {
+	if note.NoIndex {
+		ctx.Response.Header.Set("X-Robots-Tag", noIndexRobots)
+	}
+}
+
 //nolint:gocognit,funlen,gocyclo,cyclop // high branch count is inherent to HTTP response dispatch; extracting sub-branches would obscure the flow
 func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	token, err := req.UserToken()
@@ -79,6 +96,9 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		}
 
 		layoutParams.HrefLangs = buildHrefLangs(env, resp.Note)
+
+		layoutParams.MetaRobots = noteMetaRobots(resp.Note)
+		setNoIndexHeader(ctx, resp.Note)
 	}
 
 	// 301 redirect for non-canonical URL variants (alternate transliteration methods).

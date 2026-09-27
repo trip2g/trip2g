@@ -12,6 +12,8 @@ Sitemap.xml автоматически генерируется из всех о
 
 Заметки с `free: false` (за paywall) **не включаются** в sitemap.
 
+Заметки с `noindex: true` тоже **не включаются** — ни в `Generate`, ни в `GenerateForDomain` — и не попадают в hreflang-альтернативы других записей. Для таких страниц рендер ставит `MetaRobots = "noindex"` и заголовок `X-Robots-Tag: noindex` (`internal/case/rendernotepage`, в том числе на ответах из page cache).
+
 ## Метаданные
 
 Для каждой страницы в sitemap.xml указывается:

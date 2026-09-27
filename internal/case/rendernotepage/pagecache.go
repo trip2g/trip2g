@@ -219,6 +219,7 @@ func serveCachedPageEarly(ctx *fasthttp.RequestCtx, env Env, request Request) bo
 		return false
 	}
 
+	setNoIndexHeader(ctx, note)
 	writeCachedPage(ctx, cached)
 	return true
 }

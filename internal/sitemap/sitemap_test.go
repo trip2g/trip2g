@@ -84,6 +84,36 @@ func TestGenerateForDomain_ExcludeSystemPages(t *testing.T) {
 	require.NotContains(t, xml, "_system")
 }
 
+func TestGenerateForDomain_ExcludeNoIndex(t *testing.T) {
+	nvs := model.NewNoteViews()
+
+	listed := &model.NoteView{
+		Permalink:         "/listed",
+		PermalinkOriginal: "/listed",
+		Path:              "listed.md",
+		Free:              true,
+		Routes:            []model.ParsedRoute{{Host: "foo.com", Path: "/listed"}},
+	}
+	hidden := &model.NoteView{
+		Permalink:         "/hidden",
+		PermalinkOriginal: "/hidden",
+		Path:              "hidden.md",
+		Free:              true,
+		NoIndex:           true,
+		Routes:            []model.ParsedRoute{{Host: "foo.com", Path: "/hidden"}},
+	}
+	nvs.RegisterNote(listed)
+	nvs.RegisterNote(hidden)
+
+	result, err := GenerateForDomain(nvs, "foo.com", "https://foo.com")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	xml := string(result)
+	require.Contains(t, xml, "https://foo.com/listed")
+	require.NotContains(t, xml, "hidden")
+}
+
 func TestGenerateForDomain_EmptyDomain(t *testing.T) {
 	nvs := model.NewNoteViews()
 
@@ -154,6 +184,32 @@ func TestGenerate_HreflangAlternates(t *testing.T) {
 	require.Contains(t, xml, `<xhtml:link rel="alternate" hreflang="x-default" href="https://example.com/en/guide">`)
 }
 
+func TestGenerate_HreflangAlternatesSkipNoIndex(t *testing.T) {
+	en := &model.NoteView{Permalink: "/en/guide", PermalinkOriginal: "/en/guide", Free: true, Lang: "en"}
+	ru := &model.NoteView{Permalink: "/ru/guide", PermalinkOriginal: "/ru/guide", Free: true, Lang: "ru"}
+	de := &model.NoteView{Permalink: "/de/guide", PermalinkOriginal: "/de/guide", Free: true, Lang: "de", NoIndex: true}
+	group := &model.LangGroup{
+		Hub: en,
+		Versions: []model.LangRedirect{
+			{Lang: "en", Note: en, URL: "/en/guide"},
+			{Lang: "ru", Note: ru, URL: "/ru/guide"},
+			{Lang: "de", Note: de, URL: "/de/guide"},
+		},
+	}
+	en.LangGroup = group
+	ru.LangGroup = group
+	de.LangGroup = group
+
+	nvs := &model.NoteViews{List: []*model.NoteView{en, ru, de}}
+
+	result, err := Generate(nvs, "https://example.com")
+	require.NoError(t, err)
+	xml := string(result)
+
+	require.Contains(t, xml, `<xhtml:link rel="alternate" hreflang="ru" href="https://example.com/ru/guide">`)
+	require.NotContains(t, xml, "/de/guide", "a noindex version is neither listed nor named as an alternate")
+}
+
 func TestGenerate(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -182,6 +238,17 @@ func TestGenerate(t *testing.T) {
 			},
 			contains:    []string{"<loc>https://example.com/public</loc>"},
 			notContains: []string{"_system"},
+		},
+		{
+			name: "noindex notes excluded",
+			nvs: &model.NoteViews{
+				List: []*model.NoteView{
+					{Permalink: "/public", Free: true},
+					{Permalink: "/offer", Free: true, NoIndex: true},
+				},
+			},
+			contains:    []string{"<loc>https://example.com/public</loc>"},
+			notContains: []string{"offer"},
 		},
 		{
 			name: "empty notes",

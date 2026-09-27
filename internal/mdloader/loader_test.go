@@ -1762,6 +1762,38 @@ func TestPathBasedPatchApplied(t *testing.T) {
 		"one patch should be recorded as applied")
 }
 
+func TestNoIndexFrontmatter(t *testing.T) {
+	log := logger.TestLogger{}
+
+	patch := frontmatterpatch.Compile(
+		1,
+		[]string{"offers/*"},
+		nil,
+		`{ noindex: true }`,
+		0,
+		"hide offers from search engines",
+	)
+
+	sources := []mdloader.SourceFile{
+		{Path: "own.md", Content: []byte("---\nfree: true\nnoindex: true\n---\nContent")},
+		{Path: "string.md", Content: []byte("---\nfree: true\nnoindex: \"true\"\n---\nContent")},
+		{Path: "plain.md", Content: []byte("---\nfree: true\n---\nContent")},
+		{Path: "offers/demo.md", Content: []byte("---\nfree: true\n---\nContent")},
+	}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources:            sources,
+		Log:                &log,
+		FrontmatterPatches: []frontmatterpatch.CompiledPatch{patch},
+	})
+	require.NoError(t, err)
+
+	require.True(t, pages.PathMap["own.md"].NoIndex, "noindex: true in the note's own frontmatter")
+	require.False(t, pages.PathMap["string.md"].NoIndex, "only a YAML boolean counts, like free")
+	require.False(t, pages.PathMap["plain.md"].NoIndex)
+	require.True(t, pages.PathMap["offers/demo.md"].NoIndex, "noindex set by a frontmatter patch")
+}
+
 // TestPathBasedPatchNotAppliedToNonMatchingPath verifies that a path-based patch
 // does NOT apply to notes outside the matching path prefix.
 func TestPathBasedPatchNotAppliedToNonMatchingPath(t *testing.T) {

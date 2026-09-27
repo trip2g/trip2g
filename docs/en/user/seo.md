@@ -50,8 +50,37 @@ Set these in a note's frontmatter:
 | `slug` | Custom URL for the note. |
 | `route` / `routes` | Serve the note at extra paths or on a custom domain. See [[en/user/advanced|Custom domains]]. |
 | `lang` | The note's language, for multilingual sites. |
+| `noindex` | `true` keeps the page out of search engines, `sitemap.xml` and RSS feeds. See below. |
 
 The single most useful field is `description`. It is the snippet people read before they click.
+
+### Keeping a page out of search
+
+Some pages are meant to be opened only by a direct link: an offer sent to one person, a draft you want feedback on, a demo. Mark them:
+
+```yaml
+---
+free: true
+noindex: true
+---
+```
+
+Such a page:
+
+- is not listed in `sitemap.xml` (neither the main one nor a custom domain's), and is not named as a language alternate of another page there;
+- gets `<meta name="robots" content="noindex">` in the default template and an `X-Robots-Tag: noindex` HTTP header on every response, so pages with a custom layout are covered too;
+- carries no JSON-LD structured data;
+- is left out of RSS feeds and any other list built with `.Public()` in a layout.
+
+Links on the page are still followed: `noindex` asks search engines not to show *this* page, not to ignore the pages it links to.
+
+`noindex` is not access control. Anyone with the link can open the page, and a search engine that finds the link somewhere else will still load it — it just will not show it in results. For a page only certain people may read, put it in a [[en/user/subgraphs|subgraph]]: then only readers with access can open it, and it is left out of the sitemap anyway.
+
+`noindex` does not affect the site's own search. To hide the page from it as well, add `search: false`.
+
+You can set `noindex` for a whole folder with a [[en/user/frontmatter-patches|frontmatter patch]], for example `{ noindex: true }` for `offers/*`.
+
+If your custom layout already prints its own `<meta name="robots">` from the note's properties, it keeps working: the header and the tag combine, and search engines apply the strictest directive.
 
 ### Structured data for search engines
 

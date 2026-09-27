@@ -4,9 +4,9 @@ RSS is entirely template-driven: a Jet layout (`_layouts/rss.html`) + a feed not
 
 ## The one Go primitive: `NoteQuery.Public()`
 
-`internal/templateviews/query.go` — `NoteQuery.Public()` restricts `.All()` results to notes readable by anonymous visitors (`model.NoteView.IsPubliclyReadable()`: `Free`, not a system note, not in a `RequireSignin` subgraph). Filtering happens before offset/limit so pagination can't be used to probe hidden notes.
+`internal/templateviews/query.go` — `NoteQuery.Public()` restricts `.All()` results to notes readable by anonymous visitors (`model.NoteView.IsPubliclyReadable()`: `Free`, not a system note, not `noindex: true`, not in a `RequireSignin` subgraph). Filtering happens before offset/limit so pagination can't be used to probe hidden notes.
 
-`model.NoteView.IsPubliclyReadable()` (`internal/model/note.go`) is the single source of truth for "can an unauthenticated visitor see this note" — used by `.Public()`, by `internal/assetindex` (deciding public vs access-checked asset serving), and by any future anonymous-facing feature.
+`model.NoteView.IsPubliclyReadable()` (`internal/model/note.go`) decides whether a note may be *listed* by an unauthenticated endpoint — used by `.Public()` and by any future anonymous-facing listing. Whether its content may be *served* anonymously is `IsAnonymouslyReadable()`, which `internal/assetindex` uses for public vs access-checked asset serving; a `noindex` note is still served, just never listed.
 
 ## The default `_layouts/rss.html`
 
