@@ -10,7 +10,7 @@ name: trip2g_vecbench
 
 services:
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:RELEASE.2026-09-16T00-00-00Z
     container_name: trip2g-vecbench-minio
     ports:
       - "22000:22000"

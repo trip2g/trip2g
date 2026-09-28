@@ -17,12 +17,13 @@ trip2g needs an S3-compatible store (MinIO) for assets. The commands below put b
 # Shared network so the app can reach MinIO by container name
 docker network create trip2g-local-net
 
-# MinIO (skip if you already have one; attach it to the same network)
+# MinIO (skip if you already have one; attach it to the same network).
+# MinIO's own images are gone from Docker Hub; Silo is the maintained build of the same server.
 docker run -d --name trip2g-minio \
   --network trip2g-local-net \
   -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=trip2g -e MINIO_ROOT_PASSWORD=trip2g-secret \
-  minio/minio:latest server /data --console-address ":9001"
+  pgsty/silo:latest server /data --console-address ":9001"
 
 # trip2g app on port 24081 (health on 24082), fresh local DB
 # This pulls the current published image. To build locally from source instead,

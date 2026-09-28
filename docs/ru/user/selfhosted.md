@@ -246,7 +246,7 @@ services:
       - caddy-config:/config
 
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:latest
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -294,6 +294,7 @@ volumes:
 - `caddy` публикует только `80` и `443`.
 - `trip2g-data` хранит данные trip2g и внутренний bare git-репозиторий.
 - `minio-data` хранит MinIO-объекты.
+- В сервисе `minio` работает [Silo](https://github.com/pgsty/silo) (`pgsty/silo`) — поддерживаемая сборка открытого сервера MinIO. Свои образы MinIO удалил с Docker Hub в сентябре 2026 года. Silo читает тот же каталог данных, поэтому существующий том `minio-data` подходит без изменений.
 - `trip2g` и `minio` доступны только внутри compose-сети.
 
 ### `.env`

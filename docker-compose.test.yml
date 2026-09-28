@@ -2,7 +2,7 @@ name: trip2g_test_env
 
 services:
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:RELEASE.2026-09-16T00-00-00Z
     container_name: trip2g-test-minio
     ports:
       - "29000:29000"

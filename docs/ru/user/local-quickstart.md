@@ -17,12 +17,13 @@ trip2g'у нужно S3-совместимое хранилище (MinIO) для
 # Общая сеть, чтобы приложение достучалось до MinIO по имени контейнера
 docker network create trip2g-local-net
 
-# MinIO (пропустить, если уже есть; подключить к той же сети)
+# MinIO (пропустить, если уже есть; подключить к той же сети).
+# Образы самого MinIO удалены с Docker Hub; Silo — поддерживаемая сборка того же сервера.
 docker run -d --name trip2g-minio \
   --network trip2g-local-net \
   -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=trip2g -e MINIO_ROOT_PASSWORD=trip2g-secret \
-  minio/minio:latest server /data --console-address ":9001"
+  pgsty/silo:latest server /data --console-address ":9001"
 
 # Приложение trip2g на порту 24081 (healthcheck на 24082), свежая локальная БД
 # Скачивается актуальный опубликованный образ. Для сборки из исходников

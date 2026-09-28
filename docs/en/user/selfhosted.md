@@ -246,7 +246,7 @@ services:
       - caddy-config:/config
 
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:latest
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -294,6 +294,7 @@ Why these choices matter:
 - `caddy` is the only service exposing `80` and `443`.
 - `trip2g-data` keeps trip2g data and the internal bare git repository.
 - `minio-data` keeps MinIO objects.
+- `minio` runs [Silo](https://github.com/pgsty/silo) (`pgsty/silo`), the maintained build of the open-source MinIO server. MinIO removed its own images from Docker Hub in September 2026. Silo reads the same data directory, so an existing `minio-data` volume works as is.
 - `trip2g` and `minio` stay internal to the compose network.
 
 ### `.env`

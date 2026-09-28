@@ -1,6 +1,6 @@
 services:
   minio:
-    image: quay.io/minio/minio
+    image: pgsty/silo:latest
     ports:
       - "9000:9000"
       - "9001:9001"
