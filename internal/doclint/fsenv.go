@@ -106,6 +106,11 @@ func (e *fsEnv) RawNoteChunks(_ context.Context) ([]noteloader.RawNoteChunk, err
 	return nil, nil
 }
 
+// RawNoteEmbeddings returns nil: whole-note embeddings are not needed for linting.
+func (e *fsEnv) RawNoteEmbeddings(_ context.Context) ([]noteloader.RawNoteEmbedding, error) {
+	return nil, nil
+}
+
 // NoteAssetExists always returns false: assets are not tracked in the FS env.
 func (e *fsEnv) NoteAssetExists(_ context.Context, _ db.NoteAsset) (bool, error) {
 	return false, nil

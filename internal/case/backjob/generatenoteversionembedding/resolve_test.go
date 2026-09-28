@@ -36,6 +36,7 @@ func TestResolve(t *testing.T) {
 
 	t.Run("skips when vector search disabled", func(t *testing.T) {
 		env := &EnvMock{
+			NoteEmbeddingsSavedFunc: func() {},
 			FeaturesFunc: func() features.Features {
 				return features.Features{
 					VectorSearch: features.VectorSearchConfig{Enabled: false},
@@ -50,6 +51,7 @@ func TestResolve(t *testing.T) {
 
 	t.Run("skips when note not found in cache", func(t *testing.T) {
 		env := &EnvMock{
+			NoteEmbeddingsSavedFunc: func() {},
 			FeaturesFunc: func() features.Features {
 				return features.Features{
 					VectorSearch: features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall},
@@ -87,6 +89,7 @@ func TestResolve(t *testing.T) {
 		}
 
 		env := &EnvMock{
+			NoteEmbeddingsSavedFunc: func() {},
 			FeaturesFunc: func() features.Features {
 				return features.Features{VectorSearch: cfg}
 			},
@@ -114,6 +117,7 @@ func TestResolve(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, env.UpsertNoteVersionEmbeddingCalls())
 		require.Empty(t, env.UpsertNoteVersionChunkCalls())
+		require.Empty(t, env.NoteEmbeddingsSavedCalls(), "nothing written, nothing to reload")
 	})
 
 	t.Run("re-embeds stale or missing chunks when whole-note hash matches", func(t *testing.T) {
@@ -177,8 +181,9 @@ func TestResolve(t *testing.T) {
 				defer srv.Close()
 
 				env := &EnvMock{
-					FeaturesFunc: func() features.Features { return features.Features{VectorSearch: cfg} },
-					LoggerFunc:   func() logger.Logger { return &logger.TestLogger{} },
+					NoteEmbeddingsSavedFunc: func() {},
+					FeaturesFunc:            func() features.Features { return features.Features{VectorSearch: cfg} },
+					LoggerFunc:              func() logger.Logger { return &logger.TestLogger{} },
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return &model.NoteViews{Map: map[string]*model.NoteView{noteView.Permalink: noteView}}
 					},
@@ -208,6 +213,8 @@ func TestResolve(t *testing.T) {
 					"whole-note embedding is up to date and must not be regenerated")
 				require.NotEmpty(t, env.UpsertNoteVersionChunkCalls(),
 					"stale or missing chunks must be re-embedded even when the whole-note hash matches")
+				require.Len(t, env.NoteEmbeddingsSavedCalls(), 1,
+					"rewritten chunks must be signalled so search re-reads them")
 			})
 		}
 	})
@@ -247,8 +254,9 @@ func TestResolve(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			FeaturesFunc: func() features.Features { return features.Features{VectorSearch: cfg} },
-			LoggerFunc:   func() logger.Logger { return &logger.TestLogger{} },
+			NoteEmbeddingsSavedFunc: func() {},
+			FeaturesFunc:            func() features.Features { return features.Features{VectorSearch: cfg} },
+			LoggerFunc:              func() logger.Logger { return &logger.TestLogger{} },
 			LatestNoteViewsFunc: func() *model.NoteViews {
 				return &model.NoteViews{Map: map[string]*model.NoteView{noteView.Permalink: noteView}}
 			},
@@ -320,6 +328,7 @@ func TestResolve(t *testing.T) {
 		contentHash := sha256.Sum256([]byte(noteView.Title + string(noteView.Content) + modelFingerprint(cfg)))
 
 		env := &EnvMock{
+			NoteEmbeddingsSavedFunc: func() {},
 			FeaturesFunc: func() features.Features {
 				return features.Features{VectorSearch: cfg}
 			},
@@ -348,6 +357,8 @@ func TestResolve(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, env.UpsertNoteVersionEmbeddingCalls(), 1,
 			"model switch must regenerate the embedding even when the content hash matches")
+		require.Len(t, env.NoteEmbeddingsSavedCalls(), 1,
+			"a saved embedding must be signalled so similar-notes re-reads it")
 	})
 
 	t.Run("re-embeds when embedding params change for same custom model", func(t *testing.T) {
@@ -401,6 +412,7 @@ func TestResolve(t *testing.T) {
 					"\x00model=my-model\x00passage_prefix="))
 
 				env := &EnvMock{
+					NoteEmbeddingsSavedFunc: func() {},
 					FeaturesFunc: func() features.Features {
 						return features.Features{VectorSearch: tc.cfg}
 					},
@@ -487,8 +499,9 @@ func TestResolveChunkBatching(t *testing.T) {
 
 		var upserted []db.UpsertNoteVersionChunkParams
 		env := &EnvMock{
-			FeaturesFunc: func() features.Features { return features.Features{VectorSearch: cfg} },
-			LoggerFunc:   func() logger.Logger { return &logger.TestLogger{} },
+			NoteEmbeddingsSavedFunc: func() {},
+			FeaturesFunc:            func() features.Features { return features.Features{VectorSearch: cfg} },
+			LoggerFunc:              func() logger.Logger { return &logger.TestLogger{} },
 			LatestNoteViewsFunc: func() *model.NoteViews {
 				return &model.NoteViews{Map: map[string]*model.NoteView{noteView.Permalink: noteView}}
 			},
@@ -566,8 +579,9 @@ func TestResolveChunkBatching(t *testing.T) {
 		require.LessOrEqual(t, len(chunks), 8, "test setup: note must fit within the batch size")
 
 		env := &EnvMock{
-			FeaturesFunc: func() features.Features { return features.Features{VectorSearch: cfg} },
-			LoggerFunc:   func() logger.Logger { return &logger.TestLogger{} },
+			NoteEmbeddingsSavedFunc: func() {},
+			FeaturesFunc:            func() features.Features { return features.Features{VectorSearch: cfg} },
+			LoggerFunc:              func() logger.Logger { return &logger.TestLogger{} },
 			LatestNoteViewsFunc: func() *model.NoteViews {
 				return &model.NoteViews{Map: map[string]*model.NoteView{noteView.Permalink: noteView}}
 			},
@@ -632,8 +646,9 @@ func TestResolveChunkBatching(t *testing.T) {
 		require.Greater(t, len(chunks), 4, "test setup: note must exceed the configured batch size")
 
 		env := &EnvMock{
-			FeaturesFunc: func() features.Features { return features.Features{VectorSearch: cfg} },
-			LoggerFunc:   func() logger.Logger { return &logger.TestLogger{} },
+			NoteEmbeddingsSavedFunc: func() {},
+			FeaturesFunc:            func() features.Features { return features.Features{VectorSearch: cfg} },
+			LoggerFunc:              func() logger.Logger { return &logger.TestLogger{} },
 			LatestNoteViewsFunc: func() *model.NoteViews {
 				return &model.NoteViews{Map: map[string]*model.NoteView{noteView.Permalink: noteView}}
 			},

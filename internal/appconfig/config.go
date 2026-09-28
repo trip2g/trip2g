@@ -86,6 +86,7 @@ type Config struct {
 	ShutdownTimeout         time.Duration
 	WriterAcquireTimeout    time.Duration
 	GlobalQueuePollInterval time.Duration
+	EmbeddingReloadInterval time.Duration
 	InternalListenAddr      string
 	// DebugEmbedding exposes the unauthenticated /debug/embedding endpoint on
 	// the internal listener outside dev mode. It can drive arbitrary embedding
@@ -551,6 +552,8 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.WriterAcquireTimeout, "writer-acquire-timeout", 20*time.Second,
 		"Max time to wait for the SQLite writer slot before starting writer subsystems")
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
+	flag.DurationVar(&c.EmbeddingReloadInterval, "embedding-reload-interval", 5*time.Second,
+		"Minimum time between re-reads of note embeddings into search while embedding jobs keep finishing")
 	flag.StringVar(
 		&c.CronExecuteWebhooksSchedule,
 		"cron-execute-webhooks-schedule",

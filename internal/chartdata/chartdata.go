@@ -1,6 +1,6 @@
 // Package chartdata orchestrates server-side data for url/internal datachart
 // sources: it serves cached rows to the renderer, enqueues a background refresh
-// on a cache miss, and re-renders notes (debounced) when fresh data lands.
+// on a cache miss, and re-renders notes (throttled) when fresh data lands.
 //
 // It follows the gitapi pattern: it declares the dependencies it needs as Env
 // and the host app implements them. The app embeds *Service, so ChartData and
@@ -14,11 +14,12 @@ import (
 
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/throttle"
 )
 
-// reloadDebounce coalesces a burst of cache writes (e.g. on startup render) into
-// a single re-render.
-const reloadDebounce = 2 * time.Second
+// reloadInterval bounds how often a burst of cache writes (e.g. on startup
+// render) re-renders the notes.
+const reloadInterval = 2 * time.Second
 
 type Env interface {
 	Logger() logger.Logger
@@ -42,16 +43,15 @@ type Env interface {
 type ChartData struct {
 	env    Env
 	logger logger.Logger
-	reload chan struct{}
+	reload *throttle.Throttle
 }
 
 func New(env Env) *ChartData {
 	s := &ChartData{
 		env:    env,
 		logger: logger.WithPrefix(env.Logger(), "chartdata:"),
-		reload: make(chan struct{}, 1),
 	}
-	go s.reloadLoop()
+	s.reload = throttle.New(reloadInterval, s.reloadNotes)
 	return s
 }
 
@@ -86,7 +86,7 @@ func (s *ChartData) ChartRows(versionID int64, chart model.NoteViewChart) model.
 	return model.ChartRowsResult{}
 }
 
-// SaveChartDataError records a fetch failure and signals a debounced re-render.
+// SaveChartDataError records a fetch failure and signals a throttled re-render.
 // Implements refreshchartdata.Env (called by the background job on fetch errors).
 func (s *ChartData) SaveChartDataError(ctx context.Context, versionID int64, hash, errMsg string) error {
 	if err := s.env.StoreChartDataError(ctx, versionID, hash, errMsg, s.env.Now().Unix()); err != nil {
@@ -96,7 +96,7 @@ func (s *ChartData) SaveChartDataError(ctx context.Context, versionID int64, has
 	return nil
 }
 
-// SaveChartData caches fetched rows and signals a debounced re-render.
+// SaveChartData caches fetched rows and signals a throttled re-render.
 // Implements refreshchartdata.Env (called by the background job).
 func (s *ChartData) SaveChartData(ctx context.Context, versionID int64, hash, dataJSON string) error {
 	if err := s.env.StoreChartData(ctx, versionID, hash, dataJSON, s.env.Now().Unix()); err != nil {
@@ -107,23 +107,11 @@ func (s *ChartData) SaveChartData(ctx context.Context, versionID int64, hash, da
 }
 
 func (s *ChartData) signalReload() {
-	select {
-	case s.reload <- struct{}{}:
-	default:
-	}
+	s.reload.Signal()
 }
 
-// reloadLoop coalesces bursts of cache writes into a single debounced re-render.
-func (s *ChartData) reloadLoop() {
-	for range s.reload {
-		time.Sleep(reloadDebounce)
-		// Drain any extra signals that arrived during the debounce window.
-		select {
-		case <-s.reload:
-		default:
-		}
-		if err := s.env.ReloadChartDataNotes(context.Background()); err != nil {
-			s.logger.Warn("notes reload failed", "err", err)
-		}
+func (s *ChartData) reloadNotes() {
+	if err := s.env.ReloadChartDataNotes(context.Background()); err != nil {
+		s.logger.Warn("notes reload failed", "err", err)
 	}
 }

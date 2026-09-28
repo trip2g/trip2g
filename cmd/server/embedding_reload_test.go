@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"trip2g/internal/appconfig"
 	"trip2g/internal/case/backjob/generatenoteversionembedding"
@@ -14,6 +15,7 @@ import (
 	"trip2g/internal/features"
 	"trip2g/internal/noteloader"
 	"trip2g/internal/openai"
+	"trip2g/internal/throttle"
 
 	"github.com/stretchr/testify/require"
 )
@@ -53,7 +55,8 @@ func newEmbeddingTestApp(t *testing.T, embeddingURL string) *app {
 
 	a := newTxTestApp(t)
 	a.config = &appconfig.Config{
-		PublicURL: "https://example.com",
+		PublicURL:               "https://example.com",
+		EmbeddingReloadInterval: time.Millisecond,
 		Features: features.Features{
 			VectorSearch: features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall},
 		},
@@ -62,14 +65,15 @@ func newEmbeddingTestApp(t *testing.T, embeddingURL string) *app {
 	a.SiteConfigBuilder = configregistry.NewSiteConfigBuilder(a)
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.embeddingReload = throttle.New(a.config.EmbeddingReloadInterval, a.reloadNoteEmbeddings)
 	return a
 }
 
-// TestEmbeddingJob_ReachesInMemoryVectors reproduces vector search returning
-// nothing after a push: notes are loaded first, the embedding job writes the
-// whole-note embedding and the chunks afterwards, and until the next note
-// reload neither is visible to search or similar-notes, which read the
-// loader's in-memory copies.
+// TestEmbeddingJob_ReachesInMemoryVectors pins the fix for vector search
+// returning nothing after a push: notes are loaded first, the embedding job
+// writes the whole-note embedding and the chunks afterwards, and search and
+// similar-notes read the loader's in-memory copies — so the job's signal must
+// bring both into memory without waiting for the next note reload.
 func TestEmbeddingJob_ReachesInMemoryVectors(t *testing.T) {
 	srv := newEmbeddingServer(t)
 	defer srv.Close()
@@ -91,9 +95,10 @@ func TestEmbeddingJob_ReachesInMemoryVectors(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, stored, "the job persisted chunk embeddings")
 
-	chunks := a.LatestNoteChunks()
-	require.Len(t, chunks, len(stored), "chunks saved by the embedding job must reach vector search without a note reload")
-	for _, c := range chunks {
+	require.Eventually(t, func() bool {
+		return len(a.LatestNoteChunks()) == len(stored)
+	}, 5*time.Second, 5*time.Millisecond, "chunks saved by the embedding job must reach vector search without a note reload")
+	for _, c := range a.LatestNoteChunks() {
 		require.Equal(t, versionID, c.VersionID)
 		require.Equal(t, "guide.md", c.NotePath)
 		require.Equal(t, []float32{0.6, 0.8, 0}, c.Embedding)

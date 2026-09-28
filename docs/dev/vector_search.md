@@ -117,7 +117,9 @@ Embeddings are generated asynchronously:
 2. The background worker embeds documents using the **passage** prefix (not the query prefix). Whole-note text is `passagePrefix + title + "\n\n" + strippedContent` (`resolve.go` line 79); each chunk is embedded as `passagePrefix + chunk.Content` (`resolve.go` lines 150–153), where `chunk.Content` already contains the full `{breadcrumb}\n\n{body}` string — the title is not re-concatenated. The query side (search path, `sitesearch/resolve.go` line 128) uses the **query** prefix: `queryPrefix + query`. This query/passage split is the standard asymmetric embedding convention used by e5 and bge model families.
 3. A `regenerate_note_embeddings` cronjob runs at startup and weekly on Sunday at 03:00 (`"0 0 3 * * 0"`), comparing content hashes and re-queuing stale chunks.
 
-**Known limitation:** the in-memory chunk cache loads at boot. A note synced after the last boot does not have chunk embeddings in memory until the app restarts. The vecbench stack handles this by waiting for the job queue to drain before restarting (`/debug/wait_all_jobs`).
+4. Search and similar-notes read in-memory copies of the chunks and the whole-note embeddings, which a note reload fills from the DB. The job writes its rows after that reload, so on success it signals the app (`NoteEmbeddingsSaved`), and both loaders re-read just the embeddings and chunks (`noteloader.ReloadEmbeddings`) — no note is re-rendered. The re-read is throttled by `-embedding-reload-interval` (default 5s, `internal/throttle`): while jobs keep finishing, at most one re-read per interval, and the last job of a burst is always followed by one. Search improves progressively during a long push instead of waiting for it to end.
+
+**Known limitation:** a full note reload that started before a job's rows were written but published after the throttled re-read overwrites it with the older DB state. The next re-read or reload puts it back; nothing is lost from the DB.
 
 ## Configuration
 
@@ -156,7 +158,7 @@ internal/
 │   └── chunk.go           NoteChunk struct, Float32SliceToBytes / BytesToFloat32Slice
 ├── noteloader/
 │   ├── search.go          bleve index creation, per-language mapping, Search()
-│   └── loader.go          loads NoteChunks into memory on reload
+│   └── loader.go          loads NoteChunks into memory on reload; ReloadEmbeddings re-reads them after the embedding job
 ├── case/
 │   ├── sitesearch/
 │   │   └── resolve.go     vectorSearch, mergeResults (RRF), dotSimilarity, rerankResults

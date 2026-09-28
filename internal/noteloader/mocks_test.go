@@ -53,6 +53,9 @@ var _ noteloader.Env = &EnvMock{}
 //			RawNoteChunksFunc: func(ctx context.Context) ([]noteloader.RawNoteChunk, error) {
 //				panic("mock out the RawNoteChunks method")
 //			},
+//			RawNoteEmbeddingsFunc: func(ctx context.Context) ([]noteloader.RawNoteEmbedding, error) {
+//				panic("mock out the RawNoteEmbeddings method")
+//			},
 //			RawNotesFunc: func(ctx context.Context) ([]noteloader.RawNote, error) {
 //				panic("mock out the RawNotes method")
 //			},
@@ -92,6 +95,9 @@ type EnvMock struct {
 
 	// RawNoteChunksFunc mocks the RawNoteChunks method.
 	RawNoteChunksFunc func(ctx context.Context) ([]noteloader.RawNoteChunk, error)
+
+	// RawNoteEmbeddingsFunc mocks the RawNoteEmbeddings method.
+	RawNoteEmbeddingsFunc func(ctx context.Context) ([]noteloader.RawNoteEmbedding, error)
 
 	// RawNotesFunc mocks the RawNotes method.
 	RawNotesFunc func(ctx context.Context) ([]noteloader.RawNote, error)
@@ -144,6 +150,11 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// RawNoteEmbeddings holds details about calls to the RawNoteEmbeddings method.
+		RawNoteEmbeddings []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// RawNotes holds details about calls to the RawNotes method.
 		RawNotes []struct {
 			// Ctx is the ctx argument value.
@@ -160,6 +171,7 @@ type EnvMock struct {
 	lockPublicURL              sync.RWMutex
 	lockRawAssets              sync.RWMutex
 	lockRawNoteChunks          sync.RWMutex
+	lockRawNoteEmbeddings      sync.RWMutex
 	lockRawNotes               sync.RWMutex
 }
 
@@ -469,6 +481,38 @@ func (mock *EnvMock) RawNoteChunksCalls() []struct {
 	mock.lockRawNoteChunks.RLock()
 	calls = mock.calls.RawNoteChunks
 	mock.lockRawNoteChunks.RUnlock()
+	return calls
+}
+
+// RawNoteEmbeddings calls RawNoteEmbeddingsFunc.
+func (mock *EnvMock) RawNoteEmbeddings(ctx context.Context) ([]noteloader.RawNoteEmbedding, error) {
+	if mock.RawNoteEmbeddingsFunc == nil {
+		panic("EnvMock.RawNoteEmbeddingsFunc: method is nil but Env.RawNoteEmbeddings was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockRawNoteEmbeddings.Lock()
+	mock.calls.RawNoteEmbeddings = append(mock.calls.RawNoteEmbeddings, callInfo)
+	mock.lockRawNoteEmbeddings.Unlock()
+	return mock.RawNoteEmbeddingsFunc(ctx)
+}
+
+// RawNoteEmbeddingsCalls gets all the calls that were made to RawNoteEmbeddings.
+// Check the length with:
+//
+//	len(mockedEnv.RawNoteEmbeddingsCalls())
+func (mock *EnvMock) RawNoteEmbeddingsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockRawNoteEmbeddings.RLock()
+	calls = mock.calls.RawNoteEmbeddings
+	mock.lockRawNoteEmbeddings.RUnlock()
 	return calls
 }
 

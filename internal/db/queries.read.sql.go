@@ -526,6 +526,42 @@ func (q *Queries) AllLatestNoteAssets(ctx context.Context) ([]AllLatestNoteAsset
 	return items, nil
 }
 
+const allLatestNoteEmbeddings = `-- name: AllLatestNoteEmbeddings :many
+select v.id as version_id, e.embedding
+  from note_paths p
+  join note_versions v on p.id = v.path_id and p.version_count = v.version
+  join note_version_embeddings e on v.id = e.version_id
+ where p.hidden_by is null
+`
+
+type AllLatestNoteEmbeddingsRow struct {
+	VersionID int64  `json:"version_id"`
+	Embedding []byte `json:"embedding"`
+}
+
+func (q *Queries) AllLatestNoteEmbeddings(ctx context.Context) ([]AllLatestNoteEmbeddingsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLatestNoteEmbeddings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLatestNoteEmbeddingsRow
+	for rows.Next() {
+		var i AllLatestNoteEmbeddingsRow
+		if err := rows.Scan(&i.VersionID, &i.Embedding); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allLatestNotes = `-- name: AllLatestNotes :many
 select value as path, p.id as path_id, v.id as version_id, content, v.created_at, e.embedding
   from note_paths p
@@ -631,6 +667,44 @@ func (q *Queries) AllLiveNoteAssets(ctx context.Context) ([]AllLiveNoteAssetsRow
 			&i.NoteAsset.CreatedAt,
 			&i.NoteAsset.Size,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allLiveNoteEmbeddings = `-- name: AllLiveNoteEmbeddings :many
+select v.id as version_id, e.embedding
+  from note_paths p
+  join note_versions v on p.id = v.path_id
+  join release_note_versions rnv on v.id = rnv.note_version_id
+  join releases r on rnv.release_id = r.id
+  join note_version_embeddings e on v.id = e.version_id
+ where r.is_live = true
+`
+
+type AllLiveNoteEmbeddingsRow struct {
+	VersionID int64  `json:"version_id"`
+	Embedding []byte `json:"embedding"`
+}
+
+func (q *Queries) AllLiveNoteEmbeddings(ctx context.Context) ([]AllLiveNoteEmbeddingsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLiveNoteEmbeddings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLiveNoteEmbeddingsRow
+	for rows.Next() {
+		var i AllLiveNoteEmbeddingsRow
+		if err := rows.Scan(&i.VersionID, &i.Embedding); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -38,6 +38,12 @@ type RawNoteChunk struct {
 	Path       string
 }
 
+// RawNoteEmbedding is a whole-note embedding row (Embedding as raw bytes).
+type RawNoteEmbedding struct {
+	VersionID int64
+	Embedding []byte
+}
+
 type RawAsset struct {
 	VersionID int64
 	Path      string
@@ -50,6 +56,7 @@ type Env interface {
 	RawNotes(ctx context.Context) ([]RawNote, error)
 	RawAssets(ctx context.Context) ([]RawAsset, error)
 	RawNoteChunks(ctx context.Context) ([]RawNoteChunk, error)
+	RawNoteEmbeddings(ctx context.Context) ([]RawNoteEmbedding, error)
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteAssetPath(asset db.NoteAsset) string
 	PublicURL() string
@@ -510,6 +517,38 @@ func (l *Loader) NoteChunks() []model.NoteChunk {
 	l.Lock()
 	defer l.Unlock()
 	return l.chunks
+}
+
+// ReloadEmbeddings re-reads the whole-note embeddings and the chunks from the
+// DB into the published snapshot without re-rendering any note. The embedding
+// job writes both after the notes were loaded, so this is what makes them
+// reach vector search and similar-notes before the next full Load.
+func (l *Loader) ReloadEmbeddings(ctx context.Context) error {
+	embeddings, err := l.env.RawNoteEmbeddings(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get note embeddings: %w", err)
+	}
+
+	embeddingMap := make(map[int64][]byte, len(embeddings))
+	for _, e := range embeddings {
+		if len(e.Embedding) > 0 {
+			embeddingMap[e.VersionID] = e.Embedding
+		}
+	}
+
+	chunks, err := l.loadChunks(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load note chunks: %w", err)
+	}
+
+	l.Lock()
+	defer l.Unlock()
+	if l.nvs != nil {
+		l.assignEmbeddings(l.nvs, embeddingMap)
+	}
+	l.chunks = chunks
+
+	return nil
 }
 
 // loadChunks fetches all chunk rows from the DB via the Env and converts them

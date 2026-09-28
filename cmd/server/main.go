@@ -71,6 +71,7 @@ import (
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/tgtd"
+	"trip2g/internal/throttle"
 	"trip2g/internal/turnstile"
 	"trip2g/internal/userbans"
 	"trip2g/internal/usertoken"
@@ -238,6 +239,7 @@ type appState struct {
 
 	liveNoteLoader         *noteloader.Loader
 	latestNoteLoader       *noteloader.Loader
+	embeddingReload        *throttle.Throttle
 	frontmatterPatchLoader *frontmatterpatch.Loader
 
 	*chartdata.ChartData // server-side data for url/internal datachart sources (promotes ChartRows, SaveChartData)
@@ -481,6 +483,7 @@ func main() {
 	a.ChartData = chartdata.New(a)
 	a.liveNoteLoader.SetChartDataProvider(a)
 	a.latestNoteLoader.SetChartDataProvider(a)
+	a.embeddingReload = throttle.New(a.config.EmbeddingReloadInterval, a.reloadNoteEmbeddings)
 	a.frontmatterPatchLoader = frontmatterpatch.NewLoader(a)
 
 	a.gitAPI, err = gitapi.New(ctx, a.config.GitAPI, a)
@@ -670,6 +673,23 @@ func (a *app) LatestNoteChunks() []model.NoteChunk {
 
 func (a *app) LiveNoteChunks() []model.NoteChunk {
 	return a.liveNoteLoader.NoteChunks()
+}
+
+// NoteEmbeddingsSaved is the embedding job's signal that rows landed in the
+// DB after the notes were loaded. Reloads are throttled: many jobs finishing
+// in a burst share one re-read, and the last one is always followed by one.
+func (a *app) NoteEmbeddingsSaved() {
+	a.embeddingReload.Signal()
+}
+
+func (a *app) reloadNoteEmbeddings() {
+	ctx := context.Background()
+	for _, loader := range []*noteloader.Loader{a.latestNoteLoader, a.liveNoteLoader} {
+		err := loader.ReloadEmbeddings(ctx)
+		if err != nil {
+			a.log.Warn("failed to reload note embeddings", "err", err)
+		}
+	}
 }
 
 func (a *app) LiveNoteViews() *model.NoteViews {

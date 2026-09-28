@@ -34,6 +34,7 @@ type Env interface {
 	GetNoteVersionChunks(ctx context.Context, versionID int64) ([]db.NoteVersionChunk, error)
 	UpsertNoteVersionChunk(ctx context.Context, arg db.UpsertNoteVersionChunkParams) error
 	DeleteNoteVersionChunksBeyond(ctx context.Context, arg db.DeleteNoteVersionChunksBeyondParams) error
+	NoteEmbeddingsSaved()
 }
 
 func Resolve(ctx context.Context, env Env, params Params) error {
@@ -78,7 +79,14 @@ func resolve(ctx context.Context, env Env, params Params) error {
 		// nothing — delegate to the chunk path, which verifies each chunk's hash
 		// and model, re-embeds only the stale/missing ones, and no-ops otherwise.
 		env.Logger().Debug("embedding up to date, verifying chunks", "version_id", params.VersionID, "title", noteView.Title)
-		return generateChunkEmbeddings(ctx, env, params.VersionID, noteView.Title, noteView.Content)
+		saved, chunkErr := generateChunkEmbeddings(ctx, env, params.VersionID, noteView.Title, noteView.Content)
+		if chunkErr != nil {
+			return chunkErr
+		}
+		if saved {
+			env.NoteEmbeddingsSaved()
+		}
+		return nil
 	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("failed to check existing embedding: %w", err)
@@ -119,26 +127,30 @@ func resolve(ctx context.Context, env Env, params Params) error {
 
 	// Generate chunk embeddings (skip search-excluded and system notes)
 	if noteView.ExcludeSearch || noteView.IsSystem() {
+		env.NoteEmbeddingsSaved()
 		return nil
 	}
 
-	if err = generateChunkEmbeddings(ctx, env, params.VersionID, noteView.Title, noteView.Content); err != nil {
+	_, err = generateChunkEmbeddings(ctx, env, params.VersionID, noteView.Title, noteView.Content)
+	if err != nil {
 		return err
 	}
 
+	env.NoteEmbeddingsSaved()
 	return nil
 }
 
 // generateChunkEmbeddings splits the note into chunks, batch-embeds changed chunks,
-// upserts them, and deletes any orphan chunks from previous versions.
-func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, title string, rawContent []byte) error {
+// upserts them, and deletes any orphan chunks from previous versions. It reports
+// whether any chunk row was written.
+func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, title string, rawContent []byte) (bool, error) {
 	chunks := mdchunk.Split(title, rawContent)
 	env.Logger().Debug("chunk split done", "version_id", versionID, "title", title, "total_chunks", len(chunks))
 
 	// Load existing chunks to skip ones unchanged under the same model.
 	existingChunks, err := env.GetNoteVersionChunks(ctx, versionID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("failed to get existing chunks: %w", err)
+		return false, fmt.Errorf("failed to get existing chunks: %w", err)
 	}
 	existingByIndex := make(map[int64]db.NoteVersionChunk, len(existingChunks))
 	for _, ec := range existingChunks {
@@ -178,14 +190,14 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 
 		results, embErr := createEmbeddingsBatched(ctx, env, texts, vsConfig.ResolvedEmbedBatchSize())
 		if embErr != nil {
-			return fmt.Errorf("failed to create chunk embeddings: %w", embErr)
+			return false, fmt.Errorf("failed to create chunk embeddings: %w", embErr)
 		}
 
 		modelID := int64(vsConfig.Model)
 		for i, pe := range toEmbed {
 			select {
 			case <-ctx.Done():
-				return ctx.Err()
+				return false, ctx.Err()
 			default:
 			}
 			tokens := int64(results[i].Tokens)
@@ -198,7 +210,7 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 				ContentHash: pe.hash[:],
 				Tokens:      &tokens,
 			}); upsertErr != nil {
-				return fmt.Errorf("failed to upsert chunk %d: %w", pe.chunk.Index, upsertErr)
+				return false, fmt.Errorf("failed to upsert chunk %d: %w", pe.chunk.Index, upsertErr)
 			}
 		}
 
@@ -210,10 +222,10 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 		VersionID:  versionID,
 		ChunkIndex: int64(len(chunks) - 1),
 	}); delErr != nil {
-		return fmt.Errorf("failed to delete orphan chunks: %w", delErr)
+		return false, fmt.Errorf("failed to delete orphan chunks: %w", delErr)
 	}
 
-	return nil
+	return len(toEmbed) > 0, nil
 }
 
 // createEmbeddingsBatched embeds texts in windows of at most maxBatch, since

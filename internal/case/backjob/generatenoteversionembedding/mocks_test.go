@@ -42,6 +42,9 @@ var _ generatenoteversionembedding.Env = &EnvMock{}
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
+//			NoteEmbeddingsSavedFunc: func()  {
+//				panic("mock out the NoteEmbeddingsSaved method")
+//			},
 //			OpenAIFunc: func() *openai.Client {
 //				panic("mock out the OpenAI method")
 //			},
@@ -75,6 +78,9 @@ type EnvMock struct {
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
+
+	// NoteEmbeddingsSavedFunc mocks the NoteEmbeddingsSaved method.
+	NoteEmbeddingsSavedFunc func()
 
 	// OpenAIFunc mocks the OpenAI method.
 	OpenAIFunc func() *openai.Client
@@ -117,6 +123,9 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
+		// NoteEmbeddingsSaved holds details about calls to the NoteEmbeddingsSaved method.
+		NoteEmbeddingsSaved []struct {
+		}
 		// OpenAI holds details about calls to the OpenAI method.
 		OpenAI []struct {
 		}
@@ -141,6 +150,7 @@ type EnvMock struct {
 	lockGetNoteVersionEmbedding       sync.RWMutex
 	lockLatestNoteViews               sync.RWMutex
 	lockLogger                        sync.RWMutex
+	lockNoteEmbeddingsSaved           sync.RWMutex
 	lockOpenAI                        sync.RWMutex
 	lockUpsertNoteVersionChunk        sync.RWMutex
 	lockUpsertNoteVersionEmbedding    sync.RWMutex
@@ -332,6 +342,33 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// NoteEmbeddingsSaved calls NoteEmbeddingsSavedFunc.
+func (mock *EnvMock) NoteEmbeddingsSaved() {
+	if mock.NoteEmbeddingsSavedFunc == nil {
+		panic("EnvMock.NoteEmbeddingsSavedFunc: method is nil but Env.NoteEmbeddingsSaved was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockNoteEmbeddingsSaved.Lock()
+	mock.calls.NoteEmbeddingsSaved = append(mock.calls.NoteEmbeddingsSaved, callInfo)
+	mock.lockNoteEmbeddingsSaved.Unlock()
+	mock.NoteEmbeddingsSavedFunc()
+}
+
+// NoteEmbeddingsSavedCalls gets all the calls that were made to NoteEmbeddingsSaved.
+// Check the length with:
+//
+//	len(mockedEnv.NoteEmbeddingsSavedCalls())
+func (mock *EnvMock) NoteEmbeddingsSavedCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockNoteEmbeddingsSaved.RLock()
+	calls = mock.calls.NoteEmbeddingsSaved
+	mock.lockNoteEmbeddingsSaved.RUnlock()
 	return calls
 }
 

@@ -30,6 +30,9 @@ func (emptyNoteLoaderEnv) RawAssets(context.Context) ([]noteloader.RawAsset, err
 func (emptyNoteLoaderEnv) RawNoteChunks(context.Context) ([]noteloader.RawNoteChunk, error) {
 	return nil, nil
 }
+func (emptyNoteLoaderEnv) RawNoteEmbeddings(context.Context) ([]noteloader.RawNoteEmbedding, error) {
+	return nil, nil
+}
 func (emptyNoteLoaderEnv) NoteAssetExists(context.Context, db.NoteAsset) (bool, error) {
 	return false, nil
 }
