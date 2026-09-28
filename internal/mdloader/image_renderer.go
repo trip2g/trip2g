@@ -84,13 +84,11 @@ func parseImageSize(alt string) (string, *imageSize) {
 // imageRenderer renders Enclave image nodes with AssetReplaces URL substitution.
 type imageRenderer struct {
 	resolver *myLinkResolver
-	tweets   *TweetCache
 }
 
-func newImageRenderer(resolver *myLinkResolver, tweets *TweetCache) *imageRenderer {
+func newImageRenderer(resolver *myLinkResolver) *imageRenderer {
 	return &imageRenderer{
 		resolver: resolver,
-		tweets:   tweets,
 	}
 }
 
@@ -98,15 +96,7 @@ func (r *imageRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(enclavecore.KindEnclave, r.renderEnclave)
 }
 
-// tweet fetches during load only; request-time partials read the cache.
-func (r *imageRenderer) tweet(url, theme string) (string, error) {
-	if r.resolver.loaded {
-		return r.tweets.Cached(url, theme)
-	}
-	return r.tweets.Tweet(url, theme)
-}
-
-//nolint:gocognit,gocyclo,cyclop // complex rendering logic with multiple enclave providers
+//nolint:gocognit // complex rendering logic with multiple enclave providers
 func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
 		// Remove text children (cleanup from enclave transformer)
@@ -159,13 +149,7 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderTwitter:
-		html, err := r.tweet(enc.ObjectID, enc.Theme)
-		if err != nil || html == "" {
-			html = wrapEnclaveErrorHTML("twitter", enc.ObjectID)
-		} else {
-			html = wrapEnclaveHTML("twitter", html, true, false)
-		}
-		_, _ = w.Write([]byte(html))
+		_, _ = w.Write([]byte(wrapEnclaveHTML("twitter", tweetHTML(enc), true, false)))
 
 	case enclavecore.EnclaveProviderTradingView:
 		var html string
@@ -179,43 +163,6 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 			html = wrapEnclaveErrorHTML("tradingview", enc.ObjectID)
 		} else {
 			html = wrapEnclaveHTML("tradingview", html, false, false)
-		}
-		_, _ = w.Write([]byte(html))
-
-	case enclavecore.EnclaveProviderDifyWidget:
-		var html string
-		var err error
-		if enclavefix.ValidDifyURL(enc.ObjectID) {
-			html, err = object.GetDifyWidgetHtml(enc)
-		} else {
-			err = errors.New("invalid Dify chatbot URL")
-		}
-		if err != nil || html == "" {
-			html = wrapEnclaveErrorHTML("dify", enc.ObjectID)
-		} else {
-			html = wrapEnclaveHTML("dify", html, true, false)
-		}
-		_, _ = w.Write([]byte(html))
-
-	case enclavecore.EnclaveProviderQuailWidget:
-		var html string
-		var err error
-		if enclavefix.ValidQuailLayout(enc.Params["layout"]) {
-			html, err = object.GetQuailWidgetHtml(enc)
-		} else {
-			err = errors.New("invalid Quail layout")
-		}
-		if err != nil || html == "" {
-			html = wrapEnclaveErrorHTML("quail", enc.ObjectID)
-		} else {
-			html = wrapEnclaveHTML("quail", html, true, false)
-		}
-		_, _ = w.Write([]byte(html))
-
-	case enclavecore.EnclaveProviderQuailAd:
-		html, err := object.GetQuailAdHtml(enc)
-		if err != nil || html == "" {
-			html = wrapEnclaveErrorHTML("quail-ad", enc.ObjectID)
 		}
 		_, _ = w.Write([]byte(html))
 
@@ -242,6 +189,22 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 	}
 
 	return ast.WalkContinue, nil
+}
+
+// tweetHTML renders X's standard embed: a link in a blockquote that X's
+// script turns into the tweet card in the browser. Without JS the reader
+// sees the link. Nothing is fetched on the server.
+func tweetHTML(enc *enclavecore.Enclave) string {
+	themeAttr := ""
+	if enc.Theme == "dark" {
+		themeAttr = ` data-theme="dark"`
+	}
+	tweetURL := html.EscapeString(safeSrcURL(enc.ObjectID))
+	return fmt.Sprintf(
+		`<blockquote class="twitter-tweet"%s><a href="%s">%s</a></blockquote>`+
+			`<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>`,
+		themeAttr, tweetURL, tweetURL,
+	)
 }
 
 // renderAudio renders audio enclaves with asset replacement.

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"trip2g/internal/image"
 
-	"github.com/google/uuid"
 	"github.com/quailyquaily/goldmark-enclave/core"
 	"github.com/quailyquaily/goldmark-enclave/helper"
 	"github.com/yuin/goldmark/ast"
@@ -94,78 +93,6 @@ func (a *astTransformer) Transform(node *ast.Document, reader text.Reader, pc pa
 			provider = core.EnclaveProviderTradingView
 			oid = u.Query().Get("symbol")
 			theme = u.Query().Get("theme")
-
-		} else if u.Host == "udify.app" || u.Scheme == "dify" {
-			// https://udify.app/chatbot/1NaVTsaJ1t54UrNE
-			// or
-			// dify://udify.app/chatbot/1NaVTsaJ1t54UrNE
-			provider = core.EnclaveProviderDifyWidget
-			if u.Scheme == "dify" {
-				oid = fmt.Sprintf("https://%s", u.Host+u.Path)
-			} else {
-				oid = string(img.Destination)
-			}
-
-		} else if u.Host == "quail.ink" || u.Host == "dev.quail.ink" || u.Host == "quaily.com" {
-			// https://quaily.com/{list_slug} or https://quaily.com/{list_slug}/p/{post_slug}
-			const re1 = `^([a-zA-Z0-9_-]+)$`
-			const re2 = `^([a-zA-Z0-9_-]+)/p/([a-zA-Z0-9_-]+)$`
-			if len(u.Path) > 1 {
-				p := strings.Trim(u.Path[1:], "/")
-				ok1, _ := regexp.MatchString(re1, p)
-				ok2, _ := regexp.MatchString(re2, p)
-				if ok1 || ok2 {
-					provider = core.EnclaveProviderQuailWidget
-					oid = string(img.Destination)
-					theme = u.Query().Get("theme")
-					params["layout"] = u.Query().Get("layout")
-				}
-			}
-
-		} else if u.Scheme == "quaily" {
-			// list: quaily://list/{list_slug}
-			// post: quaily://post/{list_slug}/{post_slug}
-			// ad: quaily://ads/{ad_uuid}
-			reList := regexp.MustCompile(`^/([a-zA-Z0-9_-]+)$`)
-			rePost := regexp.MustCompile(`^/([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)$`)
-			reAd := regexp.MustCompile(`^/([a-zA-Z0-9_-]{36})$`)
-
-			if u.Host == "list" || u.Host == "post" {
-				provider = core.EnclaveProviderQuailWidget
-				// find the list slug and post slug using regex
-				var listSlug, postSlug string
-				var destURL string
-
-				if reList.MatchString(u.Path) {
-					matches := reList.FindStringSubmatch(u.Path)
-					if len(matches) > 1 {
-						listSlug = matches[1]
-						destURL = fmt.Sprintf("https://quaily.com/%s", listSlug)
-					}
-				} else if rePost.MatchString(u.Path) {
-					matches := rePost.FindStringSubmatch(u.Path)
-					if len(matches) > 2 {
-						listSlug = matches[1]
-						postSlug = matches[2]
-						destURL = fmt.Sprintf("https://quaily.com/%s/p/%s", listSlug, postSlug)
-					}
-				}
-
-				oid = destURL
-				theme = u.Query().Get("theme")
-				params["layout"] = u.Query().Get("layout")
-			} else if u.Host == "ads" {
-				provider = core.EnclaveProviderQuailAd
-				// get the ad id from the url
-				matches := reAd.FindStringSubmatch(u.Path)
-				if len(matches) > 1 {
-					adUUID := matches[1]
-					// the ad id must be an UUID
-					if _, err := uuid.Parse(adUUID); err == nil {
-						oid = adUUID
-					}
-				}
-			}
 
 		} else if u.Host == "open.spotify.com" {
 			// https://open.spotify.com/track/5vdp5UmvTsnMEMESIF2Ym7?si=d4ee09bfd0e941c5

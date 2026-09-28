@@ -122,10 +122,6 @@ type Loader struct {
 	// note (AST) cache held in l.nvs. It skips re-running the Jsonnet VM per note
 	// when neither the note's frontmatter nor the patch set changed.
 	patchCache *frontmatterpatch.ResultCache
-
-	// tweetCache persists Twitter oEmbed HTML across reloads so a sync doesn't
-	// refetch every embedded tweet.
-	tweetCache *mdloader.TweetCache
 }
 
 func New(version string, env Env, config mdloader.Config) *Loader {
@@ -136,7 +132,6 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 		version:    version,
 		config:     config,
 		patchCache: frontmatterpatch.NewResultCache(),
-		tweetCache: mdloader.NewTweetCache(),
 	}
 }
 
@@ -328,7 +323,6 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		FrontmatterPatches: l.frontmatterPatches,
 		ChartData:          l.chartData,
 		PatchCache:         l.patchCache,
-		TweetCache:         l.tweetCache,
 	}
 
 	nvs, err := mdloader.Load(mdOptions)

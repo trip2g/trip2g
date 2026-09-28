@@ -101,10 +101,6 @@ type Options struct {
 	// when nil, patches are applied directly (uncached). Reuse the same instance
 	// across reloads for the cache to help (it persists alongside the note cache).
 	PatchCache *frontmatterpatch.ResultCache
-
-	// TweetCache memoizes Twitter oEmbed fetches. Optional; when nil, each Load
-	// gets its own. Reuse the same instance across reloads to skip refetching.
-	TweetCache *TweetCache
 }
 
 // Load transforms markdown files into pages.
@@ -129,15 +125,10 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.frontmatterPatches = options.FrontmatterPatches
 	ldr.patchCache = options.PatchCache
 
-	tweets := options.TweetCache
-	if tweets == nil {
-		tweets = NewTweetCache()
-	}
-
 	renderOptions := []renderer.Option{
 		renderer.WithNodeRenderers(util.Prioritized(&chartRenderer{resolver: ldr.linkResolver}, 197)),
 		renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{resolver: ldr.linkResolver, nvs: ldr.nvs}, 198)),
-		renderer.WithNodeRenderers(util.Prioritized(newImageRenderer(ldr.linkResolver, tweets), 199)),
+		renderer.WithNodeRenderers(util.Prioritized(newImageRenderer(ldr.linkResolver), 199)),
 		renderer.WithNodeRenderers(util.Prioritized(&headingRenderer{}, 200)),
 	}
 
@@ -232,8 +223,6 @@ func Load(options Options) (*model.NoteViews, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to find assets: %w", err)
 	}
-
-	ldr.linkResolver.loaded = true
 
 	return ldr.nvs, nil
 }

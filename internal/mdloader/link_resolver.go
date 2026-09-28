@@ -24,10 +24,6 @@ type myLinkResolver struct {
 	// rendered, false once its HTML is final. nil after load.
 	embedRendering map[*model.NoteView]bool
 
-	// loaded is set once Load returns; renders after that are request-time
-	// partials, which must not do network I/O.
-	loaded bool
-
 	// domainRenderNotes maps domain-specific paths to NoteViews during
 	// domain re-render. Used by linkRenderer to find notes for data-pid
 	// and paywall classes when the href is a domain path (not a permalink).
