@@ -289,7 +289,8 @@ func (ldr *loader) markAsset(p *model.NoteView, dest []byte) {
 }
 
 func (ldr *loader) findAssets() error {
-	for id, p := range ldr.nvs.Map {
+	// PathMap: Map holds each note again under every alias URL.
+	for id, p := range ldr.nvs.PathMap {
 		if p.Ast() == nil {
 			continue // raw file (e.g. .canvas, .base) — no AST to walk
 		}

@@ -318,9 +318,7 @@ func (pr *PartialRenderer) renderExcerptRange(allNodes []ast.Node, start, end in
 			if _, ok := node.(*extast.Table); ok {
 				continue // skip wide tables in the excerpt
 			}
-			if err := pr.md.Renderer().Render(&buf, pr.content, node); err != nil {
-				continue // Skip nodes that can't be rendered.
-			}
+			pr.renderNode(&buf, node)
 		}
 	})
 
@@ -454,10 +452,7 @@ func (pr *PartialRenderer) renderHeading(heading *ast.Heading) string {
 	pr.withCurrentPage(func() {
 		// Render only the children of the heading (the content inside).
 		for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
-			err := pr.md.Renderer().Render(&buf, pr.content, child)
-			if err != nil {
-				continue // Skip nodes that can't be rendered.
-			}
+			pr.renderNode(&buf, child)
 		}
 	})
 
@@ -473,13 +468,19 @@ func (pr *PartialRenderer) renderNodeRange(allNodes []ast.Node, start, end int) 
 
 	pr.withCurrentPage(func() {
 		for i := start; i < end && i < len(allNodes); i++ {
-			node := allNodes[i]
-			err := pr.md.Renderer().Render(&buf, pr.content, node)
-			if err != nil {
-				continue // Skip nodes that can't be rendered.
-			}
+			pr.renderNode(&buf, allNodes[i])
 		}
 	})
 
 	return buf.String()
+}
+
+// renderNode appends node's HTML to buf, or nothing if rendering fails, so a
+// node that errors halfway never leaves broken markup behind.
+func (pr *PartialRenderer) renderNode(buf *bytes.Buffer, node ast.Node) {
+	var nodeBuf bytes.Buffer
+	if err := pr.md.Renderer().Render(&nodeBuf, pr.content, node); err != nil {
+		return
+	}
+	buf.Write(nodeBuf.Bytes())
 }
