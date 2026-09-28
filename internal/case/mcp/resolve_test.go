@@ -384,6 +384,7 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
@@ -524,6 +525,7 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
@@ -597,6 +599,7 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: federationNote, URL: federationNote.Permalink, Score: 2},
@@ -664,6 +667,7 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: privateNote, URL: privateNote.Permalink, Score: 2},
@@ -774,6 +778,7 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: systemNote, URL: systemNote.Permalink, Score: 3},
@@ -837,6 +842,7 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: note,
@@ -1915,6 +1921,7 @@ func makeSearchEnv(t *testing.T, results []appmodel.SearchResult) *EnvMock {
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 			return results, nil
 		},

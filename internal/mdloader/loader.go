@@ -200,6 +200,7 @@ func Load(options Options) (*model.NoteViews, error) {
 	}
 
 	ldr.buildBasenameIndex()
+	ldr.buildNameIndex()
 
 	err := ldr.extractInLinks()
 	if err != nil {
@@ -526,6 +527,24 @@ func (ldr *loader) buildBasenameIndex() {
 			}
 			return notes[i].Path < notes[j].Path
 		})
+	}
+}
+
+func (ldr *loader) buildNameIndex() {
+	ldr.nvs.NameMap = make(map[string][]*model.NoteView, len(ldr.nvs.PathMap))
+	for _, note := range ldr.nvs.PathMap {
+		seen := map[string]bool{}
+		for _, name := range append([]string{note.Title}, note.Aliases...) {
+			key := model.NormalizeName(name)
+			if key == "" || seen[key] {
+				continue
+			}
+			seen[key] = true
+			ldr.nvs.NameMap[key] = append(ldr.nvs.NameMap[key], note)
+		}
+	}
+	for _, notes := range ldr.nvs.NameMap {
+		sort.Slice(notes, func(i, j int) bool { return notes[i].Path < notes[j].Path })
 	}
 }
 

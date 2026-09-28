@@ -28,10 +28,11 @@ func TestResolve_ReadPatternsOmitOutOfScope(t *testing.T) {
 		SearchLiveNotesFunc: func(_ string) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{inScope, outScope}, nil
 		},
-		FeaturesFunc:    func() features.Features { return features.Features{} },
-		OpenAIFunc:      func() *openai.Client { return nil },
-		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
-		LoggerFunc:      func() logger.Logger { return &logger.DummyLogger{} },
+		FeaturesFunc:      func() features.Features { return features.Features{} },
+		OpenAIFunc:        func() *openai.Client { return nil },
+		CanReadNoteFunc:   func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
+		LoggerFunc:        func() logger.Logger { return &logger.DummyLogger{} },
+		LiveNoteViewsFunc: appmodel.NewNoteViews,
 	}
 
 	// WebhookScoped must be true: read-pattern enforcement is only triggered for
@@ -54,6 +55,7 @@ func makeSearchEnv(results []appmodel.SearchResult) *EnvMock {
 		OpenAIFunc:           func() *openai.Client { return nil },
 		CanReadNoteFunc:      func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
 		LoggerFunc:           func() logger.Logger { return &logger.DummyLogger{} },
+		LiveNoteViewsFunc:    appmodel.NewNoteViews,
 	}
 }
 

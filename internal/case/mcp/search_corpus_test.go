@@ -54,6 +54,8 @@ func corpusEnv() *EnvMock {
 		},
 		LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
 		LiveNoteChunksFunc:   func() []appmodel.NoteChunk { return nil },
+		LatestNoteViewsFunc:  appmodel.NewNoteViews,
+		LiveNoteViewsFunc:    appmodel.NewNoteViews,
 		FeaturesFunc:         func() features.Features { return features.Features{} },
 		NoteURLFunc:          func(n *appmodel.NoteView) string { return "https://x.test" + n.Permalink },
 		LoggerFunc:           func() logger.Logger { return &logger.DummyLogger{} },

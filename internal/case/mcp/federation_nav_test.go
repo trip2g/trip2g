@@ -55,6 +55,7 @@ func TestSearchTextNamesFederationPointer(t *testing.T) {
 			}}, nil
 		},
 		LiveNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
+		LiveNoteViewsFunc:  appmodel.NewNoteViews,
 		PublicURLFunc:      func() string { return "https://hub.local" },
 		NoteURLFunc:        func(n *appmodel.NoteView) string { return "https://hub.local" + n.Permalink },
 		LoggerFunc:         func() logger.Logger { return &logger.DummyLogger{} },

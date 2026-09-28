@@ -39,6 +39,11 @@ const rrfK = 60
 // list is capped after permission filtering (see hybridResultCap in Resolve).
 const vectorTopK = 50
 
+// exactNameWeight is the RRF weight of the exact-name list. A query that spells
+// out a note's title or alias almost always means that note, so this list
+// counts double against text and vector.
+const exactNameWeight = 2.0
+
 // Retrieve runs the shared first-stage retrieval pipeline used by both the
 // site (GraphQL) search and the MCP search tool: text lane (bleve) + vector
 // lane + RRF fusion + optional blended cross-encoder rerank. useLatest selects
@@ -90,6 +95,19 @@ func Retrieve(
 			results = mergeResults(results, vectorResults)
 			merged = true
 		}
+	}
+
+	var noteViews *appmodel.NoteViews
+	if useLatest {
+		noteViews = env.LatestNoteViews()
+	} else {
+		noteViews = env.LiveNoteViews()
+	}
+	if names := exactNameResults(query, noteViews); len(names) > 0 {
+		if !merged {
+			results = rankScores(results)
+		}
+		results = fuseLane(results, names, exactNameWeight)
 	}
 
 	// Optional second-stage cross-encoder rerank, BLENDED with the RRF order.
@@ -285,6 +303,63 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 	})
 
 	return finalResults
+}
+
+// exactNameResults returns the notes whose title or alias equals the query
+// after NormalizeName, in NameMap order.
+func exactNameResults(query string, noteViews *appmodel.NoteViews) []appmodel.SearchResult {
+	if noteViews == nil {
+		return nil
+	}
+	var results []appmodel.SearchResult
+	for _, note := range noteViews.NameMap[appmodel.NormalizeName(query)] {
+		if note.ExcludeSearch || note.IsSystem() {
+			continue
+		}
+		title := note.Title
+		results = append(results, appmodel.SearchResult{
+			NoteView:         note,
+			URL:              note.Permalink,
+			MatchOrigin:      appmodel.SearchMatchText,
+			HighlightedTitle: &title,
+		})
+	}
+	return results
+}
+
+// rankScores replaces raw text-lane scores with their RRF contribution so a
+// text-only result list can be fused with another lane.
+func rankScores(results []appmodel.SearchResult) []appmodel.SearchResult {
+	for i := range results {
+		results[i].Score = 1.0 / float64(rrfK+i+1)
+	}
+	return results
+}
+
+// fuseLane adds a weighted RRF list to results that already carry RRF scores.
+func fuseLane(results, lane []appmodel.SearchResult, weight float64) []appmodel.SearchResult {
+	index := make(map[string]int, len(results))
+	for i, r := range results {
+		index[r.URL] = i
+	}
+	for rank, r := range lane {
+		score := weight / float64(rrfK+rank+1)
+		if i, ok := index[r.URL]; ok {
+			results[i].Score += score
+			continue
+		}
+		r.Score = score
+		r.HighlightedContent = []string{generateSnippet(r.NoteView, 150)}
+		index[r.URL] = len(results)
+		results = append(results, r)
+	}
+	sort.SliceStable(results, func(i, j int) bool {
+		if results[i].Score != results[j].Score {
+			return results[i].Score > results[j].Score
+		}
+		return results[i].URL < results[j].URL
+	})
+	return results
 }
 
 // rerankResults applies the shared optional cross-encoder rerank

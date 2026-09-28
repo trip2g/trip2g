@@ -330,3 +330,54 @@ func TestGoldenResolve_PostACLCap(t *testing.T) {
 		require.NotNil(t, n.NoteView, "placeholders must be cut by the cap, not readable results")
 	}
 }
+
+// Exact name lane: a query equal to a note's title or alias (after
+// normalization) enters RRF as its own list with weight 2.
+//
+//	Hybrid, query "Звёздочки" = alias of D:
+//	  D = 1/62 (vector#2) + 2/61 (name#1) ≈ 0.048916 → first
+//	Text-only, same query: text ranks become RRF scores (B 1/61, A 1/62,
+//	  E 1/63) and D enters with 2/61 alone.
+func withNames(env *EnvMock) *EnvMock {
+	views := env.LiveNoteViewsFunc()
+	d := views.PathMap["d.md"]
+	views.NameMap = map[string][]*appmodel.NoteView{appmodel.NormalizeName("звездочки"): {d}}
+	env.LiveNoteViewsFunc = func() *appmodel.NoteViews { return views }
+	return env
+}
+
+func TestGoldenRetrieve_ExactNameHybrid(t *testing.T) {
+	srv := newEmbeddingServer(t, []float32{1, 0})
+	defer srv.Close()
+
+	results, merged, err := sitesearch.Retrieve(context.Background(), withNames(goldenEnv(t, srv.URL)), "  Звёздочки ", false, nil)
+	require.NoError(t, err)
+	require.True(t, merged)
+	require.Equal(t, []string{"/d", "/a", "/b", "/c", "/e"}, urlsOf(results))
+	require.InDelta(t, 1.0/62+2.0/61, results[0].Score, 1e-12)
+}
+
+func TestGoldenRetrieve_ExactNameTextOnly(t *testing.T) {
+	srv := newEmbeddingServer(t, []float32{1, 0})
+	defer srv.Close()
+
+	env := withNames(goldenEnv(t, srv.URL))
+	env.FeaturesFunc = func() features.Features { return features.Features{} }
+
+	results, _, err := sitesearch.Retrieve(context.Background(), env, "звездочки", false, nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"/d", "/b", "/a", "/e"}, urlsOf(results))
+	require.NotEmpty(t, results[0].HighlightedContent, "a name-only hit still carries a snippet")
+}
+
+func TestGoldenRetrieve_NoNameMatchKeepsOrder(t *testing.T) {
+	srv := newEmbeddingServer(t, []float32{1, 0})
+	defer srv.Close()
+
+	env := withNames(goldenEnv(t, srv.URL))
+	env.FeaturesFunc = func() features.Features { return features.Features{} }
+
+	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"/b", "/a", "/e"}, urlsOf(results))
+}

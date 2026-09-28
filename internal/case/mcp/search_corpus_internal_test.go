@@ -26,6 +26,7 @@ func (e *fedCorpusEnv) SearchLiveNotes(string) ([]model.SearchResult, error) {
 	}}, nil
 }
 func (e *fedCorpusEnv) LiveNoteChunks() []model.NoteChunk { return nil }
+func (e *fedCorpusEnv) LiveNoteViews() *model.NoteViews   { return model.NewNoteViews() }
 func (e *fedCorpusEnv) Features() features.Features       { return features.Features{} }
 func (e *fedCorpusEnv) NoteURL(n *model.NoteView) string  { return "https://x.test" + n.Permalink }
 func (e *fedCorpusEnv) SiteConfig(context.Context) model.SiteConfig {

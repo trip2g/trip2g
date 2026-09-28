@@ -13,6 +13,7 @@ import (
 	"unicode"
 
 	"github.com/yuin/goldmark/ast"
+	"golang.org/x/text/unicode/norm"
 )
 
 // TOC display constants.
@@ -200,6 +201,9 @@ type NoteView struct {
 
 	Description *string // meta description for SEO
 
+	// Aliases are the frontmatter aliases (Obsidian alternative names).
+	Aliases []string
+
 	InLinks         map[string]struct{} // permlinks of notes linking to this note
 	RawMeta         map[string]interface{}
 	OriginalRawMeta map[string]interface{} // RawMeta before patches, used to re-apply patches correctly on cached reloads
@@ -323,6 +327,10 @@ type NoteViews struct {
 	// Candidate slices are sorted by path depth (shallowest first),
 	// then lexicographically by path — see mdloader buildBasenameIndex.
 	BasenameMap map[string][]*NoteView `json:"-"`
+
+	// NameMap maps a NormalizeName'd title or alias to its notes; search uses
+	// it to promote a note whose name the query spells out exactly.
+	NameMap map[string][]*NoteView `json:"-"`
 
 	// WikilinkResolution selects the bare-wikilink resolution strategy.
 	// Zero value ("") means the default scoped ladder.
@@ -579,6 +587,8 @@ func (n *NoteView) ExtractMetaData() error {
 	if err != nil {
 		return err
 	}
+
+	n.Aliases = n.extractAliases()
 
 	n.extractReadingTime()
 
@@ -963,6 +973,39 @@ func (n *NoteView) extractString(key string) (*string, error) {
 	}
 
 	return &str, nil
+}
+
+// extractAliases reads "aliases" (or the singular "alias") as a list or a
+// single string, the forms Obsidian accepts; other values are ignored.
+func (n *NoteView) extractAliases() []string {
+	raw, ok := n.RawMeta["aliases"]
+	if !ok {
+		raw = n.RawMeta["alias"]
+	}
+
+	var values []any
+	switch v := raw.(type) {
+	case string:
+		values = []any{v}
+	case []any:
+		values = v
+	}
+
+	var aliases []string
+	for _, v := range values {
+		if s, isStr := v.(string); isStr && strings.TrimSpace(s) != "" {
+			aliases = append(aliases, strings.TrimSpace(s))
+		}
+	}
+	return aliases
+}
+
+// NormalizeName folds a note name or query for exact-name matching: NFC,
+// lower case, ё→е, whitespace collapsed.
+func NormalizeName(s string) string {
+	s = strings.ToLower(norm.NFC.String(s))
+	s = strings.ReplaceAll(s, "ё", "е")
+	return strings.Join(strings.Fields(s), " ")
 }
 
 func (n *NoteView) ExtractTitle() string {

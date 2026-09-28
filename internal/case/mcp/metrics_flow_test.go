@@ -77,6 +77,10 @@ func withSearchEnv(env *EnvMock) {
 	env.SearchLatestNotesFunc = textSearch
 	env.LiveNoteChunksFunc = func() []appmodel.NoteChunk { return nil }
 	env.LatestNoteChunksFunc = func() []appmodel.NoteChunk { return nil }
+	env.LiveNoteViewsFunc = appmodel.NewNoteViews
+	if env.LatestNoteViewsFunc == nil {
+		env.LatestNoteViewsFunc = appmodel.NewNoteViews
+	}
 	env.NoteURLFunc = func(n *appmodel.NoteView) string { return "https://x/" + n.Path }
 }
 
