@@ -42,6 +42,7 @@ title: "Навигация"
 - [[ru/thoughts/the-database-was-re-reading-its-own-queries|База данных разбирала свои запросы заново]]
 - [[ru/thoughts/blaming-sqlite-for-my-own-bug|Полгода я винил SQLite в собственном баге]]
 - [[ru/thoughts/truth-about-reranking|Правда о реранкере]]
+- [[ru/thoughts/note-that-looked-like-a-font|Заметка, которую сервер принял за шрифт]]
 - [[ru/thoughts/krisp-segmentation-nano-vs-mini|Проси точку поворота, а не интервал]]
 - [[ru/thoughts/ingest-as-a-note|Задание приезжает заметкой]]
 - [[ru/thoughts/alerts-in-a-knowledge-base|Алертам место в базе знаний]]

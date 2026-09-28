@@ -3,9 +3,10 @@ package pushnotes
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
+
 	"trip2g/internal/appreq"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -31,11 +32,6 @@ var allowedExtensins = map[string]struct{}{ //nolint:gochecknoglobals // it's a 
 	".canvas":     {},
 	".base":       {},
 	".excalidraw": {},
-}
-
-var allowedContentTypes = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
-	"text/plain; charset=utf-8": {},
-	"text/html; charset=utf-8":  {},
 }
 
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
@@ -149,12 +145,12 @@ func validateUpdate(log logger.Logger, update model.PushNoteInput) *model.ErrorP
 		return &model.ErrorPayload{Message: "Only .md, .html, .html.json, .canvas, .base, and .excalidraw files are supported"}
 	}
 
-	contentType := http.DetectContentType([]byte(update.Content))
-	_, allowed = allowedContentTypes[contentType]
-	if !allowed {
-		msg := fmt.Sprintf("Unsupported content type: %s", contentType)
-		log.Info("unsupported content type", "path", update.Path, "contentType", contentType)
-		return &model.ErrorPayload{Message: msg}
+	// Every accepted format is text, so check the encoding instead of sniffing
+	// magic bytes: prose can match a binary signature (http.DetectContentType
+	// calls any file with "LP" at byte 34 an EOT font).
+	if !utf8.ValidString(update.Content) || strings.ContainsRune(update.Content, 0) {
+		log.Info("binary content rejected", "path", update.Path)
+		return &model.ErrorPayload{Message: "File content must be UTF-8 text"}
 	}
 
 	return nil

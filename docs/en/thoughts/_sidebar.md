@@ -41,6 +41,7 @@ title: "Navigation"
 - [[en/thoughts/the-database-was-re-reading-its-own-queries|The database was re-reading its own queries]]
 - [[en/thoughts/blaming-sqlite-for-my-own-bug|I spent half a year blaming SQLite for my own bug]]
 - [[en/thoughts/truth-about-reranking|The truth about reranking]]
+- [[en/thoughts/note-that-looked-like-a-font|The note the server took for a font]]
 - [[en/thoughts/krisp-segmentation-nano-vs-mini|Ask for the turn, not the interval]]
 - [[en/thoughts/ingest-as-a-note|The job ships as a note]]
 - [[en/thoughts/alerts-in-a-knowledge-base|Alerts belong in a knowledge base]]

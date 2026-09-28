@@ -760,3 +760,55 @@ func TestUnchangedNoteStaysQuiet(t *testing.T) {
 	require.Zero(t, queued, "an unchanged push has nothing to defer")
 	require.Zero(t, handled, "an unchanged push is not a change")
 }
+
+// Content validation must judge text by encoding, not by magic-byte sniffing:
+// ordinary prose can collide with a binary signature (an EOT font is any file
+// with "LP" at byte 34, an MP3 is anything starting with "ID3").
+func TestResolve_TextContentValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		wantOK  bool
+	}{
+		{name: "plain markdown", content: "# Hello\n\nПривет", wantOK: true},
+		{name: "LP at byte 34 sniffs as EOT font", content: "---\ntitle: \"BASOPHILS AND THE T HELPER 2\"\n---\n\nBody.", wantOK: true},
+		{name: "ID3 prefix sniffs as MP3", content: "ID3 tags explained: how MP3 metadata works", wantOK: true},
+		{name: "GIF89a prefix sniffs as GIF", content: "GIF89a is an image format from 1989", wantOK: true},
+		{name: "XML declaration sniffs as XML", content: "<?xml version=\"1.0\"?> notes about XML", wantOK: true},
+		{name: "UTF-8 BOM", content: "\xEF\xBB\xBF# Hello", wantOK: true},
+		{name: "NUL byte is binary", content: "# Hello\x00world", wantOK: false},
+		{name: "invalid UTF-8 is binary", content: "# Hello \xff\xfe world", wantOK: false},
+		{name: "PNG image", content: "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR", wantOK: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := newEnvMock(&logger.TestLogger{})
+			env.InsertNoteFunc = func(_ context.Context, _ appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+				return appmodel.NoteSaveResult{PathID: 1, VersionID: 1}, nil
+			}
+			env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+				return &appmodel.NoteViews{
+					List:      []*appmodel.NoteView{{Path: "note.md", PathID: 1, VersionID: 1, Assets: map[string]struct{}{}}},
+					Subgraphs: map[string]*appmodel.NoteSubgraph{},
+				}, nil
+			}
+			env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error { return nil }
+			env.LayoutsFunc = func() *appmodel.Layouts { return &appmodel.Layouts{Map: map[string]appmodel.Layout{}} }
+
+			result, err := pushnotes.Resolve(context.Background(), env, model.PushNotesInput{
+				Updates: []model.PushNoteInput{{Path: "note.md", Content: tt.content}},
+			})
+			require.NoError(t, err)
+
+			errPayload, isErr := result.(*model.ErrorPayload)
+			if tt.wantOK {
+				require.False(t, isErr, "unexpected rejection: %v", errPayload)
+				require.Len(t, env.InsertNoteCalls(), 1)
+				return
+			}
+			require.True(t, isErr, "binary content must be rejected")
+			require.Empty(t, env.InsertNoteCalls())
+		})
+	}
+}
