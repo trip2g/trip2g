@@ -2,6 +2,7 @@ package mdloader
 
 import (
 	"bytes"
+	"sync"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
@@ -14,6 +15,18 @@ type myLinkResolver struct {
 	nvs *model.NoteViews
 
 	currentPage *model.NoteView
+
+	// renderMu serializes request-time partial renders: they share this
+	// resolver and the goldmark renderer with every other note of the load.
+	renderMu sync.Mutex
+
+	// embedRendering tracks notes during load: true while a note is being
+	// rendered, false once its HTML is final. nil after load.
+	embedRendering map[*model.NoteView]bool
+
+	// loaded is set once Load returns; renders after that are request-time
+	// partials, which must not do network I/O.
+	loaded bool
 
 	// domainRenderNotes maps domain-specific paths to NoteViews during
 	// domain re-render. Used by linkRenderer to find notes for data-pid

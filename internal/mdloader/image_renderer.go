@@ -84,16 +84,26 @@ func parseImageSize(alt string) (string, *imageSize) {
 // imageRenderer renders Enclave image nodes with AssetReplaces URL substitution.
 type imageRenderer struct {
 	resolver *myLinkResolver
+	tweets   *TweetCache
 }
 
-func newImageRenderer(resolver *myLinkResolver) *imageRenderer {
+func newImageRenderer(resolver *myLinkResolver, tweets *TweetCache) *imageRenderer {
 	return &imageRenderer{
 		resolver: resolver,
+		tweets:   tweets,
 	}
 }
 
 func (r *imageRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(enclavecore.KindEnclave, r.renderEnclave)
+}
+
+// tweet fetches during load only; request-time partials read the cache.
+func (r *imageRenderer) tweet(url, theme string) (string, error) {
+	if r.resolver.loaded {
+		return r.tweets.Cached(url, theme)
+	}
+	return r.tweets.Tweet(url, theme)
 }
 
 //nolint:gocognit,gocyclo,cyclop // complex rendering logic with multiple enclave providers
@@ -149,7 +159,7 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderTwitter:
-		html, err := object.GetTweetOembedHtml(enc.ObjectID, enc.Theme)
+		html, err := r.tweet(enc.ObjectID, enc.Theme)
 		if err != nil || html == "" {
 			html = wrapEnclaveErrorHTML("twitter", enc.ObjectID)
 		} else {

@@ -2,7 +2,6 @@ package mdloader
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
 	"go.abhg.dev/goldmark/wikilink"
 )
@@ -129,7 +129,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		}
 
 		_, _ = w.WriteString(` href="`)
-		_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))
+		_, _ = w.Write(safeURL(dest))
 		_, _ = w.WriteString(`">`)
 		return ast.WalkContinue, nil
 	}
@@ -140,7 +140,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 	if isVideo {
 		// Render as <video> tag
 		_, _ = w.WriteString(`<video controls src="`)
-		_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))
+		_, _ = w.Write(safeURL(dest))
 		_, _ = w.WriteString(`">`)
 		_, _ = w.WriteString(`Your browser does not support the video tag.`)
 		_, _ = w.WriteString(`</video>`)
@@ -150,7 +150,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 	// Check if it's an audio file
 	if image.IsAudioExtension(string(n.Target)) {
 		_, _ = w.WriteString(`<audio controls src="`)
-		_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))
+		_, _ = w.Write(safeURL(dest))
 		_, _ = w.WriteString(`">`)
 		_, _ = w.WriteString(`</audio>`)
 		return ast.WalkSkipChildren, nil
@@ -159,7 +159,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 	// Check if it's a document file — render as download link
 	if image.IsDocExtension(string(n.Target)) {
 		_, _ = w.WriteString(`<a href="`)
-		_, _ = w.Write(util.URLEscape(dest, true))
+		_, _ = w.Write(safeURL(dest))
 		_, _ = w.WriteString(`" class="file-link">`)
 		_, _ = w.Write(util.EscapeHTML(n.Target))
 		_, _ = w.WriteString(`</a>`)
@@ -168,7 +168,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 
 	// Render as <img> tag for images
 	_, _ = w.WriteString(`<img src="`)
-	_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))
+	_, _ = w.Write(safeURL(dest))
 
 	// The label portion of the link becomes the alt text
 	// only if it isn't the same as the target.
@@ -202,6 +202,18 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 	return ast.WalkSkipChildren, nil
 }
 
+// safeURL escapes dest for an attribute and blanks it when it carries an
+// executable scheme (javascript:, vbscript:, file:, data: except images),
+// matching goldmark's policy for ordinary markdown links. The check runs on
+// the escaped form, after entity references like &#106; are resolved.
+func safeURL(dest []byte) []byte {
+	escaped := util.URLEscape(dest, true /* resolve references */)
+	if html.IsDangerousURL(escaped) {
+		return nil
+	}
+	return escaped
+}
+
 // removeVersion strips ?version=... from URL without full URL parsing.
 func removeVersion(originalURL string) string {
 	idx := strings.Index(originalURL, "?version=")
@@ -210,8 +222,6 @@ func removeVersion(originalURL string) string {
 	}
 	return originalURL[:idx]
 }
-
-var errNoHTML = errors.New("note has no HTML content")
 
 func (r *linkRenderer) renderEmbed(w util.BufWriter, dest []byte) (ast.WalkStatus, error) {
 	url := removeVersion(string(dest))
@@ -232,9 +242,13 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, dest []byte) (ast.WalkStatu
 		return ast.WalkSkipChildren, nil
 	}
 
-	if len(note.HTML) == 0 {
-		// mdloader will try to render it again later
-		return ast.WalkSkipChildren, errNoHTML
+	if lr, ok := r.resolver.(*myLinkResolver); ok && lr.embedRendering[note] {
+		// The free-preview pass renders the same embed again; warn once.
+		msg := "embed cycle: " + url
+		if !hasWarningMessage(lr.currentPage, msg) {
+			lr.currentPage.AddWarning(model.NoteWarningWarning, "%s", msg)
+		}
+		return ast.WalkSkipChildren, nil
 	}
 
 	class := "embedded-note"
@@ -302,4 +316,13 @@ func writeNodeText(src []byte, dst io.Writer, n ast.Node) {
 			writeNodeText(src, dst, c)
 		}
 	}
+}
+
+func hasWarningMessage(note *model.NoteView, msg string) bool {
+	for _, w := range note.Warnings {
+		if w.Message == msg {
+			return true
+		}
+	}
+	return false
 }

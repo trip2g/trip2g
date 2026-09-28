@@ -10,6 +10,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/text"
 
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
 
@@ -156,6 +157,34 @@ Third paragraph.`,
 			},
 			expectContains:    []string{"First paragraph", "Second paragraph"},
 			expectNotContains: []string{"Third paragraph"},
+		},
+		{
+			name: "table counts as one block with free_paragraphs",
+			markdown: `| Col |
+| --- |
+| cell |
+
+After.`,
+			metadata: map[string]interface{}{
+				"free_paragraphs": 1,
+			},
+			expectContains:    []string{"<table>", "cell"},
+			expectNotContains: []string{"After"},
+		},
+		{
+			name: "table before cut is kept",
+			markdown: `| Col |
+| --- |
+| cell |
+
+---
+
+Hidden.`,
+			metadata: map[string]interface{}{
+				"free_cut": true,
+			},
+			expectContains:    []string{"<table>", "cell"},
+			expectNotContains: []string{"Hidden"},
 		},
 	}
 
@@ -431,6 +460,83 @@ Third section should be excluded.`,
 
 			for _, notExpected := range tt.expectNotContains {
 				require.NotContains(t, freeHTML, notExpected, "Free HTML should NOT contain: %s", notExpected)
+			}
+		})
+	}
+}
+
+func TestFreeHTMLKeepsCalloutWrapper(t *testing.T) {
+	notes, err := Load(Options{
+		Log: &logger.TestLogger{},
+		Sources: []SourceFile{{Path: "a.md", Content: []byte(`---
+free_paragraphs: 1
+---
+> [!note] Title
+> Inside.
+
+After.`)}},
+	})
+	require.NoError(t, err)
+
+	freeHTML := string(notes.PathMap["a.md"].FreeHTML)
+	require.Contains(t, freeHTML, "callout")
+	require.Contains(t, freeHTML, "Inside")
+	require.NotContains(t, freeHTML, "After")
+}
+
+func TestFreeHTMLEdgeBlocks(t *testing.T) {
+	tests := []struct {
+		name              string
+		content           string
+		expectContains    []string
+		expectNotContains []string
+	}{
+		{
+			name: "comment block does not use up free_paragraphs",
+			content: `---
+free_paragraphs: 1
+---
+%%
+private
+%%
+
+Visible intro.
+
+Paid.`,
+			expectContains:    []string{"Visible intro"},
+			expectNotContains: []string{"private", "Paid"},
+		},
+		{
+			name: "cut inside a callout still cuts",
+			content: `---
+free_cut: true
+---
+> [!note] T
+> teaser
+>
+> ---
+> paid inside
+
+Paid body.`,
+			expectContains:    []string{"teaser"},
+			expectNotContains: []string{"paid inside", "Paid body"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			notes, err := Load(Options{
+				Log:     &logger.TestLogger{},
+				Sources: []SourceFile{{Path: "a.md", Content: []byte(tt.content)}},
+			})
+			require.NoError(t, err)
+
+			freeHTML := string(notes.PathMap["a.md"].FreeHTML)
+			for _, s := range tt.expectContains {
+				require.Contains(t, freeHTML, s)
+			}
+			for _, s := range tt.expectNotContains {
+				require.NotContains(t, freeHTML, s)
 			}
 		})
 	}

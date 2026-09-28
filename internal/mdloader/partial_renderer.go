@@ -2,6 +2,7 @@ package mdloader
 
 import (
 	"bytes"
+	"sync"
 	"trip2g/internal/model"
 
 	"github.com/yuin/goldmark"
@@ -15,6 +16,13 @@ type PartialRenderer struct {
 	content  []byte
 	resolver *myLinkResolver
 	page     *model.NoteView
+
+	// Templates ask for the same intro and sections on every request (footer,
+	// cards, meta description); the snapshot is immutable, so render them once.
+	introOnce sync.Once
+	intro     model.NoteViewSection
+	sectionMu sync.Mutex
+	sections  map[int][]model.NoteViewSection
 }
 
 func (pr *PartialRenderer) SetContent(astNode ast.Node, content []byte) {
@@ -28,8 +36,19 @@ func (pr *PartialRenderer) SetPage(page *model.NoteView) {
 }
 
 // withCurrentPage temporarily sets resolver.currentPage to this page for rendering.
+// The goldmark renderer and resolver are shared by every note of a load and
+// hold per-render state, so partial renders from concurrent requests are
+// serialized on the resolver.
 func (pr *PartialRenderer) withCurrentPage(fn func()) {
-	if pr.resolver == nil || pr.page == nil {
+	if pr.resolver == nil {
+		fn()
+		return
+	}
+
+	pr.resolver.renderMu.Lock()
+	defer pr.resolver.renderMu.Unlock()
+
+	if pr.page == nil {
 		fn()
 		return
 	}
@@ -41,7 +60,20 @@ func (pr *PartialRenderer) withCurrentPage(fn func()) {
 }
 
 func (pr *PartialRenderer) Sections(level int) []model.NoteViewSection {
-	return pr.sectionsFromNodes(pr.collectTopLevelNodes(), level)
+	pr.sectionMu.Lock()
+	defer pr.sectionMu.Unlock()
+
+	if cached, ok := pr.sections[level]; ok {
+		return cached
+	}
+
+	result := pr.sectionsFromNodes(pr.collectTopLevelNodes(), level)
+	if pr.sections == nil {
+		pr.sections = make(map[int][]model.NoteViewSection)
+	}
+	pr.sections[level] = result
+
+	return result
 }
 
 func (pr *PartialRenderer) collectTopLevelNodes() []ast.Node {
@@ -224,6 +256,13 @@ func extractTextFromNodeRecursive(content []byte, node ast.Node, buf *bytes.Buff
 }
 
 func (pr *PartialRenderer) Introduce() model.NoteViewSection {
+	pr.introOnce.Do(func() {
+		pr.intro = pr.introduce()
+	})
+	return pr.intro
+}
+
+func (pr *PartialRenderer) introduce() model.NoteViewSection {
 	if pr.ast == nil || pr.content == nil {
 		return model.NoteViewSection{}
 	}

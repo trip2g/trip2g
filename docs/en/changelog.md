@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Embeds, preview blocks and links render reliably
+
+- **What.** A note that embeds another note (`![[note]]`) no longer comes out blank when the embedded note has no body, when embeds form a loop, or when they are chained many levels deep. A loop now shows up as an "embed cycle" warning on the note instead. The free preview (`free_paragraphs`, `free_cut`) keeps tables and callouts, each counted as one block. Wikilinks to `javascript:`, `vbscript:`, `file:` and `data:` addresses render without the address, as ordinary Markdown links already did. An embedded tweet is fetched once and reused across renders and syncs instead of on every render.
+- **Why.** Pages could lose all their content without any warning, a leading table vanished from the free preview, and a tweet embed made every sync and page render wait on X. Pages rendered at the same moment for different visitors could also swap each other's image links in the footer and cards.
+- **How.** Nothing to do. If a note shows the new "embed cycle" warning, remove one of the embeds that forms the loop.
+
 ### `noindex: true` keeps a page out of search engines and sitemap.xml
 
 - **What.** A new `noindex` note property. A note with `noindex: true` is left out of `sitemap.xml` (the main one and every custom domain's), out of RSS feeds and any `.Public()` listing in a layout, and carries no JSON-LD. Its page gets `<meta name="robots" content="noindex">` in the default template and an `X-Robots-Tag: noindex` header on every response, custom layouts included.

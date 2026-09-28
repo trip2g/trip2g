@@ -7,6 +7,7 @@ import (
 	"html/template"
 
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/renderer"
 
 	"trip2g/internal/model"
 )
@@ -63,60 +64,104 @@ func (ldr *loader) generateFreeHTML(p *model.NoteView) error {
 	return nil
 }
 
-// renderFreeContent walks the AST and renders nodes until any limit is reached.
+// renderFreeContent renders top-level blocks until any limit is reached.
+// Each block that produces output (paragraph, heading, list, table, callout,
+// ...) counts once toward paragraphLimit and is rendered whole; each --- counts
+// toward cutLimit and is not rendered. A container that holds a --- (e.g. a
+// callout) is walked into instead, so the cut still applies inside it.
 func (ldr *loader) renderFreeContent(buf *bytes.Buffer, root ast.Node, source []byte, cutLimit int, paragraphLimit int) error {
 	if cutLimit <= 0 && paragraphLimit <= 0 {
 		return errors.New("at least one limit must be positive")
 	}
 
-	cutCount := 0
-	paragraphCount := 0
-	renderer := ldr.md.Renderer()
+	fc := freeCut{
+		renderer:       ldr.md.Renderer(),
+		buf:            buf,
+		source:         source,
+		cutLimit:       cutLimit,
+		paragraphLimit: paragraphLimit,
+	}
+	_, err := fc.renderBlocks(root)
+	return err
+}
 
-	err := ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
+type freeCut struct {
+	renderer       renderer.Renderer
+	buf            *bytes.Buffer
+	source         []byte
+	cutLimit       int
+	paragraphLimit int
+	cutCount       int
+	paragraphCount int
+}
 
-		// Skip the document node itself
-		if node.Kind() == ast.KindDocument {
-			return ast.WalkContinue, nil
-		}
-
-		// Check for thematic break (--- in markdown) if cutLimit is set
-		if cutLimit > 0 && node.Kind() == ast.KindThematicBreak {
-			cutCount++
-			if cutCount >= cutLimit {
-				// Stop when we've reached the Nth cut
-				return ast.WalkStop, nil
+// renderBlocks renders the children of parent and reports whether a limit
+// was reached.
+func (fc *freeCut) renderBlocks(parent ast.Node) (bool, error) {
+	for node := parent.FirstChild(); node != nil; node = node.NextSibling() {
+		if node.Kind() == ast.KindThematicBreak {
+			if fc.cutLimit <= 0 {
+				continue
 			}
-			// Don't render the --- itself, just count it and continue
-			return ast.WalkSkipChildren, nil
+			fc.cutCount++
+			if fc.cutCount >= fc.cutLimit {
+				return true, nil
+			}
+			continue
 		}
 
-		// Count and render paragraphs and block elements
-		switch node.Kind() {
-		case ast.KindParagraph, ast.KindHeading, ast.KindList, ast.KindBlockquote,
-			ast.KindCodeBlock, ast.KindFencedCodeBlock:
-
-			// Check if we've reached the paragraph limit
-			if paragraphLimit > 0 && paragraphCount >= paragraphLimit {
-				return ast.WalkStop, nil
+		if fc.cutLimit > 0 && isCutContainer(node) && containsThematicBreak(node) {
+			done, err := fc.renderBlocks(node)
+			if done || err != nil {
+				return done, err
 			}
-
-			// Render this node
-			err := renderer.Render(buf, source, node)
-			if err != nil {
-				return ast.WalkStop, fmt.Errorf("failed to render node: %w", err)
-			}
-
-			paragraphCount++
-			return ast.WalkSkipChildren, nil
+			continue
 		}
 
-		// Continue walking for other node types
+		if fc.paragraphLimit > 0 && fc.paragraphCount >= fc.paragraphLimit {
+			return true, nil
+		}
+
+		before := fc.buf.Len()
+		err := fc.renderer.Render(fc.buf, fc.source, node)
+		if err != nil {
+			return true, fmt.Errorf("failed to render node: %w", err)
+		}
+
+		// Comments and omitted raw HTML render nothing and don't use up the quota.
+		if !isEmptyOutput(fc.buf.Bytes()[before:]) {
+			fc.paragraphCount++
+		}
+	}
+
+	return false, nil
+}
+
+// isCutContainer reports whether a --- inside node should cut the preview.
+// Lists and blockquotes are rendered whole, as they always were.
+func isCutContainer(node ast.Node) bool {
+	switch node.Kind() {
+	case ast.KindList, ast.KindBlockquote:
+		return false
+	}
+	return node.HasChildren() && node.Type() == ast.TypeBlock
+}
+
+func containsThematicBreak(node ast.Node) bool {
+	found := false
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if entering && n.Kind() == ast.KindThematicBreak {
+			found = true
+			return ast.WalkStop, nil
+		}
 		return ast.WalkContinue, nil
 	})
+	return found
+}
 
-	return err
+// isEmptyOutput reports whether rendered HTML shows nothing: blank, or only
+// goldmark's placeholder for omitted raw HTML.
+func isEmptyOutput(out []byte) bool {
+	trimmed := bytes.TrimSpace(out)
+	return len(trimmed) == 0 || bytes.Equal(trimmed, []byte("<!-- raw HTML omitted -->"))
 }

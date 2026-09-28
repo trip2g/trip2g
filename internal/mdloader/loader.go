@@ -2,7 +2,6 @@ package mdloader
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"html/template"
 	"path/filepath"
@@ -102,6 +101,10 @@ type Options struct {
 	// when nil, patches are applied directly (uncached). Reuse the same instance
 	// across reloads for the cache to help (it persists alongside the note cache).
 	PatchCache *frontmatterpatch.ResultCache
+
+	// TweetCache memoizes Twitter oEmbed fetches. Optional; when nil, each Load
+	// gets its own. Reuse the same instance across reloads to skip refetching.
+	TweetCache *TweetCache
 }
 
 // Load transforms markdown files into pages.
@@ -126,10 +129,15 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.frontmatterPatches = options.FrontmatterPatches
 	ldr.patchCache = options.PatchCache
 
+	tweets := options.TweetCache
+	if tweets == nil {
+		tweets = NewTweetCache()
+	}
+
 	renderOptions := []renderer.Option{
 		renderer.WithNodeRenderers(util.Prioritized(&chartRenderer{resolver: ldr.linkResolver}, 197)),
 		renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{resolver: ldr.linkResolver, nvs: ldr.nvs}, 198)),
-		renderer.WithNodeRenderers(util.Prioritized(newImageRenderer(ldr.linkResolver), 199)),
+		renderer.WithNodeRenderers(util.Prioritized(newImageRenderer(ldr.linkResolver, tweets), 199)),
 		renderer.WithNodeRenderers(util.Prioritized(&headingRenderer{}, 200)),
 	}
 
@@ -224,6 +232,8 @@ func Load(options Options) (*model.NoteViews, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to find assets: %w", err)
 	}
+
+	ldr.linkResolver.loaded = true
 
 	return ldr.nvs, nil
 }
@@ -379,40 +389,94 @@ func (ldr *loader) markChartAssets(p *model.NoteView) {
 }
 
 func (ldr *loader) generatePageHTMLs() error {
-	retryNotes := []*model.NoteView{}
+	ldr.linkResolver.embedRendering = make(map[*model.NoteView]bool)
+	defer func() { ldr.linkResolver.embedRendering = nil }()
 
-	// Use PathMap to iterate over unique notes (Map contains duplicates under different URLs)
-	for _, p := range ldr.nvs.PathMap {
-		if p.Ast() == nil {
-			continue // raw file (e.g. .canvas, .base) — no HTML to generate
-		}
-		err := ldr.generatePageHTML(p)
-		if err != nil {
-			if errors.Is(err, errNoHTML) {
-				retryNotes = append(retryNotes, p)
-				continue
-			}
-
-			return fmt.Errorf("failed to generate page: %w (%s)", err, p.Path)
-		}
+	// PathMap holds unique notes (Map has duplicates under different URLs).
+	// Sorted so which side of an embed cycle gets the warning is stable.
+	paths := make([]string, 0, len(ldr.nvs.PathMap))
+	for path := range ldr.nvs.PathMap {
+		paths = append(paths, path)
 	}
+	sort.Strings(paths)
 
-	// Retry generating pages that failed to render HTML
-	// it's possible that some pages embedded other notes that yet not processed
-	for range 3 {
-		for _, p := range retryNotes {
-			err := ldr.generatePageHTML(p)
-			if err != nil {
-				if errors.Is(err, errNoHTML) {
-					continue
-				}
-
-				return fmt.Errorf("failed to generate page on retry: %w (%s)", err, p.Path)
-			}
+	for _, path := range paths {
+		err := ldr.generatePageHTMLWithEmbeds(ldr.nvs.PathMap[path])
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+// generatePageHTMLWithEmbeds renders the notes p embeds before p itself, so
+// renderEmbed can copy their finished HTML. A note reached again while still
+// in progress is an embed cycle; renderEmbed reports it.
+func (ldr *loader) generatePageHTMLWithEmbeds(p *model.NoteView) error {
+	if p.Ast() == nil {
+		return nil // raw file (e.g. .canvas, .base) — no HTML to generate
+	}
+	if _, seen := ldr.linkResolver.embedRendering[p]; seen {
+		return nil
+	}
+	ldr.linkResolver.embedRendering[p] = true
+
+	deps, err := ldr.embeddedNotes(p)
+	if err != nil {
+		return fmt.Errorf("failed to find embeds: %w (%s)", err, p.Path)
+	}
+
+	for _, dep := range deps {
+		err = ldr.generatePageHTMLWithEmbeds(dep)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = ldr.generatePageHTML(p)
+	if err != nil {
+		return fmt.Errorf("failed to generate page: %w (%s)", err, p.Path)
+	}
+	ldr.linkResolver.embedRendering[p] = false
+
+	return nil
+}
+
+// embeddedNotes returns the notes p embeds with ![[...]], resolved the same
+// way renderEmbed resolves them.
+func (ldr *loader) embeddedNotes(p *model.NoteView) ([]*model.NoteView, error) {
+	prev := ldr.linkResolver.currentPage
+	ldr.linkResolver.currentPage = p
+	defer func() { ldr.linkResolver.currentPage = prev }()
+
+	seen := make(map[*model.NoteView]struct{})
+	var notes []*model.NoteView
+	err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		link, ok := n.(*wikilink.Node)
+		if !entering || !ok || !link.Embed || resolveAsImage(link) {
+			return ast.WalkContinue, nil
+		}
+		dest, err := ldr.linkResolver.ResolveWikilink(link)
+		if err != nil {
+			return ast.WalkStop, err
+		}
+		note := ldr.nvs.GetByPath(removeVersion(string(dest)))
+		if note == nil {
+			return ast.WalkContinue, nil
+		}
+		if _, dup := seen[note]; !dup {
+			seen[note] = struct{}{}
+			notes = append(notes, note)
+		}
+		return ast.WalkContinue, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(notes, func(i, j int) bool { return notes[i].Path < notes[j].Path })
+	return notes, nil
 }
 
 // shouldWarnEmptyHTML reports whether empty rendered HTML is a real bug
