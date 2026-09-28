@@ -126,6 +126,9 @@ services:
 
       # MCP federation
       - MCP_FEDERATION_MAX_DEPTH=3
+      # The e2e suite runs ~6 workers against one CPU-bound embedding container;
+      # a peer search can queue past the 2s production default.
+      - MCP_FEDERATION_TIMEOUT=10s
       - MCP_FEDERATED_GRAPHQL=true
     volumes:
       - ./tmp/data:/data
@@ -307,6 +310,7 @@ services:
 
       # MCP federation
       - MCP_FEDERATION_MAX_DEPTH=3
+      - MCP_FEDERATION_TIMEOUT=10s
       - MCP_FEDERATED_GRAPHQL=true
     volumes:
       - ./tmp/data:/data
@@ -370,6 +374,7 @@ services:
 
       # MCP federation
       - MCP_FEDERATION_MAX_DEPTH=3
+      - MCP_FEDERATION_TIMEOUT=10s
       - MCP_FEDERATED_GRAPHQL=true
     volumes:
       - ./tmp/data:/data
@@ -433,6 +438,7 @@ services:
 
       # MCP federation
       - MCP_FEDERATION_MAX_DEPTH=3
+      - MCP_FEDERATION_TIMEOUT=10s
       - MCP_FEDERATED_GRAPHQL=true
     volumes:
       - ./tmp/data:/data

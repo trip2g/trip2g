@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"trip2g/internal/federation"
 	"trip2g/internal/model"
@@ -51,7 +52,7 @@ func TestClientCallsSixFederationTools(t *testing.T) {
 		Secret: []byte("12345678901234567890123456789012"),
 		Issuer: "https://hub.local",
 		Depth:  1,
-	}, &fasthttp.Client{}, false)
+	}, &fasthttp.Client{}, false, 0)
 
 	_, err := client.Search(context.Background(), model.MCPSearchParams{Query: "q"})
 	require.NoError(t, err)
@@ -131,7 +132,7 @@ func TestClientRetriesWithThePreviousKey(t *testing.T) {
 		PrevSecret: []byte("previous-secret"),
 	}
 
-	result, err := federation.NewClient(peer, &fasthttp.Client{}, true).
+	result, err := federation.NewClient(peer, &fasthttp.Client{}, true, 0).
 		Search(context.Background(), model.MCPSearchParams{Query: "x"})
 
 	require.NoError(t, err)
@@ -152,7 +153,7 @@ func TestClientDoesNotRetryWithoutAPreviousKey(t *testing.T) {
 
 	peer := model.FederationPeer{KBURL: server.URL, KID: "kid-1", Secret: []byte("stale-secret")}
 
-	_, err := federation.NewClient(peer, &fasthttp.Client{}, true).
+	_, err := federation.NewClient(peer, &fasthttp.Client{}, true, 0).
 		Search(context.Background(), model.MCPSearchParams{Query: "x"})
 
 	require.Error(t, err)
@@ -171,7 +172,7 @@ func TestClientTypesAJSONRPCErrorAnswer(t *testing.T) {
 
 	peer := model.FederationPeer{KBURL: server.URL, KID: "kid-1", Secret: []byte("secret")}
 
-	_, err := federation.NewClient(peer, &fasthttp.Client{}, true).
+	_, err := federation.NewClient(peer, &fasthttp.Client{}, true, 0).
 		RotateSecret(context.Background(), model.MCPRotateSecretParams{SecretHex: "00"})
 
 	var rpcErr *model.FederationRPCError
@@ -190,7 +191,7 @@ func TestClientTypesAnHTTPErrorAnswer(t *testing.T) {
 
 	peer := model.FederationPeer{KBURL: server.URL, KID: "kid-1", Secret: []byte("secret")}
 
-	_, err := federation.NewClient(peer, &fasthttp.Client{}, true).
+	_, err := federation.NewClient(peer, &fasthttp.Client{}, true, 0).
 		RotateSecret(context.Background(), model.MCPRotateSecretParams{SecretHex: "00"})
 
 	var httpErr *model.FederationHTTPError
@@ -217,7 +218,7 @@ func TestClientSignsTheBody(t *testing.T) {
 
 	peer := model.FederationPeer{KBURL: server.URL, KID: "kid-1", Secret: []byte("secret")}
 
-	_, err := federation.NewClient(peer, &fasthttp.Client{}, true).
+	_, err := federation.NewClient(peer, &fasthttp.Client{}, true, 0).
 		Search(context.Background(), model.MCPSearchParams{Query: "x"})
 
 	require.NoError(t, err)
@@ -257,4 +258,25 @@ func verifyHS256(token string, secret, body []byte) bool {
 
 	digest := sha256.Sum256(body)
 	return claims.Bh == base64.RawURLEncoding.EncodeToString(digest[:])
+}
+
+// The per-request timeout comes from the operator; a slow peer is cut off at
+// it, and a peer that answers within it succeeds.
+func TestClientUsesConfiguredTimeout(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(300 * time.Millisecond)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","result":{"content":[{"type":"text","text":"ok"}]},"id":"rid"}`))
+	}))
+	defer server.Close()
+
+	peer := model.FederationPeer{KBURL: server.URL, KID: "kid-1", Secret: []byte("12345678901234567890123456789012")}
+
+	_, err := federation.NewClient(peer, &fasthttp.Client{}, true, 100*time.Millisecond).
+		Search(context.Background(), model.MCPSearchParams{Query: "q"})
+	require.ErrorContains(t, err, "timeout")
+
+	_, err = federation.NewClient(peer, &fasthttp.Client{}, true, 2*time.Second).
+		Search(context.Background(), model.MCPSearchParams{Query: "q"})
+	require.NoError(t, err)
 }

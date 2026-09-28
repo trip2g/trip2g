@@ -261,6 +261,7 @@ To reduce scope without full revocation, remove individual subgraphs from the `k
 - **Auth:** HMAC-SHA256 only in the current version. No mTLS, no OAuth.
 - **Fan-out timeout:** 2 seconds per peer call. Slow or unreachable peers are skipped; you get results from the rest.
 - **Depth cap:** fan-out recursion stops at depth 3 (configurable via `MCP_FEDERATION_MAX_DEPTH` on self-hosted). This prevents loops when peers also have peers.
+- **Peer timeout:** one request to a peer is cut off after 2 seconds (configurable via `MCP_FEDERATION_TIMEOUT` on self-hosted, e.g. `5s`). Raise it if your peers run vector search on slow hardware.
 - **TLS:** not enforced for search traffic. Rotation is the exception and refuses a non-HTTPS peer address. Use HTTPS peer URLs in production.
 - **Rotation grace:** five minutes. During it the peer accepts both keys, which also means whoever holds the old key can rotate the pairing away from you. A successful call closes the window early.
 - **No replay cache:** JWT expiry is 30 seconds. Acceptable for personal-hub scale.

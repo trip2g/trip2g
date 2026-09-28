@@ -99,6 +99,7 @@ type Config struct {
 	// writer/queue connections; disables cron and queue workers.
 	LeaderAddr                 string
 	MCPFederationMaxDepth      int
+	MCPFederationTimeout       time.Duration
 	MCPFederationAllowPrivate  bool
 	WebhookAllowPrivate        bool
 	MCPFederatedGraphQLEnabled bool
@@ -576,6 +577,8 @@ func (c *Config) defineServerFlags() {
 		"Leader internal address as host:port (the leader's --internal-listen-addr, plain HTTP over the private network). When set, this instance runs as a read-only replica: serves reads locally and forwards writes to the leader.",
 	)
 	flag.IntVar(&c.MCPFederationMaxDepth, "mcp-federation-max-depth", 3, "Max MCP federation fan-out depth")
+	flag.DurationVar(&c.MCPFederationTimeout, "mcp-federation-timeout", 2*time.Second,
+		"Timeout for one request to a federation peer")
 	flag.BoolVar(
 		&c.MCPFederationAllowPrivate,
 		"mcp-federation-allow-private",
