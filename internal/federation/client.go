@@ -30,7 +30,12 @@ type Client struct {
 	timeout time.Duration
 }
 
-func NewClient(peer model.FederationPeer, http *fasthttp.Client, devMode bool) *Client {
+// NewClient builds a client for one peer. timeout bounds each request to it;
+// zero means defaultTimeout.
+func NewClient(peer model.FederationPeer, http *fasthttp.Client, devMode bool, timeout time.Duration) *Client {
+	if timeout <= 0 {
+		timeout = defaultTimeout
+	}
 	if http == nil {
 		http = &fasthttp.Client{
 			MaxResponseBodySize: defaultMaxResponseBody,
@@ -42,7 +47,7 @@ func NewClient(peer model.FederationPeer, http *fasthttp.Client, devMode bool) *
 	return &Client{
 		peer:    peer,
 		http:    http,
-		timeout: defaultTimeout,
+		timeout: timeout,
 	}
 }
 

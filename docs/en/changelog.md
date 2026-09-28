@@ -16,6 +16,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** MinIO ended its open-source distribution and deleted the `minio/minio` images from Docker Hub on 11 September 2026. `docker compose up` fails with `pull access denied for minio/minio`. Silo is the last open-source MinIO server, rebuilt and patched by the Pigsty project: same S3 API, same `MINIO_*` variables, same on-disk format.
 - **How.** In your own `docker-compose.yml`, change `image: minio/minio:latest` to `image: pgsty/silo:latest` and run `docker compose up -d`. Keep the volume: Silo reads the existing data as is. See [[en/user/selfhosted|Self-hosting]].
 
+### Sync no longer mistakes a note for a font or an image
+
+- **What.** The server no longer rejects ordinary notes with an error like "Unsupported content type: application/vnd.ms-fontobject" (or `audio/mpeg`, `image/gif`, `text/xml`). It now checks one thing only: the content is UTF-8 text with no NUL bytes. A binary file posing as a note is still rejected, now with "File content must be UTF-8 text".
+- **Why.** The file type was guessed from the first bytes, the way a browser does it. For text that check misfires: a note with the capital letters `LP` landing on bytes 35 and 36 (in a title such as "T HELPER" or "NLP", say) counted as an EOT font. A note starting with "ID3" counted as music, one starting with "GIF89a" as an image. Such a note never synced, and the error gave no clue what was wrong with it.
+- **How to use.** Nothing to do. If a note used to fail to sync with this error, run the sync again.
+
 ### Embeds, preview blocks and links render reliably
 
 - **What.** A note that embeds another note (`![[note]]`) no longer comes out blank when the embedded note has no body, when embeds form a loop, or when they are chained many levels deep. A loop now shows up as an "embed cycle" warning on the note instead. The free preview (`free_paragraphs`, `free_cut`) keeps tables and callouts, each counted as one block. Wikilinks to `javascript:`, `vbscript:`, `file:` and `data:` addresses render without the address, as ordinary Markdown links already did. An embedded tweet is now X's standard embed, built in the reader's browser: the server no longer fetches it. Quail widgets and ads (`quaily.com`, `quaily://`) and Dify chatbots (`udify.app`, `dify://`) are no longer embedded; such a URL in image syntax renders as a plain image.

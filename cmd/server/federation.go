@@ -96,7 +96,7 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 			}
 		}
 
-		return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode), nil
+		return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode, a.config.MCPFederationTimeout), nil
 	}
 
 	return nil, fmt.Errorf("federation kb %q not found", kbID)
@@ -134,7 +134,7 @@ func (a *app) ClearFederationSecretPrev(ctx context.Context, arg db.ClearFederat
 // than by a KB-note. Rotation needs it: the pairing it talks to is named by a
 // secret row, and at install time there is no note and no row yet.
 func (a *app) FederationPeerClient(peer model.FederationPeer) model.Federation {
-	return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode)
+	return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode, a.config.MCPFederationTimeout)
 }
 
 // FederationAllowsPlainHTTP reports whether this deployment federates over
