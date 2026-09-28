@@ -28,7 +28,12 @@ GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
 
 wait_all_jobs() {
   echo "⏳ Waiting for background jobs (embeddings) to drain..."
-  curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || {
+  # Not `tee /dev/stderr`: when stderr is redirected to a file, reopening it
+  # truncates that file and wipes the whole log written so far.
+  local result
+  result=$(curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs")
+  echo "$result" >&2
+  echo "$result" | grep -q "^ok:" || {
     echo -e "${RED}✗ wait_all_jobs did not return ok${NC}"; exit 1
   }
   sleep 2

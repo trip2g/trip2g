@@ -2,6 +2,10 @@
 // To update snapshots: ./scripts/update_screenshots.sh
 import { test, expect } from '@playwright/test';
 
+// A 6000px full-page capture is taken twice and pixel-compared; on a loaded
+// machine that overruns the default 5s expect timeout even when it matches.
+const SCREENSHOT_TIMEOUT = 20_000;
+
 test.describe('Screenshot Tests', () => {
   // The baselines belong to the seeded e2e vault. A run against the dev instance
   // (default baseURL :8081 serves the landing page) would otherwise rewrite them
@@ -14,6 +18,7 @@ test.describe('Screenshot Tests', () => {
   test('home page light theme', async ({ page }) => {
     await expect(page).toHaveScreenshot('home-light.png', {
       fullPage: true,
+      timeout: SCREENSHOT_TIMEOUT,
     });
   });
 
@@ -23,6 +28,7 @@ test.describe('Screenshot Tests', () => {
     await page.waitForTimeout(300);
     await expect(page).toHaveScreenshot('home-dark.png', {
       fullPage: true,
+      timeout: SCREENSHOT_TIMEOUT,
     });
   });
 });

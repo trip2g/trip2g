@@ -103,7 +103,12 @@ run_telegram_cron() {
 # Helper function to wait for all background jobs
 wait_all_jobs() {
   echo "⏳ Waiting for all background jobs to complete..."
-  curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || exit 1
+  # Not `tee /dev/stderr`: when stderr is redirected to a file, reopening it
+  # truncates that file and wipes the whole log written so far.
+  local result
+  result=$(curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs")
+  echo "$result" >&2
+  echo "$result" | grep -q "^ok:" || exit 1
 
   sleep 2 # wait a bit for consistency
 }
