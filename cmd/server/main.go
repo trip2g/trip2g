@@ -299,6 +299,7 @@ func main() {
 	}
 
 	log := zerologger.New(config.LogLevel, config.DevMode)
+	log.Info("trip2g starting", "commit", GitCommit)
 
 	// Deprecated: map legacy RESEND_API_KEY onto Resend SMTP (warns if it fires).
 	applyLegacyEmailConfig(config, log)
