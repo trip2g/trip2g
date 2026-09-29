@@ -60,6 +60,7 @@ title: "Навигация"
 ### Автоматизация
 
 - [[ru/user/mcp|MCP-сервер]]
+- [[ru/user/instructions_guide|Инструкции для базы знаний]]
 - [[ru/user/federation|MCP Federation]]
 - [[ru/user/context-separation|Разделение контекста]]
 - [[ru/user/hub|Публичный хаб баз]]

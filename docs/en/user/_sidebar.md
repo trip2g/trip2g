@@ -39,6 +39,7 @@ title: "Navigation"
 - [[en/user/telegram-access|Telegram group access]]
 - [[en/user/monetization|Monetization]]
 - [[en/user/mcp|AI assistant (MCP)]]
+- [[en/user/instructions_guide|Instructions for a knowledge base]]
 - [[en/user/federation|MCP Federation]]
 - [[en/user/context-separation|Context separation]]
 - [[en/user/hub|Public hub of curated bases]]

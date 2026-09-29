@@ -45,6 +45,7 @@ title: "Navigation"
 - [[en/thoughts/rag-under-the-hood|How others search]]
 - [[en/thoughts/search-benchmark-obsidian-help|trip2g search against qmd and obsidian-hybrid-search]]
 - [[en/thoughts/query-expansion-by-the-agent|Let the agent expand the query]]
+- [[en/thoughts/do-agents-need-instructions|Do agents need instructions for a knowledge base]]
 - [[en/thoughts/krisp-segmentation-nano-vs-mini|Ask for the turn, not the interval]]
 - [[en/thoughts/ingest-as-a-note|The job ships as a note]]
 - [[en/thoughts/alerts-in-a-knowledge-base|Alerts belong in a knowledge base]]
