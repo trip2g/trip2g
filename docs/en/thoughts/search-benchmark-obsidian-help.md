@@ -26,6 +26,24 @@ Another 120 queries were written by a separate agent that went through the help 
 
 It checked every answer against the page text. That gives four sets: English and Russian base, 58 queries each, and English and Russian tricky, 57 and 63.
 
+### What the tricky queries look like
+
+A few examples from the run. Each cell is the position at which a system returned the right page; "—" means it is not in the top twenty. The first three queries go against the English docs, the rest against the Russian ones. The "trip2g" column already includes alias search.
+
+| Query | The catch | Right page | obsidian-hybrid-search | qmd + Qwen3 | trip2g | trip2g + agent fields |
+|---|---|---|---|---|---|---|
+| Insider builds | it is the page's alias, and "Insider" appears on a neighbouring licence page | Early access versions | 1 | 1 | 9 → 1 with aliases | 2 |
+| starred | an old plugin name, surviving only in the alias `Plugins/Starred` | Bookmarks | 1 | 3 | — | 4 |
+| `{{title}}` | the same variable exists in three different template systems | Templates | 15 | 2 | 15 | 2 |
+| синхранизация через айклауд ("sync via iCloud", misspelt) | a typo and iCloud written in Cyrillic | Sync your notes across devices | 2 | 5 | 1 | 1 |
+| на телефоне и на ноутбуке разные версии одной и той же заметки ("my phone and laptop have different versions of the same note") | neither "sync" nor "devices" appears | Sync your notes across devices | 14 | 10 | 3 | 3 |
+| how long is version history kept | an English question against the Russian docs | Sync FAQ | 10 | 1 | 1 | 1 |
+| `$$` | two characters, no words | Advanced formatting syntax | — | 12 | 1 | 2 |
+| работает ли Obsidian без интернета ("does Obsidian work offline") | no page of its own; the answer sits in a subsection | Local and remote vaults | — | — | 2 | 5 |
+| вернуть старую версию заметки без подписки на Sync ("restore an old version of a note without a Sync subscription") | everything hinges on "without a subscription": the paid Version history page sits right next to it | File recovery | 9 | 10 | — | 3 |
+
+It shows where trip2g is weak. It doesn't find "starred" at all: the alias is written as `Plugins/Starred`, and our alias search needs an exact match, while obsidian-hybrid-search forgives the difference with fuzzy matching. On "without a Sync subscription" trip2g confidently returns the paid Version history page, the very page the query rules out.
+
 ## How we measured
 
 - **trip2g**: our hybrid search. bleve full-text search with Russian and English stemming, vector search on bge-m3, fusion with RRF.
