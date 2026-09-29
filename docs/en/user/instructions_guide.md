@@ -28,6 +28,18 @@ Instructions are ordinary notes with an `mcp_method` field in the frontmatter. T
 
 Add `free: true` if the base is open to anonymous clients. Otherwise only those with access get the note.
 
+## Instructions as a skill for searching the base
+
+It helps to think of instructions as an agent skill: "how to search this knowledge base". The structure matches skills in Claude and other agents, from general to specific, with each level loaded only when needed:
+
+| Skill level | In the knowledge base | When it is in context |
+|---|---|---|
+| Description: what the skill is and when to use it | the `initialize` note | always, from the moment of connecting |
+| Body: exactly how to act | the `instructions` note, the `instructions()` call | when the agent takes on a question about the base |
+| Reference material | the index, decision maps, vocabulary, `_instructions.md` with routes | when a route leads there |
+
+This gives the writing rules. `initialize` should answer two questions: what the base is and when to go to it. As in a skill's description, this is no place for detail, or it will take up the context of every conversation, including ones that have nothing to do with the base. The detail lives in `instructions` and the reference notes, which the agent opens on its own. A good test: if the agent reads only `initialize`, will it know whether to call `instructions()`?
+
 ## Step 1. Benchmark your base first
 
 Don't write instructions from your head. First see where an agent trips on your base without them, and write the instructions for those spots.
