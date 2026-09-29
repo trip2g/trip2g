@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Search finds a note by its alias
+
+- **What.** Site search and MCP search now read the `aliases` (and `alias`) frontmatter field. When the query as a whole equals a note's title or one of its aliases, that note moves to the top of the results. Case, extra spaces and `ё`/`е` don't matter.
+- **Why.** Aliases used to play no part in search: a note everyone calls "Starred" but titled "Bookmarks" could not be found by "Starred". On Obsidian's help docs, queries equal to an alias now find the right page almost every time (nDCG@5 0.81 → 0.98), and results for other queries did not change.
+- **How to use.** List alternative names in the frontmatter, as in Obsidian: `aliases: [Starred, Favourites]`. Aliases do not create new URLs.
+
 ### MinIO image replaced with Silo
 
 - **What.** The Compose files and the self-hosting guides now run `pgsty/silo` instead of `minio/minio`.
