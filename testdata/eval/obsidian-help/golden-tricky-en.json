@@ -1,0 +1,661 @@
+[
+  {
+    "id": "t-en-001",
+    "query": "Zettelkasten prefixer",
+    "relevant_paths": [
+      "Plugins/Unique note creator.md"
+    ],
+    "partial_paths": [
+      "Plugins/Format converter.md"
+    ],
+    "category": "alias-exact",
+    "notes": "Exact legacy alias of Unique note creator; the word Zettelkasten appears in Format converter too, which has its own Zettelkasten section."
+  },
+  {
+    "id": "t-en-002",
+    "query": "Cancel my subscription",
+    "relevant_paths": [
+      "Licenses and payment/Refund policy.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Frequently asked questions.md"
+    ],
+    "category": "alias-exact",
+    "notes": "Alias of Refund policy (Request a refund cancels auto-renewals); nothing on the page title says cancel. Sync FAQ Data retention covers what happens after subscription ends."
+  },
+  {
+    "id": "t-en-003",
+    "query": "Insider builds",
+    "relevant_paths": [
+      "Obsidian/Early access versions.md"
+    ],
+    "partial_paths": [
+      "Licenses and payment/Catalyst license.md"
+    ],
+    "category": "alias-exact",
+    "notes": "Alias of Early access versions; Catalyst license names an Insider tier and has an Enable early access versions section, a strong lexical distractor."
+  },
+  {
+    "id": "t-en-004",
+    "query": "Migration assistant",
+    "relevant_paths": [
+      "Obsidian Sync/Upgrade Sync encryption.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Sync regions.md"
+    ],
+    "category": "alias-exact",
+    "notes": "Alias of Upgrade Sync encryption (section Upgrade encryption with the migration assistant); Sync regions only mentions it in passing."
+  },
+  {
+    "id": "t-en-005",
+    "query": "Vault switcher",
+    "relevant_paths": [
+      "Files and folders/Manage vaults.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Set up Obsidian Sync.md"
+    ],
+    "category": "alias-exact",
+    "notes": "Alias of Manage vaults; Set up Obsidian Sync has a Sync your vault from the vault switcher section that matches the words better."
+  },
+  {
+    "id": "t-en-006",
+    "query": "Settings profile",
+    "relevant_paths": [
+      "Obsidian Sync/Sync settings and selective syncing.md"
+    ],
+    "partial_paths": [
+      "Files and folders/Configuration folder.md",
+      "User interface/Settings.md"
+    ],
+    "category": "alias-exact",
+    "notes": "Alias of Sync settings; answered by its Settings profiles section (Override config folder). Configuration folder and Settings describe the same option without the word profile."
+  },
+  {
+    "id": "t-en-007",
+    "query": "backlnks panel not showing",
+    "relevant_paths": [
+      "Plugins/Backlinks.md"
+    ],
+    "partial_paths": [
+      "User interface/Sidebar.md"
+    ],
+    "category": "typo",
+    "notes": "Misspelled backlinks; Show backlinks section explains enabling the plugin and opening the tab in the right sidebar."
+  },
+  {
+    "id": "t-en-008",
+    "query": "calouts collapsable",
+    "relevant_paths": [
+      "Editing and formatting/Callouts.md"
+    ],
+    "partial_paths": [],
+    "category": "typo",
+    "notes": "Two misspellings; answer is the Foldable callouts section (add - or + after the type)."
+  },
+  {
+    "id": "t-en-009",
+    "query": "custom domian cloudflare publsh",
+    "relevant_paths": [
+      "Obsidian Publish/Custom domains.md"
+    ],
+    "partial_paths": [],
+    "category": "typo",
+    "notes": "Three typos; Set up using CloudFlare section of Custom domains."
+  },
+  {
+    "id": "t-en-010",
+    "query": "sychronise vault via icloud iphone",
+    "relevant_paths": [
+      "Getting started/Sync your notes across devices.md"
+    ],
+    "partial_paths": [
+      "Obsidian/Obsidian for iOS and iPadOS.md"
+    ],
+    "category": "typo",
+    "notes": "British spelling plus typo; iCloud section of Sync your notes across devices. iOS page only links there from its Sync section."
+  },
+  {
+    "id": "t-en-011",
+    "query": "my phone and laptop show different notes",
+    "relevant_paths": [
+      "Getting started/Sync your notes across devices.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Introduction to Obsidian Sync.md",
+      "Obsidian Sync/Troubleshoot Obsidian Sync.md"
+    ],
+    "category": "paraphrase",
+    "notes": "No shared keywords with sync pages; the user needs a syncing method. Troubleshoot covers the case where Sync is already on but diverges."
+  },
+  {
+    "id": "t-en-012",
+    "query": "the app takes forever to open, how do I see what is slowing it down",
+    "relevant_paths": [
+      "Help and support.md"
+    ],
+    "partial_paths": [
+      "User interface/Settings.md"
+    ],
+    "category": "paraphrase",
+    "notes": "Check startup time section in Help and support (Startup time window under Settings > General > Advanced); Settings only lists the Notify if startup takes longer toggle."
+  },
+  {
+    "id": "t-en-013",
+    "query": "after reinstalling on my Android phone all my notes were gone",
+    "relevant_paths": [
+      "Obsidian/Obsidian for Android.md"
+    ],
+    "partial_paths": [
+      "Getting started/Back up your Obsidian files.md"
+    ],
+    "category": "paraphrase",
+    "notes": "Vault location > App storage warning: uninstalling deletes the local vault with app storage. Nothing in the query says storage or vault location."
+  },
+  {
+    "id": "t-en-014",
+    "query": "give a friend a Sync subscription as a present",
+    "relevant_paths": [
+      "Licenses and payment/Obsidian Credit.md"
+    ],
+    "partial_paths": [
+      "Licenses and payment/Introduction to licenses and payment.md"
+    ],
+    "category": "paraphrase",
+    "notes": "Gifting section of Obsidian Credit: you gift credit, not a product. Licenses intro just lists Purchase and Gift Obsidian services."
+  },
+  {
+    "id": "t-en-015",
+    "query": "make text bigger everywhere in the app",
+    "relevant_paths": [
+      "User interface/Settings.md"
+    ],
+    "partial_paths": [],
+    "category": "paraphrase",
+    "notes": "Deep in Settings > Appearance: Font size, Quick font size adjustment and Zoom level; the Appearance page itself has nothing on fonts."
+  },
+  {
+    "id": "t-en-016",
+    "query": "show the same paragraph in several notes without copy-pasting",
+    "relevant_paths": [
+      "Linking notes and files/Embed files.md"
+    ],
+    "partial_paths": [
+      "Linking notes and files/Internal links.md"
+    ],
+    "category": "paraphrase",
+    "notes": "Embed a note in another note (block embeds ![[note#^id]]); Internal links explains block identifiers but not embedding."
+  },
+  {
+    "id": "t-en-017",
+    "query": "starred",
+    "relevant_paths": [
+      "Plugins/Bookmarks.md"
+    ],
+    "partial_paths": [],
+    "category": "short",
+    "notes": "Old plugin name that survives only as the alias Plugins/Starred; body never says starred."
+  },
+  {
+    "id": "t-en-018",
+    "query": "iframe",
+    "relevant_paths": [
+      "Editing and formatting/Embed web pages.md"
+    ],
+    "partial_paths": [
+      "Editing and formatting/HTML content.md"
+    ],
+    "category": "short",
+    "notes": "Alias of Embed web pages; HTML content and Web Clipper pages also contain the token iframe."
+  },
+  {
+    "id": "t-en-019",
+    "query": "vim",
+    "relevant_paths": [
+      "User interface/Settings.md"
+    ],
+    "partial_paths": [
+      "Editing and formatting/Properties.md"
+    ],
+    "category": "short",
+    "notes": "Single deep setting (Editor > Advanced > Vim key bindings); Properties has a Vim (advanced) hotkey table that is a distractor."
+  },
+  {
+    "id": "t-en-020",
+    "query": "trash",
+    "relevant_paths": [
+      "User interface/Settings.md"
+    ],
+    "partial_paths": [
+      "Files and folders/Manage notes.md"
+    ],
+    "category": "short",
+    "notes": "Deleted files setting (system trash / Obsidian .trash / permanent) sits in Settings > Files and links > Trash; Manage notes only says how to delete."
+  },
+  {
+    "id": "t-en-021",
+    "query": "regex",
+    "relevant_paths": [
+      "Plugins/Search.md"
+    ],
+    "partial_paths": [
+      "Obsidian Web Clipper/Templates.md"
+    ],
+    "category": "short",
+    "notes": "Abbreviation never used in the docs; Search has Use regular expressions, Web Clipper Templates has Regular expression matching for triggers."
+  },
+  {
+    "id": "t-en-022",
+    "query": "footnotes",
+    "relevant_paths": [
+      "Editing and formatting/Basic formatting syntax.md"
+    ],
+    "partial_paths": [
+      "Plugins/Footnotes view.md"
+    ],
+    "category": "short",
+    "notes": "The syntax lives in Basic formatting syntax; Footnotes view is a tiny plugin page whose title matches exactly but does not explain how to write one."
+  },
+  {
+    "id": "t-en-023",
+    "query": "hi, I'm a university student and money is tight, is there any chance of getting obsidian sync cheaper, like some kind of student pricing or something?",
+    "relevant_paths": [
+      "Licenses and payment/Education and non-profit discount.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Plans and storage limits.md"
+    ],
+    "category": "long-question",
+    "notes": "Filler-heavy; page title says education, not student (student only in an alias). 40% discount on Sync and Publish, How to apply."
+  },
+  {
+    "id": "t-en-024",
+    "query": "I keep pressing what the hotkey list says but nothing happens, I'm on a German keyboard, is it because the letters are in different places?",
+    "relevant_paths": [
+      "User interface/Hotkeys.md"
+    ],
+    "partial_paths": [],
+    "category": "long-question",
+    "notes": "Non-US keyboard layouts section: hotkeys are shown as on a US layout but fire on physical keys."
+  },
+  {
+    "id": "t-en-025",
+    "query": "our IT department wants to know exactly which servers the desktop app talks to before they let us install it, is there a list somewhere?",
+    "relevant_paths": [
+      "Teams/Security considerations for teams.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Security and privacy.md",
+      "Obsidian Publish/Security and privacy.md"
+    ],
+    "category": "long-question",
+    "notes": "Network and access section lists Obsidian-sourced, GitHub-sourced and other connections on port 443; the two Security and privacy pages only cover their own service."
+  },
+  {
+    "id": "t-en-026",
+    "query": "if two of us have the same shared vault open and we both type in the same note at the same moment, will one person's changes get lost or what happens?",
+    "relevant_paths": [
+      "Obsidian Sync/Collaborate on a shared vault.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Troubleshoot Obsidian Sync.md"
+    ],
+    "category": "long-question",
+    "notes": "Live editing section: no live collaboration, concurrent edits are merged and recoverable from Version history; Troubleshoot has the Conflict resolution details."
+  },
+  {
+    "id": "t-en-027",
+    "query": "back up my vault to a git repository",
+    "relevant_paths": [
+      "Getting started/Back up your Obsidian files.md"
+    ],
+    "partial_paths": [
+      "Getting started/Sync your notes across devices.md"
+    ],
+    "category": "near-neighbor",
+    "notes": "Distractor: Sync your notes has a whole Git section, but the backup page (Use community plugins > Obsidian Git) is the backup answer."
+  },
+  {
+    "id": "t-en-028",
+    "query": "restore an older version of a note without paying for Sync",
+    "relevant_paths": [
+      "Plugins/File recovery.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Version history.md"
+    ],
+    "category": "near-neighbor",
+    "notes": "File recovery (core plugin, local snapshots) vs Sync Version history; the negation without Sync decides it."
+  },
+  {
+    "id": "t-en-029",
+    "query": "which notes link out from the current note",
+    "relevant_paths": [
+      "Plugins/Outgoing links.md"
+    ],
+    "partial_paths": [
+      "Plugins/Backlinks.md"
+    ],
+    "category": "near-neighbor",
+    "notes": "Outgoing vs Backlinks; the Backlinks page mentions links in every sentence and is longer."
+  },
+  {
+    "id": "t-en-030",
+    "query": "put a whole folder of notes onto a canvas",
+    "relevant_paths": [
+      "Plugins/Canvas.md"
+    ],
+    "partial_paths": [],
+    "category": "near-neighbor",
+    "notes": "Add cards from folders subsection (drag a folder from File explorer); Graph view and File explorer are lexical neighbors."
+  },
+  {
+    "id": "t-en-031",
+    "query": "insert today's date at the cursor",
+    "relevant_paths": [
+      "Plugins/Templates.md"
+    ],
+    "partial_paths": [
+      "Plugins/Daily notes.md"
+    ],
+    "category": "near-neighbor",
+    "notes": "Templates: Insert current date command at the end of the Templates page; Daily notes is the obvious but wrong neighbor."
+  },
+  {
+    "id": "t-en-032",
+    "query": "stop a folder from being synced",
+    "relevant_paths": [
+      "Obsidian Sync/Sync settings and selective syncing.md"
+    ],
+    "partial_paths": [
+      "User interface/Settings.md",
+      "Obsidian Publish/Publish your content.md"
+    ],
+    "category": "near-neighbor",
+    "notes": "Exclude a folder from syncing section; distractors are Excluded files (Settings, affects search/graph) and Ignore data (Publish)."
+  },
+  {
+    "id": "t-en-033",
+    "query": "set a password so only people I choose can open my published site",
+    "relevant_paths": [
+      "Obsidian Publish/Security and privacy.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Security and privacy.md"
+    ],
+    "category": "near-neighbor",
+    "notes": "Two notes share the title Security and privacy; only the Publish one has Password protection / Add a site password."
+  },
+  {
+    "id": "t-en-034",
+    "query": "select a rectangular block of text with the mouse",
+    "relevant_paths": [
+      "Editing and formatting/Multiple cursors.md"
+    ],
+    "partial_paths": [],
+    "category": "deep-section",
+    "notes": "Rectangular selection subsection (Shift+Alt drag or middle mouse button) inside a page titled Multiple cursors."
+  },
+  {
+    "id": "t-en-035",
+    "query": "use Ollama with the web clipper",
+    "relevant_paths": [
+      "Obsidian Web Clipper/Interpreter.md"
+    ],
+    "partial_paths": [],
+    "category": "deep-section",
+    "notes": "Models > Local models > Ollama, four levels deep in Interpreter; Web Clipper intro never mentions models."
+  },
+  {
+    "id": "t-en-036",
+    "query": "why is my .git folder not being uploaded by Sync",
+    "relevant_paths": [
+      "Obsidian Sync/Sync settings and selective syncing.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Frequently asked questions.md"
+    ],
+    "category": "deep-section",
+    "notes": "Always excluded from sync > Hidden files and folders: dot-folders (.git, .vscode) are skipped except .obsidian. FAQ What type of data is synced is adjacent."
+  },
+  {
+    "id": "t-en-037",
+    "query": "downgrade my Sync plan but keep version history",
+    "relevant_paths": [
+      "Obsidian Sync/Plans and storage limits.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Version history.md"
+    ],
+    "category": "deep-section",
+    "notes": "Downgrade your plan > Preserve version history: remove attachments first, wait two weeks. Version history page has no downgrade advice."
+  },
+  {
+    "id": "t-en-038",
+    "query": "nest a code block inside another code block",
+    "relevant_paths": [
+      "Editing and formatting/Basic formatting syntax.md"
+    ],
+    "partial_paths": [],
+    "category": "deep-section",
+    "notes": "Code > Code blocks > Nesting code blocks: use four or more backticks for the outer block."
+  },
+  {
+    "id": "t-en-039",
+    "query": "keep the outline structure when importing from Logseq",
+    "relevant_paths": [
+      "Import notes/Import from Logseq.md"
+    ],
+    "partial_paths": [],
+    "category": "deep-section",
+    "notes": "Settings > Flatten outlines: off by default preserves the outline; query is phrased as the opposite of the setting name."
+  },
+  {
+    "id": "t-en-040",
+    "query": "URL with spaces in a markdown link",
+    "relevant_paths": [
+      "Editing and formatting/Basic formatting syntax.md"
+    ],
+    "partial_paths": [
+      "Linking notes and files/Internal links.md"
+    ],
+    "category": "deep-section",
+    "notes": "External links > Escape blank spaces in links (%20); Internal links shows %20 in the Markdown link format example."
+  },
+  {
+    "id": "t-en-041",
+    "query": "как отключить автообновление программы",
+    "relevant_paths": [
+      "Getting started/Update Obsidian.md"
+    ],
+    "partial_paths": [
+      "User interface/Settings.md"
+    ],
+    "category": "cross-lingual",
+    "notes": "Russian query; Disable automatic updates section of Update Obsidian. Settings > General > Version and updates only covers manual check."
+  },
+  {
+    "id": "t-en-042",
+    "query": "поставить пароль на опубликованный сайт",
+    "relevant_paths": [
+      "Obsidian Publish/Security and privacy.md"
+    ],
+    "partial_paths": [],
+    "category": "cross-lingual",
+    "notes": "Russian query; Password protection > Add a site password. Same-titled Sync page is a distractor."
+  },
+  {
+    "id": "t-en-043",
+    "query": "сколько времени хранится история версий в Sync",
+    "relevant_paths": [
+      "Obsidian Sync/Frequently asked questions.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Version history.md",
+      "Obsidian Sync/Plans and storage limits.md"
+    ],
+    "category": "cross-lingual",
+    "notes": "Russian query; Data retention > How long do you keep the version history (1 month Standard, 12 months Plus, attachments two weeks)."
+  },
+  {
+    "id": "t-en-044",
+    "query": "скидка для студентов и некоммерческих организаций",
+    "relevant_paths": [
+      "Licenses and payment/Education and non-profit discount.md"
+    ],
+    "partial_paths": [],
+    "category": "cross-lingual",
+    "notes": "Russian query; student maps to education, NKO to non-profit. 40% off Sync and Publish."
+  },
+  {
+    "id": "t-en-045",
+    "query": "перенести удалённое хранилище на другой сервер синхронизации",
+    "relevant_paths": [
+      "Obsidian Sync/Sync regions.md"
+    ],
+    "partial_paths": [
+      "Obsidian Sync/Upgrade Sync encryption.md"
+    ],
+    "category": "cross-lingual",
+    "notes": "Russian query; Change Sync region: recreate the vault on another server, or use the migration assistant for older vaults."
+  },
+  {
+    "id": "t-en-046",
+    "query": "%%comment%%",
+    "relevant_paths": [
+      "Editing and formatting/Basic formatting syntax.md"
+    ],
+    "partial_paths": [
+      "Editing and formatting/Obsidian Flavored Markdown.md"
+    ],
+    "category": "syntax",
+    "notes": "Pure punctuation for tokenizers; Comments section of Basic formatting syntax. OFM lists %%Text%% in its extensions table."
+  },
+  {
+    "id": "t-en-047",
+    "query": "==highlight==",
+    "relevant_paths": [
+      "Editing and formatting/Basic formatting syntax.md"
+    ],
+    "partial_paths": [
+      "Editing and formatting/Obsidian Flavored Markdown.md"
+    ],
+    "category": "syntax",
+    "notes": "Bold, italics, highlights table; Web Clipper Highlighter is a lexical distractor about a different feature."
+  },
+  {
+    "id": "t-en-048",
+    "query": "[[note#^block]]",
+    "relevant_paths": [
+      "Linking notes and files/Internal links.md"
+    ],
+    "partial_paths": [
+      "Editing and formatting/Obsidian Flavored Markdown.md",
+      "Linking notes and files/Embed files.md"
+    ],
+    "category": "syntax",
+    "notes": "Link to a block in a note section; brackets and caret are stripped by most tokenizers."
+  },
+  {
+    "id": "t-en-049",
+    "query": "$$",
+    "relevant_paths": [
+      "Editing and formatting/Advanced formatting syntax.md"
+    ],
+    "partial_paths": [],
+    "category": "syntax",
+    "notes": "Math section: surround MathJax with double dollar signs. Two characters, no words."
+  },
+  {
+    "id": "t-en-050",
+    "query": "> [!faq]- foldable",
+    "relevant_paths": [
+      "Editing and formatting/Callouts.md"
+    ],
+    "partial_paths": [],
+    "category": "syntax",
+    "notes": "Foldable callouts: the trailing minus makes a callout collapsed by default."
+  },
+  {
+    "id": "t-en-051",
+    "query": "{{title}}",
+    "relevant_paths": [
+      "Plugins/Templates.md"
+    ],
+    "partial_paths": [
+      "Obsidian Web Clipper/Variables.md",
+      "Import notes/Importer templates.md"
+    ],
+    "category": "syntax",
+    "notes": "Same variable exists in three template systems (core Templates, Web Clipper, Importer); the core plugin is the canonical answer for a bare query."
+  },
+  {
+    "id": "t-en-052",
+    "query": "file.mtime > now() - \"1 week\"",
+    "relevant_paths": [
+      "Bases/Bases syntax.md"
+    ],
+    "partial_paths": [
+      "Bases/Functions.md",
+      "Bases/Formulas.md"
+    ],
+    "category": "syntax",
+    "notes": "Exact example from Bases syntax > Operators > Date arithmetic; Functions and Formulas also mention file.mtime."
+  },
+  {
+    "id": "t-en-053",
+    "query": "can I keep working when there is no internet",
+    "relevant_paths": [
+      "Obsidian Sync/Local and remote vaults.md"
+    ],
+    "partial_paths": [],
+    "category": "negative-ish",
+    "notes": "Docs never state offline use as a topic; Offline behavior subsection says changes queue and the local vault stays fully functional."
+  },
+  {
+    "id": "t-en-054",
+    "query": "does the published site track visitors with cookies",
+    "relevant_paths": [
+      "Obsidian Publish/Security and privacy.md"
+    ],
+    "partial_paths": [
+      "Obsidian Publish/Analytics.md"
+    ],
+    "category": "negative-ish",
+    "notes": "Data collection > Visitor data: Publish does not collect visitor data or store cookies by default; Analytics explains opting in."
+  },
+  {
+    "id": "t-en-055",
+    "query": "does Obsidian work with Apple Lockdown Mode",
+    "relevant_paths": [
+      "Obsidian Sync/Frequently asked questions.md"
+    ],
+    "partial_paths": [],
+    "category": "negative-ish",
+    "notes": "A single FAQ entry inside the Sync FAQ, not a Sync question at all; answer: yes, if Obsidian is added as an exclusion."
+  },
+  {
+    "id": "t-en-056",
+    "query": "max number of people in a shared vault",
+    "relevant_paths": [
+      "Obsidian Sync/Frequently asked questions.md",
+      "Obsidian Sync/Collaborate on a shared vault.md"
+    ],
+    "partial_paths": [
+      "Teams/Syncing for teams.md"
+    ],
+    "category": "negative-ish",
+    "notes": "20 users; stated in FAQ How many people can I share a remote vault with and in Collaborate > Limitations."
+  },
+  {
+    "id": "t-en-057",
+    "query": "does the graph view work on my Publish site",
+    "relevant_paths": [
+      "Obsidian Publish/Publish limitations.md"
+    ],
+    "partial_paths": [],
+    "category": "negative-ish",
+    "notes": "Publish limitations > Graph: basic CSS colors only, no sorting/viewing options of the app graph. Graph view page is the obvious wrong hit."
+  }
+]

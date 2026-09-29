@@ -61,6 +61,14 @@ For picking/justifying the embedding model itself, the relevant public benchmark
 
 The CLI reports each overall and per `direction`. A run with `-fail-under-ndcg X` (or `EVAL_MIN_NDCG=X`) exits nonzero when overall nDCG@k drops below `X` — use this as a CI regression gate once a baseline is established.
 
+## Obsidian Help set (cross-system, en + ru)
+
+A second, public benchmark compares trip2g with obsidian-hybrid-search and qmd on Obsidian's
+own help docs (176 notes, English and the Russian translation; 58 base + ~60 tricky queries
+per language, graded relevance). Kit: `scripts/obsidian-help-bench/` (README there), data:
+`testdata/eval/obsidian-help/`, committed runs: `docs/superpowers/eval-runs/obsidian-help/`,
+write-up: `docs/en/thoughts/search-benchmark-obsidian-help.md`.
+
 ## Run history
 
 Corpus: 48 notes (24 topics × 2 languages = 6 themes, each a core note + 3 intra-theme distractors). Golden set: 60 hand-verified queries, balanced across the four directions; relevance = both language versions of the topic.
