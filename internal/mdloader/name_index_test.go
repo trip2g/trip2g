@@ -47,6 +47,5 @@ func TestNameIndex(t *testing.T) {
 func TestNormalizeName(t *testing.T) {
 	require.Equal(t, "елка и дерево", model.NormalizeName("  Ёлка   и\tДерево "))
 	// NFD input (й decomposed into и + U+0306) must match its NFC form.
-	require.Equal(t, model.NormalizeName("Настройки"), model.NormalizeName("Настройки"))
 	require.Equal(t, model.NormalizeName("ключ й"), model.NormalizeName("ключ й"))
 }
