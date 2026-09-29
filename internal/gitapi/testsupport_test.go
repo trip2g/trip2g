@@ -32,6 +32,10 @@ func newTestAPI(t *testing.T, env Env) *API {
 	if err := api.ensureBareRepo(); err != nil {
 		t.Fatal(err)
 	}
+	// Newer git runs auto-maintenance detached after a commit; it can still be
+	// writing to objects/ when t.TempDir cleanup runs.
+	gitOut(t, repo, "config", "maintenance.auto", "false")
+	gitOut(t, repo, "config", "gc.auto", "0")
 	return api
 }
 
