@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### An empty frontmatter field no longer breaks sync
+
+- **What.** A note with `description:` or `redirect:` and no value (or `null`, `~`) now loads, with the field treated as not set.
+- **Why.** Such a note used to fail the load, and the whole sync batch of a hundred notes failed with "invalid description type: <nil>". Several pages of Obsidian's own help docs are written this way.
+- **How to use.** Nothing to do. If sync used to fail with this error, run it again.
+
 ### Search finds a note by its alias
 
 - **What.** Site search and MCP search now read the `aliases` (and `alias`) frontmatter field. When the query as a whole equals a note's title or one of its aliases, that note moves to the top of the results. Case, extra spaces and `ё`/`е` don't matter.

@@ -963,7 +963,8 @@ func extractTextFromNode(source []byte, node ast.Node, text *strings.Builder) {
 
 func (n *NoteView) extractString(key string) (*string, error) {
 	description, ok := n.RawMeta[key]
-	if !ok {
+	// A key with no value (`description:`, `null`, `~`) means "not set".
+	if !ok || description == nil {
 		return nil, nil
 	}
 
