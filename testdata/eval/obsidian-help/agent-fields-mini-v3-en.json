@@ -1,0 +1,807 @@
+[
+ {
+  "id": "q001",
+  "called": true,
+  "short_query": "Links",
+  "rephrased_query": "How do I create links between notes in Obsidian?",
+  "expected_answer": "You can create an internal link by typing [[ and selecting a note, or by highlighting text and using the link command. Links can point to notes, headings, blocks, or files."
+ },
+ {
+  "id": "q002",
+  "called": true,
+  "short_query": "Frontmatter",
+  "rephrased_query": "How do I add and use frontmatter properties in notes?",
+  "expected_answer": "Frontmatter lets you store metadata in YAML at the top of a note. Properties in frontmatter can be used to organize and query notes."
+ },
+ {
+  "id": "q003",
+  "called": true,
+  "short_query": "Tags",
+  "rephrased_query": "How do I use tags in Obsidian to organize notes?",
+  "expected_answer": "Tags are keywords you add to notes. You can use them in the note body or frontmatter, search for them, and view them in the Tags pane."
+ },
+ {
+  "id": "q004",
+  "called": true,
+  "short_query": "Keyboard shortcuts",
+  "rephrased_query": "How do keyboard shortcuts and hotkeys work in Obsidian?",
+  "expected_answer": "You can assign hotkeys to commands in Settings under Hotkeys. Obsidian also has keyboard shortcuts for common actions."
+ },
+ {
+  "id": "q005",
+  "called": true,
+  "short_query": "Canvas",
+  "rephrased_query": "What is Canvas in Obsidian and how does it relate to infinite whiteboard use?",
+  "expected_answer": "Canvas is a visual note-taking tool in Obsidian. It lets you arrange notes, text, and media on an open canvas."
+ },
+ {
+  "id": "q006",
+  "called": true,
+  "short_query": "Templates",
+  "rephrased_query": "How can I reuse a note structure with templates in Obsidian?",
+  "expected_answer": "Templates let you insert reusable text into notes. You can create a template note and insert it into another note."
+ },
+ {
+  "id": "q007",
+  "called": true,
+  "short_query": "Search",
+  "rephrased_query": "How do I search inside my vault?",
+  "expected_answer": "Use the Search pane to search across the vault. You can open it from the left sidebar or with the search command."
+ },
+ {
+  "id": "q008",
+  "called": true,
+  "short_query": "Callouts",
+  "rephrased_query": "How do callout boxes and admonitions work in Obsidian?",
+  "expected_answer": "Obsidian supports callouts in Markdown using blockquotes that start with a type, and they can be folded and customized. Admonitions are often created with callouts."
+ },
+ {
+  "id": "q009",
+  "called": true,
+  "short_query": "Backlinks",
+  "rephrased_query": "How do I see backlinks for a note in Obsidian?",
+  "expected_answer": "Backlinks show notes that mention the current note. You can open the Backlinks pane or use the backlinks section in a note to see linked mentions and unlinked mentions."
+ },
+ {
+  "id": "q010",
+  "called": true,
+  "short_query": "Daily notes",
+  "rephrased_query": "How do I use Daily notes for journaling in Obsidian?",
+  "expected_answer": "Daily notes lets you create a new note each day from a template and open it with a hotkey or ribbon icon."
+ },
+ {
+  "id": "q011",
+  "called": true,
+  "short_query": "Graph view",
+  "rephrased_query": "How can I connect notes and visualize relationships in Obsidian?",
+  "expected_answer": "Graph view shows a visual representation of notes and their connections. You can use links between notes to create relationships, and the graph displays those links."
+ },
+ {
+  "id": "q012",
+  "called": true,
+  "short_query": "Templates",
+  "rephrased_query": "How do I insert pre-defined snippets of text into notes in Obsidian?",
+  "expected_answer": "Templates let you insert predefined text into a note."
+ },
+ {
+  "id": "q013",
+  "called": true,
+  "short_query": "Graph view",
+  "rephrased_query": "How do I visualize the knowledge graph of my notes in Obsidian?",
+  "expected_answer": "Graph view displays a visual graph of your notes and links between them. You can open the global graph for your whole vault or the local graph for the current note."
+ },
+ {
+  "id": "q014",
+  "called": true,
+  "short_query": "Tags",
+  "rephrased_query": "How do I add keywords or topics to notes so I can filter them later?",
+  "expected_answer": "Tags are keywords you can add to notes, and you can search or filter notes by tag."
+ },
+ {
+  "id": "q015",
+  "called": true,
+  "short_query": "Reading view",
+  "rephrased_query": "How do I toggle between reading and editing view in Obsidian?",
+  "expected_answer": "You can switch between reading and editing modes using the View menu, a shortcut, or the icon in the note header."
+ },
+ {
+  "id": "q016",
+  "called": true,
+  "short_query": "Graph view",
+  "rephrased_query": "How does the graph of connections between notes work in Obsidian?",
+  "expected_answer": "The Graph view shows a visual representation of note connections based on links and attachments. You can zoom, pan, filter, and group nodes, and the graph can show local or global connections."
+ },
+ {
+  "id": "q017",
+  "called": true,
+  "short_query": "Tags",
+  "rephrased_query": "How do tags help organize notes in a vault?",
+  "expected_answer": "Tags are a way to organize notes and can be searched or used in the Tags pane."
+ },
+ {
+  "id": "q018",
+  "called": true,
+  "short_query": "Math",
+  "rephrased_query": "How do I write mathematical formulas in notes?",
+  "expected_answer": "You can write math in notes using LaTeX math syntax between dollar signs for inline math and double dollar signs for display math."
+ },
+ {
+  "id": "q019",
+  "called": true,
+  "short_query": "Callouts",
+  "rephrased_query": "How do I write callout syntax for warning, info, and tip blocks in Obsidian?",
+  "expected_answer": "Callouts use the syntax > [!type] at the start of a blockquote. The type can be warning, info, tip, and other supported values."
+ },
+ {
+  "id": "q020",
+  "called": true,
+  "short_query": "Block references",
+  "rephrased_query": "How do I embed a section or block from another note using a block reference?",
+  "expected_answer": "Block references can be used to embed a specific block from another note. You can copy a block reference with Copy block reference, then paste it in an embed using ![[Note#^blockid]]."
+ },
+ {
+  "id": "q021",
+  "called": true,
+  "short_query": "Bases",
+  "rephrased_query": "How do I use table view in Bases for notes?",
+  "expected_answer": "Bases can display notes in a table view."
+ },
+ {
+  "id": "q022",
+  "called": true,
+  "short_query": "Aliases",
+  "rephrased_query": "How do aliases work in Obsidian notes?",
+  "expected_answer": "An alias is an alternative name for a note. Aliases can be set in the note properties or in frontmatter, and they are used when linking and searching."
+ },
+ {
+  "id": "q023",
+  "called": true,
+  "short_query": "Embed files",
+  "rephrased_query": "How do I embed a file or note using a wikilink in Obsidian?",
+  "expected_answer": "You can embed a file or note by using an exclamation point before the wikilink, such as ![[Note name]] or ![[image.png]]."
+ },
+ {
+  "id": "q024",
+  "called": true,
+  "short_query": "Community plugins",
+  "rephrased_query": "How do I install community plugins in Obsidian?",
+  "expected_answer": "You can enable community plugins from Settings, then browse and install plugins from the community plugin browser."
+ },
+ {
+  "id": "q025",
+  "called": true,
+  "short_query": "Appearance",
+  "rephrased_query": "How do I change the theme and color scheme in Appearance?",
+  "expected_answer": "Appearance settings let you change the theme and choose a color scheme."
+ },
+ {
+  "id": "q026",
+  "called": true,
+  "short_query": "CSS snippets",
+  "rephrased_query": "How do I use CSS snippets to customize Obsidian styles?",
+  "expected_answer": "CSS snippets are CSS files stored in the snippets folder. You can enable or disable them in Appearance settings, and Obsidian reloads them when the file changes."
+ },
+ {
+  "id": "q027",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "How do I sync notes across devices with a remote vault in Obsidian?",
+  "expected_answer": "Obsidian Sync can sync your vault across devices. Remote vaults are stored in cloud storage or on a remote server and can be connected from multiple devices."
+ },
+ {
+  "id": "q028",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "How do I publish notes as a website or digital garden in Obsidian?",
+  "expected_answer": "Publish lets you publish notes from your vault to the web as a website. You can create a digital garden by publishing selected notes and linking them together."
+ },
+ {
+  "id": "q029",
+  "called": true,
+  "short_query": "Web Clipper",
+  "rephrased_query": "How do I save a webpage to my vault with the browser extension?",
+  "expected_answer": "Web Clipper is a browser extension that can save webpages into your vault."
+ },
+ {
+  "id": "q030",
+  "called": true,
+  "short_query": "Import",
+  "rephrased_query": "How do I import notes from Evernote or Notion into Obsidian?",
+  "expected_answer": "Obsidian can import notes from Evernote and Notion using the Importer."
+ },
+ {
+  "id": "q031",
+  "called": true,
+  "short_query": "File recovery",
+  "rephrased_query": "How do I restore a previous version from file recovery snapshots in Obsidian?",
+  "expected_answer": "File recovery snapshots let you restore a previous version of a note from the File recovery view."
+ },
+ {
+  "id": "q032",
+  "called": true,
+  "short_query": "Workspace",
+  "rephrased_query": "How do I save and load a workspace layout in Obsidian?",
+  "expected_answer": "Workspaces let you save the current layout of panes, tabs, and sidebars, and later restore it."
+ },
+ {
+  "id": "q033",
+  "called": true,
+  "short_query": "Command palette",
+  "rephrased_query": "How do I run commands from the command palette with Ctrl+P?",
+  "expected_answer": "The command palette lets you search for and run commands. You can open it with Ctrl+P."
+ },
+ {
+  "id": "q034",
+  "called": true,
+  "short_query": "Bookmarks",
+  "rephrased_query": "How do Bookmarks provide quick access to notes and searches in Obsidian?",
+  "expected_answer": "Bookmarks can store notes, headings, search results, and files for quick access."
+ },
+ {
+  "id": "q035",
+  "called": true,
+  "short_query": "Outline",
+  "rephrased_query": "How do I use the Outline panel to navigate headings in a note?",
+  "expected_answer": "The Outline view shows the headings in the current note and lets you click a heading to jump to that section."
+ },
+ {
+  "id": "q036",
+  "called": true,
+  "short_query": "Page preview",
+  "rephrased_query": "How do I preview a page by hovering over an internal link?",
+  "expected_answer": "Page preview lets you hover over a link to see a popover preview of the linked note. It can be enabled in Settings."
+ },
+ {
+  "id": "q037",
+  "called": true,
+  "short_query": "audio recording",
+  "rephrased_query": "How do I record audio in Obsidian and insert it into a note using the microphone?",
+  "expected_answer": "Obsidian can record audio from the microphone and insert the recording into a note."
+ },
+ {
+  "id": "q038",
+  "called": true,
+  "short_query": "Merge notes",
+  "rephrased_query": "How do I merge notes or extract a selection into a new note in Obsidian?",
+  "expected_answer": "You can merge several notes into one note, or extract selected text into a new note using a command."
+ },
+ {
+  "id": "q039",
+  "called": true,
+  "short_query": "Vault switcher",
+  "rephrased_query": "How do I manage multiple vaults and switch between them in Obsidian?",
+  "expected_answer": "You can use the vault switcher to open or create another vault. Obsidian stores vaults separately, and the vault switcher lists them for quick access."
+ },
+ {
+  "id": "q040",
+  "called": true,
+  "short_query": "Attachments",
+  "rephrased_query": "Where are images and files attached to notes saved by default, and how can I change the default attachment folder?",
+  "expected_answer": "By default, attached images and files are saved in the vault root. You can change the default location in Settings under Files & Links."
+ },
+ {
+  "id": "q041",
+  "called": true,
+  "short_query": "Headings",
+  "rephrased_query": "How do I fold or collapse headings to hide the content under them?",
+  "expected_answer": "You can collapse a heading to hide the content below it. Headings can be folded and unfolded to show or hide the sections under them."
+ },
+ {
+  "id": "q042",
+  "called": true,
+  "short_query": "Zettelkasten",
+  "rephrased_query": "How does Obsidian help create unique note names or IDs for Zettelkasten using timestamps?",
+  "expected_answer": "Obsidian can help create unique note names or IDs using templates, templates with date/time variables, or daily notes. A note’s title can include a timestamp to make it unique."
+ },
+ {
+  "id": "q043",
+  "called": true,
+  "short_query": "Slideshow",
+  "rephrased_query": "How do I create a slideshow presentation from markdown notes in Obsidian?",
+  "expected_answer": "Obsidian supports creating slideshows from notes using the Slides feature or a community plugin. The note should explain how to start a presentation and any required markdown syntax."
+ },
+ {
+  "id": "q044",
+  "called": true,
+  "short_query": "Status bar",
+  "rephrased_query": "How do I show word count and character count in the status bar in Obsidian?",
+  "expected_answer": "The status bar can show the current note's word count and character count when the corresponding status bar items are enabled."
+ },
+ {
+  "id": "q045",
+  "called": true,
+  "short_query": "external links",
+  "rephrased_query": "Can external links be opened inside Obsidian's built-in web viewer or browser?",
+  "expected_answer": "Obsidian can open external links in your system browser or, when available, an in-app browser/web viewer."
+ },
+ {
+  "id": "q046",
+  "called": true,
+  "short_query": "Trash",
+  "rephrased_query": "How do I restore a deleted note in Obsidian?",
+  "expected_answer": "Deleted notes can be restored from the Trash. You can open Trash from the file explorer and move the note back, or empty Trash if you do not need the deleted files."
+ },
+ {
+  "id": "q047",
+  "called": true,
+  "short_query": "Links",
+  "rephrased_query": "How do I use a different display text for a link to a note in Obsidian?",
+  "expected_answer": "You can create a link with custom display text using the pipe character, for example [[Note name|display text]]."
+ },
+ {
+  "id": "q048",
+  "called": true,
+  "short_query": "Community plugins",
+  "rephrased_query": "How do I add third-party extensions to extend functionality in Obsidian?",
+  "expected_answer": "You can extend Obsidian with community plugins. Turn off Restricted mode in settings, then browse and install plugins from the community plugins browser."
+ },
+ {
+  "id": "q049",
+  "called": true,
+  "short_query": "Workspaces",
+  "rephrased_query": "How do I save different window arrangements for different tasks in Obsidian?",
+  "expected_answer": "Workspaces let you save and restore the layout of open files, panels, and tabs for different tasks."
+ },
+ {
+  "id": "q050",
+  "called": true,
+  "short_query": "Web Clipper",
+  "rephrased_query": "How do I save a web article into my notes in Obsidian?",
+  "expected_answer": "Obsidian Web Clipper can save web pages and articles to your vault. It can create a new note or append to an existing note, and you can use templates to control the saved content."
+ },
+ {
+  "id": "q051",
+  "called": true,
+  "short_query": "Import",
+  "rephrased_query": "How do I import notes from another app into Obsidian?",
+  "expected_answer": "You can import notes from other apps by moving or exporting them into your Obsidian vault. Obsidian can open plain text and Markdown files, and some apps may require export or conversion first."
+ },
+ {
+  "id": "q052",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "How do I sync notes between devices in Obsidian?",
+  "expected_answer": "Obsidian Sync keeps your notes up to date across devices. You can also use third-party sync services, but Obsidian Sync is the built-in option."
+ },
+ {
+  "id": "q053",
+  "called": true,
+  "short_query": "Embed media",
+  "rephrased_query": "How do I embed an image in a note in Obsidian?",
+  "expected_answer": "You can embed an image in a note using wiki-style embeds or Markdown image syntax."
+ },
+ {
+  "id": "q054",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "How do I publish notes to the internet in Obsidian?",
+  "expected_answer": "Obsidian Publish lets you publish notes to the web and control what is visible."
+ },
+ {
+  "id": "q055",
+  "called": true,
+  "short_query": "Embed",
+  "rephrased_query": "How do I use the ![[filename]] syntax to embed notes and images in Obsidian?",
+  "expected_answer": "The ![[filename]] syntax embeds a note, image, or other file. You can embed linked files by adding an exclamation mark before an internal link."
+ },
+ {
+  "id": "q056",
+  "called": true,
+  "short_query": "URI",
+  "rephrased_query": "How do I open a note in Obsidian from another app using an obsidian:// link?",
+  "expected_answer": "Obsidian can be opened with obsidian:// URLs, and a link can target a file in a vault."
+ },
+ {
+  "id": "q057",
+  "called": true,
+  "short_query": "Slash commands",
+  "rephrased_query": "How do I trigger a slash command in the editor?",
+  "expected_answer": "Typing / in the editor opens the slash command menu."
+ },
+ {
+  "id": "q058",
+  "called": true,
+  "short_query": "Bases",
+  "rephrased_query": "How do I write filter formulas in Bases and configure them in YAML?",
+  "expected_answer": "Bases supports filters written as formulas, and configuration can be stored in YAML frontmatter."
+ },
+ {
+  "id": "t-en-001",
+  "called": true,
+  "short_query": "Zettelkasten prefixer",
+  "rephrased_query": "How do I use Zettelkasten prefixer in Obsidian?",
+  "expected_answer": "Zettelkasten prefixer is a plugin or feature related to adding prefixes to notes."
+ },
+ {
+  "id": "t-en-002",
+  "called": true,
+  "short_query": "Subscription",
+  "rephrased_query": "How do I cancel my Obsidian subscription?",
+  "expected_answer": "To cancel a subscription, you manage it in the account or billing page associated with how it was purchased."
+ },
+ {
+  "id": "t-en-003",
+  "called": true,
+  "short_query": "Insider builds",
+  "rephrased_query": "What are Insider builds in Obsidian?",
+  "expected_answer": "Insider builds are early releases of Obsidian that include the latest changes and may be less stable than public releases."
+ },
+ {
+  "id": "t-en-004",
+  "called": true,
+  "short_query": "Migration assistant",
+  "rephrased_query": "What is Migration assistant in Obsidian?",
+  "expected_answer": "Migration assistant helps import data from other apps or previous vault formats into Obsidian."
+ },
+ {
+  "id": "t-en-005",
+  "called": true,
+  "short_query": "Vault switcher",
+  "rephrased_query": "How do I switch between vaults in Obsidian?",
+  "expected_answer": "Obsidian lets you create and switch between multiple vaults from the vault switcher."
+ },
+ {
+  "id": "t-en-006",
+  "called": true,
+  "short_query": "Settings",
+  "rephrased_query": "How do settings profiles work in Obsidian?",
+  "expected_answer": "Settings profiles let you maintain separate app settings for different use cases."
+ },
+ {
+  "id": "t-en-007",
+  "called": true,
+  "short_query": "Backlinks",
+  "rephrased_query": "Why is the backlinks panel not showing in Obsidian?",
+  "expected_answer": "The Backlinks pane can be opened from the More options menu or by using the command to show backlinks. It may be hidden if the Backlinks core plugin is disabled."
+ },
+ {
+  "id": "t-en-008",
+  "called": true,
+  "short_query": "Callouts",
+  "rephrased_query": "How do I make callouts collapsible in Obsidian?",
+  "expected_answer": "Callouts can be collapsed by adding the collapse modifier to the callout type. There are collapsed and collapsible callouts."
+ },
+ {
+  "id": "t-en-009",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "How do I set up a custom domain for Obsidian Publish with Cloudflare?",
+  "expected_answer": "Obsidian Publish can use a custom domain by creating a CNAME record. Cloudflare must not proxy the record, and DNS changes can take up to 24 hours to propagate."
+ },
+ {
+  "id": "t-en-010",
+  "called": true,
+  "short_query": "iCloud",
+  "rephrased_query": "How do I sync an Obsidian vault using iCloud on iPhone?",
+  "expected_answer": "Obsidian can store vaults in iCloud Drive on iOS, and iCloud sync requires iCloud Drive to be enabled."
+ },
+ {
+  "id": "t-en-011",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "Why do my devices show different notes in Obsidian Sync?",
+  "expected_answer": "Obsidian devices can show different notes when they are in different vaults, sync has not finished, or a device is offline. Check that both devices are connected to the same vault and give sync time to complete."
+ },
+ {
+  "id": "t-en-012",
+  "called": true,
+  "short_query": "Slow startup",
+  "rephrased_query": "How can I diagnose why Obsidian starts slowly or what is slowing down startup?",
+  "expected_answer": "Obsidian has a setting or command to open the app without loading plugins, and the Help menu can show plugin startup time or start-up performance information."
+ },
+ {
+  "id": "t-en-013",
+  "called": true,
+  "short_query": "Android reinstall notes missing",
+  "rephrased_query": "On Android, notes disappeared after reinstalling Obsidian. How can I get them back?",
+  "expected_answer": "Notes are stored in your vault folder, not in the app itself. If you reinstalled the app, you need to reopen the same vault or restore the folder from backup if it was deleted."
+ },
+ {
+  "id": "t-en-014",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "How can I gift an Obsidian Sync subscription to someone?",
+  "expected_answer": "Obsidian Sync subscriptions can be purchased as gifts or transferred according to the gift purchase flow."
+ },
+ {
+  "id": "t-en-015",
+  "called": true,
+  "short_query": "Text size",
+  "rephrased_query": "How do I make text bigger everywhere in Obsidian?",
+  "expected_answer": "Obsidian lets you adjust the font size of the interface and editor with the zoom controls or by changing the theme settings. Some themes also support a base font size setting."
+ },
+ {
+  "id": "t-en-016",
+  "called": true,
+  "short_query": "transclusion",
+  "rephrased_query": "How can I display the same paragraph in multiple notes without duplicating it?",
+  "expected_answer": "You can embed a block or note so the same content appears in multiple notes without copy-pasting. You can also transclude a heading or block reference."
+ },
+ {
+  "id": "t-en-017",
+  "called": true,
+  "short_query": "Starred",
+  "rephrased_query": "What is the Starred feature in Obsidian and how do I use it?",
+  "expected_answer": "The Starred view lets you pin notes, searches, and files for quick access. You can open it from the ribbon or command palette and add items by starring them."
+ },
+ {
+  "id": "t-en-018",
+  "called": true,
+  "short_query": "iframe",
+  "rephrased_query": "How do I use iframes in Obsidian?",
+  "expected_answer": "Obsidian can embed iframes in notes using HTML. Some iframes may be blocked by the embedded content's site or by sandbox restrictions."
+ },
+ {
+  "id": "t-en-019",
+  "called": true,
+  "short_query": "Vim",
+  "rephrased_query": "How do I use Vim key bindings in Obsidian?",
+  "expected_answer": "Obsidian can use Vim key bindings through a setting in the editor."
+ },
+ {
+  "id": "t-en-020",
+  "called": true,
+  "short_query": "Trash",
+  "rephrased_query": "How do I use Trash in Obsidian?",
+  "expected_answer": "Trash is a folder in your vault where deleted files are moved. You can restore or permanently delete items from it."
+ },
+ {
+  "id": "t-en-021",
+  "called": true,
+  "short_query": "Regex",
+  "rephrased_query": "How do regular expressions work in Obsidian?",
+  "expected_answer": "Obsidian supports regular expressions in search and replace. Search queries can be wrapped in /slashes/ and use common regex syntax."
+ },
+ {
+  "id": "t-en-022",
+  "called": true,
+  "short_query": "Footnotes",
+  "rephrased_query": "How do I create and use footnotes in Obsidian?",
+  "expected_answer": "Footnotes let you reference notes with a syntax like [^1] and define them elsewhere in the note."
+ },
+ {
+  "id": "t-en-023",
+  "called": true,
+  "short_query": "Sync pricing",
+  "rephrased_query": "Is there student pricing or a discount for Obsidian Sync?",
+  "expected_answer": "Obsidian Sync is available as a paid monthly or yearly subscription. The help docs state whether there are discounts or special pricing such as for students."
+ },
+ {
+  "id": "t-en-024",
+  "called": true,
+  "short_query": "keyboard shortcuts",
+  "rephrased_query": "Hotkeys on a German keyboard use the physical key position, not the printed character.",
+  "expected_answer": "Keyboard shortcuts are based on the physical key positions on your keyboard, not the labels on the keys. On non-US layouts, the same shortcut may be on a different printed letter."
+ },
+ {
+  "id": "t-en-025",
+  "called": true,
+  "short_query": "servers",
+  "rephrased_query": "Is there a list of servers that the Obsidian desktop app connects to?",
+  "expected_answer": "Obsidian provides a network activity page or list of endpoints for the desktop app."
+ },
+ {
+  "id": "t-en-026",
+  "called": true,
+  "short_query": "sync conflicts",
+  "rephrased_query": "What happens if two people edit the same note at the same time in a shared vault?",
+  "expected_answer": "If the same note is edited on two devices at the same time, Obsidian Sync can create a conflict copy so both versions are preserved."
+ },
+ {
+  "id": "t-en-027",
+  "called": true,
+  "short_query": "Git",
+  "rephrased_query": "How do I back up my vault to a Git repository?",
+  "expected_answer": "You can use Git to back up a vault by initializing a repository in the vault folder and committing changes, or by using Git integration if available."
+ },
+ {
+  "id": "t-en-028",
+  "called": true,
+  "short_query": "Version history",
+  "rephrased_query": "How can I restore an older version of a note without Obsidian Sync?",
+  "expected_answer": "Version history is available only with Obsidian Sync. Without Sync, you can restore a note only if you have another backup or copy of the file."
+ },
+ {
+  "id": "t-en-029",
+  "called": true,
+  "short_query": "Backlinks",
+  "rephrased_query": "How do I see which notes are linked from the current note?",
+  "expected_answer": "The Backlinks pane can show linked mentions and unlinked mentions. It lists notes that link to the current note."
+ },
+ {
+  "id": "t-en-030",
+  "called": true,
+  "short_query": "Canvas",
+  "rephrased_query": "How do I add all notes from a folder to a canvas?",
+  "expected_answer": "You can add a folder to a canvas so that all notes in the folder appear as cards on the canvas."
+ },
+ {
+  "id": "t-en-031",
+  "called": true,
+  "short_query": "date",
+  "rephrased_query": "How do I insert today's date at the cursor in Obsidian?",
+  "expected_answer": "You can insert today's date at the cursor using the Today command or a date format command, depending on the feature."
+ },
+ {
+  "id": "t-en-032",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "How do I exclude a folder from Obsidian Sync?",
+  "expected_answer": "You can exclude folders from sync by adding them to the ignored items list in Sync settings."
+ },
+ {
+  "id": "t-en-033",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Can I password protect my published site so only invited people can access it?",
+  "expected_answer": "Publish sites can be shared with a password or access can be restricted to specific people, depending on the publishing options."
+ },
+ {
+  "id": "t-en-034",
+  "called": true,
+  "short_query": "block selection",
+  "rephrased_query": "How do I select a rectangular block of text with the mouse in Obsidian?",
+  "expected_answer": "You can select a rectangular block of text by holding Alt/Option while dragging with the mouse."
+ },
+ {
+  "id": "t-en-035",
+  "called": true,
+  "short_query": "Web Clipper",
+  "rephrased_query": "How do I use Ollama with the Web Clipper?",
+  "expected_answer": "The Web Clipper can use local AI providers. It supports Ollama by configuring a local endpoint and selecting it as the provider."
+ },
+ {
+  "id": "t-en-036",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "Why is my .git folder not uploaded by Obsidian Sync?",
+  "expected_answer": "Obsidian Sync ignores hidden files and folders such as .git, so it will not upload them."
+ },
+ {
+  "id": "t-en-037",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "Can I downgrade my Obsidian Sync plan and still keep version history?",
+  "expected_answer": "Version history is tied to the Sync plan and may be affected if you downgrade. The help page should explain what happens to version history when changing plans."
+ },
+ {
+  "id": "t-en-038",
+  "called": true,
+  "short_query": "Code blocks",
+  "rephrased_query": "How do I put one code block inside another in Obsidian markdown?",
+  "expected_answer": "Code blocks can be nested by indenting the inner block or by escaping the backticks, depending on the markdown context."
+ },
+ {
+  "id": "t-en-039",
+  "called": true,
+  "short_query": "Logseq import",
+  "rephrased_query": "How do I preserve outline structure when importing notes from Logseq into Obsidian?",
+  "expected_answer": "Importing from Logseq preserves the outline structure when converting pages and bullets into Obsidian notes."
+ },
+ {
+  "id": "t-en-040",
+  "called": true,
+  "short_query": "Markdown links",
+  "rephrased_query": "How do I write a Markdown link when the URL contains spaces?",
+  "expected_answer": "Markdown links should not contain raw spaces in URLs. Use URL encoding or paste the link so Obsidian handles it appropriately."
+ },
+ {
+  "id": "t-en-041",
+  "called": true,
+  "short_query": "updates",
+  "rephrased_query": "How do I turn off automatic updates in Obsidian?",
+  "expected_answer": "Obsidian can be set to update automatically, and there is a setting to disable automatic updates."
+ },
+ {
+  "id": "t-en-042",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "How do I password-protect a published site in Obsidian Publish?",
+  "expected_answer": "Obsidian Publish lets you restrict access to a site with a password if you have the appropriate plan or settings. The password is set for the published site and visitors must enter it to view the content."
+ },
+ {
+  "id": "t-en-043",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "How long is version history kept in Sync?",
+  "expected_answer": "Obsidian Sync keeps version history for a limited period, depending on the plan."
+ },
+ {
+  "id": "t-en-044",
+  "called": true,
+  "short_query": "Pricing",
+  "rephrased_query": "Student and non-profit discount for Obsidian",
+  "expected_answer": "Obsidian offers a 40% discount for students and non-profit organizations."
+ },
+ {
+  "id": "t-en-045",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "How do I move a remote vault to another sync server?",
+  "expected_answer": "To move a remote vault to another sync server, create or select the remote vault on the new server and then point your client to it. If needed, sync the files to the new vault and stop using the old one."
+ },
+ {
+  "id": "t-en-046",
+  "called": true,
+  "short_query": "Comment",
+  "rephrased_query": "How do comments work in Obsidian?",
+  "expected_answer": "Comments are ignored by Obsidian and can be used to leave notes in a file without showing in reading view."
+ },
+ {
+  "id": "t-en-047",
+  "called": true,
+  "short_query": "Highlight",
+  "rephrased_query": "How do I highlight text in Obsidian?",
+  "expected_answer": "Obsidian lets you highlight text using Markdown or the highlight menu."
+ },
+ {
+  "id": "t-en-048",
+  "called": true,
+  "short_query": "Blocks",
+  "rephrased_query": "How do block references work in Obsidian?",
+  "expected_answer": "Block references let you link to a specific block in a note using the block ID syntax ^blockid."
+ },
+ {
+  "id": "t-en-049",
+  "called": true,
+  "short_query": "math",
+  "rephrased_query": "How do I use math notation in Obsidian?",
+  "expected_answer": "Obsidian supports LaTeX math using dollar signs for inline and block equations."
+ },
+ {
+  "id": "t-en-050",
+  "called": true,
+  "short_query": "Callouts",
+  "rephrased_query": "How do callout fold indicators work in Obsidian?",
+  "expected_answer": "Callouts can be foldable using the collapse indicator in the callout title. A minus sign makes the callout folded by default."
+ },
+ {
+  "id": "t-en-051",
+  "called": true,
+  "short_query": "title",
+  "rephrased_query": "What is {{title}} in Obsidian?",
+  "expected_answer": "The note should explain the requested Obsidian feature or concept."
+ },
+ {
+  "id": "t-en-052",
+  "called": true,
+  "short_query": "Search",
+  "rephrased_query": "What does file.mtime > now() - \"1 week\" mean in an Obsidian search?",
+  "expected_answer": "Search supports date comparisons and relative dates. A query like file.mtime > now() - \"1 week\" finds notes modified in the last week."
+ },
+ {
+  "id": "t-en-053",
+  "called": true,
+  "short_query": "Offline",
+  "rephrased_query": "Can I use Obsidian without an internet connection?",
+  "expected_answer": "Obsidian lets you work on local notes without an internet connection. Some features such as Sync, Publish, and third-party services require internet access."
+ },
+ {
+  "id": "t-en-054",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Does Obsidian Publish track visitors with cookies?",
+  "expected_answer": "Obsidian Publish does not use cookies for analytics or visitor tracking, or it uses only essential cookies if any are mentioned."
+ },
+ {
+  "id": "t-en-055",
+  "called": true,
+  "short_query": "Lockdown Mode",
+  "rephrased_query": "Apple Lockdown Mode compatibility",
+  "expected_answer": "A note may state whether Obsidian is compatible with Apple Lockdown Mode or mention any limitations."
+ },
+ {
+  "id": "t-en-056",
+  "called": true,
+  "short_query": "Shared vault",
+  "rephrased_query": "What is the maximum number of people that can use a shared vault?",
+  "expected_answer": "A shared vault has a maximum number of users or collaborators."
+ },
+ {
+  "id": "t-en-057",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Does Graph view work on an Obsidian Publish site?",
+  "expected_answer": "Graph view is not available on Obsidian Publish sites."
+ }
+]

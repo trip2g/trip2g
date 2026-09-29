@@ -1,0 +1,849 @@
+[
+ {
+  "id": "q001",
+  "called": true,
+  "short_query": "Внутренние ссылки",
+  "rephrased_query": "Как создавать ссылки между заметками в Obsidian",
+  "expected_answer": "В Obsidian внутренние ссылки создаются с помощью синтаксиса [[название заметки]]. Можно также использовать автодополнение при вводе [[."
+ },
+ {
+  "id": "q002",
+  "called": true,
+  "short_query": "Frontmatter",
+  "rephrased_query": "Как работать со свойствами заметки в frontmatter в Obsidian?",
+  "expected_answer": "Свойства заметки можно хранить в frontmatter YAML в начале файла. Obsidian отображает и редактирует эти свойства как Properties."
+ },
+ {
+  "id": "q003",
+  "called": true,
+  "short_query": "Теги",
+  "rephrased_query": "Как использовать теги для организации заметок в Obsidian",
+  "expected_answer": "Теги помогают группировать заметки по темам. Теги можно добавлять в заметку и затем находить или просматривать через панель тегов."
+ },
+ {
+  "id": "q004",
+  "called": true,
+  "short_query": "Горячие клавиши",
+  "rephrased_query": "Где в Obsidian настраиваются и просматриваются сочетания клавиш?",
+  "expected_answer": "Сочетания клавиш можно просматривать и изменять в настройках Hotkeys. Для поиска команды можно использовать поле поиска."
+ },
+ {
+  "id": "q005",
+  "called": true,
+  "short_query": "Холст",
+  "rephrased_query": "Как работает плагин «Холст» в Obsidian и есть ли у него бесконечная доска?",
+  "expected_answer": "Холст — это визуальное рабочее пространство для заметок, файлов и веб-страниц. На холсте можно свободно размещать и соединять карты, а область холста не ограничена видимой рамкой."
+ },
+ {
+  "id": "q006",
+  "called": true,
+  "short_query": "шаблоны",
+  "rephrased_query": "Как использовать шаблоны для повторяющейся структуры заметок в Obsidian?",
+  "expected_answer": "Obsidian supports templates for notes with recurring structure. You can insert a template into a note to reuse the same layout and text."
+ },
+ {
+  "id": "q007",
+  "called": true,
+  "short_query": "Поиск",
+  "rephrased_query": "Как искать по хранилищу в Obsidian?",
+  "expected_answer": "Поиск позволяет находить заметки и текст по всему хранилищу. Можно использовать фильтры и операторы поиска."
+ },
+ {
+  "id": "q008",
+  "called": true,
+  "short_query": "выноски",
+  "rephrased_query": "Как использовать выноски и блоки-предупреждения в Obsidian?",
+  "expected_answer": "Выноски создаются с помощью callout-списка и поддерживают разные типы, включая предупреждения."
+ },
+ {
+  "id": "q009",
+  "called": true,
+  "short_query": "Обратные ссылки",
+  "rephrased_query": "Как посмотреть обратные ссылки для заметки в Obsidian?",
+  "expected_answer": "Обратные ссылки показывают, где на текущую заметку ссылаются другие заметки. Их можно открыть в панели обратных ссылок или во всплывающем окне."
+ },
+ {
+  "id": "q010",
+  "called": true,
+  "short_query": "Ежедневные заметки",
+  "rephrased_query": "Как использовать ежедневные заметки в Obsidian для ведения дневника?",
+  "expected_answer": "Ежедневные заметки позволяют автоматически создавать заметку на каждый день и использовать её как дневник."
+ },
+ {
+  "id": "q011",
+  "called": true,
+  "short_query": "Граф",
+  "rephrased_query": "Как связать заметки и увидеть, как они связаны в Obsidian?",
+  "expected_answer": "Связи между заметками можно создавать с помощью внутренних ссылок. Чтобы увидеть связи, используйте граф или локальный граф заметки."
+ },
+ {
+  "id": "q012",
+  "called": true,
+  "short_query": "шаблоны",
+  "rephrased_query": "Как вставлять заготовленные фрагменты текста в заметки в Obsidian?",
+  "expected_answer": "Заготовленные фрагменты текста можно вставлять в заметки с помощью шаблонов."
+ },
+ {
+  "id": "q013",
+  "called": true,
+  "short_query": "Граф",
+  "rephrased_query": "Как визуализировать граф заметок в Obsidian?",
+  "expected_answer": "Obsidian has a graph view that visualizes connections between notes."
+ },
+ {
+  "id": "q014",
+  "called": true,
+  "short_query": "Теги",
+  "rephrased_query": "Как добавить заметкам ключевые слова или темы, чтобы потом фильтровать их?",
+  "expected_answer": "Для пометки заметок используйте теги. Их можно добавлять в текст заметки или в frontmatter YAML, а затем искать и фильтровать по ним."
+ },
+ {
+  "id": "q015",
+  "called": true,
+  "short_query": "режим чтения",
+  "rephrased_query": "Как переключаться между режимом чтения и режимом редактирования в Obsidian?",
+  "expected_answer": "В Obsidian можно переключать заметку между режимом чтения и режимом редактирования."
+ },
+ {
+  "id": "q016",
+  "called": true,
+  "short_query": "Граф",
+  "rephrased_query": "Как работает граф связей между заметками в Obsidian?",
+  "expected_answer": "Граф показывает связи между заметками и может отображать локальный или глобальный набор заметок. Узлы представляют заметки, а линии — ссылки между ними."
+ },
+ {
+  "id": "q017",
+  "called": true,
+  "short_query": "Теги",
+  "rephrased_query": "Как использовать теги для организации заметок в хранилище Obsidian?",
+  "expected_answer": "Теги можно добавлять в текст или в свойства заметки, а затем находить и фильтровать по ним заметки."
+ },
+ {
+  "id": "q018",
+  "called": true,
+  "short_query": "Математические формулы",
+  "rephrased_query": "Как вставлять и отображать математические формулы в заметках Obsidian?",
+  "expected_answer": "Obsidian supports LaTeX math in notes using $...$ for inline and $$...$$ for display equations."
+ },
+ {
+  "id": "q019",
+  "called": true,
+  "short_query": "выноски",
+  "rephrased_query": "Какой синтаксис у выносок warning, info и tip в Obsidian?",
+  "expected_answer": "Выноски создаются с помощью блока цитаты с маркером `>[!type]`. Типы, такие как warning, info и tip, задаются в квадратных скобках после `!`."
+ },
+ {
+  "id": "q020",
+  "called": true,
+  "short_query": "Встраивание блоков",
+  "rephrased_query": "Как вставить в заметку блок или раздел из другой заметки по ссылке?",
+  "expected_answer": "Блоки и заголовки можно встраивать в заметку с помощью ссылки на блок или заголовок."
+ },
+ {
+  "id": "q021",
+  "called": true,
+  "short_query": "Bases",
+  "rephrased_query": "Как в Obsidian сделать табличное представление базы заметок?",
+  "expected_answer": "Базы могут показывать заметки в виде таблицы. Табличный вид отображает строки и столбцы, где столбцы соответствуют полям базы."
+ },
+ {
+  "id": "q022",
+  "called": true,
+  "short_query": "Псевдоним",
+  "rephrased_query": "Как задать другое название для заметки в Obsidian?",
+  "expected_answer": "Для заметки можно задать псевдоним (alias), который используется как другое название заметки и отображается в некоторых местах вместо имени файла."
+ },
+ {
+  "id": "q023",
+  "called": true,
+  "short_query": "Встраивание файлов",
+  "rephrased_query": "Как встроить файл или заметку через вики-ссылку в Obsidian?",
+  "expected_answer": "Чтобы встроить файл или заметку, добавьте вики-ссылку с восклицательным знаком в начале: ![[Имя файла]]. Для изображений это показывает файл, для заметок — отображает содержимое заметки."
+ },
+ {
+  "id": "q024",
+  "called": true,
+  "short_query": "плагины сообщества",
+  "rephrased_query": "Как установить плагины сообщества в Obsidian?",
+  "expected_answer": "Чтобы установить плагин сообщества, нужно отключить безопасный режим в настройках и затем открыть раздел сообществских плагинов, где можно просматривать и устанавливать плагины."
+ },
+ {
+  "id": "q025",
+  "called": true,
+  "short_query": "Тема",
+  "rephrased_query": "Как изменить тему и цветовую схему в Obsidian?",
+  "expected_answer": "Тему и цветовую схему можно изменить в настройках оформления."
+ },
+ {
+  "id": "q026",
+  "called": true,
+  "short_query": "CSS-фрагменты",
+  "rephrased_query": "Как использовать CSS-фрагменты для изменения стилей в Obsidian?",
+  "expected_answer": "CSS-фрагменты — это способ переопределить стили Obsidian с помощью пользовательского CSS. Их можно создавать в специальной папке, включать и отключать в настройках внешнего вида."
+ },
+ {
+  "id": "q027",
+  "called": true,
+  "short_query": "Синхронизация",
+  "rephrased_query": "Как синхронизировать заметки между устройствами через удалённое хранилище?",
+  "expected_answer": "Obsidian Sync позволяет синхронизировать хранилище между устройствами. Можно выбрать, какие хранилища и устройства участвуют в синхронизации."
+ },
+ {
+  "id": "q028",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Как опубликовать заметки как сайт или цифровой сад в Obsidian?",
+  "expected_answer": "Obsidian Publish позволяет публиковать заметки как сайт. Можно публиковать отдельные заметки или весь vault."
+ },
+ {
+  "id": "q029",
+  "called": true,
+  "short_query": "Web Clipper",
+  "rephrased_query": "Как сохранить веб-страницу в хранилище расширения браузера с помощью Web Clipper?",
+  "expected_answer": "Web Clipper может сохранять веб-страницы в хранилище расширения браузера."
+ },
+ {
+  "id": "q030",
+  "called": true,
+  "short_query": "Импорт",
+  "rephrased_query": "Как импортировать заметки из Evernote или Notion в Obsidian?",
+  "expected_answer": "Obsidian supports importing from Evernote and Notion through built-in import tools or plugins, and the process depends on the source format."
+ },
+ {
+  "id": "q031",
+  "called": true,
+  "short_query": "Снимки",
+  "rephrased_query": "Как восстановить предыдущую версию файла из снимка в Obsidian?",
+  "expected_answer": "Снимок позволяет восстановить предыдущую версию файла."
+ },
+ {
+  "id": "q032",
+  "called": true,
+  "short_query": "рабочее пространство",
+  "rephrased_query": "Как сохранить и загрузить раскладку рабочего пространства в Obsidian?",
+  "expected_answer": "Можно сохранить текущую раскладку рабочего пространства в отдельный файл и затем загрузить её позже."
+ },
+ {
+  "id": "q033",
+  "called": true,
+  "short_query": "Палитра команд",
+  "rephrased_query": "Как открыть палитру команд и запускать команды через Ctrl+P?",
+  "expected_answer": "Палитра команд открывается сочетанием клавиш Ctrl+P. Через нее можно запускать команды Obsidian."
+ },
+ {
+  "id": "q034",
+  "called": true,
+  "short_query": "Закладки",
+  "rephrased_query": "Как использовать закладки для быстрого доступа к заметкам и поискам?",
+  "expected_answer": "Закладки позволяют быстро открывать сохранённые заметки и поиски."
+ },
+ {
+  "id": "q035",
+  "called": true,
+  "short_query": "Структура",
+  "rephrased_query": "Как использовать панель структуры для перехода по заголовкам в заметке?",
+  "expected_answer": "Панель структуры показывает заголовки заметки и позволяет переходить к ним."
+ },
+ {
+  "id": "q036",
+  "called": true,
+  "short_query": "предпросмотр ссылки",
+  "rephrased_query": "Как включить предпросмотр страницы при наведении на внутреннюю ссылку в Obsidian?",
+  "expected_answer": "При наведении на внутреннюю ссылку можно показывать предпросмотр страницы."
+ },
+ {
+  "id": "q037",
+  "called": true,
+  "short_query": "аудиозапись",
+  "rephrased_query": "Как записать звук с микрофона и вставить запись в заметку в Obsidian?",
+  "expected_answer": "Obsidian allows recording audio from the microphone and inserting the recording into a note as an embedded audio file."
+ },
+ {
+  "id": "q038",
+  "called": true,
+  "short_query": "объединение заметок",
+  "rephrased_query": "Как объединить заметки или вынести выделенное в новую заметку в Obsidian?",
+  "expected_answer": "В Obsidian можно объединить заметки через плагин, а выделенный фрагмент можно вынести в новую заметку с помощью команды для создания заметки из выделения."
+ },
+ {
+  "id": "q039",
+  "called": true,
+  "short_query": "хранилища",
+  "rephrased_query": "Как переключаться между несколькими хранилищами в Obsidian?",
+  "expected_answer": "Obsidian supports multiple vaults, and you can switch between them from the vault switcher or start screen."
+ },
+ {
+  "id": "q040",
+  "called": true,
+  "short_query": "Вложения",
+  "rephrased_query": "Как в Obsidian задать папку по умолчанию для прикрепляемых к заметкам картинок и файлов?",
+  "expected_answer": "Obsidian can store attachments in the vault root, in the same folder as the current note, or in a custom folder. The default location for new attachments is set in the Files & Links settings."
+ },
+ {
+  "id": "q041",
+  "called": true,
+  "short_query": "сворачивание заголовков",
+  "rephrased_query": "Как свернуть заголовки в заметке, чтобы скрыть их содержимое?",
+  "expected_answer": "Заголовки можно сворачивать, чтобы скрывать содержимое под ними."
+ },
+ {
+  "id": "q042",
+  "called": true,
+  "short_query": "Zettelkasten",
+  "rephrased_query": "Как создать уникальную заметку с отметкой времени в Zettelkasten?",
+  "expected_answer": "В Zettelkasten можно использовать уникальные идентификаторы, например отметку времени, чтобы каждая заметка имела свой неповторимый ID."
+ },
+ {
+  "id": "q043",
+  "called": true,
+  "short_query": "Презентации",
+  "rephrased_query": "Как сделать презентацию из Markdown-заметок в Obsidian?",
+  "expected_answer": "В Obsidian можно создавать презентации из заметок Markdown с помощью режима слайдов (Slides)."
+ },
+ {
+  "id": "q044",
+  "called": true,
+  "short_query": "Строка состояния",
+  "rephrased_query": "Как включить количество слов и символов в строке состояния Obsidian?",
+  "expected_answer": "В строке состояния можно отображать количество слов и символов для текущей заметки."
+ },
+ {
+  "id": "q045",
+  "called": true,
+  "short_query": "внешние ссылки",
+  "rephrased_query": "Как открывать внешние ссылки в Obsidian во встроенном браузере?",
+  "expected_answer": "В Obsidian можно открывать внешние ссылки либо в системном браузере, либо во встроенном просмотрщике, если включить соответствующую настройку."
+ },
+ {
+  "id": "q046",
+  "called": true,
+  "short_query": "Удаление",
+  "rephrased_query": "Как восстановить случайно удалённую заметку в Obsidian?",
+  "expected_answer": "Удалённую заметку можно восстановить из корзины или из резервной копии, если она есть."
+ },
+ {
+  "id": "q047",
+  "called": true,
+  "short_query": "Внутренние ссылки",
+  "rephrased_query": "Как создать ссылку на заметку, используя другое отображаемое имя?",
+  "expected_answer": "Можно задать отображаемый текст ссылки отдельно от имени заметки с помощью синтаксиса вики-ссылки."
+ },
+ {
+  "id": "q048",
+  "called": true,
+  "short_query": "плагины",
+  "rephrased_query": "Как подключить сторонние плагины, чтобы добавить новые функции в Obsidian?",
+  "expected_answer": "Сторонние плагины можно включить в разделе Community plugins. Нужно отключить безопасный режим, после чего можно установить и включить плагины."
+ },
+ {
+  "id": "q049",
+  "called": true,
+  "short_query": "расположение окон",
+  "rephrased_query": "Как сохранить разные расположения окон для разных задач в Obsidian?",
+  "expected_answer": "Можно сохранять рабочие пространства, чтобы открывать разные расположения окон и вкладок для разных задач."
+ },
+ {
+  "id": "q050",
+  "called": true,
+  "short_query": "Веб-клиппер",
+  "rephrased_query": "Как сохранить статью из интернета в заметки Obsidian?",
+  "expected_answer": "Obsidian Web Clipper allows saving web pages, articles, and selected content to your vault."
+ },
+ {
+  "id": "q051",
+  "called": true,
+  "short_query": "импорт",
+  "rephrased_query": "Как перенести заметки из другого приложения в Obsidian?",
+  "expected_answer": "Obsidian can import files from other apps if they are in a supported format, or you can copy files into the vault manually."
+ },
+ {
+  "id": "q052",
+  "called": true,
+  "short_query": "Синхронизация",
+  "rephrased_query": "Как синхронизировать заметки между устройствами в Obsidian?",
+  "expected_answer": "Obsidian Sync allows you to synchronize your notes and other vault data between devices using end-to-end encryption."
+ },
+ {
+  "id": "q053",
+  "called": true,
+  "short_query": "Встраивание файлов",
+  "rephrased_query": "Как вставить или встроить изображение в заметку Obsidian?",
+  "expected_answer": "Изображение можно встроить в заметку с помощью синтаксиса ![[имя файла]]. Если файл находится в другой папке, укажите путь к нему."
+ },
+ {
+  "id": "q054",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Как опубликовать заметки в интернете в Obsidian?",
+  "expected_answer": "Публикация позволяет разместить заметки в интернете и делиться ими по ссылке."
+ },
+ {
+  "id": "q055",
+  "called": true,
+  "short_query": "Встраивание файлов",
+  "rephrased_query": "Как работает синтаксис ![[filename]] для встраивания заметок и изображений?",
+  "expected_answer": "Синтаксис ![[filename]] используется для встраивания заметки, изображения или другого файла в заметку."
+ },
+ {
+  "id": "q056",
+  "called": true,
+  "short_query": "URI",
+  "rephrased_query": "Как открыть заметку через obsidian:// из внешнего приложения?",
+  "expected_answer": "Obsidian supports obsidian:// URIs for opening notes and other actions from external apps."
+ },
+ {
+  "id": "q057",
+  "called": true,
+  "short_query": "Команды",
+  "rephrased_query": "Как в редакторе вызвать команду через слэш /",
+  "expected_answer": "В редакторе можно ввести /, чтобы открыть меню команд и вставить команду в текст."
+ },
+ {
+  "id": "q058",
+  "called": true,
+  "short_query": "Bases",
+  "rephrased_query": "Какой синтаксис у формул фильтров в Bases, если они записаны в YAML?",
+  "expected_answer": "Фильтры Bases записываются в YAML как выражения с операторами и функциями; нужно смотреть раздел про фильтры и формулы."
+ },
+ {
+  "id": "t-ru-001",
+  "called": true,
+  "short_query": "Веб-страницы",
+  "rephrased_query": "Что такое интерпретация веб-страниц в Obsidian?",
+  "expected_answer": "Интерпретация веб-страниц позволяет Obsidian открывать веб-страницы в виде заметок и извлекать из них контент."
+ },
+ {
+  "id": "t-ru-002",
+  "called": true,
+  "short_query": "Выделение",
+  "rephrased_query": "Как работает выделение текста на веб-страницах в Obsidian Web Clipper?",
+  "expected_answer": "При выделении на веб-странице можно сохранить выделенный текст в Obsidian."
+ },
+ {
+  "id": "t-ru-003",
+  "called": true,
+  "short_query": "Синхронизация",
+  "rephrased_query": "Что такое headless sync в Obsidian Sync и как его настроить?",
+  "expected_answer": "Headless Sync позволяет синхронизировать хранилище без интерфейса приложения. Для настройки используется командная строка или соответствующие параметры запуска."
+ },
+ {
+  "id": "t-ru-004",
+  "called": true,
+  "short_query": "Уникальные заметки",
+  "rephrased_query": "Как создавать заметки с уникальными именами или не допускать дублирования заметок в Obsidian?",
+  "expected_answer": "Obsidian can create uniquely named notes by using templates, timestamps, or rename settings; duplicate note creation is handled through settings or the Quick switcher."
+ },
+ {
+  "id": "t-ru-005",
+  "called": true,
+  "short_query": "Статус",
+  "rephrased_query": "Как работает значок статуса и сообщения в Obsidian?",
+  "expected_answer": "The status bar shows icons and messages from core features and plugins. Clicking or hovering an icon may show more information or actions."
+ },
+ {
+  "id": "t-ru-006",
+  "called": true,
+  "short_query": "хранение данных",
+  "rephrased_query": "Как Obsidian хранит данные в хранилище и файлах",
+  "expected_answer": "Obsidian stores notes and settings in plain text files in your vault. The vault is a folder on your device, and Obsidian does not upload your notes to its own servers unless you use a syncing or publishing feature."
+ },
+ {
+  "id": "t-ru-007",
+  "called": true,
+  "short_query": "Новая заметка",
+  "rephrased_query": "Как использовать composer для создания заметок в Obsidian?",
+  "expected_answer": "Объясняется, как создавать и редактировать заметки; возможно, речь о создании новой заметки или о режиме редактирования."
+ },
+ {
+  "id": "t-ru-008",
+  "called": true,
+  "short_query": "Скидки",
+  "rephrased_query": "Скидка для образования и некоммерческих организаций",
+  "expected_answer": "Obsidian offers a discount for students, teachers, and non-profit organizations."
+ },
+ {
+  "id": "t-ru-009",
+  "called": true,
+  "short_query": "Обратные ссылки",
+  "rephrased_query": "Почему не отображаются обратные ссылки в Obsidian?",
+  "expected_answer": "Обратные ссылки отображаются в боковой панели или под заметкой, если включена соответствующая настройка. Панель обратных ссылок может быть скрыта, а также можно показывать только связи в связанных заметках."
+ },
+ {
+  "id": "t-ru-010",
+  "called": true,
+  "short_query": "Горячие клавиши",
+  "rephrased_query": "Как настроить горячие клавиши в Obsidian?",
+  "expected_answer": "Горячие клавиши настраиваются в разделе настроек Hotkeys. Для команды можно задать, изменить или удалить сочетание клавиш."
+ },
+ {
+  "id": "t-ru-011",
+  "called": true,
+  "short_query": "восстановление",
+  "rephrased_query": "Как восстановить файлы из снимка в Obsidian?",
+  "expected_answer": "Снимки позволяют восстановить удалённые или изменённые файлы из предыдущего состояния хранилища."
+ },
+ {
+  "id": "t-ru-012",
+  "called": true,
+  "short_query": "iCloud",
+  "rephrased_query": "Синхронизация через iCloud в Obsidian",
+  "expected_answer": "Obsidian Sync is a separate paid service. iCloud may be used by some users on Apple devices, but there are limitations and it is not the same as Obsidian Sync."
+ },
+ {
+  "id": "t-ru-013",
+  "called": true,
+  "short_query": "Синхронизация",
+  "rephrased_query": "Как настроить синхронизацию хранилища Obsidian с телефоном?",
+  "expected_answer": "Чтобы синхронизировать хранилище с телефоном, нужно использовать Obsidian Sync или другой способ синхронизации, поддерживаемый на мобильном устройстве."
+ },
+ {
+  "id": "t-ru-014",
+  "called": true,
+  "short_query": "переименование заметки",
+  "rephrased_query": "Что происходит со ссылками при переименовании заметки в Obsidian?",
+  "expected_answer": "При переименовании заметки Obsidian автоматически обновляет внутренние ссылки на неё, если включено автоматическое обновление ссылок."
+ },
+ {
+  "id": "t-ru-015",
+  "called": true,
+  "short_query": "заголовки",
+  "rephrased_query": "Почему заголовки в заметке не сворачиваются и как это исправить?",
+  "expected_answer": "Заголовки сворачиваются только в режиме чтения или в режиме Live Preview. В режиме Source mode сворачивание заголовков не работает."
+ },
+ {
+  "id": "t-ru-016",
+  "called": true,
+  "short_query": "Закладки",
+  "rephrased_query": "Как сгруппировать закладки в Obsidian, если их стало слишком много?",
+  "expected_answer": "Закладки можно упорядочивать с помощью папок и вложенных папок, чтобы сгруппировать их по темам."
+ },
+ {
+  "id": "t-ru-017",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Как убрать заметку из публикации в Obsidian Publish?",
+  "expected_answer": "Нужно отключить публикацию заметки в настройках Publish или удалить ее из списка опубликованных файлов."
+ },
+ {
+  "id": "t-ru-018",
+  "called": true,
+  "short_query": "кредиты",
+  "rephrased_query": "Как подарить кредиты другому пользователю?",
+  "expected_answer": "Кредиты нельзя передавать, дарить или продавать другим пользователям."
+ },
+ {
+  "id": "t-ru-019",
+  "called": true,
+  "short_query": "Холст",
+  "rephrased_query": "Как соединять карточки на холсте в Obsidian?",
+  "expected_answer": "На холсте карточки можно соединять линиями связи. Для этого нужно перетащить одну карточку за ручку соединения к другой карточке."
+ },
+ {
+  "id": "t-ru-020",
+  "called": true,
+  "short_query": "Синхронизация",
+  "rephrased_query": "На телефоне и на ноутбуке одна и та же заметка имеет разные версии. Почему так происходит и как это исправить?",
+  "expected_answer": "Если на разных устройствах у одной заметки разные версии, нужно дождаться завершения синхронизации и проверить, что оба устройства подключены к одному хранилищу. При конфликте синхронизации Obsidian может создать отдельную конфликтную копию заметки."
+ },
+ {
+  "id": "t-ru-021",
+  "called": true,
+  "short_query": "язык",
+  "rephrased_query": "Как сделать интерфейс и настройки на русском языке?",
+  "expected_answer": "Язык интерфейса Obsidian можно изменить в настройках. Чтобы меню и настройки были по-русски, нужно выбрать русский язык в разделе Language."
+ },
+ {
+  "id": "t-ru-022",
+  "called": true,
+  "short_query": "запуск",
+  "rephrased_query": "Obsidian очень долго открывается при запуске",
+  "expected_answer": "Если Obsidian стал медленно открываться, причиной могут быть большое хранилище, множество плагинов или проблемный плагин. Можно проверить запуск в безопасном режиме и отключить лишние плагины."
+ },
+ {
+  "id": "t-ru-023",
+  "called": true,
+  "short_query": "синхронизация",
+  "rephrased_query": "После переустановки Obsidian на Android заметки пропали. Как их вернуть?",
+  "expected_answer": "Заметки могут не исчезнуть, если они хранились в синхронизируемом хранилище или в папке хранилища. Нужно проверить, где находился vault, включена ли синхронизация и не был ли vault удалён с устройства."
+ },
+ {
+  "id": "t-ru-024",
+  "called": true,
+  "short_query": "масштаб",
+  "rephrased_query": "Как увеличить размер текста и интерфейса в Obsidian?",
+  "expected_answer": "Размер текста можно изменить в настройках внешнего вида, а масштаб интерфейса — отдельно."
+ },
+ {
+  "id": "t-ru-025",
+  "called": true,
+  "short_query": "2FA",
+  "rephrased_query": "Как включить двухфакторную аутентификацию в Obsidian?",
+  "expected_answer": "Двухфакторная аутентификация включается в настройках аккаунта Obsidian."
+ },
+ {
+  "id": "t-ru-026",
+  "called": true,
+  "short_query": "Корзина",
+  "rephrased_query": "Где находится корзина в Obsidian и как она работает?",
+  "expected_answer": "Корзина хранит удалённые файлы, и их можно восстановить."
+ },
+ {
+  "id": "t-ru-027",
+  "called": true,
+  "short_query": "регулярные выражения",
+  "rephrased_query": "Как использовать регулярные выражения в Obsidian?",
+  "expected_answer": "В Obsidian регулярные выражения можно использовать в поиске и заменe. Для этого включите режим регулярных выражений в строке поиска."
+ },
+ {
+  "id": "t-ru-028",
+  "called": true,
+  "short_query": "Сноски",
+  "rephrased_query": "Как работать со сносками в Obsidian?",
+  "expected_answer": "Сноски создаются и вставляются в заметку с помощью синтаксиса markdown, а затем отображаются в конце заметки."
+ },
+ {
+  "id": "t-ru-029",
+  "called": true,
+  "short_query": "Вим",
+  "rephrased_query": "Как использовать режим Vim в Obsidian?",
+  "expected_answer": "В Obsidian можно включить режим Vim в настройках редактора."
+ },
+ {
+  "id": "t-ru-030",
+  "called": true,
+  "short_query": "Mermaid",
+  "rephrased_query": "Как работать с Mermaid в Obsidian?",
+  "expected_answer": "Mermaid позволяет создавать диаграммы и графики в заметках с помощью блоков кода."
+ },
+ {
+  "id": "t-ru-031",
+  "called": true,
+  "short_query": "Синхронизация",
+  "rephrased_query": "Есть ли скидки для студентов на Obsidian Sync?",
+  "expected_answer": "Obsidian Sync has no student discounts or reduced pricing. Billing and pricing are managed by Sync plans."
+ },
+ {
+  "id": "t-ru-032",
+  "called": true,
+  "short_query": "сочетания клавиш",
+  "rephrased_query": "Горячие клавиши в Obsidian зависят от раскладки клавиатуры?",
+  "expected_answer": "Сочетания клавиш обычно привязаны к физическим клавишам, но некоторые комбинации могут работать иначе при другой раскладке. Нужно проверить, не перехватывает ли сочетание система или другое приложение."
+ },
+ {
+  "id": "t-ru-033",
+  "called": true,
+  "short_query": "сервера подключения",
+  "rephrased_query": "Есть ли список серверов и доменов, к которым подключается Obsidian?",
+  "expected_answer": "Obsidian connects to several services such as its sync servers, updates, plugin/community services, and third-party resources; there is a note describing network connections and privacy implications."
+ },
+ {
+  "id": "t-ru-034",
+  "called": true,
+  "short_query": "конфликты синхронизации",
+  "rephrased_query": "Если два человека одновременно редактируют одну заметку в общем хранилище, чьи изменения будут потеряны?",
+  "expected_answer": "При одновременном редактировании одной заметки возникают конфликты синхронизации; Obsidian не перезаписывает изменения молча и сообщает о конфликте."
+ },
+ {
+  "id": "t-ru-035",
+  "called": true,
+  "short_query": "Git",
+  "rephrased_query": "Как сделать бэкап хранилища в git-репозиторий?",
+  "expected_answer": "В Obsidian есть поддержка Git через плагин. Нужно установить и настроить плагин Git для синхронизации изменений с git-репозиторием."
+ },
+ {
+  "id": "t-ru-036",
+  "called": true,
+  "short_query": "История версий",
+  "rephrased_query": "Как восстановить старую версию заметки без подписки на Sync?",
+  "expected_answer": "Облачная история версий доступна через Obsidian Sync. Если у вас нет Sync, можно восстановить версию из локальных резервных копий или истории файлов вашей системы, если они были настроены."
+ },
+ {
+  "id": "t-ru-037",
+  "called": true,
+  "short_query": "ссылки",
+  "rephrased_query": "Какие ссылки исходят из текущей заметки?",
+  "expected_answer": "Можно посмотреть исходящие ссылки текущей заметки."
+ },
+ {
+  "id": "t-ru-038",
+  "called": true,
+  "short_query": "Дата",
+  "rephrased_query": "Как вставить текущую дату в заметку в Obsidian?",
+  "expected_answer": "Можно вставить текущую дату в заметку с помощью команды вставки даты или шаблона, если он настроен."
+ },
+ {
+  "id": "t-ru-039",
+  "called": true,
+  "short_query": "Синхронизация",
+  "rephrased_query": "Как исключить папку из синхронизации в Obsidian?",
+  "expected_answer": "Можно исключить папку из синхронизации через настройки Sync, указав папки, которые не нужно загружать или синхронизировать."
+ },
+ {
+  "id": "t-ru-040",
+  "called": true,
+  "short_query": "Опубликованный сайт",
+  "rephrased_query": "Как поставить пароль на опубликованный сайт в Obsidian Publish?",
+  "expected_answer": "Сайт, опубликованный через Obsidian Publish, можно защитить паролем в настройках публикации."
+ },
+ {
+  "id": "t-ru-041",
+  "called": true,
+  "short_query": "Холст",
+  "rephrased_query": "Можно ли перетащить папку целиком на холст в Obsidian?",
+  "expected_answer": "Папку можно перетащить на холст, и это создаст карточку папки или набор карточек в зависимости от поведения холста."
+ },
+ {
+  "id": "t-ru-042",
+  "called": true,
+  "short_query": "Выделение",
+  "rephrased_query": "Как сделать прямоугольное выделение мышью в Obsidian?",
+  "expected_answer": "В Obsidian есть прямоугольное выделение в режиме выбора текста. Обычно его выполняют с помощью мыши и клавиши-модификатора."
+ },
+ {
+  "id": "t-ru-043",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "Почему папка .git не загружается в Obsidian Sync?",
+  "expected_answer": "Obsidian Sync ignores certain system and hidden folders and files by default, including .git, so they are not uploaded unless the exclusion settings are changed."
+ },
+ {
+  "id": "t-ru-044",
+  "called": true,
+  "short_query": "Sync",
+  "rephrased_query": "Как понизить план Obsidian Sync и при этом сохранить историю версий?",
+  "expected_answer": "История версий зависит от плана Sync и способа понижения. Нужно знать, сохраняется ли история версий при отмене или смене плана."
+ },
+ {
+  "id": "t-ru-045",
+  "called": true,
+  "short_query": "Веб-клиппер",
+  "rephrased_query": "Как использовать Ollama в веб-клиппере Obsidian?",
+  "expected_answer": "Web Clipper can send captured content to a local Ollama model if Ollama is configured and the browser extension can reach it."
+ },
+ {
+  "id": "t-ru-046",
+  "called": true,
+  "short_query": "ссылки",
+  "rephrased_query": "Как в Obsidian кодировать пробелы в ссылке как %20?",
+  "expected_answer": "В ссылках пробелы можно записывать как %20."
+ },
+ {
+  "id": "t-ru-047",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Как настроить свой домен для Obsidian Publish и перенаправить старый адрес publish.obsidian.md на него?",
+  "expected_answer": "Obsidian Publish supports custom domains. To use one, set up DNS as instructed and configure the domain in Publish settings. The old publish.obsidian.md address is not automatically redirected."
+ },
+ {
+  "id": "t-ru-048",
+  "called": true,
+  "short_query": "автообновления",
+  "rephrased_query": "Как отключить автоматические обновления в Obsidian?",
+  "expected_answer": "Obsidian can update automatically, and there is a setting to disable automatic updates."
+ },
+ {
+  "id": "t-ru-049",
+  "called": true,
+  "short_query": "История версий",
+  "rephrased_query": "Сколько хранится история версий в Obsidian",
+  "expected_answer": "Version history is kept for a limited time depending on the plan or sync settings."
+ },
+ {
+  "id": "t-ru-050",
+  "called": true,
+  "short_query": "Удаление приложения",
+  "rephrased_query": "После удаления приложения на Android заметки пропали. Можно ли их восстановить?",
+  "expected_answer": "If notes were stored locally and not synced, uninstalling the app may remove local data. If Sync was enabled, reinstall and sync to restore notes."
+ },
+ {
+  "id": "t-ru-051",
+  "called": true,
+  "short_query": "Импорт",
+  "rephrased_query": "Как сохранить структуру outline из Logseq при импорте в Obsidian?",
+  "expected_answer": "При импорте из Logseq можно сохранить структуру outline, если выбрать соответствующий способ импорта или предварительно преобразовать файл. Импортированные пункты могут стать отдельными строками или заметками в зависимости от формата."
+ },
+ {
+  "id": "t-ru-052",
+  "called": true,
+  "short_query": "аппаратное ускорение",
+  "rephrased_query": "Как включить или отключить аппаратное ускорение в Obsidian?",
+  "expected_answer": "Аппаратное ускорение можно включать и выключать в настройках приложения."
+ },
+ {
+  "id": "t-ru-053",
+  "called": false,
+  "short_query": "",
+  "rephrased_query": "",
+  "expected_answer": ""
+ },
+ {
+  "id": "t-ru-054",
+  "called": true,
+  "short_query": "выделение",
+  "rephrased_query": "Как сделать выделение текста в Obsidian",
+  "expected_answer": "В Obsidian для выделения текста используются двойные знаки равенства. Текст между ними будет подсвечен как выделенный."
+ },
+ {
+  "id": "t-ru-055",
+  "called": true,
+  "short_query": "Встраивание файлов",
+  "rephrased_query": "Как работает ссылка на блок в виде [[заметка#^блок]]?",
+  "expected_answer": "Ссылка на блок использует идентификатор блока после символа ^ в ссылке на заметку."
+ },
+ {
+  "id": "t-ru-056",
+  "called": true,
+  "short_query": "Математические формулы",
+  "rephrased_query": "Как писать математические формулы в Obsidian?",
+  "expected_answer": "Mathematical expressions can be written using LaTeX syntax and displayed inline or as a block."
+ },
+ {
+  "id": "t-ru-057",
+  "called": true,
+  "short_query": "Callouts",
+  "rephrased_query": "Как работает сворачивание callout-блоков и что означает знак минус в заголовке callout?",
+  "expected_answer": "Знак минус в заголовке callout делает его свернутым по умолчанию."
+ },
+ {
+  "id": "t-ru-058",
+  "called": true,
+  "short_query": "{{title}}",
+  "rephrased_query": "Что такое {{title}} в Obsidian?",
+  "expected_answer": "В документации есть объяснение {{title}}."
+ },
+ {
+  "id": "t-ru-059",
+  "called": true,
+  "short_query": "Интернет",
+  "rephrased_query": "Можно ли использовать Obsidian офлайн?",
+  "expected_answer": "Obsidian can work without an internet connection for local notes and most features, but some services require internet."
+ },
+ {
+  "id": "t-ru-060",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Сохраняет ли опубликованный сайт куки посетителей?",
+  "expected_answer": "Опубликованный сайт не собирает куки посетителей сам по себе. Куки могут использоваться только сторонними сервисами, если вы их подключили."
+ },
+ {
+  "id": "t-ru-061",
+  "called": true,
+  "short_query": "Общее хранилище",
+  "rephrased_query": "Сколько пользователей можно добавить в общее хранилище?",
+  "expected_answer": "Общее хранилище имеет ограничение на количество участников."
+ },
+ {
+  "id": "t-ru-062",
+  "called": true,
+  "short_query": "Publish",
+  "rephrased_query": "Отображается ли граф в опубликованном сайте Publish?",
+  "expected_answer": "Граф не поддерживается на Publish-сайте."
+ },
+ {
+  "id": "t-ru-063",
+  "called": true,
+  "short_query": "режим блокировки",
+  "rephrased_query": "Как использовать режим блокировки на Apple-устройствах в Obsidian?",
+  "expected_answer": "Режим блокировки может ограничивать или отключать некоторые функции Obsidian на устройствах Apple."
+ }
+]

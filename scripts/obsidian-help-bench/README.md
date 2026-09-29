@@ -11,7 +11,8 @@ with one scorer for all systems. Background and results: `docs/{en,ru}/thoughts/
 | `golden-en.json` | 58 queries against the English docs, hand-written by the ohs author (MIT, © flowing-abyss) |
 | `golden-ru.json` | the same 58 in Russian; judgements mapped to the Russian pages through their shared `permalink` |
 | `golden-tricky-{en,ru}.json` | 57 + 63 harder queries: aliases, typos, Russian morphology, cross-lingual, deep sections, syntax |
-| `agent-fields-{en,ru}.json` | `short_query` / `rephrased_query` / `expected_answer` for every query, written by a model that saw only the query and the field descriptions |
+| `agent-fields-{en,ru}.json` | `short_query` / `rephrased_query` / `expected_answer` for every query, written by a strong model (Claude Sonnet) given only the queries and the field descriptions |
+| `agent-fields-mini-v{1,2,3}-{en,ru}.json` | the same fields from gpt-5.4-mini's first `search` call under three field-description variants (`agent_fields_gen.py`) |
 
 Relevance is graded: `relevant_paths` 1.0, `partial_paths` 0.5. The help texts themselves have no
 licence and are not committed; `prepare.py` fetches them at the commit the judgements were made against.
@@ -43,6 +44,9 @@ python3 run_ohs.py en && python3 run_ohs.py ru
 # instance's database; the t2g-sim run must equal the plain trip2g run
 ./trip2g_up.sh en 21105 "$OHB_WORK/trip2g" '{}'
 python3 agent_fields.py en 21105 "$OHB_WORK/t2g-en-21101/bench.sqlite3"
+# a real small agent fills the fields instead (OpenRouter): variants v1/v2/v3
+OPENROUTER_KEY=... python3 agent_fields_gen.py v3 openai/gpt-5.4-mini
+python3 agent_fields.py en 21105 "$OHB_WORK/t2g-en-21101/bench.sqlite3" --fields "$OHB_WORK/fields-v3-gpt-5.4-mini-en.json" --label mini-v3
 
 # score (same definitions as ohs's eval/metrics.ts)
 python3 score.py ../../testdata/eval/obsidian-help/golden-en.json "$OHB_WORK"/runs/*-en.json

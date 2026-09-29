@@ -15,6 +15,9 @@ and fused with RRF k=60, capped at 20. The `t2g-sim` run must equal a real trip2
 run on the same data; that is the check that the rebuild is faithful.
 
 usage: agent_fields.py <lang> <text-only port> <db of the vector instance> [embed url]
+                       [--fields FILE --label NAME]
+With --fields (output of agent_fields_gen.py) only one run, NAME, is written: all three
+fields at weight 1; empty fields add no list.
 """
 import json
 import os
@@ -26,8 +29,14 @@ import numpy as np
 
 from common import DATA, WORK, queries, write_run
 
-lang, port, db = sys.argv[1], sys.argv[2], sys.argv[3]
-embed_url = sys.argv[4] if len(sys.argv) > 4 else "http://localhost:11439/v1/embeddings"
+args = sys.argv[1:]
+fields_file = label = None
+if "--fields" in args:
+    i = args.index("--fields")
+    fields_file, label = args[i + 1], args[args.index("--label") + 1]
+    args = args[:i]
+lang, port, db = args[0], args[1], args[2]
+embed_url = args[3] if len(args) > 3 else "http://localhost:11439/v1/embeddings"
 K, VEC_TOP, CAP = 60, 50, 20
 cache_path = os.path.join(WORK, f"lane-cache-{lang}.json")
 cache = json.load(open(cache_path)) if os.path.exists(cache_path) else {}
@@ -90,7 +99,22 @@ def rrf(lists):
     return [p for p, _ in sorted(score.items(), key=lambda kv: (-kv[1], kv[0]))][:CAP]
 
 
-fields = {f["id"]: f for f in json.load(open(os.path.join(DATA, f"agent-fields-{lang}.json"), encoding="utf-8"))}
+fields = {f["id"]: f for f in json.load(open(fields_file or os.path.join(DATA, f"agent-fields-{lang}.json"),
+                                             encoding="utf-8"))}
+if fields_file:
+    res = {}
+    for q in queries(lang):
+        f = fields[q["id"]]
+        lists = [(1.0, text_lane(q["query"])), (1.0, vec_lane(q["query"]))]
+        if f.get("short_query"):
+            lists.append((1.0, text_lane(f["short_query"])))
+        for k in ("rephrased_query", "expected_answer"):
+            if f.get(k):
+                lists.append((1.0, vec_lane(f[k])))
+        res[q["id"]] = rrf(lists)
+    json.dump(cache, open(cache_path, "w", encoding="utf-8"), ensure_ascii=False)
+    write_run(label, lang, res)
+    sys.exit(0)
 runs = {name: {} for name in ("t2g-sim", "fields-short", "fields-w05", "fields-w1")}
 for q in queries(lang):
     f = fields[q["id"]]
