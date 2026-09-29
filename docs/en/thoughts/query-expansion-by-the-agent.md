@@ -68,7 +68,10 @@ qmd itself allows for this. Its MCP `query` tool accepts either a string or a re
 
 If the agent sends `searches`, qmd's own model does not run at all. The MCP server's instructions teach the agent to fill these fields: what `lex` is, what `vec` is, why `hyde`, and to always pass `intent`. obsidian-hybrid-search does the same more simply with a `queries[]` parameter: several phrasings are searched separately and fused with RRF.
 
-So the small model in qmd is a fallback for people searching from the command line without an agent. When there is an agent, expansion is better left to it: it is bigger, smarter, understands Russian, and nothing has to be computed.
+So the small model in qmd is a fallback for people searching from the command line without an agent. When there is an agent, expansion is better left to it.
+
+> [!tip] Two problems, one move
+> Handing query expansion to the calling agent solves two problems at once. First, trip2g doesn't have to carry a generative model, keep it in memory and run it on every query; on a server without a GPU that means minutes. Second, the variants come from a model many times larger than Qwen3-1.7B that understands Russian and knows what the conversation is about. Cheaper and better at the same time.
 
 ## What to call the fields
 
