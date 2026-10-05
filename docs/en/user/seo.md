@@ -48,7 +48,7 @@ Set these in a note's frontmatter:
 | `title` | Page title (the `<title>` tag and the link text). Falls back to the first heading, then the filename. |
 | `description` | The text shown under your link in search results, and the social-preview description. Write it yourself — there is no auto-generated fallback, so a note without `description` ships without one. |
 | `slug` | Custom URL for the note. |
-| `route` / `routes` | Serve the note at extra paths or on a custom domain. See [[en/user/advanced|Custom domains]]. |
+| `route` / `routes` | Serve the note at extra paths or on a custom domain. See [[en/user/multidomains|Multi-domains]]. |
 | `lang` | The note's language, for multilingual sites. |
 | `noindex` | `true` keeps the page out of search engines, `sitemap.xml` and RSS feeds. See below. |
 

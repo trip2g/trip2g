@@ -172,7 +172,9 @@ Lower numbers appear first. Notes without `home_position` are not included in th
 - **Separate homepages** — give each language its own `_index.md` with `lang` set and `magazine_include_files` scoped to that language's folder.
 - **`lang_redirect` is optional per page** — add it only where a translated equivalent exists. Pages without a counterpart simply won't show a language toggle.
 
+**Limitation: hreflang and custom domains.** `hreflang` links always use the main-domain address of each language version, both in the page `<head>` and in the main `sitemap.xml`. A custom domain's sitemap carries no language alternates. If you serve each language on its own [[en/user/multidomains|domain]], search engines get no language pairing for the domain addresses.
+
 ### Related
 
 - [[en/user/publishing|Publishing notes]] — frontmatter properties reference
-- [[en/user/advanced|Custom domains, CLI, SEO]] — serve each language on its own domain
+- [[en/user/multidomains|Multi-domains]] — serve each language on its own domain

@@ -105,6 +105,26 @@ title: Моя страница
 > </body>
 > ```
 
+### SEO-теги в своём layout
+
+Шаблон по умолчанию сам пишет `<link rel="canonical">`, `og:url`, `hreflang` и `<meta name="robots">`. Свой layout не пишет ничего из этого. Единственное, что trip2g добавляет сам, — HTTP-заголовок `X-Robots-Tag: noindex` для заметок с `noindex: true`.
+
+`publicURL` — адрес основного домена. На [[multidomains|кастомном домене]] это всё равно основной домен, поэтому canonical собирайте из маршрута заметки:
+
+```jet
+<head>
+  {{ if note.M().GetBool("noindex", false) }}<meta name="robots" content="noindex">{{ end }}
+  {{ canonicalRoute := note.M().GetString("route", "") }}
+  {{ if canonicalRoute != "" }}
+  <link rel="canonical" href="https://{{ canonicalRoute }}">
+  {{ else }}
+  <link rel="canonical" href="{{ publicURL }}{{ note.Permalink() }}">
+  {{ end }}
+</head>
+```
+
+Значение `noindex` по умолчанию оставляйте `false`. С `GetBool("noindex", true)` каждая страница без этого свойства помечается `noindex`, и весь сайт выпадает из поиска, а HTTP-заголовки при этом выглядят чистыми. Пример рассчитан на `route` в виде полного `домен/путь`; если используете `routes` или алиасы основного домена, доработайте его.
+
 ### PartialRenderer — контент по частям
 
 `PartialRenderer` разбирает markdown на логические блоки. Полезно для лендингов, FAQ, карточек.
