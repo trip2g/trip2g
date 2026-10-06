@@ -3,6 +3,9 @@ package mdchunk
 import (
 	"strings"
 	"unicode/utf8"
+
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
 )
 
 const (
@@ -198,5 +201,23 @@ func parseHeading(block string) (int, string, bool) {
 	if i == 0 || i > 6 || i >= len(line) || line[i] != ' ' {
 		return 0, "", false
 	}
-	return i, strings.TrimSpace(line[i+1:]), true
+	return i, stripHeadingAttributes(strings.TrimSpace(line[i+1:])), true
+}
+
+// stripHeadingAttributes drops a trailing "{#id .class}" the way goldmark
+// does, so the text matches the heading the page renders.
+func stripHeadingAttributes(heading string) string {
+	open := strings.LastIndexByte(heading, '{')
+	if open < 0 {
+		return heading
+	}
+
+	reader := text.NewReader([]byte(heading[open:]))
+	_, ok := parser.ParseAttributes(reader)
+	rest, _ := reader.PeekLine()
+	if !ok || strings.TrimSpace(string(rest)) != "" {
+		return heading
+	}
+
+	return strings.TrimSpace(heading[:open])
 }

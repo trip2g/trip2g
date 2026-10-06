@@ -682,7 +682,7 @@ func StreamNoteSidebar(qw422016 *qt422016.Writer, ctx *Ctx, position string, wid
 			qw422016.N().S(`
   <nav class="sidebar-nav">`)
 //line views.html:168
-			qw422016.N().S(navHTML)
+			qw422016.N().S(navHTML.String())
 //line views.html:168
 			qw422016.N().S(`</nav>
   `)
@@ -767,7 +767,7 @@ func StreamNoteSidebar(qw422016 *qt422016.Writer, ctx *Ctx, position string, wid
       <div class="widget widget--content">
         <div class="widget__content">`)
 //line views.html:193
-				qw422016.N().S(wNote.HTMLString())
+				qw422016.N().S(wNote.HTMLString().String())
 //line views.html:193
 				qw422016.N().S(`</div>
       </div>
@@ -1228,7 +1228,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 				qw422016.N().S(`
       <div class="content__body">`)
 //line views.html:277
-				qw422016.N().S(refNote.HTMLString())
+				qw422016.N().S(refNote.HTMLString().String())
 //line views.html:277
 				qw422016.N().S(`</div>
       `)
@@ -1254,7 +1254,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 				qw422016.N().S(`
       <div class="content__body">`)
 //line views.html:282
-				qw422016.N().S(refNote.HTMLString())
+				qw422016.N().S(refNote.HTMLString().String())
 //line views.html:282
 				qw422016.N().S(`</div>
       `)
@@ -1469,7 +1469,7 @@ func StreamSelfContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 		qw422016.N().S(`
   <div class="content__body">`)
 //line views.html:325
-		qw422016.N().S(ctx.Note.HTMLString())
+		qw422016.N().S(ctx.Note.HTMLString().String())
 //line views.html:325
 		qw422016.N().S(`</div>
   `)
@@ -1766,7 +1766,7 @@ func StreamMagazineCard(qw422016 *qt422016.Writer, ctx *Ctx, item MagazineItem, 
 			qw422016.N().S(`
   <p class="magazine-item__excerpt">`)
 //line views.html:395
-			qw422016.N().S(intro.ContentHTML)
+			qw422016.N().S(intro.ContentHTML.String())
 //line views.html:395
 			qw422016.N().S(`</p>
   `)
@@ -1879,7 +1879,7 @@ func StreamSiteHeader(qw422016 *qt422016.Writer, ctx *Ctx, headerNote *templatev
 		qw422016.N().S(`
     <nav class="site-header__nav">`)
 //line views.html:419
-		qw422016.N().S(navHTML)
+		qw422016.N().S(navHTML.String())
 //line views.html:419
 		qw422016.N().S(`</nav>
     `)
@@ -1958,7 +1958,7 @@ func StreamSiteFooter(qw422016 *qt422016.Writer, ctx *Ctx, footerNote *templatev
     <div class="site-footer__brand">
       `)
 //line views.html:442
-		qw422016.N().S(intro.ContentHTML)
+		qw422016.N().S(intro.ContentHTML.String())
 //line views.html:442
 		qw422016.N().S(`
     </div>
@@ -1987,12 +1987,12 @@ func StreamSiteFooter(qw422016 *qt422016.Writer, ctx *Ctx, footerNote *templatev
       <div class="site-footer__column">
         <p class="site-footer__column-title">`)
 //line views.html:450
-			qw422016.N().S(sec.TitleHTML)
+			qw422016.N().S(sec.TitleHTML.String())
 //line views.html:450
 			qw422016.N().S(`</p>
         `)
 //line views.html:451
-			qw422016.N().S(sec.ContentHTML)
+			qw422016.N().S(sec.ContentHTML.String())
 //line views.html:451
 			qw422016.N().S(`
       </div>
@@ -2020,7 +2020,7 @@ func StreamSiteFooter(qw422016 *qt422016.Writer, ctx *Ctx, footerNote *templatev
 			qw422016.N().S(`
     <div class="site-footer__links site-footer__links--inline">`)
 //line views.html:458
-			qw422016.N().S(listHTML)
+			qw422016.N().S(listHTML.String())
 //line views.html:458
 			qw422016.N().S(`</div>
     `)

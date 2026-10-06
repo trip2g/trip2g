@@ -93,10 +93,10 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	// request context to populate. No-op functions return zero values so
 	// layouts render without errors during smoke-checks.
 	vars["defaultTemplate"] = reflect.ValueOf(map[string]interface{}{
-		"UserSpaceScripts": func() string { return "" },
-		"Header":           func() string { return "" },
-		"Footer":           func() string { return "" },
-		"Styles":           func() string { return "" },
+		"UserSpaceScripts": func() model.SafeHTML { return "" },
+		"Header":           func() model.SafeHTML { return "" },
+		"Footer":           func() model.SafeHTML { return "" },
+		"Styles":           func() model.SafeHTML { return "" },
 	})
 	vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
 		"IsAdmin": func() bool { return false },

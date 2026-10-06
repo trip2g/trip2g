@@ -39,7 +39,7 @@ func TestResolveLayoutSection_GlobMatch(t *testing.T) {
 
 	nvs := makeNVS([]*model.NoteView{headerNote, postNote})
 	ctx := &Ctx{
-		Note:  nvs.ByPath("blog/post1.md"),
+		Note:  nvs.NoteByPath("blog/post1.md"),
 		Notes: nvs,
 		LayoutSections: []model.LayoutSectionEntry{
 			{NotePath: "layouts/header.md", Section: "header", Includes: []string{"blog/**"}},
@@ -55,7 +55,7 @@ func TestResolveLayoutSection_GlobNoMatch(t *testing.T) {
 	postNote := makeNote("blog/post1.md", nil)
 	nvs := makeNVS([]*model.NoteView{postNote})
 	ctx := &Ctx{
-		Note:  nvs.ByPath("blog/post1.md"),
+		Note:  nvs.NoteByPath("blog/post1.md"),
 		Notes: nvs,
 		LayoutSections: []model.LayoutSectionEntry{
 			{NotePath: "layouts/header.md", Section: "header", Includes: []string{"docs/**"}},
@@ -70,7 +70,7 @@ func TestResolveLayoutSection_ExcludePattern(t *testing.T) {
 	postNote := makeNote("blog/draft1.md", nil)
 	nvs := makeNVS([]*model.NoteView{postNote})
 	ctx := &Ctx{
-		Note:  nvs.ByPath("blog/draft1.md"),
+		Note:  nvs.NoteByPath("blog/draft1.md"),
 		Notes: nvs,
 		LayoutSections: []model.LayoutSectionEntry{
 			{
@@ -102,11 +102,11 @@ func TestResolveLayoutSection_IncludeProperty(t *testing.T) {
 	}
 
 	// Note with property matches.
-	ctx1 := &Ctx{Note: nvs.ByPath("blog/post1.md"), Notes: nvs, LayoutSections: []model.LayoutSectionEntry{entry}}
+	ctx1 := &Ctx{Note: nvs.NoteByPath("blog/post1.md"), Notes: nvs, LayoutSections: []model.LayoutSectionEntry{entry}}
 	require.NotNil(t, ctx1.resolveLayoutSection("header"))
 
 	// Note without property does not match.
-	ctx2 := &Ctx{Note: nvs.ByPath("blog/post2.md"), Notes: nvs, LayoutSections: []model.LayoutSectionEntry{entry}}
+	ctx2 := &Ctx{Note: nvs.NoteByPath("blog/post2.md"), Notes: nvs, LayoutSections: []model.LayoutSectionEntry{entry}}
 	require.Nil(t, ctx2.resolveLayoutSection("header"))
 }
 
@@ -117,7 +117,7 @@ func TestResolveLayoutSection_ExcludeProperty(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{draftNote})
 
 	ctx := &Ctx{
-		Note:  nvs.ByPath("blog/draft1.md"),
+		Note:  nvs.NoteByPath("blog/draft1.md"),
 		Notes: nvs,
 		LayoutSections: []model.LayoutSectionEntry{
 			{
@@ -138,7 +138,7 @@ func TestResolveLayoutSection_HigherPriorityWins(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{postNote})
 
 	ctx := &Ctx{
-		Note:  nvs.ByPath("blog/post1.md"),
+		Note:  nvs.NoteByPath("blog/post1.md"),
 		Notes: nvs,
 		LayoutSections: []model.LayoutSectionEntry{
 			{NotePath: "layouts/generic.md", Section: "header", Includes: []string{"**/*.md"}, Priority: 1},
@@ -156,7 +156,7 @@ func TestResolveLayoutSection_PriorityTie_ReturnsOne(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{postNote})
 
 	ctx := &Ctx{
-		Note:  nvs.ByPath("blog/post1.md"),
+		Note:  nvs.NoteByPath("blog/post1.md"),
 		Notes: nvs,
 		LayoutSections: []model.LayoutSectionEntry{
 			{NotePath: "layouts/a.md", Section: "header", Includes: []string{"blog/**"}, Priority: 5},
@@ -177,7 +177,7 @@ func TestHeaderRef_PerNoteOverrideWins(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{postNote})
 
 	ctx := &Ctx{
-		Note:  nvs.ByPath("blog/post1.md"),
+		Note:  nvs.NoteByPath("blog/post1.md"),
 		Notes: nvs,
 		LayoutSections: []model.LayoutSectionEntry{
 			{NotePath: "layouts/header.md", Section: "header", Includes: []string{"blog/**"}},
@@ -198,7 +198,7 @@ func TestHeaderRef_FallbackToDefaultHeader(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{postNote, headerNote})
 
 	ctx := &Ctx{
-		Note:  nvs.ByPath("blog/post1.md"),
+		Note:  nvs.NoteByPath("blog/post1.md"),
 		Notes: nvs,
 		LayoutSections: []model.LayoutSectionEntry{
 			// Only matches docs/**, not blog/**

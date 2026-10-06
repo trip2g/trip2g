@@ -51,7 +51,7 @@ model.NoteView, model.NoteViews
   <time>{{ note.CreatedAt().Format("02.01.2006") }}</time>
   <span>{{ note.ReadingTime() }} мин</span>
 
-  {{ note.HTMLString() | unsafe }}
+  {{ note.HTMLString() }}
 </article>
 ```
 
@@ -91,7 +91,7 @@ model.NoteView, model.NoteViews
 {* Загрузить заметку по пути *}
 {{ sidebar := nvs.ByPath("/docs/_sidebar.md") }}
 {{ if sidebar }}
-  {{ sidebar.HTMLString() | unsafe }}
+  {{ sidebar.HTMLString() }}
 {{ end }}
 
 {* Загрузить по URL *}
@@ -246,14 +246,45 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 |-------|----------|
 | `Introduce()` | Контент до первого заголовка |
 | `Sections(level)` | Секции под заголовками уровня level |
-| `Section(title)` | Секция по тексту заголовка |
+| `Section(x)` | Секция по тексту заголовка или по якорю (`"pricing"`, `"#pricing"`), иначе `nil` |
+| `FirstList()` | Первый список заметки или `nil` |
+| `Lists()` | Все списки верхнего уровня |
+| `Images()` | Все картинки заметки по порядку |
+| `CodeBlocks(lang)` | Блоки кода языка `lang`, все блоки для `""` |
+| `FirstImageURL()` | URL первой картинки |
 
-### Структура секции
+Подробнее с примерами — в [[ru/user/templates#own-toc|Шаблонах]].
+
+### Структуры
 
 ```go
 type Section struct {
+    ID          string  // Якорь заголовка, тот же, что в TOC() и в HTML
+    Level       int     // Уровень заголовка: 2 для ##
+    Title       string  // Текст заголовка без разметки
     TitleHTML   string  // Текст заголовка (без тега)
-    ContentHTML string  // Контент до следующего заголовка
+    ContentHTML string  // Контент до следующего заголовка того же или более высокого уровня
+}
+
+type ListItem struct {
+    Text     string
+    URL      string
+    Task     string  // "", "todo" для [ ], "done" для любого другого символа
+    TaskMark string  // Символ в скобках: " ", "x", "/", "-"...; "" для обычного пункта
+    Children []ListItem
+}
+
+type Image struct {
+    URL   string  // Адрес, по которому картинку отдаёт страница
+    Alt   string
+    Title string
+}
+
+type CodeBlock struct {
+    Lang    string  // Первое слово после ```
+    Info    string  // Вся строка после ```
+    Content string  // Код как написан
+    HTML    string  // Блок как его рендерит страница
 }
 ```
 
@@ -262,20 +293,20 @@ type Section struct {
 ```jet
 {* Вступление *}
 {{ intro := note.PartialRenderer().Introduce() }}
-<div class="lead">{{ intro.ContentHTML | unsafe }}</div>
+<div class="lead">{{ intro.ContentHTML }}</div>
 
 {* FAQ из H3 *}
 {{ range i, q := note.PartialRenderer().Sections(3) }}
   <details>
-    <summary>{{ q.TitleHTML | unsafe }}</summary>
-    <div>{{ q.ContentHTML | unsafe }}</div>
+    <summary>{{ q.TitleHTML }}</summary>
+    <div>{{ q.ContentHTML }}</div>
   </details>
 {{ end }}
 
 {* Конкретная секция *}
 {{ faq := note.PartialRenderer().Section("FAQ") }}
 {{ if faq }}
-  {{ faq.ContentHTML | unsafe }}
+  {{ faq.ContentHTML }}
 {{ end }}
 ```
 
@@ -356,7 +387,19 @@ type Section struct {
 ### Фильтры
 
 ```jet
-{{ value | unsafe }}          {* Вывод HTML без экранирования *}
-{{ value | html }}            {* Экранирование (по умолчанию) *}
+{{ value }}                   {* Экранируется по умолчанию *}
+{{ value | unsafe }}          {* Вывод строки без экранирования *}
 ```
+
+Вывод экранируется. Методы, которые возвращают готовый HTML (`HTMLString()`, `TitleHTML`, `ContentHTML`, `FirstListHTML()`, `FormSpecJSON()`, `asset()`), имеют тип `model.SafeHTML` и выводятся как есть. `| html` экранирует один раз и тоже возвращает `SafeHTML`, поэтому старые шаблоны с `| html` не экранируют дважды.
+
+### Разбор данных
+
+```jet
+{{ d := parseJSON(text) }}    {* JSON в словари и списки, nil при ошибке *}
+{{ d := parseYAML(text) }}    {* То же для YAML *}
+{{ rows := parseCSV(text) }}  {* Список строк, строка — список значений *}
+```
+
+Подробнее — в разделе [[ru/user/templates#parse-data|Разбор данных]].
 

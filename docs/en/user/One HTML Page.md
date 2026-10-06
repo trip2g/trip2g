@@ -61,7 +61,7 @@ Data from frontmatter via `note.M()`:
 Full markdown content of the note:
 
 ```jet
-{{ note.HTMLString() | unsafe }}
+{{ note.HTMLString() }}
 ```
 
 Markdown broken into sections via `note.PartialRenderer()`:
@@ -69,8 +69,8 @@ Markdown broken into sections via `note.PartialRenderer()`:
 ```jet
 {{ range i, section := note.PartialRenderer().Sections(2) }}
   <section>
-    <h2>{{ section.TitleHTML | unsafe }}</h2>
-    {{ section.ContentHTML | unsafe }}
+    <h2>{{ section.TitleHTML }}</h2>
+    {{ section.ContentHTML }}
   </section>
 {{ end }}
 ```
@@ -125,7 +125,7 @@ _layouts/
 {{ yield main_layout() content }}
   <article>
     <h1>{{ note.Title() }}</h1>
-    {{ note.HTMLString() | unsafe }}
+    {{ note.HTMLString() }}
   </article>
 {{ end }}
 ```

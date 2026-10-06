@@ -66,10 +66,9 @@ func newUserSpaceHelper(
 // scripts returns the raw HTML string to inject.
 //
 // Jet calls this via reflection when the template uses
-// {{ defaultTemplate.UserSpaceScripts() }}.  Because the Jet set used by
-// custom layouts is created with jet.WithSafeWriter(nil), the returned string
-// is written directly to the response without HTML-escaping.
-func (h *userSpaceHelper) scripts() string {
+// {{ defaultTemplate.UserSpaceScripts() }}. The model.SafeHTML result is
+// written to the response without HTML-escaping.
+func (h *userSpaceHelper) scripts() model.SafeHTML {
 	var sb strings.Builder
 
 	if !h.settingsEmitted {
@@ -133,7 +132,7 @@ func (h *userSpaceHelper) scripts() string {
 		sb.WriteByte('\n')
 	}
 
-	return sb.String()
+	return model.SafeHTML(sb.String())
 }
 
 // admin returns true when the current viewer is the site owner/admin.
@@ -154,21 +153,21 @@ func (h *userSpaceHelper) dtCtx() *defaulttemplate.Ctx {
 
 // header returns the standard site-header HTML (or "" when the page has no
 // header). Jet calls this for {{ defaultTemplate.Header() }}.
-func (h *userSpaceHelper) header() string {
-	return defaulttemplate.Header(h.dtCtx())
+func (h *userSpaceHelper) header() model.SafeHTML {
+	return model.SafeHTML(defaulttemplate.Header(h.dtCtx()))
 }
 
 // footer returns the standard site-footer HTML (or "" when the page has no
 // footer). Jet calls this for {{ defaultTemplate.Footer() }}.
-func (h *userSpaceHelper) footer() string {
-	return defaulttemplate.Footer(h.dtCtx())
+func (h *userSpaceHelper) footer() model.SafeHTML {
+	return model.SafeHTML(defaulttemplate.Footer(h.dtCtx()))
 }
 
 // styles returns <link> tags for the default-template stylesheet so a custom
 // layout embedding the standard chrome isn't unstyled. Reuses the existing
 // hashed served URL (renderlayout.Env.UserCSSURLs) — never a hardcoded hash.
 // Jet calls this for {{ defaultTemplate.Styles() }}.
-func (h *userSpaceHelper) styles() string {
+func (h *userSpaceHelper) styles() model.SafeHTML {
 	var sb strings.Builder
 	for _, u := range h.cssURLs {
 		sb.WriteString(`<link rel="stylesheet" href="`)
@@ -176,7 +175,7 @@ func (h *userSpaceHelper) styles() string {
 		sb.WriteString(`">`)
 		sb.WriteByte('\n')
 	}
-	return sb.String()
+	return model.SafeHTML(sb.String())
 }
 
 // jetMap returns the map stored in vars["defaultTemplate"]. Holds

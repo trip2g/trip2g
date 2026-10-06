@@ -135,9 +135,9 @@ func (ctx *Ctx) JSONLDLogo() string {
 	var note *templateviews.Note
 	switch ref.Kind {
 	case ContentRefFile:
-		note = ctx.Notes.ByPath(ref.Value)
+		note = ctx.Notes.NoteByPath(ref.Value)
 	case ContentRefWikiLink:
-		note = ctx.Notes.ByWikilink(ref.Value)
+		note = ctx.Notes.NoteByWikilink(ref.Value)
 	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone, ContentRefSimilar, ContentRefInLinks, ContentRefOutLinks, ContentRefTOC:
 		// no header note to resolve — note stays nil
 	}
@@ -166,7 +166,7 @@ func (ctx *Ctx) JSONLDBreadcrumb() []JSONLDCrumb {
 		cum += "/" + seg
 		name := humanizeSegment(seg)
 		if ctx.Notes != nil {
-			if n := ctx.Notes.ByPermalink(cum); n != nil && n.Title() != "" {
+			if n := ctx.Notes.NoteByPermalink(cum); n != nil && n.Title() != "" {
 				name = n.Title()
 			}
 		}
