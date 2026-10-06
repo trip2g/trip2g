@@ -21,6 +21,7 @@
     var sidebars = document.querySelectorAll('.layout__sidebar');
     if (!sidebars.length) return;
     var topOffset = (header ? header.offsetHeight : 56) + 16;
+    document.documentElement.style.setProperty('--sidebar-top', topOffset + 'px');
     var states = Array.prototype.map.call(sidebars, function(sb) {
       sb.style.top = topOffset + 'px';
       return { el: sb, top: topOffset };
@@ -43,6 +44,28 @@
       });
     }, { passive: true });
   })();
+
+  // The left nav scrolls on its own (see .layout__sidebar--left in CSS): bring
+  // the current page into view there, without scrolling the page itself.
+  (function(){
+    // The first match may be the top-nav copy, hidden on desktop.
+    var active = leftSidebar && Array.prototype.find.call(
+      leftSidebar.querySelectorAll('a.is-active'),
+      function(a){ return a.getClientRects().length > 0; });
+    if (!active || leftSidebar.scrollHeight <= leftSidebar.clientHeight) return;
+    var sb = leftSidebar.getBoundingClientRect();
+    var a = active.getBoundingClientRect();
+    if (a.top >= sb.top && a.bottom <= sb.bottom) return;
+    leftSidebar.scrollTop += a.top - sb.top - (leftSidebar.clientHeight - a.height) / 2;
+  })();
+
+  // Wide tables scroll inside their own box instead of widening the page.
+  document.querySelectorAll('.content__body table').forEach(function(t){
+    var wrap = document.createElement('div');
+    wrap.className = 'table-scroll';
+    t.parentNode.insertBefore(wrap, t);
+    wrap.appendChild(t);
+  });
 
   // Heading anchors. The ids are already rendered by the markdown pipeline and
   // the TOC widget already links to them; this only adds the affordance to copy
