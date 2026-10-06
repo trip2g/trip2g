@@ -673,3 +673,32 @@ func TestResolve_AgentChangesUnchangedRaiseNoEvents(t *testing.T) {
 	err := delivercronwebhook.Resolve(context.Background(), env, delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 12, Attempt: 1})
 	require.NoError(t, err)
 }
+
+func TestResolve_TokenCarriesWebhookCreator(t *testing.T) {
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+
+	env := baseEnv(t, srv.URL, nil)
+	env.CronWebhookByIDFunc = func(_ context.Context, id int64) (db.CronWebhook, error) {
+		return db.CronWebhook{
+			ID: id, Url: srv.URL, TimeoutSeconds: 10, PassApiKey: true,
+			ReadPatterns: `[]`, WritePatterns: `[]`, CreatedBy: 7,
+		}, nil
+	}
+
+	err := delivercronwebhook.Resolve(context.Background(), env,
+		delivercronwebhook.DeliverCronParams{CronWebhookID: 1, DeliveryID: 602, Attempt: 1})
+	require.NoError(t, err)
+
+	var payload struct {
+		APIToken string `json:"api_token"`
+	}
+	require.NoError(t, json.Unmarshal(body, &payload))
+	claims, err := shortapitoken.Parse(payload.APIToken, "test-secret")
+	require.NoError(t, err)
+	require.EqualValues(t, 7, claims.CreatedBy)
+}

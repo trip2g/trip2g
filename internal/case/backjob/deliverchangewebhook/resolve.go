@@ -109,6 +109,7 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 			WritePatterns: writePatterns,
 			DeliveryKind:  deliveryKindChange,
 			DeliveryID:    params.DeliveryID,
+			CreatedBy:     wh.CreatedBy,
 		}, env.ShortAPITokenSecret(), ttl)
 		if signErr != nil {
 			log.Error("failed to sign short API token", "webhook_id", wh.ID, "error", signErr)

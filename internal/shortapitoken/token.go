@@ -21,6 +21,9 @@ type Data struct {
 	WritePatterns []string `json:"wp"`
 	DeliveryKind  string   `json:"dk,omitempty"` // "change" | "cron"
 	DeliveryID    int64    `json:"di,omitempty"`
+	// CreatedBy is the admin who created the webhook the token was issued for.
+	// Writes that record an admin (e.g. note_paths.hidden_by) attribute to it.
+	CreatedBy int64 `json:"cb,omitempty"`
 }
 
 type claims struct {

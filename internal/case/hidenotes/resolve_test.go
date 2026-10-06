@@ -213,7 +213,7 @@ func TestResolve_ScopedToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			env := newTestEnv(func(_ context.Context, _ db.HideNotePathParams) error { return nil })
 
-			result, err := Resolve(tt.ctx, env, model.HideNotesInput{Paths: []string{"note.md"}})
+			result, err := Resolve(tt.ctx, env, model.HideNotesInput{Paths: []string{"note.md"}, ApiKey: db.ApiKey{CreatedBy: 1}})
 			require.NoError(t, err)
 
 			if tt.wantDenied {

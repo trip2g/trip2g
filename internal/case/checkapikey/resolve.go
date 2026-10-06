@@ -42,6 +42,7 @@ func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
 			ID:          0,
 			Value:       "admin",
 			Description: "Admin user bypass",
+			CreatedBy:   int64(token.ID),
 		}, nil
 	}
 
@@ -139,6 +140,7 @@ func resolveShortAPIToken(ctx context.Context, env Env, tokenStr string, req *ap
 		ID:           0, // Virtual key, no DB record.
 		Value:        "shortapitoken",
 		Description:  "Short API token (webhook)",
+		CreatedBy:    data.CreatedBy,
 		SkipWebhooks: false, // shortapitoken should never skip webhooks.
 	}
 
