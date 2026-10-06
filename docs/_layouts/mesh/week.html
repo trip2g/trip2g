@@ -1,0 +1,119 @@
+{{ block _style_@lid() }}
+/* Copy comes from the _index_week note: h2, an intro p, an ordered list of jobs,
+   a closing p and a last p about how this site itself is built. */
+.@did {
+  padding: 40px 20px 36px;
+  border-bottom: 1px solid var(--rule);
+}
+.@did > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.@did h2 {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: clamp(30px, 3.4vw, 44px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin: 0;
+  max-width: 14ch;
+  text-wrap: balance;
+}
+.@did p {
+  margin: 18px 0 0;
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 46ch;
+  color: color-mix(in oklab, var(--fg) 85%, transparent);
+}
+.@did ol + p {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg);
+  border-left: 2px solid var(--accent);
+  padding-left: 14px;
+}
+.@did p:last-child {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.@did p:last-child::before { content: "// "; color: var(--accent); }
+.@did a { color: var(--accent); text-decoration: none; }
+.@did a:hover { color: var(--fg); }
+.@did ol {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  counter-reset: job;
+  border-top: 1px solid var(--rule);
+}
+.@did li {
+  counter-increment: job;
+  position: relative;
+  padding: 18px 0 20px 36px;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: color-mix(in oklab, var(--fg) 78%, transparent);
+}
+.@did li::before {
+  content: "0" counter(job);
+  position: absolute;
+  left: 0;
+  top: 23px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+.@did li strong {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.@did li strong a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+.@did li strong a:hover { color: var(--accent); text-decoration-color: var(--accent); }
+.@did li:last-child { border-bottom: 0; }
+
+@media (min-width: 901px) {
+  .@did {
+    padding: 64px 40px 56px;
+  }
+  .@did > div {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: auto auto auto auto 1fr;
+    column-gap: 48px;
+  }
+  .@did > div > * { grid-column: 1; }
+  .@did ol {
+    grid-column: 2;
+    grid-row: 1 / 6;
+    margin: 0;
+  }
+  .@did li { padding: 20px 0 22px 56px; }
+  .@did li::before { top: 26px; }
+  .@did li:first-child { padding-top: 6px; }
+  .@did li:first-child::before { top: 12px; }
+  .@did ol { border-top: 0; }
+  .@did ol + p { margin-top: 28px; }
+}
+{{ end }}
+
+{{ block @lid(s_lhs="one instance at work", s_rhs="5 jobs · 1 process", note="_index_week.md") }}
+{{ yield section_header(lhs=s_lhs, rhs=s_rhs) }}
+<div class="@did">{{ yield mesh_section(path=note) }}</div>
+{{ end }}

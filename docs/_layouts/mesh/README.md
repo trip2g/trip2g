@@ -15,6 +15,8 @@ listings/search and off standalone URLs):
 | Note | Rendered into |
 |------|---------------|
 | `_index_hero.md` / `ru/_index_hero.md` | hero left column (`hero_walk.html`) |
+| `_index_week.md` / `ru/_index_week.md` | "one week, one trip2g" job list (`week.html`) |
+| `_index_knife.md` / `ru/_index_knife.md` | "markdown Swiss army knife" where-to-start section (`knife.html`) |
 | `_index_getting_started.md` / `ru/_index_getting_started.md` | "0 → live site" steps (`how.html`) |
 | `_index_capabilities.md` / `ru/_index_capabilities.md` | 6-capability grid (`capabilities.html`) |
 | `_index_payoff.md` / `ru/_index_payoff.md` | federation lead-in above the privacy section (`privacy.html`) |
@@ -68,6 +70,8 @@ translatable strings as parameters with **English defaults**; `index.html` yield
 | `bar.html` | `mesh_bar` | Top navigation bar; wraps into a two-row layout under 900px |
 | `hero_walk.html` | `mesh_hero_walk` | First screen: copy from the `_index_hero` note + CTA row on the left, a terminal-style player on the right that replays real recorded agent walks over MCP (`hero_walk.js`, scenarios in `walk_en.json` / `walk_ru.json`), followed by the "ask it yourself" strip with the MCP client config |
 | `hero_hub.html` | `mesh_hero_hub` | "markdown in · everything out" animation bound to a voice-over (`hero_hub.js`, `hero_vo_*.mp3`) |
+| `week.html` | `mesh_week` | "One week, one trip2g": heading, intro and closing lines on the left, the numbered job list on the right; copy from the `_index_week` note |
+| `knife.html` | `mesh_knife` | "A markdown Swiss army knife": heading on the left, two paragraphs on the right; copy from the `_index_knife` note |
 | `how.html` | `mesh_how` | "0 → live site" steps from the `_index_getting_started` note |
 | `capabilities.html` | `mesh_capabilities` | 6-card capability grid, copy from the `_index_capabilities` note |
 | `privacy.html` | `mesh_privacy` | Federation lead-in (`_index_payoff` note, optional `note` param) + data privacy section with SVG diagram |
@@ -89,7 +93,7 @@ in order of preference:
    `ru_index.html` overrides each with the Russian string. Non-mechanical hrefs (e.g.
    `/en/user/getting_started` vs `/ru/user/nachalo_rabotyi`) are parameters too.
 3. **Markdown notes for paragraph copy.** Where a component's copy is prose with no
-   load-bearing element classes (hero, how, capabilities, network), it lives in a hidden
+   load-bearing element classes (hero, week, knife, how, capabilities, network), it lives in a hidden
    `_index_*.md` note pair (see [Where the landing copy lives](#where-the-landing-copy-lives))
    and the block takes the note path as a parameter (`note="ru/_index_hero.md"`).
 
