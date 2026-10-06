@@ -65,6 +65,10 @@ Example. From an English note you want to send the reader to the Russian version
 See the [[ru/user/templates|Russian version]].
 ```
 
+### Links in frontmatter
+
+Wikilinks in frontmatter properties of the default template — `header`, `footer`, `left_sidebar`, `right_sidebar` — resolve by the same rules, from the note that has the property. A `|alias` or `#heading` part is ignored there. So a link Obsidian writes or updates on rename, such as `left_sidebar: "[[_sidebar]]"`, points at the same file on the site as in Obsidian.
+
 ### Related
 
 - [[en/user/markdown|Markdown syntax]] — wikilink and embed syntax

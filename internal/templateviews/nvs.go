@@ -134,6 +134,37 @@ func (n *NVS) NoteByWikilink(target string) *Note {
 	return nil
 }
 
+// NoteByWikilinkFrom resolves a wikilink target the way links in note text are
+// resolved from source, so frontmatter links match what Obsidian shows.
+// "|alias", "#heading" and a ".md" suffix are ignored. A nil source resolves
+// from the vault root.
+func (n *NVS) NoteByWikilinkFrom(source *Note, target string) *Note {
+	if n.nvs == nil {
+		return nil
+	}
+
+	target, _, _ = strings.Cut(target, "|")
+	target, _, _ = strings.Cut(target, "#")
+	target = strings.TrimSuffix(strings.TrimSpace(strings.TrimSuffix(target, `\`)), ".md")
+	if target == "" {
+		return nil
+	}
+
+	var src *model.NoteView
+	if source != nil {
+		src = source.Unwrap()
+	}
+
+	nv := n.nvs.ResolveWikilinkTarget(src, target)
+	if nv == nil && src == nil {
+		nv = n.nvs.PathMap[strings.TrimPrefix(target, "/")+".md"]
+	}
+	if nv == nil {
+		return nil
+	}
+	return n.wrap(nv)
+}
+
 // orNil turns a nil *Note into an untyped nil. Jet compares a typed nil
 // pointer as unequal to the nil literal, so template lookups return any.
 func orNil(note *Note) any {

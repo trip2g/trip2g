@@ -159,7 +159,7 @@ func (ctx *Ctx) AllTelegramLinks() []model.TelegramPostLink {
 			continue
 		}
 
-		resolved := ctx.Notes.NoteByWikilink(target)
+		resolved := ctx.Notes.NoteByWikilinkFrom(ctx.Note, target)
 		if resolved == nil {
 			continue
 		}
@@ -180,11 +180,15 @@ func (ctx *Ctx) AllTelegramLinks() []model.TelegramPostLink {
 
 // noteExists returns true if a note with the given wikilink name exists in ctx.Notes.
 func (ctx *Ctx) noteExists(name string) bool {
+	return ctx.rootNote(name) != nil
+}
+
+// rootNote finds a note in the vault root by its URL, e.g. the site-wide _header.
+func (ctx *Ctx) rootNote(name string) *templateviews.Note {
 	if ctx.Notes == nil {
-		return false
+		return nil
 	}
-	permalink := "/" + strings.ToLower(strings.ReplaceAll(name, " ", "_"))
-	return ctx.Notes.NoteByPermalink(permalink) != nil
+	return ctx.Notes.NoteByPermalink("/" + strings.ToLower(strings.ReplaceAll(name, " ", "_")))
 }
 
 // RSSFeeds returns one RSSFeedLink per note whose content_type declares it as
@@ -344,8 +348,8 @@ func (ctx *Ctx) HeaderRef() ContentRef {
 	if match := ctx.resolveLayoutSection("header"); match != nil {
 		return ContentRef{Kind: ContentRefFile, Value: match.NotePath}
 	}
-	if ctx.noteExists("_header") {
-		return ContentRef{Kind: ContentRefWikiLink, Value: "_header"}
+	if note := ctx.rootNote("_header"); note != nil {
+		return ContentRef{Kind: ContentRefFile, Value: note.Path()}
 	}
 	return ContentRef{Kind: ContentRefNone}
 }
@@ -362,8 +366,8 @@ func (ctx *Ctx) FooterRef() ContentRef {
 	if match := ctx.resolveLayoutSection("footer"); match != nil {
 		return ContentRef{Kind: ContentRefFile, Value: match.NotePath}
 	}
-	if ctx.noteExists("_footer") {
-		return ContentRef{Kind: ContentRefWikiLink, Value: "_footer"}
+	if note := ctx.rootNote("_footer"); note != nil {
+		return ContentRef{Kind: ContentRefFile, Value: note.Path()}
 	}
 	return ContentRef{Kind: ContentRefNone}
 }
@@ -585,7 +589,7 @@ func (ctx *Ctx) resolveNoteRef(ref ContentRef) *templateviews.Note {
 	}
 	switch ref.Kind {
 	case ContentRefWikiLink:
-		return ctx.Notes.NoteByPermalink("/" + strings.ToLower(strings.ReplaceAll(ref.Value, " ", "_")))
+		return ctx.Notes.NoteByWikilinkFrom(ctx.Note, ref.Value)
 	case ContentRefFile:
 		return ctx.Notes.NoteByPath(ref.Value)
 	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone, ContentRefSimilar, ContentRefInLinks, ContentRefOutLinks, ContentRefTOC:
