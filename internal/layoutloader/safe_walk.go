@@ -7,17 +7,19 @@ import (
 	"github.com/CloudyKit/jet/v6/utils"
 )
 
-// safeWalk is a drop-in for utils.Walk that guards against two known Jet AST
+// safeWalk is a drop-in for utils.Walk that guards against known Jet AST
 // walker pitfalls so individual visitors don't need to handle them:
 //
 //   - IncludeNode triggers infinite recursion in Jet's walker — skipped.
 //   - YieldNode.Parameters may be nil for {{ yield content }} nodes — initialised.
+//   - Jet's walker panics with "unexpected node" on {{ try }}/{{ catch }},
+//     {{ return }} and the _ identifier — the walker descends into them itself.
 func safeWalk(tmpl *jet.Template, v utils.Visitor) {
 	utils.Walk(tmpl, &guardedWalker{inner: v})
 }
 
 // walkContained runs safeWalk and recovers panics from Jet's AST walker
-// (e.g. "unexpected node _" for underscore range vars). Used where one
+// (e.g. a node type added in a newer Jet). Used where one
 // template's walk must not take down analysis of others (block registry,
 // imported-template walks). Returns the panic message, or "" on success.
 //
@@ -38,11 +40,22 @@ func (g *guardedWalker) Visit(vc utils.VisitorContext, node jet.Node) {
 	if node == nil {
 		return
 	}
-	if _, ok := node.(*jet.IncludeNode); ok {
+	switch n := node.(type) {
+	case *jet.IncludeNode, *jet.UnderscoreNode:
 		return
-	}
-	if y, ok := node.(*jet.YieldNode); ok && y.Parameters == nil {
-		y.Parameters = &jet.BlockParameterList{}
+	case *jet.YieldNode:
+		if n.Parameters == nil {
+			n.Parameters = &jet.BlockParameterList{}
+		}
+	case *jet.ReturnNode:
+		g.Visit(vc, n.Value)
+		return
+	case *jet.TryNode:
+		g.Visit(vc, n.List)
+		if n.Catch != nil && n.Catch.List != nil {
+			g.Visit(vc, n.Catch.List)
+		}
+		return
 	}
 	g.inner.Visit(vc, node)
 }
