@@ -559,7 +559,7 @@ Documented in [[en/user/templates#What's available in a custom template|Template
 | `nvs.ByWikilink("Page name")` | `note` or nil | Resolves like an Obsidian `[[link]]`; with a `/` it is a path, otherwise the shortest matching path wins |
 | `nvs.List()` | list of `note` | All notes except those under `_` paths, sorted by permalink |
 | `nvs.Query()` | query | A query over all notes, no glob |
-| `nvs.BackLinks(note)` | list of `note` | Notes that link to `note`, without system notes. Order is not stable |
+| `nvs.BackLinks(note)` | list of `note` | Notes that link to `note`, without system notes, sorted by title (case-insensitive), then by permalink |
 | `nvs.OutLinks(note)` | list of `note` | Notes `note` links to |
 | `nvs.Sidebars(note)` | list of `note` | The note whose permalink is in the `sidebar` field (`sidebar: false` gives none), else the subgraph sidebars, else `/_sidebar` |
 | `nvs.HomePages(note)` | list of `note` | Home pages of the note's subgraphs |
