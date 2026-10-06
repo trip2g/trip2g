@@ -9,6 +9,8 @@ Templates control how your notes look — sidebar, header, footer, and layout.
 
 A template is an HTML file stored in `_layouts/`. It receives the note's content and frontmatter, then produces a complete page. Your markdown stays clean; the template decides how it's presented.
 
+> **Recommended structure:** build custom layouts from components: one `block` per file, called with `yield`, named with `@lid`, styled with BEM and imported automatically. See [[en/user/components|Components, auto-import and best practices]].
+
 > **See one in action:** [[instaframes/_index|Instagram frames]] is a ready-made template that turns a markdown file into downloadable carousel images — a full example of a custom layout doing real work.
 
 ### How templates work
@@ -246,6 +248,8 @@ Keep the `noindex` default at `false`. With `GetBool("noindex", true)` every pag
 
 ### Organizing multiple templates
 
+The recommended way is a file per component, imported automatically: see [[en/user/components|Components, auto-import and best practices]]. A single `blocks.html` with an explicit import also works.
+
 For sites with shared header, footer, and styles, use a `blocks.html` file:
 
 ```
@@ -352,5 +356,6 @@ A query returns paid, sign-in-only and `_` system notes too; add `.Public()` on 
 
 ### See also
 
+- [[en/user/components|Components, auto-import and best practices]] — how to structure a layout
 - [[en/user/jet-functions|Jet functions reference]] — every Jet built-in and everything trip2g adds to templates
 - [[en/user/jet-debugging|Debugging Jet templates]]

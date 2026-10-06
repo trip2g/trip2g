@@ -49,6 +49,7 @@ title: "Навигация"
 - [[ru/user/themes|Темы для дефолтного шаблона]]
 - [[ru/user/theme-editor|Редактор тем (вживую)]]
 - [[ru/user/templates|Основы]]
+- [[ru/user/components|Компоненты и лучшие практики]]
 - [[ru/user/jet-debugging|Отладка шаблонов]]
 - [[ru/user/jet-functions|Справочник функций Jet]]
 - [[ru/user/yield_blocks|yield_blocks: CSS и JS по страницам]]

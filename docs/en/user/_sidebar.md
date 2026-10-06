@@ -52,6 +52,7 @@ title: "Navigation"
 - [[en/user/themes|Theming the default template]]
 - [[en/user/theme-editor|Theme editor (live)]]
 - [[en/user/templates|Custom templates]]
+- [[en/user/components|Components and best practices]]
 - [[en/user/jet-debugging|Debugging Jet templates]]
 - [[en/user/jet-functions|Jet functions reference]]
 - [[en/user/yield_blocks|yield_blocks: per-page CSS/JS]]

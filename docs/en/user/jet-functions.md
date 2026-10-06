@@ -9,7 +9,7 @@ Every function, filter and construct you can use in a custom Jet layout in `_lay
 
 The page has two parts. The first is the full reference for **Jet itself**: built-in functions, escaping, and language constructs. The second is an **index of what trip2g adds** (`note`, `nvs`, `asset()` and the rest), with a link to the page that documents each item.
 
-New to custom layouts? Start with [[en/user/templates|Templates]]. When something renders wrong, see [[en/user/jet-debugging|Debugging Jet templates]].
+New to custom layouts? Start with [[en/user/templates|Templates]], then build pages from components as [[en/user/components|Components, auto-import and best practices]] recommends. When something renders wrong, see [[en/user/jet-debugging|Debugging Jet templates]].
 
 ### Output is not escaped by default
 
@@ -43,7 +43,7 @@ What follows from this:
 | `json` | `json(v)` | JSON of `v`, compact |
 | `writeJson` | `writeJson(v)` | Writes JSON of `v` to the output, followed by a newline |
 | `includeIfExists` | `includeIfExists(path, ctx?)` | Renders the template if it exists; returns a hidden `true`/`false` |
-| `exec` | `exec(path, ctx?)` | Runs a template without writing its output (see the caveat below) |
+| `exec` | `exec(path, ctx?)` | **Not supported in trip2g** (see below) |
 | `dump` | `dump()`, `dump("name")` | A text dump of the context, variables and globals in scope |
 
 Escaping filters (`html`, `url`, `safeHtml`, `safeJs`, `raw`, `unsafe`) have [[#Escaping|their own table]].
@@ -121,7 +121,7 @@ Both escape `<`, `>` and `&` as `<`… so the output is safe inside `<script>`. 
 
 `includeIfExists` renders the template when it exists and returns a boolean that prints nothing. The optional second argument becomes `.` inside the included template.
 
-`exec` runs a template, discards its output and returns its `return` value. In trip2g a layout that contains `{{ return }}` fails to load (see [[#Not available in trip2g layouts]]), so `exec` has nothing to return. Use `include` or a `block`.
+`exec` is **not supported in trip2g**. It runs a template, discards its output and returns the template's `return` value, but a layout that contains `{{ return }}` fails to load with `layout panic: unexpected node` (see [[#Not available in trip2g layouts]]). So `exec` can't return a value. To reuse template code, use a component and `yield`: see [[en/user/components|Components]].
 
 #### `dump`
 
@@ -255,16 +255,16 @@ A value after the call becomes `.` inside the block: `{{ yield menu() items }}`.
 
 - Paths are relative to `_layouts/`, without `.html`.
 - `import` and `extends` must come first in the file.
-- trip2g also imports blocks automatically when a page yields a block defined in another layout file. See [[en/user/yield_blocks|yield_blocks]] and [[en/user/templates#Organizing multiple templates|Organizing multiple templates]].
+- trip2g also imports blocks automatically when a page yields a block defined in another layout file. See [[en/user/components#Auto-import|Components: auto-import]].
 
 #### Not available in trip2g layouts
 
-trip2g walks every layout's syntax tree when it loads, to find `asset()` calls and blocks. Jet's tree walker doesn't know three constructs. A layout that uses one of them fails to load with `layout panic: unexpected node …`:
+These constructs are **not supported in trip2g**, and neither is `exec`, which needs `return`. trip2g walks every layout's syntax tree when it loads, to find `asset()` calls and blocks. Jet's tree walker doesn't know three constructs. A layout that uses one of them fails to load with `layout panic: unexpected node …`:
 
 | Construct | Instead |
 |---|---|
 | `{{ try }} … {{ catch err }} … {{ end }}` | Guard with `if`: `{{ if x }}{{ x.Title() }}{{ end }}` |
-| `{{ return value }}` (and therefore `exec`) | A `block`, or `include` |
+| `{{ return value }}` (and therefore `exec`) | A component called with `yield`: [[en/user/components|Components]] |
 | `_` as a range variable | Any name: `range i, v :=` |
 
 Admins see the error on the page and in `/_system/renderlayout`. Other visitors get the default template.
@@ -472,6 +472,7 @@ This template is rendered by a test in the trip2g repository (`internal/layoutlo
 ### See also
 
 - [[en/user/templates|Templates]] — how layouts work
+- [[en/user/components|Components, auto-import and best practices]] — how to structure a layout
 - [[en/user/jet-debugging|Debugging Jet templates]]
 - [[en/user/yield_blocks|yield_blocks]] — components, assets, `@lid` / `@did`
 - [[en/user/renderlayout|Layout preview endpoint]] — try a template without uploading it
