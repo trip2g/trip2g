@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Wider reading column on large screens
+
+- **What.** The default template's reading column grows on wide screens: 80 characters from 1440px, 90 characters and a 1680px layout from 1800px. Laptops and phones are unchanged.
+- **Why.** On a large monitor text was squeezed into a narrow strip and tables and code examples needed sideways scrolling. `wide: true` fixed that but hid both sidebars.
+- **How.** Nothing to do. `wide: true` stays for pages that need the full width (boards, big diagrams).
+
 ### Wikilinks to a heading scroll to it
 
 - **What.** `[[Note#Heading text]]` and `[[#Heading text]]` now link to the heading's id, the same one the page and its table of contents use. The heading text is matched exactly, then ignoring case and extra spaces; an id such as `faq-2` or one set with `{#id}` works too. A fragment that matches no heading keeps the broken-link mark, and `trip2g lint` reports it as `broken link: Note#Heading`.

@@ -1,7 +1,6 @@
 ---
 title: Справочник функций Jet
 free: true
-wide: true
 lang_redirect: "[[en/user/jet-functions]]"
 ---
 

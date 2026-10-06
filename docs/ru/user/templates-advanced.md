@@ -1,6 +1,5 @@
 ---
 free: true
-wide: true
 title: "Шаблоны: API"
 ---
 

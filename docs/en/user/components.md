@@ -1,7 +1,6 @@
 ---
 title: "Template components"
 free: true
-wide: true
 lang: en
 lang_redirect: "[[ru/user/components]]"
 ---
