@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Frontmatter links resolve like in Obsidian
+
+- **What.** Wikilinks in `header`, `footer`, `left_sidebar` and `right_sidebar` resolve by the same rules as links in note text: by file name from the note that has the property, with `|alias` and `#heading` ignored.
+- **Why.** These links were matched against the page URL only, so `[[Folder/_sidebar]]` with a non-Latin folder, `[[Site Footer]]` or `[[Note|alias]]` found nothing and the sidebar or header silently disappeared, even though Obsidian showed a valid link.
+- **How to use.** Nothing to do. In the default global mode a link that worked keeps pointing at the same file; one that found nothing now works. In scoped mode a bare `[[Name]]` now picks the nearest file, as links in note text do. See [[en/user/wikilink-resolution#Links in frontmatter|Wikilink resolution]].
+
 ### Admins can hide notes
 
 - **What.** `hideNotes` and the `hide` change in `updateNotes` work for a signed-in admin: a browser session, a personal token `t2g_…` in a header or in `?token=`, or a session token. The `hide` change also works with a webhook token, within its write patterns. The hide is recorded against the signed-in admin, the admin who created the API key, or the admin who created the webhook.

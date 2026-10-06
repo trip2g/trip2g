@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"trip2g/internal/model"
-	"trip2g/internal/templateviews"
 )
 
 // JSON-LD data layer. These methods make the structured-data DECISIONS in Go;
@@ -131,16 +130,7 @@ func (ctx *Ctx) JSONLDLogo() string {
 	if ctx.Notes == nil {
 		return ""
 	}
-	ref := ctx.HeaderRef()
-	var note *templateviews.Note
-	switch ref.Kind {
-	case ContentRefFile:
-		note = ctx.Notes.NoteByPath(ref.Value)
-	case ContentRefWikiLink:
-		note = ctx.Notes.NoteByWikilink(ref.Value)
-	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone, ContentRefSimilar, ContentRefInLinks, ContentRefOutLinks, ContentRefTOC:
-		// no header note to resolve — note stays nil
-	}
+	note := ctx.resolveNoteRef(ctx.HeaderRef())
 	if note == nil {
 		return ""
 	}

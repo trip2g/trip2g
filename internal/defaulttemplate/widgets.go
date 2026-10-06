@@ -8,7 +8,7 @@ type ContentRefKind int
 const (
 	ContentRefSelfContent ContentRefKind = iota
 	ContentRefMagazine
-	ContentRefWikiLink // [[Title]] - resolve via ctx.Notes.ByPermalink
+	ContentRefWikiLink // [[Title]] - resolved like a link in note text
 	ContentRefFile     // "path/file.md" - resolve via ctx.Notes.ByPath
 	ContentRefNone
 	ContentRefSimilar

@@ -207,8 +207,8 @@ func TestHeaderRef_FallbackToDefaultHeader(t *testing.T) {
 	}
 
 	ref := ctx.HeaderRef()
-	require.Equal(t, ContentRefWikiLink, ref.Kind)
-	require.Equal(t, "_header", ref.Value)
+	require.Equal(t, ContentRefFile, ref.Kind)
+	require.Equal(t, "_header.md", ref.Value)
 }
 
 func TestResolveLayoutSection_NilNoteReturnsNil(t *testing.T) {
