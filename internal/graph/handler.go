@@ -60,6 +60,10 @@ func sseTransport() transport.SSE {
 	return transport.SSE{KeepAlivePingInterval: 30 * time.Second}
 }
 
+// maxQueryComplexity caps one operation's field count; the SPA docs test
+// keeps the documented operations under it.
+const maxQueryComplexity = 30
+
 func NewHandler(env Env) *handler.Server {
 	log := env.Logger()
 
@@ -90,7 +94,7 @@ func NewHandler(env Env) *handler.Server {
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
 	srv.Use(extension.Introspection{})
-	srv.Use(extension.FixedComplexityLimit(30))
+	srv.Use(extension.FixedComplexityLimit(maxQueryComplexity))
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
