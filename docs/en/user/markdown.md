@@ -40,7 +40,7 @@ The first heading gets `id="pricing"`, the second `id="start"` and the CSS class
 
 **Linking to a heading.** Inside the same note, use the id as a fragment: `[see pricing](#pricing)`. To another note, add the fragment to its URL: `[pricing](/docs/plans#pricing)`.
 
-A wikilink keeps the fragment exactly as you typed it. `[[Plans#Getting Started]]` becomes a link ending in `#Getting%20Started`, which matches no id, so the browser opens the top of the page. Write the id instead of the heading text: `[[Plans#getting_started]]`, or `[[Plans#pricing]]` after `{#pricing}`. Obsidian does not know these ids, so inside Obsidian such a link opens the note without scrolling.
+A wikilink takes the heading text, as Obsidian writes it: `[[Plans#Getting Started]]` links to the `getting_started` id of that note, and `[[#Getting Started]]` to the heading in the same note. Case and extra spaces do not matter, and the alias works as usual: `[[Plans#getting started|start here]]`. For two headings with the same text, the link goes to the first; reach the second by its id, `[[Plans#faq-2]]`. An id works in place of the text, so after `## Getting Started {#start}` both `[[Plans#Getting Started]]` and `[[Plans#start]]` lead to `#start`; Obsidian scrolls only for the text. A fragment that matches no heading stays as written and the link is marked as broken, like a link to a missing note. Block links (`[[Plans#^block-id]]`) are left as they are.
 
 **The table of contents.** The default template shows a table of contents built from these headings, each entry linking to its id. The `toc` frontmatter field controls it:
 

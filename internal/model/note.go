@@ -587,6 +587,34 @@ func (n *NoteView) TOC() NoteViewHeadings {
 	}
 }
 
+// HeadingAnchor returns the id of the heading a link fragment points to,
+// matched the way templates' Section() matches: exact text, then text ignoring
+// case and extra spaces, then the id itself.
+func (n *NoteView) HeadingAnchor(fragment string) (string, bool) {
+	normalized := NormalizeHeadingTitle(fragment)
+	matchers := []func(NoteViewHeading) bool{
+		func(h NoteViewHeading) bool { return h.Text == fragment },
+		func(h NoteViewHeading) bool { return NormalizeHeadingTitle(h.Text) == normalized },
+		func(h NoteViewHeading) bool { return h.ID == fragment },
+	}
+
+	for _, match := range matchers {
+		for _, heading := range n.Headings {
+			if match(heading) {
+				return heading.ID, true
+			}
+		}
+	}
+
+	return "", false
+}
+
+// NormalizeHeadingTitle folds a heading title for lookup: lower case,
+// whitespace collapsed.
+func NormalizeHeadingTitle(title string) string {
+	return strings.ToLower(strings.Join(strings.Fields(title), " "))
+}
+
 func (n *NoteView) ExtractSubgraphs() error {
 	subgraphs := make(map[string]struct{})
 
