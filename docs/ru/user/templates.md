@@ -22,7 +22,7 @@ home_position: 70
 </head>
 <body>
   <h1>{{ note.Title() }}</h1>
-  {{ note.HTMLString() | unsafe }}
+  {{ note.HTMLString() }}
 </body>
 </html>
 ```
@@ -65,7 +65,7 @@ title: Моя страница
 
 ```jet
 {{ if sidebar := nvs.ByPath("/_sidebar.md"); sidebar }}
-  {{ sidebar.HTMLString() | unsafe }}
+  {{ sidebar.HTMLString() }}
 {{ end }}
 
 {{ about := nvs.ByPermalink("/about") }}
@@ -137,7 +137,7 @@ title: Моя страница
 ```jet
 {{ intro := note.PartialRenderer().Introduce() }}
 <div class="intro">
-  {{ intro.ContentHTML | unsafe }}
+  {{ intro.ContentHTML }}
 </div>
 ```
 
@@ -172,13 +172,13 @@ title: Моя страница
 
 ```jet
 {{ intro := note.PartialRenderer().Introduce() }}
-<p class="lead">{{ intro.ContentHTML | unsafe }}</p>
+<p class="lead">{{ intro.ContentHTML }}</p>
 
 <div class="faq">
   {{ range i, s := note.PartialRenderer().Sections(3) }}
     <details>
-      <summary>{{ s.TitleHTML | unsafe }}</summary>
-      <div>{{ s.ContentHTML | unsafe }}</div>
+      <summary>{{ s.TitleHTML }}</summary>
+      <div>{{ s.ContentHTML }}</div>
     </details>
   {{ end }}
 </div>
@@ -192,7 +192,7 @@ title: Моя страница
 {{ faq := note.PartialRenderer().Section("FAQ") }}
 {{ if faq }}
   <div class="faq-section">
-    {{ faq.ContentHTML | unsafe }}
+    {{ faq.ContentHTML }}
   </div>
 {{ end }}
 ```
@@ -203,8 +203,8 @@ title: Моя страница
 <div class="features-grid">
   {{ range i, s := note.PartialRenderer().Sections(3) }}
     <div class="feature-card">
-      <h3>{{ s.TitleHTML | unsafe }}</h3>
-      {{ s.ContentHTML | unsafe }}
+      <h3>{{ s.TitleHTML }}</h3>
+      {{ s.ContentHTML }}
     </div>
   {{ end }}
 </div>
@@ -239,11 +239,11 @@ Markdown:
 ```jet
 {{ range idx, category := note.PartialRenderer().Sections(2) }}
 <section class="category">
-  <h2>{{ category.TitleHTML | unsafe }}</h2>
+  <h2>{{ category.TitleHTML }}</h2>
   {{ range slideIdx, slide := category.Sections(3) }}
   <div class="slide" data-num="{{ slideIdx + 1 }}">
-    <h3>{{ slide.TitleHTML | unsafe }}</h3>
-    {{ slide.ContentHTML | unsafe }}
+    <h3>{{ slide.TitleHTML }}</h3>
+    {{ slide.ContentHTML }}
   </div>
   {{ end }}
 </section>
@@ -258,7 +258,7 @@ Markdown:
   {{ overview := features.Section("Обзор") }}
   {{ if overview }}
     <div class="product-overview">
-      {{ overview.ContentHTML | unsafe }}
+      {{ overview.ContentHTML }}
     </div>
   {{ end }}
 {{ end }}
@@ -284,14 +284,14 @@ Markdown:
 {{ pr := note.PartialRenderer() }}
 <nav class="toc">
   {{ range i, h := note.TOC() }}
-    <a class="toc__item toc__item--{{ h.Level }}" href="#{{ h.ID }}">{{ h.Text | html }}</a>
+    <a class="toc__item toc__item--{{ h.Level }}" href="#{{ h.ID }}">{{ h.Text }}</a>
   {{ end }}
 </nav>
 
 {{ range i, s := pr.Sections(2) }}
   <section id="{{ s.ID }}">
-    <h2>{{ s.TitleHTML | unsafe }}</h2>
-    {{ s.ContentHTML | unsafe }}
+    <h2>{{ s.TitleHTML }}</h2>
+    {{ s.ContentHTML }}
   </section>
 {{ end }}
 ```
@@ -315,7 +315,7 @@ Markdown:
 {{ if list := note.PartialRenderer().FirstList(); list }}
   <ul class="tasks">
     {{ range i, item := list.Items }}
-      <li class="tasks__item tasks__item--{{ item.Task }}" data-mark="{{ item.TaskMark | html }}">{{ item.Text | html }}</li>
+      <li class="tasks__item tasks__item--{{ item.Task }}" data-mark="{{ item.TaskMark }}">{{ item.Text }}</li>
     {{ end }}
   </ul>
 {{ end }}
@@ -331,8 +331,8 @@ Markdown:
 <div class="gallery">
   {{ range i, img := note.PartialRenderer().Images() }}
     <figure>
-      <img src="{{ img.URL | html }}" alt="{{ img.Alt | html }}" loading="lazy">
-      {{ if img.Title }}<figcaption>{{ img.Title | html }}</figcaption>{{ end }}
+      <img src="{{ img.URL }}" alt="{{ img.Alt }}" loading="lazy">
+      {{ if img.Title }}<figcaption>{{ img.Title }}</figcaption>{{ end }}
     </figure>
   {{ end }}
 </div>
@@ -362,11 +362,11 @@ Markdown:
   {{ if d := parseJSON(b.Content); d }}
     <ul class="bars">
       {{ range j, label := d.labels }}
-        <li style="--value: {{ d.values[j] }}">{{ label | html }}</li>
+        <li style="--value: {{ d.values[j] }}">{{ label }}</li>
       {{ end }}
     </ul>
   {{ else }}
-    {{ b.HTML | unsafe }}
+    {{ b.HTML }}
   {{ end }}
 {{ end }}
 ```
@@ -392,25 +392,25 @@ Markdown:
   {{ if rows := parseCSV(b[0].Content); rows }}
     <table>
       {{ range i, row := rows }}
-        <tr>{{ range j, cell := row }}<td>{{ cell | html }}</td>{{ end }}</tr>
+        <tr>{{ range j, cell := row }}<td>{{ cell }}</td>{{ end }}</tr>
       {{ end }}
     </table>
   {{ end }}
 {{ end }}
 ```
 
-Значения из заметки — это текст её автора. Пропускайте их через `| html` везде, где они попадают на страницу, как в примерах выше: layout сам вывод не экранирует.
+Значения из заметки — это текст её автора, и layout экранирует их при выводе: заголовок `Q&A <черновик>` попадёт на страницу текстом, а не тегами. HTML, в который заметка отрендерена (`HTMLString()`, `TitleHTML`, `ContentHTML`, `HTML` блока кода), выводится как есть.
 
 ### Фильтр unsafe
 
-HTML экранируется по умолчанию. Чтобы вывести разметку — добавьте `| unsafe`:
+Вывод экранируется по умолчанию: строка с `<p>` отобразится как текст `&lt;p&gt;`. Методы, которые возвращают готовый HTML, — `note.HTMLString()`, `TitleHTML`, `ContentHTML`, `FirstListHTML()`, `FormSpecJSON()`, `asset()` — выводятся как есть, фильтр им не нужен.
+
+`| unsafe` выводит без экранирования любую строку. Нужен он, только когда разметку собирает сам шаблон или она лежит в обычной строке:
 
 ```jet
-{{ note.HTMLString() | unsafe }}
-{{ b.ContentHTML | unsafe }}
+{{ block hero(title="") }}<h2>{{ title | unsafe }}</h2>{{ end }}
+{{ yield hero(title="Данные там,<br>где вы решите.") }}
 ```
-
-Без фильтра теги отобразятся как текст: `&lt;p&gt;...`
 
 ### Asset-ы между layout-файлами
 
@@ -486,7 +486,7 @@ HTML экранируется по умолчанию. Чтобы вывести
 {{ end }}
 
 {{ if faq := note.PartialRenderer().Section("FAQ"); faq }}
-  {{ faq.ContentHTML | unsafe }}
+  {{ faq.ContentHTML }}
 {{ end }}
 ```
 
@@ -494,9 +494,9 @@ HTML экранируется по умолчанию. Чтобы вывести
 
 ```jet
 {{ if header := nvs.ByPath("/blog/_header.md"); header }}
-  {{ header.HTMLString() | unsafe }}
+  {{ header.HTMLString() }}
 {{ else if fallback := nvs.ByPath("/_header.md"); fallback }}
-  {{ fallback.HTMLString() | unsafe }}
+  {{ fallback.HTMLString() }}
 {{ end }}
 ```
 

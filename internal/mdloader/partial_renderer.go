@@ -157,8 +157,8 @@ func (pr *PartialRenderer) sectionsFromNodes(allNodes []ast.Node, level int) []m
 			ID:          headingID(r.heading),
 			Level:       r.heading.Level,
 			Title:       r.title,
-			TitleHTML:   r.titleHTML,
-			ContentHTML: pr.renderNodeRange(allNodes, r.contentStart, r.contentEnd),
+			TitleHTML:   model.SafeHTML(r.titleHTML),
+			ContentHTML: model.SafeHTML(pr.renderNodeRange(allNodes, r.contentStart, r.contentEnd)),
 		}
 
 		// Capture nodes for nested Sections()/Section() calls.
@@ -233,8 +233,8 @@ func (pr *PartialRenderer) sectionAt(allNodes []ast.Node, i int, heading *ast.He
 		ID:          headingID(heading),
 		Level:       heading.Level,
 		Title:       extractHeadingText(pr.content, heading),
-		TitleHTML:   pr.renderHeading(heading),
-		ContentHTML: pr.renderNodeRange(allNodes, i+1, contentEnd),
+		TitleHTML:   model.SafeHTML(pr.renderHeading(heading)),
+		ContentHTML: model.SafeHTML(pr.renderNodeRange(allNodes, i+1, contentEnd)),
 	}
 
 	section.SectionsFunc = pr.makeSectionsFunc(contentNodes)
@@ -329,14 +329,14 @@ func (pr *PartialRenderer) introduce() model.NoteViewSection {
 	if firstHeadingIndex == -1 {
 		return model.NoteViewSection{
 			TitleHTML:   "",
-			ContentHTML: pr.renderExcerptRange(allNodes, 0, len(allNodes)),
+			ContentHTML: model.SafeHTML(pr.renderExcerptRange(allNodes, 0, len(allNodes))),
 		}
 	}
 
 	// Return content before the first heading
 	return model.NoteViewSection{
 		TitleHTML:   "",
-		ContentHTML: pr.renderExcerptRange(allNodes, 0, firstHeadingIndex),
+		ContentHTML: model.SafeHTML(pr.renderExcerptRange(allNodes, 0, firstHeadingIndex)),
 	}
 }
 
@@ -628,7 +628,7 @@ func (pr *PartialRenderer) CodeBlocks(lang string) []model.NoteViewCodeBlock {
 			block := model.NoteViewCodeBlock{
 				Lang:    string(node.Language(pr.content)),
 				Content: content.String(),
-				HTML:    html.String(),
+				HTML:    model.SafeHTML(html.String()),
 			}
 			if node.Info != nil {
 				block.Info = string(node.Info.Segment.Value(pr.content))

@@ -63,7 +63,7 @@ func TestDeriveMetaDescription(t *testing.T) {
 	t.Run("truncates to about 155 chars with ellipsis on word boundary", func(t *testing.T) {
 		long := strings.Repeat("word ", 60) // 300 chars
 		note := &model.NoteView{Free: true, PartialRenderer: introPartialRenderer{
-			intro: model.NoteViewSection{ContentHTML: "<p>" + long + "</p>"},
+			intro: model.NoteViewSection{ContentHTML: model.SafeHTML("<p>" + long + "</p>")},
 		}}
 		got := deriveMetaDescription(note)
 		require.LessOrEqual(t, len([]rune(got)), metaDescriptionMaxLen+1) // +1 for the ellipsis

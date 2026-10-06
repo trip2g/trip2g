@@ -64,8 +64,8 @@ type NoteViewSection struct {
 	ID          string
 	Level       int
 	Title       string
-	TitleHTML   string
-	ContentHTML string
+	TitleHTML   SafeHTML
+	ContentHTML SafeHTML
 
 	// SectionsFunc is set by PartialRenderer to enable nested section extraction.
 	SectionsFunc func(level int) []NoteViewSection `json:"-"`
@@ -127,7 +127,7 @@ type NoteViewCodeBlock struct {
 	Lang    string
 	Info    string
 	Content string
-	HTML    string
+	HTML    SafeHTML
 }
 
 // NoteViewList represents a top-level markdown list with recursive items.

@@ -22,7 +22,7 @@ func TestNote_HTMLString_MainDomainDomainHTML(t *testing.T) {
 
 	// Main domain context (domainHost == "").
 	note := NewNoteWithDomain(nv, "")
-	require.Equal(t, `<a href="https://extra.trip2g.com/">extra</a>`, note.HTMLString(),
+	require.Equal(t, `<a href="https://extra.trip2g.com/">extra</a>`, note.HTMLString().String(),
 		"main domain: HTMLString should use DomainHTML[\"\"] not nv.HTML")
 
 	// Custom domain context — should use custom domain HTML when available.
@@ -33,7 +33,7 @@ func TestNote_HTMLString_MainDomainDomainHTML(t *testing.T) {
 		},
 	}
 	note2 := NewNoteWithDomain(nv2, "foo.com")
-	require.Equal(t, `<a href="/custom-path">extra</a>`, note2.HTMLString(),
+	require.Equal(t, `<a href="/custom-path">extra</a>`, note2.HTMLString().String(),
 		"custom domain: HTMLString should use DomainHTML[domainHost]")
 
 	// No DomainHTML — falls back to nv.HTML.
@@ -41,7 +41,7 @@ func TestNote_HTMLString_MainDomainDomainHTML(t *testing.T) {
 		HTML: template.HTML(`<a href="/plain">plain</a>`),
 	}
 	note3 := NewNoteWithDomain(nv3, "")
-	require.Equal(t, `<a href="/plain">plain</a>`, note3.HTMLString(),
+	require.Equal(t, `<a href="/plain">plain</a>`, note3.HTMLString().String(),
 		"no DomainHTML: HTMLString should return nv.HTML")
 }
 

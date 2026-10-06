@@ -10,6 +10,13 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Layouts escape output by default
+
+- **What.** A custom layout now HTML-escapes what it prints. `{{ note.Title() }}`, a frontmatter value, `{{ note.ContentString() }}` and every other plain string reach the page as text: `<`, `>`, `&`, `"` and `'` become entities. HTML the server builds itself is still printed as is: `note.HTMLString()`, `FirstListHTML()`, a section's `TitleHTML` and `ContentHTML`, a code block's `HTML`, `FormSpecJSON()`, `SubgraphNamesJSON()`, `asset()` and `defaultTemplate.*`.
+- **Why.** Layouts printed everything raw. A note whose markdown held `</textarea><script>` broke out of a `<textarea>{{ note.ContentString() }}</textarea>` and ran its script, and a title with `&` or `<` broke the markup around it. Each layout had to remember `| html` on every value, and one missed value was enough.
+- **How to use.** Existing layouts keep working. `| unsafe` and `| raw` still print a string raw. `| html` and `html(x)` still escape, exactly once, so an RSS layout that writes `html(n.HTMLString())` gets the same output as before; the filter is no longer needed on text. `| json` keeps escaping `<`, `>` and `&` inside JSON, so `{{ x | json }}` stays safe in a `<script>`. `| url` escapes once.
+- **Migration.** Check a layout that prints markup from a plain string: a block parameter such as `title="Line one<br>line two"`, or HTML glued with `+` or returned by `replace(...)`. That output now shows the tags as text; print it with `{{ title | unsafe }}`. Values from `htmlInjectionsHead` / `htmlInjectionsBodyEnd` stay plain strings, so keep `{{ injection.Content | unsafe }}`. `asset()` now percent-encodes `"`, `'`, `<`, `>`, a backslash, a backtick and whitespace in a URL; ordinary URLs, including signed storage URLs with `&`, are unchanged. See [[en/user/templates|Templates]].
+
 ### Your own heading anchors, and more of a note's content for templates
 
 - **What.** A heading can set its own anchor: `## Pricing {#plans}` gets `id="plans"`; `{.class}` adds a CSS class. In templates, a section now has `ID` and `Level`, and `Section(...)` also finds a heading ignoring case and extra spaces, or by its anchor (`"plans"` or `"#plans"`). New: `Images()` (Markdown images and `![[...]]` embeds), `CodeBlocks(lang)`, `Task` and `TaskMark` on list items (Obsidian's custom statuses like `[/]` included), and the `parseJSON`, `parseYAML` and `parseCSV` functions.
