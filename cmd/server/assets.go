@@ -182,10 +182,24 @@ func (a *app) UserJSURLs() []string {
 // keep the same URL and the browser/CDN serves a stale locale file. Reuses assetURL
 // so hashing/caching stays single-source.
 func (a *app) UserLocaleHashes() map[string]string {
+	return a.localeHashes("ui/user/-")
+}
+
+// EditorJSURL is the page editor's bundle. Only the editor frame loads it, so
+// visitors who never open the editor don't download it.
+func (a *app) EditorJSURL() string {
+	return a.assetURL("/assets/ui/editor/pane/-/web.js")
+}
+
+func (a *app) EditorLocaleHashes() map[string]string {
+	return a.localeHashes("ui/editor/pane/-")
+}
+
+func (a *app) localeHashes(bundleDir string) map[string]string {
 	out := map[string]string{}
-	matches, err := fs.Glob(assets.FS, "ui/user/-/web.locale=*.json")
+	matches, err := fs.Glob(assets.FS, bundleDir+"/web.locale=*.json")
 	if err != nil {
-		a.log.Error("failed to glob user locale files", "error", err)
+		a.log.Error("failed to glob locale files", "dir", bundleDir, "error", err)
 		return out
 	}
 	for _, m := range matches {

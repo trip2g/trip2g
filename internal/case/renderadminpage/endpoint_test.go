@@ -20,6 +20,10 @@ type stubEnv struct {
 func (stubEnv) AdminJSURL() string { return "/assets/ui/admin/-/web.js?h=deadbeef" }
 
 func (e stubEnv) LiveNoteViews() *model.NoteViews { return e.views }
+func (stubEnv) EditorJSURL() string               { return "/assets/ui/editor/pane/-/web.js?h=e1" }
+func (stubEnv) EditorLocaleHashes() map[string]string {
+	return map[string]string{"ru": "r1"}
+}
 
 func newRequest(env renderadminpage.Env) *appreq.Request {
 	fctx := &fasthttp.RequestCtx{}
@@ -47,6 +51,8 @@ func TestCanonicalSystemAdminServesShell(t *testing.T) {
 	body := string(req.Req.Response.Body())
 	require.Contains(t, body, `mol_view_root="$trip2g_admin"`)
 	require.Contains(t, body, "/assets/ui/admin/-/web.js?h=deadbeef")
+	require.Contains(t, body, `editor_js_url: "/assets/ui/editor/pane/-/web.js?h=e1",`)
+	require.Contains(t, body, `editor_locale_hashes: {"ru":"r1",},`)
 	require.True(t, strings.HasPrefix(string(req.Req.Response.Header.ContentType()), "text/html"))
 }
 

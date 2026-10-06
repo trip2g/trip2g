@@ -27,9 +27,11 @@ func (serverErrEnv) IsDevMode() bool { return false }
 func (serverErrEnv) ActiveHTMLInjections(context.Context) ([]db.HtmlInjection, error) {
 	return nil, nil
 }
-func (serverErrEnv) UserJSURLs() []string                { return nil }
-func (serverErrEnv) UserLocaleHashes() map[string]string { return nil }
-func (serverErrEnv) UserCSSURLs() []string               { return nil }
+func (serverErrEnv) UserJSURLs() []string                  { return nil }
+func (serverErrEnv) UserLocaleHashes() map[string]string   { return nil }
+func (serverErrEnv) UserCSSURLs() []string                 { return nil }
+func (serverErrEnv) EditorJSURL() string                   { return "" }
+func (serverErrEnv) EditorLocaleHashes() map[string]string { return nil }
 
 func TestWriteLayoutRenderError(t *testing.T) {
 	const layoutName = "mesh/index"
@@ -88,9 +90,11 @@ func (renderLayoutEnv) IsDevMode() bool           { return true }
 func (renderLayoutEnv) ActiveHTMLInjections(context.Context) ([]db.HtmlInjection, error) {
 	return nil, nil
 }
-func (renderLayoutEnv) UserJSURLs() []string                { return nil }
-func (renderLayoutEnv) UserLocaleHashes() map[string]string { return nil }
-func (renderLayoutEnv) UserCSSURLs() []string               { return nil }
+func (renderLayoutEnv) UserJSURLs() []string                  { return nil }
+func (renderLayoutEnv) UserLocaleHashes() map[string]string   { return nil }
+func (renderLayoutEnv) UserCSSURLs() []string                 { return nil }
+func (renderLayoutEnv) EditorJSURL() string                   { return "" }
+func (renderLayoutEnv) EditorLocaleHashes() map[string]string { return nil }
 
 // TestRenderLayoutExecuteFailure drives the real renderLayout path with a Jet
 // layout that fails mid-render, proving the buffer -> error-page wiring: no

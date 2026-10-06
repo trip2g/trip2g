@@ -23,15 +23,17 @@ func WriteNotFound(ctx *fasthttp.RequestCtx, env Env, token *usertoken.Data) {
 
 	uiLang := uiLangFromCtx(ctx)
 	dtCtx := &Ctx{
-		Title:          T(uiLang, "not_found_title"),
-		JSURLs:         env.UserJSURLs(),
-		LocaleHashes:   env.UserLocaleHashes(),
-		CSSURLs:        env.UserCSSURLs(),
-		DevMode:        devModeString(env.IsDevMode()),
-		HTMLInjections: injections,
-		UILang:         uiLang,
-		UserToken:      token,
-		NotFoundMode:   true,
+		Title:              T(uiLang, "not_found_title"),
+		JSURLs:             env.UserJSURLs(),
+		LocaleHashes:       env.UserLocaleHashes(),
+		EditorJSURL:        env.EditorJSURL(),
+		EditorLocaleHashes: env.EditorLocaleHashes(),
+		CSSURLs:            env.UserCSSURLs(),
+		DevMode:            devModeString(env.IsDevMode()),
+		HTMLInjections:     injections,
+		UILang:             uiLang,
+		UserToken:          token,
+		NotFoundMode:       true,
 	}
 
 	WriteRender(ctx, dtCtx)

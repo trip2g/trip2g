@@ -16,6 +16,13 @@
 
   <title>Admin</title>
 
+  <script>
+  window.__trip2g_settings = {
+    editor_js_url: {%q= resp.EditorJSURL %},
+    editor_locale_hashes: {{% for l, h := range resp.EditorLocaleHashes %}{%q= l %}:{%q= h %},{% endfor %}},
+  }
+  </script>
+
   <body mol_view_root>
     <div mol_view_root="$trip2g_admin"></div>
     <script src="{%s= resp.JSURL %}"></script>

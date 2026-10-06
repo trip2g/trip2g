@@ -18,7 +18,11 @@ type stubEnv struct{}
 func (stubEnv) UserJSURLs() []string                { return nil }
 func (stubEnv) UserLocaleHashes() map[string]string { return nil }
 func (stubEnv) UserCSSURLs() []string               { return nil }
-func (stubEnv) IsDevMode() bool                     { return false }
+func (stubEnv) EditorJSURL() string                 { return "/assets/ui/editor/pane/-/web.js?h=e1" }
+func (stubEnv) EditorLocaleHashes() map[string]string {
+	return map[string]string{"ru": "r1"}
+}
+func (stubEnv) IsDevMode() bool { return false }
 func (stubEnv) ActiveHTMLInjections(context.Context) ([]db.HtmlInjection, error) {
 	return nil, nil
 }

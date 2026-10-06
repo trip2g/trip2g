@@ -68,6 +68,20 @@ func TestUserSpaceHelper_SettingsFields(t *testing.T) {
 	require.Contains(t, out, `<script src="/assets/bundle.js" defer></script>`)
 }
 
+// TestUserSpaceHelper_EditorBundle verifies the editor bundle URL and its
+// locale hashes reach the settings without becoming a page script.
+func TestUserSpaceHelper_EditorBundle(t *testing.T) {
+	h := newUserSpaceHelper(nil, nil, "en", false, true, "Title", nil)
+	h.editorJSURL = "/assets/ui/editor/pane/-/web.js?h=e1"
+	h.editorLocaleHashes = map[string]string{"ru": "r1"}
+
+	out := string(h.scripts())
+
+	require.Contains(t, out, `editor_js_url: "/assets/ui/editor/pane/-/web.js?h=e1"`)
+	require.Contains(t, out, `editor_locale_hashes: {"ru":"r1"}`)
+	require.NotContains(t, out, `<script src="/assets/ui/editor/pane/-/web.js`)
+}
+
 // TestUserSpaceHelper_DevModeTrue verifies is_dev_mode renders "true" when set.
 func TestUserSpaceHelper_DevModeTrue(t *testing.T) {
 	h := newUserSpaceHelper(nil, nil, "ru", true, false, "Title", nil)
