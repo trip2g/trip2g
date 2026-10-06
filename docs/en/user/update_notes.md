@@ -204,19 +204,34 @@ Each change is processed independently. The batch stops at the first error and r
 
 ### Authentication
 
-`updateNotes` requires an API key. Pass it as a header:
+`updateNotes` accepts three kinds of access. They are checked in this order, and the first one present wins.
+
+**1. Signed-in admin** — full access; write patterns don't apply. Any way trip2g recognises an admin works:
+
+- a browser session (cookie) — this is how app pages on the same site save, see [[en/user/spa|SPA on top of trip2g]];
+- an admin's personal token in a header:
+
+  ```
+  Authorization: Bearer t2g_...
+  ```
+
+- the same personal token in the URL: `?token=t2g_...`.
+
+**2. An API key** — write access is limited to the key's write patterns:
 
 ```
 X-Api-Key: your-api-key
 ```
 
-Or, for webhook agents, use the short-lived token from the webhook payload:
+If the target path is not covered by the key's write patterns, the mutation returns an `ErrorPayload`.
+
+**3. A short-lived webhook token** — for webhook agents, see below:
 
 ```
 Authorization: Bearer eyJhbGc...
 ```
 
-Write access is checked against the key's write patterns. If the target path is not covered by the key's write patterns, the mutation returns an `ErrorPayload`.
+With none of the three the request fails with `missing X-API-Key in request header`. `hideNotes`, `uploadNoteAsset` and `commitNotes` work the same way.
 
 ---
 
