@@ -253,13 +253,14 @@ free: true
 See [[page#section]] and [[free-page#heading]] for details.`),
 	}, {
 		Path:    "page.md",
-		Content: []byte(`## section\nPaid content.`),
+		Content: []byte("## section\nPaid content."),
 	}, {
 		Path: "free-page.md",
 		Content: []byte(`---
 free: true
 ---
-## heading\nFree content.`),
+## heading
+Free content.`),
 	}}
 
 	pages, err := mdloader.Load(mdloader.Options{

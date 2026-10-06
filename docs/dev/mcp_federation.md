@@ -239,7 +239,7 @@ No audit table in MVP — application logs cover the operational view; structure
 
 ## Authorization
 
-Federation works transparently with personal user tokens. Any MCP call authenticated via a personal token inherits the user's access control — the personal token resolver in `appreq.Request.UserToken()` establishes user identity, and then `canreadnote.Resolve` and `accessibleKBNotes` apply the same ACL logic. For details on personal tokens, see [[en/user/mcp#personal-access-tokens]].
+Federation works transparently with personal user tokens. Any MCP call authenticated via a personal token inherits the user's access control — the personal token resolver in `appreq.Request.UserToken()` establishes user identity, and then `canreadnote.Resolve` and `accessibleKBNotes` apply the same ACL logic. For details on personal tokens, see [[en/user/mcp#Personal access tokens]].
 
 Federation also needs three distinct auth profiles for peer-to-peer federation secrets:
 

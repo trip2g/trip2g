@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Wikilinks to a heading scroll to it
+
+- **What.** `[[Note#Heading text]]` and `[[#Heading text]]` now link to the heading's id, the same one the page and its table of contents use. The heading text is matched exactly, then ignoring case and extra spaces; an id such as `faq-2` or one set with `{#id}` works too. A fragment that matches no heading keeps the broken-link mark, and `trip2g lint` reports it as `broken link: Note#Heading`.
+- **Why.** The fragment went into the URL as typed (`#Heading%20text`) and matched no id, so the link opened the top of the page, and a link to a heading in the same note was marked as broken.
+- **How to use.** Nothing to do: links written the Obsidian way now work. See [[en/user/markdown#heading-anchors|Markdown syntax]].
+
 ### "Links here" are sorted alphabetically
 
 - **What.** The backlinks block at the end of a page and `nvs.BackLinks(note)` in templates list notes by title (case-insensitive), then by permalink.

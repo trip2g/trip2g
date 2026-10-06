@@ -578,6 +578,14 @@ func (ldr *loader) extractInLinks() error {
 				return ast.WalkContinue, nil
 			}
 
+			if fragment, found := resolveHeadingAnchor(ldr.nvs, p, link); !found {
+				p.AddWarning(model.NoteWarningInfo, "broken link: %s#%s", target, fragment)
+			}
+
+			if target == "" && len(link.Fragment) > 0 {
+				return ast.WalkContinue, nil
+			}
+
 			if pp := ldr.nvs.ResolveWikilinkTarget(p, target); pp != nil {
 				// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
 				// Use Permalink for regular pages (already transliterated)

@@ -2,6 +2,7 @@ package mdloader
 
 import (
 	"bytes"
+	"strings"
 	"sync"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -60,15 +61,45 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 		target = target[:len(target)-len(_html)]
 	}
 
-	dest := make([]byte, len(target)+len(_hash)+len(n.Fragment))
+	fragment, _ := resolveHeadingAnchor(r.nvs, r.currentPage, n)
+
+	dest := make([]byte, len(target)+len(_hash)+len(fragment))
 	var i int
 	if len(target) > 0 {
 		i += copy(dest, target)
 	}
-	if len(n.Fragment) > 0 {
+	if len(fragment) > 0 {
 		i += copy(dest[i:], _hash)
-		i += copy(dest[i:], n.Fragment)
+		i += copy(dest[i:], fragment)
 	}
 
 	return dest[:i], nil
+}
+
+// resolveHeadingAnchor turns a wikilink's heading fragment into the id of
+// that heading in the target note (the source note for [[#...]]), dropping the
+// backslash a table cell leaves before an escaped alias pipe. ok is false when
+// the target note exists but has no such heading. Block refs (#^id) and
+// fragments of links that resolve to no note are returned as written.
+func resolveHeadingAnchor(nvs *model.NoteViews, source *model.NoteView, n *wikilink.Node) (string, bool) {
+	fragment := strings.TrimSuffix(string(n.Fragment), `\`)
+	if fragment == "" || strings.HasPrefix(fragment, "^") {
+		return fragment, true
+	}
+
+	note := source
+	target := strings.TrimSuffix(string(n.Target), `\`)
+	if target != "" {
+		note = nvs.ResolveWikilinkTarget(source, target)
+	}
+	if note == nil {
+		return fragment, true
+	}
+
+	id, found := note.HeadingAnchor(fragment)
+	if !found {
+		return fragment, false
+	}
+
+	return id, true
 }

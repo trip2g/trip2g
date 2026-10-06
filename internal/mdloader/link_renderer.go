@@ -107,8 +107,17 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		r.hasDest.Store(n, struct{}{})
 		_, _ = w.WriteString(`<a`)
 
+		anchorFound := true
+		lr, ok := r.resolver.(*myLinkResolver)
+		if ok {
+			_, anchorFound = resolveHeadingAnchor(lr.nvs, lr.currentPage, n)
+		}
+
 		note := r.resolveNoteForAttributes(string(dest))
-		if note != nil {
+		switch {
+		case !anchorFound || (note == nil && len(n.Target) > 0):
+			_, _ = w.WriteString(` class="wip"`)
+		case note != nil:
 			if !note.Free {
 				subgraphClasses := ""
 
@@ -124,8 +133,6 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 			}
 
 			_, _ = fmt.Fprintf(w, ` data-pid="%d"`, note.PathID)
-		} else {
-			_, _ = w.WriteString(` class="wip"`)
 		}
 
 		_, _ = w.WriteString(` href="`)

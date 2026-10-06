@@ -191,14 +191,14 @@ func (pr *PartialRenderer) sectionFromNodes(allNodes []ast.Node, query string) *
 		return nil
 	}
 
-	normalized := normalizeHeadingTitle(query)
+	normalized := model.NormalizeHeadingTitle(query)
 	anchor := strings.TrimPrefix(query, "#")
 	matchers := []func(*ast.Heading) bool{
 		func(h *ast.Heading) bool {
 			return extractHeadingText(pr.content, h) == query
 		},
 		func(h *ast.Heading) bool {
-			return normalizeHeadingTitle(extractHeadingText(pr.content, h)) == normalized
+			return model.NormalizeHeadingTitle(extractHeadingText(pr.content, h)) == normalized
 		},
 		func(h *ast.Heading) bool {
 			return anchor != "" && headingID(h) == anchor
@@ -241,10 +241,6 @@ func (pr *PartialRenderer) sectionAt(allNodes []ast.Node, i int, heading *ast.He
 	section.SectionFunc = pr.makeSectionFunc(contentNodes)
 
 	return section
-}
-
-func normalizeHeadingTitle(title string) string {
-	return strings.ToLower(strings.Join(strings.Fields(title), " "))
 }
 
 // headingID returns the id the note load assigned to the heading.
