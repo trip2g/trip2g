@@ -1,21 +1,23 @@
 package model
 
 import (
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/goldmark/wikilink"
 )
 
-// NoteNavLink is a wikilink to a note, with the nearest heading above it.
+// NoteNavLink is a link to a note, with the nearest heading above it.
 type NoteNavLink struct {
 	Note        *NoteView
 	Heading     string    // "" when no heading precedes the link
 	HeadingNote *NoteView // the note the heading itself links to, if any
 }
 
-// NavLinks returns source's wikilinks to notes in document order. Embeds,
-// links to headings and unresolved links are skipped; a link inside a heading
+// NavLinks returns source's wikilinks and markdown links to notes in document
+// order. Embeds, links to headings and unresolved links are skipped; a link inside a heading
 // is not listed, it becomes HeadingNote of the links below.
 func (nvs *NoteViews) NavLinks(source *NoteView) []NoteNavLink {
 	if source == nil || source.ast == nil {
@@ -52,9 +54,35 @@ func (nvs *NoteViews) NavLinks(source *NoteView) []NoteNavLink {
 }
 
 func (nvs *NoteViews) navTarget(source *NoteView, node ast.Node) *NoteView {
-	link, ok := node.(*wikilink.Node)
-	if !ok || link.Embed || len(link.Fragment) > 0 {
+	switch link := node.(type) {
+	case *wikilink.Node:
+		if link.Embed || len(link.Fragment) > 0 {
+			return nil
+		}
+		return nvs.ResolveWikilinkTarget(source, strings.TrimSuffix(string(link.Target), `\`))
+	case *ast.Link:
+		return nvs.markdownLinkTarget(source, string(link.Destination))
+	}
+	return nil
+}
+
+// markdownLinkTarget resolves a local link to a note: "/x" by permalink,
+// "x.md" or "x" from source's folder first, then like a wikilink.
+func (nvs *NoteViews) markdownLinkTarget(source *NoteView, dest string) *NoteView {
+	u, err := url.Parse(dest)
+	if err != nil || u.Scheme != "" || u.Host != "" || u.Fragment != "" || u.Path == "" {
 		return nil
 	}
-	return nvs.ResolveWikilinkTarget(source, strings.TrimSuffix(string(link.Target), `\`))
+	if strings.HasPrefix(u.Path, "/") {
+		return nvs.Map[u.Path]
+	}
+	if ext := path.Ext(u.Path); ext != "" && ext != ".md" {
+		return nil
+	}
+
+	target := strings.TrimSuffix(u.Path, ".md")
+	if note := nvs.ResolveWikilinkTarget(source, "./"+target); note != nil {
+		return note
+	}
+	return nvs.ResolveWikilinkTarget(source, target)
 }
