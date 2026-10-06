@@ -10,21 +10,23 @@ A frontmatter patch works like this: you specify a path pattern and an expressio
 
 ### How this documentation site is configured
 
-The trip2g docs you are reading right now use frontmatter patches to manage the multilingual structure. Here are the actual rules running on this site:
+The trip2g docs you are reading use frontmatter patches stored as ordinary notes in the `patches/` folder:
 
-| Pattern | Expression | What it does |
-|---------|-----------|--------------|
-| `**/*.md` | `{lang: "en"}` | Sets English as the default language for all notes (priority −1, runs first) |
-| `ru/**/*.md` | `{lang: "ru"}` | Overrides language to Russian for the `ru/` section (priority 0, runs after) |
-| `**/*.md` | `{free: true}` | Makes all documentation pages publicly accessible |
-| `ru/user/**/*.md` | `{left_sidebar: "ru/user/_sidebar.md"}` | Attaches the Russian sidebar to all RU user docs |
-| `ru/**/*.md` | `{header: "[[ru/_header]]", footer: "[[ru/_footer]]"}` | Switches header and footer to their Russian versions |
-| `ru/thoughts/**/*.md` | `{left_sidebar: "[[ru/thoughts/_sidebar]]"}` | Attaches the Russian philosophy sidebar |
-| `en/thoughts/**/*.md` | `{left_sidebar: "[[en/thoughts/_sidebar]]"}` | Attaches the English philosophy sidebar |
+| Patch file | Pattern | What it does |
+|------------|---------|--------------|
+| [[patches/lang-en\|lang-en.md]] | `**/*.md` (priority −1) | Sets English as the default language for the whole site |
+| [[patches/free\|free.md]] | `**/*.md` | Makes every page public (`free: true`) |
+| [[patches/ru\|ru.md]] | `ru/**/*.md` | Sets `lang: ru`, header, and footer for the Russian section |
+| [[patches/en-user-sidebar\|en-user-sidebar.md]] | `en/user/**/*.md` | Attaches the sidebar to all English user docs |
+| [[patches/ru-user-sidebar\|ru-user-sidebar.md]] | `ru/user/**/*.md` | Attaches the sidebar to all Russian user docs |
+| [[patches/en-thoughts-sidebar\|en-thoughts-sidebar.md]] | `en/thoughts/**/*.md` | Attaches the English essays sidebar |
+| [[patches/ru-thoughts-sidebar\|ru-thoughts-sidebar.md]] | `ru/thoughts/**/*.md` | Attaches the Russian essays sidebar |
+| [[patches/dev-no-search\|dev-no-search.md]] | `dev/**/*.md` | Keeps dev notes out of site search |
+| [[patches/related\|related.md]] | thoughts + user (priority 10) | Adds backlinks, related notes, and table of contents |
 
-The language cascade is worth noting: the first rule sets `lang: "en"` at priority −1 for everything. The second rule then sets `lang: "ru"` at priority 0 for `ru/**` — overriding only what it needs to. No note needs `lang` in its own frontmatter.
+The language cascade is worth noting: `lang-en.md` sets `lang: "en"` at priority −1 for everything. `ru.md` sets `lang: "ru"` at priority 0 for `ru/**` — overriding only what it needs to. No note needs `lang` in its own frontmatter.
 
-The [[en/user/default-template|default template]] reads `lang`, `left_sidebar`, `header`, and `footer` from the note's properties to decide what to render. Patches inject those properties at load time without touching the source files.
+The [[en/user/default-template|default template]] reads `lang`, `left_sidebar`, `header`, and `footer` from the note's properties. Patches inject those properties at load time without touching the source files.
 
 ### Who needs this
 
@@ -34,58 +36,138 @@ The [[en/user/default-template|default template]] reads `lang`, `left_sidebar`, 
 
 ### Creating a patch
 
-Patches are created in the admin panel under **Notes & Content**. Each patch has three parts:
+Create an ordinary markdown file anywhere in your vault. Give it `type: frontmatter-patch` in its frontmatter along with the patterns you want to match. Write the Jsonnet expression in a fenced code block in the body.
 
-1. **Path patterns** — which notes to match. Supports `*` (one folder level) and `**` (recursive)
-2. **Expression** — what to add or change in the properties
-3. **Priority** — order of application when you have multiple patches
+Example — make every note in `blog/` free:
+
+````markdown
+---
+type: frontmatter-patch
+include:
+  - blog/*
+---
+
+All notes in blog/ are public.
+
+```jsonnet
+{ free: true }
+```
+````
+
+Sync your vault and the patch takes effect immediately.
+
+#### Frontmatter fields
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `type` | yes | — | Must be `"frontmatter-patch"` |
+| `include` | yes | — | Glob patterns for notes to match |
+| `exclude` | no | `[]` | Glob patterns for notes to skip |
+| `priority` | no | `0` | Lower numbers apply first (within vault patches) |
+
+There is no `enabled` field. To disable a patch, delete or rename the file.
+
+#### Visibility of the patch file
+
+Files with a `_` prefix — such as `_rules.md` or `_publish-rules.md` — are hidden from the published site but still work as patches. Files without the prefix appear as regular notes on the site and also work as patches. This lets you write the patch description in plain prose, link to it from other notes, and keep it visible as documentation.
+
+#### Multiple patches in one file
+
+Each fenced `jsonnet` block in the body becomes a separate patch. All blocks in a single file share the same `include`, `exclude`, and `priority` from the frontmatter:
+
+````markdown
+---
+type: frontmatter-patch
+include:
+  - docs/**
+priority: 5
+---
+
+```jsonnet
+{ layout: "doc" }
+```
+
+```jsonnet
+{ free: true }
+```
+````
+
+This creates two patches, both with `priority: 5` and `include: ["docs/**"]`.
+
+#### Errors in a patch file
+
+If a patch file has problems, the site keeps working. The note displays a warning so you can see and fix the issue.
+
+| Situation | What happens |
+|-----------|-------------|
+| No jsonnet block in the body | Warning on the note; file still renders normally |
+| `include` patterns missing | Warning on the note |
+| Invalid glob pattern | Warning on the note |
+| Invalid Jsonnet syntax | Warning on the note |
+
+The warning appears when you open the note in the published site. Other patches continue to apply normally.
 
 ### Examples
 
-**Make all notes in `blog/` free:**
-
-```
-pattern: blog/*
-expression: { free: true }
-```
-
-Every note in `blog/` gets `free: true`, even if its frontmatter doesn't have it.
-
 **Assign a layout to a section:**
 
-```
-pattern: blog/*
-expression: { layout: "blog_layout" }
-```
+````markdown
+---
+type: frontmatter-patch
+include: ["blog/*"]
+---
 
-All notes in `blog/` use the `blog_layout` template.
+```jsonnet
+{ layout: "blog_layout" }
+```
+````
+
+All notes in `blog/` use the `blog_layout` template. Notes outside it keep whatever layout their frontmatter specifies.
 
 **Attach a folder to a subdomain:**
 
+````markdown
+---
+type: frontmatter-patch
+include: ["docs/**"]
+---
+
+```jsonnet
+{ route: "docs.mysite.com" }
 ```
-pattern: docs/**
-expression: { route: "docs.mysite.com" }
-```
+````
 
 All notes in `docs/` and subfolders automatically appear at `docs.mysite.com`. See [[en/user/multidomains|multi-domains]] for more on routes.
 
 **Add a suffix to titles:**
 
+````markdown
+---
+type: frontmatter-patch
+include: ["*"]
+---
+
+```jsonnet
+meta + { title: meta.title + " — My Site" }
 ```
-pattern: *
-expression: meta + { title: meta.title + " — My Site" }
-```
+````
 
 `meta` contains the note's current properties. The expression takes the existing title and appends the site name.
 
 **Conditional patch — set a layout only if not already set:**
 
-```
-pattern: *
-expression: if std.objectHas(meta, "layout") then {} else { layout: "default" }
-```
+````markdown
+---
+type: frontmatter-patch
+include: ["*"]
+---
 
-If the note already has a `layout`, the patch does nothing. Otherwise sets `default`.
+```jsonnet
+if std.objectHas(meta, "layout") then {} else { layout: "default" }
+```
+````
+
+If the note already has a `layout`, the patch does nothing. Otherwise it sets `default`.
 
 ### Priorities and chains
 
@@ -102,7 +184,7 @@ For `blog/post.md`: rule 0 sets `layout: "default"`, then rule 10 overwrites it 
 
 **The patch wins.** trip2g starts from the note's own frontmatter and applies every matching patch on top. Each key the expression returns replaces the note's value; keys it doesn't return stay as they are.
 
-A note `ru/user/intro.md` with `lang: en` and a patch for `ru/**/*.md` with `{ lang: "ru" }` ends up with `lang: "ru"`. Priority doesn't change this: it only orders patches among themselves, the note's frontmatter always comes first.
+A note `ru/user/intro.md` with `lang: en` and a patch for `ru/**/*.md` with `{ lang: "ru" }` ends up with `lang: "ru"`. Priority doesn't change this: it only orders patches among themselves; the note's frontmatter always comes first.
 
 To make a patch a default that a note can override, check the key first:
 
@@ -114,7 +196,7 @@ Now a note with its own `left_sidebar` keeps it. `meta` also contains values fro
 
 The other way is to take the note out of the patch with `exclude`:
 
-```
+```yaml
 include: ["ru/user/**/*.md"]
 exclude: ["ru/user/landing.md"]
 ```
@@ -174,36 +256,76 @@ Both overwrite `lang` that a note sets itself. If some notes set their language 
 
 **Full-width pages for a folder of boards:**
 
+````markdown
+---
+type: frontmatter-patch
+include: ["boards/**/*.md"]
+---
+
 ```jsonnet
 { wide: true }
 ```
-
-with `include: ["boards/**/*.md"]`.
+````
 
 **Keep a folder out of site search** (`patches/dev-no-search.md` on this site):
+
+````markdown
+---
+type: frontmatter-patch
+include: ["dev/**/*.md"]
+---
 
 ```jsonnet
 { search: false }
 ```
-
-with `include: ["dev/**/*.md"]`.
+````
 
 ### Patterns
+
+Patterns determine which notes a patch applies to. The syntax is similar to `.gitignore` with a few specifics.
+
+**Special characters:**
 
 | Symbol | What it matches |
 |--------|----------------|
 | `*` | Any characters except `/`. Does not match hidden files (starting with `.`) |
 | `**` | Any number of nested folders, including zero |
 | `?` | Exactly one character, except `/` |
-| `[abc]` | One character from the set |
-| `{foo,bar}` | One of the alternatives |
+| `[abc]` | One character from the set: `a`, `b`, or `c` |
+| `[a-z]` | One character from the range |
+| `[^abc]` or `[!abc]` | Any character except those listed |
+| `{foo,bar}` | One of the alternatives: `foo` or `bar` |
+
+**Examples:**
+
+| Pattern | Matches | Does not match |
+|---------|---------|---------------|
+| `blog/*` | `blog/post.md`, `blog/draft.md` | `blog/2024/post.md` (nested folder) |
+| `blog/**` | `blog/post.md`, `blog/2024/jan/post.md` | `docs/post.md` |
+| `blog/**/draft*` | `blog/draft1.md`, `blog/2024/drafts/draft-new.md` | `blog/final.md` |
+| `*` | `index.md`, `about.md` | `.hidden.md`, `blog/post.md` |
+| `*.md` | `about.md`, `index.md` | `.secret.md` |
+| `.*` | `.hidden.md`, `.config.md` | `about.md` |
+| `blog/post-?.md` | `blog/post-1.md`, `blog/post-a.md` | `blog/post-12.md` |
+| `{blog,docs}/*` | `blog/post.md`, `docs/api.md` | `notes/post.md` |
+| `blog/[0-9]*` | `blog/2024-review.md` | `blog/my-post.md` |
+
+**Things to know:**
+
+`**` only works between path separators. `blog/**/*.md` matches all `.md` files at any depth inside `blog/`. `blog/**.md` behaves like `blog/*.md` — first level only. Use `blog/**/*.md` when you need recursion.
+
+Hidden files (starting with a dot) are not matched by `*` or `?`. Use an explicit pattern `.*` or a concrete name `.config` to match them.
+
+Empty alternatives in braces work as optional parts: `some{thing,}` matches both `something` and `some`.
 
 **Include and exclude:** each patch has include patterns (what to match) and exclude patterns (what to skip). A note is patched if it matches at least one include and no exclude patterns.
 
-```
+```yaml
 include: ["blog/**"]
 exclude: ["blog/drafts/*"]
 ```
+
+This patch applies to all notes in `blog/` except those in `blog/drafts/`.
 
 ### Expressions (Jsonnet)
 
@@ -218,137 +340,86 @@ Expressions are written in [Jsonnet](https://jsonnet.org/) — a language that e
 
 The expression must return an object `{}`. Its contents are merged into the note properties. Existing keys are overwritten.
 
-**Common patterns:**
+**Simple object** — the most common case:
 
 ```jsonnet
-// Simple object — most common case
 { free: true, layout: "blog" }
+```
 
-// Read current properties with meta
+**Reading current properties** with `meta`:
+
+```jsonnet
 meta + { title: meta.title + " — My Site" }
+```
 
-// Conditional
+The `+` operator for objects works as a merge: takes all fields from `meta` and overwrites `title` with the new value.
+
+**Conditionals** with `if / then / else`:
+
+```jsonnet
 if std.objectHas(meta, "layout") then {} else { layout: "default" }
+```
 
-// Path-based logic
+`std.objectHas` checks whether the note has a `layout` field. If it does, the patch returns an empty object (changes nothing). If it doesn't, sets `default`. Without the check, `meta.layout` would fail on any note that doesn't have that field.
+
+**Path-based logic:**
+
+```jsonnet
 if std.startsWith(path, "premium/")
 then { free: false }
 else {}
 ```
 
-### Vault-based patches
+This is achievable with patterns too (`["premium/*"]`), but sometimes a condition in the expression is cleaner.
 
-Instead of creating patches in the admin panel, you can define them as markdown files directly in your vault. The patch rules live next to your content, under version control, editable in Obsidian.
-
-#### File format
-
-Create a markdown file anywhere in your vault. Give it a frontmatter with `type: frontmatter-patch`, the patterns you want to match, and write the Jsonnet expression in a fenced code block in the body:
-
-```markdown
----
-type: frontmatter-patch
-include:
-  - blog/*
-  - articles/**
-exclude:
-  - blog/premium/*
-priority: 10
----
-
-Makes all blog posts free, except the premium section.
+**String concatenation** with `+`:
 
 ```jsonnet
-{ free: true }
+{ description: meta.title + " — published at " + meta.site_name }
 ```
-```
 
-**Frontmatter fields:**
-
-| Field | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `type` | yes | — | Must be `"frontmatter-patch"` |
-| `include` | yes | — | Glob patterns for notes to match |
-| `exclude` | no | `[]` | Glob patterns for notes to skip |
-| `priority` | no | `0` | Lower numbers apply first (within vault patches) |
-
-There is no `enabled` field. To disable a patch, delete or rename the file.
-
-#### Visibility
-
-Files with a `_` prefix — such as `_rules.md` or `_publish-rules.md` — are hidden from the published site but still work as patches. Files without the prefix appear as regular notes on the site and also work as patches. This lets you write the patch description in plain prose, link to it from other notes, and keep it visible as documentation.
-
-#### Multiple patches in one file
-
-Each fenced `jsonnet` block in the body becomes a separate patch. All blocks in a single file share the same `include`, `exclude`, and `priority` from the frontmatter:
-
-```markdown
----
-type: frontmatter-patch
-include:
-  - docs/**
-priority: 5
----
-
-Two rules for the docs section:
+**String formatting** with `%` (Python-style):
 
 ```jsonnet
-{ layout: "doc" }
+{ og_title: "%s | %s" % [meta.title, "My Site"] }
 ```
+
+**Useful standard library functions:**
+
+| Function | What it does | Example |
+|----------|-------------|---------|
+| `std.objectHas(obj, key)` | Check whether a field exists | `std.objectHas(meta, "layout")` |
+| `std.length(x)` | Length of string or array | `std.length(meta.title) > 50` |
+| `std.startsWith(str, prefix)` | Does string start with prefix | `std.startsWith(path, "blog/")` |
+| `std.endsWith(str, suffix)` | Does string end with suffix | `std.endsWith(path, ".draft.md")` |
+| `std.split(str, delim)` | Split a string | `std.split(path, "/")` |
+| `std.join(delim, arr)` | Join an array | `std.join(", ", meta.tags)` |
+
+**Composite example** — a premium section with a default complexity level:
 
 ```jsonnet
-{ free: true }
-```
-```
-
-This creates two patches, both with `priority: 5` and `include: ["docs/**"]`.
-
-#### Order of application
-
-Admin panel patches apply first, then vault patches. Within each group, patches apply in priority order. This means vault patches can override admin panel rules.
-
-#### Complete example
-
-`docs/_publish-rules.md`:
-
-```markdown
----
-type: frontmatter-patch
-include:
-  - docs/**
-  - guides/**
-exclude:
-  - docs/draft/*
-priority: 20
----
-
-Publishing rules for docs and guides.
-
-All docs become free. Guides get the "guide" layout by default.
-Draft notes are excluded.
-
-```jsonnet
-{ free: true }
+meta + {
+  free: false,
+  reading_complexity:
+    if std.objectHas(meta, "reading_complexity")
+    then meta.reading_complexity
+    else "advanced"
+}
 ```
 
-```jsonnet
-if std.startsWith(path, "guides/")
-then { layout: "guide" }
-else {}
-```
-```
+The patch closes access to notes (`free: false`) and sets `reading_complexity: "advanced"` only when the author hasn't set it manually.
 
-#### Errors
+Return an **empty object `{}`** when the patch should change nothing — useful in one branch of a conditional.
 
-If a patch file has problems, the site keeps working. The note displays a warning so you can see and fix the issue.
+### Patches in the admin panel
 
-| Situation | What happens |
-|-----------|-------------|
-| No jsonnet block in the body | Warning on the note; file still renders normally |
-| `include` patterns missing | Warning on the note |
-| Invalid glob pattern | Warning on the note |
-| Invalid Jsonnet syntax | Warning on the note |
+You can also create patches in the admin panel under **Notes & Content**. Each patch has three fields: path patterns, a Jsonnet expression, and a priority.
 
-The warning appears when you open the note in the published site. Other patches continue to apply normally.
+![[images/frontmatter_patches_admin.png]]
+
+**Order of application.** Admin panel patches apply first, then vault patches from the vault. Within each group, patches apply in priority order — lower number first. At equal priority, vault patches are ordered alphabetically by file path (alphabetically later wins); admin patches are ordered by creation time (created later wins).
+
+Vault patches always run after admin panel patches — even if a vault patch has a lower priority number. A vault patch can override any admin panel rule.
 
 ### Troubleshooting
 
@@ -356,7 +427,11 @@ The warning appears when you open the note in the published site. Other patches 
 
 **Expression error** — if the expression fails for a specific note (e.g., accessing a missing field), the patch is skipped only for that note. Other notes process normally; the site keeps working.
 
-**Two patches conflict** — the one with higher priority (larger number) wins. At equal priority, the one created later wins.
+**Two vault patches conflict** — the one with higher priority (larger number) wins. At equal priority, the alphabetically later file path wins.
+
+**A vault patch and an admin patch conflict** — the vault patch always runs last and overrides the admin patch, regardless of priority.
+
+**Forgot about ordering** — a patch with priority 10 sees `meta` after all patches with priority 0–9. If you add a suffix to `title` in a high-priority patch, it picks up the already-modified title.
 
 **Accessing a missing field** — `meta.tags` fails if the note has no `tags`. Wrap in a check: `if std.objectHas(meta, "tags") then meta.tags else []`.
 
@@ -368,7 +443,8 @@ This documentation site runs on its own patches. Each one is a real note you can
 - [[patches/lang-en|Default language English]] — site-wide `lang: en`
 - [[patches/ru|Russian section]] — language plus shared header and footer under `ru/`
 - [[patches/en-user-sidebar|English user-docs sidebar]] and [[patches/ru-user-sidebar|Russian user-docs sidebar]]
-- [[patches/en-thoughts-sidebar|English thoughts sidebar]] and [[patches/ru-thoughts-sidebar|Russian thoughts sidebar]]
+- [[patches/en-thoughts-sidebar|English essays sidebar]] and [[patches/ru-thoughts-sidebar|Russian essays sidebar]]
 - [[patches/dev-no-search|Keep dev docs out of search]]
+- [[patches/related|Backlinks, related notes, and table of contents]]
 
 Together they replace frontmatter that would otherwise be repeated across hundreds of notes.
