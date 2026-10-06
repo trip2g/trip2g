@@ -15,18 +15,18 @@ func TestJSONLDType(t *testing.T) {
 	require.Equal(t, "WebPage", (&Ctx{}).JSONLDType())
 
 	nvs := makeNVS([]*model.NoteView{makeNote("a.md", map[string]interface{}{"schema_type": "HowTo"})})
-	require.Equal(t, "HowTo", (&Ctx{Note: nvs.ByPath("a.md")}).JSONLDType())
+	require.Equal(t, "HowTo", (&Ctx{Note: nvs.NoteByPath("a.md")}).JSONLDType())
 
 	nvs = makeNVS([]*model.NoteView{makeNote("p.md", map[string]interface{}{"type": "profile"})})
-	require.Equal(t, "ProfilePage", (&Ctx{Note: nvs.ByPath("p.md")}).JSONLDType())
+	require.Equal(t, "ProfilePage", (&Ctx{Note: nvs.NoteByPath("p.md")}).JSONLDType())
 
 	nvs = makeNVS([]*model.NoteView{makeNote("n.md", nil)})
-	require.Equal(t, "BlogPosting", (&Ctx{Note: nvs.ByPath("n.md")}).JSONLDType())
+	require.Equal(t, "BlogPosting", (&Ctx{Note: nvs.NoteByPath("n.md")}).JSONLDType())
 }
 
 func TestShouldEmitJSONLD(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{makeNote("n.md", nil)})
-	note := nvs.ByPath("n.md")
+	note := nvs.NoteByPath("n.md")
 
 	require.False(t, (&Ctx{}).ShouldEmitJSONLD()) // nil note
 	require.True(t, (&Ctx{Note: note}).ShouldEmitJSONLD())
@@ -39,7 +39,7 @@ func TestShouldEmitJSONLD(t *testing.T) {
 
 func TestJSONLDBreadcrumb(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{makeNote("a/b/c.md", nil)})
-	ctx := &Ctx{Note: nvs.ByPath("a/b/c.md"), Notes: nvs, PublicURL: "https://ex.com"}
+	ctx := &Ctx{Note: nvs.NoteByPath("a/b/c.md"), Notes: nvs, PublicURL: "https://ex.com"}
 
 	crumbs := ctx.JSONLDBreadcrumb()
 	require.Len(t, crumbs, 4) // Home, a, b, c
@@ -49,7 +49,7 @@ func TestJSONLDBreadcrumb(t *testing.T) {
 
 	// Home page (root permalink) → no breadcrumb.
 	rootNVS := makeNVS([]*model.NoteView{{Path: "home.md", Permalink: "/"}})
-	rootCtx := &Ctx{Note: rootNVS.ByPath("home.md"), Notes: rootNVS, PublicURL: "https://ex.com"}
+	rootCtx := &Ctx{Note: rootNVS.NoteByPath("home.md"), Notes: rootNVS, PublicURL: "https://ex.com"}
 	require.Nil(t, rootCtx.JSONLDBreadcrumb())
 }
 
@@ -71,7 +71,7 @@ func TestJSONLD_RenderValid(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{nv})
 
 	ctx := &Ctx{
-		Note:      nvs.ByPath("blog/my-post.md"),
+		Note:      nvs.NoteByPath("blog/my-post.md"),
 		Notes:     nvs,
 		Title:     "My Post",
 		OGTags:    map[string]string{"og:url": "https://ex.com/blog/my-post"},
@@ -104,7 +104,7 @@ func TestJSONLD_RenderValid(t *testing.T) {
 func TestJSONLD_EscapesScriptInjection(t *testing.T) {
 	nvs := makeNVS([]*model.NoteView{makeNote("n.md", nil)})
 	ctx := &Ctx{
-		Note:      nvs.ByPath("n.md"),
+		Note:      nvs.NoteByPath("n.md"),
 		Notes:     nvs,
 		Title:     "Pwn </script><script>alert(1)</script>",
 		OGTags:    map[string]string{"og:url": "https://ex.com/n"},
@@ -136,7 +136,7 @@ func TestJSONLDImage_IsAbsolute(t *testing.T) {
 	}
 	nvs := makeNVS([]*model.NoteView{nv})
 
-	ctx := &Ctx{Note: nvs.ByPath("blog/my-post.md"), PublicURL: "https://ex.com"}
+	ctx := &Ctx{Note: nvs.NoteByPath("blog/my-post.md"), PublicURL: "https://ex.com"}
 
 	require.Equal(t, "https://ex.com/_system/assets/abc/cover.png", ctx.JSONLDImage())
 }

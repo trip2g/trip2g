@@ -15,13 +15,13 @@ type leakPartialRenderer struct {
 	intro string
 }
 
-func (r leakPartialRenderer) Sections(int) []model.NoteViewSection  { return nil }
-func (r leakPartialRenderer) Section(string) *model.NoteViewSection { return nil }
+func (r leakPartialRenderer) Sections(int) []model.NoteViewSection { return nil }
+func (r leakPartialRenderer) Section(string) any                   { return nil }
 func (r leakPartialRenderer) Introduce() model.NoteViewSection {
 	return model.NoteViewSection{ContentHTML: "<p>" + r.intro + "</p>"}
 }
 func (r leakPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
-func (r leakPartialRenderer) FirstList() *model.NoteViewList            { return nil }
+func (r leakPartialRenderer) FirstList() any                            { return nil }
 func (r leakPartialRenderer) Lists() []model.NoteViewList               { return nil }
 func (r leakPartialRenderer) FirstImageURL() string                     { return "" }
 

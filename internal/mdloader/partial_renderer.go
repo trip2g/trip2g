@@ -224,10 +224,14 @@ func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewSection {
 }
 
 // Section finds a section by its heading title.
-// Returns nil if no heading with the given title is found.
+// Returns an untyped nil if no heading with the given title is found.
 // The title is matched against the plain text content of the heading.
-func (pr *PartialRenderer) Section(title string) *model.NoteViewSection {
-	return pr.sectionFromNodes(pr.collectTopLevelNodes(), title)
+func (pr *PartialRenderer) Section(title string) any {
+	section := pr.sectionFromNodes(pr.collectTopLevelNodes(), title)
+	if section == nil {
+		return nil
+	}
+	return section
 }
 
 // extractHeadingText extracts plain text from a heading node.
@@ -405,8 +409,8 @@ func (pr *PartialRenderer) convertList(list *ast.List) model.NoteViewList {
 	return nvl
 }
 
-// FirstList returns the first top-level list, nil if none found.
-func (pr *PartialRenderer) FirstList() *model.NoteViewList {
+// FirstList returns the first top-level list, or an untyped nil if none found.
+func (pr *PartialRenderer) FirstList() any {
 	for _, node := range pr.collectTopLevelNodes() {
 		if list, ok := node.(*ast.List); ok {
 			nvl := pr.convertList(list)

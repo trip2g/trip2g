@@ -305,8 +305,8 @@ func (n *Note) HasLangAlternatives() bool {
 }
 
 // LangAlternative returns the Note wrapper for a specific language code.
-// Returns nil if not found.
-func (n *Note) LangAlternative(lang string) *Note {
+// Returns an untyped nil if not found, so templates can compare it with nil.
+func (n *Note) LangAlternative(lang string) any {
 	if n.nv.LangAlternatives == nil {
 		return nil
 	}

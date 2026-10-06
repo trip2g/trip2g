@@ -168,11 +168,12 @@ The Jet template engine provides these variables:
 Access other notes via `nvs`:
 
 ```jet
-{{ sidebar := nvs.ByPath("/_sidebar.md") }}
-{{ if sidebar }}
+{{ if sidebar := nvs.ByPath("/_sidebar.md"); sidebar }}
   {{ sidebar.HTMLString() | unsafe }}
 {{ end }}
 ```
+
+A lookup that finds nothing — `nvs.ByPath`, `nvs.ByPermalink`, `nvs.ByWikilink`, a query's `.First()` or `.Last()`, `PartialRenderer().Section(...)`, `FirstList()` — returns `nil`. Both `{{ if x }}` and `{{ if x == nil }}` test it. (Older versions returned a value that `{{ if x }}` treated as empty while `x == nil` was false; templates written with `{{ if x }}` keep working.) Calling a method on it, like `x.Title()`, stops the render with an error, so test first. The form above declares and tests in one step: see [[en/user/templates#Assignment in if (Go-style)|Assignment in if]].
 
 Load assets:
 
@@ -308,6 +309,64 @@ Three Jet rules to remember:
 1. Block parameters need default values or named arguments won't bind: `{{ block card(title="", body="") }}`
 2. `content` is a reserved keyword — don't use it as a parameter name
 3. **Single-variable range iterates indices, not values.** `{{ range item := list }}` gives `item = 0, 1, 2…` (the index). To get values, always use two variables: `{{ range i, item := list }}`
+
+### Assignment in if (Go-style)
+
+`if` can declare a variable and test it in one tag, like Go's `if x := f(); cond`:
+
+```jet
+{{ if name := expression; condition }}
+  ...
+{{ else }}
+  ...
+{{ end }}
+```
+
+The variable exists only inside this `if`, its `else if` branches and its `else`. After `{{ end }}` it is gone: using it there stops the render with `identifier "name" not available in current … scope`. A variable of the same name declared before the `if` is shadowed inside it and keeps its value after.
+
+The usual case is a note that may not exist:
+
+```jet
+{{ if about := nvs.ByPermalink("/about"); about }}
+  <a href="{{ about.Permalink() }}">{{ about.Title() }}</a>
+{{ else }}
+  <span>About page is not published yet</span>
+{{ end }}
+```
+
+The condition can be any expression, not only the variable:
+
+```jet
+{{ if subtitle := note.M().GetString("subtitle", ""); subtitle != "" }}
+  <p class="subtitle">{{ subtitle }}</p>
+{{ else }}
+  <p class="subtitle">{{ note.Title() }}</p>
+{{ end }}
+
+{{ if latest := nvs.ByGlob("blog/*.md").SortBy("CreatedAt").Desc().First(); latest }}
+  Latest post: <a href="{{ latest.Permalink() }}">{{ latest.Title() }}</a>
+{{ end }}
+
+{{ if faq := note.PartialRenderer().Section("FAQ"); faq }}
+  {{ faq.ContentHTML | unsafe }}
+{{ end }}
+```
+
+Each `else if` can declare its own variable, and still sees the ones declared before it:
+
+```jet
+{{ if header := nvs.ByPath("/blog/_header.md"); header }}
+  {{ header.HTMLString() | unsafe }}
+{{ else if fallback := nvs.ByPath("/_header.md"); fallback }}
+  {{ fallback.HTMLString() | unsafe }}
+{{ end }}
+```
+
+Two-value forms work too: `{{ if value, ok := someMap["key"]; ok }}`.
+
+With `=` instead of `:=` the tag assigns a variable declared earlier, and the new value stays after `{{ end }}`.
+
+**`range` is different.** `{{ range i, post := list }}` also declares variables scoped to the loop, but it takes no `; condition` — `{{ range p := list; p }}` is a parse error. The variables are the loop index and element, not the result of an expression: with one variable over a list you get the index. `{{ range … }}{{ else }}…{{ end }}` runs the `else` when the list is empty.
 
 ### Debugging templates
 

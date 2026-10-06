@@ -63,7 +63,15 @@ Jet — движок шаблонов. Поддерживает наследов
 {{ if value, ok := myMap["key"]; ok }}
   {{ value }}
 {{ end }}
+
+{{ if about := nvs.ByPermalink("/about"); about }}
+  {{ about.Title() }}
+{{ else }}
+  Страницы нет
+{{ end }}
 ```
+
+Переменная видна только внутри `if`, его `else if` и `else`. Подробнее — в [[templates#Присваивание прямо в if (как в Go)|присваивании в if]].
 
 #### Тернарный оператор
 

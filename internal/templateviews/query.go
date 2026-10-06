@@ -120,8 +120,8 @@ func (q *NoteQuery) All() []*Note {
 	return notes
 }
 
-// First executes the query and returns the first matching note, or nil.
-func (q *NoteQuery) First() *Note {
+// First executes the query and returns the first matching note, or an untyped nil.
+func (q *NoteQuery) First() any {
 	q.limit = 1
 	notes := q.All()
 	if len(notes) == 0 {
@@ -130,8 +130,8 @@ func (q *NoteQuery) First() *Note {
 	return notes[0]
 }
 
-// Last executes the query and returns the last matching note, or nil.
-func (q *NoteQuery) Last() *Note {
+// Last executes the query and returns the last matching note, or an untyped nil.
+func (q *NoteQuery) Last() any {
 	notes := q.All()
 	if len(notes) == 0 {
 		return nil

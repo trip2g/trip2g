@@ -294,10 +294,10 @@ func TestJetBinding_IsAdmin_False(t *testing.T) {
 type stubPartialRenderer struct{}
 
 func (stubPartialRenderer) Sections(int) []model.NoteViewSection      { return nil }
-func (stubPartialRenderer) Section(string) *model.NoteViewSection     { return nil }
+func (stubPartialRenderer) Section(string) any                        { return nil }
 func (stubPartialRenderer) Introduce() model.NoteViewSection          { return model.NoteViewSection{} }
 func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
-func (stubPartialRenderer) FirstList() *model.NoteViewList            { return nil }
+func (stubPartialRenderer) FirstList() any                            { return nil }
 func (stubPartialRenderer) Lists() []model.NoteViewList               { return nil }
 func (stubPartialRenderer) FirstImageURL() string                     { return "" }
 
@@ -315,7 +315,7 @@ func chromeHelper() *userSpaceHelper {
 	}
 	tv := templateviews.NewNVS(nvs, "live")
 
-	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", tv.ByPath("blog/post1.md"))
+	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", tv.NoteByPath("blog/post1.md"))
 	h.nvs = tv
 	h.cssURLs = []string{"/assets/defaulttemplate.css?h=abc123"}
 	return h

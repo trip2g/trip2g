@@ -80,12 +80,17 @@ func (s *NoteViewSection) Sections(level int) []NoteViewSection {
 }
 
 // Section finds a subsection by its heading title.
-// Returns nil if no heading with the given title is found.
-func (s *NoteViewSection) Section(title string) *NoteViewSection {
+// Returns an untyped nil if no heading with the given title is found,
+// so templates can compare the result with nil.
+func (s *NoteViewSection) Section(title string) any {
 	if s.SectionFunc == nil {
 		return nil
 	}
-	return s.SectionFunc(title)
+	section := s.SectionFunc(title)
+	if section == nil {
+		return nil
+	}
+	return section
 }
 
 // NoteViewHeadingBlock is an alias for NoteViewSection (deprecated, use NoteViewSection).
@@ -106,14 +111,15 @@ type NoteViewList struct {
 
 type NoteViewPartialRenderer interface {
 	Sections(level int) []NoteViewSection
-	Section(title string) *NoteViewSection
+	// Section returns a *NoteViewSection, or an untyped nil if none matches.
+	Section(title string) any
 	Introduce() NoteViewSection
 
 	// HeadingBlocks is deprecated, use Sections instead.
 	HeadingBlocks(level int) []NoteViewSection
 
-	// FirstList returns the first top-level list, nil if none found.
-	FirstList() *NoteViewList
+	// FirstList returns the first top-level *NoteViewList, or an untyped nil if none found.
+	FirstList() any
 	// Lists returns all top-level lists.
 	Lists() []NoteViewList
 	// FirstImageURL returns the URL of the first image (top-level ast.Image or first paragraph).

@@ -214,9 +214,9 @@ func TestNoteQuery_OffsetAndLimit(t *testing.T) {
 func TestNoteQuery_First(t *testing.T) {
 	nvs := createTestNVS()
 
-	note := nvs.ByGlob("blog/*.md").SortBy("Title").First()
+	note, ok := nvs.ByGlob("blog/*.md").SortBy("Title").First().(*templateviews.Note)
 
-	require.NotNil(t, note)
+	require.True(t, ok)
 	require.Equal(t, "Alpha Post", note.Title())
 }
 
@@ -231,9 +231,9 @@ func TestNoteQuery_FirstEmpty(t *testing.T) {
 func TestNoteQuery_Last(t *testing.T) {
 	nvs := createTestNVS()
 
-	note := nvs.ByGlob("blog/*.md").SortBy("Title").Last()
+	note, ok := nvs.ByGlob("blog/*.md").SortBy("Title").Last().(*templateviews.Note)
 
-	require.NotNil(t, note)
+	require.True(t, ok)
 	require.Equal(t, "Zebra Post", note.Title())
 }
 

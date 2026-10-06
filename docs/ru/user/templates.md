@@ -64,13 +64,14 @@ title: Моя страница
 #### nvs — доступ к другим заметкам
 
 ```jet
-{{ sidebar := nvs.ByPath("/_sidebar.md") }}
-{{ if sidebar }}
+{{ if sidebar := nvs.ByPath("/_sidebar.md"); sidebar }}
   {{ sidebar.HTMLString() | unsafe }}
 {{ end }}
 
 {{ about := nvs.ByPermalink("/about") }}
 ```
+
+Если поиск ничего не нашёл — `nvs.ByPath`, `nvs.ByPermalink`, `nvs.ByWikilink`, `.First()` и `.Last()` у запроса, `PartialRenderer().Section(...)`, `FirstList()`, — он возвращает `nil`. Проверять можно и `{{ if x }}`, и `{{ if x == nil }}`. Вызов метода у такого значения, например `x.Title()`, обрывает рендер с ошибкой, поэтому сначала проверьте. (Раньше эти методы возвращали значение, которое `{{ if x }}` считал пустым, а `x == nil` — нет; шаблоны с `{{ if x }}` продолжают работать.) Объявить и проверить переменную можно одним тегом, как в примере выше: см. [[ru/user/templates#Присваивание прямо в if (как в Go)|присваивание в if]].
 
 #### asset() — подключение файлов
 
@@ -306,6 +307,64 @@ HTML экранируется по умолчанию. Чтобы вывести
 {{ yield имя() }}                      — вызов блока
 {{ include "путь" данные }}            — вставка шаблона
 ```
+
+### Присваивание прямо в if (как в Go)
+
+`if` умеет объявить переменную и сразу её проверить — как `if x := f(); cond` в Go:
+
+```jet
+{{ if имя := выражение; условие }}
+  ...
+{{ else }}
+  ...
+{{ end }}
+```
+
+Переменная живёт только внутри этого `if`: в его ветках `else if` и `else`. После `{{ end }}` её нет — обращение к ней обрывает рендер с ошибкой `identifier "имя" not available in current … scope`. Если до `if` уже была переменная с тем же именем, внутри `if` её заслоняет новая, а после `{{ end }}` старое значение на месте.
+
+Типичный случай — заметка, которой может не быть:
+
+```jet
+{{ if about := nvs.ByPermalink("/about"); about }}
+  <a href="{{ about.Permalink() }}">{{ about.Title() }}</a>
+{{ else }}
+  <span>Страница «О нас» ещё не опубликована</span>
+{{ end }}
+```
+
+Условие — любое выражение, не только сама переменная:
+
+```jet
+{{ if subtitle := note.M().GetString("subtitle", ""); subtitle != "" }}
+  <p class="subtitle">{{ subtitle }}</p>
+{{ else }}
+  <p class="subtitle">{{ note.Title() }}</p>
+{{ end }}
+
+{{ if latest := nvs.ByGlob("blog/*.md").SortBy("CreatedAt").Desc().First(); latest }}
+  Свежий пост: <a href="{{ latest.Permalink() }}">{{ latest.Title() }}</a>
+{{ end }}
+
+{{ if faq := note.PartialRenderer().Section("FAQ"); faq }}
+  {{ faq.ContentHTML | unsafe }}
+{{ end }}
+```
+
+Каждый `else if` может объявить свою переменную и видит объявленные до него:
+
+```jet
+{{ if header := nvs.ByPath("/blog/_header.md"); header }}
+  {{ header.HTMLString() | unsafe }}
+{{ else if fallback := nvs.ByPath("/_header.md"); fallback }}
+  {{ fallback.HTMLString() | unsafe }}
+{{ end }}
+```
+
+Работает и форма с двумя значениями: `{{ if value, ok := someMap["key"]; ok }}`.
+
+С `=` вместо `:=` тег присваивает значение переменной, объявленной раньше, и оно остаётся после `{{ end }}`.
+
+**`range` устроен иначе.** `{{ range i, post := список }}` тоже объявляет переменные, видимые только в цикле, но `; условие` не принимает — `{{ range p := список; p }}` не разбирается. Переменные — это индекс и элемент, а не результат выражения: с одной переменной по списку вы получите индекс. `{{ range … }}{{ else }}…{{ end }}` выполняет `else`, когда список пуст.
 
 Подробнее — в [[jet|документации Jet]].
 
