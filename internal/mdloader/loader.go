@@ -578,8 +578,8 @@ func (ldr *loader) extractInLinks() error {
 				return ast.WalkContinue, nil
 			}
 
-			if _, found := resolveHeadingAnchor(ldr.nvs, p, link); !found {
-				p.AddWarning(model.NoteWarningInfo, "broken link: %s#%s", target, link.Fragment)
+			if fragment, found := resolveHeadingAnchor(ldr.nvs, p, link); !found {
+				p.AddWarning(model.NoteWarningInfo, "broken link: %s#%s", target, fragment)
 			}
 
 			if target == "" && len(link.Fragment) > 0 {

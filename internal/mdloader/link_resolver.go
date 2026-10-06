@@ -77,11 +77,12 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 }
 
 // resolveHeadingAnchor turns a wikilink's heading fragment into the id of
-// that heading in the target note (the source note for [[#...]]). ok is false
-// when the target note exists but has no such heading. Block refs (#^id) and
+// that heading in the target note (the source note for [[#...]]), dropping the
+// backslash a table cell leaves before an escaped alias pipe. ok is false when
+// the target note exists but has no such heading. Block refs (#^id) and
 // fragments of links that resolve to no note are returned as written.
 func resolveHeadingAnchor(nvs *model.NoteViews, source *model.NoteView, n *wikilink.Node) (string, bool) {
-	fragment := string(n.Fragment)
+	fragment := strings.TrimSuffix(string(n.Fragment), `\`)
 	if fragment == "" || strings.HasPrefix(fragment, "^") {
 		return fragment, true
 	}

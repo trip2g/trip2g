@@ -110,3 +110,15 @@ func TestWikilinkBlockRefUnchanged(t *testing.T) {
 	require.NotContains(t, html, `class="wip"`)
 	require.Empty(t, brokenLinkWarnings(index))
 }
+
+func TestWikilinkHeadingAnchorInTable(t *testing.T) {
+	notes := loadAnchorNotes(t, "| a | b |\n|---|---|\n| [[target#Getting Started\\|start]] | [[target#Missing\\|gone]] |\n")
+	index := notes.PathMap["index.md"]
+
+	html := string(index.HTML)
+	require.Contains(t, html, `href="/target#getting_started"`)
+	require.Contains(t, html, `>start</a>`)
+	require.Contains(t, html, `href="/target#Missing"`)
+	require.NotContains(t, html, `%5C`)
+	require.Equal(t, []string{"broken link: target#Missing"}, brokenLinkWarnings(index))
+}
