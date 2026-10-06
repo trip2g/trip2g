@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Your own heading anchors, and more of a note's content for templates
+
+- **What.** A heading can set its own anchor: `## Pricing {#plans}` gets `id="plans"`; `{.class}` adds a CSS class. In templates, a section now has `ID` and `Level`, and `Section(...)` also finds a heading ignoring case and extra spaces, or by its anchor (`"plans"` or `"#plans"`). New: `Images()` (Markdown images and `![[...]]` embeds), `CodeBlocks(lang)`, `Task` and `TaskMark` on list items (Obsidian's custom statuses like `[/]` included), and the `parseJSON`, `parseYAML` and `parseCSV` functions.
+- **Why.** A generated anchor changes whenever the heading text does, and breaks links to it. A template could split a note into sections but could not link to them, find a section by its anchor, or read a note's images, code blocks or task states.
+- **How to use.** Add `{#id}` at the end of a heading, see [[en/user/markdown#heading-anchors|Markdown syntax]]. Template functions are in [[en/user/templates#own-toc|Templates]]. A heading that already ends with braces in this form, such as `## Setup {#install}`, loses them from its text and gets that id.
+
 ### An empty frontmatter field no longer breaks sync
 
 - **What.** A note with `description:` or `redirect:` and no value (or `null`, `~`) now loads, with the field treated as not set.
