@@ -273,6 +273,7 @@ func TestResolveAdminBypass(t *testing.T) {
 		require.Equal(t, int64(0), apiKey.ID)
 		require.Equal(t, "admin", apiKey.Value)
 		require.Equal(t, "Admin user bypass", apiKey.Description)
+		require.Equal(t, int64(42), apiKey.CreatedBy, "hides must be recorded against the admin")
 	})
 
 	t.Run("admin bypasses API key check even with X-API-Key header present", func(t *testing.T) {

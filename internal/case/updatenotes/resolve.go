@@ -29,6 +29,10 @@ type Env interface {
 	HandleLatestNotesAfterSave(ctx context.Context, pathIDs []int64) error
 }
 
+// NoHideActorMessage is returned when a request has no admin to record as the one
+// who hid a note (e.g. a webhook token issued before tokens carried one).
+const NoHideActorMessage = "cannot hide: the request carries no admin to record as hidden_by"
+
 func hashContent(content []byte) string {
 	h := sha256.New()
 	h.Write(content)
@@ -138,6 +142,9 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 				return errp, nil
 			}
 			hide.Path = norm
+			if input.ApiKey.CreatedBy == 0 {
+				return &model.ErrorPayload{Message: NoHideActorMessage}, nil
+			}
 			err := env.HideNotePath(ctx, db.HideNotePathParams{
 				HiddenBy: &input.ApiKey.CreatedBy,
 				Value:    hide.Path,

@@ -86,7 +86,7 @@ Optional `expectedHash` works the same as for upsert.
 }
 ```
 
-Marks the note as hidden without changing its content. The note remains in the vault but is no longer served to readers.
+Marks the note as hidden without changing its content. The note remains in the vault but is no longer served to readers. The hide is recorded against an admin: the signed-in admin, the admin who created the API key, or the admin who created the webhook that issued the token.
 
 ---
 
@@ -231,7 +231,7 @@ If the target path is not covered by the key's write patterns, the mutation retu
 Authorization: Bearer eyJhbGc...
 ```
 
-With none of the three the request fails with `missing X-API-Key in request header`. `hideNotes`, `uploadNoteAsset` and `commitNotes` work the same way.
+With none of the three the request fails with `missing X-API-Key in request header`. `hideNotes`, `uploadNoteAsset` and `commitNotes` work the same way, except that `hideNotes` and `commitNotes` answer the webhook token with an `ErrorPayload`; a webhook agent hides a note with the `hide` change instead.
 
 ---
 

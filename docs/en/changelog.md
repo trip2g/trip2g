@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Admins can hide notes
+
+- **What.** `hideNotes` and the `hide` change in `updateNotes` work for a signed-in admin: a browser session, a personal token `t2g_…` in a header or in `?token=`, or a session token. The `hide` change also works with a webhook token, within its write patterns. The hide is recorded against the signed-in admin, the admin who created the API key, or the admin who created the webhook.
+- **Why.** Both failed with an `errors` entry for everyone but an API key, and the `hide` change failed for a webhook token the same way: the hide had no admin to record.
+- **How to use.** Nothing to do. A webhook token issued before the upgrade still gets `ErrorPayload` from the `hide` change until it expires. See [[en/user/update_notes#hide — remove a note from public view|updateNotes]].
+
 ### A base layout can mark a slot with a bare yield
 
 - **What.** A base layout may mark a slot with `{{ yield main() }}` instead of `{{ block main() }}…{{ end }}`; the pages that extend it fill the slot with their own `{{ block main() }}`. Auto-import never pulls in a layout that starts with `{{ extends }}`: such a file is a page, not a component.

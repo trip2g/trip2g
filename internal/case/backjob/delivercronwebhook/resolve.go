@@ -151,6 +151,7 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 			WritePatterns: writePatterns,
 			DeliveryKind:  deliveryKindCron,
 			DeliveryID:    params.DeliveryID,
+			CreatedBy:     wh.CreatedBy,
 		}, env.ShortAPITokenSecret(), ttl)
 		if signErr != nil {
 			log.Error("failed to sign short API token", "cron_webhook_id", wh.ID, "error", signErr)

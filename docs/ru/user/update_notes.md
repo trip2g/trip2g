@@ -86,7 +86,7 @@ mutation UpdateNotes($input: UpdateNotesInput!) {
 }
 ```
 
-Помечает заметку как скрытую, не затрагивая содержимое. Заметка остаётся в хранилище, но перестаёт отдаваться читателям.
+Помечает заметку как скрытую, не затрагивая содержимое. Заметка остаётся в хранилище, но перестаёт отдаваться читателям. Скрытие записывается на админа: на вошедшего админа, на админа, создавшего API-ключ, или на админа, создавшего вебхук, который выдал токен.
 
 ---
 
@@ -203,7 +203,7 @@ X-Api-Key: your-api-key
 Authorization: Bearer eyJhbGc...
 ```
 
-Без любого из трёх запрос отклоняется с ошибкой `missing X-API-Key in request header`. Так же устроены `hideNotes`, `uploadNoteAsset` и `commitNotes`.
+Без любого из трёх запрос отклоняется с ошибкой `missing X-API-Key in request header`. Так же устроены `hideNotes`, `uploadNoteAsset` и `commitNotes`, только `hideNotes` и `commitNotes` отвечают токену вебхука `ErrorPayload`; webhook-агент скрывает заметку изменением `hide`.
 
 ---
 

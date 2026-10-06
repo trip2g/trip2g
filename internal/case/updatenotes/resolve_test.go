@@ -546,6 +546,7 @@ func TestResolve_Hide(t *testing.T) {
 	}
 
 	input := model.UpdateNotesInput{
+		ApiKey: db.ApiKey{CreatedBy: 1},
 		Changes: []model.NoteChangeInput{
 			{Hide: &model.NoteChangeHideInput{Path: "gone.md"}},
 		},
@@ -617,6 +618,7 @@ func TestResolve_MixedBatch(t *testing.T) {
 	}
 
 	input := model.UpdateNotesInput{
+		ApiKey: db.ApiKey{CreatedBy: 1},
 		Changes: []model.NoteChangeInput{
 			{Patch: &model.NoteChangePatchInput{Path: "patch-me.md", Find: "original", Replace: "updated"}},
 			{Upsert: &model.NoteChangeUpsertInput{Path: "new.md", Content: "brand new"}},
@@ -853,7 +855,7 @@ func TestResolve_ScopedToken_LeadingSlashHideNotDenied(t *testing.T) {
 	}
 
 	out, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
-		ApiKey: db.ApiKey{},
+		ApiKey: db.ApiKey{CreatedBy: 1},
 		Changes: []model.NoteChangeInput{
 			{Hide: &model.NoteChangeHideInput{Path: "/concepts/x.md"}},
 		},
@@ -1097,6 +1099,7 @@ func TestResolve_HideWithUnchangedUpsertStillReports(t *testing.T) {
 	}
 
 	result, err := updatenotes.Resolve(ctx, env, model.UpdateNotesInput{
+		ApiKey: db.ApiKey{CreatedBy: 1},
 		Changes: []model.NoteChangeInput{
 			{Hide: &model.NoteChangeHideInput{Path: "gone.md"}},
 			{Upsert: &model.NoteChangeUpsertInput{Path: "kept.md", Content: "same"}},

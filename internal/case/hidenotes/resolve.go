@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/handlenotewebhooks"
+	"trip2g/internal/case/updatenotes"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -29,6 +30,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// tokens are denied outright (updateNotes' hide change is the scoped path).
 	if err := appreq.RequireUnscoped(ctx); err != nil {
 		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // authorization denial returned as payload, not as error.
+	}
+
+	if input.ApiKey.CreatedBy == 0 {
+		return &model.ErrorPayload{Message: updatenotes.NoHideActorMessage}, nil
 	}
 
 	// Collect note info before hiding (notes may be removed from NoteViews after reload).

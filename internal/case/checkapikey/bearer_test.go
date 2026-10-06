@@ -201,6 +201,7 @@ func TestResolveWithDeliveryIdentity(t *testing.T) {
 		WritePatterns: []string{"boards/**"},
 		DeliveryKind:  "change",
 		DeliveryID:    99,
+		CreatedBy:     5,
 	}
 	token, err := shortapitoken.Sign(tokenData, testSecret, time.Hour)
 	require.NoError(t, err)
@@ -216,9 +217,10 @@ func TestResolveWithDeliveryIdentity(t *testing.T) {
 
 	ctx, req := setupRequestContextWithBearer(token)
 
-	_, err = checkapikey.Resolve(ctx, env, "test-action")
+	apiKey, err := checkapikey.Resolve(ctx, env, "test-action")
 	require.NoError(t, err)
 
+	require.EqualValues(t, 5, apiKey.CreatedBy)
 	require.Equal(t, "change", req.WebhookDeliveryKind)
 	require.EqualValues(t, 99, req.WebhookDeliveryID)
 }

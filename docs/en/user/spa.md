@@ -161,9 +161,9 @@ Most results are unions: ask for `__typename` and one `... on` fragment per type
 
 | Caller | Sends | Reaches |
 |---|---|---|
-| Signed-in admin | Session cookie, or `Authorization: Bearer t2g_…` | Everything below, `admin { … }` included, except hiding a note |
+| Signed-in admin | Session cookie, or `Authorization: Bearer t2g_…` | Everything below, `admin { … }` included |
 | API key | `X-Api-Key: …` | Everything but `admin { … }`; writes only within the key's write patterns |
-| Webhook token | `Authorization: Bearer eyJ…` | What an API key reaches, within the token's read and write patterns, except hiding a note |
+| Webhook token | `Authorization: Bearer eyJ…` | What an API key reaches, within the token's read and write patterns, except `hideNotes`, `pushNotes` and `commitNotes` |
 | Any visitor | Nothing | `search`, and `noteChanges` once signed in |
 
 An app on a page visitors open authenticates with the admin's session cookie, which `credentials: 'include'` sends. Don't put an API key in a bundle: anyone who loads the page can read it.
@@ -328,7 +328,7 @@ mutation HideNotes($input: HideNotesInput!) {
 
 A hidden note disappears from the site. Saving it again with `updateNotes` brings it back. A `hide` change in `updateNotes`, `{ "hide": { "path": "boards/old.md" } }`, does the same within a batch.
 
-Hiding needs an API key today. Sent with an admin session or a personal token, both `hideNotes` and the `hide` change fail with an `errors` entry; a webhook token gets `ErrorPayload` from `hideNotes` and the same error from the `hide` change.
+The hide is recorded against an admin: the signed-in admin, the admin who created the API key, or the admin who created the webhook that issued the token. A webhook token gets `ErrorPayload` from `hideNotes`; it hides with the `hide` change, within its write patterns.
 
 #### Upload a file
 
