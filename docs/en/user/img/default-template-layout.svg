@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 1180" width="440" height="1180" role="img" aria-labelledby="t d" lang="en">
+<title id="t">How the default template assembles a page</title>
+<desc id="d">Desktop: _header.md on top, _left_sidebar.md left, the note in the middle, _right_sidebar.md right, _footer.md at the bottom. wide: true drops both sidebars. Each region takes the first source that has one: the note's frontmatter, a glob section, then the auto-load note. On a phone both sidebars become drawers opened from buttons in the header.</desc>
+<style>
+  .card{fill:#f3f5f8;stroke:#e1e5eb}
+  text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Noto Sans","DejaVu Sans",sans-serif;font-size:15px;fill:#373c44}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono","DejaVu Sans Mono",monospace;font-weight:600}
+  .h{font-size:15px;font-weight:700;letter-spacing:.06em;fill:#646b79}
+  .bb{font-weight:700}
+  .muted{fill:#646b79}
+  .strong{fill:#1f242c}
+  .frame{fill:#ffffff;stroke:#c9d0da;stroke-width:1.5}
+  .rule{stroke:#d5dbe3;stroke-width:1}
+  .dot{fill:#c9d0da}
+  .fn{fill:#dcf1e6;stroke:#2f9e6e;stroke-width:1.5}
+  .fnt{fill:#145c3d}
+  .fnt2{fill:#1f6e4b}
+  .fnbar{fill:#2f9e6e;opacity:.35}
+  .fnrule{stroke:#2f9e6e;stroke-opacity:.5}
+  .chip{fill:#dcf1e6;stroke:#2f9e6e;stroke-width:1.5}
+  .link{stroke:#2f9e6e;stroke-width:1.5;stroke-dasharray:3 3}
+  .note{fill:#deedf8;stroke:#0172ad;stroke-width:1.5}
+  .notet{fill:#0b5a86}
+  .notebar{fill:#0172ad;opacity:.3}
+  .drawer{fill:#dcf1e6;stroke:#2f9e6e;stroke-width:1.5;stroke-dasharray:6 4}
+  .icon{stroke:#145c3d;stroke-width:2;fill:none}
+  .arrow{stroke:#646b79;stroke-width:1.5;fill:none}
+  .ahead{fill:#646b79}
+  .step{fill:#2f9e6e}
+  .stept{fill:#ffffff}
+  .stepoff{fill:none;stroke:#9aa3b2;stroke-width:1.5;stroke-dasharray:3 3}
+  @media (prefers-color-scheme: dark){
+    .card{fill:#1a1e28;stroke:#262c39}
+    text{fill:#c2c7d0}
+    .h,.muted{fill:#8e97a8}
+    .strong{fill:#e6e9ee}
+    .frame{fill:#13171f;stroke:#3a4253}
+    .rule{stroke:#2c3342}
+    .dot{fill:#3a4253}
+    .fn,.chip,.drawer{fill:#173329;stroke:#3fbf88}
+    .fnt{fill:#9be6c3}
+    .fnt2{fill:#7fd5ad}
+    .fnbar{fill:#3fbf88;opacity:.4}
+    .fnrule{stroke:#3fbf88}
+    .link{stroke:#3fbf88}
+    .note{fill:#112c42;stroke:#01aaff}
+    .notet{fill:#8fd3ff}
+    .notebar{fill:#01aaff;opacity:.35}
+    .icon{stroke:#9be6c3}
+    .arrow{stroke:#8e97a8}
+    .ahead{fill:#8e97a8}
+    .step{fill:#3fbf88}
+    .stept{fill:#0d1f17}
+    .stepoff{stroke:#5b6475}
+  }
+</style>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahead"/></marker></defs>
+<rect x="0.5" y="0.5" width="439" height="1179" rx="14" class="card"/>
+<text x="16" y="34" class="h">DESKTOP · 1280 PX AND WIDER</text>
+<rect x="16" y="48" width="408" height="330" rx="10" class="frame"/>
+<line x1="16" y1="68" x2="424" y2="68" class="rule"/>
+<circle cx="30" cy="58" r="3.5" class="dot"/>
+<circle cx="42" cy="58" r="3.5" class="dot"/>
+<circle cx="54" cy="58" r="3.5" class="dot"/>
+<rect x="26" y="78" width="388" height="56" rx="6" class="fn"/>
+<text x="40" y="101" class="mono fnt">_header.md</text>
+<text x="40" y="123" class="b fnt2">first image → logo, first list → menu</text>
+<rect x="26" y="144" width="162" height="26" rx="13" class="chip"/>
+<text x="107" y="162" class="mono fnt" text-anchor="middle">_left_sidebar.md</text>
+<rect x="243" y="144" width="171" height="26" rx="13" class="chip"/>
+<text x="328.5" y="162" class="mono fnt" text-anchor="middle">_right_sidebar.md</text>
+<line x1="86" y1="170" x2="86" y2="182" class="link"/>
+<line x1="354" y1="170" x2="354" y2="182" class="link"/>
+<rect x="26" y="182" width="120" height="140" rx="6" class="fn"/>
+<text x="38" y="204" class="b fnt2">left</text>
+<text x="38" y="222" class="b fnt2">sidebar</text>
+<rect x="38" y="240" width="70" height="6" rx="3" class="fnbar"/><rect x="38" y="254" width="84" height="6" rx="3" class="fnbar"/><rect x="38" y="268" width="58" height="6" rx="3" class="fnbar"/><rect x="38" y="282" width="76" height="6" rx="3" class="fnbar"/><rect x="38" y="296" width="64" height="6" rx="3" class="fnbar"/>
+<rect x="156" y="182" width="128" height="140" rx="6" class="note"/>
+<text x="168" y="204" class="bb notet">the note</text>
+<text x="168" y="222" class="bb notet">itself</text>
+<rect x="168" y="240" width="104" height="6" rx="3" class="notebar"/><rect x="168" y="252" width="98" height="6" rx="3" class="notebar"/><rect x="168" y="264" width="104" height="6" rx="3" class="notebar"/><rect x="168" y="276" width="80" height="6" rx="3" class="notebar"/><rect x="168" y="288" width="100" height="6" rx="3" class="notebar"/><rect x="168" y="300" width="60" height="6" rx="3" class="notebar"/>
+<rect x="294" y="182" width="120" height="140" rx="6" class="fn"/>
+<text x="306" y="204" class="b fnt2">right</text>
+<text x="306" y="222" class="b fnt2">sidebar</text>
+<rect x="306" y="240" width="62" height="6" rx="3" class="fnbar"/><rect x="306" y="254" width="80" height="6" rx="3" class="fnbar"/><rect x="306" y="268" width="70" height="6" rx="3" class="fnbar"/><rect x="306" y="282" width="54" height="6" rx="3" class="fnbar"/>
+<rect x="26" y="332" width="388" height="36" rx="6" class="fn"/>
+<text x="40" y="355" class="mono fnt">_footer.md</text>
+<rect x="16" y="400" width="120" height="84" rx="8" class="frame"/>
+<rect x="24" y="408" width="104" height="14" rx="3" class="fn"/>
+<rect x="24" y="428" width="104" height="30" rx="3" class="note"/>
+<rect x="32" y="434" width="88" height="6" rx="3" class="notebar"/><rect x="32" y="444" width="80" height="6" rx="3" class="notebar"/>
+<rect x="24" y="464" width="104" height="12" rx="3" class="fn"/>
+<text x="152" y="422" class="mono strong">wide: true</text>
+<text x="152" y="446" class="b">no sidebars,</text>
+<text x="152" y="466" class="b">no reading-width cap</text>
+<line x1="16" y1="506" x2="424" y2="506" class="rule"/>
+<text x="16" y="536" class="h">WHICH NOTE FILLS A REGION</text>
+<text x="16" y="560" class="b muted">First match wins. Shown for the header;</text>
+<text x="16" y="580" class="b muted">footer and sidebars resolve the same way.</text>
+<line x1="28" y1="614" x2="28" y2="770" class="link"/>
+<circle cx="28" cy="609" r="12" class="step"/>
+<text x="28" y="614" class="bb stept" text-anchor="middle">1</text>
+<text x="50" y="614" class="bb">The note's own frontmatter</text>
+<text x="50" y="634" class="b"><tspan class="mono">header: [[note]]</tspan> · <tspan class="mono">false</tspan> hides it</text>
+<circle cx="28" cy="661" r="12" class="step"/>
+<text x="28" y="666" class="bb stept" text-anchor="middle">2</text>
+<text x="50" y="666" class="bb">A glob section that matches</text>
+<text x="50" y="686" class="b"><tspan class="mono">header_includes</tspan>, highest <tspan class="mono">header_priority</tspan></text>
+<circle cx="28" cy="713" r="12" class="step"/>
+<text x="28" y="718" class="bb stept" text-anchor="middle">3</text>
+<text x="50" y="718" class="bb">The auto-load note</text>
+<text x="50" y="738" class="b"><tspan class="mono">_header.md</tspan> at the vault root</text>
+<circle cx="28" cy="765" r="12" class="stepoff"/>
+<text x="28" y="770" class="bb muted" text-anchor="middle">4</text>
+<text x="50" y="770" class="b muted">None of them: the region is not drawn</text>
+<line x1="16" y1="798" x2="424" y2="798" class="rule"/>
+<text x="16" y="828" class="h">PHONE · NARROWER THAN 1024 PX</text>
+<rect x="144" y="850" width="152" height="236" rx="20" class="frame"/>
+<rect x="154" y="864" width="132" height="34" rx="6" class="fn"/>
+<line x1="164" y1="876" x2="178" y2="876" class="icon"/><line x1="164" y1="881" x2="178" y2="881" class="icon"/><line x1="164" y1="886" x2="178" y2="886" class="icon"/>
+<rect x="190" y="875" width="40" height="12" rx="6" class="fnbar"/>
+<rect x="262" y="875" width="5" height="5" class="icon"/><rect x="262" y="883" width="5" height="5" class="icon"/><rect x="270" y="875" width="5" height="5" class="icon"/><rect x="270" y="883" width="5" height="5" class="icon"/>
+<rect x="154" y="906" width="132" height="128" rx="6" class="note"/>
+<rect x="164" y="918" width="112" height="6" rx="3" class="notebar"/><rect x="164" y="931" width="100" height="6" rx="3" class="notebar"/><rect x="164" y="944" width="112" height="6" rx="3" class="notebar"/><rect x="164" y="957" width="90" height="6" rx="3" class="notebar"/><rect x="164" y="970" width="112" height="6" rx="3" class="notebar"/><rect x="164" y="983" width="104" height="6" rx="3" class="notebar"/><rect x="164" y="996" width="70" height="6" rx="3" class="notebar"/><rect x="164" y="1009" width="108" height="6" rx="3" class="notebar"/>
+<rect x="154" y="1042" width="132" height="30" rx="6" class="fn"/>
+<rect x="16" y="878" width="112" height="180" rx="8" class="drawer"/>
+<text x="28" y="902" class="b fnt2">header</text>
+<text x="28" y="920" class="b fnt2">menu</text>
+<rect x="28" y="934" width="58" height="6" rx="3" class="fnbar"/><rect x="28" y="946" width="72" height="6" rx="3" class="fnbar"/>
+<line x1="28" y1="964" x2="116" y2="964" class="fnrule"/>
+<text x="28" y="988" class="b fnt2">left</text>
+<text x="28" y="1006" class="b fnt2">sidebar</text>
+<rect x="28" y="1020" width="70" height="6" rx="3" class="fnbar"/><rect x="28" y="1032" width="56" height="6" rx="3" class="fnbar"/><rect x="28" y="1044" width="66" height="6" rx="3" class="fnbar"/>
+<rect x="312" y="878" width="112" height="180" rx="8" class="drawer"/>
+<text x="324" y="902" class="b fnt2">right</text>
+<text x="324" y="920" class="b fnt2">sidebar</text>
+<rect x="324" y="936" width="62" height="6" rx="3" class="fnbar"/><rect x="324" y="950" width="80" height="6" rx="3" class="fnbar"/><rect x="324" y="964" width="70" height="6" rx="3" class="fnbar"/><rect x="324" y="978" width="54" height="6" rx="3" class="fnbar"/><rect x="324" y="992" width="74" height="6" rx="3" class="fnbar"/>
+<path d="M 166 872 C 150 854, 132 856, 124 876" class="arrow" marker-end="url(#ah)"/>
+<path d="M 274 872 C 290 854, 308 856, 316 876" class="arrow" marker-end="url(#ah)"/>
+<text x="16" y="1116" class="b muted">1024–1279 px: only the right sidebar is a drawer.</text>
+<text x="16" y="1138" class="b muted">Both drawer buttons sit in the header:</text>
+<text x="16" y="1160" class="b muted">a page without a header cannot open drawers.</text>
+</svg>
