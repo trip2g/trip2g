@@ -52,13 +52,14 @@ title: "Navigation"
 - [[en/user/themes|Theming the default template]]
 - [[en/user/theme-editor|Theme editor (live)]]
 - [[en/user/templates|Custom templates]]
-- [[en/user/components|Components and best practices]]
+- [[en/user/components|Template components]]
 - [[en/user/jet-debugging|Debugging Jet templates]]
 - [[en/user/jet-functions|Jet functions reference]]
 - [[en/user/yield_blocks|yield_blocks: per-page CSS/JS]]
 - [[en/user/embedded-notes|Embedded notes]]
 - [[en/user/bem|BEM naming in templates]]
 - [[en/user/One HTML Page|One HTML page]]
+- [[en/user/spa|An app on top of trip2g]]
 
 ### Automation
 

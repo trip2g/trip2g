@@ -9,9 +9,15 @@ Templates control how your notes look — sidebar, header, footer, and layout.
 
 A template is an HTML file stored in `_layouts/`. It receives the note's content and frontmatter, then produces a complete page. Your markdown stays clean; the template decides how it's presented.
 
-> **Recommended structure:** build custom layouts from components: one `block` per file, called with `yield`, named with `@lid`, styled with BEM and imported automatically. See [[en/user/components|Components, auto-import and best practices]].
+> **Recommended structure:** build custom layouts from components: one `block` per file, called with `yield`, named with `@lid`, styled with BEM and imported automatically. See [[en/user/components|Template components]].
 
 > **See one in action:** [[instaframes/_index|Instagram frames]] is a ready-made template that turns a markdown file into downloadable carousel images — a full example of a custom layout doing real work.
+
+### Why templates
+
+Content stays plain markdown. A template gets the document's structure through `note.PartialRenderer()`: its sections, lists, images and code blocks. It lays them out the way the page needs, and the note itself carries no markup.
+
+This exists to keep agents on track. An agent writes markdown by the template's rules, such as a heading per section, a list for the menu or a code block for data. It doesn't touch HTML or CSS, and the page still comes out designed. One set of layouts covers landing pages, business cards, dashboards, and even single-page apps on top of trip2g's GraphQL API: see [[en/user/spa|An app on top of trip2g]].
 
 ### How templates work
 
@@ -183,29 +189,30 @@ Load assets:
 <link rel="stylesheet" href="{{ asset("style.css") }}">
 ```
 
-Include HTML injections from site settings (analytics scripts, custom `<head>` tags):
+Include the site's HTML injections: see the next section.
+
+### HTML injections
+
+`htmlInjectionsHead` and `htmlInjectionsBodyEnd` hold the snippets an admin adds in **Admin → SEO & URLs → HTML Injections**: analytics and metrics scripts, verification tags, a `<style>` block with theme overrides. Each injection has a placement (`head` or `body_end`), a position (lower comes first) and optional active-from / active-to dates. A template gets only the injections active right now, sorted by position.
+
+The default template prints them for you. A custom layout prints them only where it asks for them:
 
 ```jet
-{{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+<head>
+  <title>{{ title }}</title>
+  {{ range i, injection := htmlInjectionsHead }}
+    {{ injection.Content | unsafe }}
+  {{ end }}
+</head>
+<body>
+  {{ note.HTMLString() }}
+  {{ range i, injection := htmlInjectionsBodyEnd }}
+    {{ injection.Content | unsafe }}
+  {{ end }}
+</body>
 ```
 
-```jet
-{{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
-```
-
-Place `htmlInjectionsHead` inside `<head>` and `htmlInjectionsBodyEnd` before `</body>`. This is how Google Analytics and other site-wide scripts reach custom Jet layouts.
-
-> **Tip:** If you use a custom Jet layout, add both variables so scripts configured in Admin → HTML Injections are automatically included:
-> ```jet
-> <head>
->   ...
->   {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
-> </head>
-> <body>
->   ...
->   {{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
-> </body>
-> ```
+`Content` is a plain string of HTML the admin wrote, so it needs `| unsafe`; without it the script shows up on the page as text. A layout that leaves both loops out gets no analytics. What to put in an injection: [[en/user/themes|Themes]] (a `<style>` block), [[en/user/admin_onboarding|Admin panel tour]].
 
 ### SEO tags in a custom layout
 
@@ -215,7 +222,9 @@ The default template writes `<link rel="canonical">`, `og:url`, `hreflang` and `
 
 ```jet
 <head>
-  {{ if note.M().GetBool("noindex", false) }}<meta name="robots" content="noindex">{{ end }}
+  {{ if note.M().GetBool("noindex", false) }}
+    <meta name="robots" content="noindex">
+  {{ end }}
   {{ canonicalRoute := note.M().GetString("route", "") }}
   {{ if canonicalRoute != "" }}
   <link rel="canonical" href="https://{{ canonicalRoute }}">
@@ -270,7 +279,9 @@ A table of contents where each entry also shows the first lines of its section:
 {{ pr := note.PartialRenderer() }}
 <nav class="toc">
   {{ range i, h := note.TOC() }}
-    <a class="toc__item toc__item--{{ h.Level }}" href="#{{ h.ID }}">{{ h.Text }}</a>
+    <a class="toc__item toc__item--{{ h.Level }}" href="#{{ h.ID }}">
+      {{ h.Text }}
+    </a>
   {{ end }}
 </nav>
 
@@ -301,7 +312,10 @@ Any character other than a space counts as `done`, the way Obsidian shows such a
 {{ if list := note.PartialRenderer().FirstList(); list }}
   <ul class="tasks">
     {{ range i, item := list.Items }}
-      <li class="tasks__item tasks__item--{{ item.Task }}" data-mark="{{ item.TaskMark }}">{{ item.Text }}</li>
+      <li class="tasks__item tasks__item--{{ item.Task }}"
+          data-mark="{{ item.TaskMark }}">
+        {{ item.Text }}
+      </li>
     {{ end }}
   </ul>
 {{ end }}
@@ -378,7 +392,11 @@ A table from a ` ```csv ` block:
   {{ if rows := parseCSV(b[0].Content); rows }}
     <table>
       {{ range i, row := rows }}
-        <tr>{{ range j, cell := row }}<td>{{ cell }}</td>{{ end }}</tr>
+        <tr>
+          {{ range j, cell := row }}
+            <td>{{ cell }}</td>
+          {{ end }}
+        </tr>
       {{ end }}
     </table>
   {{ end }}
@@ -389,7 +407,7 @@ Values from a note are the note author's text, and layouts escape them on output
 
 ### Organizing multiple templates
 
-The recommended way is a file per component, imported automatically: see [[en/user/components|Components, auto-import and best practices]]. A single `blocks.html` with an explicit import also works.
+The recommended way is a file per component, imported automatically: see [[en/user/components|Template components]]. A single `blocks.html` with an explicit import also works.
 
 For sites with shared header, footer, and styles, use a `blocks.html` file:
 
@@ -413,6 +431,124 @@ _layouts/
   </article>
 {{ end }}
 ```
+
+### A page from several notes
+
+A layout can pull in other notes, not only the one being rendered. `nvs.ByPath("blocks/pricing.md")` returns that note, and every method of `note` works on it: `Title()`, `HTMLString()`, `PartialRenderer()`. A landing page can keep each block in its own note, and an author or an agent edits the pricing note without touching the page or the layout.
+
+Put the lookup in a component that takes the note's path as a parameter. `_layouts/components/section.html`:
+
+```jet
+{{ block @lid(path="") }}
+  {{ if part := nvs.ByPath(path); part }}
+    <section class="@did">
+      <h2>{{ part.Title() }}</h2>
+      {{ part.HTMLString() }}
+    </section>
+  {{ end }}
+{{ end }}
+```
+
+A component can also take a note apart. `_layouts/components/faq.html` turns every `##` heading of a note into a collapsible answer:
+
+```jet
+{{ block @lid(path="") }}
+  {{ if faq := nvs.ByPath(path); faq }}
+    {{ range i, s := faq.PartialRenderer().Sections(2) }}
+      <details class="@did">
+        <summary>{{ s.TitleHTML }}</summary>
+        {{ s.ContentHTML }}
+      </details>
+    {{ end }}
+  {{ end }}
+{{ end }}
+```
+
+The page layout lists the notes it is made of:
+
+```jet
+{{ note.HTMLString() }}
+{{ yield components_section(path="/blocks/pricing.md") }}
+{{ yield components_faq(path="/blocks/faq.md") }}
+```
+
+- The path is the note's file path in the vault, with or without a leading `/`.
+- A path that matches no note gives `nil`, and the `if` skips the block. A typo in a path shows up as a missing section, not as an error.
+- `ByPath` returns the note whatever its access settings. A paid or sign-in-only note pulled into a public page is shown to everyone who opens that page.
+- Auto-import finds both components; the page needs no `{{ import }}`.
+
+These layouts are rendered by a test in the trip2g repository (`internal/layoutloader/templates_doc_example_test.go`).
+
+### Layout inheritance: extends
+
+Most pages of a site share a frame: the `<head>`, a header, a footer. Inheritance puts the frame in one file, the **base layout**, and lets each page layout fill in only what differs. If you know Jinja2 or Twig, it works the same way.
+
+The base marks each place a page may fill with a `block`. The block holds the default content. `_layouts/base.html`:
+
+```jet
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ block title() }}{{ note.Title() }}{{ end }}</title>
+</head>
+<body>
+  <header>My site</header>
+  <main>
+    {{ block main() }}
+      {{ note.HTMLString() }}
+    {{ end }}
+  </main>
+  <footer>
+    {{ block footer() }}© My site{{ end }}
+  </footer>
+</body>
+</html>
+```
+
+A page layout starts with `{{ extends "base" }}` and redefines the blocks it wants to change. `_layouts/article.html`:
+
+```jet
+{{ extends "base" }}
+
+{{ block title() }}{{ note.Title() }} · Blog{{ end }}
+
+{{ block main() }}
+  <article>
+    <h1>{{ note.Title() }}</h1>
+    {{ note.HTMLString() }}
+    {{ yield components_button(label="All posts", url="/blog") }}
+  </article>
+{{ end }}
+```
+
+A note with `layout: article` renders like this:
+
+- trip2g renders `base.html` from top to bottom. At each block it takes the page's version when the page defines one, and the base's default otherwise. Here `title` and `main` come from `article.html`, and `footer` stays `© My site`.
+- Anything in the page outside a `{{ block }}` is ignored. Only the page's blocks reach the result.
+- `extends` must be the first tag of the page, before any `{{ import }}`. The path is relative to `_layouts/`, without `.html`.
+- A note can use `layout: base` too, and gets all the defaults.
+
+**Give every slot a default.** Mark a slot in the base with `{{ block main() }}…{{ end }}`, not with a bare `{{ yield main() }}`. A base that yields a block only the pages define doesn't load in trip2g today, and the pages that extend it then fail with `template /base could not be found`.
+
+**Components.** The page that extends a base gets auto-import, so the button above needs no `{{ import }}`. The base doesn't: auto-import reaches only the layout the note names. When the base itself yields a component, the base imports it at the top:
+
+```jet
+{{ import "components/header" }}
+<!DOCTYPE html>
+<html lang="en">
+<body>
+  {{ yield components_header() }}
+  <main>{{ block main() }}{{ end }}</main>
+</body>
+</html>
+```
+
+Without the import the page fails with `unresolved block "components_header"`. This limit is tracked in [trip2g#388](https://github.com/trip2g/trip2g/issues/388).
+
+**Inheritance or a base component.** [[en/user/components#Base layer|Template components]] wraps a page in a base component instead: `{{ yield components_base(title=…) content }}`. That needs no `extends` and fits a frame with one slot for content. Inheritance fits a frame with several slots that a page fills separately, such as a title, a sidebar and the main column.
+
+These layouts are rendered by a test in the trip2g repository (`internal/layoutloader/templates_doc_example_test.go`).
 
 ### Assets across layout files
 
@@ -438,18 +574,19 @@ The HTML comment stays in the page source (with the resolved URL inside), but vi
 
 Templates use the [Jet](https://github.com/CloudyKit/jet) engine:
 
-```jet
-{{ variable }}                        — output
-{{ if condition }}...{{ end }}        — conditional
-{{ range i, item := list }}...{{ end }} — loop (always capture both index and value)
-{{ block name() }}...{{ end }}        — define a block
-{{ yield name() }}                    — call a block
-{{ include "path" data }}             — include a partial
-{{ x := exec("lib/name", data) }}     — run another layout file, take the value it returns
-{{ try }}...{{ catch err }}...{{ end }} — render a fallback if the inner part fails
-{{ value | unsafe }}                  — output a string without escaping
-{{ d := parseJSON(text) }}            — parse JSON, YAML or CSV into data
-```
+| Syntax | Does |
+|---|---|
+| `{{ variable }}` | Output, HTML-escaped |
+| `{{ if condition }}…{{ end }}` | Conditional |
+| `{{ range i, item := list }}…{{ end }}` | Loop; always capture both index and value |
+| `{{ block name() }}…{{ end }}` | Define a block |
+| `{{ yield name() }}` | Call a block |
+| `{{ include "path" data }}` | Include a partial |
+| `{{ extends "base" }}` | Inherit a base layout, see [[#Layout inheritance: extends]] |
+| `{{ x := exec("lib/name", data) }}` | Run another layout file, take the value it returns |
+| `{{ try }}…{{ catch err }}…{{ end }}` | Render a fallback if the inner part fails |
+| `{{ value \| unsafe }}` | Output a string without escaping |
+| `{{ d := parseJSON(text) }}` | Parse JSON, YAML or CSV into data |
 
 `parseJSON`, `parseYAML` and `parseCSV` are described in [[en/user/templates#parse-data|Parsing data]]. Every function and filter, including what trip2g adds, is in the [[en/user/jet-functions|Jet functions reference]].
 
@@ -488,7 +625,9 @@ Changing what "featured" means — a different sort, five instead of three, only
 ```jet
 {{ notes := nvs.ByGlob(. + "/*.md").Public().All() }}
 {{ minutes := 0 }}
-{{ range _, n := notes }}{{ minutes = minutes + n.ReadingTime() }}{{ end }}
+{{ range _, n := notes }}
+  {{ minutes = minutes + n.ReadingTime() }}
+{{ end }}
 {{ return map("count", len(notes), "minutes", minutes) }}
 ```
 
@@ -502,7 +641,7 @@ Rules worth knowing:
 - **The path starts at `_layouts/` and has no extension.** `exec("lib/featured")` and `exec("/lib/featured")` both load `_layouts/lib/featured.html`, from whichever folder the caller lives in. `exec("lib/featured.html")` is *not found*. Only `.html` and `.html.json` files under `_layouts/` are layout files.
 - **A missing file fails the render** with `template /lib/featured could not be found`. Wrap the call in `try` (below) if the page should survive it.
 - **`return` only means something in an exec'd file.** In a page that is rendered normally it stops nothing and its value is not printed.
-- **Components inside an exec'd file need an explicit import.** Auto-import covers the page itself; a file reached through `exec`, `include` or `extends` must `{{ import "/path/to/component" }}` the components it yields.
+- **Components inside an exec'd file need an explicit import.** Auto-import covers the page itself; a file reached through `exec`, `include` or `extends` must `{{ import "/path/to/component" }}` the components it yields ([trip2g#388](https://github.com/trip2g/trip2g/issues/388)).
 - **Each call runs the file.** `exec` is not cached: calling `lib/section_stats` in a loop over twenty sections runs twenty full queries on every render. For a value that depends only on the note itself, frontmatter is cheaper; for heavy computation across many notes, a Go helper is the better place.
 
 ### Isolating failures: try and catch
@@ -518,10 +657,14 @@ Use it around a widget whose input you don't control, so one bad note shows a fa
   {{ chart := note.M().Get("chart") }}
   <figure class="chart">
     <figcaption>{{ chart["title"] }}</figcaption>
-    {{ range _, v := chart["values"] }}<span class="bar" style="--v: {{ v }}"></span>{{ end }}
+    {{ range _, v := chart["values"] }}
+      <span class="bar" style="--v: {{ v }}"></span>
+    {{ end }}
   </figure>
 {{ catch err }}
-  <div class="chart chart--broken">Chart unavailable: {{ err.Error() | html }}</div>
+  <div class="chart chart--broken">
+    Chart unavailable: {{ err.Error() | html }}
+  </div>
 {{ end }}
 ```
 
@@ -530,7 +673,9 @@ Use it around a widget whose input you don't control, so one bad note shows a fa
 ```jet
 {{ try }}
   {{ related := nvs.ByPath(note.M().GetString("related", "")) }}
-  <aside class="related">See also: <a href="{{ related.Permalink() }}">{{ related.Title() }}</a></aside>
+  <aside class="related">
+    See also: <a href="{{ related.Permalink() }}">{{ related.Title() }}</a>
+  </aside>
 {{ end }}
 ```
 
@@ -541,7 +686,11 @@ Use it around a widget whose input you don't control, so one bad note shows a fa
   {{ stats := exec("lib/section_stats", "blog") }}
   <p>{{ stats["count"] }} posts, {{ stats["minutes"] }} min of reading</p>
 {{ catch err }}
-  {{ if currentUser.IsAdmin() }}<p class="admin-error">lib/section_stats: {{ err.Error() | html }}</p>{{ end }}
+  {{ if currentUser.IsAdmin() }}
+    <p class="admin-error">
+      lib/section_stats: {{ err.Error() | html }}
+    </p>
+  {{ end }}
 {{ end }}
 ```
 
@@ -584,7 +733,8 @@ The condition can be any expression, not only the variable:
   <p class="subtitle">{{ note.Title() }}</p>
 {{ end }}
 
-{{ if latest := nvs.ByGlob("blog/*.md").SortBy("CreatedAt").Desc().First(); latest }}
+{{ blog := nvs.ByGlob("blog/*.md").Public() }}
+{{ if latest := blog.SortBy("CreatedAt").Desc().First(); latest }}
   Latest post: <a href="{{ latest.Permalink() }}">{{ latest.Title() }}</a>
 {{ end }}
 
@@ -638,7 +788,9 @@ To test templates interactively without uploading files, use `/_system/renderlay
 `nvs.ByGlob()` selects notes by path pattern and supports sorting and pagination:
 
 ```jet
-{{ range i, post := nvs.ByGlob("blog/*.md").SortBy("CreatedAt").Desc().Limit(5).All() }}
+{{ blog := nvs.ByGlob("blog/*.md").Public() }}
+{{ posts := blog.SortBy("CreatedAt").Desc().Limit(5).All() }}
+{{ range i, post := posts }}
   <a href="{{ post.Permalink() }}">{{ post.Title() }}</a>
 {{ end }}
 ```
@@ -649,6 +801,6 @@ A query returns paid, sign-in-only and `_` system notes too; add `.Public()` on 
 
 ### See also
 
-- [[en/user/components|Components, auto-import and best practices]] — how to structure a layout
+- [[en/user/components|Template components]] — how to structure a layout
 - [[en/user/jet-functions|Jet functions reference]] — every Jet built-in and everything trip2g adds to templates
 - [[en/user/jet-debugging|Debugging Jet templates]]

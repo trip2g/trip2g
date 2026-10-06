@@ -126,5 +126,6 @@ The template is a single self-contained HTML file built with React and [@dnd-kit
 ## Related
 
 - [[templates|Custom templates]] — how `_layouts/` files work in trip2g
+- [[en/user/spa|An app on top of trip2g]] — the pattern this template follows, for building your own
 - [[publishing|Publishing notes]] — frontmatter basics
 - [[webhooks|Webhooks]] — change webhooks, cron webhooks, and MCP server

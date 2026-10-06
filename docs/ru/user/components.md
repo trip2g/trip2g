@@ -1,6 +1,7 @@
 ---
-title: "Компоненты, автоимпорт и лучшие практики"
+title: "Компоненты шаблонов"
 free: true
+wide: true
 lang_redirect: "[[en/user/components]]"
 ---
 
@@ -177,7 +178,12 @@ _layouts/
 
 ```jet
 {{ block _style_@lid() }}
-.@did { display: block; padding: 16px; border: 1px solid #ddd; border-radius: 8px; }
+.@did {
+  display: block;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
 .@did--featured { border-color: #0070f3; }
 .@did__title { margin: 0 0 8px; font-size: 1.25rem; }
 {{ end }}
@@ -194,7 +200,13 @@ _layouts/
 
 ```jet
 {{ block _style_@lid() }}
-.@did { display: inline-block; padding: 8px 16px; border-radius: 6px; background: #0070f3; color: #fff; }
+.@did {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #0070f3;
+  color: #fff;
+}
 {{ end }}
 
 {{ block @lid(label="", url="") }}
@@ -215,10 +227,17 @@ _layouts/
 <body>
   {{ note.HTMLString() }}
 
-  {{ posts := nvs.ByGlob("blog/*.md").Public().SortByMeta("date").Desc().SortBy("Title").Limit(3).All() }}
-  {{ range i, post := posts }}
-    {{ yield components_card(title=post.Title(), url=post.PermalinkEncoded(), featured=i == 0) content }}
-      {{ if summary := post.M().GetString("summary", ""); summary }}<p>{{ summary }}</p>{{ end }}
+  {{ blog := nvs.ByGlob("blog/*.md").Public() }}
+  {{ sorted := blog.SortByMeta("date").Desc().SortBy("Title") }}
+  {{ range i, post := sorted.Limit(3).All() }}
+    {{ yield components_card(
+      title=post.Title(),
+      url=post.PermalinkEncoded(),
+      featured=i == 0
+    ) content }}
+      {{ if summary := post.M().GetString("summary", ""); summary }}
+        <p>{{ summary }}</p>
+      {{ end }}
     {{ end }}
   {{ end }}
 

@@ -16,7 +16,8 @@ import (
 // Mirrors the worked example in docs/{en,ru}/user/jet-functions.md; keep them in sync.
 const jetFunctionsExample = `{{ query := nvs.ByGlob("blog/*.md").Public() }}
 {{ total := len(query.All()) }}
-{{ posts := query.SortByMeta("date").Desc().SortBy("Title").Limit(5).All() }}
+{{ sorted := query.SortByMeta("date").Desc().SortBy("Title") }}
+{{ posts := sorted.Limit(5).All() }}
 <h2>Latest posts</h2>
 <p>Showing {{ len(posts) }} of {{ total }}</p>
 <ul>
@@ -31,6 +32,8 @@ const jetFunctionsExample = `{{ query := nvs.ByGlob("blog/*.md").Public() }}
 </ul>`
 
 func TestJetFunctionsDocExample(t *testing.T) {
+	requireSnippetsInDocs(t, jetFunctionsPages(), []docSnippet{{name: "worked example", src: jetFunctionsExample}})
+
 	notes := model.NewNoteViews()
 	add := func(path, title string, free bool, date string) {
 		meta := map[string]interface{}{}

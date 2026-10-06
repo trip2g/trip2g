@@ -3,11 +3,24 @@ free: true
 title: Синтаксис Jet
 ---
 
-Jet — движок шаблонов. Поддерживает наследование, блоки и фильтры.
+Jet — движок шаблонов для Go. Синтаксис близок к `text/template` из Go, плюс то, что взято из Jinja2 и Twig: наследование через `extends` и блоки, фильтры через `|`, тернарный оператор `условие ? a : b`.
 
-[Документация разработчика](https://github.com/CloudyKit/jet/wiki)
+Если вы знаете шаблоны Go, держите в голове главные отличия:
 
-Все встроенные функции, фильтры и то, что добавляет trip2g, — в [[ru/user/jet-functions|Справочнике функций Jet]]. Как собирать шаблон из компонентов — в [[ru/user/components|Компонентах, автоимпорте и лучших практиках]].
+- переменные без `$`: `x := note.Title()`, а не `$x := .Title`;
+- методы вызываются со скобками: `note.Title()`;
+- операторы как в C: `==`, `&&`, `!`, `+`, а не функции `eq`, `and`, `not`;
+- `if` с объявлением принимает любое условие: `if x := f(); x != ""`;
+- `range` с одной переменной даёт **индекс**, а не элемент;
+- в пайпе `a | f: b` значение `a` становится **первым** аргументом, а в Go — последним;
+- повторяемый кусок — `block` с именованными параметрами и `yield`, а не `define` и `template`;
+- экранирование одно и то же везде, без учёта контекста, как в `html/template`.
+
+Если вы знаете Jinja2 или Twig: `extends`, блоки, `import`, `include` и фильтры работают похоже, но все теги пишутся в `{{ }}`, а цикл — это `range`, а не `for x in list`. Полное сравнение — в [[ru/user/jet-functions#На что похож Jet|Справочнике функций Jet]].
+
+[Справочник синтаксиса от автора движка](https://github.com/CloudyKit/jet/blob/master/docs/syntax.md)
+
+Все встроенные функции, фильтры и то, что добавляет trip2g, — в [[ru/user/jet-functions|Справочнике функций Jet]]. Как собирать шаблон из компонентов — в [[ru/user/components|Компонентах шаблонов]].
 
 ### Вывод переменных
 
@@ -125,13 +138,17 @@ Jet — движок шаблонов. Поддерживает наследов
 {{ end }}
 ```
 
-Срезы (slice) — начало:конец, конец не включается:
+Срезы (slice) — начало:конец, конец не включается. Границы могут быть переменными:
 
 ```jet
-{{ range i, item := items[1:3] }}
+{{ from := 1 }}
+{{ to := len(items) - 1 }}
+{{ range i, item := items[from:to] }}
   {{ item }}
 {{ end }}
 ```
+
+Подробнее и с выводом — в [[ru/user/jet-functions#Индекс и срез|Справочнике функций Jet]].
 
 ### Операторы
 
@@ -199,11 +216,14 @@ Jet — движок шаблонов. Поддерживает наследов
 
 | Фильтр | Описание |
 |--------|----------|
-| `html` | Экранировать HTML; вывод и так экранируется, фильтр не нужен |
-| `url` | Экранировать значение параметра URL |
-| `unsafe` / `raw` | Без экранирования |
+| `html` | Функция: экранирует HTML один раз и возвращает значение. Для текста не нужна, вывод и так экранируется. Нужна, чтобы показать HTML-код текстом: `{{ html(note.HTMLString()) }}` |
+| `safeHtml` | То же экранирование, но работает только последним фильтром в теге вывода |
+| `url` | Экранировать одно значение параметра URL |
+| `unsafe` / `raw` | Без экранирования; только последним фильтром в теге вывода |
 | `json` / `writeJson` | Преобразовать в JSON |
-| `safeJs` | Безопасный вывод в JS |
+| `safeJs` | Безопасный вывод в JS-строку |
+
+Чем `html` отличается от `safeHtml` и когда нужны `url`, `raw`, `unsafe` — с примерами в [[ru/user/jet-functions#Экранирование|Справочнике функций Jet]].
 
 ### Функции
 
@@ -346,19 +366,17 @@ Jet — движок шаблонов. Поддерживает наследов
 
 #### extends — наследование layout
 
-Шаблон наследует layout и переопределяет блоки:
+Шаблон наследует базовый layout и переопределяет его блоки:
 
 ```jet
-{{ extends "layouts/base" }}
+{{ extends "base" }}
 
-{{ block title() }}Моя страница{{ end }}
-
-{{ block body() }}
-  <p>Контент страницы</p>
+{{ block main() }}
+  <p>This replaces the main block of base.html</p>
 {{ end }}
 ```
 
-`extends` должен быть первой строкой шаблона.
+`extends` должен быть первым тегом шаблона. Что такое базовый шаблон, что где выводится и как наследование сочетается с компонентами, — в [[ru/user/templates#Наследование шаблонов: extends|Шаблонах: наследование]], с проверенным примером.
 
 #### exec и return — данные из другого файла
 
@@ -389,7 +407,9 @@ Jet — движок шаблонов. Поддерживает наследов
 ```jet
 {{ notes := nvs.ByGlob(. + "/*.md").Public().All() }}
 {{ minutes := 0 }}
-{{ range _, n := notes }}{{ minutes = minutes + n.ReadingTime() }}{{ end }}
+{{ range _, n := notes }}
+  {{ minutes = minutes + n.ReadingTime() }}
+{{ end }}
 {{ return map("count", len(notes), "minutes", minutes) }}
 ```
 
@@ -403,7 +423,7 @@ Jet — движок шаблонов. Поддерживает наследов
 - **Путь отсчитывается от `_layouts/` и пишется без расширения.** `exec("lib/featured")` и `exec("/lib/featured")` загружают `_layouts/lib/featured.html` из любой папки. `exec("lib/featured.html")` файл *не найдёт*. Шаблонами считаются только файлы `.html` и `.html.json` внутри `_layouts/`.
 - **Несуществующий файл роняет рендер** с ошибкой `template /lib/featured could not be found`. Если страница должна это пережить — оберните вызов в `try` (ниже).
 - **`return` имеет смысл только в файле, который вызывают через `exec`.** В обычной странице он ничего не останавливает и ничего не выводит.
-- **Компоненты внутри файла для `exec` нужно импортировать явно.** Автоимпорт работает только для самой страницы; файл, до которого дошли через `exec`, `include` или `extends`, должен сам написать `{{ import "/путь/к/компоненту" }}`.
+- **Компоненты внутри файла для `exec` нужно импортировать явно.** Автоимпорт работает только для самой страницы; файл, до которого дошли через `exec`, `include` или `extends`, должен сам написать `{{ import "/путь/к/компоненту" }}` ([trip2g#388](https://github.com/trip2g/trip2g/issues/388)).
 - **Каждый вызов выполняет файл заново.** `exec` не кэшируется: `lib/section_stats` в цикле по двадцати разделам — это двадцать полных выборок на каждый рендер. Если значение зависит только от самой заметки, дешевле frontmatter; тяжёлые вычисления по многим заметкам лучше делать Go-хелпером.
 
 ### Обработка ошибок: try / catch
@@ -419,10 +439,14 @@ Jet — движок шаблонов. Поддерживает наследов
   {{ chart := note.M().Get("chart") }}
   <figure class="chart">
     <figcaption>{{ chart["title"] }}</figcaption>
-    {{ range _, v := chart["values"] }}<span class="bar" style="--v: {{ v }}"></span>{{ end }}
+    {{ range _, v := chart["values"] }}
+      <span class="bar" style="--v: {{ v }}"></span>
+    {{ end }}
   </figure>
 {{ catch err }}
-  <div class="chart chart--broken">Chart unavailable: {{ err.Error() | html }}</div>
+  <div class="chart chart--broken">
+    Chart unavailable: {{ err.Error() | html }}
+  </div>
 {{ end }}
 ```
 
@@ -431,7 +455,9 @@ Jet — движок шаблонов. Поддерживает наследов
 ```jet
 {{ try }}
   {{ related := nvs.ByPath(note.M().GetString("related", "")) }}
-  <aside class="related">See also: <a href="{{ related.Permalink() }}">{{ related.Title() }}</a></aside>
+  <aside class="related">
+    See also: <a href="{{ related.Permalink() }}">{{ related.Title() }}</a>
+  </aside>
 {{ end }}
 ```
 
@@ -442,7 +468,11 @@ Jet — движок шаблонов. Поддерживает наследов
   {{ stats := exec("lib/section_stats", "blog") }}
   <p>{{ stats["count"] }} posts, {{ stats["minutes"] }} min of reading</p>
 {{ catch err }}
-  {{ if currentUser.IsAdmin() }}<p class="admin-error">lib/section_stats: {{ err.Error() | html }}</p>{{ end }}
+  {{ if currentUser.IsAdmin() }}
+    <p class="admin-error">
+      lib/section_stats: {{ err.Error() | html }}
+    </p>
+  {{ end }}
 {{ end }}
 ```
 
@@ -481,6 +511,5 @@ Jet — движок шаблонов. Поддерживает наследов
 ### Полезные ссылки
 
 - [[ru/user/jet-functions|Справочник функций Jet]] — все функции и конструкции, проверенные на trip2g
-- [Официальная документация](https://github.com/CloudyKit/jet/wiki)
-- [Синтаксис шаблонов](https://github.com/CloudyKit/jet/wiki/3.-Jet-template-syntax)
-- [Встроенные функции](https://github.com/CloudyKit/jet/wiki/4.-Built-in-functions)
+- [Справочник синтаксиса](https://github.com/CloudyKit/jet/blob/master/docs/syntax.md)
+- [Встроенные функции](https://github.com/CloudyKit/jet/blob/master/docs/builtins.md)

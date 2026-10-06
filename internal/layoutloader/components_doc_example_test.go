@@ -13,9 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Mirrors the worked example in docs/{en,ru}/user/components.md; keep them in sync.
+// The worked example in docs/{en,ru}/user/components.md; TestComponentsDocSnippetsInDocs keeps them in sync.
 const componentsDocCard = `{{ block _style_@lid() }}
-.@did { display: block; padding: 16px; border: 1px solid #ddd; border-radius: 8px; }
+.@did {
+  display: block;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
 .@did--featured { border-color: #0070f3; }
 .@did__title { margin: 0 0 8px; font-size: 1.25rem; }
 {{ end }}
@@ -28,7 +33,13 @@ const componentsDocCard = `{{ block _style_@lid() }}
 {{ end }}`
 
 const componentsDocButton = `{{ block _style_@lid() }}
-.@did { display: inline-block; padding: 8px 16px; border-radius: 6px; background: #0070f3; color: #fff; }
+.@did {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #0070f3;
+  color: #fff;
+}
 {{ end }}
 
 {{ block @lid(label="", url="") }}
@@ -45,10 +56,17 @@ const componentsDocPage = `<!DOCTYPE html>
 <body>
   {{ note.HTMLString() }}
 
-  {{ posts := nvs.ByGlob("blog/*.md").Public().SortByMeta("date").Desc().SortBy("Title").Limit(3).All() }}
-  {{ range i, post := posts }}
-    {{ yield components_card(title=post.Title(), url=post.PermalinkEncoded(), featured=i == 0) content }}
-      {{ if summary := post.M().GetString("summary", ""); summary }}<p>{{ summary }}</p>{{ end }}
+  {{ blog := nvs.ByGlob("blog/*.md").Public() }}
+  {{ sorted := blog.SortByMeta("date").Desc().SortBy("Title") }}
+  {{ range i, post := sorted.Limit(3).All() }}
+    {{ yield components_card(
+      title=post.Title(),
+      url=post.PermalinkEncoded(),
+      featured=i == 0
+    ) content }}
+      {{ if summary := post.M().GetString("summary", ""); summary }}
+        <p>{{ summary }}</p>
+      {{ end }}
     {{ end }}
   {{ end }}
 
@@ -104,7 +122,7 @@ func TestComponentsDocExample(t *testing.T) {
 	require.Equal(t, want, strings.Join(strings.Fields(buf.String()), " "))
 }
 
-// Mirrors the base layer example in docs/{en,ru}/user/components.md; keep them in sync.
+// The base layer example in docs/{en,ru}/user/components.md.
 const componentsDocBase = `{{ block _style_@lid() }}
 :root { --text: #1a1a1a; --accent: #0070f3; }
 *, *::before, *::after { box-sizing: border-box; }
@@ -180,4 +198,15 @@ func TestComponentsDocStyleOrder(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, "<style>/*header*//*button*//*base*//*card*/</style>", strings.TrimSpace(buf.String()))
+}
+
+func TestComponentsDocSnippetsInDocs(t *testing.T) {
+	snippets := []docSnippet{
+		{name: "card", src: componentsDocCard},
+		{name: "button", src: componentsDocButton},
+		{name: "page", src: componentsDocPage},
+		{name: "base", src: componentsDocBase},
+		{name: "base page", src: componentsDocBasePage},
+	}
+	requireSnippetsInDocs(t, []string{"en/user/components", "ru/user/components"}, snippets)
 }

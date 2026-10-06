@@ -130,7 +130,7 @@ _layouts/
 {{ end }}
 ```
 
-Подробнее — в [[ru/user/components|Компонентах, автоимпорте и лучших практиках]].
+Подробнее — в [[ru/user/components|Компонентах шаблонов]].
 
 ### Отладка: превью layout до sync
 
@@ -154,4 +154,4 @@ CSS и JS размещайте в `_assets/` и подключайте чере�
 
 ---
 
-Смотрите также: [[ru/user/templates|Шаблоны]] · [[ru/user/templates-advanced|API шаблонов]] · [[ru/user/components|Компоненты и лучшие практики]] · [[ru/user/jet|Синтаксис Jet]] · [[ru/user/default-template|Дефолтный шаблон]] · [[ru/user/renderlayout|renderlayout]]
+Смотрите также: [[ru/user/templates|Шаблоны]] · [[ru/user/templates-advanced|API шаблонов]] · [[ru/user/components|Компоненты шаблонов]] · [[ru/user/jet|Синтаксис Jet]] · [[ru/user/default-template|Дефолтный шаблон]] · [[ru/user/renderlayout|renderlayout]]

@@ -1,5 +1,6 @@
 ---
 free: true
+wide: true
 title: "Шаблоны: API"
 ---
 
@@ -37,7 +38,7 @@ model.NoteView, model.NoteViews
 | `VersionID()` | `string` | ID текущей версии заметки |
 | `Path()` | `string` | Путь файла в хранилище, например `blog/post.md` |
 | `Permalink()` | `string` | URL страницы |
-| `PermalinkEncoded()` | `string` | URL в percent-encoding, для `href` |
+| `PermalinkEncoded()` | `string` | `Permalink()`, где каждый сегмент пути закодирован процентами: `/привет мир` → `/%D0%BF…%20%D0%BC…`. Это кодирование URL, не HTML-экранирование; `Permalink()` в `href` тоже безопасен. Нужен для строго закодированного адреса, когда в пути есть не-ASCII символы или пробелы |
 | `CreatedAt()` | `time.Time` | Дата создания; если в frontmatter есть `created_at` / `created_on` — она |
 | `UpdatedAt()` | `time.Time` | Из `updated_at`, `updated` или `modified`; нулевое время, если не задано (проверка — `.IsZero()`) |
 | `Author()` | `string` | `author` из frontmatter, `""` если не задан |
@@ -59,7 +60,7 @@ model.NoteView, model.NoteViews
 | `HasAnyCodeBlock()` | `bool` | Есть хотя бы один блок кода |
 | `HasCharts()` | `bool` | Есть блоки datachart |
 | `HasTaskListItems()` | `bool` | Есть чекбоксы задач |
-| `FormSpecJSON()` | `string` | JSON формы, см. [[ru/user/forms|Формы]] |
+| `FormSpecJSON()` | `string` | JSON формы, см. [[ru/user/forms\|Формы]] |
 | `SubgraphNamesJSON()` | `string` | JSON-список подграфов заметки |
 | `LastEditedBy()`, `LastEditedByLabel()` | объект / `string` | Кто запушил текущую версию. **Только для админа:** оборачивайте в `currentUser.IsAdmin()` |
 | `PartialRenderer()` | `NoteViewPartialRenderer` | Рендерер для разбивки контента |
@@ -157,7 +158,8 @@ nvs.Query()                        {* Все заметки без фильтр�
 Всё, что подходит под паттерн: платные заметки, заметки за входом и системные (`_`) тоже. Для публичной страницы добавьте `.Public()`:
 
 ```jet
-nvs.ByGlob("blog/*.md").Public()   {* только то, что может прочитать анонимный посетитель *}
+{* только то, что может прочитать анонимный посетитель *}
+nvs.ByGlob("blog/*.md").Public()
 ```
 
 `.Public()` оставляет заметки с `free`, не закрытые входом, не системные и без `noindex`. Фильтр срабатывает до `Offset` и `Limit`.
@@ -216,12 +218,11 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 ### Полный пример
 
 ```jet
-{* Последние 5 постов блога *}
-{{ range i, post := nvs.ByGlob("blog/*.md").SortBy("CreatedAt").Desc().Limit(5).All() }}
-  <article>
-    <h2><a href="{{ post.Permalink() }}">{{ post.Title() }}</a></h2>
-    <time>{{ post.CreatedAt().Format("02.01.2006") }}</time>
-  </article>
+{* Последние 5 публичных постов блога *}
+{{ blog := nvs.ByGlob("blog/*.md").Public() }}
+{{ posts := blog.SortBy("CreatedAt").Desc().Limit(5).All() }}
+{{ range i, post := posts }}
+  <a href="{{ post.Permalink() }}">{{ post.Title() }}</a>
 {{ end }}
 
 {* Документация с ручным порядком *}
@@ -253,7 +254,7 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 | `GetBool(key, default)` | Булево или default |
 | `GetStrings(key)` | Список строк (не-строки отбрасываются); одна строка — список из одного элемента; если ключа нет — пустой список, не nil |
 | `Raw()` | Весь frontmatter как карта, например для `json(note.M().Raw())` |
-| `Debug()` | Frontmatter одной JSON-строкой, см. [[ru/user/jet-debugging|Отладка]] |
+| `Debug()` | Frontmatter одной JSON-строкой, см. [[ru/user/jet-debugging\|Отладка]] |
 
 ### Приведение типов
 
@@ -313,14 +314,14 @@ type Section struct {
     Level       int     // Уровень заголовка: 2 для ##
     Title       string  // Текст заголовка без разметки
     TitleHTML   string  // Текст заголовка (без тега)
-    ContentHTML string  // Контент до следующего заголовка того же или более высокого уровня
+    ContentHTML string  // Контент до следующего заголовка не ниже уровнем
 }
 
 type ListItem struct {
     Text     string
     URL      string
     Task     string  // "", "todo" для [ ], "done" для любого другого символа
-    TaskMark string  // Символ в скобках: " ", "x", "/", "-"...; "" для обычного пункта
+    TaskMark string  // Символ в скобках: " ", "x", "/"…; "" без чекбокса
     Children []ListItem
 }
 
@@ -421,20 +422,9 @@ type CodeBlock struct {
 {{ yield header() }}  {* Вызов блока *}
 ```
 
-### Переопределение блоков
+### Наследование
 
-```jet
-{* page.html *}
-{{ import "blocks" }}
-
-{{ block header() }}
-  <header>Custom header</header>
-{{ end }}
-
-{{ yield main_layout() content }}
-  ...
-{{ end }}
-```
+Базовый шаблон отмечает места блоками с содержимым по умолчанию, страница начинается с `{{ extends "base" }}` и переопределяет нужные блоки. Как это устроено, с проверенным примером, — в [[ru/user/templates#Наследование шаблонов: extends|Шаблонах: наследование]].
 
 ### Фильтры
 
