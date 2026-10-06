@@ -581,6 +581,8 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, pa
 		return a.Get(n - 1)
 	})
 
+	addParseFuncs(views, jl.log)
+
 	// yield_blocks is registered with a mutable slice pointer so the second pass
 	// can populate block names after all templates are parsed.
 	blockNames := make([]string, 0)

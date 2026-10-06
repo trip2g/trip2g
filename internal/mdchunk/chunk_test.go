@@ -293,3 +293,22 @@ func TestSplitKeepsOverlapRuneAligned(t *testing.T) {
 		})
 	}
 }
+
+func TestParseHeadingDropsAttributes(t *testing.T) {
+	tests := []struct {
+		block string
+		want  string
+	}{
+		{"## Setup {#setup}", "Setup"},
+		{"## Setup {#setup .wide}", "Setup"},
+		{"## Price {per month}", "Price {per month}"},
+		{"## Plain", "Plain"},
+	}
+
+	for _, tt := range tests {
+		_, got, ok := parseHeading(tt.block)
+		if !ok || got != tt.want {
+			t.Errorf("parseHeading(%q) = %q, %v; want %q", tt.block, got, ok, tt.want)
+		}
+	}
+}

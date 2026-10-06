@@ -293,13 +293,15 @@ func TestJetBinding_IsAdmin_False(t *testing.T) {
 // render its chrome wrapper without a full markdown pipeline in tests.
 type stubPartialRenderer struct{}
 
-func (stubPartialRenderer) Sections(int) []model.NoteViewSection      { return nil }
-func (stubPartialRenderer) Section(string) any                        { return nil }
-func (stubPartialRenderer) Introduce() model.NoteViewSection          { return model.NoteViewSection{} }
-func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
-func (stubPartialRenderer) FirstList() any                            { return nil }
-func (stubPartialRenderer) Lists() []model.NoteViewList               { return nil }
-func (stubPartialRenderer) FirstImageURL() string                     { return "" }
+func (stubPartialRenderer) Sections(int) []model.NoteViewSection        { return nil }
+func (stubPartialRenderer) Section(string) any                          { return nil }
+func (stubPartialRenderer) Introduce() model.NoteViewSection            { return model.NoteViewSection{} }
+func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection   { return nil }
+func (stubPartialRenderer) FirstList() any                              { return nil }
+func (stubPartialRenderer) Lists() []model.NoteViewList                 { return nil }
+func (stubPartialRenderer) FirstImageURL() string                       { return "" }
+func (stubPartialRenderer) Images() []model.NoteViewImage               { return nil }
+func (stubPartialRenderer) CodeBlocks(string) []model.NoteViewCodeBlock { return nil }
 
 // chromeHelper builds a userSpaceHelper whose Notes resolve _header/_footer so
 // that Header()/Footer()/Styles() produce the standard chrome HTML.

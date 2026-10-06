@@ -246,14 +246,45 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 |-------|----------|
 | `Introduce()` | Контент до первого заголовка |
 | `Sections(level)` | Секции под заголовками уровня level |
-| `Section(title)` | Секция по тексту заголовка |
+| `Section(x)` | Секция по тексту заголовка или по якорю (`"pricing"`, `"#pricing"`), иначе `nil` |
+| `FirstList()` | Первый список заметки или `nil` |
+| `Lists()` | Все списки верхнего уровня |
+| `Images()` | Все картинки заметки по порядку |
+| `CodeBlocks(lang)` | Блоки кода языка `lang`, все блоки для `""` |
+| `FirstImageURL()` | URL первой картинки |
 
-### Структура секции
+Подробнее с примерами — в [[ru/user/templates#own-toc|Шаблонах]].
+
+### Структуры
 
 ```go
 type Section struct {
+    ID          string  // Якорь заголовка, тот же, что в TOC() и в HTML
+    Level       int     // Уровень заголовка: 2 для ##
+    Title       string  // Текст заголовка без разметки
     TitleHTML   string  // Текст заголовка (без тега)
-    ContentHTML string  // Контент до следующего заголовка
+    ContentHTML string  // Контент до следующего заголовка того же или более высокого уровня
+}
+
+type ListItem struct {
+    Text     string
+    URL      string
+    Task     string  // "", "todo" для [ ], "done" для любого другого символа
+    TaskMark string  // Символ в скобках: " ", "x", "/", "-"...; "" для обычного пункта
+    Children []ListItem
+}
+
+type Image struct {
+    URL   string  // Адрес, по которому картинку отдаёт страница
+    Alt   string
+    Title string
+}
+
+type CodeBlock struct {
+    Lang    string  // Первое слово после ```
+    Info    string  // Вся строка после ```
+    Content string  // Код как написан
+    HTML    string  // Блок как его рендерит страница
 }
 ```
 
@@ -352,4 +383,14 @@ type Section struct {
 {{ value | unsafe }}          {* Вывод HTML без экранирования *}
 {{ value | html }}            {* Экранирование (по умолчанию) *}
 ```
+
+### Разбор данных
+
+```jet
+{{ d := parseJSON(text) }}    {* JSON в словари и списки, nil при ошибке *}
+{{ d := parseYAML(text) }}    {* То же для YAML *}
+{{ rows := parseCSV(text) }}  {* Список строк, строка — список значений *}
+```
+
+Подробнее — в разделе [[ru/user/templates#parse-data|Разбор данных]].
 

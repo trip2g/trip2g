@@ -57,19 +57,26 @@ func (r *headingRenderer) renderHeading(w util.BufWriter, source []byte, node as
 			r.stack = r.stack[:len(r.stack)-1]
 		}
 		text := headingPlainText(source, heading)
-		idAttr := ""
-		if rawID, hasID := heading.AttributeString("id"); hasID {
-			if idBytes, isBytes := rawID.([]byte); isBytes {
-				idAttr = ` id="` + string(idBytes) + `"`
-			}
-		}
-		_, _ = fmt.Fprintf(w, `<div data-header="%s" data-level="%d"><%s%s>`, escapeAttr(text), level, tag, idAttr)
+		attrs := headingAttr(heading, "id") + headingAttr(heading, "class")
+		_, _ = fmt.Fprintf(w, `<div data-header="%s" data-level="%d"><%s%s>`, escapeAttr(text), level, tag, attrs)
 		r.stack = append(r.stack, level)
 	} else {
 		_, _ = fmt.Fprintf(w, `</%s>`, tag)
 	}
 
 	return ast.WalkContinue, nil
+}
+
+func headingAttr(heading *ast.Heading, name string) string {
+	raw, ok := heading.AttributeString(name)
+	if !ok {
+		return ""
+	}
+	value, isBytes := raw.([]byte)
+	if !isBytes {
+		return ""
+	}
+	return ` ` + name + `="` + escapeAttr(string(value)) + `"`
 }
 
 func headingPlainText(source []byte, heading *ast.Heading) string {

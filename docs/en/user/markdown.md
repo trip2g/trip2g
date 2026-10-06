@@ -18,6 +18,40 @@ Notes in trip2g are Markdown files. Write them in Obsidian, sync, and they appea
 
 More `#` symbols mean a smaller heading. Use `##` and `###` for most sections — `#` is reserved for the page title.
 
+### Heading anchors and the table of contents {#heading-anchors}
+
+Every heading on the published page gets an `id`, so a link can point at it. trip2g builds the id from the heading text: Cyrillic is transliterated to Latin, every run of characters other than letters and digits becomes `_`, and the result is lowercased. A repeated id gets `-2`, `-3` and so on.
+
+| Heading | id |
+|---|---|
+| `## Getting Started` | `getting_started` |
+| `## Цены и тарифы` | `cenyi_i_tarifyi` |
+| `## Что нового в 2.0?` | `chto_novogo_v_2_0_` |
+| `## FAQ`, then `## FAQ` again | `faq`, then `faq-2` |
+
+Changing the heading text changes its id and breaks links to the old one. To keep an anchor stable, or to make it short, set it yourself with `{#id}` at the end of the heading:
+
+```markdown
+## Цены и тарифы {#pricing}
+## Getting Started {#start .wide}
+```
+
+The first heading gets `id="pricing"`, the second `id="start"` and the CSS class `wide`. The braces do not show up anywhere: not on the page, not in the table of contents, not in search. An id you set wins over a generated one: if `## Intro` comes before `## Start {#intro}`, the second heading keeps `intro` and the first one becomes `intro-2`. Only the id and classes reach the HTML; other attributes in the braces are ignored. An id may hold letters, digits, `-`, `_`, `:` and `.`. Braces that do not parse as attributes stay part of the heading text, so `## Price {per month}` renders as written.
+
+**Linking to a heading.** Inside the same note, use the id as a fragment: `[see pricing](#pricing)`. To another note, add the fragment to its URL: `[pricing](/docs/plans#pricing)`.
+
+A wikilink keeps the fragment exactly as you typed it. `[[Plans#Getting Started]]` becomes a link ending in `#Getting%20Started`, which matches no id, so the browser opens the top of the page. Write the id instead of the heading text: `[[Plans#getting_started]]`, or `[[Plans#pricing]]` after `{#pricing}`. Obsidian does not know these ids, so inside Obsidian such a link opens the note without scrolling.
+
+**The table of contents.** The default template shows a table of contents built from these headings, each entry linking to its id. The `toc` frontmatter field controls it:
+
+| `toc:` | Table of contents |
+|---|---|
+| not set or `auto` | shown when the note has 5 or more headings, or takes 2 or more minutes to read |
+| `show`, `true`, `yes` | always shown |
+| `hide`, `false`, `no` | never shown |
+
+A custom template can build its own table of contents from the same ids, see [[en/user/templates#own-toc|Templates]].
+
 ### Text emphasis
 
 ```markdown
