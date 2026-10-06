@@ -14,6 +14,9 @@ import (
 )
 
 func TestAssetsHandlerCacheHeaders(t *testing.T) {
+	// The dev build reads assets from ./assets, relative to the repo root.
+	t.Chdir("../..")
+
 	content, err := fs.ReadFile(assets.FS, "favicon.svg")
 	require.NoError(t, err)
 
