@@ -98,6 +98,96 @@ Patches apply in order: lower priority number first, then higher. Each patch see
 
 For `blog/post.md`: rule 0 sets `layout: "default"`, then rule 10 overwrites it with `blog_layout`. All other notes keep `default`.
 
+### Patch or note: which wins
+
+**The patch wins.** trip2g starts from the note's own frontmatter and applies every matching patch on top. Each key the expression returns replaces the note's value; keys it doesn't return stay as they are.
+
+A note `ru/user/intro.md` with `lang: en` and a patch for `ru/**/*.md` with `{ lang: "ru" }` ends up with `lang: "ru"`. Priority doesn't change this: it only orders patches among themselves, the note's frontmatter always comes first.
+
+To make a patch a default that a note can override, check the key first:
+
+```jsonnet
+if std.objectHas(meta, "left_sidebar") then {} else { left_sidebar: "ru/user/_sidebar.md" }
+```
+
+Now a note with its own `left_sidebar` keeps it. `meta` also contains values from earlier patches, so the check skips the key if a lower-priority patch has already set it.
+
+The other way is to take the note out of the patch with `exclude`:
+
+```
+include: ["ru/user/**/*.md"]
+exclude: ["ru/user/landing.md"]
+```
+
+### Common scenarios
+
+**One sidebar for every page in a folder.** This site does exactly that (`patches/ru-user-sidebar.md`):
+
+````markdown
+---
+type: frontmatter-patch
+include: ["ru/user/**/*.md"]
+---
+
+```jsonnet
+{ left_sidebar: "ru/user/_sidebar.md" }
+```
+````
+
+`ru/user/**/*.md` matches notes in subfolders too, but not `ru/user.md` next to the folder.
+
+**Turn off previous/next links and breadcrumbs for a folder.** The [[en/user/default-template|default template]] builds them from the sidebar; for a blog you may not want them:
+
+````markdown
+---
+type: frontmatter-patch
+include: ["blog/**/*.md"]
+---
+
+```jsonnet
+{ prev: false, next: false, breadcrumbs: false }
+```
+````
+
+**Make every note public, except one folder:**
+
+````markdown
+---
+type: frontmatter-patch
+include: ["**/*.md"]
+exclude: ["members/**/*.md"]
+---
+
+```jsonnet
+{ free: true }
+```
+````
+
+**Default language with a section override.** The weakest patch sets the language everywhere, a stronger one fixes the `ru/` section:
+
+| Priority | Include | Expression |
+|----------|---------|------------|
+| −1 | `**/*.md` | `{ lang: "en" }` |
+| 0 | `ru/**/*.md` | `{ lang: "ru" }` |
+
+Both overwrite `lang` that a note sets itself. If some notes set their language by hand, use the `std.objectHas` check from the previous section.
+
+**Full-width pages for a folder of boards:**
+
+```jsonnet
+{ wide: true }
+```
+
+with `include: ["boards/**/*.md"]`.
+
+**Keep a folder out of site search** (`patches/dev-no-search.md` on this site):
+
+```jsonnet
+{ search: false }
+```
+
+with `include: ["dev/**/*.md"]`.
+
 ### Patterns
 
 | Symbol | What it matches |
