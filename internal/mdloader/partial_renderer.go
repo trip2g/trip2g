@@ -2,12 +2,17 @@ package mdloader
 
 import (
 	"bytes"
+	"regexp"
+	"strings"
 	"sync"
+	"trip2g/internal/image"
 	"trip2g/internal/model"
 
+	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	extast "github.com/yuin/goldmark/extension/ast"
+	"go.abhg.dev/goldmark/wikilink"
 )
 
 type PartialRenderer struct {
@@ -96,6 +101,7 @@ func (pr *PartialRenderer) sectionsFromNodes(allNodes []ast.Node, level int) []m
 	var blocks []model.NoteViewSection
 
 	type sectionRange struct {
+		heading      *ast.Heading
 		title        string
 		titleHTML    string
 		contentStart int
@@ -121,6 +127,7 @@ func (pr *PartialRenderer) sectionsFromNodes(allNodes []ast.Node, level int) []m
 
 			// Start new range.
 			currentRange = &sectionRange{
+				heading:      heading,
 				title:        extractHeadingText(pr.content, heading),
 				titleHTML:    pr.renderHeading(heading),
 				contentStart: i + 1,
@@ -147,9 +154,11 @@ func (pr *PartialRenderer) sectionsFromNodes(allNodes []ast.Node, level int) []m
 		contentNodes := allNodes[r.contentStart:r.contentEnd]
 
 		section := model.NoteViewSection{
+			ID:          headingID(r.heading),
+			Level:       r.heading.Level,
 			Title:       r.title,
-			TitleHTML:   r.titleHTML,
-			ContentHTML: pr.renderNodeRange(allNodes, r.contentStart, r.contentEnd),
+			TitleHTML:   model.SafeHTML(r.titleHTML),
+			ContentHTML: model.SafeHTML(pr.renderNodeRange(allNodes, r.contentStart, r.contentEnd)),
 		}
 
 		// Capture nodes for nested Sections()/Section() calls.
@@ -174,48 +183,75 @@ func (pr *PartialRenderer) makeSectionFunc(nodes []ast.Node) func(string) *model
 	}
 }
 
-func (pr *PartialRenderer) sectionFromNodes(allNodes []ast.Node, title string) *model.NoteViewSection {
+// sectionFromNodes finds a heading by its exact title, then by its title
+// ignoring case and repeated whitespace, then by its id with or without a
+// leading "#".
+func (pr *PartialRenderer) sectionFromNodes(allNodes []ast.Node, query string) *model.NoteViewSection {
 	if len(allNodes) == 0 || pr.content == nil {
 		return nil
 	}
 
-	// Find the heading with matching title.
-	for i, node := range allNodes {
-		heading, ok := node.(*ast.Heading)
-		if !ok {
-			continue
-		}
+	normalized := normalizeHeadingTitle(query)
+	anchor := strings.TrimPrefix(query, "#")
+	matchers := []func(*ast.Heading) bool{
+		func(h *ast.Heading) bool {
+			return extractHeadingText(pr.content, h) == query
+		},
+		func(h *ast.Heading) bool {
+			return normalizeHeadingTitle(extractHeadingText(pr.content, h)) == normalized
+		},
+		func(h *ast.Heading) bool {
+			return anchor != "" && headingID(h) == anchor
+		},
+	}
 
-		headingText := extractHeadingText(pr.content, heading)
-		if headingText != title {
-			continue
-		}
-
-		// Found the heading, now collect content until next heading of same or higher level.
-		contentEnd := len(allNodes)
-		for j := i + 1; j < len(allNodes); j++ {
-			nextHeading, isHeading := allNodes[j].(*ast.Heading)
-			if isHeading && nextHeading.Level <= heading.Level {
-				contentEnd = j
-				break
+	for _, match := range matchers {
+		for i, node := range allNodes {
+			heading, ok := node.(*ast.Heading)
+			if ok && match(heading) {
+				return pr.sectionAt(allNodes, i, heading)
 			}
 		}
-
-		contentNodes := allNodes[i+1 : contentEnd]
-
-		section := &model.NoteViewSection{
-			Title:       headingText,
-			TitleHTML:   pr.renderHeading(heading),
-			ContentHTML: pr.renderNodeRange(allNodes, i+1, contentEnd),
-		}
-
-		section.SectionsFunc = pr.makeSectionsFunc(contentNodes)
-		section.SectionFunc = pr.makeSectionFunc(contentNodes)
-
-		return section
 	}
 
 	return nil
+}
+
+func (pr *PartialRenderer) sectionAt(allNodes []ast.Node, i int, heading *ast.Heading) *model.NoteViewSection {
+	contentEnd := len(allNodes)
+	for j := i + 1; j < len(allNodes); j++ {
+		nextHeading, isHeading := allNodes[j].(*ast.Heading)
+		if isHeading && nextHeading.Level <= heading.Level {
+			contentEnd = j
+			break
+		}
+	}
+
+	contentNodes := allNodes[i+1 : contentEnd]
+
+	section := &model.NoteViewSection{
+		ID:          headingID(heading),
+		Level:       heading.Level,
+		Title:       extractHeadingText(pr.content, heading),
+		TitleHTML:   model.SafeHTML(pr.renderHeading(heading)),
+		ContentHTML: model.SafeHTML(pr.renderNodeRange(allNodes, i+1, contentEnd)),
+	}
+
+	section.SectionsFunc = pr.makeSectionsFunc(contentNodes)
+	section.SectionFunc = pr.makeSectionFunc(contentNodes)
+
+	return section
+}
+
+func normalizeHeadingTitle(title string) string {
+	return strings.ToLower(strings.Join(strings.Fields(title), " "))
+}
+
+// headingID returns the id the note load assigned to the heading.
+func headingID(heading *ast.Heading) string {
+	raw, _ := heading.AttributeString("id")
+	id, _ := raw.([]byte)
+	return string(id)
 }
 
 // HeadingBlocks is deprecated, use Sections instead.
@@ -223,11 +259,14 @@ func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewSection {
 	return pr.Sections(level)
 }
 
-// Section finds a section by its heading title.
-// Returns nil if no heading with the given title is found.
-// The title is matched against the plain text content of the heading.
-func (pr *PartialRenderer) Section(title string) *model.NoteViewSection {
-	return pr.sectionFromNodes(pr.collectTopLevelNodes(), title)
+// Section finds a section by its heading title or anchor (see sectionFromNodes).
+// Returns an untyped nil if no heading matches.
+func (pr *PartialRenderer) Section(title string) any {
+	section := pr.sectionFromNodes(pr.collectTopLevelNodes(), title)
+	if section == nil {
+		return nil
+	}
+	return section
 }
 
 // extractHeadingText extracts plain text from a heading node.
@@ -290,14 +329,14 @@ func (pr *PartialRenderer) introduce() model.NoteViewSection {
 	if firstHeadingIndex == -1 {
 		return model.NoteViewSection{
 			TitleHTML:   "",
-			ContentHTML: pr.renderExcerptRange(allNodes, 0, len(allNodes)),
+			ContentHTML: model.SafeHTML(pr.renderExcerptRange(allNodes, 0, len(allNodes))),
 		}
 	}
 
 	// Return content before the first heading
 	return model.NoteViewSection{
 		TitleHTML:   "",
-		ContentHTML: pr.renderExcerptRange(allNodes, 0, firstHeadingIndex),
+		ContentHTML: model.SafeHTML(pr.renderExcerptRange(allNodes, 0, firstHeadingIndex)),
 	}
 }
 
@@ -351,9 +390,56 @@ func (pr *PartialRenderer) applyInlineNode(item *model.NoteViewListItem, n ast.N
 	}
 }
 
+var taskMarkerRE = regexp.MustCompile(`^\[([^\[\]])\](?:[ \t]|$)`)
+
+// taskMarker returns the mark of a "[c]" that opens the list item, and how
+// many bytes of text it takes when goldmark left it as text: GFM turns only
+// "[ ]", "[x]" and "[X]" into a checkbox, Obsidian's other statuses stay text.
+func (pr *PartialRenderer) taskMarker(listItem ast.Node) (string, int) {
+	block := listItem.FirstChild()
+	if block == nil || block.Lines().Len() == 0 {
+		return "", 0
+	}
+
+	first := block.FirstChild()
+	_, isCheckBox := first.(*extast.TaskCheckBox)
+	_, isText := first.(*ast.Text)
+	if !isCheckBox && !isText {
+		return "", 0
+	}
+
+	line := block.Lines().At(0)
+	m := taskMarkerRE.FindSubmatch(line.Value(pr.content))
+	if m == nil {
+		return "", 0
+	}
+
+	if isCheckBox {
+		return string(m[1]), 0
+	}
+
+	return string(m[1]), len(m[0])
+}
+
+func taskState(mark string) string {
+	switch mark {
+	case "":
+		return ""
+	case " ":
+		return "todo"
+	default:
+		return "done"
+	}
+}
+
 // walkListItem recursively converts an ast.ListItem node into a model.NoteViewListItem.
 func (pr *PartialRenderer) walkListItem(node ast.Node) model.NoteViewListItem {
 	var item model.NoteViewListItem
+
+	var skip int
+	item.TaskMark, skip = pr.taskMarker(node)
+	item.Task = taskState(item.TaskMark)
+
 	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
 		switch c := child.(type) {
 		case *ast.Link:
@@ -374,6 +460,17 @@ func (pr *PartialRenderer) walkListItem(node ast.Node) model.NoteViewListItem {
 		default:
 			// For paragraph or other wrapper nodes, recurse into children.
 			for inner := child.FirstChild(); inner != nil; inner = inner.NextSibling() {
+				text, isText := inner.(*ast.Text)
+				if skip > 0 && isText {
+					value := text.Segment.Value(pr.content)
+					cut := min(skip, len(value))
+					skip -= cut
+					if rest := strings.TrimLeft(string(value[cut:]), " \t"); rest != "" {
+						item.Text = rest
+					}
+					continue
+				}
+				skip = 0
 				pr.applyInlineNode(&item, inner)
 			}
 		}
@@ -405,8 +502,8 @@ func (pr *PartialRenderer) convertList(list *ast.List) model.NoteViewList {
 	return nvl
 }
 
-// FirstList returns the first top-level list, nil if none found.
-func (pr *PartialRenderer) FirstList() *model.NoteViewList {
+// FirstList returns the first top-level list, or an untyped nil if none found.
+func (pr *PartialRenderer) FirstList() any {
 	for _, node := range pr.collectTopLevelNodes() {
 		if list, ok := node.(*ast.List); ok {
 			nvl := pr.convertList(list)
@@ -444,6 +541,104 @@ func (pr *PartialRenderer) FirstImageURL() string {
 		}
 	}
 	return ""
+}
+
+// Images returns every image of the note in document order: markdown images
+// and Obsidian embeds of image files, with the URL the page uses.
+func (pr *PartialRenderer) Images() []model.NoteViewImage {
+	if pr.ast == nil {
+		return nil
+	}
+
+	var images []model.NoteViewImage
+
+	pr.withCurrentPage(func() {
+		_ = ast.Walk(pr.ast, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+			if !entering {
+				return ast.WalkContinue, nil
+			}
+
+			switch n := node.(type) {
+			case *enclavecore.Enclave:
+				if n.Provider == enclavecore.EnclaveRegularImage || n.Provider == enclavecore.EnclaveProviderQuailImage {
+					_, resolved := enclaveImageURL(n, pr.page)
+					alt, _ := parseImageSize(n.Alt)
+					images = append(images, model.NoteViewImage{URL: safeSrcURL(resolved), Alt: alt, Title: n.Title})
+				}
+				return ast.WalkSkipChildren, nil
+			case *wikilink.Node:
+				if n.Embed && image.IsRightExtension(string(n.Target)) {
+					images = append(images, pr.embedImage(n))
+				}
+				return ast.WalkSkipChildren, nil
+			}
+
+			return ast.WalkContinue, nil
+		})
+	})
+
+	return images
+}
+
+func (pr *PartialRenderer) embedImage(n *wikilink.Node) model.NoteViewImage {
+	var img model.NoteViewImage
+
+	dest, err := pr.resolver.ResolveWikilink(n)
+	if err == nil {
+		img.URL = string(safeURL(dest))
+	}
+
+	if n.ChildCount() == 1 {
+		label := nodeText(pr.content, n.FirstChild())
+		if !bytes.Equal(label, n.Target) {
+			img.Alt, _ = parseImageSize(string(label))
+		}
+	}
+
+	return img
+}
+
+// CodeBlocks returns the fenced code blocks whose language is lang, or every
+// fenced block when lang is "", in document order.
+func (pr *PartialRenderer) CodeBlocks(lang string) []model.NoteViewCodeBlock {
+	if pr.ast == nil {
+		return nil
+	}
+
+	var nodes []*ast.FencedCodeBlock
+	_ = ast.Walk(pr.ast, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		block, ok := node.(*ast.FencedCodeBlock)
+		if entering && ok && (lang == "" || string(block.Language(pr.content)) == lang) {
+			nodes = append(nodes, block)
+		}
+		return ast.WalkContinue, nil
+	})
+
+	blocks := make([]model.NoteViewCodeBlock, 0, len(nodes))
+
+	pr.withCurrentPage(func() {
+		for _, node := range nodes {
+			var content, html bytes.Buffer
+			for i := range node.Lines().Len() {
+				line := node.Lines().At(i)
+				content.Write(line.Value(pr.content))
+			}
+			pr.renderNode(&html, node)
+
+			block := model.NoteViewCodeBlock{
+				Lang:    string(node.Language(pr.content)),
+				Content: content.String(),
+				HTML:    model.SafeHTML(html.String()),
+			}
+			if node.Info != nil {
+				block.Info = string(node.Info.Segment.Value(pr.content))
+			}
+
+			blocks = append(blocks, block)
+		}
+	})
+
+	return blocks
 }
 
 func (pr *PartialRenderer) renderHeading(heading *ast.Heading) string {

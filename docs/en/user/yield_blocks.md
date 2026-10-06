@@ -101,6 +101,9 @@ Block names in Jet are **global** across all included files. If `hero.html` and 
 | `button.html` | `button` | `button` |
 | `components/button.html` | `components_button` | `components-button` |
 | `ui/nav/header.html` | `ui_nav_header` | `ui-nav-header` |
+| `my-theme/components/button.html` | `my_theme_components_button` | `my-theme-components-button` |
+
+A Jet block name may only contain letters, digits and `_`, so every other character in the path (`-`, `.`, a space) becomes `_` in `@lid`, and a name that would start with a digit gets a leading `_` (`2col/card.html` → `_2col_card`). `@did` keeps those characters; only `/` becomes `-`. Prefixes for `yield_blocks` follow the `@lid` form: `yield_blocks("_style_my_theme_")`.
 
 `@lid` and `@did` are **preprocessor variables** — the layout loader substitutes them before Jet parses the template. `@lid` (**l**odash **id** — underscores) is used in Jet block names. `@did` (**d**ash **id** — hyphens) is used in BEM CSS class names. Both are derived from the file path, not the block name. Use `@@lid` / `@@did` to emit a literal `@lid` / `@did` in JS or CSS.
 

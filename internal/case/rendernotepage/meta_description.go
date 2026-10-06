@@ -26,7 +26,7 @@ func deriveMetaDescription(note *model.NoteView) string {
 		return ""
 	}
 	intro := note.PartialRenderer.Introduce()
-	text := collapseSpaces(stripHTMLTags(intro.ContentHTML))
+	text := collapseSpaces(stripHTMLTags(intro.ContentHTML.String()))
 	if text == "" {
 		return ""
 	}

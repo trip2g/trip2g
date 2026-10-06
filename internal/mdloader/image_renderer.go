@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"trip2g/internal/enclavefix"
+	"trip2g/internal/model"
 
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 	"github.com/quailyquaily/goldmark-enclave/object"
@@ -225,20 +226,11 @@ func (r *imageRenderer) renderAudio(w util.BufWriter, enc *enclavecore.Enclave) 
 
 // renderImage renders regular images and quail images with asset replacement.
 func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) {
-	// Get the original URL - ObjectID contains the clean URL for QuailImage
-	originalURL := enc.URL.String()
-	if enc.Provider == enclavecore.EnclaveProviderQuailImage && enc.ObjectID != "" {
-		originalURL = enc.ObjectID
+	var page *model.NoteView
+	if r.resolver != nil {
+		page = r.resolver.currentPage
 	}
-
-	// Try to resolve from AssetReplaces
-	resolvedURL := originalURL
-	if r.resolver != nil && r.resolver.currentPage != nil {
-		assetReplace, found := r.resolver.currentPage.AssetReplaces[originalURL]
-		if found && assetReplace != nil {
-			resolvedURL = assetReplace.URL
-		}
-	}
+	originalURL, resolvedURL := enclaveImageURL(enc, page)
 
 	// Detect if this is a custom emoji (before asset replacement)
 	isEmoji := isCustomEmoji(originalURL)
@@ -303,6 +295,25 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 		out = fmt.Sprintf(`<img src="%s" alt="%s"%s />`, safeSrc, safeAlt, classAttr)
 	}
 	_, _ = w.Write([]byte(out))
+}
+
+// enclaveImageURL returns the image's URL as written and as the page serves
+// it, from the page's AssetReplaces.
+func enclaveImageURL(enc *enclavecore.Enclave, page *model.NoteView) (string, string) {
+	// ObjectID contains the clean URL for QuailImage
+	originalURL := enc.URL.String()
+	if enc.Provider == enclavecore.EnclaveProviderQuailImage && enc.ObjectID != "" {
+		originalURL = enc.ObjectID
+	}
+
+	if page != nil {
+		assetReplace, found := page.AssetReplaces[originalURL]
+		if found && assetReplace != nil {
+			return originalURL, assetReplace.URL
+		}
+	}
+
+	return originalURL, originalURL
 }
 
 // wrapEnclaveErrorHTML wraps error message in enclave error HTML.

@@ -54,7 +54,7 @@
 <section class="@did">
   <div class="@did__text">
     {{ if note }}<div class="@did__lead">{{ yield mesh_section(path=note) }}</div>{{ end }}
-    <h2 class="@did__title">{{ title }}</h2>
+    <h2 class="@did__title">{{ title | unsafe }}</h2>
     <p class="@did__p">
       {{ p1 }}
     </p>

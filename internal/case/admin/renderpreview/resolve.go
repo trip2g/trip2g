@@ -112,10 +112,10 @@ func Resolve(ctx context.Context, env Env, input graphmodel.RenderLayoutInput) (
 		// a live HTTP request context to populate; no-op values keep layouts that
 		// call defaultTemplate.Styles() / currentUser.IsAdmin() previewable.
 		vars["defaultTemplate"] = reflect.ValueOf(map[string]interface{}{
-			"UserSpaceScripts": func() string { return "" },
-			"Header":           func() string { return "" },
-			"Footer":           func() string { return "" },
-			"Styles":           func() string { return "" },
+			"UserSpaceScripts": func() model.SafeHTML { return "" },
+			"Header":           func() model.SafeHTML { return "" },
+			"Footer":           func() model.SafeHTML { return "" },
+			"Styles":           func() model.SafeHTML { return "" },
 		})
 		vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
 			"IsAdmin": func() bool { return false },

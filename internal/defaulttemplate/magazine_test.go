@@ -60,7 +60,7 @@ func createMagazineTestNVS() *templateviews.NVS {
 func TestMagazineExcludeFiles_NoExclude(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	ctx := &Ctx{
-		Note:  nvs.ByPath("index.md"),
+		Note:  nvs.NoteByPath("index.md"),
 		Notes: nvs,
 	}
 
@@ -71,7 +71,7 @@ func TestMagazineExcludeFiles_NoExclude(t *testing.T) {
 
 func TestMagazineExcludeFiles_ExcludeDrafts(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	indexNote.Unwrap().RawMeta["magazine_exclude_files"] = "drafts/**"
 
 	ctx := &Ctx{
@@ -89,7 +89,7 @@ func TestMagazineExcludeFiles_ExcludeDrafts(t *testing.T) {
 
 func TestMagazineExcludeFiles_ExcludeMultipleWithInclude(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	indexNote.Unwrap().RawMeta["magazine_include_files"] = "blog/*.md"
 	indexNote.Unwrap().RawMeta["magazine_exclude_files"] = "blog/post1.md"
 
@@ -113,7 +113,7 @@ func TestMagazineExcludeFiles_DefaultEmpty(t *testing.T) {
 
 func TestMagazineExcludeFiles_ReturnsValue(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	indexNote.Unwrap().RawMeta["magazine_exclude_files"] = "drafts/**"
 
 	ctx := &Ctx{
@@ -124,7 +124,7 @@ func TestMagazineExcludeFiles_ReturnsValue(t *testing.T) {
 
 func TestMagazineExcludeFiles_TelegramGlob(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	indexNote.Unwrap().RawMeta["magazine_exclude_files"] = "**/*Telegram.md"
 
 	ctx := &Ctx{
@@ -147,7 +147,7 @@ func TestMagazineExcludeProperty_NoExclude(t *testing.T) {
 
 func TestMagazineExcludeProperty_ReturnsValue(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	indexNote.Unwrap().RawMeta["magazine_exclude_property"] = "telegram_publish_at"
 
 	ctx := &Ctx{
@@ -158,7 +158,7 @@ func TestMagazineExcludeProperty_ReturnsValue(t *testing.T) {
 
 func TestMagazineExcludeProperty_ExcludesByProperty(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	indexNote.Unwrap().RawMeta["magazine_exclude_property"] = "telegram_publish_at"
 
 	ctx := &Ctx{
@@ -176,12 +176,12 @@ func TestMagazineExcludeProperty_ExcludesByProperty(t *testing.T) {
 
 func TestMagazineExcludeProperty_CombinedWithIncludeProperty(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	// Add "published" to some notes
-	nvs.ByPath("blog/post1.md").Unwrap().RawMeta = map[string]interface{}{"published": true}
-	nvs.ByPath("blog/post2.md").Unwrap().RawMeta = map[string]interface{}{"published": true}
+	nvs.NoteByPath("blog/post1.md").Unwrap().RawMeta = map[string]interface{}{"published": true}
+	nvs.NoteByPath("blog/post2.md").Unwrap().RawMeta = map[string]interface{}{"published": true}
 	// post2.Telegram has both published and telegram_publish_at
-	nvs.ByPath("blog/post2. Telegram.md").Unwrap().RawMeta["published"] = true
+	nvs.NoteByPath("blog/post2. Telegram.md").Unwrap().RawMeta["published"] = true
 
 	indexNote.Unwrap().RawMeta["magazine_include_property"] = "published"
 	indexNote.Unwrap().RawMeta["magazine_exclude_property"] = "telegram_publish_at"
@@ -237,7 +237,7 @@ func TestMagazineTierCounts(t *testing.T) {
 
 func TestMagazineItems_CustomTierCounts(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	indexNote.Unwrap().RawMeta["magazine_featured"] = 0
 	indexNote.Unwrap().RawMeta["magazine_grid"] = 0
 
@@ -270,7 +270,7 @@ func TestMagazineGridColumns_Default(t *testing.T) {
 
 func TestMagazineFeaturedCount_ReturnsValue(t *testing.T) {
 	nvs := createMagazineTestNVS()
-	indexNote := nvs.ByPath("index.md")
+	indexNote := nvs.NoteByPath("index.md")
 	indexNote.Unwrap().RawMeta["magazine_featured"] = 3
 
 	ctx := &Ctx{Note: indexNote}

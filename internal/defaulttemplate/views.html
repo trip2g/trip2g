@@ -165,7 +165,7 @@ window.__trip2g_settings = {
   {% if position == "left" && headerNote != nil %}
   {% code navHTML := headerNote.FirstListHTML() %}
   {% if navHTML != "" %}
-  <nav class="sidebar-nav">{%s= navHTML %}</nav>
+  <nav class="sidebar-nav">{%s= navHTML.String() %}</nav>
   {% endif %}
   {% endif %}
 
@@ -190,7 +190,7 @@ window.__trip2g_settings = {
       %}
       {% if wNote != nil %}
       <div class="widget widget--content">
-        <div class="widget__content">{%s= wNote.HTMLString() %}</div>
+        <div class="widget__content">{%s= wNote.HTMLString().String() %}</div>
       </div>
       {% endif %}
     {% endswitch %}
@@ -274,12 +274,12 @@ window.__trip2g_settings = {
     {% case ContentRefWikiLink %}
       {% code refNote := ctx.resolveNoteRef(ref) %}
       {% if refNote != nil %}
-      <div class="content__body">{%s= refNote.HTMLString() %}</div>
+      <div class="content__body">{%s= refNote.HTMLString().String() %}</div>
       {% endif %}
     {% case ContentRefFile %}
       {% code refNote := ctx.resolveNoteRef(ref) %}
       {% if refNote != nil %}
-      <div class="content__body">{%s= refNote.HTMLString() %}</div>
+      <div class="content__body">{%s= refNote.HTMLString().String() %}</div>
       {% endif %}
     {% case ContentRefSimilar %}
       {%= SimilarWidget(ctx) %}
@@ -322,7 +322,7 @@ window.__trip2g_settings = {
   </div>
   {% endif %}
   {% if !ctx.Note.HasH1() %}<h1 class="content__title">{%s ctx.Note.Title() %}</h1>{% endif %}
-  <div class="content__body">{%s= ctx.Note.HTMLString() %}</div>
+  <div class="content__body">{%s= ctx.Note.HTMLString().String() %}</div>
   {% if ctx.UserToken.IsAdmin() && ctx.Note.HasTaskListItems() %}
   <div mol_view_root="$trip2g_user_tasklist" class="content__tasklist" data-pid="{%dl ctx.Note.PathID() %}" data-path="{%s ctx.Note.Path() %}"></div>
   {% endif %}
@@ -392,7 +392,7 @@ window.__trip2g_settings = {
   {% if pr != nil %}
   {% code intro := pr.Introduce() %}
   {% if intro.ContentHTML != "" %}
-  <p class="magazine-item__excerpt">{%s= intro.ContentHTML %}</p>
+  <p class="magazine-item__excerpt">{%s= intro.ContentHTML.String() %}</p>
   {% endif %}
   {% endif %}
   <div class="magazine-item__footer">
@@ -416,7 +416,7 @@ window.__trip2g_settings = {
     {% endif %}
     {% code navHTML := headerNote.FirstListHTML() %}
     {% if navHTML != "" %}
-    <nav class="site-header__nav">{%s= navHTML %}</nav>
+    <nav class="site-header__nav">{%s= navHTML.String() %}</nav>
     {% endif %}
 
     <div class="site-header__space" mol_view_root="$trip2g_user_space"></div>
@@ -439,7 +439,7 @@ window.__trip2g_settings = {
     {% code intro := footerNote.PartialRenderer().Introduce() %}
     {% if intro.ContentHTML != "" %}
     <div class="site-footer__brand">
-      {%s= intro.ContentHTML %}
+      {%s= intro.ContentHTML.String() %}
     </div>
     {% endif %}
     {% code sections := footerNote.PartialRenderer().Sections(3) %}
@@ -447,15 +447,15 @@ window.__trip2g_settings = {
     <div class="site-footer__links site-footer__links--columns">
       {% for _, sec := range sections %}
       <div class="site-footer__column">
-        <p class="site-footer__column-title">{%s= sec.TitleHTML %}</p>
-        {%s= sec.ContentHTML %}
+        <p class="site-footer__column-title">{%s= sec.TitleHTML.String() %}</p>
+        {%s= sec.ContentHTML.String() %}
       </div>
       {% endfor %}
     </div>
     {% else %}
     {% code listHTML := footerNote.FirstListHTML() %}
     {% if listHTML != "" %}
-    <div class="site-footer__links site-footer__links--inline">{%s= listHTML %}</div>
+    <div class="site-footer__links site-footer__links--inline">{%s= listHTML.String() %}</div>
     {% endif %}
     {% endif %}
   </div>

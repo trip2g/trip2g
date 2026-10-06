@@ -39,10 +39,16 @@ func (n *NVS) wrap(nv *model.NoteView) *Note {
 	return NewNoteWithDomain(nv, n.domainHost)
 }
 
-// ByPath returns a note by its file path (e.g., "/_sidebar.md", "_sidebar.md").
+// ByPath is the template-facing NoteByPath. A miss is an untyped nil, so a
+// template can test the result with both {{ if x }} and {{ if x == nil }}.
+func (n *NVS) ByPath(path string) any {
+	return orNil(n.NoteByPath(path))
+}
+
+// NoteByPath returns a note by its file path (e.g., "/_sidebar.md", "_sidebar.md").
 // Leading slash is trimmed automatically for convenience.
 // Returns nil if note not found.
-func (n *NVS) ByPath(path string) *Note {
+func (n *NVS) NoteByPath(path string) *Note {
 	if n.nvs == nil {
 		return nil
 	}
@@ -57,9 +63,14 @@ func (n *NVS) ByPath(path string) *Note {
 	return n.wrap(nv)
 }
 
-// ByPermalink returns a note by its permalink (e.g., "/docs", "/about").
+// ByPermalink is the template-facing NoteByPermalink; a miss is an untyped nil.
+func (n *NVS) ByPermalink(permalink string) any {
+	return orNil(n.NoteByPermalink(permalink))
+}
+
+// NoteByPermalink returns a note by its permalink (e.g., "/docs", "/about").
 // Returns nil if note not found.
-func (n *NVS) ByPermalink(permalink string) *Note {
+func (n *NVS) NoteByPermalink(permalink string) *Note {
 	if n.nvs == nil {
 		return nil
 	}
@@ -72,11 +83,16 @@ func (n *NVS) ByPermalink(permalink string) *Note {
 	return n.wrap(nv)
 }
 
-// ByWikilink resolves a wikilink target using Obsidian's algorithm:
+// ByWikilink is the template-facing NoteByWikilink; a miss is an untyped nil.
+func (n *NVS) ByWikilink(target string) any {
+	return orNil(n.NoteByWikilink(target))
+}
+
+// NoteByWikilink resolves a wikilink target using Obsidian's algorithm:
 // 1. If target contains "/" — explicit path lookup
 // 2. Otherwise — global basename lookup (shortest path from root wins)
 // See docs/dev/obsidian_links.md for the full algorithm.
-func (n *NVS) ByWikilink(target string) *Note {
+func (n *NVS) NoteByWikilink(target string) *Note {
 	if n.nvs == nil || target == "" {
 		return nil
 	}
@@ -115,6 +131,15 @@ func (n *NVS) ByWikilink(target string) *Note {
 	}
 
 	return nil
+}
+
+// orNil turns a nil *Note into an untyped nil. Jet compares a typed nil
+// pointer as unequal to the nil literal, so template lookups return any.
+func orNil(note *Note) any {
+	if note == nil {
+		return nil
+	}
+	return note
 }
 
 // Sidebars returns sidebar notes for a given note.

@@ -19,6 +19,11 @@ func TestDerivePlaceholderIDs(t *testing.T) {
 		{"/mesh/bar.html", "mesh_bar", "mesh-bar"},
 		{"mesh/bar", "mesh_bar", "mesh-bar"},
 		{"/mesh/index", "mesh_index", "mesh-index"},
+		{"/my-theme/card", "my_theme_card", "my-theme-card"},
+		{"/my-theme/components/button", "my_theme_components_button", "my-theme-components-button"},
+		{"/my-theme/card.html", "my_theme_card", "my-theme-card"},
+		{"/v1.2/card", "v1_2_card", "v1.2-card"},
+		{"/2col/card", "_2col_card", "2col-card"},
 	}
 	for _, c := range cases {
 		lid, did := derivePlaceholderIDs(c.id)

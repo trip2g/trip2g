@@ -1068,7 +1068,7 @@ Content for slide 2.1
 	nvs := model.NewNoteViews()
 	nvs.RegisterNote(noteView)
 	tplNVS := templateviews.NewNVS(nvs, "live")
-	note := tplNVS.ByPath("presentation.md")
+	note := tplNVS.NoteByPath("presentation.md")
 	require.NotNil(t, note)
 
 	vars := make(jet.VarMap)
@@ -1218,7 +1218,7 @@ $10/month
 	nvs := model.NewNoteViews()
 	nvs.RegisterNote(noteView)
 	tplNVS := templateviews.NewNVS(nvs, "live")
-	note := tplNVS.ByPath("features.md")
+	note := tplNVS.NoteByPath("features.md")
 	require.NotNil(t, note)
 
 	vars := make(jet.VarMap)

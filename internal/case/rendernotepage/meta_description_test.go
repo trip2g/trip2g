@@ -13,13 +13,15 @@ type introPartialRenderer struct {
 	intro model.NoteViewSection
 }
 
-func (r introPartialRenderer) Sections(int) []model.NoteViewSection      { return nil }
-func (r introPartialRenderer) Section(string) *model.NoteViewSection     { return nil }
-func (r introPartialRenderer) Introduce() model.NoteViewSection          { return r.intro }
-func (r introPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
-func (r introPartialRenderer) FirstList() *model.NoteViewList            { return nil }
-func (r introPartialRenderer) Lists() []model.NoteViewList               { return nil }
-func (r introPartialRenderer) FirstImageURL() string                     { return "" }
+func (r introPartialRenderer) Sections(int) []model.NoteViewSection        { return nil }
+func (r introPartialRenderer) Section(string) any                          { return nil }
+func (r introPartialRenderer) Introduce() model.NoteViewSection            { return r.intro }
+func (r introPartialRenderer) HeadingBlocks(int) []model.NoteViewSection   { return nil }
+func (r introPartialRenderer) FirstList() any                              { return nil }
+func (r introPartialRenderer) Lists() []model.NoteViewList                 { return nil }
+func (r introPartialRenderer) FirstImageURL() string                       { return "" }
+func (r introPartialRenderer) Images() []model.NoteViewImage               { return nil }
+func (r introPartialRenderer) CodeBlocks(string) []model.NoteViewCodeBlock { return nil }
 
 func TestDeriveMetaDescription(t *testing.T) {
 	t.Run("nil note", func(t *testing.T) {
@@ -61,7 +63,7 @@ func TestDeriveMetaDescription(t *testing.T) {
 	t.Run("truncates to about 155 chars with ellipsis on word boundary", func(t *testing.T) {
 		long := strings.Repeat("word ", 60) // 300 chars
 		note := &model.NoteView{Free: true, PartialRenderer: introPartialRenderer{
-			intro: model.NoteViewSection{ContentHTML: "<p>" + long + "</p>"},
+			intro: model.NoteViewSection{ContentHTML: model.SafeHTML("<p>" + long + "</p>")},
 		}}
 		got := deriveMetaDescription(note)
 		require.LessOrEqual(t, len([]rune(got)), metaDescriptionMaxLen+1) // +1 for the ellipsis

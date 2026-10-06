@@ -36,7 +36,7 @@ func TestNVS_ByPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			note := wrapper.ByPath(tt.path)
+			note := wrapper.NoteByPath(tt.path)
 			require.NotNil(t, note)
 			require.Equal(t, tt.expected, note.Title())
 		})
@@ -47,7 +47,7 @@ func TestNVS_ByPath_NotFound(t *testing.T) {
 	nvs := model.NewNoteViews()
 	wrapper := templateviews.NewNVS(nvs, "live")
 
-	note := wrapper.ByPath("/nonexistent.md")
+	note := wrapper.NoteByPath("/nonexistent.md")
 	require.Nil(t, note)
 }
 
@@ -89,7 +89,7 @@ func TestNVS_BackLinks_ExcludesSystemNotes(t *testing.T) {
 	nvs.PathMap["_footer.md"] = systemNote
 
 	wrapper := templateviews.NewNVS(nvs, "live")
-	target := wrapper.ByPath("docs/article.md")
+	target := wrapper.NoteByPath("docs/article.md")
 
 	backlinks := wrapper.BackLinks(target)
 	require.Len(t, backlinks, 1)

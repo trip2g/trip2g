@@ -137,6 +137,7 @@ func Load(options Options) (*model.NoteViews, error) {
 	}
 
 	ldr.md = goldmark.New(
+		goldmark.WithParserOptions(parser.WithAttribute()),
 		goldmark.WithRendererOptions(renderOptions...),
 		goldmark.WithExtensions(
 			highlight.Highlight,

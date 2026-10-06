@@ -6,18 +6,31 @@ import (
 	"strconv"
 	"strings"
 	"trip2g/internal/model"
+	"unicode"
+	"unicode/utf8"
 )
 
 // derivePlaceholderIDs derives the @lid/@did expansions from a component's source ID.
 // @lid = lodash id (underscores), used for Jet block names.
 // @did = dash id (hyphens), used for BEM CSS class names.
-// Examples: "/mesh/bar" → lid="mesh_bar", did="mesh-bar".
+// Every character that cannot appear in a Jet identifier becomes "_" in lid,
+// and a leading digit gets a "_" prefix, so @lid is always a valid block name.
+// Examples: "/mesh/bar" → lid="mesh_bar", did="mesh-bar";
+// "/my-theme/card" → lid="my_theme_card", did="my-theme-card".
 func derivePlaceholderIDs(sourceID string) (string, string) {
 	base := strings.TrimPrefix(sourceID, "/")
-	if idx := strings.LastIndex(base, "."); idx != -1 {
+	if idx := strings.LastIndex(base, "."); idx > strings.LastIndex(base, "/") {
 		base = base[:idx]
 	}
-	lid := strings.ReplaceAll(base, "/", "_")
+	lid := strings.Map(func(r rune) rune {
+		if r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return r
+		}
+		return '_'
+	}, base)
+	if first, _ := utf8.DecodeRuneInString(lid); unicode.IsDigit(first) {
+		lid = "_" + lid
+	}
 	did := strings.ReplaceAll(base, "/", "-")
 	return lid, did
 }
