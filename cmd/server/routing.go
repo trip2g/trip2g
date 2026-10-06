@@ -177,7 +177,7 @@ var (
 )
 
 func (a *app) prepareMiddlewares() []Middleware {
-	fsHandler := a.assetsFS.NewRequestHandler()
+	fsHandler := a.assetsHandler()
 
 	return []Middleware{
 		// Read-only replica: forward every mutating request to the leader before

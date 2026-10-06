@@ -82,6 +82,68 @@ func (a *app) setupAssets() {
 	a.assetHashes = make(map[string]string)
 }
 
+// assetsHandler serves /assets/ with explicit caching. fasthttp.FS reports the
+// embed.FS zero ModTime as Last-Modified, so it would answer any
+// If-Modified-Since with 304 even after a deploy; revalidation uses a
+// content-hash ETag instead.
+func (a *app) assetsHandler() fasthttp.RequestHandler {
+	fsHandler := a.assetsFS.NewRequestHandler()
+
+	return func(ctx *fasthttp.RequestCtx) {
+		ctx.Request.Header.Del("If-Modified-Since")
+
+		hash, ok := a.assetHash(string(ctx.Path()[len("/assets/"):]))
+		if !ok {
+			fsHandler(ctx)
+			return
+		}
+
+		// Weak: the same tag covers the gzip/br/identity encodings.
+		etag := `W/"` + hash + `"`
+		cacheControl := "public, max-age=3600"
+		switch {
+		case a.config.DevMode:
+			cacheControl = "no-cache"
+		case string(ctx.QueryArgs().Peek("h")) == hash[:8]:
+			cacheControl = "public, max-age=31536000, immutable"
+		}
+
+		if strings.Contains(string(ctx.Request.Header.Peek("If-None-Match")), hash) {
+			ctx.NotModified()
+		} else {
+			fsHandler(ctx)
+			ctx.Response.Header.Del("Last-Modified")
+		}
+
+		ctx.Response.Header.Set("ETag", etag)
+		ctx.Response.Header.Set("Cache-Control", cacheControl)
+	}
+}
+
+// assetHash returns the sha256 of an embedded asset, cached outside dev mode.
+func (a *app) assetHash(assetPath string) (string, bool) {
+	a.assetsMu.Lock()
+	defer a.assetsMu.Unlock()
+
+	if hash, exists := a.assetHashes[assetPath]; exists && !a.config.DevMode {
+		return hash, true
+	}
+
+	content, err := fs.ReadFile(assets.FS, assetPath)
+	if err != nil {
+		return "", false
+	}
+
+	sum := sha256.Sum256(content)
+	hash := hex.EncodeToString(sum[:])
+
+	if !a.config.DevMode {
+		a.assetHashes[assetPath] = hash
+	}
+
+	return hash, true
+}
+
 // TODO: read all asset urls from flags.
 func (a *app) assetURL(path string) string {
 	// Remove leading / if it exists
@@ -91,31 +153,13 @@ func (a *app) assetURL(path string) string {
 	// Remove /assets/ prefix if it exists
 	assetPath = strings.TrimPrefix(assetPath, "assets/")
 
-	a.assetsMu.Lock()
-	defer a.assetsMu.Unlock()
-
-	// Check if hash already calculated (non-dev mode only)
-	if hash, exists := a.assetHashes[assetPath]; exists && !a.config.DevMode {
-		return path + "?h=" + hash[:8]
-	}
-
-	// Calculate hash on the fly
-	content, err := fs.ReadFile(assets.FS, assetPath)
-	if err != nil {
+	hash, ok := a.assetHash(assetPath)
+	if !ok {
 		a.log.Debug("asset file not found", "path", assetPath, "original", path)
 		return path
 	}
 
-	// Calculate SHA256 hash
-	hash := sha256.Sum256(content)
-	hashStr := hex.EncodeToString(hash[:])
-
-	// Store hash for future use (non-dev mode only)
-	if !a.config.DevMode {
-		a.assetHashes[assetPath] = hashStr
-	}
-
-	return path + "?h=" + hashStr[:8]
+	return path + "?h=" + hash[:8]
 }
 
 func (a *app) AdminJSURL() string {
