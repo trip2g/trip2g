@@ -66,7 +66,7 @@ func (nvs *NoteViews) navTarget(source *NoteView, node ast.Node) *NoteView {
 	return nil
 }
 
-// markdownLinkTarget resolves a local link to a note: "/x" by permalink,
+// markdownLinkTarget resolves a local link to a note: "/x" by route alias, then permalink,
 // "x.md" or "x" from source's folder first, then like a wikilink.
 func (nvs *NoteViews) markdownLinkTarget(source *NoteView, dest string) *NoteView {
 	u, err := url.Parse(dest)
@@ -74,6 +74,9 @@ func (nvs *NoteViews) markdownLinkTarget(source *NoteView, dest string) *NoteVie
 		return nil
 	}
 	if strings.HasPrefix(u.Path, "/") {
+		if note := nvs.GetByRoute("", u.Path); note != nil {
+			return note
+		}
 		return nvs.Map[u.Path]
 	}
 	if ext := path.Ext(u.Path); ext != "" && ext != ".md" {

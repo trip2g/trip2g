@@ -132,7 +132,7 @@ Both wikilinks and markdown links count:
 | `[[Note]]`, `[[folder/Note]]` | Like any wikilink, see [[en/user/wikilink-resolution\|wikilink resolution]] |
 | `[x](page.md)`, `[x](page)` | In the sidebar note's folder first, then like a wikilink |
 | `[x](./sub/page.md)`, `[x](../page.md)` | Relative to the sidebar note's folder |
-| `[x](/docs/page)` | By the page's URL, exactly as it opens on the site |
+| `[x](/docs/page)` | By the page's URL, including a `route:` address — exactly as it opens on the site |
 | `[x](page%20name.md)` | Encoded characters are decoded first |
 
 Skipped: embeds (`![[...]]`), links to a heading (`[[Note#Part]]`, `page.md#part`), external links (`https://`, `mailto:` and so on), files that are not notes (`image.png`), and links to notes that don't exist.

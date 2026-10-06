@@ -17,6 +17,10 @@ func TestNavLinks(t *testing.T) {
 		"docs/sub/page.md",
 		"docs/page name.md",
 		"ru/user/jet-functions.md",
+		"docs/props.md",
+	}
+	contents := map[string]string{
+		"docs/props.md": "---\nroute: /props\n---\nbody",
 	}
 
 	tests := []struct {
@@ -55,6 +59,11 @@ func TestNavLinks(t *testing.T) {
 			want:    []string{"ru/user/jet-functions.md"},
 		},
 		{
+			name:    "route alias",
+			sidebar: "- [P](/props)",
+			want:    []string{"docs/props.md"},
+		},
+		{
 			name: "skips external, anchors, fragments, assets and misses",
 			sidebar: "- [a](https://example.com/x.md)\n- [b](//cdn.example.com/x)\n- [c](mailto:a@b.c)\n" +
 				"- [d](tel:123)\n- [e](#top)\n- [f](templates.md#part)\n- [g](pic.png)\n- [h](missing.md)\n- [i](/missing)",
@@ -80,7 +89,11 @@ func TestNavLinks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srcs := []mdloader.SourceFile{{Path: "docs/_sidebar.md", Content: []byte(tt.sidebar)}}
 			for _, path := range notes {
-				srcs = append(srcs, mdloader.SourceFile{Path: path, Content: []byte("body")})
+				content := "body"
+				if c, ok := contents[path]; ok {
+					content = c
+				}
+				srcs = append(srcs, mdloader.SourceFile{Path: path, Content: []byte(content)})
 			}
 			for i := range srcs {
 				srcs[i].PathID = int64(i + 1)
