@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### "Links here" are sorted alphabetically
+
+- **What.** The backlinks block at the end of a page and `nvs.BackLinks(note)` in templates list notes by title (case-insensitive), then by permalink.
+- **Why.** The list was built from a map, so its order changed from one render to the next: a link was hard to find and the same page looked different each time.
+- **How.** Nothing to do.
+
 ### Layouts escape output by default
 
 - **What.** A custom layout now HTML-escapes what it prints. `{{ note.Title() }}`, a frontmatter value, `{{ note.ContentString() }}` and every other plain string reach the page as text: `<`, `>`, `&`, `"` and `'` become entities. HTML the server builds itself is still printed as is: `note.HTMLString()`, `FirstListHTML()`, a section's `TitleHTML` and `ContentHTML`, a code block's `HTML`, `FormSpecJSON()`, `SubgraphNamesJSON()`, `asset()` and `defaultTemplate.*`.

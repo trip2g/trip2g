@@ -1,6 +1,7 @@
 package templateviews
 
 import (
+	"sort"
 	"strings"
 
 	"trip2g/internal/model"
@@ -182,6 +183,16 @@ func (n *NVS) BackLinks(note *Note) []*Note {
 			result = append(result, n.wrap(linked))
 		}
 	}
+
+	// InLinks is a map, so sort for a stable order: by title, then permalink.
+	sort.SliceStable(result, func(i, j int) bool {
+		ti, tj := strings.ToLower(result[i].Title()), strings.ToLower(result[j].Title())
+		if ti != tj {
+			return ti < tj
+		}
+		return result[i].Permalink() < result[j].Permalink()
+	})
+
 	return result
 }
 

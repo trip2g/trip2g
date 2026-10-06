@@ -95,3 +95,36 @@ func TestNVS_BackLinks_ExcludesSystemNotes(t *testing.T) {
 	require.Len(t, backlinks, 1)
 	require.Equal(t, "docs/intro.md", backlinks[0].Path())
 }
+
+func TestNVS_BackLinks_SortedByTitleThenPermalink(t *testing.T) {
+	nvs := model.NewNoteViews()
+
+	inLinks := map[string]struct{}{}
+	notes := []*model.NoteView{
+		{PathID: 2, Path: "b.md", Permalink: "/b", Title: "zebra"},
+		{PathID: 3, Path: "c.md", Permalink: "/c", Title: "Apple"},
+		{PathID: 4, Path: "d.md", Permalink: "/d", Title: "mango"},
+		{PathID: 5, Path: "a.md", Permalink: "/a", Title: "mango"},
+		{PathID: 6, Path: "e.md", Permalink: "/e", Title: "Яблоко"},
+	}
+	for _, n := range notes {
+		inLinks[n.Permalink] = struct{}{}
+		nvs.Map[n.Permalink] = n
+		nvs.PathMap[n.Path] = n
+	}
+
+	target := &model.NoteView{PathID: 1, Path: "target.md", Permalink: "/target", InLinks: inLinks}
+	nvs.Map["/target"] = target
+	nvs.PathMap["target.md"] = target
+
+	wrapper := templateviews.NewNVS(nvs, "live")
+
+	for range 20 {
+		backlinks := wrapper.BackLinks(wrapper.NoteByPath("target.md"))
+		got := make([]string, 0, len(backlinks))
+		for _, bl := range backlinks {
+			got = append(got, bl.Path())
+		}
+		require.Equal(t, []string{"c.md", "a.md", "d.md", "b.md", "e.md"}, got)
+	}
+}
