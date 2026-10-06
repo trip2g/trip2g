@@ -182,14 +182,7 @@ window.__trip2g_settings = {
     {% case WidgetSimilar %}
       {%= SimilarWidget(ctx) %}
     {% case WidgetContent %}
-      {% code
-        ref := ContentRef{Kind: ContentRefWikiLink, Value: w.Value}
-        wNote := ctx.resolveNoteRef(ref)
-        if wNote == nil {
-          ref = ContentRef{Kind: ContentRefFile, Value: w.Value}
-          wNote = ctx.resolveNoteRef(ref)
-        }
-      %}
+      {% code wNote := ctx.resolveWidgetNote(w.Value) %}
       {% if wNote != nil %}
       <div class="widget widget--content">
         <div class="widget__content">{%s= wNote.HTMLString().String() %}</div>
@@ -298,6 +291,7 @@ window.__trip2g_settings = {
 
 {% func SelfContent(ctx *Ctx) %}
 {% if ctx.Note != nil %}
+{% code nav := ctx.PageNav() %}
 <article class="content">
   {% if ctx.Note != nil && ctx.Note.HasLangAlternatives() %}
   <div class="lang-switcher">
@@ -311,6 +305,13 @@ window.__trip2g_settings = {
       </div>
     </details>
   </div>
+  {% endif %}
+  {% if len(nav.Breadcrumbs) > 0 %}
+  <nav class="breadcrumbs">
+    {% for _, c := range nav.Breadcrumbs %}
+    {% if c.Href != "" %}<a class="breadcrumbs__item" href="{%s c.Href %}">{%s c.Label %}</a>{% else %}<span class="breadcrumbs__item">{%s c.Label %}</span>{% endif %}
+    {% endfor %}
+  </nav>
   {% endif %}
   {% code tgLinks := ctx.AllTelegramLinks() %}
   {% if len(tgLinks) > 0 %}
@@ -327,6 +328,16 @@ window.__trip2g_settings = {
   <div class="content__body">{%s= ctx.Note.HTMLString().String() %}</div>
   {% if ctx.UserToken.IsAdmin() && ctx.Note.HasTaskListItems() %}
   <div mol_view_root="$trip2g_user_tasklist" class="content__tasklist" data-pid="{%dl ctx.Note.PathID() %}" data-path="{%s ctx.Note.Path() %}"></div>
+  {% endif %}
+  {% if nav.Prev != nil || nav.Next != nil %}
+  <nav class="pager">
+    {% if nav.Prev != nil %}
+    <a class="pager__link pager__link--prev" href="{%s nav.Prev.Href %}"><span class="pager__label">{%s ctx.T("pager_prev") %}</span>{%s nav.Prev.Label %}</a>
+    {% endif %}
+    {% if nav.Next != nil %}
+    <a class="pager__link pager__link--next" href="{%s nav.Next.Href %}"><span class="pager__label">{%s ctx.T("pager_next") %}</span>{%s nav.Next.Label %}</a>
+    {% endif %}
+  </nav>
   {% endif %}
 {% if specJSON := ctx.FormSpecJSON(); specJSON != nil %}
 <script id="form-spec" data-nvid="{%s= ctx.Note.VersionID() %}" type="application/json">{%z= specJSON %}</script>
