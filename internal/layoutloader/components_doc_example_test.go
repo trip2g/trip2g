@@ -22,7 +22,7 @@ const componentsDocCard = `{{ block _style_@lid() }}
 
 {{ block @lid(title="", url="", featured=false) }}
 <a class="@did{{ if featured }} @did--featured{{ end }}" href="{{ url }}">
-  <h3 class="@did__title">{{ title | html }}</h3>
+  <h3 class="@did__title">{{ title }}</h3>
   {{ yield content }}
 </a>
 {{ end }}`
@@ -32,23 +32,23 @@ const componentsDocButton = `{{ block _style_@lid() }}
 {{ end }}
 
 {{ block @lid(label="", url="") }}
-<a class="@did" href="{{ url }}">{{ label | html }}</a>
+<a class="@did" href="{{ url }}">{{ label }}</a>
 {{ end }}`
 
 const componentsDocPage = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>{{ note.Title() | html }}</title>
+  <title>{{ note.Title() }}</title>
   <style>{{ yield_blocks("_style_") }}</style>
 </head>
 <body>
-  {{ note.HTMLString() | unsafe }}
+  {{ note.HTMLString() }}
 
   {{ posts := nvs.ByGlob("blog/*.md").Public().SortByMeta("date").Desc().SortBy("Title").Limit(3).All() }}
   {{ range i, post := posts }}
     {{ yield components_card(title=post.Title(), url=post.PermalinkEncoded(), featured=i == 0) content }}
-      {{ if summary := post.M().GetString("summary", ""); summary }}<p>{{ summary | html }}</p>{{ end }}
+      {{ if summary := post.M().GetString("summary", ""); summary }}<p>{{ summary }}</p>{{ end }}
     {{ end }}
   {{ end }}
 
@@ -102,4 +102,82 @@ func TestComponentsDocExample(t *testing.T) {
 		` <a class="components-card" href="/blog/c"> <h3 class="components-card__title">Gamma</h3> </a>` +
 		` <a class="components-button" href="/blog">All posts</a> </body> </html>`
 	require.Equal(t, want, strings.Join(strings.Fields(buf.String()), " "))
+}
+
+// Mirrors the base layer example in docs/{en,ru}/user/components.md; keep them in sync.
+const componentsDocBase = `{{ block _style_@lid() }}
+:root { --text: #1a1a1a; --accent: #0070f3; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--text); }
+a { color: var(--accent); }
+{{ end }}
+
+{{ block @lid(title="") }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title }}</title>
+  <style>{{ yield_blocks("_style_") }}</style>
+</head>
+<body>
+  {{ yield content }}
+</body>
+</html>
+{{ end }}`
+
+const componentsDocBasePage = `{{ yield components_base(title=note.Title()) content }}
+  {{ note.HTMLString() }}
+  {{ yield components_button(label="All posts", url="/blog") }}
+{{ end }}`
+
+func TestComponentsDocBaseExample(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{ID: "/page", Path: "_layouts/page.html", Content: componentsDocBasePage},
+		{ID: "/components/base", Path: "_layouts/components/base.html", Content: componentsDocBase},
+		{ID: "/components/button", Path: "_layouts/components/button.html", Content: componentsDocButton},
+	}
+	layouts, err := Load(&testEnv{logger: &logger.TestLogger{}}, sources, Options{})
+	require.NoError(t, err)
+	require.Empty(t, layouts.Map["/page"].Warnings)
+
+	page := &model.NoteView{Path: "index.md", Title: "Q&A", HTML: "<p>Hello</p>"}
+	vars := make(jet.VarMap)
+	vars["note"] = reflect.ValueOf(templateviews.NewNote(page))
+	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(model.NewNoteViews(), "live"))
+
+	var buf bytes.Buffer
+	err = layouts.Map["/page"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	want := `<!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Q&amp;A</title> <style>` +
+		` :root { --text: #1a1a1a; --accent: #0070f3; }` +
+		` *, *::before, *::after { box-sizing: border-box; }` +
+		` body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--text); }` +
+		` a { color: var(--accent); }` +
+		` .components-button { display: inline-block; padding: 8px 16px; border-radius: 6px; background: #0070f3; color: #fff; }` +
+		` </style> </head> <body> <p>Hello</p>` +
+		` <a class="components-button" href="/blog">All posts</a> </body> </html>`
+	require.Equal(t, want, strings.Join(strings.Fields(buf.String()), " "))
+}
+
+func TestComponentsDocStyleOrder(t *testing.T) {
+	component := func(name, inner string) string {
+		return `{{ block _style_@lid() }}/*` + name + `*/{{ end }}{{ block @lid() }}` + inner + `{{ end }}`
+	}
+	sources := []model.LayoutSourceFile{
+		{ID: "/page", Path: "_layouts/page.html", Content: `<style>{{ yield_blocks("_style_") }}</style>{{ yield base() }}{{ yield card() }}`},
+		{ID: "/base", Path: "_layouts/base.html", Content: component("base", `{{ yield header() }}`)},
+		{ID: "/card", Path: "_layouts/card.html", Content: component("card", `{{ yield button() }}`)},
+		{ID: "/header", Path: "_layouts/header.html", Content: component("header", "")},
+		{ID: "/button", Path: "_layouts/button.html", Content: component("button", "")},
+	}
+	layouts, err := Load(&testEnv{logger: &logger.TestLogger{}}, sources, Options{})
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	err = layouts.Map["/page"].View.Execute(&buf, make(jet.VarMap), nil)
+	require.NoError(t, err)
+
+	require.Equal(t, "<style>/*header*//*button*//*base*//*card*/</style>", strings.TrimSpace(buf.String()))
 }

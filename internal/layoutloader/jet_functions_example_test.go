@@ -22,7 +22,7 @@ const jetFunctionsExample = `{{ query := nvs.ByGlob("blog/*.md").Public() }}
 <ul>
 {{ range i, post := posts }}
   <li>
-    <a href="{{ post.PermalinkEncoded() }}">{{ post.Title() | html }}</a>
+    <a href="{{ post.PermalinkEncoded() }}">{{ post.Title() }}</a>
     <time>{{ post.M().GetString("date", "undated") }}</time>
   </li>
 {{ else }}

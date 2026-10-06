@@ -11,19 +11,21 @@ The page has two parts. The first is the full reference for **Jet itself**: buil
 
 New to custom layouts? Start with [[en/user/templates|Templates]], then build pages from components as [[en/user/components|Components, auto-import and best practices]] recommends. When something renders wrong, see [[en/user/jet-debugging|Debugging Jet templates]].
 
-### Output is not escaped by default
+### Output is escaped by default
 
-Read this first. trip2g creates its Jet set with auto-escaping turned off, because layouts embed pre-rendered note HTML. `{{ value }}` writes the value **as is**:
+Read this first. `{{ value }}` HTML-escapes the value, so a title like `Q&A <draft>` reaches the page as text, not as tags:
 
 ```jet
-{{ "<b>bold</b>" }}            {* → <b>bold</b> *}
-{{ "<b>bold</b>" | html }}     {* → &lt;b&gt;bold&lt;/b&gt; *}
+{{ "<b>bold</b>" }}            {* → &lt;b&gt;bold&lt;/b&gt; *}
+{{ "<b>bold</b>" | unsafe }}   {* → <b>bold</b> *}
 ```
 
 What follows from this:
 
-- `| unsafe` and `| raw` do nothing in trip2g. `{{ note.HTMLString() }}` and `{{ note.HTMLString() | unsafe }}` print the same thing. The docs keep `| unsafe` in examples because it makes the intent clear.
-- Escape any text that could contain `<`, `&` or `"` yourself: titles, frontmatter values, anything a visitor or another author controls. Use `| html` in HTML text and attributes, and `| url` in a query-string parameter.
+- Methods and fields that return HTML the server built print as is, without a filter: `note.HTMLString()`, `FirstListHTML()`, `FormSpecJSON()`, `SubgraphNamesJSON()`, section `TitleHTML` / `ContentHTML`, code block `HTML`, the `defaultTemplate.*` functions and `asset()`.
+- `| unsafe` and `| raw` print a plain string without escaping. You need them only for markup the template builds itself or keeps in a string, and for `injection.Content` of the site's HTML injections.
+- `| html` is no longer needed. It escapes once and marks the result as safe, so `{{ title | html }}` in an older template prints the same as `{{ title }}`, not a double-escaped `&amp;amp;`.
+- A string function or `+` applied to safe output returns a plain string, and that string is escaped: `{{ upper(note.HTMLString()) }}` prints the tags as text.
 
 ### Jet built-in functions
 
@@ -40,10 +42,10 @@ What follows from this:
 | `map` | `map(k1, v1, k2, v2, …)` | `map[string]interface{}` |
 | `slice` / `array` | `slice(a, b, …)` | `[]interface{}` |
 | `ints` | `ints(from, to)` | A rangeable sequence `from … to-1` |
-| `json` | `json(v)` | JSON of `v`, compact |
+| `json` | `json(v)` | JSON of `v`, compact, printed without HTML escaping |
 | `writeJson` | `writeJson(v)` | Writes JSON of `v` to the output, followed by a newline |
 | `includeIfExists` | `includeIfExists(path, ctx?)` | Renders the template if it exists; returns a hidden `true`/`false` |
-| `exec` | `exec(path, ctx?)` | **Not supported in trip2g** (see below) |
+| `exec` | `exec(path, ctx?)` | The value another layout file `return`s; its output is discarded |
 | `dump` | `dump()`, `dump("name")` | A text dump of the context, variables and globals in scope |
 
 Escaping filters (`html`, `url`, `safeHtml`, `safeJs`, `raw`, `unsafe`) have [[#Escaping|their own table]].
@@ -110,7 +112,7 @@ A function can be called directly, or applied with a pipe. In a pipe the piped v
 <script type="application/json" id="data">{{ writeJson(note.M().Raw()) }}</script>
 ```
 
-Both escape `<`, `>` and `&` as `<`… so the output is safe inside `<script>`. `writeJson` adds a trailing newline. `json` does not.
+Both escape `<`, `>` and `&` as `\u003c`… so the output is safe inside `<script>`, and the page's escaping leaves it alone. `writeJson` adds a trailing newline. `json` does not.
 
 #### `includeIfExists` and `exec`
 
@@ -121,7 +123,7 @@ Both escape `<`, `>` and `&` as `<`… so the output is safe inside `<script>`. 
 
 `includeIfExists` renders the template when it exists and returns a boolean that prints nothing. The optional second argument becomes `.` inside the included template.
 
-`exec` is **not supported in trip2g**. It runs a template, discards its output and returns the template's `return` value, but a layout that contains `{{ return }}` fails to load with `layout panic: unexpected node` (see [[#Not available in trip2g layouts]]). So `exec` can't return a value. To reuse template code, use a component and `yield`: see [[en/user/components|Components]].
+`exec("lib/featured", data)` runs another layout file, throws away what it prints and gives you the value of its `{{ return }}`. Inside that file `data` is `.`, and `note`, `nvs` and the other page variables work. The path starts at `_layouts/` and has **no extension**: `exec("lib/featured")` works, `exec("lib/featured.html")` fails with `template /lib/featured.html could not be found`. Use it for data (a list, a map, a number), and components for markup. Examples and path rules: [[en/user/templates#Data from another layout: exec and return|Templates: exec and return]].
 
 #### `dump`
 
@@ -136,14 +138,14 @@ Both escape `<`, `>` and `&` as `<`… so the output is safe inside `<script>`. 
 
 | Filter | Does | Use for |
 |---|---|---|
-| `html` | Escapes `<`, `>`, `&`, `'`, `"` | Text and attribute values in HTML |
+| `html` | Escapes `<`, `>`, `&`, `'`, `"` once and marks the result safe | Nothing new: `{{ value }}` already escapes. Harmless in older templates |
 | `safeHtml` | The same escaping, written straight to the output | Same as `html` |
-| `url` | Query escaping (`a b&c` → `a+b%26c`) | One query-string value: `?q={{ term \| url }}` |
-| `safeJs` | JavaScript string escaping (`'` → `\'`, `<` → `<`) | A value inside a JS string literal |
-| `raw` / `unsafe` | Nothing in trip2g, output is already unescaped | Marking intentional raw HTML |
+| `url` | Query escaping (`a b&c` → `a+b%26c`), result marked safe | One query-string value: `?q={{ term \| url }}` |
+| `safeJs` | JavaScript string escaping (`'` → `\'`, `<` → `\u003C`) | A value inside a JS string literal |
+| `raw` / `unsafe` | No escaping | Markup the template builds itself or keeps in a plain string |
 
 ```jet
-<a href="/search?q={{ term | url }}" title="{{ note.Title() | html }}">{{ note.Title() | html }}</a>
+<a href="/search?q={{ term | url }}" title="{{ note.Title() }}">{{ note.Title() }}</a>
 <script>var title = '{{ note.Title() | safeJs }}';</script>
 ```
 
@@ -209,13 +211,13 @@ Call methods with parentheses. `{{ note.Title }}` without `()` prints a function
 
 - **With one variable, `range` gives the index, not the value.** `{{ range tag := note.Tags() }}` yields `0, 1, 2…`. Always write `range i, value :=`.
 - `{{ else }}` renders when the collection is empty.
-- `_` as a variable name fails to load the layout. Name the index, even if you don't use it.
+- Use `_` for a variable you don't need: `range _, tag := note.Tags()`.
 
 #### `block` and `yield`
 
 ```jet
 {{ block card(title="", url="") }}
-  <a class="card" href="{{ url }}">{{ title | html }}</a>
+  <a class="card" href="{{ url }}">{{ title }}</a>
 {{ end }}
 
 {{ yield card(title="Docs", url="/docs") }}
@@ -255,23 +257,28 @@ A value after the call becomes `.` inside the block: `{{ yield menu() items }}`.
 
 - Paths are relative to `_layouts/`, without `.html`.
 - `import` and `extends` must come first in the file.
-- trip2g also imports blocks automatically when a page yields a block defined in another layout file. See [[en/user/components#Auto-import|Components: auto-import]].
+- trip2g also imports blocks automatically when a page yields a block defined in another layout file. A template reached through `include` or `extends` doesn't get that and needs its own `{{ import }}`. See [[en/user/components#Auto-import|Components: auto-import]].
 
-#### Not available in trip2g layouts
+#### `return` and `try` / `catch`
 
-These constructs are **not supported in trip2g**, and neither is `exec`, which needs `return`. trip2g walks every layout's syntax tree when it loads, to find `asset()` calls and blocks. Jet's tree walker doesn't know three constructs. A layout that uses one of them fails to load with `layout panic: unexpected node …`:
+```jet
+{{ return nvs.ByGlob(. + "/*.md").Public().Limit(3).All() }}   {* in lib/featured.html: the value exec gets *}
 
-| Construct | Instead |
-|---|---|
-| `{{ try }} … {{ catch err }} … {{ end }}` | Guard with `if`: `{{ if x }}{{ x.Title() }}{{ end }}` |
-| `{{ return value }}` (and therefore `exec`) | A component called with `yield`: [[en/user/components|Components]] |
-| `_` as a range variable | Any name: `range i, v :=` |
+{{ try }}
+  {{ stats := exec("lib/stats", "blog") }}<p>{{ stats.count }} posts</p>
+{{ catch err }}
+  {{ if currentUser.IsAdmin() }}<p>{{ err.Error() }}</p>{{ end }}
+{{ end }}
+```
 
-Admins see the error on the page and in `/_system/renderlayout`. Other visitors get the default template.
+- `return` gives `exec` its value. In a page rendered normally it stops nothing and prints nothing.
+- `try` renders its body; if anything inside fails, the body's output is dropped and `catch` renders instead. Without `catch` a failed `try` prints nothing. It doesn't catch a layout that fails to load.
+
+Worked examples: [[en/user/templates#Data from another layout: exec and return|exec and return]], [[en/user/templates#Isolating failures: try and catch|try and catch]].
 
 ### What trip2g adds
 
-trip2g registers five global functions, passes a set of variables to every custom layout, and replaces two placeholders in layout source. Each item below links to the page that documents it in full. Short descriptions are given here for items that have no other page.
+trip2g registers eight global functions, passes a set of variables to every custom layout, and replaces two placeholders in layout source. Each item below links to the page that documents it in full. Short descriptions are given here for items that have no other page.
 
 #### Global functions
 
@@ -282,6 +289,7 @@ trip2g registers five global functions, passes a set of variables to every custo
 | `yield_blocks("prefix")` | Renders every block whose name starts with the prefix (or matches `/regex/`) | [[en/user/yield_blocks|yield_blocks]] |
 | `coalesce(a, b, …)` | The first argument that is set and non-empty; otherwise the last argument | Below |
 | `arg_type("param", "type", "comment")` | Nothing; describes a block parameter for tooling | Below |
+| `parseJSON(s)`, `parseYAML(s)`, `parseCSV(s)` | The text as maps and lists (CSV: a list of rows); `nil` on invalid input | [[en/user/templates#parse-data|Templates: parsing data]] |
 
 `coalesce` treats a missing map key, `nil`, `""`, an empty list and an empty map as empty. `0` and `false` count as values:
 
@@ -319,7 +327,7 @@ To put the default template's header, footer and styles around your own content:
 
 ```jet
 <head>
-  <title>{{ title | html }}</title>
+  <title>{{ title }}</title>
   {{ defaultTemplate.Styles() }}
   {{ defaultTemplate.UserSpaceScripts() }}
 </head>
@@ -335,7 +343,7 @@ To put the default template's header, footer and styles around your own content:
 
 #### Placeholders in layout source
 
-`@lid` and `@did` in a layout file are replaced with the file's id before parsing (`mesh/bar.html` → `mesh_bar` / `mesh-bar`), so block and CSS names stay unique. See [[en/user/yield_blocks|yield_blocks]] and [[en/user/bem|BEM naming]].
+`@lid` and `@did` in a layout file are replaced with the file's id before parsing (`mesh/bar.html` → `mesh_bar` / `mesh-bar`, `my-theme/card.html` → `my_theme_card` / `my-theme-card`), so block and CSS names stay unique. See [[en/user/yield_blocks|yield_blocks]] and [[en/user/bem|BEM naming]].
 
 ### The page: `note`
 
@@ -418,24 +426,22 @@ Behaviour of queries that the code defines:
 - `Limit(0)` means no limit. An `Offset` past the end gives an empty list.
 - `First()` sets the query's limit to 1 for good. Don't reuse a query after calling `First()` on it.
 
-Check a lookup result with `if`, not `== nil`: a missing note is a typed nil, so `x == nil` is `false`, and `x.Title()` on it stops the render.
+A lookup that finds nothing (`ByPath`, `ByPermalink`, `ByWikilink`, a query's `First()` / `Last()`, `LangAlternative()`, `Section()`, `FirstList()`) returns `nil`. `{{ if x }}` and `{{ if x == nil }}` both test it. Calling a method on it, `x.Title()`, stops the render. Declare and test in one tag:
 
 ```jet
-{{ about := nvs.ByPermalink("/about") }}
-{{ if about }}<a href="{{ about.PermalinkEncoded() }}">{{ about.Title() | html }}</a>{{ end }}
+{{ if about := nvs.ByPermalink("/about"); about }}<a href="{{ about.PermalinkEncoded() }}">{{ about.Title() }}</a>{{ end }}
 ```
 
 ### Content in parts: `note.PartialRenderer()`
 
-`Introduce()`, `Sections(level)` and `Section("Title")`, and the section fields `TitleHTML` and `ContentHTML`, are documented in [[en/user/templates#Splitting content into sections|Templates]]. Also available:
+`Introduce()`, `Sections(level)`, `Section(title or anchor)`, `FirstList()`, `Lists()`, `Images()`, `CodeBlocks(lang)` and the section fields `TitleHTML`, `ContentHTML`, `ID` and `Level` are documented in [[en/user/templates|Templates]]. Also available:
 
 | Method | Returns |
 |---|---|
-| `FirstList()` | The first top-level list as `{Items, MaxDepth}`, each item `{Text, URL, Children}`; nil if none |
-| `Lists()` | All top-level lists |
 | `FirstImageURL()` | URL of the first image |
 | section `.Title` | Heading as plain text |
 | section `.Sections(level)`, `.Section("Title")` | Subsections of a section |
+| list item `.Task`, `.TaskMark` | `""`, `"todo"` or `"done"`, and the character inside `[ ]` |
 
 ### Worked example: latest posts with a count
 
@@ -450,7 +456,7 @@ A listing that takes the five newest public notes from `blog/`, sorted by the `d
 <ul>
 {{ range i, post := posts }}
   <li>
-    <a href="{{ post.PermalinkEncoded() }}">{{ post.Title() | html }}</a>
+    <a href="{{ post.PermalinkEncoded() }}">{{ post.Title() }}</a>
     <time>{{ post.M().GetString("date", "undated") }}</time>
   </li>
 {{ else }}
@@ -465,7 +471,7 @@ How it works:
 - `query.All()` doesn't change the query. The same `query` is reused for sorting. Only `First()` would change it.
 - `date: 2024-05-10` is a string, and ISO dates sort correctly as strings. Notes without `date` go last.
 - `.SortBy("Title")` breaks ties between posts with the same date. Without it their order would change from render to render.
-- `| html` escapes titles such as `Q&A`, because trip2g doesn't escape output.
+- A title such as `Q&A` is escaped on output; no filter is needed.
 
 This template is rendered by a test in the trip2g repository (`internal/layoutloader/jet_functions_example_test.go`), so it stays correct as the code changes.
 

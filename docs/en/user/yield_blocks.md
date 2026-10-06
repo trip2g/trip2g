@@ -250,5 +250,4 @@ Contrast this with `yield_blocks`, which collects inline CSS/JS from component b
 
 - [[en/user/components|Components, auto-import and best practices]] — how to structure a layout from components
 - [[templates|Custom templates]] — template basics, Jet syntax, `note` and `nvs` variables
-- [[ru/user/templates-best-practices|Template best practices]] — organizing multi-template projects
 - [[en/user/bem|BEM naming in templates]] — naming convention for component CSS classes
