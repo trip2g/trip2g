@@ -204,6 +204,26 @@ Place `htmlInjectionsHead` inside `<head>` and `htmlInjectionsBodyEnd` before `<
 > </body>
 > ```
 
+### SEO tags in a custom layout
+
+The default template writes `<link rel="canonical">`, `og:url`, `hreflang` and `<meta name="robots">` for you. A custom layout writes none of them. The only thing trip2g adds on its own is the `X-Robots-Tag: noindex` HTTP header for notes with `noindex: true`.
+
+`publicURL` holds the main domain's address. On a [[en/user/multidomains|custom domain]] it is still the main domain, so build the canonical from the note's route:
+
+```jet
+<head>
+  {{ if note.M().GetBool("noindex", false) }}<meta name="robots" content="noindex">{{ end }}
+  {{ canonicalRoute := note.M().GetString("route", "") }}
+  {{ if canonicalRoute != "" }}
+  <link rel="canonical" href="https://{{ canonicalRoute }}">
+  {{ else }}
+  <link rel="canonical" href="{{ publicURL }}{{ note.Permalink() }}">
+  {{ end }}
+</head>
+```
+
+Keep the `noindex` default at `false`. With `GetBool("noindex", true)` every page without the property is marked `noindex` and the whole site drops out of search, while the HTTP headers look clean. The snippet expects `route` to be a full `domain/path`; adapt it if you use `routes` or main-domain aliases.
+
 ### Splitting content into sections
 
 `PartialRenderer` breaks a markdown note into logical blocks — useful for landing pages, FAQs, and card grids:

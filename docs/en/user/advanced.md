@@ -16,7 +16,7 @@ route: mysite.com/
 ---
 ```
 
-After adding the route, point your domain at the trip2g server with a CNAME DNS record. HTTPS certificates are issued automatically on first request.
+After adding the route, point your domain at the trip2g server: an `A`/`AAAA` record, or a `CNAME` for a subdomain (a bare domain cannot have a `CNAME`). The built-in Let's Encrypt client issues certificates only for domains in its ACME domain list, so on your own server add the domain there or terminate TLS in front of trip2g. See [[en/user/multidomains|Multi-domains]] for details.
 
 #### Route variants
 
@@ -48,15 +48,13 @@ A common pattern is to apply routes across a whole folder using [[en/user/frontm
 docs/**.md → { route: "docs.mysite.com" }
 ```
 
-<!-- TODO: verify with product — confirm frontmatter_patches slug/link -->
-
 #### Cross-domain wikilinks
 
 Wikilinks resolve automatically based on where the reader is. If the target note is on a different custom domain, the link becomes a full URL (`https://other.com/path`). If it's on the same domain, it stays relative.
 
 #### DNS troubleshooting
 
-- CNAME changes can take up to 48 hours to propagate. Check with `dig yourdomain.com` or [dnschecker.org](https://dnschecker.org).
+- DNS changes can take up to 48 hours to propagate. Check with `dig yourdomain.com` or [dnschecker.org](https://dnschecker.org).
 - Use `route: mysite.com/` (with trailing slash) to make a note the root of the domain. Without the slash, the note is accessible at its normal permalink on that domain.
 - Each custom domain gets its own `/sitemap.xml` containing only its own notes.
 - Session cookies are scoped to the domain. For private notes on a custom domain, the reader must log in separately on that domain. For open content, add `free: true`.

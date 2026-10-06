@@ -30,7 +30,7 @@ The [[en/user/default-template|default template]] reads `lang`, `left_sidebar`, 
 
 - You have a free section and a paid section, and setting `free` on every note manually is tedious
 - You want to assign a layout to a whole folder instead of each note individually
-- You need to attach a subdomain to a section via [[en/user/advanced|custom routes]]
+- You need to attach a subdomain to a section via [[en/user/multidomains|custom routes]]
 
 ### Creating a patch
 
@@ -67,7 +67,7 @@ pattern: docs/**
 expression: { route: "docs.mysite.com" }
 ```
 
-All notes in `docs/` and subfolders automatically appear at `docs.mysite.com`. See [[en/user/advanced|custom domains]] for more on routes.
+All notes in `docs/` and subfolders automatically appear at `docs.mysite.com`. See [[en/user/multidomains|multi-domains]] for more on routes.
 
 **Add a suffix to titles:**
 
