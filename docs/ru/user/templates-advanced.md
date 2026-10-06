@@ -80,9 +80,9 @@ model.NoteView, model.NoteViews
 
 ---
 
-## NVS (NoteViewService)
+## NVS (NoteViews)
 
-Сервис доступа к заметкам. Доступен в шаблоне как `nvs`.
+Набор заметок сайта (`NoteViews`) в обёртке для шаблонов. Доступен в шаблоне как `nvs`.
 
 ### Методы доступа
 

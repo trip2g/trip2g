@@ -58,9 +58,9 @@ model.NoteView, model.NoteViews
 
 ---
 
-## NVS (NoteViewService)
+## NVS (NoteViews)
 
-Сервис доступа к заметкам. Доступен в шаблоне как `nvs`.
+Набор заметок сайта (`NoteViews`) в обёртке для шаблонов. Доступен в шаблоне как `nvs`.
 
 ### Методы доступа
 
@@ -361,7 +361,7 @@ type Section struct {
 ```
 internal/templateviews/
 ├── note.go       # Note — обёртка заметки
-├── nvs.go        # NVS — сервис доступа к заметкам
+├── nvs.go        # NVS — обёртка над model.NoteViews для шаблонов
 ├── query.go      # NoteQuery — query builder
 ├── meta.go       # Meta — доступ к frontmatter
 └── *_test.go     # Тесты
