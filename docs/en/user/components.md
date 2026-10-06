@@ -63,13 +63,9 @@ A page calls `components/card.html` as `{{ yield components_card(...) }}`. The f
 
 ### Auto-import
 
-A page doesn't need `{{ import }}` to use a component. When trip2g loads a page, it:
+A page doesn't need `{{ import }}` to use a component. Every component the page calls with `{{ yield name(...) }}` is found and connected automatically, together with the components those call in turn: a card that yields a button brings in the button file too. Just call the block by name.
 
-1. Collects every `{{ yield name(...) }}` in the page.
-2. Finds the layout file that defines each block, then the blocks those files yield, and so on. A card that yields a button brings in the button file too.
-3. Adds the content of the files it found to the top of the page, wrapped in `{{ if false }} … {{ end }}`. Jet registers their blocks there, and nothing is rendered at that spot. The page's own leading `{{ import }}` lines stay first.
-
-The scan is static: it reads the template source, not the rendered output. Every component a page can reach is imported, even inside an `if` that is false on this request.
+The lookup reads the template source, not the rendered output, so a component is connected even when its `yield` sits inside an `if` that is false on this request. How the loader does this is described for trip2g developers in [[dev/layouts]] (section "Автоимпорт компонентов"); layout authors don't need it.
 
 **Collisions.** Two files that define a block with the same name don't stop the load:
 
