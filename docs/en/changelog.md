@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### A base layout can mark a slot with a bare yield
+
+- **What.** A base layout may mark a slot with `{{ yield main() }}` instead of `{{ block main() }}…{{ end }}`; the pages that extend it fill the slot with their own `{{ block main() }}`. Auto-import never pulls in a layout that starts with `{{ extends }}`: such a file is a page, not a component.
+- **Why.** Auto-import found `main` in a page that extends the base and pasted that whole page into the base. The base failed to load, and every page extending it failed with `template /base could not be found`.
+- **How to use.** Use a bare `yield` for a slot every page must fill, and `block` for a slot with a default. See [[en/user/templates#Layout inheritance: extends|Templates]].
+
 ### Wider reading column on large screens
 
 - **What.** The default template's reading column grows on wide screens: 80 characters from 1440px, 90 characters and a 1680px layout from 1800px. Laptops and phones are unchanged.

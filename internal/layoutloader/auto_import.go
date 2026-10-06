@@ -81,7 +81,7 @@ func (jl *jetLoader) buildAutoImportPreamble(pageSourceID string) string {
 		return ""
 	}
 
-	registry, _ := buildBlockRegistry(tmpViews, jl.sourceIDs, pageSourceID)
+	registry, _ := buildBlockRegistry(tmpViews, jl.templates, jl.sourceIDs, pageSourceID)
 	neededFileIDs, _, _ := resolveNeededFiles(tmpViews, pageView, registry)
 
 	if len(neededFileIDs) == 0 {

@@ -196,6 +196,49 @@ func TestAutoImport_TransitiveYield(t *testing.T) {
 		"transitive yield must be resolved via BFS auto-import")
 }
 
+func TestAutoImport_SkipsPagesThatExtend(t *testing.T) {
+	tests := []struct {
+		name    string
+		sources []model.LayoutSourceFile
+		want    string
+	}{
+		{
+			name: "base imports and yields a component",
+			sources: []model.LayoutSourceFile{
+				page("/base", `{{ import "components/nav" }}<nav>{{ yield nav() }}</nav><main>{{ yield main() }}</main>`),
+				page("/page", `{{ extends "base" }}{{ block main() }}M{{ end }}`),
+				page("/components/nav", `{{ block nav() }}N{{ end }}`),
+			},
+			want: `<nav>N</nav><main>M</main>`,
+		},
+		{
+			name: "child yields a component",
+			sources: []model.LayoutSourceFile{
+				page("/base", `<main>{{ yield main() }}</main>`),
+				page("/page", `{{ extends "base" }}{{ block main() }}{{ yield button() }}{{ end }}`),
+				page("/components/button", `{{ block button() }}B{{ end }}`),
+			},
+			want: `<main>B</main>`,
+		},
+		{
+			name: "two children fill the same slot",
+			sources: []model.LayoutSourceFile{
+				page("/base", `<main>{{ yield main() }}</main>`),
+				page("/other", `{{ extends "base" }}{{ block main() }}O{{ end }}`),
+				page("/page", `{{ extends "base" }}{{ block main() }}M{{ end }}`),
+			},
+			want: `<main>M</main>`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			layouts := testLoadLayouts(t, tt.sources)
+			require.NotNil(t, layouts.Map["/base"].View, "%v", layouts.Map["/base"].Warnings)
+			require.Equal(t, tt.want, renderLayout(t, layouts, "/page"))
+		})
+	}
+}
+
 // TestYieldBlocks_StyleMeshTransitive is the exact scenario from the bug report:
 // page yields mesh_hero (via @lid), hero yields mesh_button (via @lid),
 // yield_blocks("_style_mesh_") must collect CSS from BOTH hero and button.

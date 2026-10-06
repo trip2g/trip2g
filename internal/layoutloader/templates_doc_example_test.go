@@ -363,15 +363,33 @@ func TestTemplatesDocExamples(t *testing.T) {
 	}
 }
 
-func TestTemplatesDocBaseYieldingAnUndefinedSlotFailsToLoad(t *testing.T) {
-	sources := []model.LayoutSourceFile{
-		page("/base", `<main>{{ yield main() }}</main>`),
-		page("/page", `{{ extends "base" }}{{ block main() }}M{{ end }}`),
+func TestTemplatesDocBaseSlotForms(t *testing.T) {
+	tests := []struct {
+		name string
+		base string
+		want string
+	}{
+		{
+			name: "bare yield",
+			base: `<main>{{ yield main() }}</main>`,
+			want: `<main>M</main>`,
+		},
+		{
+			name: "block with default",
+			base: `<main>{{ block main() }}default{{ end }}</main>`,
+			want: `<main>M</main>`,
+		},
 	}
-	layouts, err := Load(&testEnv{logger: &logger.TestLogger{}}, sources, Options{})
-	require.NoError(t, err)
-	require.Nil(t, layouts.Map["/base"].View, "docs/{en,ru}/user/templates.md say a base must define its slots; update them when this loads")
-	require.Nil(t, layouts.Map["/page"].View)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			layouts := testLoadLayouts(t, []model.LayoutSourceFile{
+				page("/base", tt.base),
+				page("/page", `{{ extends "base" }}{{ block main() }}M{{ end }}`),
+			})
+			require.NotNil(t, layouts.Map["/base"].View, "%v", layouts.Map["/base"].Warnings)
+			require.Equal(t, tt.want, renderLayout(t, layouts, "/page"))
+		})
+	}
 }
 
 // The app layout in docs/{en,ru}/user/spa.md.
