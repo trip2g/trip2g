@@ -21,14 +21,15 @@ func WriteNotFound(ctx *fasthttp.RequestCtx, env Env, token *usertoken.Data) {
 		}
 	}
 
+	uiLang := uiLangFromCtx(ctx)
 	dtCtx := &Ctx{
-		Title:          "Page not found",
+		Title:          T(uiLang, "not_found_title"),
 		JSURLs:         env.UserJSURLs(),
 		LocaleHashes:   env.UserLocaleHashes(),
 		CSSURLs:        env.UserCSSURLs(),
 		DevMode:        devModeString(env.IsDevMode()),
 		HTMLInjections: injections,
-		UILang:         uiLangFromCtx(ctx),
+		UILang:         uiLang,
 		UserToken:      token,
 		NotFoundMode:   true,
 	}

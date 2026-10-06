@@ -19,3 +19,15 @@ func TestWriteNotFound(t *testing.T) {
 	body := string(ctx.Response.Body())
 	require.Contains(t, body, "Page not found")
 }
+
+func TestWriteNotFound_SpeaksTheVisitorsLanguage(t *testing.T) {
+	ctx := &fasthttp.RequestCtx{}
+	ctx.Request.Header.SetCookie(langCookieName, "ru")
+	WriteNotFound(ctx, stubEnv{}, nil)
+
+	body := string(ctx.Response.Body())
+	require.Contains(t, body, "<title>Страница не найдена")
+	require.Contains(t, body, `<p class="notfound__message">Страница не найдена</p>`)
+	require.Contains(t, body, "← Главная")
+	require.NotContains(t, body, "Page not found")
+}

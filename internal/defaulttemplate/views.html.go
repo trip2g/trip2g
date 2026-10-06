@@ -1359,7 +1359,11 @@ func StreamSelfContent(qw422016 *qt422016.Writer, ctx *Ctx) {
 //line views.html:300
 			qw422016.N().S(`
   <div class="lang-switcher">
-    <span class="lang-switcher__label">Read in:</span>
+    <span class="lang-switcher__label">`)
+//line views.html:302
+			qw422016.E().S(ctx.T("lang_read_in"))
+//line views.html:302
+			qw422016.N().S(`</span>
     <details class="lang-switcher__picker">
       <summary class="lang-switcher__current lang-switcher__current--`)
 //line views.html:304
@@ -1837,7 +1841,11 @@ func StreamSiteHeader(qw422016 *qt422016.Writer, ctx *Ctx, headerNote *templatev
 	if hasLeft {
 //line views.html:408
 		qw422016.N().S(`
-    <button class="site-header__hamburger site-header__hamburger--left" aria-label="Open menu" id="btn-left">
+    <button class="site-header__hamburger site-header__hamburger--left" aria-label="`)
+//line views.html:409
+		qw422016.E().S(ctx.T("menu_open"))
+//line views.html:409
+		qw422016.N().S(`" id="btn-left">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     `)
@@ -1860,7 +1868,11 @@ func StreamSiteHeader(qw422016 *qt422016.Writer, ctx *Ctx, headerNote *templatev
 //line views.html:415
 		qw422016.N().S(logoURL)
 //line views.html:415
-		qw422016.N().S(`" alt="Logo"></a>
+		qw422016.N().S(`" alt="`)
+//line views.html:415
+		qw422016.E().S(ctx.T("logo_alt"))
+//line views.html:415
+		qw422016.N().S(`"></a>
     `)
 //line views.html:416
 	}
@@ -1894,7 +1906,11 @@ func StreamSiteHeader(qw422016 *qt422016.Writer, ctx *Ctx, headerNote *templatev
 	if hasRight {
 //line views.html:423
 		qw422016.N().S(`
-    <button class="site-header__hamburger site-header__hamburger--right" aria-label="Open related" id="btn-right">
+    <button class="site-header__hamburger site-header__hamburger--right" aria-label="`)
+//line views.html:424
+		qw422016.E().S(ctx.T("related_open"))
+//line views.html:424
+		qw422016.N().S(`" id="btn-right">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     </button>
     `)
@@ -2303,8 +2319,16 @@ func streamnotFoundBody(qw422016 *qt422016.Writer, ctx *Ctx) {
 <div class="layout layout--no-sidebars">
   <main class="notfound">
     <div class="notfound__code">404</div>
-    <p class="notfound__message">Page not found</p>
-    <a class="notfound__home" href="/">← Home</a>
+    <p class="notfound__message">`)
+//line views.html:529
+	qw422016.E().S(ctx.T("not_found_title"))
+//line views.html:529
+	qw422016.N().S(`</p>
+    <a class="notfound__home" href="/">`)
+//line views.html:530
+	qw422016.E().S(ctx.T("system_home"))
+//line views.html:530
+	qw422016.N().S(`</a>
   </main>
 </div>
 `)
@@ -2419,7 +2443,11 @@ func streamserverErrorBody(qw422016 *qt422016.Writer, ctx *Ctx) {
 <div class="layout layout--no-sidebars">
   <main class="notfound">
     <div class="notfound__code">500</div>
-    <p class="notfound__message">Something went wrong</p>
+    <p class="notfound__message">`)
+//line views.html:556
+	qw422016.E().S(ctx.T("system_error_title"))
+//line views.html:556
+	qw422016.N().S(`</p>
     `)
 //line views.html:557
 	if ctx.ServerErrorDetail != "" {
@@ -2435,7 +2463,11 @@ func streamserverErrorBody(qw422016 *qt422016.Writer, ctx *Ctx) {
 	}
 //line views.html:559
 	qw422016.N().S(`
-    <a class="notfound__home" href="/">← Home</a>
+    <a class="notfound__home" href="/">`)
+//line views.html:560
+	qw422016.E().S(ctx.T("system_home"))
+//line views.html:560
+	qw422016.N().S(`</a>
   </main>
 </div>
 `)
@@ -2511,19 +2543,31 @@ func StreamUnsupportedFile(qw422016 *qt422016.Writer, ctx *Ctx) {
 	if ctx.UnsupportedFileExt == ".canvas" {
 //line views.html:575
 		qw422016.N().S(`
-      <p>Canvas files are not supported yet.</p>
+      <p>`)
+//line views.html:576
+		qw422016.E().S(ctx.T("unsupported_canvas"))
+//line views.html:576
+		qw422016.N().S(`</p>
       `)
 //line views.html:577
 	} else if ctx.UnsupportedFileExt == ".excalidraw" {
 //line views.html:577
 		qw422016.N().S(`
-      <p>Excalidraw files are not supported yet.</p>
+      <p>`)
+//line views.html:578
+		qw422016.E().S(ctx.T("unsupported_excalidraw"))
+//line views.html:578
+		qw422016.N().S(`</p>
       `)
 //line views.html:579
 	} else {
 //line views.html:579
 		qw422016.N().S(`
-      <p>Bases are not supported yet.</p>
+      <p>`)
+//line views.html:580
+		qw422016.E().S(ctx.T("unsupported_bases"))
+//line views.html:580
+		qw422016.N().S(`</p>
       `)
 //line views.html:581
 	}

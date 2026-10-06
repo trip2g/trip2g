@@ -46,6 +46,17 @@ func TestWriteServerError(t *testing.T) {
 		require.NotContains(t, body, "coalesce", "public must not see internal error text")
 		require.Contains(t, body, "Something went wrong")
 	})
+
+	t.Run("speaks the visitor's language", func(t *testing.T) {
+		ctx := &fasthttp.RequestCtx{}
+		ctx.Request.Header.SetCookie(langCookieName, "ru")
+		WriteServerError(ctx, stubEnv{}, ServerErrorParams{})
+
+		body := string(ctx.Response.Body())
+		require.Contains(t, body, `<p class="notfound__message">Что-то пошло не так</p>`)
+		require.Contains(t, body, "← Главная")
+		require.NotContains(t, body, "Something went wrong")
+	})
 }
 
 func TestWriteServerErrorFallbackEscapesDetail(t *testing.T) {

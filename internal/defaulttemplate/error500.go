@@ -68,14 +68,15 @@ func writeServerErrorChrome(ctx *fasthttp.RequestCtx, env Env, params ServerErro
 		}
 	}
 
+	uiLang := uiLangFromCtx(ctx)
 	dtCtx := &Ctx{
-		Title:           "Server error",
+		Title:           T(uiLang, "system_error_title"),
 		JSURLs:          env.UserJSURLs(),
 		LocaleHashes:    env.UserLocaleHashes(),
 		CSSURLs:         env.UserCSSURLs(),
 		DevMode:         devModeString(env.IsDevMode()),
 		HTMLInjections:  injections,
-		UILang:          uiLangFromCtx(ctx),
+		UILang:          uiLang,
 		ServerErrorMode: true,
 	}
 	if params.Admin {

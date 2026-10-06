@@ -66,3 +66,27 @@ other = "Не удалось войти"
 
 [hat_failed_text]
 other = "Что-то пошло не так на нашей стороне. Попробуйте открыть ссылку ещё раз через минуту."
+
+[lang_read_in]
+other = "Читать на:"
+
+[menu_open]
+other = "Открыть меню"
+
+[related_open]
+other = "Открыть связанное"
+
+[logo_alt]
+other = "Логотип"
+
+[not_found_title]
+other = "Страница не найдена"
+
+[unsupported_canvas]
+other = "Canvas-файлы пока не поддерживаются."
+
+[unsupported_excalidraw]
+other = "Excalidraw-файлы пока не поддерживаются."
+
+[unsupported_bases]
+other = "Bases пока не поддерживаются."

@@ -43,3 +43,14 @@ func TestUnsupportedFile_Excalidraw(t *testing.T) {
 	require.NotContains(t, body, "Canvas files are not supported yet.")
 	require.NotContains(t, body, "Bases are not supported yet.")
 }
+
+func TestUnsupportedFile_SpeaksTheVisitorsLanguage(t *testing.T) {
+	ctx := &Ctx{
+		Title:              "demo.canvas",
+		UnsupportedFileExt: ".canvas",
+		UILang:             "ru",
+	}
+	var buf bytes.Buffer
+	WriteRender(&buf, ctx)
+	require.Contains(t, buf.String(), "Canvas-файлы пока не поддерживаются.")
+}
