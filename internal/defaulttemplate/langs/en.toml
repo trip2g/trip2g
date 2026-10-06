@@ -66,3 +66,27 @@ other = "Couldn't sign you in"
 
 [hat_failed_text]
 other = "Something went wrong on our side. Try the link again in a minute."
+
+[lang_read_in]
+other = "Read in:"
+
+[menu_open]
+other = "Open menu"
+
+[related_open]
+other = "Open related"
+
+[logo_alt]
+other = "Logo"
+
+[not_found_title]
+other = "Page not found"
+
+[unsupported_canvas]
+other = "Canvas files are not supported yet."
+
+[unsupported_excalidraw]
+other = "Excalidraw files are not supported yet."
+
+[unsupported_bases]
+other = "Bases are not supported yet."
