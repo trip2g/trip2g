@@ -9,6 +9,8 @@ Templates control how your notes look — sidebar, header, footer, and layout.
 
 A template is an HTML file stored in `_layouts/`. It receives the note's content and frontmatter, then produces a complete page. Your markdown stays clean; the template decides how it's presented.
 
+> **Recommended structure:** build custom layouts from components: one `block` per file, called with `yield`, named with `@lid`, styled with BEM and imported automatically. See [[en/user/components|Components, auto-import and best practices]].
+
 > **See one in action:** [[instaframes/_index|Instagram frames]] is a ready-made template that turns a markdown file into downloadable carousel images — a full example of a custom layout doing real work.
 
 ### How templates work
@@ -387,6 +389,8 @@ Values from a note are the note author's text, and layouts escape them on output
 
 ### Organizing multiple templates
 
+The recommended way is a file per component, imported automatically: see [[en/user/components|Components, auto-import and best practices]]. A single `blocks.html` with an explicit import also works.
+
 For sites with shared header, footer, and styles, use a `blocks.html` file:
 
 ```
@@ -428,7 +432,7 @@ The engine walks `import` and yield chains to discover `asset()` calls automatic
 {{ end }}
 ```
 
-The comment is stripped from the rendered HTML, but the dependency is guaranteed to be picked up.
+The HTML comment stays in the page source (with the resolved URL inside), but visitors don't see it. The dependency is guaranteed to be picked up.
 
 ### Jet template syntax
 
@@ -447,7 +451,7 @@ Templates use the [Jet](https://github.com/CloudyKit/jet) engine:
 {{ d := parseJSON(text) }}            — parse JSON, YAML or CSV into data
 ```
 
-`parseJSON`, `parseYAML` and `parseCSV` are described in [[en/user/templates#parse-data|Parsing data]].
+`parseJSON`, `parseYAML` and `parseCSV` are described in [[en/user/templates#parse-data|Parsing data]]. Every function and filter, including what trip2g adds, is in the [[en/user/jet-functions|Jet functions reference]].
 
 Three Jet rules to remember:
 
@@ -639,4 +643,12 @@ To test templates interactively without uploading files, use `/_system/renderlay
 {{ end }}
 ```
 
-Methods: `SortBy("Title")`, `SortBy("CreatedAt")`, `SortByMeta("order")`, `.Desc()`, `.Asc()`, `.Limit(n)`, `.Offset(n)`, `.All()`, `.First()`, `.Last()`
+Methods: `SortBy("Title")`, `SortBy("CreatedAt")`, `SortByMeta("order")`, `.Desc()`, `.Asc()`, `.Public()`, `.Limit(n)`, `.Offset(n)`, `.All()`, `.First()`, `.Last()`
+
+A query returns paid, sign-in-only and `_` system notes too; add `.Public()` on a public page. Without a sort, the order is random. See [[en/user/jet-functions|Jet functions reference]] for every method and how sorting behaves.
+
+### See also
+
+- [[en/user/components|Components, auto-import and best practices]] — how to structure a layout
+- [[en/user/jet-functions|Jet functions reference]] — every Jet built-in and everything trip2g adds to templates
+- [[en/user/jet-debugging|Debugging Jet templates]]

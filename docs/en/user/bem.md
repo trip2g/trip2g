@@ -4,7 +4,7 @@ title: "BEM naming in templates"
 lang_redirect: "[[ru/user/bem]]"
 ---
 
-BEM is a CSS naming convention that keeps component styles from leaking into each other. In trip2g templates, BEM is the recommended way to name the classes inside your `_style_*` blocks.
+BEM is a CSS naming convention that keeps component styles from leaking into each other. In trip2g templates, BEM is the recommended way to name the classes inside your `_style_*` blocks. How BEM fits with components and auto-import: [[en/user/components|Components, auto-import and best practices]].
 
 ### What BEM is
 
@@ -131,5 +131,6 @@ BEM keeps CSS classes unique across the page. `@lid` keeps Jet block names uniqu
 
 ### Related
 
+- [[en/user/components|Components, auto-import and best practices]] — how to structure a layout from components
 - [[en/user/yield_blocks|yield_blocks: per-page CSS and JS]] — how style blocks are collected and emitted, and the full `@lid`/`@did` reference
 - [[en/user/templates|Custom templates]] — template basics and Jet syntax

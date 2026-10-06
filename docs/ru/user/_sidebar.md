@@ -49,12 +49,13 @@ title: "Навигация"
 - [[ru/user/themes|Темы для дефолтного шаблона]]
 - [[ru/user/theme-editor|Редактор тем (вживую)]]
 - [[ru/user/templates|Основы]]
+- [[ru/user/components|Компоненты и лучшие практики]]
 - [[ru/user/jet-debugging|Отладка шаблонов]]
+- [[ru/user/jet-functions|Справочник функций Jet]]
 - [[ru/user/yield_blocks|yield_blocks: CSS и JS по страницам]]
 - [[ru/user/embedded-notes|Встраивание заметок]]
 - [[ru/user/bem|BEM-именование в шаблонах]]
 - [[ru/user/templates-advanced|API и запросы]]
-- [[ru/user/templates-best-practices|Лучшие практики]]
 - [[ru/user/One HTML Page|Страница на чистом HTML]]
 
 ### Автоматизация
