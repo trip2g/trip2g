@@ -41,7 +41,6 @@ So the reloaded page is rendered for the signed-in user: `currentUser.IsAdmin()`
 
 - **Don't put an API key or a personal token in the page.** Anyone who opens the page can read them. The cookie is the credential.
 - **Don't build a login screen.** Signing in is the header's job; after it the page reloads with the session in place.
-- **Don't call the trip2g UI's internal GraphQL client.** The user-space bundle that draws the sign-in button is a $mol app. It exposes no JavaScript API to other code, and reads its input from `window.__trip2g_settings`, which isn't an API either. Its client and names can change with any UI rebuild. Use your own `fetch`, such as the `gql()` helper in [[en/user/spa#Ready-made GraphQL operations|Ready-made GraphQL operations]].
 - **Don't serve the app from another origin,** such as a separate dev server. The browser doesn't send the `SameSite=Lax` cookie with a cross-site `POST`, and the server allows cross-origin requests only from the Obsidian plugin.
 
 **No CSRF token, no extra header.** The endpoint asks for nothing beyond the cookie: no CSRF token and no custom header. A form on another site can't use the session, because the browser leaves the `SameSite=Lax` cookie off a cross-site `POST`.
@@ -74,6 +73,7 @@ The layout gives the app three things: the note's vault path, its raw markdown, 
 </html>
 ```
 
+- `title` is a variable every custom layout gets: the note's title run through the site's title template, ready for `<title>`. With the default template, `%s`, it is the title itself. For the bare title elsewhere on the page, use `note.Title()`.
 - `note.ContentString()` is the note's markdown source, frontmatter included. It is the same text the server hashes for conflict checks, so the app can edit it and send it back.
 - `json()` escapes `<`, `>` and `&` as `<`…, so markdown that contains `</script>` can't close the element. `JSON.parse` gives back the exact text.
 - `currentUser.IsAdmin()` only decides whether the app shows its edit controls. The server checks every save again (see below).
@@ -81,6 +81,44 @@ The layout gives the app three things: the note's vault path, its raw markdown, 
 
 The kanban layout uses a different carrier for the same data: the markdown goes into a hidden `<textarea>` and the path into a hidden `<span>`, both printed with plain `{{ … }}`. That is safe too, because output is escaped by default: a note containing `</textarea>` reaches the page as `&lt;/textarea&gt;`, and the browser decodes it back. A `<textarea>` has two quirks, though: the browser normalizes its line endings to `\n` and drops a newline that comes right after the opening tag. The JSON island has neither.
 
+### Configure the app from the frontmatter {#config}
+
+The note's frontmatter is a handy place for the app's settings. Whoever edits the note, in Obsidian or by an agent, changes them along with the content, and one bundle serves many notes, each with its own settings:
+
+```yaml
+---
+title: Todo
+layout: app
+columns: [Todo, Doing, Done]
+wip_limit: 3
+show_archive: false
+---
+```
+
+The layout reads the keys with `note.M()` and adds them to the data block as `config`:
+
+```jet
+<script type="application/json" id="app-data">
+  {{ json(map(
+    "path", note.Path(),
+    "content", note.ContentString(),
+    "editable", currentUser.IsAdmin(),
+    "config", map(
+      "columns", note.M().GetStrings("columns"),
+      "wipLimit", note.M().GetInt("wip_limit", 0),
+      "showArchive", note.M().GetBool("show_archive", true)
+    )
+  )) }}
+</script>
+```
+
+The app finds them in `data.config`:
+
+```js
+const { columns, wipLimit, showArchive } = data.config
+```
+
+Each getter returns its default when the key is missing or holds the wrong type, so a note without settings still opens; `GetStrings` returns an empty list. To hand the app the whole frontmatter instead, use `"config", note.M().Raw()`. The getters are in [[en/user/templates#What's available in a custom template|Templates]]. The settings are also part of `content`, so a save that keeps the frontmatter keeps them.
 
 ### Wrap your app in the standard site chrome {#chrome}
 
@@ -114,7 +152,7 @@ The layout above is a bare page. To give the app the site's header, with its sig
 | Call | Prints |
 |---|---|
 | `defaultTemplate.Styles()` | `<link>` tags for the default template's stylesheet, so the header and footer look as they do on other pages |
-| `defaultTemplate.UserSpaceScripts()` | A `<script>` that sets `window.__trip2g_settings`, then the user-space bundle. The bundle draws the sign-in button and the search box in the header. The settings come only on the first call |
+| `defaultTemplate.UserSpaceScripts()` | A `<script>` with the bundle's settings, then the user-space bundle. The bundle draws the sign-in button and the search box in the header. The settings come only on the first call |
 | `defaultTemplate.Header()` | The site header: logo, navigation, the sign-in button and the search box |
 | `defaultTemplate.Footer()` | The site footer |
 
@@ -144,48 +182,61 @@ const data = JSON.parse(
 // data.path, data.content, data.editable
 ```
 
-### Saving: the `updateNotes` mutation
+### Saving: the `updateNotes` mutation {#save}
 
-The app writes the note back with the `updateNotes` GraphQL mutation at `/_system/graphql`. A same-origin `fetch` with `credentials: 'include'` sends the visitor's session cookie. A signed-in site admin is allowed to write; anyone else gets an error, so a visitor's browser can't change the note even if the app shows its controls by mistake.
+The app writes the note back with the `updateNotes` GraphQL mutation at `/_system/graphql`. A signed-in site admin is allowed to write; anyone else gets an error, so a visitor's browser can't change the note even if the app shows its controls by mistake.
+
+Every operation is the same `POST` with a JSON body `{ query, variables }`, so one small helper covers them all. `makeRequest` takes an operation and returns a function of its variables:
 
 ```js
-const UPDATE = `mutation ($i: UpdateNotesInput!) {
-  updateNotes(input: $i) {
-    __typename
-    ... on UpdateNotesHashMismatchPayload { actualHash }
-    ... on ErrorPayload { message }
-  }
-}`
-
-async function save(path, content, expectedHash) {
-  const change = { upsert: { path, content, expectedHash } }
-  const res = await fetch('/_system/graphql', {
+const makeRequest = (query) => (variables) =>
+  fetch('/_system/graphql', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query: UPDATE,
-      variables: { i: { changes: [change] } },
-    }),
+    body: JSON.stringify({ query, variables }),
   })
-  const body = await res.json()
-  if (body.errors) throw new Error(body.errors[0].message)
-  return body.data.updateNotes
-}
+    .then((res) => res.json())
+    .then((body) => {
+      if (body.errors) throw new Error(body.errors[0].message)
+      return body.data
+    })
+
+const updateNotes = makeRequest(`mutation ($input: UpdateNotesInput!) {
+  updateNotes(input: $input) {
+    __typename
+    ... on UpdateNotesSuccessPayload { updated { path versionId } }
+    ... on UpdateNotesHashMismatchPayload { path actualHash }
+    ... on UpdateNotesPatchNotFoundPayload { path find }
+    ... on ErrorPayload { message }
+  }
+}`)
+
+const change = { upsert: { path: data.path, content: newContent, expectedHash } }
+const { updateNotes: result } = await updateNotes({ input: { changes: [change] } })
 ```
 
-`__typename` says how it went:
+`newContent` is the edited markdown, and `expectedHash` is explained below. The request is same-origin, so the browser attaches the session cookie; `credentials: 'include'` only says so explicitly. `__typename` says how the save went:
 
 | `__typename` | Meaning |
 |---|---|
-| `UpdateNotesSuccessPayload` | Saved |
-| `UpdateNotesHashMismatchPayload` | Someone changed the note since the app loaded it; `actualHash` is the current hash |
+| `UpdateNotesSuccessPayload` | Saved; `updated` lists each note with the `versionId` the save wrote |
+| `UpdateNotesHashMismatchPayload` | Nothing was written: the note no longer matches `expectedHash`; `actualHash` is its current hash |
 | `UpdateNotesPatchNotFoundPayload` | A `patch` change didn't find its `find` text, or found it more than once |
 | `ErrorPayload` | Refused, with a `message` |
 
-A visitor who isn't the admin doesn't reach a payload at all: the response carries an `errors` entry and no `data.updateNotes`, which `save` above turns into an exception.
+A visitor who isn't the admin doesn't reach a payload at all: the response carries an `errors` entry and no `data`, which `makeRequest` turns into an exception.
 
-**Don't overwrite someone else's edit.** `expectedHash` makes the save conditional: the server saves only if the note still hashes to that value. The hash is SHA-256 of the markdown, in URL-safe base64 with padding:
+#### `expectedHash`: a save applies once, to the text it was made from
+
+`expectedHash` is a field of the `upsert` and `patch` changes of `updateNotes`. It ties a change to the version of the note it was made from. Before writing, the server hashes the note's current markdown and compares:
+
+- **It matches:** the change is written.
+- **It doesn't:** nothing is written, and the result is `UpdateNotesHashMismatchPayload` with the note's `path` and its current `actualHash`.
+
+That makes a change apply at most once. The same save sent twice, by a retry after a timeout, a double click or a second open tab, carries the same `expectedHash`; the first one changes the note, so the second no longer matches and is refused instead of applied again. The same check keeps the app from overwriting an edit someone made in Obsidian or by an agent in between.
+
+What to pass is the hash of the markdown the app started from: `latestContentHash` from the `ReadNote` query below, or the hash of `data.content` the layout shipped. The hash is SHA-256 of the markdown, in URL-safe base64 with padding:
 
 ```js
 async function contentHash(text) {
@@ -196,37 +247,91 @@ async function contentHash(text) {
     .replace(/\//g, '_')
 }
 
-const hash = await contentHash(data.content)
-const result = await save(data.path, newContent, hash)
+const expectedHash = await contentHash(data.content)
 ```
+
+A successful save doesn't return the new hash. The note now holds exactly the markdown an `upsert` sent, so the next save's `expectedHash` is `contentHash(newContent)`; after a `patch`, read `latestContentHash` again. Two values are special: an empty `expectedHash` means "create only" and fails on a note that exists, and a change without `expectedHash` is written unconditionally.
 
 On `UpdateNotesHashMismatchPayload` reload the page, or fetch the new content and apply your change to it. Kanban re-reads the latest version through the admin `noteVersionHistory` and `noteVersion` queries and replays the move.
 
 **Small edits.** Instead of `upsert`, which replaces the whole note, a change can be a `patch`: `{ patch: { path, find, replace, expectedHash } }` replaces one exact piece of text. Kanban toggles a checkbox this way, so text it doesn't model is never rewritten. Both forms, batches and error cases are in [[en/user/update_notes|updateNotes]].
 
-### Live updates
+### Live updates {#live}
 
-To pick up edits made in Obsidian or by an agent while the app is open, subscribe to `noteChanges` with a filter on the note's path. The subscription runs over server-sent events on the same `/_system/graphql` endpoint and accepts the admin session cookie. Kanban uses it to refresh the board without a reload; its `src/api.ts` is a working client.
-
-### Ready-made GraphQL operations
-
-Copy these into your app. Each one goes to `/_system/graphql` as a `POST` with a JSON body `{ query, variables }`: the operation is `query`, the JSON block under it is `variables`. This helper sends one and returns `data`:
+To pick up edits made in Obsidian or by an agent while the app is open, subscribe to `noteChanges` with a filter on the note's path. The endpoint serves subscriptions over server-sent events only, on the same `/_system/graphql`: a `POST` with `Accept: text/event-stream`. It has no WebSocket transport, so a `graphql-ws` client won't connect. `EventSource` can't send a `POST`, so the helper reads the response stream itself:
 
 ```js
-async function gql(query, variables) {
+const makeSubscription = (query) => async (variables, onData) => {
   const res = await fetch('/_system/graphql', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    },
     body: JSON.stringify({ query, variables }),
   })
-  const body = await res.json()
-  if (body.errors) throw new Error(body.errors[0].message)
-  return body.data
+  const reader = res.body
+    .pipeThrough(new TextDecoderStream())
+    .getReader()
+  let buffer = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) return
+    buffer += value
+    const frames = buffer.split('\n\n')
+    buffer = frames.pop()
+    for (const frame of frames) {
+      const line = frame.match(/^data: (.*)$/m)
+      if (!frame.startsWith('event: next') || !line) continue
+      const body = JSON.parse(line[1])
+      if (body.errors) throw new Error(body.errors[0].message)
+      onData(body.data)
+    }
+  }
 }
+
+const watchNotes = makeSubscription(`subscription ($filter: NoteChangesFilter!) {
+  noteChanges(filter: $filter) {
+    changes {
+      __typename
+      ... on NoteUpsertEvent { path versionId }
+      ... on NoteHideEvent { path }
+    }
+  }
+}`)
+
+async function follow(path, onChange) {
+  for (;;) {
+    await watchNotes({ filter: { includePatterns: [path] } }, onChange)
+      .catch(() => {})
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+  }
+}
+
+const ownVersions = new Set()
+
+follow(data.path, ({ noteChanges }) => {
+  const foreign = noteChanges.changes
+    .some((change) => !ownVersions.has(change.versionId))
+  if (foreign) location.reload()
+})
 ```
 
-Most results are unions: ask for `__typename` and one `... on` fragment per type, then branch on `__typename`. A refusal the app should show comes back as a payload type such as `ErrorPayload`; a caller with no access gets an `errors` entry instead, which `gql` turns into an exception.
+The server sends `event: next` with a result, `event: complete` at the end, and a `: ping` comment every 30 seconds. The stream can end, for example when the server restarts, so `follow` subscribes again after a pause.
+
+Your own save comes back as an event too. Add each `versionId` from the save's `updated` to `ownVersions`, and the app skips its own echo. `location.reload()` is the simplest reaction to someone else's edit. To keep the app's state, re-read the note with `ReadNote` and merge instead, as Kanban's [src/api.ts](https://github.com/trip2g/kanban_template/blob/main/src/api.ts) does. The subscription needs a signed-in visitor: the admin gets every matching note, another signed-in reader only the notes they may read. The filter's globs are explained under [[en/user/spa#Watch for changes|Watch for changes]].
+
+### Ready-made GraphQL operations
+
+Copy these into your app. Each one goes to `/_system/graphql` as a `POST` with a JSON body `{ query, variables }`: the operation is `query`, the JSON block under it is `variables`. Wrap an operation with `makeRequest` from [[en/user/spa#save|Saving]] and call it with the variables. Here `READ_NOTE` holds the `ReadNote` operation below:
+
+```js
+const readNote = makeRequest(READ_NOTE)
+const { notePaths } = await readNote({ paths: [data.path] })
+```
+
+Most results are unions: ask for `__typename` and one `... on` fragment per type, then branch on `__typename`. A refusal the app should show comes back as a payload type such as `ErrorPayload`; a caller with no access gets an `errors` entry instead, which `makeRequest` turns into an exception.
 
 **Who may call what.** The details are in [[en/user/update_notes#Authentication|updateNotes → Authentication]].
 
@@ -490,40 +595,7 @@ subscription WatchNotes($filter: NoteChangesFilter!) {
 
 `includePatterns` (required) and `excludePatterns` are globs: `*` stays within a folder, `**` crosses folders, and a plain path matches one note. One event can carry several changes when one save wrote several notes.
 
-The transport is server-sent events, not WebSocket: a `POST` to `/_system/graphql` with `Accept: text/event-stream`. `EventSource` can't send a `POST`, so read the response stream:
-
-```js
-async function watch(query, variables, onData) {
-  const res = await fetch('/_system/graphql', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
-    },
-    body: JSON.stringify({ query, variables }),
-  })
-  const reader = res.body
-    .pipeThrough(new TextDecoderStream())
-    .getReader()
-  let buffer = ''
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) return
-    buffer += value
-    const frames = buffer.split('\n\n')
-    buffer = frames.pop()
-    for (const frame of frames) {
-      const data = frame.match(/^data: (.*)$/m)
-      if (frame.startsWith('event: next') && data) {
-        onData(JSON.parse(data[1]).data.noteChanges)
-      }
-    }
-  }
-}
-```
-
-The server sends `event: next` with a result, `event: complete` at the end, and a `: ping` comment every 30 seconds. The stream can end, for example when the server restarts, so call `watch` again after a pause. Kanban's [src/api.ts](https://github.com/trip2g/kanban_template/blob/main/src/api.ts) does this with a backoff.
+The client that runs this subscription, with reconnects, is in [[en/user/spa#live|Live updates]].
 
 #### Read an older version (admin)
 
@@ -563,6 +635,21 @@ query NoteVersion($id: Int64!) {
 { "id": 42 }
 ```
 
+### API calls and admin calls {#api-vs-admin}
+
+The endpoint carries two kinds of operations, and they differ in what they promise:
+
+| | API calls | Admin calls |
+|---|---|---|
+| Where they sit | At the top level of the operation: `notePaths`, `search`, `updateNotes`, `noteChanges` | Inside `admin { … }`, the `AdminQuery` and `AdminMutation` types in the schema |
+| Who relies on them | The Obsidian plugin, agents with an API key, apps like this one | trip2g's own admin panel |
+| Stability | The surface those clients are built on | Fewer guarantees: they change with the admin panel and may change in any release |
+| Who may call | See the table in [[en/user/spa#Ready-made GraphQL operations\|Ready-made GraphQL operations]] | A signed-in admin: the session cookie or a personal token |
+
+An app may use admin calls; Kanban reads version history with them. Keep them to features only admins see, and check them again after you upgrade trip2g. Everything else on this page, apart from the section marked "(admin)", is API.
+
+The API surface is documented in [[en/user/update_notes|updateNotes]], [[en/user/graphql|GraphQL API]] and the operations above, and the Obsidian plugin's operations file below lists what it runs.
+
 ### Where to find more
 
 The operations above are tested against the schema. For anything else:
@@ -574,8 +661,6 @@ The operations above are tested against the schema. For anything else:
   ```bash
   grep -rl --include='*.graphql' 'noteVersionHistory' assets/ui
   ```
-
-  Anything under `admin { … }` needs a signed-in admin: the session cookie or a personal token, not an API key. That suits an app only admins open, such as an internal dashboard or an editor.
 
 ### Build your own
 
@@ -591,7 +676,6 @@ The operations above are tested against the schema. For anything else:
 - [ ] The page has a header note, or the layout has its own `$trip2g_user_space` mount element: otherwise there is no sign-in button.
 - [ ] The app calls `/_system/graphql` by a relative URL, as `POST` with `Content-Type: application/json`, with default credentials or `credentials: 'include'`.
 - [ ] No API key or token in the page, no login screen of the app's own.
-- [ ] No calls into the trip2g UI's bundle or `window.__trip2g_settings`: the app has its own `fetch` helper.
 - [ ] Edit controls show only when the layout's `currentUser.IsAdmin()` says so; a visitor sees the note read-only and the header's sign-in button.
 - [ ] Every save passes `expectedHash` and handles `UpdateNotesHashMismatchPayload` and an `errors` entry.
 

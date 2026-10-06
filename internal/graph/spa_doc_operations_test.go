@@ -80,3 +80,37 @@ func TestSPADocOperationsMatchSchema(t *testing.T) {
 		}
 	}
 }
+
+func readDocInlineOperations(t *testing.T, page string) []string {
+	t.Helper()
+
+	data, err := os.ReadFile("../../docs/" + page + ".md")
+	require.NoError(t, err)
+
+	inline := regexp.MustCompile("(?s)make(?:Request|Subscription)\\(`(.*?)`\\)")
+
+	var ops []string
+	for _, m := range inline.FindAllStringSubmatch(string(data), -1) {
+		ops = append(ops, m[1])
+	}
+
+	return ops
+}
+
+func TestSPADocInlineOperationsMatchSchema(t *testing.T) {
+	es := generated.NewExecutableSchema(generated.Config{Resolvers: &Resolver{}})
+
+	en := readDocInlineOperations(t, "en/user/spa")
+	ru := readDocInlineOperations(t, "ru/user/spa")
+	require.Len(t, en, 2)
+	require.Equal(t, en, ru, "en and ru spa pages must carry identical inline operations")
+
+	for _, op := range en {
+		doc, errs := gqlparser.LoadQueryWithRules(es.Schema(), op, rules.NewDefaultRules())
+		require.Empty(t, errs, op)
+		require.Len(t, doc.Operations, 1, op)
+
+		cost := complexity.Calculate(context.Background(), es, doc.Operations[0], map[string]any{})
+		require.LessOrEqual(t, cost, maxQueryComplexity, op)
+	}
+}

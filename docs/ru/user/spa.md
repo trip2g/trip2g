@@ -41,7 +41,6 @@ lang_redirect: "[[en/user/spa]]"
 
 - **Не кладите в страницу API-ключ или личный токен.** Их прочитает любой, кто откроет страницу. Учётные данные — это cookie.
 - **Не делайте свой экран входа.** Вход — работа шапки; после него страница перезагружается уже с сессией.
-- **Не вызывайте внутренний GraphQL-клиент интерфейса trip2g.** Бандл user space, который рисует кнопку входа, — приложение на $mol. Он не даёт другому коду JavaScript API, а входные данные читает из `window.__trip2g_settings`, который тоже не API. Его клиент и имена могут поменяться с любой пересборкой интерфейса. Пользуйтесь своим `fetch`, например функцией `gql()` из раздела [[ru/user/spa#Готовые GraphQL-запросы|Готовые GraphQL-запросы]].
 - **Не отдавайте приложение с другого origin,** например с отдельного dev-сервера. Браузер не отправляет cookie `SameSite=Lax` с кросс-сайтовым `POST`, а запросы с другого origin сервер разрешает только плагину Obsidian.
 
 **Ни CSRF-токена, ни особого заголовка.** Кроме cookie эндпоинт ничего не требует: ни CSRF-токена, ни своего заголовка. Форма на чужом сайте сессией не воспользуется, потому что браузер не прикладывает cookie `SameSite=Lax` к кросс-сайтовому `POST`.
@@ -74,12 +73,52 @@ lang_redirect: "[[en/user/spa]]"
 </html>
 ```
 
+- `title` — переменная, которую получает каждый свой шаблон: заголовок заметки, пропущенный через шаблон заголовка сайта, готовый для `<title>`. С шаблоном по умолчанию, `%s`, это сам заголовок. Голый заголовок в другом месте страницы даёт `note.Title()`.
 - `note.ContentString()` — исходный markdown заметки вместе с frontmatter. Это тот же текст, от которого сервер считает хеш для проверки конфликтов, поэтому приложение может его изменить и отправить обратно.
 - `json()` экранирует `<`, `>` и `&` как `<`…, поэтому markdown с `</script>` внутри не закроет элемент. `JSON.parse` вернёт текст в точности.
 - `currentUser.IsAdmin()` решает только, показывает ли приложение кнопки редактирования. Каждое сохранение сервер проверяет заново (см. ниже).
 - Обращение к `currentUser` делает страницу персонализированной: она не отдаётся из анонимного кэша страниц, поэтому приложение всегда стартует с текущей версии заметки.
 
 Шаблон канбана передаёт те же данные иначе: markdown — в скрытой `<textarea>`, путь — в скрытом `<span>`, оба выведены обычным `{{ … }}`. Это тоже безопасно, потому что вывод экранируется по умолчанию: заметка с `</textarea>` попадёт на страницу как `&lt;/textarea&gt;`, и браузер декодирует её обратно. Но у `<textarea>` две особенности: браузер приводит переводы строк к `\n` и выбрасывает перевод строки сразу после открывающего тега. У JSON-острова их нет.
+
+### Настройки приложения во frontmatter {#config}
+
+Frontmatter заметки — удобное место для настроек приложения. Кто правит заметку, в Obsidian или агентом, меняет их вместе с содержимым, а один бандл обслуживает много заметок, у каждой свои настройки:
+
+```yaml
+---
+title: Todo
+layout: app
+columns: [Todo, Doing, Done]
+wip_limit: 3
+show_archive: false
+---
+```
+
+Шаблон читает ключи через `note.M()` и добавляет их в блок данных как `config`:
+
+```jet
+<script type="application/json" id="app-data">
+  {{ json(map(
+    "path", note.Path(),
+    "content", note.ContentString(),
+    "editable", currentUser.IsAdmin(),
+    "config", map(
+      "columns", note.M().GetStrings("columns"),
+      "wipLimit", note.M().GetInt("wip_limit", 0),
+      "showArchive", note.M().GetBool("show_archive", true)
+    )
+  )) }}
+</script>
+```
+
+Приложение находит их в `data.config`:
+
+```js
+const { columns, wipLimit, showArchive } = data.config
+```
+
+Каждый метод возвращает значение по умолчанию, если ключа нет или у него не тот тип, поэтому заметка без настроек тоже откроется; `GetStrings` вернёт пустой список. Чтобы отдать приложению весь frontmatter, напишите `"config", note.M().Raw()`. Методы описаны в [[ru/user/templates#Что доступно в шаблоне|Шаблонах]]. Настройки — тоже часть `content`, поэтому сохранение, которое не трогает frontmatter, их сохраняет.
 
 ### Обернуть приложение в стандартную шапку и подвал {#chrome}
 
@@ -113,7 +152,7 @@ lang_redirect: "[[en/user/spa]]"
 | Вызов | Что выводит |
 |---|---|
 | `defaultTemplate.Styles()` | Теги `<link>` со стилями дефолтного шаблона, чтобы шапка и подвал выглядели как на других страницах |
-| `defaultTemplate.UserSpaceScripts()` | `<script>`, который задаёт `window.__trip2g_settings`, затем бандл user space. Бандл рисует в шапке кнопку входа и поиск. Настройки выводятся только при первом вызове |
+| `defaultTemplate.UserSpaceScripts()` | `<script>` с настройками бандла, затем бандл user space. Бандл рисует в шапке кнопку входа и поиск. Настройки выводятся только при первом вызове |
 | `defaultTemplate.Header()` | Шапку сайта: логотип, навигацию, кнопку входа и поиск |
 | `defaultTemplate.Footer()` | Подвал сайта |
 
@@ -143,48 +182,61 @@ const data = JSON.parse(
 // data.path, data.content, data.editable
 ```
 
-### Сохранение: мутация `updateNotes`
+### Сохранение: мутация `updateNotes` {#save}
 
-Приложение записывает заметку мутацией GraphQL `updateNotes` на `/_system/graphql`. `fetch` с того же домена с `credentials: 'include'` отправляет cookie сессии посетителя. Писать может вошедший админ сайта, остальные получат ошибку, поэтому браузер посетителя не изменит заметку, даже если приложение по ошибке покажет кнопки.
+Приложение записывает заметку мутацией GraphQL `updateNotes` на `/_system/graphql`. Писать может вошедший админ сайта, остальные получат ошибку, поэтому браузер посетителя не изменит заметку, даже если приложение по ошибке покажет кнопки.
+
+Любая операция — один и тот же `POST` с JSON-телом `{ query, variables }`, поэтому хватит одной маленькой функции. `makeRequest` принимает операцию и возвращает функцию от её переменных:
 
 ```js
-const UPDATE = `mutation ($i: UpdateNotesInput!) {
-  updateNotes(input: $i) {
-    __typename
-    ... on UpdateNotesHashMismatchPayload { actualHash }
-    ... on ErrorPayload { message }
-  }
-}`
-
-async function save(path, content, expectedHash) {
-  const change = { upsert: { path, content, expectedHash } }
-  const res = await fetch('/_system/graphql', {
+const makeRequest = (query) => (variables) =>
+  fetch('/_system/graphql', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query: UPDATE,
-      variables: { i: { changes: [change] } },
-    }),
+    body: JSON.stringify({ query, variables }),
   })
-  const body = await res.json()
-  if (body.errors) throw new Error(body.errors[0].message)
-  return body.data.updateNotes
-}
+    .then((res) => res.json())
+    .then((body) => {
+      if (body.errors) throw new Error(body.errors[0].message)
+      return body.data
+    })
+
+const updateNotes = makeRequest(`mutation ($input: UpdateNotesInput!) {
+  updateNotes(input: $input) {
+    __typename
+    ... on UpdateNotesSuccessPayload { updated { path versionId } }
+    ... on UpdateNotesHashMismatchPayload { path actualHash }
+    ... on UpdateNotesPatchNotFoundPayload { path find }
+    ... on ErrorPayload { message }
+  }
+}`)
+
+const change = { upsert: { path: data.path, content: newContent, expectedHash } }
+const { updateNotes: result } = await updateNotes({ input: { changes: [change] } })
 ```
 
-Результат показывает `__typename`:
+`newContent` — отредактированный markdown, `expectedHash` разобран ниже. Запрос идёт на тот же origin, поэтому браузер сам прикладывает cookie сессии; `credentials: 'include'` лишь говорит это явно. Результат показывает `__typename`:
 
 | `__typename` | Что значит |
 |---|---|
-| `UpdateNotesSuccessPayload` | Сохранено |
-| `UpdateNotesHashMismatchPayload` | Кто-то изменил заметку после того, как приложение её загрузило; `actualHash` — текущий хеш |
+| `UpdateNotesSuccessPayload` | Сохранено; в `updated` каждая заметка с `versionId`, который записало сохранение |
+| `UpdateNotesHashMismatchPayload` | Ничего не записано: заметка больше не соответствует `expectedHash`; `actualHash` — её текущий хеш |
 | `UpdateNotesPatchNotFoundPayload` | Изменение `patch` не нашло свой текст `find` или нашло его больше одного раза |
 | `ErrorPayload` | Отказ, причина в `message` |
 
-Посетитель, который не админ, до результата не доходит: в ответе будет запись в `errors` и не будет `data.updateNotes`, и `save` выше превратит это в исключение.
+Посетитель, который не админ, до результата не доходит: в ответе будет запись в `errors` и не будет `data`, и `makeRequest` превратит это в исключение.
 
-**Не затирайте чужую правку.** `expectedHash` делает сохранение условным: сервер сохраняет, только если заметка всё ещё даёт этот хеш. Хеш — SHA-256 от markdown в URL-safe base64 с дополнением `=`:
+#### `expectedHash`: сохранение применяется один раз и к тому тексту, от которого сделано
+
+`expectedHash` — поле изменений `upsert` и `patch` в `updateNotes`. Оно привязывает изменение к версии заметки, от которой оно сделано. Перед записью сервер считает хеш текущего markdown заметки и сравнивает:
+
+- **Совпал:** изменение записывается.
+- **Не совпал:** ничего не записывается, а результат — `UpdateNotesHashMismatchPayload` с путём заметки `path` и её текущим `actualHash`.
+
+Поэтому изменение применяется не больше одного раза. То же сохранение, отправленное дважды — повтором после таймаута, двойным кликом или из второй открытой вкладки, — несёт тот же `expectedHash`. Первое меняет заметку, второе уже не совпадает и получает отказ, а не применяется ещё раз. Эта же проверка не даёт приложению затереть правку, которую кто-то успел сделать в Obsidian или агентом.
+
+Передавать нужно хеш того markdown, с которого начало приложение: `latestContentHash` из запроса `ReadNote` ниже или хеш `data.content`, который отдал шаблон. Хеш — SHA-256 от markdown в URL-safe base64 с дополнением `=`:
 
 ```js
 async function contentHash(text) {
@@ -195,37 +247,91 @@ async function contentHash(text) {
     .replace(/\//g, '_')
 }
 
-const hash = await contentHash(data.content)
-const result = await save(data.path, newContent, hash)
+const expectedHash = await contentHash(data.content)
 ```
+
+Новый хеш успешное сохранение не возвращает. После `upsert` в заметке ровно тот markdown, который вы отправили, поэтому `expectedHash` следующего сохранения — `contentHash(newContent)`; после `patch` перечитайте `latestContentHash`. Два значения особые: пустой `expectedHash` значит «только создать», и на существующей заметке сохранение не пройдёт, а изменение без `expectedHash` записывается без проверки.
 
 На `UpdateNotesHashMismatchPayload` перезагрузите страницу или получите новое содержимое и примените своё изменение к нему. Канбан перечитывает последнюю версию админскими запросами `noteVersionHistory` и `noteVersion` и повторяет перемещение.
 
 **Маленькие правки.** Вместо `upsert`, который заменяет заметку целиком, изменение может быть `patch`: `{ patch: { path, find, replace, expectedHash } }` заменяет один точный кусок текста. Так канбан переключает чекбокс, и текст, который он не понимает, никогда не переписывается. Обе формы, пакеты изменений и ошибки — в [[ru/user/update_notes|updateNotes]].
 
-### Живые обновления
+### Живые обновления {#live}
 
-Чтобы видеть правки из Obsidian или от агента, пока приложение открыто, подпишитесь на `noteChanges` с фильтром по пути заметки. Подписка идёт через server-sent events на том же `/_system/graphql` и принимает cookie сессии админа. Канбан так обновляет доску без перезагрузки; рабочий клиент — в его `src/api.ts`.
-
-### Готовые GraphQL-запросы
-
-Эти запросы можно копировать в приложение. Каждый уходит на `/_system/graphql` как `POST` с JSON-телом `{ query, variables }`: операция — это `query`, JSON-блок под ней — `variables`. Эта функция отправляет запрос и возвращает `data`:
+Чтобы видеть правки из Obsidian или от агента, пока приложение открыто, подпишитесь на `noteChanges` с фильтром по пути заметки. Подписки эндпоинт отдаёт только через server-sent events, на том же `/_system/graphql`: `POST` с `Accept: text/event-stream`. Транспорта WebSocket у него нет, так что клиент `graphql-ws` не подключится. `EventSource` не умеет `POST`, поэтому функция сама читает поток ответа:
 
 ```js
-async function gql(query, variables) {
+const makeSubscription = (query) => async (variables, onData) => {
   const res = await fetch('/_system/graphql', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    },
     body: JSON.stringify({ query, variables }),
   })
-  const body = await res.json()
-  if (body.errors) throw new Error(body.errors[0].message)
-  return body.data
+  const reader = res.body
+    .pipeThrough(new TextDecoderStream())
+    .getReader()
+  let buffer = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) return
+    buffer += value
+    const frames = buffer.split('\n\n')
+    buffer = frames.pop()
+    for (const frame of frames) {
+      const line = frame.match(/^data: (.*)$/m)
+      if (!frame.startsWith('event: next') || !line) continue
+      const body = JSON.parse(line[1])
+      if (body.errors) throw new Error(body.errors[0].message)
+      onData(body.data)
+    }
+  }
 }
+
+const watchNotes = makeSubscription(`subscription ($filter: NoteChangesFilter!) {
+  noteChanges(filter: $filter) {
+    changes {
+      __typename
+      ... on NoteUpsertEvent { path versionId }
+      ... on NoteHideEvent { path }
+    }
+  }
+}`)
+
+async function follow(path, onChange) {
+  for (;;) {
+    await watchNotes({ filter: { includePatterns: [path] } }, onChange)
+      .catch(() => {})
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+  }
+}
+
+const ownVersions = new Set()
+
+follow(data.path, ({ noteChanges }) => {
+  const foreign = noteChanges.changes
+    .some((change) => !ownVersions.has(change.versionId))
+  if (foreign) location.reload()
+})
 ```
 
-Большинство результатов — union-типы: запросите `__typename` и по фрагменту `... on` на каждый тип, потом ветвитесь по `__typename`. Отказ, который приложение должно показать, приходит типом результата, например `ErrorPayload`. Вызов без доступа получает запись в `errors`, и `gql` превращает её в исключение.
+Сервер шлёт `event: next` с результатом, `event: complete` в конце и комментарий `: ping` каждые 30 секунд. Поток может оборваться, например при перезапуске сервера, поэтому `follow` после паузы подписывается снова.
+
+Ваше собственное сохранение тоже придёт событием. Добавляйте каждый `versionId` из `updated` сохранения в `ownVersions`, и приложение пропустит своё эхо. `location.reload()` — самая простая реакция на чужую правку. Чтобы сохранить состояние приложения, перечитайте заметку через `ReadNote` и слейте изменения, как делает [src/api.ts](https://github.com/trip2g/kanban_template/blob/main/src/api.ts) канбана. Подписке нужен вошедший посетитель: админ получает все подходящие заметки, другой вошедший читатель — только те, что ему можно читать. Glob-шаблоны фильтра разобраны в разделе [[ru/user/spa#Следить за изменениями|Следить за изменениями]].
+
+### Готовые GraphQL-запросы
+
+Эти запросы можно копировать в приложение. Каждый уходит на `/_system/graphql` как `POST` с JSON-телом `{ query, variables }`: операция — это `query`, JSON-блок под ней — `variables`. Оберните операцию в `makeRequest` из раздела [[ru/user/spa#save|Сохранение]] и вызовите с переменными. Здесь в `READ_NOTE` лежит операция `ReadNote` ниже:
+
+```js
+const readNote = makeRequest(READ_NOTE)
+const { notePaths } = await readNote({ paths: [data.path] })
+```
+
+Большинство результатов — union-типы: запросите `__typename` и по фрагменту `... on` на каждый тип, потом ветвитесь по `__typename`. Отказ, который приложение должно показать, приходит типом результата, например `ErrorPayload`. Вызов без доступа получает запись в `errors`, и `makeRequest` превращает её в исключение.
 
 **Кто что может вызвать.** Подробности — в [[ru/user/update_notes#Авторизация|updateNotes → Авторизация]].
 
@@ -489,40 +595,7 @@ subscription WatchNotes($filter: NoteChangesFilter!) {
 
 `includePatterns` (обязателен) и `excludePatterns` — glob-шаблоны: `*` не выходит за пределы папки, `**` проходит через папки, обычный путь соответствует одной заметке. Одно событие может нести несколько изменений, если одно сохранение записало несколько заметок.
 
-Транспорт — server-sent events, не WebSocket: `POST` на `/_system/graphql` с `Accept: text/event-stream`. `EventSource` не умеет `POST`, поэтому читайте поток ответа:
-
-```js
-async function watch(query, variables, onData) {
-  const res = await fetch('/_system/graphql', {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
-    },
-    body: JSON.stringify({ query, variables }),
-  })
-  const reader = res.body
-    .pipeThrough(new TextDecoderStream())
-    .getReader()
-  let buffer = ''
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) return
-    buffer += value
-    const frames = buffer.split('\n\n')
-    buffer = frames.pop()
-    for (const frame of frames) {
-      const data = frame.match(/^data: (.*)$/m)
-      if (frame.startsWith('event: next') && data) {
-        onData(JSON.parse(data[1]).data.noteChanges)
-      }
-    }
-  }
-}
-```
-
-Сервер шлёт `event: next` с результатом, `event: complete` в конце и комментарий `: ping` каждые 30 секунд. Поток может оборваться, например при перезапуске сервера, поэтому после паузы вызовите `watch` снова. Канбан делает это с задержкой в своём [src/api.ts](https://github.com/trip2g/kanban_template/blob/main/src/api.ts).
+Клиент, который выполняет эту подписку и переподключается, — в разделе [[ru/user/spa#live|Живые обновления]].
 
 #### Прочитать старую версию (админ)
 
@@ -562,6 +635,21 @@ query NoteVersion($id: Int64!) {
 { "id": 42 }
 ```
 
+### Вызовы API и админские вызовы {#api-vs-admin}
+
+Эндпоинт несёт операции двух видов, и обещают они разное:
+
+| | Вызовы API | Админские вызовы |
+|---|---|---|
+| Где находятся | На верхнем уровне операции: `notePaths`, `search`, `updateNotes`, `noteChanges` | Внутри `admin { … }`, в типах `AdminQuery` и `AdminMutation` схемы |
+| Кто на них опирается | Плагин Obsidian, агенты с API-ключом, приложения вроде этого | Собственная админка trip2g |
+| Стабильность | Поверхность, на которой построены эти клиенты | Гарантий меньше: они меняются вместе с админкой и могут поменяться в любом релизе |
+| Кто может вызвать | См. таблицу в разделе [[ru/user/spa#Готовые GraphQL-запросы\|Готовые GraphQL-запросы]] | Вошедший админ: cookie сессии или личный токен |
+
+Приложению можно пользоваться админскими вызовами — канбан читает ими историю версий. Оставляйте их для функций, которые видят только админы, и проверяйте заново после обновления trip2g. Всё остальное на этой странице, кроме раздела с пометкой «(админ)», — API.
+
+Поверхность API описана в [[ru/user/update_notes|updateNotes]], [[ru/user/graphql|GraphQL API]] и в запросах выше, а файл операций плагина Obsidian ниже показывает, что он выполняет.
+
 ### Где искать остальное
 
 Запросы выше проверены тестом по схеме. Для всего остального:
@@ -573,8 +661,6 @@ query NoteVersion($id: Int64!) {
   ```bash
   grep -rl --include='*.graphql' 'noteVersionHistory' assets/ui
   ```
-
-  Всё внутри `admin { … }` требует вошедшего админа: cookie сессии или личный токен, не API-ключ. Это подходит приложению, которое открывают только админы, например внутреннему дашборду или редактору.
 
 ### Как сделать своё
 
@@ -590,7 +676,6 @@ query NoteVersion($id: Int64!) {
 - [ ] У страницы есть заметка-шапка, или в шаблоне есть свой элемент монтирования `$trip2g_user_space`: иначе нет кнопки входа.
 - [ ] Приложение обращается к `/_system/graphql` по относительному адресу, методом `POST` с `Content-Type: application/json`, с credentials по умолчанию или `credentials: 'include'`.
 - [ ] В странице нет API-ключа или токена, у приложения нет своего экрана входа.
-- [ ] Никаких вызовов в бандл интерфейса trip2g и в `window.__trip2g_settings`: у приложения своя функция для `fetch`.
 - [ ] Кнопки редактирования видны, только когда так решил `currentUser.IsAdmin()` в шаблоне; посетитель видит заметку только для чтения и кнопку входа в шапке.
 - [ ] Каждое сохранение передаёт `expectedHash` и обрабатывает `UpdateNotesHashMismatchPayload` и запись в `errors`.
 

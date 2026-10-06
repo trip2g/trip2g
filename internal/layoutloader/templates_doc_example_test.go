@@ -1,6 +1,7 @@
 package layoutloader
 
 import (
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -423,20 +424,19 @@ func TestSpaDocLayout(t *testing.T) {
 		"boards/todo.md": "---\ntitle: Todo\n---\n- [ ] ship </script><b>it</b> & more\n",
 	})
 	vars := docVars(notes, "boards/todo.md")
-	vars["title"] = reflect.ValueOf("Todo")
+	vars["title"] = reflect.ValueOf("Todo | Site")
 	vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
 		"IsAdmin": func() bool { return true },
 	})
 
 	out := renderDocLayout(t, []model.LayoutSourceFile{page("/p", docSpaLayout)}, vars)
-	want := `<!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Todo</title> </head> <body> ` +
+	want := `<!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Todo | Site</title> </head> <body> ` +
 		`<div id="app"></div> <script type="application/json" id="app-data"> ` +
 		`{"content":"---\ntitle: Todo\n---\n- [ ] ship \u003c/script\u003e\u003cb\u003eit\u003c/b\u003e \u0026 more\n",` +
 		`"editable":true,"path":"boards/todo.md"} </script> <script src="app.js"></script> </body> </html>`
 	require.Equal(t, want, out)
 }
 
-// The app layout with the standard site chrome in docs/{en,ru}/user/spa.md.
 const docSpaChrome = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -460,7 +460,6 @@ const docSpaChrome = `<!DOCTYPE html>
 </body>
 </html>`
 
-// The chrome skeleton in docs/{en,ru}/user/templates.md.
 const docTemplatesChrome = `<head>
   {{ defaultTemplate.Styles() }}
   {{ defaultTemplate.UserSpaceScripts() }}
@@ -542,4 +541,65 @@ func TestSpaDocChrome(t *testing.T) {
 			`<footer>F</footer> </body>`
 		require.Equal(t, want, out)
 	})
+}
+
+const docSpaConfig = `<script type="application/json" id="app-data">
+  {{ json(map(
+    "path", note.Path(),
+    "content", note.ContentString(),
+    "editable", currentUser.IsAdmin(),
+    "config", map(
+      "columns", note.M().GetStrings("columns"),
+      "wipLimit", note.M().GetInt("wip_limit", 0),
+      "showArchive", note.M().GetBool("show_archive", true)
+    )
+  )) }}
+</script>`
+
+const docSpaConfigFrontmatter = `---
+title: Todo
+layout: app
+columns: [Todo, Doing, Done]
+wip_limit: 3
+show_archive: false
+---`
+
+func TestSpaDocConfig(t *testing.T) {
+	requireSnippetsInDocs(t, []string{"en/user/spa", "ru/user/spa"}, []docSnippet{
+		{name: "config layout", src: docSpaConfig},
+		{name: "config frontmatter", src: docSpaConfigFrontmatter},
+	})
+
+	tests := []struct {
+		name    string
+		content string
+		config  string
+	}{
+		{
+			name:    "settings from the frontmatter",
+			content: docSpaConfigFrontmatter + "\n",
+			config:  `{"columns":["Todo","Doing","Done"],"showArchive":false,"wipLimit":3}`,
+		},
+		{
+			name:    "defaults for a note without settings",
+			content: "---\nlayout: app\n---\n",
+			config:  `{"columns":[],"showArchive":true,"wipLimit":0}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			notes := loadDocNotes(t, map[string]string{"boards/todo.md": tt.content})
+			vars := docVars(notes, "boards/todo.md")
+			vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
+				"IsAdmin": func() bool { return false },
+			})
+
+			out := renderDocLayout(t, []model.LayoutSourceFile{page("/p", docSpaConfig)}, vars)
+			content, err := json.Marshal(tt.content)
+			require.NoError(t, err)
+			want := `<script type="application/json" id="app-data"> {"config":` + tt.config +
+				`,"content":` + string(content) + `,"editable":false,"path":"boards/todo.md"} </script>`
+			require.Equal(t, want, out)
+		})
+	}
 }
