@@ -287,7 +287,7 @@ The engine walks `import` and yield chains to discover `asset()` calls automatic
 {{ end }}
 ```
 
-The comment is stripped from the rendered HTML, but the dependency is guaranteed to be picked up.
+The HTML comment stays in the page source (with the resolved URL inside), but visitors don't see it. The dependency is guaranteed to be picked up.
 
 ### Jet template syntax
 
@@ -300,8 +300,11 @@ Templates use the [Jet](https://github.com/CloudyKit/jet) engine:
 {{ block name() }}...{{ end }}        — define a block
 {{ yield name() }}                    — call a block
 {{ include "path" data }}             — include a partial
-{{ value | unsafe }}                  — output HTML without escaping
+{{ value | html }}                    — escape HTML
+{{ value | unsafe }}                  — mark raw HTML (a no-op: output is not escaped by default)
 ```
+
+trip2g does not escape output: `{{ value }}` writes the value as is, tags included. Escape titles and frontmatter values that may contain `<` or `&` with `| html`.
 
 Three Jet rules to remember:
 
@@ -343,4 +346,11 @@ To test templates interactively without uploading files, use `/_system/renderlay
 {{ end }}
 ```
 
-Methods: `SortBy("Title")`, `SortBy("CreatedAt")`, `SortByMeta("order")`, `.Desc()`, `.Asc()`, `.Limit(n)`, `.Offset(n)`, `.All()`, `.First()`, `.Last()`
+Methods: `SortBy("Title")`, `SortBy("CreatedAt")`, `SortByMeta("order")`, `.Desc()`, `.Asc()`, `.Public()`, `.Limit(n)`, `.Offset(n)`, `.All()`, `.First()`, `.Last()`
+
+A query returns paid, sign-in-only and `_` system notes too; add `.Public()` on a public page. Without a sort, the order is random. See [[en/user/jet-functions|Jet functions reference]] for every method and how sorting behaves.
+
+### See also
+
+- [[en/user/jet-functions|Jet functions reference]] — every Jet built-in and everything trip2g adds to templates
+- [[en/user/jet-debugging|Debugging Jet templates]]

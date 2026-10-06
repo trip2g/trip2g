@@ -53,6 +53,7 @@ title: "Navigation"
 - [[en/user/theme-editor|Theme editor (live)]]
 - [[en/user/templates|Custom templates]]
 - [[en/user/jet-debugging|Debugging Jet templates]]
+- [[en/user/jet-functions|Jet functions reference]]
 - [[en/user/yield_blocks|yield_blocks: per-page CSS/JS]]
 - [[en/user/embedded-notes|Embedded notes]]
 - [[en/user/bem|BEM naming in templates]]

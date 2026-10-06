@@ -30,17 +30,40 @@ model.NoteView, model.NoteViews
 | Метод | Возвращает | Описание |
 |-------|------------|----------|
 | `Title()` | `string` | Заголовок из frontmatter |
+| `HasH1()` | `bool` | Контент начинается с H1, который служит заголовком; свой `<h1>` можно не выводить |
 | `HTMLString()` | `string` | Отрендеренный HTML контент |
 | `ContentString()` | `string` | Сырой markdown |
 | `PathID()` | `int64` | ID для data-атрибутов |
+| `VersionID()` | `string` | ID текущей версии заметки |
+| `Path()` | `string` | Путь файла в хранилище, например `blog/post.md` |
 | `Permalink()` | `string` | URL страницы |
-| `CreatedAt()` | `time.Time` | Дата создания |
+| `PermalinkEncoded()` | `string` | URL в percent-encoding, для `href` |
+| `CreatedAt()` | `time.Time` | Дата создания; если в frontmatter есть `created_at` / `created_on` — она |
+| `UpdatedAt()` | `time.Time` | Из `updated_at`, `updated` или `modified`; нулевое время, если не задано (проверка — `.IsZero()`) |
+| `Author()` | `string` | `author` из frontmatter, `""` если не задан |
+| `Tags()` | `[]string` | Из `tags`, иначе из `keywords`; список или строка через запятую. `nil`, если не заданы |
 | `ReadingTime()` | `int` | Время чтения в минутах |
 | `ReadingComplexity()` | `int` | Сложность (0-2) |
 | `IsHomePage()` | `bool` | Является ли домашней страницей подграфа |
+| `IsSystem()` | `bool` | Какая-то часть пути начинается с `_` |
 | `Description()` | `string` | SEO-описание |
+| `OGImageURL()` | `string` | URL картинки из `og_image` (иначе `cover`), `""` если не найдена |
+| `FirstImageURL()` | `string` | URL первой картинки в заметке, `""` если нет |
+| `FirstListHTML()` | `string` | HTML первого `<ul>` в заметке, `""` если нет |
+| `Lang()` | `string` | Нормализованный код языка (`ru`, `en`) |
+| `LangName()` | `string` | Название языка на нём самом (`Русский`) |
+| `HasLangAlternatives()` | `bool` | Есть версии на других языках |
+| `LangAlternative("en")` | `*Note` | Версия на этом языке или nil |
+| `LangAlternativesList()` | `[]*Note` | Все языковые версии, по коду языка |
+| `HasCodeLanguage("mermaid")` | `bool` | Есть блок кода на этом языке — чтобы подключать скрипт виджета только там, где он нужен |
+| `HasAnyCodeBlock()` | `bool` | Есть хотя бы один блок кода |
+| `HasCharts()` | `bool` | Есть блоки datachart |
+| `HasTaskListItems()` | `bool` | Есть чекбоксы задач |
+| `FormSpecJSON()` | `string` | JSON формы, см. [[ru/user/forms|Формы]] |
+| `SubgraphNamesJSON()` | `string` | JSON-список подграфов заметки |
+| `LastEditedBy()`, `LastEditedByLabel()` | объект / `string` | Кто запушил текущую версию. **Только для админа:** оборачивайте в `currentUser.IsAdmin()` |
 | `PartialRenderer()` | `NoteViewPartialRenderer` | Рендерер для разбивки контента |
-| `TOC()` | `NoteViewHeadings` | Оглавление |
+| `TOC()` | `NoteViewHeadings` | Оглавление: список `{Text, Level, ID}`; пустой, если оглавление для заметки скрыто |
 | `M()` | `*Meta` | Доступ к frontmatter |
 
 ### Пример
@@ -67,16 +90,20 @@ model.NoteView, model.NoteViews
 |-------|----------|
 | `ByPath(path)` | Заметка по пути файла (`"/_sidebar.md"`, `"docs/intro.md"`) |
 | `ByPermalink(url)` | Заметка по URL (`"/docs"`, `"/about"`) |
-| `List()` | Все видимые заметки (без системных `/_*`) |
+| `ByWikilink(target)` | Заметка по тексту вики-ссылки, как в Obsidian: с `/` — путь, иначе побеждает самый короткий путь |
+| `List()` | Все заметки, кроме системных `/_*`, по возрастанию URL. Платные и закрытые тоже входят |
+
+Все методы возвращают nil, если заметки нет. Проверяйте результат через `{{ if x }}`, а не `x == nil`: ненайденная заметка — типизированный nil, `x == nil` для неё `false`, а `x.Title()` останавливает рендер.
 
 ### Методы для навигации
 
 | Метод | Описание |
 |-------|----------|
-| `Sidebars(note)` | Сайдбары для заметки |
+| `Sidebars(note)` | Сайдбары для заметки: заметка с URL из поля `sidebar` (`sidebar: false` — без сайдбара), иначе сайдбары подграфов, иначе `/_sidebar` |
 | `HomePages(note)` | Домашние страницы подграфов |
-| `BackLinks(note)` | Обратные ссылки (кто ссылается на эту заметку) |
-| `ResolveURL(note)` | Полный URL с версией |
+| `BackLinks(note)` | Обратные ссылки (кто ссылается на эту заметку), без системных заметок. Порядок не постоянный |
+| `OutLinks(note)` | Заметки, на которые ссылается эта |
+| `ResolveURL(note)` | URL заметки — сейчас то же, что `Permalink()` |
 
 ### Методы запросов
 
@@ -118,10 +145,22 @@ nvs.ByGlob("projects/**/README.md") {* Все README.md *}
 nvs.Query()                        {* Все заметки без фильтра *}
 ```
 
+Паттерн сравнивается с путём файла **без ведущего слэша**: `"blog/*.md"` работает, `"/blog/*.md"` не находит ничего.
+
 Поддерживаемые [glob-паттерны](https://github.com/bmatcuk/doublestar#patterns):
 - `*` — любые символы кроме `/`
 - `**` — любая вложенность
 - `?` — один символ
+
+### Что попадает в выборку
+
+Всё, что подходит под паттерн: платные заметки, заметки за входом и системные (`_`) тоже. Для публичной страницы добавьте `.Public()`:
+
+```jet
+nvs.ByGlob("blog/*.md").Public()   {* только то, что может прочитать анонимный посетитель *}
+```
+
+`.Public()` оставляет заметки с `free`, не закрытые входом, не системные и без `noindex`. Фильтр срабатывает до `Offset` и `Limit`.
 
 ### Сортировка
 
@@ -134,6 +173,11 @@ nvs.Query()                        {* Все заметки без фильтр�
 .SortByMeta("order")   {* По полю frontmatter *}
 .SortByMeta("weight")
 ```
+
+- `SortBy` принимает любой метод `Note` без аргументов: `Title`, `CreatedAt`, `Permalink`, `PathID`, `ReadingTime`, `UpdatedAt`, `Author`… Неизвестное имя порядок не меняет, ошибки не будет.
+- `SortByMeta` сравнивает строки, целые и дробные числа, время. Заметки без значения идут первыми (с `Desc()` — последними). Значения разных типов, например `1` и `1.5`, считаются равными.
+- Даты в frontmatter без кавычек (`date: 2024-05-10`) приходят строками. Даты в формате ISO как строки сортируются правильно.
+- **Без сортировки порядок случайный** и меняется между рендерами. Сортировка стабильная, но равные элементы сохраняют этот случайный порядок, поэтому добавляйте второй критерий: `.SortByMeta("date").Desc().SortBy("Title")`.
 
 ### Направление
 
@@ -157,6 +201,8 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 .Offset(10).Limit(10)   {* Вторая страница *}
 ```
 
+`Limit(0)` — без ограничения. `Offset` дальше конца даёт пустой список.
+
 ### Терминальные методы
 
 | Метод | Возвращает | Описание |
@@ -164,6 +210,8 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 | `All()` | `[]*Note` | Все результаты |
 | `First()` | `*Note` | Первый результат или nil |
 | `Last()` | `*Note` | Последний результат или nil |
+
+`All()` выборку не меняет, её можно выполнить ещё раз. `First()` навсегда ставит выборке лимит 1 — после него ту же выборку не используйте.
 
 ### Полный пример
 
@@ -199,21 +247,23 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 | Метод | Описание |
 |-------|----------|
 | `Has(key)` | Проверка наличия ключа |
-| `Get(key)` | Сырое значение (`interface{}`) |
-| `GetString(key, default)` | Строка или default |
+| `Get(key)` | Сырое значение (`interface{}`), nil если ключа нет. Арифметика с ним не работает: `Get("order") + 1` падает, используйте `GetInt` |
+| `GetString(key, default)` | Строка; default, если ключа нет **или значение не строка** (`order: 3` даст default) |
 | `GetInt(key, default)` | Число или default |
 | `GetBool(key, default)` | Булево или default |
-| `GetStringSlice(key)` | Массив строк или nil |
+| `GetStrings(key)` | Список строк (не-строки отбрасываются); одна строка — список из одного элемента; если ключа нет — пустой список, не nil |
+| `Raw()` | Весь frontmatter как карта, например для `json(note.M().Raw())` |
+| `Debug()` | Frontmatter одной JSON-строкой, см. [[ru/user/jet-debugging|Отладка]] |
 
 ### Приведение типов
 
 `GetBool` понимает:
 - `true`, `false` (bool)
-- `"true"`, `"yes"`, `"1"` (string → true)
-- `1`, `0` (int → bool)
+- `"true"`, `"yes"`, `"1"` (string → true); любая другая строка — false
+- `1`, `0` (число → bool: не ноль — true)
 
 `GetInt` понимает:
-- `int`, `int64`, `float64`
+- `int`, `int64`, `float64` (дробная часть отбрасывается: `2.7` → `2`). Строка `"3"` даёт default
 
 ### Примеры
 
@@ -229,7 +279,7 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 {{ published := note.M().GetBool("published", false) }}
 
 {* Теги *}
-{{ range i, tag := note.M().GetStringSlice("tags") }}
+{{ range i, tag := note.M().GetStrings("tags") }}
   <span class="tag">{{ tag }}</span>
 {{ end }}
 ```
@@ -247,15 +297,21 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 | `Introduce()` | Контент до первого заголовка |
 | `Sections(level)` | Секции под заголовками уровня level |
 | `Section(title)` | Секция по тексту заголовка |
+| `FirstList()` | Первый список верхнего уровня: `{Items, MaxDepth}`, у пункта — `{Text, URL, Children}`; nil, если списков нет |
+| `Lists()` | Все списки верхнего уровня |
+| `FirstImageURL()` | URL первой картинки |
 
 ### Структура секции
 
 ```go
 type Section struct {
+    Title       string  // Текст заголовка без разметки
     TitleHTML   string  // Текст заголовка (без тега)
     ContentHTML string  // Контент до следующего заголовка
 }
 ```
+
+У секции есть свои `Sections(level)` и `Section(title)` — для вложенных подсекций.
 
 ### Примеры
 
@@ -283,7 +339,7 @@ type Section struct {
 
 ## Jet-синтаксис
 
-Краткая справка. Подробнее — в [Синтаксис Jet](/docs/jet).
+Краткая справка. Подробнее — в [[ru/user/jet|Синтаксисе Jet]] и [[ru/user/jet-functions|Справочнике функций Jet]].
 
 ### Переменные
 
@@ -349,7 +405,9 @@ type Section struct {
 ### Фильтры
 
 ```jet
-{{ value | unsafe }}          {* Вывод HTML без экранирования *}
-{{ value | html }}            {* Экранирование (по умолчанию) *}
+{{ value | html }}            {* Экранировать HTML *}
+{{ value | unsafe }}          {* Ничего не меняет: вывод и так не экранируется *}
 ```
+
+В trip2g вывод **не экранируется по умолчанию**: `{{ value }}` пишет значение как есть. Заголовки и значения frontmatter экранируйте через `| html`. Все функции и фильтры — в [[ru/user/jet-functions|Справочнике функций Jet]].
 
