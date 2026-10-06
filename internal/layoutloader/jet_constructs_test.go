@@ -24,7 +24,9 @@ const (
 
 	docStatsLib = `{{ notes := nvs.ByGlob(. + "/*.md").Public().All() }}
 {{ minutes := 0 }}
-{{ range _, n := notes }}{{ minutes = minutes + n.ReadingTime() }}{{ end }}
+{{ range _, n := notes }}
+  {{ minutes = minutes + n.ReadingTime() }}
+{{ end }}
 {{ return map("count", len(notes), "minutes", minutes) }}`
 
 	docStatsCaller = `{{ stats := exec("lib/section_stats", "blog") }}
@@ -34,22 +36,32 @@ const (
   {{ chart := note.M().Get("chart") }}
   <figure class="chart">
     <figcaption>{{ chart["title"] }}</figcaption>
-    {{ range _, v := chart["values"] }}<span class="bar" style="--v: {{ v }}"></span>{{ end }}
+    {{ range _, v := chart["values"] }}
+      <span class="bar" style="--v: {{ v }}"></span>
+    {{ end }}
   </figure>
 {{ catch err }}
-  <div class="chart chart--broken">Chart unavailable: {{ err.Error() | html }}</div>
+  <div class="chart chart--broken">
+    Chart unavailable: {{ err.Error() | html }}
+  </div>
 {{ end }}`
 
 	docRelatedNote = `{{ try }}
   {{ related := nvs.ByPath(note.M().GetString("related", "")) }}
-  <aside class="related">See also: <a href="{{ related.Permalink() }}">{{ related.Title() }}</a></aside>
+  <aside class="related">
+    See also: <a href="{{ related.Permalink() }}">{{ related.Title() }}</a>
+  </aside>
 {{ end }}`
 
 	docStatsInTry = `{{ try }}
   {{ stats := exec("lib/section_stats", "blog") }}
   <p>{{ stats["count"] }} posts, {{ stats["minutes"] }} min of reading</p>
 {{ catch err }}
-  {{ if currentUser.IsAdmin() }}<p class="admin-error">lib/section_stats: {{ err.Error() | html }}</p>{{ end }}
+  {{ if currentUser.IsAdmin() }}
+    <p class="admin-error">
+      lib/section_stats: {{ err.Error() | html }}
+    </p>
+  {{ end }}
 {{ end }}`
 )
 
@@ -227,14 +239,14 @@ func TestDocTryChartWidget(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(
 		t,
-		`<figure class="chart"> <figcaption>Visitors</figcaption> <span class="bar" style="--v: 120"></span><span class="bar" style="--v: 340"></span> </figure>`,
+		`<figure class="chart"> <figcaption>Visitors</figcaption> <span class="bar" style="--v: 120"></span> <span class="bar" style="--v: 340"></span> </figure>`,
 		squash(out),
 	)
 
 	missing := &model.NoteView{RawMeta: map[string]interface{}{}}
 	out, err = renderWith(t, layouts, "/note", constructsVars(missing, false))
 	require.NoError(t, err)
-	require.Contains(t, out, `<div class="chart chart--broken">Chart unavailable: `)
+	require.Contains(t, squash(out), `<div class="chart chart--broken"> Chart unavailable: `)
 	require.NotContains(t, out, "<figure")
 }
 
@@ -244,7 +256,7 @@ func TestDocTryRelatedNote(t *testing.T) {
 	linked := &model.NoteView{RawMeta: map[string]interface{}{"related": "blog/first.md"}}
 	out, err := renderWith(t, layouts, "/note", constructsVars(linked, false))
 	require.NoError(t, err)
-	require.Equal(t, `<aside class="related">See also: <a href="/blog/first">First</a></aside>`, squash(out))
+	require.Equal(t, `<aside class="related"> See also: <a href="/blog/first">First</a> </aside>`, squash(out))
 
 	dangling := &model.NoteView{RawMeta: map[string]interface{}{"related": "blog/deleted.md"}}
 	out, err = renderWith(t, layouts, "/note", constructsVars(dangling, false))
@@ -271,7 +283,7 @@ func TestDocTryExecStats(t *testing.T) {
 
 	out, err = renderWith(t, broken, "/blog/index", constructsVars(&model.NoteView{}, true))
 	require.NoError(t, err)
-	require.Contains(t, out, `<p class="admin-error">lib/section_stats: `)
+	require.Contains(t, squash(out), `<p class="admin-error"> lib/section_stats: `)
 }
 
 func TestExtendsPageYieldingComponent(t *testing.T) {

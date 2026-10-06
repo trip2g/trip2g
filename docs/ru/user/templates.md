@@ -6,11 +6,15 @@ home_position: 70
 
 Шаблон — HTML-файл, который определяет внешний вид страницы. Один файл в папке `_layouts/` — и готово.
 
-> **Рекомендуемая структура:** собирайте свои шаблоны из компонентов: один `block` на файл, вызов через `yield`, имя через `@lid`, стили по BEM, импорт автоматически. См. [[ru/user/components|Компоненты, автоимпорт и лучшие практики]].
-
-> **Ключевая идея:** контент остаётся чистым markdown, а шаблон через [[templates-advanced|PartialRenderer]] получает доступ к AST-структуре документа. Это позволяет автору писать обычный markdown, а разработчику шаблона — произвольно компоновать секции, заголовки и блоки без загрязнения контента разметкой.
+> **Рекомендуемая структура:** собирайте свои шаблоны из компонентов: один `block` на файл, вызов через `yield`, имя через `@lid`, стили по BEM, импорт автоматически. См. [[ru/user/components|Компоненты шаблонов]].
 
 > **Пример вживую:** [[instaframes/_index|Instagram-фреймы]] — готовый шаблон, который собирает из markdown-файла скачиваемые карусели для соцсетей. Наглядно, как кастомный layout делает реальную работу.
+
+### Зачем шаблоны
+
+Контент остаётся чистым markdown. Шаблон получает структуру документа через [[ru/user/templates-advanced#PartialRenderer|PartialRenderer]]: секции, списки, картинки, блоки кода. Он раскладывает их так, как нужно странице, а в самой заметке разметки нет.
+
+Это нужно, чтобы держать агентов в рамках. Агент пишет markdown по правилам шаблона: заголовок на секцию, список для меню, блок кода для данных. HTML и CSS он не трогает, а страница всё равно выходит сверстанной. Один набор шаблонов закрывает лендинги, визитки, дашборды и даже одностраничные приложения поверх GraphQL API trip2g: см. [[ru/user/spa|Приложение поверх trip2g]].
 
 ### Быстрый старт
 
@@ -82,31 +86,30 @@ title: Моя страница
 <script src="{{ asset("app.js") }}"></script>
 ```
 
-#### htmlInjectionsHead / htmlInjectionsBodyEnd — HTML-инъекции из настроек сайта
+Как вывести HTML-инъекции сайта — в следующем разделе.
 
-Скрипты и теги, добавленные в настройках сайта (Google Analytics, пиксели, кастомный `<head>`), доступны в шаблоне через две переменные:
+### HTML-инъекции
+
+`htmlInjectionsHead` и `htmlInjectionsBodyEnd` — фрагменты, которые админ добавил в **Админке → SEO & URLs → HTML Injections**: скрипты аналитики и метрик, теги подтверждения сайта, блок `<style>` с переопределениями темы. У каждой инъекции есть место (`head` или `body_end`), позиция (меньшая идёт раньше) и необязательные даты начала и конца показа. В шаблон попадают только инъекции, активные прямо сейчас, по порядку позиций.
+
+Шаблон по умолчанию выводит их сам. Свой шаблон выводит их только там, где попросит:
 
 ```jet
-{{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+<head>
+  <title>{{ title }}</title>
+  {{ range i, injection := htmlInjectionsHead }}
+    {{ injection.Content | unsafe }}
+  {{ end }}
+</head>
+<body>
+  {{ note.HTMLString() }}
+  {{ range i, injection := htmlInjectionsBodyEnd }}
+    {{ injection.Content | unsafe }}
+  {{ end }}
+</body>
 ```
 
-```jet
-{{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
-```
-
-`htmlInjectionsHead` — вставлять перед `</head>`, `htmlInjectionsBodyEnd` — перед `</body>`.
-
-> **Совет:** Если используете кастомный Jet-шаблон, добавьте обе переменные, чтобы скрипты из Admin → HTML Injections подключались автоматически:
-> ```jet
-> <head>
->   ...
->   {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
-> </head>
-> <body>
->   ...
->   {{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
-> </body>
-> ```
+`Content` — обычная строка с HTML, который написал админ, поэтому нужен `| unsafe`: без него скрипт окажется на странице текстом. Шаблон без этих двух циклов остаётся без аналитики. Что класть в инъекцию — в [[ru/user/themes|Темах]] (блок `<style>`) и [[ru/user/admin_onboarding|Обзоре панели управления]].
 
 ### SEO-теги в своём layout
 
@@ -116,7 +119,9 @@ title: Моя страница
 
 ```jet
 <head>
-  {{ if note.M().GetBool("noindex", false) }}<meta name="robots" content="noindex">{{ end }}
+  {{ if note.M().GetBool("noindex", false) }}
+    <meta name="robots" content="noindex">
+  {{ end }}
   {{ canonicalRoute := note.M().GetString("route", "") }}
   {{ if canonicalRoute != "" }}
   <link rel="canonical" href="https://{{ canonicalRoute }}">
@@ -286,7 +291,9 @@ Markdown:
 {{ pr := note.PartialRenderer() }}
 <nav class="toc">
   {{ range i, h := note.TOC() }}
-    <a class="toc__item toc__item--{{ h.Level }}" href="#{{ h.ID }}">{{ h.Text }}</a>
+    <a class="toc__item toc__item--{{ h.Level }}" href="#{{ h.ID }}">
+      {{ h.Text }}
+    </a>
   {{ end }}
 </nav>
 
@@ -317,7 +324,10 @@ Markdown:
 {{ if list := note.PartialRenderer().FirstList(); list }}
   <ul class="tasks">
     {{ range i, item := list.Items }}
-      <li class="tasks__item tasks__item--{{ item.Task }}" data-mark="{{ item.TaskMark }}">{{ item.Text }}</li>
+      <li class="tasks__item tasks__item--{{ item.Task }}"
+          data-mark="{{ item.TaskMark }}">
+        {{ item.Text }}
+      </li>
     {{ end }}
   </ul>
 {{ end }}
@@ -394,7 +404,11 @@ Markdown:
   {{ if rows := parseCSV(b[0].Content); rows }}
     <table>
       {{ range i, row := rows }}
-        <tr>{{ range j, cell := row }}<td>{{ cell }}</td>{{ end }}</tr>
+        <tr>
+          {{ range j, cell := row }}
+            <td>{{ cell }}</td>
+          {{ end }}
+        </tr>
       {{ end }}
     </table>
   {{ end }}
@@ -413,6 +427,124 @@ Markdown:
 {{ block hero(title="") }}<h2>{{ title | unsafe }}</h2>{{ end }}
 {{ yield hero(title="Данные там,<br>где вы решите.") }}
 ```
+
+### Страница из нескольких заметок
+
+Шаблон может подтянуть другие заметки, а не только ту, что рендерится. `nvs.ByPath("blocks/pricing.md")` возвращает эту заметку, и у неё работают все методы `note`: `Title()`, `HTMLString()`, `PartialRenderer()`. Лендинг может держать каждый блок в своей заметке, и автор или агент правит заметку с ценами, не трогая ни страницу, ни шаблон.
+
+Поиск удобно вынести в компонент, который принимает путь к заметке параметром. `_layouts/components/section.html`:
+
+```jet
+{{ block @lid(path="") }}
+  {{ if part := nvs.ByPath(path); part }}
+    <section class="@did">
+      <h2>{{ part.Title() }}</h2>
+      {{ part.HTMLString() }}
+    </section>
+  {{ end }}
+{{ end }}
+```
+
+Компонент может и разобрать заметку на части. `_layouts/components/faq.html` превращает каждый заголовок `##` заметки в раскрывающийся ответ:
+
+```jet
+{{ block @lid(path="") }}
+  {{ if faq := nvs.ByPath(path); faq }}
+    {{ range i, s := faq.PartialRenderer().Sections(2) }}
+      <details class="@did">
+        <summary>{{ s.TitleHTML }}</summary>
+        {{ s.ContentHTML }}
+      </details>
+    {{ end }}
+  {{ end }}
+{{ end }}
+```
+
+Шаблон страницы перечисляет заметки, из которых она собрана:
+
+```jet
+{{ note.HTMLString() }}
+{{ yield components_section(path="/blocks/pricing.md") }}
+{{ yield components_faq(path="/blocks/faq.md") }}
+```
+
+- Путь — это путь файла заметки в хранилище, с `/` в начале или без.
+- Если по пути заметки нет, приходит `nil`, и `if` пропускает блок. Опечатка в пути видна как пропавшая секция, а не как ошибка.
+- `ByPath` возвращает заметку независимо от настроек доступа. Платная или закрытая заметка, подтянутая в публичную страницу, видна всем, кто эту страницу открыл.
+- Оба компонента находит автоимпорт, `{{ import }}` странице не нужен.
+
+Эти шаблоны рендерит тест в репозитории trip2g (`internal/layoutloader/templates_doc_example_test.go`).
+
+### Наследование шаблонов: extends
+
+У большинства страниц сайта общая рамка: `<head>`, шапка, подвал. Наследование выносит рамку в один файл — **базовый шаблон**, — а каждый шаблон страницы заполняет только то, что отличается. Если вы знаете Jinja2 или Twig, здесь всё так же.
+
+База отмечает блоком `block` каждое место, которое страница может заполнить. В блоке лежит содержимое по умолчанию. `_layouts/base.html`:
+
+```jet
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ block title() }}{{ note.Title() }}{{ end }}</title>
+</head>
+<body>
+  <header>My site</header>
+  <main>
+    {{ block main() }}
+      {{ note.HTMLString() }}
+    {{ end }}
+  </main>
+  <footer>
+    {{ block footer() }}© My site{{ end }}
+  </footer>
+</body>
+</html>
+```
+
+Шаблон страницы начинается с `{{ extends "base" }}` и заново определяет блоки, которые хочет поменять. `_layouts/article.html`:
+
+```jet
+{{ extends "base" }}
+
+{{ block title() }}{{ note.Title() }} · Blog{{ end }}
+
+{{ block main() }}
+  <article>
+    <h1>{{ note.Title() }}</h1>
+    {{ note.HTMLString() }}
+    {{ yield components_button(label="All posts", url="/blog") }}
+  </article>
+{{ end }}
+```
+
+Заметка с `layout: article` рендерится так:
+
+- trip2g рендерит `base.html` сверху вниз. На каждом блоке он берёт версию страницы, если страница его определила, и содержимое базы, если нет. Здесь `title` и `main` приходят из `article.html`, а `footer` остаётся `© My site`.
+- Всё, что в странице стоит вне `{{ block }}`, игнорируется. В результат попадают только блоки страницы.
+- `extends` должен быть первым тегом страницы, до любого `{{ import }}`. Путь — относительно `_layouts/`, без `.html`.
+- Заметка может указать и `layout: base` — тогда она получит всё по умолчанию.
+
+**Задавайте каждому месту содержимое по умолчанию.** Отмечайте место в базе через `{{ block main() }}…{{ end }}`, а не голым `{{ yield main() }}`. База, которая вызывает блок, определённый только в страницах, сейчас в trip2g не загружается, и страницы, которые её наследуют, падают с `template /base could not be found`.
+
+**Компоненты.** Страница, которая наследует базу, получает автоимпорт, поэтому кнопке выше `{{ import }}` не нужен. База его не получает: автоимпорт доходит только до шаблона, который указан в заметке. Если база сама вызывает компонент, она импортирует его в начале файла:
+
+```jet
+{{ import "components/header" }}
+<!DOCTYPE html>
+<html lang="en">
+<body>
+  {{ yield components_header() }}
+  <main>{{ block main() }}{{ end }}</main>
+</body>
+</html>
+```
+
+Без импорта страница падает с `unresolved block "components_header"`. Это ограничение отслеживается в [trip2g#388](https://github.com/trip2g/trip2g/issues/388).
+
+**Наследование или базовый компонент.** [[ru/user/components#Базовый слой|Компоненты шаблонов]] оборачивают страницу в базовый компонент: `{{ yield components_base(title=…) content }}`. Там `extends` не нужен, и это подходит рамке с одним местом под контент. Наследование подходит рамке с несколькими местами, которые страница заполняет по отдельности: заголовок, боковая колонка, основная колонка.
+
+Эти шаблоны рендерит тест в репозитории trip2g (`internal/layoutloader/templates_doc_example_test.go`).
 
 ### Asset-ы между layout-файлами
 
@@ -438,17 +570,18 @@ HTML-комментарий остаётся в исходном коде стр
 
 Шаблоны используют движок [[jet|Jet]]:
 
-```jet
-{{ переменная }}                       — вывод
-{{ if условие }}...{{ end }}           — условие
-{{ range _, item := список }}...{{ end }} — цикл
-{{ block имя() }}...{{ end }}          — определение блока
-{{ yield имя() }}                      — вызов блока
-{{ include "путь" данные }}            — вставка шаблона
-{{ x := exec("lib/имя", данные) }}     — выполнить другой файл и взять значение из его return
-{{ try }}...{{ catch err }}...{{ end }} — заглушка, если внутренняя часть упала
-{{ d := parseJSON(текст) }}            — разбор JSON, YAML или CSV в данные
-```
+| Синтаксис | Что делает |
+|---|---|
+| `{{ переменная }}` | Вывод, с HTML-экранированием |
+| `{{ if условие }}…{{ end }}` | Условие |
+| `{{ range _, item := список }}…{{ end }}` | Цикл |
+| `{{ block имя() }}…{{ end }}` | Определение блока |
+| `{{ yield имя() }}` | Вызов блока |
+| `{{ include "путь" данные }}` | Вставка шаблона |
+| `{{ extends "base" }}` | Наследование базового шаблона, см. [[#Наследование шаблонов: extends]] |
+| `{{ x := exec("lib/имя", данные) }}` | Выполнить другой файл и взять значение из его `return` |
+| `{{ try }}…{{ catch err }}…{{ end }}` | Заглушка, если внутренняя часть упала |
+| `{{ d := parseJSON(текст) }}` | Разбор JSON, YAML или CSV в данные |
 
 Подробнее, включая `exec`/`return` и `try`/`catch` с примерами, — в [[jet|документации Jet]]. Все функции и фильтры, включая добавленные trip2g, — в [[ru/user/jet-functions|справочнике функций Jet]].
 
@@ -488,8 +621,9 @@ HTML-комментарий остаётся в исходном коде стр
   <p class="subtitle">{{ note.Title() }}</p>
 {{ end }}
 
-{{ if latest := nvs.ByGlob("blog/*.md").SortBy("CreatedAt").Desc().First(); latest }}
-  Свежий пост: <a href="{{ latest.Permalink() }}">{{ latest.Title() }}</a>
+{{ blog := nvs.ByGlob("blog/*.md").Public() }}
+{{ if latest := blog.SortBy("CreatedAt").Desc().First(); latest }}
+  Latest post: <a href="{{ latest.Permalink() }}">{{ latest.Title() }}</a>
 {{ end }}
 
 {{ if faq := note.PartialRenderer().Section("FAQ"); faq }}
@@ -517,4 +651,4 @@ HTML-комментарий остаётся в исходном коде стр
 
 Выборка и сортировка заметок — в [[templates-advanced|запросах к заметкам]].
 
-Как собирать шаблон из компонентов — в [[ru/user/components|Компонентах, автоимпорте и лучших практиках]].
+Как собирать шаблон из компонентов — в [[ru/user/components|Компонентах шаблонов]].
