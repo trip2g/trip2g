@@ -2,7 +2,6 @@
 title: Jet functions reference
 free: true
 lang: en
-wide: true
 lang_redirect: "[[ru/user/jet-functions]]"
 ---
 

@@ -1,7 +1,6 @@
 ---
 title: "Компоненты шаблонов"
 free: true
-wide: true
 lang_redirect: "[[en/user/components]]"
 ---
 
