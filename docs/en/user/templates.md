@@ -214,6 +214,24 @@ The default template prints them for you. A custom layout prints them only where
 
 `Content` is a plain string of HTML the admin wrote, so it needs `| unsafe`; without it the script shows up on the page as text. A layout that leaves both loops out gets no analytics. What to put in an injection: [[en/user/themes|Themes]] (a `<style>` block), [[en/user/admin_onboarding|Admin panel tour]].
 
+### Standard header and footer in your own layout {#standard-chrome}
+
+A custom layout can keep the site's header, with its sign-in button, and footer around its own content:
+
+```jet
+<head>
+  {{ defaultTemplate.Styles() }}
+  {{ defaultTemplate.UserSpaceScripts() }}
+</head>
+<body>
+  {{ defaultTemplate.Header() }}
+  <main id="app"></main>
+  {{ defaultTemplate.Footer() }}
+</body>
+```
+
+`Styles()` adds the default template's stylesheet, and `UserSpaceScripts()` the bundle that draws the sign-in button and search in the header. `Header()` and `Footer()` print nothing when the page has no header or footer note. Details are in [[en/user/jet-functions#Variables in every custom layout|Jet functions]]; an app built this way, and how it uses the visitor's session, is in [[en/user/spa#chrome|An app on top of trip2g]].
+
 ### SEO tags in a custom layout
 
 The default template writes `<link rel="canonical">`, `og:url`, `hreflang` and `<meta name="robots">` for you. A custom layout writes none of them. The only thing trip2g adds on its own is the `X-Robots-Tag: noindex` HTTP header for notes with `noindex: true`.

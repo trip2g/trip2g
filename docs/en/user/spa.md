@@ -20,6 +20,34 @@ New to layouts? Read [[en/user/templates|Templates]] first.
 
 A note opts in with `layout: app` in its frontmatter, like any other layout.
 
+### How your app is authorised: the session cookie {#auth}
+
+The app has no login of its own. It borrows the visitor's trip2g session:
+
+1. **The visitor signs in with the button in the standard header.** The layout puts trip2g's header on the page, see [[en/user/spa#chrome|Wrap your app in the standard site chrome]]. After a successful sign-in the page reloads.
+2. **The server sets a session cookie.** It is `HttpOnly` (page JavaScript can't read it), `SameSite=Lax`, and belongs to the host the visitor signed in on.
+3. **The app's own requests carry it.** A `fetch('/_system/graphql', …)` from the page goes to the same origin, and the browser attaches the cookie by itself. The server reads it and treats the request as that user's: a signed-in admin may read and write notes.
+
+So the reloaded page is rendered for the signed-in user: `currentUser.IsAdmin()` is now `true` for the admin, and the app's `editable` flag with it.
+
+**Do:**
+
+- Call the API with a relative URL, `/_system/graphql`, from a page the site itself serves: the layout and its `asset()` files, or a bundle that layout loads.
+- Leave `fetch` credentials at the default (`same-origin`) or set `credentials: 'include'`, as the helpers on this page do; for a same-origin request the two are the same. Never set `credentials: 'omit'`.
+- Send operations as `POST` with `Content-Type: application/json`; a file upload goes as `multipart/form-data`. The endpoint runs no operation sent another way.
+- Decide whether to show edit controls from `currentUser.IsAdmin()` in the layout, passed to the app as a flag such as `editable`.
+
+**Don't:**
+
+- **Don't put an API key or a personal token in the page.** Anyone who opens the page can read them. The cookie is the credential.
+- **Don't build a login screen.** Signing in is the header's job; after it the page reloads with the session in place.
+- **Don't call the trip2g UI's internal GraphQL client.** The user-space bundle that draws the sign-in button is a $mol app. It exposes no JavaScript API to other code, and reads its input from `window.__trip2g_settings`, which isn't an API either. Its client and names can change with any UI rebuild. Use your own `fetch`, such as the `gql()` helper in [[en/user/spa#Ready-made GraphQL operations|Ready-made GraphQL operations]].
+- **Don't serve the app from another origin,** such as a separate dev server. The browser doesn't send the `SameSite=Lax` cookie with a cross-site `POST`, and the server allows cross-origin requests only from the Obsidian plugin.
+
+**No CSRF token, no extra header.** The endpoint asks for nothing beyond the cookie: no CSRF token and no custom header. A form on another site can't use the session, because the browser leaves the `SameSite=Lax` cookie off a cross-site `POST`.
+
+**A visitor who isn't signed in** reaches the page and the app normally. `currentUser.IsAdmin()` is `false`, so `editable` is `false`: render the note read-only and point to the header's sign-in button, for example with a "Sign in to edit" line. On the API, `search` still works; a write returns an `errors` entry. A reader who is signed in but isn't the admin gets the same refusal on writes. The table in [[en/user/spa#Ready-made GraphQL operations|Ready-made GraphQL operations]] lists who reaches what.
+
 ### The layout: ship the note in the page
 
 The layout gives the app three things: the note's vault path, its raw markdown, and whether the visitor may edit. `json()` puts them into a `<script type="application/json">` element:
@@ -53,7 +81,50 @@ The layout gives the app three things: the note's vault path, its raw markdown, 
 
 The kanban layout uses a different carrier for the same data: the markdown goes into a hidden `<textarea>` and the path into a hidden `<span>`, both printed with plain `{{ … }}`. That is safe too, because output is escaped by default: a note containing `</textarea>` reaches the page as `&lt;/textarea&gt;`, and the browser decodes it back. A `<textarea>` has two quirks, though: the browser normalizes its line endings to `\n` and drops a newline that comes right after the opening tag. The JSON island has neither.
 
-To show trip2g's sign-in button on the app's page, add `{{ defaultTemplate.UserSpaceScripts() }}` to `<head>` and a mount element for it, as the kanban layout does.
+
+### Wrap your app in the standard site chrome {#chrome}
+
+The layout above is a bare page. To give the app the site's header, with its sign-in button, and its footer, print the default template's parts around the mount element:
+
+```jet
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title }}</title>
+  {{ defaultTemplate.Styles() }}
+  {{ defaultTemplate.UserSpaceScripts() }}
+</head>
+<body>
+  {{ defaultTemplate.Header() }}
+  <main id="app"></main>
+  <script type="application/json" id="app-data">
+    {{ json(map(
+      "path", note.Path(),
+      "content", note.ContentString(),
+      "editable", currentUser.IsAdmin()
+    )) }}
+  </script>
+  <script src="{{ asset("app.js") }}"></script>
+  {{ defaultTemplate.Footer() }}
+</body>
+</html>
+```
+
+| Call | Prints |
+|---|---|
+| `defaultTemplate.Styles()` | `<link>` tags for the default template's stylesheet, so the header and footer look as they do on other pages |
+| `defaultTemplate.UserSpaceScripts()` | A `<script>` that sets `window.__trip2g_settings`, then the user-space bundle. The bundle draws the sign-in button and the search box in the header. The settings come only on the first call |
+| `defaultTemplate.Header()` | The site header: logo, navigation, the sign-in button and the search box |
+| `defaultTemplate.Footer()` | The site footer |
+
+`Header()` and `Footer()` print nothing when the page has no header or footer note. The note comes from the page's `header:` / `footer:` frontmatter, a matching layout section, or a `_header` / `_footer` note in the vault: see [[en/user/default-template#Functional notes: header, footer, and sidebars|Functional notes]]. Without a header there is no sign-in button either. To keep one, put the bundle's mount element where you want the button, with `UserSpaceScripts()` still in `<head>`:
+
+```html
+<div mol_view_root="$trip2g_user_space"></div>
+```
+
+In the layout preview (`/_system/renderlayout`) all four calls print nothing. The full list of what a layout gets is in [[en/user/jet-functions#Variables in every custom layout|Jet functions → Variables in every custom layout]].
 
 ### The bundle
 
@@ -513,6 +584,16 @@ The operations above are tested against the schema. For anything else:
 3. Write the layout above, with your own mount element and bundle.
 4. Read the data from the page, render it, and save with `updateNotes` and `expectedHash`.
 5. Show edit controls only when `editable` is true. The server enforces the rule anyway.
+
+### Checklist
+
+- [ ] The note has `layout: app`, and the layout prints `defaultTemplate.Styles()` and `defaultTemplate.UserSpaceScripts()` in `<head>`, `Header()` before the app and `Footer()` after it.
+- [ ] The page has a header note, or the layout has its own `$trip2g_user_space` mount element: otherwise there is no sign-in button.
+- [ ] The app calls `/_system/graphql` by a relative URL, as `POST` with `Content-Type: application/json`, with default credentials or `credentials: 'include'`.
+- [ ] No API key or token in the page, no login screen of the app's own.
+- [ ] No calls into the trip2g UI's bundle or `window.__trip2g_settings`: the app has its own `fetch` helper.
+- [ ] Edit controls show only when the layout's `currentUser.IsAdmin()` says so; a visitor sees the note read-only and the header's sign-in button.
+- [ ] Every save passes `expectedHash` and handles `UpdateNotesHashMismatchPayload` and an `errors` entry.
 
 ### See also
 
