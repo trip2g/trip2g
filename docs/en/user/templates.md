@@ -300,6 +300,8 @@ Templates use the [Jet](https://github.com/CloudyKit/jet) engine:
 {{ block name() }}...{{ end }}        — define a block
 {{ yield name() }}                    — call a block
 {{ include "path" data }}             — include a partial
+{{ x := exec("lib/name", data) }}     — run another layout file, take the value it returns
+{{ try }}...{{ catch err }}...{{ end }} — render a fallback if the inner part fails
 {{ value | unsafe }}                  — output HTML without escaping
 ```
 
@@ -307,7 +309,99 @@ Three Jet rules to remember:
 
 1. Block parameters need default values or named arguments won't bind: `{{ block card(title="", body="") }}`
 2. `content` is a reserved keyword — don't use it as a parameter name
-3. **Single-variable range iterates indices, not values.** `{{ range item := list }}` gives `item = 0, 1, 2…` (the index). To get values, always use two variables: `{{ range i, item := list }}`
+3. **Single-variable range iterates indices, not values.** `{{ range item := list }}` gives `item = 0, 1, 2…` (the index). To get values, always use two variables: `{{ range i, item := list }}`, or `{{ range _, item := list }}` when you don't need the index
+
+### Data from another layout: exec and return
+
+`exec("path", data)` runs another layout file and gives you the value that file `return`s. Whatever the file prints is thrown away — only the returned value comes back. Inside the file, `data` is available as `.`, and the page's variables (`note`, `nvs`, …) work as usual.
+
+Use it for **data**, not markup. A component (`{{ block }}` + `{{ yield }}`) produces HTML; an exec'd file produces a list, a map or a number that the caller then renders its own way. The typical case is a selection rule you want to define once: which notes are "featured" in a section, or what a section's stats are. Several layouts call the file, so the rule lives in one place.
+
+**Featured notes, defined once.** `_layouts/lib/featured.html`:
+
+```jet
+{{ return nvs.ByGlob(. + "/*.md").Public().SortByMeta("order").Limit(3).All() }}
+```
+
+Any layout or page can now ask for a section's featured notes:
+
+```jet
+<ul class="featured">
+{{ range _, post := exec("lib/featured", "blog") }}
+  <li><a href="{{ post.Permalink() }}">{{ post.Title() }}</a></li>
+{{ end }}
+</ul>
+```
+
+Changing what "featured" means — a different sort, five instead of three, only notes with some frontmatter flag — is one edit in `lib/featured.html`.
+
+**Section stats as a map.** `_layouts/lib/section_stats.html`:
+
+```jet
+{{ notes := nvs.ByGlob(. + "/*.md").Public().All() }}
+{{ minutes := 0 }}
+{{ range _, n := notes }}{{ minutes = minutes + n.ReadingTime() }}{{ end }}
+{{ return map("count", len(notes), "minutes", minutes) }}
+```
+
+```jet
+{{ stats := exec("lib/section_stats", "blog") }}
+<p>{{ stats["count"] }} posts, {{ stats["minutes"] }} min of reading</p>
+```
+
+Rules worth knowing:
+
+- **The path starts at `_layouts/` and has no extension.** `exec("lib/featured")` and `exec("/lib/featured")` both load `_layouts/lib/featured.html`, from whichever folder the caller lives in. `exec("lib/featured.html")` is *not found*. Only `.html` and `.html.json` files under `_layouts/` are layout files.
+- **A missing file fails the render** with `template /lib/featured could not be found`. Wrap the call in `try` (below) if the page should survive it.
+- **`return` only means something in an exec'd file.** In a page that is rendered normally it stops nothing and its value is not printed.
+- **Components inside an exec'd file need an explicit import.** Auto-import covers the page itself; a file reached through `exec`, `include` or `extends` must `{{ import "/path/to/component" }}` the components it yields.
+- **Each call runs the file.** `exec` is not cached: calling `lib/section_stats` in a loop over twenty sections runs twenty full queries on every render. For a value that depends only on the note itself, frontmatter is cheaper; for heavy computation across many notes, a Go helper is the better place.
+
+### Isolating failures: try and catch
+
+`{{ try }}…{{ catch err }}…{{ end }}` renders the inner part, and if anything in it fails, throws that output away and renders the `catch` part instead. The rest of the page renders normally. Without `catch`, a failed `try` renders nothing.
+
+Use it around a widget whose input you don't control, so one bad note shows a fallback instead of an error page.
+
+**A chart widget built from frontmatter.** If `chart` is missing or malformed, the reader sees a small card, not a broken page:
+
+```jet
+{{ try }}
+  {{ chart := note.M().Get("chart") }}
+  <figure class="chart">
+    <figcaption>{{ chart["title"] }}</figcaption>
+    {{ range _, v := chart["values"] }}<span class="bar" style="--v: {{ v }}"></span>{{ end }}
+  </figure>
+{{ catch err }}
+  <div class="chart chart--broken">Chart unavailable: {{ err.Error() | html }}</div>
+{{ end }}
+```
+
+**An optional related note.** The frontmatter field `related` may point to a note that was renamed or deleted. If the lookup or any call on it fails, the aside simply isn't there:
+
+```jet
+{{ try }}
+  {{ related := nvs.ByPath(note.M().GetString("related", "")) }}
+  <aside class="related">See also: <a href="{{ related.Permalink() }}">{{ related.Title() }}</a></aside>
+{{ end }}
+```
+
+**A stats line from a helper file.** If `lib/section_stats` breaks, visitors see nothing and the site admin sees why:
+
+```jet
+{{ try }}
+  {{ stats := exec("lib/section_stats", "blog") }}
+  <p>{{ stats["count"] }} posts, {{ stats["minutes"] }} min of reading</p>
+{{ catch err }}
+  {{ if currentUser.IsAdmin() }}<p class="admin-error">lib/section_stats: {{ err.Error() | html }}</p>{{ end }}
+{{ end }}
+```
+
+Things to keep in mind:
+
+- **`catch` is for fallbacks, not for hiding bugs.** A `try` around half the page turns every mistake into silence. Wrap the smallest part that can legitimately fail, and show the error to admins (as above) so a broken widget gets noticed. Using `currentUser` makes the page personalized, so it is not served from the anonymous page cache.
+- **Escape the message.** `err.Error()` can contain text from a note or a URL; pipe it through `html`. The filter escapes exactly once whether or not layout output is escaped by default.
+- **`try` does not catch a layout that fails to load.** A syntax error or an `extends` in the wrong place stops the layout before anything renders; that shows up as a layout warning, not as a `catch`.
 
 ### Debugging templates
 
