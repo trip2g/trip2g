@@ -98,6 +98,15 @@ curl -sS -X POST "$G" -H 'Content-Type: application/json' -b "trip2g_token=$S" -
 ### Bilingual Docs
 User docs are always created in pairs: `docs/en/user/*.md` + `docs/ru/user/*.md`
 
+### Writing user docs
+- **Code lines ≤ ~80 characters**, so examples don't scroll on a phone. Break a long Jet call after a comma inside its parentheses (a tag may span lines there); a method chain can't break before `.`, so split it into variables. Put a short `{* → result *}` comment on its own line when it doesn't fit.
+- **Line breaks inside `if` / `range` / `block` bodies**: the body on its own indented lines, not `{{ if x }}…{{ end }}` on one line.
+- **Every claim is checked against the code or a test** before it is written. Say what the code does now, not what it is meant to do.
+- **Examples are rendered by tests where possible.** Jet examples live as constants in `internal/layoutloader/*doc*_test.go` (`jet_functions_snippets_test.go`, `templates_doc_example_test.go`, `components_doc_example_test.go`); `requireSnippetsInDocs` fails when a page loses the exact text, so keep the code identical in the en and ru pages.
+- **User pages describe behaviour; internal mechanics go to `docs/dev/`.** A user page says what a layout author sees and does, and links to the dev doc for how the loader works.
+- **Generated docs are read by a human before merge.** An agent-written page is a draft until someone has read it end to end.
+- Wide reference pages (big tables) can set `wide: true` in frontmatter: the default template then drops both sidebars and the 65ch column cap.
+
 ## Docs Map (docs/dev/)
 
 Read the relevant doc before working in that area. Docs are partially outdated (generated Nov 2025) — verify against current code.
