@@ -23,7 +23,7 @@ A template is an HTML file stored in `_layouts/`. It receives the note's content
 </head>
 <body>
   <h1>{{ note.Title() }}</h1>
-  {{ note.HTMLString() | unsafe }}
+  {{ note.HTMLString() }}
 </body>
 </html>
 ```
@@ -169,7 +169,7 @@ Access other notes via `nvs`:
 
 ```jet
 {{ if sidebar := nvs.ByPath("/_sidebar.md"); sidebar }}
-  {{ sidebar.HTMLString() | unsafe }}
+  {{ sidebar.HTMLString() }}
 {{ end }}
 ```
 
@@ -231,12 +231,12 @@ Keep the `noindex` default at `false`. With `GetBool("noindex", true)` every pag
 
 ```jet
 {{ intro := note.PartialRenderer().Introduce() }}
-<p class="lead">{{ intro.ContentHTML | unsafe }}</p>
+<p class="lead">{{ intro.ContentHTML }}</p>
 
 {{ range i, s := note.PartialRenderer().Sections(3) }}
   <details>
-    <summary>{{ s.TitleHTML | unsafe }}</summary>
-    {{ s.ContentHTML | unsafe }}
+    <summary>{{ s.TitleHTML }}</summary>
+    {{ s.ContentHTML }}
   </details>
 {{ end }}
 ```
@@ -268,14 +268,14 @@ A table of contents where each entry also shows the first lines of its section:
 {{ pr := note.PartialRenderer() }}
 <nav class="toc">
   {{ range i, h := note.TOC() }}
-    <a class="toc__item toc__item--{{ h.Level }}" href="#{{ h.ID }}">{{ h.Text | html }}</a>
+    <a class="toc__item toc__item--{{ h.Level }}" href="#{{ h.ID }}">{{ h.Text }}</a>
   {{ end }}
 </nav>
 
 {{ range i, s := pr.Sections(2) }}
   <section id="{{ s.ID }}">
-    <h2>{{ s.TitleHTML | unsafe }}</h2>
-    {{ s.ContentHTML | unsafe }}
+    <h2>{{ s.TitleHTML }}</h2>
+    {{ s.ContentHTML }}
   </section>
 {{ end }}
 ```
@@ -299,7 +299,7 @@ Any character other than a space counts as `done`, the way Obsidian shows such a
 {{ if list := note.PartialRenderer().FirstList(); list }}
   <ul class="tasks">
     {{ range i, item := list.Items }}
-      <li class="tasks__item tasks__item--{{ item.Task }}" data-mark="{{ item.TaskMark | html }}">{{ item.Text | html }}</li>
+      <li class="tasks__item tasks__item--{{ item.Task }}" data-mark="{{ item.TaskMark }}">{{ item.Text }}</li>
     {{ end }}
   </ul>
 {{ end }}
@@ -315,8 +315,8 @@ A gallery:
 <div class="gallery">
   {{ range i, img := note.PartialRenderer().Images() }}
     <figure>
-      <img src="{{ img.URL | html }}" alt="{{ img.Alt | html }}" loading="lazy">
-      {{ if img.Title }}<figcaption>{{ img.Title | html }}</figcaption>{{ end }}
+      <img src="{{ img.URL }}" alt="{{ img.Alt }}" loading="lazy">
+      {{ if img.Title }}<figcaption>{{ img.Title }}</figcaption>{{ end }}
     </figure>
   {{ end }}
 </div>
@@ -346,11 +346,11 @@ The template:
   {{ if d := parseJSON(b.Content); d }}
     <ul class="bars">
       {{ range j, label := d.labels }}
-        <li style="--value: {{ d.values[j] }}">{{ label | html }}</li>
+        <li style="--value: {{ d.values[j] }}">{{ label }}</li>
       {{ end }}
     </ul>
   {{ else }}
-    {{ b.HTML | unsafe }}
+    {{ b.HTML }}
   {{ end }}
 {{ end }}
 ```
@@ -376,14 +376,14 @@ A table from a ` ```csv ` block:
   {{ if rows := parseCSV(b[0].Content); rows }}
     <table>
       {{ range i, row := rows }}
-        <tr>{{ range j, cell := row }}<td>{{ cell | html }}</td>{{ end }}</tr>
+        <tr>{{ range j, cell := row }}<td>{{ cell }}</td>{{ end }}</tr>
       {{ end }}
     </table>
   {{ end }}
 {{ end }}
 ```
 
-Values from a note are the note author's text. Pass them through `| html` wherever they land in the page, as every example here does: layouts do not escape output on their own.
+Values from a note are the note author's text, and layouts escape them on output: a title such as `Q&A <draft>` reaches the page as text, not as tags. HTML the note renders to (`HTMLString()`, `TitleHTML`, `ContentHTML`, a code block's `HTML`) is printed as is.
 
 ### Organizing multiple templates
 
@@ -405,7 +405,7 @@ _layouts/
 {{ yield main_layout() content }}
   <article class="prose">
     <h1>{{ note.Title() }}</h1>
-    {{ note.HTMLString() | unsafe }}
+    {{ note.HTMLString() }}
   </article>
 {{ end }}
 ```
@@ -441,7 +441,7 @@ Templates use the [Jet](https://github.com/CloudyKit/jet) engine:
 {{ block name() }}...{{ end }}        — define a block
 {{ yield name() }}                    — call a block
 {{ include "path" data }}             — include a partial
-{{ value | unsafe }}                  — output HTML without escaping
+{{ value | unsafe }}                  — output a string without escaping
 {{ d := parseJSON(text) }}            — parse JSON, YAML or CSV into data
 ```
 
@@ -491,7 +491,7 @@ The condition can be any expression, not only the variable:
 {{ end }}
 
 {{ if faq := note.PartialRenderer().Section("FAQ"); faq }}
-  {{ faq.ContentHTML | unsafe }}
+  {{ faq.ContentHTML }}
 {{ end }}
 ```
 
@@ -499,9 +499,9 @@ Each `else if` can declare its own variable, and still sees the ones declared be
 
 ```jet
 {{ if header := nvs.ByPath("/blog/_header.md"); header }}
-  {{ header.HTMLString() | unsafe }}
+  {{ header.HTMLString() }}
 {{ else if fallback := nvs.ByPath("/_header.md"); fallback }}
-  {{ fallback.HTMLString() | unsafe }}
+  {{ fallback.HTMLString() }}
 {{ end }}
 ```
 

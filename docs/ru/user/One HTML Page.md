@@ -61,7 +61,7 @@ free: true
 Markdown-контент заметки целиком:
 
 ```jet
-{{ note.HTMLString() | unsafe }}
+{{ note.HTMLString() }}
 ```
 
 Разбивка markdown на секции через `note.PartialRenderer()`:
@@ -69,8 +69,8 @@ Markdown-контент заметки целиком:
 ```jet
 {{ range i, section := note.PartialRenderer().Sections(2) }}
   <section>
-    <h2>{{ section.TitleHTML | unsafe }}</h2>
-    {{ section.ContentHTML | unsafe }}
+    <h2>{{ section.TitleHTML }}</h2>
+    {{ section.ContentHTML }}
   </section>
 {{ end }}
 ```
@@ -125,7 +125,7 @@ _layouts/
 {{ yield main_layout() content }}
   <article>
     <h1>{{ note.Title() }}</h1>
-    {{ note.HTMLString() | unsafe }}
+    {{ note.HTMLString() }}
   </article>
 {{ end }}
 ```

@@ -64,7 +64,7 @@ _layouts/
 {{ yield main_layout() content }}
   <article class="prose">
     <h1>{{ note.Title() }}</h1>
-    {{ note.HTMLString() | unsafe }}
+    {{ note.HTMLString() }}
   </article>
 {{ end }}
 ```
@@ -77,14 +77,14 @@ _layouts/
 {{ yield main_layout() content }}
   <div class="hero">
     {{ intro := note.PartialRenderer().Introduce() }}
-    {{ intro.ContentHTML | unsafe }}
+    {{ intro.ContentHTML }}
   </div>
 
   <div class="features">
     {{ range b := note.PartialRenderer().Sections(2) }}
       <section>
-        <h2>{{ b.TitleHTML | unsafe }}</h2>
-        {{ b.ContentHTML | unsafe }}
+        <h2>{{ b.TitleHTML }}</h2>
+        {{ b.ContentHTML }}
       </section>
     {{ end }}
   </div>
@@ -236,8 +236,8 @@ title: "Sidebar"
 {{ if sidebar }}
   {{ range i, section := sidebar.PartialRenderer().Sections(3) }}
   <div>
-    <h3>{{ section.TitleHTML | unsafe }}</h3>
-    {{ section.ContentHTML | unsafe }}
+    <h3>{{ section.TitleHTML }}</h3>
+    {{ section.ContentHTML }}
   </div>
   {{ end }}
 {{ else }}

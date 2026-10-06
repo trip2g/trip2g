@@ -168,13 +168,13 @@ A custom Jet layout has full access to the note via `note.FormSpecJSON()` — em
 
 ```jet
 {{ block content() }}
-  <article>{{ note.HTMLString() | unsafe }}</article>
+  <article>{{ note.HTMLString() }}</article>
 
   <form id="my-form"></form>
   <div id="my-status"></div>
 
   <script id="form-spec" type="application/json">
-  {{ note.FormSpecJSON() | unsafe }}
+  {{ note.FormSpecJSON() }}
   </script>
   <script>
     const spec = JSON.parse(document.getElementById('form-spec').textContent);
