@@ -1,12 +1,12 @@
 ---
 free: true
 lang: en
-title: "A website from your Obsidian, and memory for your agents"
-description: "Write notes in Obsidian, hit Sync — the notes become a website. The hub answers your agent's questions across every connected base over MCP."
+title: "Agents write it. People read it in a browser"
+description: "A knowledge base for AI agents: what they learn and do becomes pages, dashboards and apps for your team and your customers right away. The editor is your Obsidian, the format is plain markdown."
 ---
 
-# A website from your *Obsidian*. And memory for your agents.
+# Agents write it. *People read it in a browser.*
 
-Write notes in Obsidian, hit Sync — the notes become a website. Add the hub's address to Claude Code or Cursor — your agent answers from your notes and cites the sources.
+A knowledge base for AI agents: what they learn and do becomes pages, dashboards and apps for your team and your customers right away. The editor is your Obsidian, the format is plain markdown.
 
 open source · MIT · one Go process on your own server
