@@ -60,6 +60,9 @@ type NoteAssetReplace struct {
 }
 
 type NoteViewSection struct {
+	// ID is the heading's anchor: the id the page HTML and TOC() use.
+	ID          string
+	Level       int
 	Title       string
 	TitleHTML   string
 	ContentHTML string
@@ -98,9 +101,33 @@ type NoteViewHeadingBlock = NoteViewSection
 
 // NoteViewListItem represents a single item in a markdown list.
 type NoteViewListItem struct {
-	Text     string
-	URL      string
+	Text string
+	URL  string
+	// Task is "" for a plain item, "todo" for "[ ]" and "done" for any other
+	// mark: Obsidian renders every non-space mark as a checked box.
+	Task string
+	// TaskMark is the raw character between the brackets ("x", "/", "-", ...),
+	// " " for an open task and "" for a plain item.
+	TaskMark string
 	Children []NoteViewListItem
+}
+
+// NoteViewImage is an image of the note: a markdown image or an Obsidian
+// embed, with the URL resolved the same way the page renders it.
+type NoteViewImage struct {
+	URL   string
+	Alt   string
+	Title string
+}
+
+// NoteViewCodeBlock is a fenced code block. Lang is the first word of the
+// info string, Info the whole string, Content the raw text and HTML the block
+// as the page renders it.
+type NoteViewCodeBlock struct {
+	Lang    string
+	Info    string
+	Content string
+	HTML    string
 }
 
 // NoteViewList represents a top-level markdown list with recursive items.
@@ -124,6 +151,10 @@ type NoteViewPartialRenderer interface {
 	Lists() []NoteViewList
 	// FirstImageURL returns the URL of the first image (top-level ast.Image or first paragraph).
 	FirstImageURL() string
+	// Images returns every image of the note in document order.
+	Images() []NoteViewImage
+	// CodeBlocks returns the fenced code blocks whose Lang equals lang, or all of them for "".
+	CodeBlocks(lang string) []NoteViewCodeBlock
 }
 
 // SearchMatchOrigin indicates how a search result was found.
@@ -848,22 +879,49 @@ func (n *NoteView) extractTOCDisplay() {
 
 var onlyCharsRE = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
-func (n *NoteView) generateHeadingID(headingText string) string {
-	id := rl2.Translit(headingText)
-	id = onlyCharsRE.ReplaceAllString(id, "_")
-	id = strings.ToLower(id)
+// generateHeadingID never returns an id in taken, so an id the author set
+// with {#id} wins and the generated one moves on to the next suffix.
+func (n *NoteView) generateHeadingID(headingText string, taken map[string]bool) string {
+	base := rl2.Translit(headingText)
+	base = onlyCharsRE.ReplaceAllString(base, "_")
+	base = strings.ToLower(base)
 
 	if n.HeadingCount == nil {
 		n.HeadingCount = make(map[string]int)
 	}
 
-	n.HeadingCount[id]++
+	for {
+		n.HeadingCount[base]++
 
-	if n.HeadingCount[id] > 1 {
-		id = fmt.Sprintf("%s-%d", id, n.HeadingCount[id])
+		id := base
+		if n.HeadingCount[base] > 1 {
+			id = fmt.Sprintf("%s-%d", base, n.HeadingCount[base])
+		}
+
+		if !taken[id] {
+			return id
+		}
 	}
+}
 
-	return id
+func headingIDsSetByAuthor(doc ast.Node) map[string]bool {
+	taken := make(map[string]bool)
+
+	_ = ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering || node.Kind() != ast.KindHeading {
+			return ast.WalkContinue, nil
+		}
+
+		if rawID, ok := node.AttributeString("id"); ok {
+			if id, isBytes := rawID.([]byte); isBytes {
+				taken[string(id)] = true
+			}
+		}
+
+		return ast.WalkContinue, nil
+	})
+
+	return taken
 }
 
 func (n *NoteView) extractHeadingsAndGenerateIDs() {
@@ -872,6 +930,8 @@ func (n *NoteView) extractHeadingsAndGenerateIDs() {
 	if n.ast == nil {
 		return
 	}
+
+	taken := headingIDsSetByAuthor(n.ast)
 
 	_ = ast.Walk(n.ast, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
@@ -883,11 +943,11 @@ func (n *NoteView) extractHeadingsAndGenerateIDs() {
 			if headingText != "" {
 				var id string
 
-				rawID, withID := node.AttributeString("id")
-				if withID {
-					id = string(rawID.([]byte)) //nolint:errcheck // type assertion is safe here
+				rawID, _ := node.AttributeString("id")
+				if authorID, isBytes := rawID.([]byte); isBytes {
+					id = string(authorID)
 				} else {
-					id = n.generateHeadingID(headingText)
+					id = n.generateHeadingID(headingText, taken)
 					node.SetAttributeString("id", []byte(id))
 				}
 

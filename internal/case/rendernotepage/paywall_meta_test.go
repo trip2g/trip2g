@@ -20,10 +20,12 @@ func (r leakPartialRenderer) Section(string) any                   { return nil 
 func (r leakPartialRenderer) Introduce() model.NoteViewSection {
 	return model.NoteViewSection{ContentHTML: "<p>" + r.intro + "</p>"}
 }
-func (r leakPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
-func (r leakPartialRenderer) FirstList() any                            { return nil }
-func (r leakPartialRenderer) Lists() []model.NoteViewList               { return nil }
-func (r leakPartialRenderer) FirstImageURL() string                     { return "" }
+func (r leakPartialRenderer) HeadingBlocks(int) []model.NoteViewSection   { return nil }
+func (r leakPartialRenderer) FirstList() any                              { return nil }
+func (r leakPartialRenderer) Lists() []model.NoteViewList                 { return nil }
+func (r leakPartialRenderer) FirstImageURL() string                       { return "" }
+func (r leakPartialRenderer) Images() []model.NoteViewImage               { return nil }
+func (r leakPartialRenderer) CodeBlocks(string) []model.NoteViewCodeBlock { return nil }
 
 const secretIntro = "SECRET-INTRO-MARKER the closed body starts right here"
 

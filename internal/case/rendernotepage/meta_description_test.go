@@ -13,13 +13,15 @@ type introPartialRenderer struct {
 	intro model.NoteViewSection
 }
 
-func (r introPartialRenderer) Sections(int) []model.NoteViewSection      { return nil }
-func (r introPartialRenderer) Section(string) any                        { return nil }
-func (r introPartialRenderer) Introduce() model.NoteViewSection          { return r.intro }
-func (r introPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
-func (r introPartialRenderer) FirstList() any                            { return nil }
-func (r introPartialRenderer) Lists() []model.NoteViewList               { return nil }
-func (r introPartialRenderer) FirstImageURL() string                     { return "" }
+func (r introPartialRenderer) Sections(int) []model.NoteViewSection        { return nil }
+func (r introPartialRenderer) Section(string) any                          { return nil }
+func (r introPartialRenderer) Introduce() model.NoteViewSection            { return r.intro }
+func (r introPartialRenderer) HeadingBlocks(int) []model.NoteViewSection   { return nil }
+func (r introPartialRenderer) FirstList() any                              { return nil }
+func (r introPartialRenderer) Lists() []model.NoteViewList                 { return nil }
+func (r introPartialRenderer) FirstImageURL() string                       { return "" }
+func (r introPartialRenderer) Images() []model.NoteViewImage               { return nil }
+func (r introPartialRenderer) CodeBlocks(string) []model.NoteViewCodeBlock { return nil }
 
 func TestDeriveMetaDescription(t *testing.T) {
 	t.Run("nil note", func(t *testing.T) {
