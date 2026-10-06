@@ -14,10 +14,10 @@ type introPartialRenderer struct {
 }
 
 func (r introPartialRenderer) Sections(int) []model.NoteViewSection      { return nil }
-func (r introPartialRenderer) Section(string) *model.NoteViewSection     { return nil }
+func (r introPartialRenderer) Section(string) any                        { return nil }
 func (r introPartialRenderer) Introduce() model.NoteViewSection          { return r.intro }
 func (r introPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
-func (r introPartialRenderer) FirstList() *model.NoteViewList            { return nil }
+func (r introPartialRenderer) FirstList() any                            { return nil }
 func (r introPartialRenderer) Lists() []model.NoteViewList               { return nil }
 func (r introPartialRenderer) FirstImageURL() string                     { return "" }
 
