@@ -23,6 +23,10 @@ Every page rendered with the default template has these optional sections:
 
 ### Functional notes: header, footer, and sidebars
 
+![[./img/default-template-layout.svg|The default template's page: _header.md on top, _left_sidebar.md on the left, the note itself in the middle, _right_sidebar.md on the right, _footer.md at the bottom; on a phone both sidebars become drawers|560]]
+
+Each region shows the first note found for it: one named in the page's frontmatter, then a matching glob section, then the auto-load note such as `_header.md`. Sidebars have no default widgets, and a sidebar with nothing found loses its column. Below 1024 px both sidebars become drawers opened from the header.
+
 The header, footer, and sidebars are ordinary markdown notes from your vault. You write them like any other note, and trip2g places them in the right position on each page.
 
 Trip2g resolves which note to show in each section in this order:
