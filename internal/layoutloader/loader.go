@@ -514,10 +514,9 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, pa
 		preambleApplied = true
 	}
 
-	// WithSafeWriter(nil) disables HTML auto-escaping. Layouts are trusted,
-	// admin-authored templates that embed pre-rendered note HTML and raw
-	// markup; auto-escaping would mangle that output.
-	views := jet.NewSet(jl, jet.DevelopmentMode(jl.devMode), jet.WithSafeWriter(nil))
+	// Output is HTML-escaped; values of type model.SafeHTML (rendered notes,
+	// sections, asset URLs) are written as is.
+	views := jet.NewSet(jl, jet.DevelopmentMode(jl.devMode))
 
 	sourceDir := filepath.Dir(source.Path)
 
@@ -535,10 +534,10 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, pa
 
 		asset, exists := source.Assets[key]
 		if exists {
-			return reflect.ValueOf(asset.URL)
+			return reflect.ValueOf(attrSafeURL(asset.URL))
 		}
 
-		return reflect.ValueOf(val)
+		return reflect.ValueOf(attrSafeURL(val))
 	})
 
 	// arg_type is a metadata directive for block parameters.
@@ -582,6 +581,7 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) (view *jet.Template, pa
 	})
 
 	addParseFuncs(views, jl.log)
+	addEscapeFuncs(views)
 
 	// yield_blocks is registered with a mutable slice pointer so the second pass
 	// can populate block names after all templates are parsed.

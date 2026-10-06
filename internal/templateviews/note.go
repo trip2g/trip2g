@@ -67,13 +67,13 @@ func (n *Note) HasH1() bool {
 // When domain context is set, returns domain-specific HTML if available.
 // domainHost is "" for main domain — DomainHTML[""] holds main-domain re-rendered
 // HTML where links to custom-domain-only notes use full URLs (https://foo.com/path).
-func (n *Note) HTMLString() string {
+func (n *Note) HTMLString() model.SafeHTML {
 	if n.nv.DomainHTML != nil {
 		if domainHTML, ok := n.nv.DomainHTML[n.domainHost]; ok {
-			return string(domainHTML)
+			return model.SafeHTML(domainHTML)
 		}
 	}
-	return string(n.nv.HTML)
+	return model.SafeHTML(n.nv.HTML)
 }
 
 // ContentString returns the raw markdown content.
@@ -350,8 +350,8 @@ func (n *Note) FirstImageURL() string {
 
 // FirstListHTML returns the outer HTML of the first <ul> element in rendered HTML.
 // Returns "" if no <ul> found.
-func (n *Note) FirstListHTML() string {
-	htmlStr := n.HTMLString()
+func (n *Note) FirstListHTML() model.SafeHTML {
+	htmlStr := n.HTMLString().String()
 	if htmlStr == "" {
 		return ""
 	}
@@ -370,7 +370,7 @@ func (n *Note) FirstListHTML() string {
 	if renderErr := html.Render(&buf, ul); renderErr != nil {
 		return ""
 	}
-	return buf.String()
+	return model.SafeHTML(buf.String())
 }
 
 // findFirstElement finds the first element with the given tag name in the HTML tree.
@@ -394,7 +394,7 @@ func findFirstElement(n *html.Node, tag string) *html.Node {
 // Returns "" if the note has neither `form:` nor `forms:` in frontmatter.
 // `form_ref:` is not resolved here — it requires a NVS context; layouts that
 // need it should keep the form spec inline on the rendered note.
-func (n *Note) FormSpecJSON() string {
+func (n *Note) FormSpecJSON() model.SafeHTML {
 	if n.nv == nil {
 		return ""
 	}
@@ -440,14 +440,14 @@ func (n *Note) FormSpecJSON() string {
 	if err := enc.Encode(payload); err != nil {
 		return ""
 	}
-	return strings.TrimRight(buf.String(), "\n")
+	return model.SafeHTML(strings.TrimRight(buf.String(), "\n"))
 }
 
 // SubgraphNamesJSON returns JSON of note's SubgraphNames for paywall widget.
-func (n *Note) SubgraphNamesJSON() string {
+func (n *Note) SubgraphNamesJSON() model.SafeHTML {
 	raw, err := json.Marshal(n.nv.SubgraphNames)
 	if err != nil {
 		return "null"
 	}
-	return string(raw)
+	return model.SafeHTML(raw)
 }

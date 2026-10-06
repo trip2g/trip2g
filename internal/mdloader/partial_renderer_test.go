@@ -234,7 +234,7 @@ func introduceHTML(t *testing.T, body string) string {
 	})
 	require.NoError(t, err)
 	require.Len(t, pages.List, 1)
-	return pages.List[0].PartialRenderer.Introduce().ContentHTML
+	return pages.List[0].PartialRenderer.Introduce().ContentHTML.String()
 }
 
 func TestIntroduceCutsAtThematicBreak(t *testing.T) {
