@@ -529,7 +529,10 @@ A note with `layout: article` renders like this:
 - `extends` must be the first tag of the page, before any `{{ import }}`. The path is relative to `_layouts/`, without `.html`.
 - A note can use `layout: base` too, and gets all the defaults.
 
-**Give every slot a default.** Mark a slot in the base with `{{ block main() }}…{{ end }}`, not with a bare `{{ yield main() }}`. A base that yields a block only the pages define doesn't load in trip2g today, and the pages that extend it then fail with `template /base could not be found`.
+**Two ways to mark a slot.** Both work in the base:
+
+- `{{ block main() }}…{{ end }}` holds default content. A page that doesn't define `main` gets the default, and a note can use `layout: base` directly. Use it for slots a page may leave alone, such as `title` and `footer` above.
+- A bare `{{ yield main() }}` has no default: every page that extends the base must define `main`. A note with `layout: base` then fails with `unresolved block "main"`. Use it for a slot no page can do without.
 
 **Components.** The page that extends a base gets auto-import, so the button above needs no `{{ import }}`. The base doesn't: auto-import reaches only the layout the note names. When the base itself yields a component, the base imports it at the top:
 

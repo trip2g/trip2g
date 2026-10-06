@@ -397,7 +397,7 @@ func (jl *jetLoader) wireYieldBlocksForPreview(sourceID string, view *jet.Templa
 		return
 	}
 
-	registry, _ := buildBlockRegistry(views, jl.sourceIDs, sourceID)
+	registry, _ := buildBlockRegistry(views, jl.templates, jl.sourceIDs, sourceID)
 	_, inlinedBlockNames, _ := resolveNeededFiles(views, view, registry)
 	*blockNamesPtr = inlinedBlockNames
 }
@@ -422,7 +422,7 @@ func (jl *jetLoader) wireYieldBlocks(sourceFiles []model.LayoutSourceFile) {
 		}
 
 		// Build registry of blocks from all component files (excluding this page).
-		registry, regWarnings := buildBlockRegistry(views, jl.sourceIDs, source.ID)
+		registry, regWarnings := buildBlockRegistry(views, jl.templates, jl.sourceIDs, source.ID)
 
 		// Resolve which block names are reachable from this page via yield deps.
 		_, inlinedBlockNames, resolveWarnings := resolveNeededFiles(views, layout.View, registry)
