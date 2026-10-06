@@ -40,6 +40,12 @@ var _ rendernotepage.Env = &EnvMock{}
 //			ConfigEpochFunc: func() uint64 {
 //				panic("mock out the ConfigEpoch method")
 //			},
+//			EditorJSURLFunc: func() string {
+//				panic("mock out the EditorJSURL method")
+//			},
+//			EditorLocaleHashesFunc: func() map[string]string {
+//				panic("mock out the EditorLocaleHashes method")
+//			},
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
 //			},
@@ -139,6 +145,12 @@ type EnvMock struct {
 
 	// ConfigEpochFunc mocks the ConfigEpoch method.
 	ConfigEpochFunc func() uint64
+
+	// EditorJSURLFunc mocks the EditorJSURL method.
+	EditorJSURLFunc func() string
+
+	// EditorLocaleHashesFunc mocks the EditorLocaleHashes method.
+	EditorLocaleHashesFunc func() map[string]string
 
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
@@ -244,6 +256,12 @@ type EnvMock struct {
 		}
 		// ConfigEpoch holds details about calls to the ConfigEpoch method.
 		ConfigEpoch []struct {
+		}
+		// EditorJSURL holds details about calls to the EditorJSURL method.
+		EditorJSURL []struct {
+		}
+		// EditorLocaleHashes holds details about calls to the EditorLocaleHashes method.
+		EditorLocaleHashes []struct {
 		}
 		// Features holds details about calls to the Features method.
 		Features []struct {
@@ -381,6 +399,8 @@ type EnvMock struct {
 	lockCachedPage                          sync.RWMutex
 	lockCanReadNote                         sync.RWMutex
 	lockConfigEpoch                         sync.RWMutex
+	lockEditorJSURL                         sync.RWMutex
+	lockEditorLocaleHashes                  sync.RWMutex
 	lockFeatures                            sync.RWMutex
 	lockGetTelegramChatName                 sync.RWMutex
 	lockGetTelegramPostLinksByNoteVersionID sync.RWMutex
@@ -565,6 +585,60 @@ func (mock *EnvMock) ConfigEpochCalls() []struct {
 	mock.lockConfigEpoch.RLock()
 	calls = mock.calls.ConfigEpoch
 	mock.lockConfigEpoch.RUnlock()
+	return calls
+}
+
+// EditorJSURL calls EditorJSURLFunc.
+func (mock *EnvMock) EditorJSURL() string {
+	if mock.EditorJSURLFunc == nil {
+		panic("EnvMock.EditorJSURLFunc: method is nil but Env.EditorJSURL was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockEditorJSURL.Lock()
+	mock.calls.EditorJSURL = append(mock.calls.EditorJSURL, callInfo)
+	mock.lockEditorJSURL.Unlock()
+	return mock.EditorJSURLFunc()
+}
+
+// EditorJSURLCalls gets all the calls that were made to EditorJSURL.
+// Check the length with:
+//
+//	len(mockedEnv.EditorJSURLCalls())
+func (mock *EnvMock) EditorJSURLCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockEditorJSURL.RLock()
+	calls = mock.calls.EditorJSURL
+	mock.lockEditorJSURL.RUnlock()
+	return calls
+}
+
+// EditorLocaleHashes calls EditorLocaleHashesFunc.
+func (mock *EnvMock) EditorLocaleHashes() map[string]string {
+	if mock.EditorLocaleHashesFunc == nil {
+		panic("EnvMock.EditorLocaleHashesFunc: method is nil but Env.EditorLocaleHashes was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockEditorLocaleHashes.Lock()
+	mock.calls.EditorLocaleHashes = append(mock.calls.EditorLocaleHashes, callInfo)
+	mock.lockEditorLocaleHashes.Unlock()
+	return mock.EditorLocaleHashesFunc()
+}
+
+// EditorLocaleHashesCalls gets all the calls that were made to EditorLocaleHashes.
+// Check the length with:
+//
+//	len(mockedEnv.EditorLocaleHashesCalls())
+func (mock *EnvMock) EditorLocaleHashesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockEditorLocaleHashes.RLock()
+	calls = mock.calls.EditorLocaleHashes
+	mock.lockEditorLocaleHashes.RUnlock()
 	return calls
 }
 

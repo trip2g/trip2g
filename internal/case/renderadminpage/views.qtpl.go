@@ -37,41 +37,66 @@ func StreamPage(qw422016 *qt422016.Writer, resp *Response) {
 
   <title>Admin</title>
 
+  <script>
+  window.__trip2g_settings = {
+    editor_js_url: `)
+//line views.qtpl:21
+	qw422016.N().Q(resp.EditorJSURL)
+//line views.qtpl:21
+	qw422016.N().S(`,
+    editor_locale_hashes: {`)
+//line views.qtpl:22
+	for l, h := range resp.EditorLocaleHashes {
+//line views.qtpl:22
+		qw422016.N().Q(l)
+//line views.qtpl:22
+		qw422016.N().S(`:`)
+//line views.qtpl:22
+		qw422016.N().Q(h)
+//line views.qtpl:22
+		qw422016.N().S(`,`)
+//line views.qtpl:22
+	}
+//line views.qtpl:22
+	qw422016.N().S(`},
+  }
+  </script>
+
   <body mol_view_root>
     <div mol_view_root="$trip2g_admin"></div>
     <script src="`)
-//line views.qtpl:21
+//line views.qtpl:28
 	qw422016.N().S(resp.JSURL)
-//line views.qtpl:21
+//line views.qtpl:28
 	qw422016.N().S(`"></script>
   </body
 </html>
 `)
-//line views.qtpl:24
+//line views.qtpl:31
 }
 
-//line views.qtpl:24
+//line views.qtpl:31
 func WritePage(qq422016 qtio422016.Writer, resp *Response) {
-//line views.qtpl:24
+//line views.qtpl:31
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.qtpl:24
+//line views.qtpl:31
 	StreamPage(qw422016, resp)
-//line views.qtpl:24
+//line views.qtpl:31
 	qt422016.ReleaseWriter(qw422016)
-//line views.qtpl:24
+//line views.qtpl:31
 }
 
-//line views.qtpl:24
+//line views.qtpl:31
 func Page(resp *Response) string {
-//line views.qtpl:24
+//line views.qtpl:31
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.qtpl:24
+//line views.qtpl:31
 	WritePage(qb422016, resp)
-//line views.qtpl:24
+//line views.qtpl:31
 	qs422016 := string(qb422016.B)
-//line views.qtpl:24
+//line views.qtpl:31
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.qtpl:24
+//line views.qtpl:31
 	return qs422016
-//line views.qtpl:24
+//line views.qtpl:31
 }

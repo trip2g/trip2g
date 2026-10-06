@@ -14,6 +14,8 @@ namespace $.$$ {
 		note_path: '',
 		note_path_id: 0,
 		note_version_id: '',
+		editor_js_url: '',
+		editor_locale_hashes: {} as Record<string, string>,
 		// @ts-ignore
 		...(typeof window !== 'undefined' ? window.__trip2g_settings : {}),
 	}
@@ -54,6 +56,14 @@ namespace $.$$ {
 
 		static note_version_id() {
 			return settings.note_version_id
+		}
+
+		static editor_js_url(): string {
+			return settings.editor_js_url
+		}
+
+		static editor_locale_hashes(): Record<string, string> {
+			return settings.editor_locale_hashes
 		}
 
 		static set_lang(lang: string) {

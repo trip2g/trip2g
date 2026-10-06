@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io/fs"
+	"path"
+	"strings"
 	"testing"
 	"trip2g/assets"
 	"trip2g/internal/appconfig"
@@ -120,4 +122,41 @@ func TestAssetsHandlerCacheHeaders(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEditorBundleURLs(t *testing.T) {
+	t.Chdir("../..")
+
+	a := &app{
+		appState: &appState{
+			config: &appconfig.Config{},
+			log:    &logger.TestLogger{},
+		},
+	}
+	a.setupAssets()
+
+	hashOf := func(p string) string {
+		content, err := fs.ReadFile(assets.FS, p)
+		if err != nil {
+			return ""
+		}
+		sum := sha256.Sum256(content)
+		return hex.EncodeToString(sum[:])[:8]
+	}
+
+	// Bundles are build artifacts: CI's dev-tag run has none, the embed build has all.
+	wantURL := "/assets/ui/editor/pane/-/web.js"
+	if h := hashOf("ui/editor/pane/-/web.js"); h != "" {
+		wantURL += "?h=" + h
+	}
+	require.Equal(t, wantURL, a.EditorJSURL())
+
+	matches, err := fs.Glob(assets.FS, "ui/editor/pane/-/web.locale=*.json")
+	require.NoError(t, err)
+	want := map[string]string{}
+	for _, m := range matches {
+		lang := strings.TrimSuffix(strings.TrimPrefix(path.Base(m), "web.locale="), ".json")
+		want[lang] = hashOf(m)
+	}
+	require.Equal(t, want, a.EditorLocaleHashes())
 }

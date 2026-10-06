@@ -21,6 +21,8 @@ const langCookieName = "trip2g_lang"
 type Env interface {
 	UserJSURLs() []string
 	UserLocaleHashes() map[string]string
+	EditorJSURL() string
+	EditorLocaleHashes() map[string]string
 	UserCSSURLs() []string
 	IsDevMode() bool
 	ActiveHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
@@ -70,14 +72,16 @@ func writeServerErrorChrome(ctx *fasthttp.RequestCtx, env Env, params ServerErro
 
 	uiLang := uiLangFromCtx(ctx)
 	dtCtx := &Ctx{
-		Title:           T(uiLang, "system_error_title"),
-		JSURLs:          env.UserJSURLs(),
-		LocaleHashes:    env.UserLocaleHashes(),
-		CSSURLs:         env.UserCSSURLs(),
-		DevMode:         devModeString(env.IsDevMode()),
-		HTMLInjections:  injections,
-		UILang:          uiLang,
-		ServerErrorMode: true,
+		Title:              T(uiLang, "system_error_title"),
+		JSURLs:             env.UserJSURLs(),
+		LocaleHashes:       env.UserLocaleHashes(),
+		EditorJSURL:        env.EditorJSURL(),
+		EditorLocaleHashes: env.EditorLocaleHashes(),
+		CSSURLs:            env.UserCSSURLs(),
+		DevMode:            devModeString(env.IsDevMode()),
+		HTMLInjections:     injections,
+		UILang:             uiLang,
+		ServerErrorMode:    true,
 	}
 	if params.Admin {
 		dtCtx.ServerErrorDetail = params.Detail

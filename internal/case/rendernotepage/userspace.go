@@ -22,17 +22,19 @@ import (
 // This lets a layout safely call {{ defaultTemplate.UserSpaceScripts() }}
 // once in <head> without duplicating the inline settings object.
 type userSpaceHelper struct {
-	jsURLs          []string
-	cssURLs         []string
-	localeHashes    map[string]string
-	uiLang          string
-	devMode         bool
-	isAdmin         bool
-	title           string
-	note            *templateviews.Note
-	nvs             *templateviews.NVS
-	layoutSections  []model.LayoutSectionEntry
-	settingsEmitted bool
+	jsURLs             []string
+	cssURLs            []string
+	localeHashes       map[string]string
+	editorJSURL        string
+	editorLocaleHashes map[string]string
+	uiLang             string
+	devMode            bool
+	isAdmin            bool
+	title              string
+	note               *templateviews.Note
+	nvs                *templateviews.NVS
+	layoutSections     []model.LayoutSectionEntry
+	settingsEmitted    bool
 }
 
 // newUserSpaceHelper constructs the helper from pre-extracted data values.
@@ -102,6 +104,18 @@ func (h *userSpaceHelper) scripts() model.SafeHTML {
 		sb.WriteString(",\n")
 		sb.WriteString("  locale_hashes: ")
 		sb.Write(localeHashesJSON)
+
+		if h.editorJSURL != "" {
+			editorJSURLJSON, _ := json.Marshal(h.editorJSURL)
+			editorLocaleHashesJSON, _ := json.Marshal(h.editorLocaleHashes)
+
+			sb.WriteString(",\n")
+			sb.WriteString("  editor_js_url: ")
+			sb.Write(editorJSURLJSON)
+			sb.WriteString(",\n")
+			sb.WriteString("  editor_locale_hashes: ")
+			sb.Write(editorLocaleHashesJSON)
+		}
 
 		if h.note != nil {
 			noteLangJSON, _ := json.Marshal(h.note.Lang())
@@ -221,6 +235,8 @@ func buildUserSpaceHelper(
 
 	h := newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.UserToken.IsAdmin(), resp.Title, resp.NoteView)
 	h.cssURLs = cssURLs
+	h.editorJSURL = env.EditorJSURL()
+	h.editorLocaleHashes = env.EditorLocaleHashes()
 	h.nvs = templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost)
 	if resp.Notes != nil {
 		h.layoutSections = resp.Notes.LayoutSections

@@ -47,6 +47,7 @@ jobs:
           tar czf frontend-assets.tar.gz \
             assets/ui/admin/-/web.js assets/ui/admin/-/web.locale* \
             assets/ui/user/-/web.js  assets/ui/user/-/web.locale* \
+            assets/ui/editor/pane/-/web.js assets/ui/editor/pane/-/web.locale* \
             assets/ui/forms/-/web.js assets/ui/forms/-/web.locale*
 
       - name: Upload bundles artifact

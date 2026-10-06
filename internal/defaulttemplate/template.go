@@ -62,9 +62,12 @@ type Ctx struct {
 	Title        string
 	JSURLs       []string
 	LocaleHashes map[string]string // lang -> content hash for web.locale=<lang>.json cache-busting
-	CSSURLs      []string
-	InlineCSS    string
-	DevMode      string
+
+	EditorJSURL        string
+	EditorLocaleHashes map[string]string
+	CSSURLs            []string
+	InlineCSS          string
+	DevMode            string
 
 	MetaDescription *string
 	MetaRobots      string

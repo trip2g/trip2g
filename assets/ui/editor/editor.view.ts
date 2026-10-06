@@ -1,11 +1,8 @@
 namespace $.$$ {
-	// Capture this bundle's own URL at module-load time (currentScript is the
-	// executing <script>). mol removes the <script> from the DOM after render,
-	// so this can't be read later. Works in both the served app and the dev page.
-	const bundle_url = (() => {
-		const cs = $mol_dom_context.document.currentScript as HTMLScriptElement | null
-		return cs?.src ?? ''
-	})()
+	// Split so the mam builder, which scans string literals for $-names, doesn't
+	// pull the pane into the bundle hosting this button; the frame loads it from
+	// the separate editor bundle.
+	const pane_root = '$' + 'trip2g_editor_pane'
 
 	export class $trip2g_editor extends $.$trip2g_editor {
 		@$mol_mem
@@ -36,12 +33,15 @@ namespace $.$$ {
 				note_path: this.initial_path(),
 				note_path_id: $trip2g_settings.note_path_id(),
 				note_version_id: $trip2g_settings.note_version_id(),
+				locale_hashes: $trip2g_settings.editor_locale_hashes(),
 			}
-			const scripts = bundle_url ? `<script src="${bundle_url}" defer></script>` : ''
+			const js_url = $trip2g_settings.editor_js_url()
+			const scripts = js_url ? `<script src="${js_url}" defer></script>` : ''
 			return (
 				'<!doctype html><html><head><meta charset="utf-8">' +
 				`<script>window.__trip2g_settings=${JSON.stringify(inner)}</script>` +
-				'</head><body style="margin:0;height:100vh"><div mol_view_root="$trip2g_editor_pane" style="height:100vh"></div>' +
+				'</head><body style="margin:0;height:100vh">' +
+				`<div mol_view_root="${pane_root}" style="height:100vh"></div>` +
 				scripts +
 				'</body></html>'
 			)
