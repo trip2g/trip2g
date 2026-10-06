@@ -95,7 +95,7 @@ func TestUserSpaceHelper_Idempotent(t *testing.T) {
 	require.Contains(t, second, `<script src="/assets/bundle.js" defer></script>`)
 
 	// Combined output: settings appears exactly once.
-	combined := first + second
+	combined := (first + second).String()
 	count := strings.Count(combined, "window.__trip2g_settings")
 	require.Equal(t, 1, count, "settings block must appear exactly once across two calls")
 }
@@ -293,13 +293,15 @@ func TestJetBinding_IsAdmin_False(t *testing.T) {
 // render its chrome wrapper without a full markdown pipeline in tests.
 type stubPartialRenderer struct{}
 
-func (stubPartialRenderer) Sections(int) []model.NoteViewSection      { return nil }
-func (stubPartialRenderer) Section(string) *model.NoteViewSection     { return nil }
-func (stubPartialRenderer) Introduce() model.NoteViewSection          { return model.NoteViewSection{} }
-func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection { return nil }
-func (stubPartialRenderer) FirstList() *model.NoteViewList            { return nil }
-func (stubPartialRenderer) Lists() []model.NoteViewList               { return nil }
-func (stubPartialRenderer) FirstImageURL() string                     { return "" }
+func (stubPartialRenderer) Sections(int) []model.NoteViewSection        { return nil }
+func (stubPartialRenderer) Section(string) any                          { return nil }
+func (stubPartialRenderer) Introduce() model.NoteViewSection            { return model.NoteViewSection{} }
+func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection   { return nil }
+func (stubPartialRenderer) FirstList() any                              { return nil }
+func (stubPartialRenderer) Lists() []model.NoteViewList                 { return nil }
+func (stubPartialRenderer) FirstImageURL() string                       { return "" }
+func (stubPartialRenderer) Images() []model.NoteViewImage               { return nil }
+func (stubPartialRenderer) CodeBlocks(string) []model.NoteViewCodeBlock { return nil }
 
 // chromeHelper builds a userSpaceHelper whose Notes resolve _header/_footer so
 // that Header()/Footer()/Styles() produce the standard chrome HTML.
@@ -315,7 +317,7 @@ func chromeHelper() *userSpaceHelper {
 	}
 	tv := templateviews.NewNVS(nvs, "live")
 
-	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", tv.ByPath("blog/post1.md"))
+	h := newUserSpaceHelper(nil, nil, "en", false, false, "Title", tv.NoteByPath("blog/post1.md"))
 	h.nvs = tv
 	h.cssURLs = []string{"/assets/defaulttemplate.css?h=abc123"}
 	return h

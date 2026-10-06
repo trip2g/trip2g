@@ -101,6 +101,9 @@ _layouts/
 | `button.html` | `button` | `button` |
 | `components/button.html` | `components_button` | `components-button` |
 | `ui/nav/header.html` | `ui_nav_header` | `ui-nav-header` |
+| `my-theme/components/button.html` | `my_theme_components_button` | `my-theme-components-button` |
+
+В имени блока Jet допустимы только буквы, цифры и `_`, поэтому любой другой символ пути (`-`, `.`, пробел) в `@lid` становится `_`, а имя, которое началось бы с цифры, получает `_` в начале (`2col/card.html` → `_2col_card`). `@did` эти символы сохраняет, только `/` становится `-`. Префиксы для `yield_blocks` пишутся в форме `@lid`: `yield_blocks("_style_my_theme_")`.
 
 `@lid` и `@did` — **переменные препроцессора**: загрузчик подставляет их до того, как Jet разбирает шаблон. `@lid` (**l**odash **id** — подчёркивания) используется в именах блоков Jet. `@did` (**d**ash **id** — дефисы) используется в BEM CSS-классах. Оба значения берутся из пути к файлу, а не из имени блока. Для вставки литерального `@lid` / `@did` в JS или CSS используйте `@@lid` / `@@did`.
 

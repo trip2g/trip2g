@@ -52,7 +52,7 @@ model.NoteView, model.NoteViews
   <time>{{ note.CreatedAt().Format("02.01.2006") }}</time>
   <span>{{ note.ReadingTime() }} мин</span>
 
-  {{ note.HTMLString() | unsafe }}
+  {{ note.HTMLString() }}
 </article>
 ```
 
@@ -92,7 +92,7 @@ model.NoteView, model.NoteViews
 {* Загрузить заметку по пути *}
 {{ sidebar := nvs.ByPath("/docs/_sidebar.md") }}
 {{ if sidebar }}
-  {{ sidebar.HTMLString() | unsafe }}
+  {{ sidebar.HTMLString() }}
 {{ end }}
 
 {* Загрузить по URL *}
@@ -263,20 +263,20 @@ type Section struct {
 ```jet
 {* Вступление *}
 {{ intro := note.PartialRenderer().Introduce() }}
-<div class="lead">{{ intro.ContentHTML | unsafe }}</div>
+<div class="lead">{{ intro.ContentHTML }}</div>
 
 {* FAQ из H3 *}
 {{ range i, q := note.PartialRenderer().Sections(3) }}
   <details>
-    <summary>{{ q.TitleHTML | unsafe }}</summary>
-    <div>{{ q.ContentHTML | unsafe }}</div>
+    <summary>{{ q.TitleHTML }}</summary>
+    <div>{{ q.ContentHTML }}</div>
   </details>
 {{ end }}
 
 {* Конкретная секция *}
 {{ faq := note.PartialRenderer().Section("FAQ") }}
 {{ if faq }}
-  {{ faq.ContentHTML | unsafe }}
+  {{ faq.ContentHTML }}
 {{ end }}
 ```
 
@@ -360,9 +360,11 @@ type Section struct {
 ### Фильтры
 
 ```jet
-{{ value | unsafe }}          {* Вывод HTML без экранирования *}
-{{ value | html }}            {* Экранирование (по умолчанию) *}
+{{ value }}                   {* Экранируется по умолчанию *}
+{{ value | unsafe }}          {* Вывод строки без экранирования *}
 ```
+
+Вывод экранируется. Методы, которые возвращают готовый HTML (`HTMLString()`, `TitleHTML`, `ContentHTML`, `FirstListHTML()`, `FormSpecJSON()`, `asset()`), имеют тип `model.SafeHTML` и выводятся как есть. `| html` экранирует один раз и тоже возвращает `SafeHTML`, поэтому старые шаблоны с `| html` не экранируют дважды.
 
 ---
 

@@ -12,6 +12,10 @@ import (
 // surrounding blank lines). Jet requires imports at the start of the template.
 var leadingImportRegexp = regexp.MustCompile(`^\s*{{\s*import\s+"[^"]*"\s*}}\s*`)
 
+// leadingClauseRegexp matches a leading `{{ extends "..." }}` or `{{ import "..." }}`.
+// Jet requires both at the start of the template, extends before imports.
+var leadingClauseRegexp = regexp.MustCompile(`^\s*{{\s*(?:extends|import)\s+"[^"]*"\s*}}\s*`)
+
 // importPathRegexp matches any `{{ import "path" }}` in a template, not just leading ones.
 var importPathRegexp = regexp.MustCompile(`{{\s*import\s+"([^"]+)"\s*}}`)
 
@@ -25,13 +29,13 @@ func extractImportPaths(content string) []string {
 	return paths
 }
 
-// injectAfterLeadingImports returns content with preamble inserted after any
-// leading {{ import "..." }} statements. If there are no leading imports, the
-// preamble is prepended to the content.
-func injectAfterLeadingImports(content, preamble string) string {
+// injectAfterLeadingClauses returns content with preamble inserted after any
+// leading {{ extends "..." }} and {{ import "..." }} statements. If there are
+// none, the preamble is prepended to the content.
+func injectAfterLeadingClauses(content, preamble string) string {
 	cut := 0
 	for {
-		loc := leadingImportRegexp.FindStringIndex(content[cut:])
+		loc := leadingClauseRegexp.FindStringIndex(content[cut:])
 		if loc == nil {
 			break
 		}

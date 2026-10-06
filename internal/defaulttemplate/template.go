@@ -156,7 +156,7 @@ func (ctx *Ctx) AllTelegramLinks() []model.TelegramPostLink {
 			continue
 		}
 
-		resolved := ctx.Notes.ByWikilink(target)
+		resolved := ctx.Notes.NoteByWikilink(target)
 		if resolved == nil {
 			continue
 		}
@@ -181,7 +181,7 @@ func (ctx *Ctx) noteExists(name string) bool {
 		return false
 	}
 	permalink := "/" + strings.ToLower(strings.ReplaceAll(name, " ", "_"))
-	return ctx.Notes.ByPermalink(permalink) != nil
+	return ctx.Notes.NoteByPermalink(permalink) != nil
 }
 
 // RSSFeeds returns one RSSFeedLink per note whose content_type declares it as
@@ -269,7 +269,7 @@ func (ctx *Ctx) SidebarWidgets(position string) []WidgetRef {
 
 func (ctx *Ctx) sidebarWidgetsFromLayout(key, defaultName string) []WidgetRef {
 	if match := ctx.resolveLayoutSection(key); match != nil {
-		if sectionNote := ctx.Notes.ByPath(match.NotePath); sectionNote != nil {
+		if sectionNote := ctx.Notes.NoteByPath(match.NotePath); sectionNote != nil {
 			if widgets := parseGlobSectionWidgets(sectionNote.M().Get("content"), match.NotePath); len(widgets) > 0 {
 				return widgets
 			}
@@ -502,9 +502,9 @@ func (ctx *Ctx) FormSpecJSON() []byte {
 		var ref *templateviews.Note
 		switch kind {
 		case "wikilink":
-			ref = ctx.Notes.ByPermalink(value)
+			ref = ctx.Notes.NoteByPermalink(value)
 		case "path":
-			ref = ctx.Notes.ByPath(value)
+			ref = ctx.Notes.NoteByPath(value)
 		}
 		if ref == nil {
 			return nil
@@ -582,9 +582,9 @@ func (ctx *Ctx) resolveNoteRef(ref ContentRef) *templateviews.Note {
 	}
 	switch ref.Kind {
 	case ContentRefWikiLink:
-		return ctx.Notes.ByPermalink("/" + strings.ToLower(strings.ReplaceAll(ref.Value, " ", "_")))
+		return ctx.Notes.NoteByPermalink("/" + strings.ToLower(strings.ReplaceAll(ref.Value, " ", "_")))
 	case ContentRefFile:
-		return ctx.Notes.ByPath(ref.Value)
+		return ctx.Notes.NoteByPath(ref.Value)
 	case ContentRefSelfContent, ContentRefMagazine, ContentRefNone, ContentRefSimilar, ContentRefInLinks, ContentRefOutLinks, ContentRefTOC:
 		return nil
 	}

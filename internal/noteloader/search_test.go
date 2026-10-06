@@ -3,6 +3,7 @@ package noteloader
 import (
 	"testing"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
@@ -182,4 +183,16 @@ func hasURL(res []model.SearchResult, url string) bool {
 		}
 	}
 	return false
+}
+
+func TestExtractTextDropsHeadingAttributes(t *testing.T) {
+	src := []byte("## Setup {#install .wide}\n\nbody\n")
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{Path: "note.md", Content: src}},
+		Log:     &logger.TestLogger{},
+	})
+	require.NoError(t, err)
+
+	note := pages.PathMap["note.md"]
+	require.Equal(t, "Setup\nbody", extractText(note.Ast(), note.Content))
 }

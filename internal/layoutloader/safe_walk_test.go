@@ -53,3 +53,24 @@ func TestSafeWalk_NilYieldParams(t *testing.T) {
 		safeWalk(view, &paramAccessVisitor{})
 	}, "safeWalk must initialise Parameters so the visitor never sees nil")
 }
+
+func TestSafeWalk_DescendsIntoTryCatchReturn(t *testing.T) {
+	loader := jet.NewInMemLoader()
+	loader.Set("/layout",
+		`{{ range _, x := items }}{{ x }}{{ end }}`+
+			`{{ try }}{{ asset("try.css") }}{{ catch err }}{{ asset("catch.css") }}{{ end }}`+
+			`{{ return asset("return.css") }}`)
+
+	set := jet.NewSet(loader, jet.DevelopmentMode(true))
+	set.AddGlobal("asset", func(s string) string { return s })
+	view, err := set.GetTemplate("/layout")
+	require.NoError(t, err)
+
+	require.Panics(t, func() {
+		utils.Walk(view, &paramAccessVisitor{})
+	}, "if this stops panicking, Jet's walker learned these nodes upstream")
+
+	finder := assetFinder{}
+	safeWalk(view, &finder)
+	require.Equal(t, []string{"try.css", "catch.css", "return.css"}, finder.List)
+}
