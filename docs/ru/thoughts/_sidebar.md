@@ -50,3 +50,4 @@ title: "Навигация"
 - [[ru/thoughts/krisp-segmentation-nano-vs-mini|Проси точку поворота, а не интервал]]
 - [[ru/thoughts/ingest-as-a-note|Задание приезжает заметкой]]
 - [[ru/thoughts/alerts-in-a-knowledge-base|Алертам место в базе знаний]]
+- [[ru/thoughts/template-engine-hidden-work|Сколько работы прячет шаблонизатор]]
