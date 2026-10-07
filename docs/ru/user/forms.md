@@ -33,7 +33,7 @@ form:
 </script>
 ```
 
-Дефолтный шаблон автоматически рисует форму в конце страницы. Кастомный layout читает тот же JSON и собирает свой вёрстку — см. [Кастомный layout](#kastomnyy_layout) ниже.
+Дефолтный шаблон только встраивает этот JSON: полей формы и капчи он не рисует. Чтобы показать форму, нужен layout, который читает JSON и собирает форму: готовый [form_template](https://github.com/trip2g/form_template) или свой — см. [Кастомный layout](#kastomnyij_layout) ниже.
 
 ### Типы полей
 
@@ -66,7 +66,7 @@ form:
 { "__typename": "FormSubmitDeniedPayload", "reason": "admin_required" }
 ```
 
-Дефолтный layout показывает подсказку «войдите как админ». Кастомный layout может ветвиться по `reason` и предлагать свой UX.
+Что показать, решает layout, который рисует форму: он может ветвиться по `reason` — например, подсказать админу кнопку входа.
 
 ### Редирект после успеха — `success_url`
 
@@ -89,7 +89,7 @@ form:
 Как это работает:
 
 - Если токена нет или он не прошёл — сервер возвращает `TurnstileRequiredPayload { siteKey }`.
-- Стандартный layout читает `siteKey`, рисует виджет Turnstile и пересабмитит с заполненным `turnstileToken`.
+- Layout, который рисует форму, читает `siteKey`, рисует виджет Turnstile и пересабмитит с заполненным `turnstileToken`. Дефолтный шаблон этого не делает, [form_template](https://github.com/trip2g/form_template) — делает. Какой ответ обработать — в разделе [Сабмит через GraphQL](#sabmit_cherez_graphql).
 - Локально (без `turnstile-secret-key`) проверка отключена — любой сабмит проходит. В проде ключ задан и капча гейтит каждый сабмит.
 
 Сочетайте с `can_submit: admin` для чувствительных форм; на публичных формах капча — единственная защита от анонимного спама.
@@ -166,7 +166,13 @@ form_ref: templates/comment_form.md
 {{ end }}
 ```
 
-Готовый пример лежит в `docs/_layouts/forms/example.html` — с рендером полей, сообщениями об ошибках и редиректом по `success_url`. Можно взять за основу.
+**Готовый layout.** [form_template](https://github.com/trip2g/form_template) рисует форму заметки как опрос: подписи и подсказки из frontmatter, варианты ответа и шкалы, ошибки рядом с вопросом, Turnstile и экран «спасибо». Установите его в корень vault и поставьте заметке `layout: form`:
+
+```bash
+mkdir -p _layouts && curl -fsSL -o _layouts/form.html https://raw.githubusercontent.com/trip2g/form_template/main/form.html
+```
+
+Ещё один рабочий пример лежит в `docs/_layouts/forms/example.html` — с рендером полей, сообщениями об ошибках и редиректом по `success_url`. Можно взять за основу.
 
 ### Сабмит через GraphQL
 
@@ -178,6 +184,7 @@ mutation Submit($input: SubmitFormInput!) {
     __typename
     ... on SubmitFormPayload          { submitId }
     ... on FormSubmitDeniedPayload    { reason }
+    ... on TurnstileRequiredPayload   { siteKey }
     ... on ErrorPayload               { message byFields { name value } }
   }
 }
@@ -205,6 +212,7 @@ mutation Submit($input: SubmitFormInput!) {
 |---|---|
 | `SubmitFormPayload` | Принято; `submitId` — id записи |
 | `FormSubmitDeniedPayload` | `reason` = `admin_required` / `paid_required` / `not_implemented` |
+| `TurnstileRequiredPayload` | У формы включён Turnstile, а в запросе нет валидного `turnstileToken`. Нарисуйте виджет с `siteKey` и отправьте тот же input ещё раз с токеном виджета в `turnstileToken`. Токен одноразовый: перед следующим сабмитом сбросьте виджет |
 | `ErrorPayload` | Валидация не прошла; `message` — общее сообщение, `byFields[]` — детали по полям |
 
 После принятого сабмита автоматически ставится фоновая задача на email админам.
