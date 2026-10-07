@@ -8,7 +8,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
-## v0.11.0 (2026-10-07)
+## v0.11.1 (2026-10-07)
 
 ### Payment webhooks moved under `/_system/`
 
@@ -21,6 +21,22 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **What.** `/api/admin/revokeusersubgraphaccess` is removed. In its place, the admin mutation `revokeUserSubgraphAccess` and a **Revoke** button on an access page in the admin panel. A revoke needs a reason; the access page then shows when it was revoked, by whom and why, and the access list gains a "Revoked At" column.
 - **Why.** The old endpoint did not check the admin role, and nothing in trip2g called it. A revoke now goes through the `admin` namespace, which does.
 - **How to use.** Admin → Users → Subgraph Accesses → open the access → enter a reason → Revoke. Or call `revokeUserSubgraphAccess` with the access id and a reason ([[en/user/user_management]]).
+
+### Docs: an app on top of trip2g
+
+- **What.** [[en/user/spa|An app on top of trip2g]] now covers the whole path of a JavaScript app built on a custom layout: how the app is authorised by the visitor's session cookie, settings from the frontmatter, the site's standard header and footer around the app, saving with `expectedHash`, live updates over server-sent events, API calls and admin calls, MCP from the browser over the whole base, an API of your own that asks trip2g who may call it, forms, and a small shop as an example. An API of your own goes under `/_system/extra/`: trip2g serves nothing there, and a test in its router keeps it that way. [[en/user/templates#Standard header and footer in your own layout|Templates]] shows the standard header and footer in any custom layout.
+- **Why.** The page described only the layout, the bundle and saving. Building a real app meant reading the source for auth, live updates and where to mount a backend.
+- **How to use.** Nothing to do. Read [[en/user/spa|An app on top of trip2g]] before building an app.
+
+### Docs: the default template draws no form
+
+- **What.** [[en/user/forms|Forms]] now says that the default template only embeds a note's form as JSON: it draws no fields and no captcha. To show a form, use [form_template](https://github.com/trip2g/form_template), a ready-made layout that renders the form as a survey, or a layout of your own. The page also documents the `TurnstileRequiredPayload` result of `submitForm`.
+- **Why.** The page said the default template rendered the form at the end of the page and handled Turnstile. It does neither, so a note with a form showed no form.
+- **How to use.** Put `form.html` from form_template into `_layouts/` and set `layout: form` on the note. See [[en/user/forms|Forms]].
+
+---
+
+## v0.11.0 (2026-10-07)
 
 ### Previous/next links and breadcrumbs
 
