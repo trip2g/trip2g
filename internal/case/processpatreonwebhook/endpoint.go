@@ -61,7 +61,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "/api/patreon/webhook"
+	return "/_system/patreon/webhook"
 }
 
 func (*Endpoint) Method() string {

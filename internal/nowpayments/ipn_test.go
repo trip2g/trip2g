@@ -1,6 +1,10 @@
 package nowpayments
 
 import (
+	"crypto/hmac"
+	"crypto/sha512"
+	"encoding/hex"
+	"errors"
 	"os"
 	"testing"
 )
@@ -21,5 +25,21 @@ func TestIPN(t *testing.T) {
 
 	if !ok {
 		t.Fatal("IPN signature verification failed")
+	}
+}
+
+func TestCheckIPNSignature_RefusesWithoutAKey(t *testing.T) {
+	body := []byte(`{"order_id":"X","payment_status":"finished"}`)
+	mac := hmac.New(sha512.New, []byte(""))
+	mac.Write(body)
+	sig := hex.EncodeToString(mac.Sum(nil))
+
+	ok, err := CheckIPNSignature("", sig, body)
+
+	if ok {
+		t.Fatal("a signature made with an empty key was accepted")
+	}
+	if !errors.Is(err, ErrNoIPNKey) {
+		t.Fatalf("err = %v, want ErrNoIPNKey", err)
 	}
 }

@@ -10,6 +10,18 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Payment webhooks moved under `/_system/`
+
+- **What.** NOWPayments notifications now arrive at `/_system/nowpayments/ipn`, Patreon webhooks at `/_system/patreon/webhook`. Nothing answers under `/api/` any more. A NOWPayments notification is refused when `--nowpayments-ipn-key` is not set.
+- **Why.** Every system endpoint lives under `/_system/`; these two were the last ones outside it.
+- **How to use.** NOWPayments: nothing to do, trip2g sends the address with every invoice. An invoice created before the upgrade and paid after it still notifies the old address, which no longer answers: after the upgrade, check pending purchases and grant access by hand to any that NOWPayments shows as paid. Patreon: nothing to do, trip2g registers its webhook itself. On a normal restart the old version removes the webhook at the old address when it stops, and the new version registers the new address when it starts. If the old version did not stop cleanly, the new one still registers the new address; the leftover webhook at the old address does nothing and can be deleted in the Patreon creator portal. Patreon members are also refreshed every hour either way.
+
+### `/api/admin/revokeusersubgraphaccess` is removed
+
+- **What.** The endpoint is gone, with its two database queries.
+- **Why.** It did not check the admin role. Nothing in trip2g called it.
+- **How to use.** Nothing to do.
+
 ### Previous/next links and breadcrumbs
 
 - **What.** The default template shows breadcrumbs above the title and "Previous / Next" links at the end of a page. They come from the first sidebar note, left then right, that links to the page: the neighbouring links, and the heading above the link. Wikilinks and markdown links both count. Frontmatter `prev`, `next` and `breadcrumbs` override them; `false` turns each off.

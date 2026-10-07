@@ -5,10 +5,6 @@
 
 # HTTP (dev) — mol dev server for /* catch-all
 http://localhost:9081 {
-	handle /api/* {
-		reverse_proxy http://localhost:8081
-	}
-
 	# Browser-facing codellm GraphQL must match before the generic /_system/*
 	# monolith route below. The session cookie is forwarded and codellm performs
 	# the delegated-admin check itself.
