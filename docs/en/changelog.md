@@ -8,6 +8,14 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## Unreleased
+
+### MCP `expand` declares `toc_path` as a list of strings again
+
+- **What.** The `expand` tool's input schema says `toc_path` is an array of strings, and `last` is a plain number. Since v0.11.0 the schema carried `toc_path` as an array with no item type and put that item type on `last`.
+- **Why.** An MCP client that checks tool schemas strictly could refuse `expand`, or the whole tool list, because of it.
+- **How to use.** Nothing to do. A client that cached the tool list picks up the fixed schema on its next `tools/list`.
+
 ## v0.11.1 (2026-10-07)
 
 ### Payment webhooks moved under `/_system/`

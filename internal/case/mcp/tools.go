@@ -147,6 +147,7 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 					"toc_path": {
 						Type:        "array",
 						Description: "Breadcrumb path to the node to expand, e.g. [\"Chapter 1\"]. Omit or [] for the top level.",
+						Items:       &Property{Type: "string"},
 					},
 					"first": {
 						Type:        "number",
@@ -155,7 +156,6 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 					"last": {
 						Type:        "number",
 						Description: "List only this many of the newest subsections instead of all of them. A note that gains a dated section a day has hundreds of them after a year, and reading the whole listing to reach the latest few is the cost this avoids. The summary, total_children and omitted say what was left out, so a bounded listing never reads as a complete one. Bounds that meet or overlap return everything rather than repeating a run.",
-						Items:       &Property{Type: "string"},
 					},
 				},
 			},
