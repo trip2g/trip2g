@@ -33,7 +33,7 @@ That's it. On render, the page gets:
 </script>
 ```
 
-The default template auto-renders the form at the end of the page. A custom layout can read the same JSON and lay things out however it likes (see [Custom layout](#custom-layout) below).
+The default template only embeds this JSON: it draws no form fields and no captcha. To show the form, use a layout that reads the JSON and builds the form: the ready-made [form_template](https://github.com/trip2g/form_template), or your own (see [Custom layout](#custom_layout) below).
 
 ### Field types
 
@@ -66,7 +66,7 @@ When a viewer is allowed to read the note but not to submit, the form still rend
 { "__typename": "FormSubmitDeniedPayload", "reason": "admin_required" }
 ```
 
-The default layout shows a "sign in as admin" hint. A custom layout can branch on `reason` and offer whatever UX you want.
+The layout that renders the form decides what to show: it can branch on `reason`, for example to point an admin to the sign-in button.
 
 ### Redirect on success — `success_url`
 
@@ -89,7 +89,7 @@ form:
 How it works:
 
 - When the form is submitted without a valid token, the server returns `TurnstileRequiredPayload { siteKey }`.
-- The default layout reads `siteKey`, renders the Turnstile widget, and resubmits with the token in `turnstileToken`.
+- The layout that renders the form reads `siteKey`, renders the Turnstile widget, and resubmits with the token in `turnstileToken`. The default template doesn't do this; [form_template](https://github.com/trip2g/form_template) does. The result to handle is in [Submitting via GraphQL](#submitting_via_graphql).
 - Locally (no `turnstile-secret-key` configured) verification is a no-op — any submit succeeds. In production the secret key is set and the captcha gates every submit.
 
 ```mermaid
@@ -184,7 +184,13 @@ A custom Jet layout has full access to the note via `note.FormSpecJSON()` — em
 {{ end }}
 ```
 
-There is a working example at `docs/_layouts/forms/example.html` with field rendering, validation messages, and the `success_url` redirect — copy it as a starting point.
+**Ready-made layout.** [form_template](https://github.com/trip2g/form_template) renders a note's form as a survey: labels and hints from the frontmatter, choices and rating scales, errors next to the question, Turnstile, and a thank-you screen. Install it in the vault root and set `layout: form` on the note:
+
+```bash
+mkdir -p _layouts && curl -fsSL -o _layouts/form.html https://raw.githubusercontent.com/trip2g/form_template/main/form.html
+```
+
+There is also a working example at `docs/_layouts/forms/example.html` with field rendering, validation messages, and the `success_url` redirect — copy it as a starting point.
 
 ### Submitting via GraphQL
 
@@ -196,6 +202,7 @@ mutation Submit($input: SubmitFormInput!) {
     __typename
     ... on SubmitFormPayload          { submitId }
     ... on FormSubmitDeniedPayload    { reason }
+    ... on TurnstileRequiredPayload   { siteKey }
     ... on ErrorPayload               { message byFields { name value } }
   }
 }
@@ -223,6 +230,7 @@ Variables for a single inline form:
 |---|---|
 | `SubmitFormPayload` | Accepted; `submitId` is the row id |
 | `FormSubmitDeniedPayload` | `reason` = `admin_required` / `paid_required` / `not_implemented` |
+| `TurnstileRequiredPayload` | The form has Turnstile on and the request had no valid `turnstileToken`. Render the widget with `siteKey` and send the same input again with the widget's token in `turnstileToken`. A token works once: reset the widget before the next submit |
 | `ErrorPayload` | Validation failed; `message` describes it, `byFields[]` lists per-field issues |
 
 ```mermaid
