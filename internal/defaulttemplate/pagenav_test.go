@@ -109,6 +109,7 @@ breadcrumbs:
   - {label: Plain}
   - {label: Home, href: /}`),
 		page("docs/b2.md", "title: B2\nleft_sidebar: docs/_sidebar.md\nnext: docs/a.md\nbreadcrumbs: false"),
+		page("docs/short.md", "title: Short\nprev: \"[[a|Alpha]]\"\nnext: \"[[guide#Intro]]\""),
 	}
 
 	for i := range srcs {
@@ -153,6 +154,14 @@ breadcrumbs:
 		{
 			path: "docs/b2.md",
 			want: PageNav{Next: &NavLink{Label: "A", Href: "/docs/a"}},
+		},
+		{
+			// Short Obsidian-style links: alias and heading are ignored.
+			path: "docs/short.md",
+			want: PageNav{
+				Prev: &NavLink{Label: "A", Href: "/docs/a"},
+				Next: &NavLink{Label: "Guide page", Href: "/docs/guide"},
+			},
 		},
 		{
 			path: "docs/override.md",

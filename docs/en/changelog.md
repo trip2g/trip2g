@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Previous/next links and breadcrumbs
+
+- **What.** The default template shows breadcrumbs above the title and "Previous / Next" links at the end of a page. They come from the first sidebar note, left then right, that links to the page: the neighbouring links, and the heading above the link. Wikilinks and markdown links both count. Frontmatter `prev`, `next` and `breadcrumbs` override them; `false` turns each off.
+- **Why.** Documentation read in order had no way to the next page except the sidebar, and no sign of which section a page belongs to.
+- **How to use.** Nothing to do if your pages already have a sidebar note. To turn it off for a folder, set `prev: false`, `next: false`, `breadcrumbs: false` with a frontmatter patch. See [[en/user/default-template#Previous/next links and breadcrumbs|Default template]].
+
 ### Frontmatter links resolve like in Obsidian
 
 - **What.** Wikilinks in `header`, `footer`, `left_sidebar` and `right_sidebar` resolve by the same rules as links in note text: by file name from the note that has the property, with `|alias` and `#heading` ignored.

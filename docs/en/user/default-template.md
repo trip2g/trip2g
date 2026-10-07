@@ -151,11 +151,11 @@ breadcrumbs:
 ---
 ```
 
-- `prev` and `next` take a note: a file path or `"[[folder/Note]]"`. The label is the note's title.
-- `breadcrumbs` takes a list. Each item is a note (a file path or `"[[folder/Note]]"`) or a `{label, href}` pair. `href` is used as is; an item with only `label` is plain text.
+- `prev` and `next` take a note: a file path or a wikilink. The label is the note's title.
+- `breadcrumbs` takes a list. Each item is a note (a file path or a wikilink) or a `{label, href}` pair. `href` is used as is; an item with only `label` is plain text.
 - A note that isn't found is dropped.
 
-Use full file paths with the extension (`docs/publishing.md`) in these fields. They are matched exactly. A wikilink here is simpler than in note text: `[[folder/Note]]` is matched against the page URL (lowercased, spaces become `_`), so a bare `[[Note]]` only finds a note in the vault root, and `[[Note|alias]]` is not supported.
+Wikilinks in these fields resolve the same way as in note text, from this note: `[[Note]]`, `[[Note|alias]]` and `[[Note#heading]]` work. See [[en/user/wikilink-resolution#Links in frontmatter|Wikilink resolution]].
 
 To turn these off for a whole folder, set `prev: false`, `next: false` and `breadcrumbs: false` with a [[en/user/frontmatter-patches|frontmatter patch]].
 
