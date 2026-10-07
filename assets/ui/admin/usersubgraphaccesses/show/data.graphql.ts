@@ -6,7 +6,7 @@ export type trip2g_admin_usersubgraphaccesses_show_dataQueryVariables = Exact<{
 }>;
 
 
-export type trip2g_admin_usersubgraphaccesses_show_dataQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> }, userSubgraphAccess?: { __typename?: 'AdminUserSubgraphAccess', userId: any, subgraphId: any, expiresAt?: any | null } | null } };
+export type trip2g_admin_usersubgraphaccesses_show_dataQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> }, userSubgraphAccess?: { __typename?: 'AdminUserSubgraphAccess', userId: any, subgraphId: any, expiresAt?: any | null, revoke?: { __typename?: 'AdminRevoke', createdAt: any, reason?: string | null, by: { __typename?: 'AdminUser', id: any, email?: string | null } } | null } | null } };
 
 
 export function $trip2g_admin_usersubgraphaccesses_show_data(variables: trip2g_admin_usersubgraphaccesses_show_dataQueryVariables, opts?: { revalidate?: boolean }): trip2g_admin_usersubgraphaccesses_show_dataQuery {
@@ -22,6 +22,14 @@ export function $trip2g_admin_usersubgraphaccesses_show_data(variables: trip2g_a
       userId
       subgraphId
       expiresAt
+      revoke {
+        createdAt
+        reason
+        by {
+          id
+          email
+        }
+      }
     }
   }
 }`, variables, opts) as trip2g_admin_usersubgraphaccesses_show_dataQuery

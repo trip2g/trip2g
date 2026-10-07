@@ -215,7 +215,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-    return "/api/my/path"
+    return "/_system/my/path"
 }
 
 func (*Endpoint) Method() string {

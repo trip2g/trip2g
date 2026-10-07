@@ -334,6 +334,10 @@ type RevokeFederationSecretOrErrorPayload interface {
 	IsRevokeFederationSecretOrErrorPayload()
 }
 
+type RevokeUserSubgraphAccessOrErrorPayload interface {
+	IsRevokeUserSubgraphAccessOrErrorPayload()
+}
+
 type RevokeUserTokenOrErrorPayload interface {
 	IsRevokeUserTokenOrErrorPayload()
 }
@@ -1719,6 +1723,8 @@ func (ErrorPayload) IsAdminRevokeUserTokenOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateUserSubgraphAccessOrErrorPayload() {}
 
+func (ErrorPayload) IsRevokeUserSubgraphAccessOrErrorPayload() {}
+
 func (ErrorPayload) IsUnbanUserOrErrorPayload() {}
 
 func (ErrorPayload) IsBanUserOrErrorPayload() {}
@@ -2378,6 +2384,17 @@ type RevokeFederationSecretPayload struct {
 }
 
 func (RevokeFederationSecretPayload) IsRevokeFederationSecretOrErrorPayload() {}
+
+type RevokeUserSubgraphAccessInput struct {
+	ID     int64  `json:"id"`
+	Reason string `json:"reason"`
+}
+
+type RevokeUserSubgraphAccessPayload struct {
+	Access *db.UserSubgraphAccess `json:"access"`
+}
+
+func (RevokeUserSubgraphAccessPayload) IsRevokeUserSubgraphAccessOrErrorPayload() {}
 
 type RevokeUserTokenInput struct {
 	ID string `json:"id"`

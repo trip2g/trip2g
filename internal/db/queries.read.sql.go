@@ -7767,6 +7767,24 @@ func (q *Queries) ReleaseByID(ctx context.Context, id int64) (Release, error) {
 	return i, err
 }
 
+const revokeByID = `-- name: RevokeByID :one
+select id, target_type, target_id, created_at, by_id, reason from revokes where id = ?
+`
+
+func (q *Queries) RevokeByID(ctx context.Context, id int64) (Revoke, error) {
+	row := q.db.QueryRowContext(ctx, revokeByID, id)
+	var i Revoke
+	err := row.Scan(
+		&i.ID,
+		&i.TargetType,
+		&i.TargetID,
+		&i.CreatedAt,
+		&i.ByID,
+		&i.Reason,
+	)
+	return i, err
+}
+
 const subgraphByID = `-- name: SubgraphByID :one
 select id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users, require_signin, human_description from subgraphs where id = ?
 `

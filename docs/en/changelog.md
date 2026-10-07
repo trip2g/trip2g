@@ -10,6 +10,18 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## v0.11.0 (2026-10-07)
 
+### Payment webhooks moved under `/_system/`
+
+- **What.** NOWPayments notifications now arrive at `/_system/nowpayments/ipn`, Patreon webhooks at `/_system/patreon/webhook`. Nothing answers under `/api/` any more. A NOWPayments notification is refused when `--nowpayments-ipn-key` is not set.
+- **Why.** Every system endpoint lives under `/_system/`; these two were the last ones outside it.
+- **How to use.** NOWPayments: nothing to do, trip2g sends the address with every invoice. An invoice created before the upgrade and paid after it still notifies the old address, which no longer answers: after the upgrade, check pending purchases and grant access by hand to any that NOWPayments shows as paid. Patreon: nothing to do, trip2g registers its webhook itself. On a normal restart the old version removes the webhook at the old address when it stops, and the new version registers the new address when it starts. If the old version did not stop cleanly, the new one still registers the new address; the leftover webhook at the old address does nothing and can be deleted in the Patreon creator portal. Patreon members are also refreshed every hour either way.
+
+### Revoke a subgraph access from the admin panel
+
+- **What.** `/api/admin/revokeusersubgraphaccess` is removed. In its place, the admin mutation `revokeUserSubgraphAccess` and a **Revoke** button on an access page in the admin panel. A revoke needs a reason; the access page then shows when it was revoked, by whom and why, and the access list gains a "Revoked At" column.
+- **Why.** The old endpoint did not check the admin role, and nothing in trip2g called it. A revoke now goes through the `admin` namespace, which does.
+- **How to use.** Admin → Users → Subgraph Accesses → open the access → enter a reason → Revoke. Or call `revokeUserSubgraphAccess` with the access id and a reason ([[en/user/user_management]]).
+
 ### Previous/next links and breadcrumbs
 
 - **What.** The default template shows breadcrumbs above the title and "Previous / Next" links at the end of a page. They come from the first sidebar note, left then right, that links to the page: the neighbouring links, and the heading above the link. Wikilinks and markdown links both count. Frontmatter `prev`, `next` and `breadcrumbs` override them; `false` turns each off.

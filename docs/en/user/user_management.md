@@ -79,6 +79,30 @@ mutation {
 
 `subgraphIds` is an array — you can grant access to multiple subgraphs in one call. Omit `expiresAt` (or pass `null`) for permanent access. Pass an ISO 8601 timestamp for time-limited access.
 
+### Revoke subgraph access
+
+```graphql
+mutation {
+  admin {
+    revokeUserSubgraphAccess(input: {
+      id: 12
+      reason: "Refunded"
+    }) {
+      __typename
+      ... on RevokeUserSubgraphAccessPayload {
+        access {
+          id
+          revoke { createdAt reason by { email } }
+        }
+      }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+`id` is the access id from `createUserSubgraphAccess` or `allUserSubgraphAccesses`. The reason is required. The user loses the subgraph on their next request. The access stays in the list with its revoke date, and its page shows who revoked it, when and why. It cannot be revoked twice. In the admin panel: **Users → Subgraph Accesses → open the access → enter a reason → Revoke**.
+
 ### Step 4. Make a user admin (optional)
 
 ```graphql

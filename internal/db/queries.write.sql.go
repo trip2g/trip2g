@@ -208,7 +208,7 @@ func (q *WriteQueries) ClearUncommittedPaths(ctx context.Context) error {
 const createRevoke = `-- name: CreateRevoke :one
 insert into revokes (target_type, target_id, by_id, reason)
 values (?, ?, ?, ?)
-returning id
+returning id, target_type, target_id, created_at, by_id, reason
 `
 
 type CreateRevokeParams struct {
@@ -218,16 +218,23 @@ type CreateRevokeParams struct {
 	Reason     *string `json:"reason"`
 }
 
-func (q *WriteQueries) CreateRevoke(ctx context.Context, arg CreateRevokeParams) (int64, error) {
+func (q *WriteQueries) CreateRevoke(ctx context.Context, arg CreateRevokeParams) (Revoke, error) {
 	row := q.db.QueryRowContext(ctx, createRevoke,
 		arg.TargetType,
 		arg.TargetID,
 		arg.ByID,
 		arg.Reason,
 	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+	var i Revoke
+	err := row.Scan(
+		&i.ID,
+		&i.TargetType,
+		&i.TargetID,
+		&i.CreatedAt,
+		&i.ByID,
+		&i.Reason,
+	)
+	return i, err
 }
 
 const createUserSubgraphAccess = `-- name: CreateUserSubgraphAccess :one
@@ -3295,10 +3302,11 @@ func (q *WriteQueries) RevokeSupersededOwnerTokens(ctx context.Context, arg Revo
 	return result.RowsAffected()
 }
 
-const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
+const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :one
 update user_subgraph_accesses
    set revoke_id = ?
  where id = ?
+returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id, created_by
 `
 
 type RevokeUserSubgraphAccessParams struct {
@@ -3306,9 +3314,20 @@ type RevokeUserSubgraphAccessParams struct {
 	ID       int64  `json:"id"`
 }
 
-func (q *WriteQueries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) error {
-	_, err := q.db.ExecContext(ctx, revokeUserSubgraphAccess, arg.RevokeID, arg.ID)
-	return err
+func (q *WriteQueries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) (UserSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, revokeUserSubgraphAccess, arg.RevokeID, arg.ID)
+	var i UserSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.SubgraphID,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.RevokeID,
+		&i.PurchaseID,
+		&i.CreatedBy,
+	)
+	return i, err
 }
 
 const revokeUserToken = `-- name: RevokeUserToken :one

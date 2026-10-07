@@ -21,3 +21,31 @@ $trip2g_admin_usersubgraphaccesses_show $mol_page
 					click? <=> submit? null
 				<= Result $mol_status
 					message <= result? \
+		<= Revoke_form $mol_form
+			body /
+				<= Revoke_reason_field $mol_form_field
+					name \Revoke reason
+					bid <= revoke_reason_bid \
+					Content <= revoke_reason_control $mol_string
+						hint \Why the user loses this access
+						value? <=> revoke_reason? \
+			buttons /
+				<= Revoke $mol_button_minor
+					title \Revoke
+					click? <=> revoke? null
+				<= Revoke_result $mol_status
+					message <= revoke_result? \
+		<= Revoked $mol_list
+			rows /
+				<= Revoked_at_labeler $mol_labeler
+					title \Revoked at
+					Content <= Revoked_at $trip2g_admin_cell
+						content <= revoked_at \
+				<= Revoked_by_labeler $mol_labeler
+					title \Revoked by
+					Content <= Revoked_by $trip2g_admin_cell
+						content <= revoked_by \
+				<= Revoked_reason_labeler $mol_labeler
+					title \Revoke reason
+					Content <= Revoked_reason $trip2g_admin_cell
+						content <= revoked_reason \

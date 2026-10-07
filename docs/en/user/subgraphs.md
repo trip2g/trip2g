@@ -161,6 +161,8 @@ For a teammate, a client, or anyone you're not charging:
 
 The user can now read every note in that subgraph, nothing else.
 
+To take it back, open the access under **Admin → Users → Subgraph Accesses**, enter a reason and press **Revoke**, or call `revokeUserSubgraphAccess` ([[en/user/user_management]]).
+
 ### Per-subgraph sidebar and home page
 
 A subgraph can look like its own site section:

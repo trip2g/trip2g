@@ -37,7 +37,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "/api/ipn/nowpayments"
+	return "/_system/nowpayments/ipn"
 }
 
 func (*Endpoint) Method() string {

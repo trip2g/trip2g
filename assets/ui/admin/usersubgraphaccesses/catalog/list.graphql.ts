@@ -4,7 +4,7 @@ namespace $ {
 export type trip2g_admin_usersubgraphaccesses_catalog_listQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type trip2g_admin_usersubgraphaccesses_catalog_listQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'AdminUserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'AdminSubgraph', name: string }, user: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
+export type trip2g_admin_usersubgraphaccesses_catalog_listQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'AdminUserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'AdminSubgraph', name: string }, user: { __typename?: 'AdminUser', id: any, email?: string | null }, revoke?: { __typename?: 'AdminRevoke', createdAt: any } | null }> } } };
 
 
 export function $trip2g_admin_usersubgraphaccesses_catalog_list(opts?: { revalidate?: boolean }): trip2g_admin_usersubgraphaccesses_catalog_listQuery {
@@ -22,6 +22,9 @@ export function $trip2g_admin_usersubgraphaccesses_catalog_list(opts?: { revalid
         user {
           id
           email
+        }
+        revoke {
+          createdAt
         }
       }
     }

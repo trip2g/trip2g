@@ -314,16 +314,15 @@ make deploy                     # Deploy via Ansible
 - **MinIO** - Object storage (S3-compatible)
 
 ### Webhook Endpoints
-- `/api/nowpayments/ipn` - Payment notifications
-- `/api/patreon/webhook` - Member updates
-- `/api/telegram/webhook/{bot_id}` - Bot updates
-- `/api/notion/webhook` - Notion integration (experimental)
+- `/_system/nowpayments/ipn` - Payment notifications
+- `/_system/patreon/webhook` - Member updates
+- `/_system/tg/webhook/{bot}` - Bot updates
 
 ### API Endpoints
-- GraphQL - `/graphql`
-- GraphQL Playground - `/playground`
-- Git Protocol - `/git/*`
-- Health Check - `/health` (if implemented)
+- GraphQL - `/_system/graphql`
+- MCP - `/_system/mcp`
+- Git Protocol - `/_system/git/*`
+- Health Check - `/healthz`, `/livez`, `/readyz` on the internal listener
 
 ## Security Notes
 

@@ -1,73 +1,74 @@
 package revokeusersubgraphaccess
 
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg revokeusersubgraphaccess_test . Env
+
 import (
 	"context"
-	"errors"
 	"fmt"
-	"trip2g/internal/appresp"
+	"strings"
+
 	"trip2g/internal/db"
+	"trip2g/internal/graph/model"
 	"trip2g/internal/usertoken"
 )
 
-//go:generate go tool github.com/mailru/easyjson/easyjson -snake_case -all -no_std_marshalers ./resolve.go
+const TargetType = "user_subgraph_access"
 
 type Env interface {
-	CreateRevoke(ctx context.Context, arg db.CreateRevokeParams) (int64, error)
-	RevokeUserSubgraphAccess(ctx context.Context, arg db.RevokeUserSubgraphAccessParams) error
+	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
+	CreateRevoke(ctx context.Context, arg db.CreateRevokeParams) (db.Revoke, error)
+	RevokeUserSubgraphAccess(ctx context.Context, arg db.RevokeUserSubgraphAccessParams) (db.UserSubgraphAccess, error)
 }
 
-var (
-	ErrEmptyReason = errors.New("reason is required")
-	ErrNoAuth      = errors.New("user token is required")
-)
+type Input = model.RevokeUserSubgraphAccessInput
+type Payload = model.RevokeUserSubgraphAccessOrErrorPayload
 
-type Request struct {
-	SubgraphAccessID int64
-	Reason           string
-	UserToken        *usertoken.Data
-}
-
-func (r *Request) Validate() error {
-	if r.Reason == "" {
-		return ErrEmptyReason
-	}
-	if r.UserToken == nil {
-		return ErrNoAuth
-	}
-	return nil
-}
-
-type Response struct {
-	appresp.Response
-}
-
-func Resolve(ctx context.Context, env Env, request Request) (Response, error) {
-	var response Response
-	response.Success = true
-
-	createRevokeParams := db.CreateRevokeParams{
-		TargetType: "user_subgraph_access",
-		TargetID:   request.SubgraphAccessID,
-		ByID:       int64(request.UserToken.ID),
-		Reason:     &request.Reason,
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	reason := strings.TrimSpace(input.Reason)
+	if reason == "" {
+		return &model.ErrorPayload{Message: "Reason is required"}, nil
 	}
 
-	// Create revoke record
-	revokeID, err := env.CreateRevoke(ctx, createRevokeParams)
+	actor, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
-		return response, fmt.Errorf("failed to create revoke: %w", err)
+		return nil, fmt.Errorf("failed to get current admin user token: %w", err)
 	}
 
-	revokeUSAParams := db.RevokeUserSubgraphAccessParams{
-		RevokeID: &revokeID,
-		ID:       request.SubgraphAccessID,
-	}
-
-	// Revoke the access
-	err = env.RevokeUserSubgraphAccess(ctx, revokeUSAParams)
+	access, err := env.UserSubgraphAccessByID(ctx, input.ID)
 	if err != nil {
-		return response, fmt.Errorf("failed to revoke access: %w", err)
+		if db.IsNoFound(err) {
+			return &model.ErrorPayload{Message: "Access not found"}, nil
+		}
+
+		return nil, fmt.Errorf("failed to get user subgraph access: %w", err)
 	}
 
-	return response, nil
+	if access.RevokeID != nil {
+		return &model.ErrorPayload{Message: "Access already revoked"}, nil
+	}
+
+	revokeParams := db.CreateRevokeParams{
+		TargetType: TargetType,
+		TargetID:   access.ID,
+		ByID:       int64(actor.ID),
+		Reason:     &reason,
+	}
+
+	revoke, err := env.CreateRevoke(ctx, revokeParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create revoke: %w", err)
+	}
+
+	accessParams := db.RevokeUserSubgraphAccessParams{
+		RevokeID: &revoke.ID,
+		ID:       access.ID,
+	}
+
+	revoked, err := env.RevokeUserSubgraphAccess(ctx, accessParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to revoke user subgraph access: %w", err)
+	}
+
+	return &model.RevokeUserSubgraphAccessPayload{Access: &revoked}, nil
 }

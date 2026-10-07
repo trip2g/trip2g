@@ -11,6 +11,14 @@ query ($id: Int64!) {
 			userId
 			subgraphId
 			expiresAt
+			revoke {
+				createdAt
+				reason
+				by {
+					id
+					email
+				}
+			}
 		}
 	}
 }

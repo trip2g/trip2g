@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 )
@@ -43,7 +44,13 @@ type IPNRequest struct {
 	PaymentStatus PaymentStatus `json:"payment_status"`
 }
 
+var ErrNoIPNKey = errors.New("no IPN key configured")
+
 func CheckIPNSignature(secretKey string, sig string, body []byte) (bool, error) {
+	if secretKey == "" {
+		return false, ErrNoIPNKey
+	}
+
 	var msg map[string]interface{}
 	if err := json.Unmarshal(body, &msg); err != nil {
 		return false, fmt.Errorf("invalid JSON: %w", err)

@@ -50,6 +50,15 @@ namespace $.$$ {
 			return '-'
 		}
 
+		row_revoked_at(id: any): string {
+			const revoke = this.row(id).revoke
+			if (revoke) {
+				return new $mol_time_moment(revoke.createdAt).toString('YYYY-MM-DD')
+			}
+
+			return '-'
+		}
+
 		row_user_email(id: any): string {
 			return this.row(id).user.email || '-'
 		}

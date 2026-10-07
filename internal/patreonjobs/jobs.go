@@ -3,9 +3,11 @@ package patreonjobs
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
+	"trip2g/internal/case/processpatreonwebhook"
 	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -223,7 +225,7 @@ func (io *PatreonJobs) registerWebhookForCredentials(ctx context.Context, credID
 	// Use the first campaign (creators typically have one main campaign)
 	campaign := campaigns[0]
 
-	webhookURL := fmt.Sprintf("%s/api/patreon/webhook?credential_id=%d", publicURL, credID)
+	webhookURL := webhookURLFor(publicURL, credID)
 	triggers := []string{
 		"members:create",
 		"members:update",
@@ -273,7 +275,7 @@ func (io *PatreonJobs) UnregisterWebhook(ctx context.Context, credentialsID int6
 		return fmt.Errorf("failed to list webhooks: %w", err)
 	}
 
-	expectedURLPrefix := fmt.Sprintf("%s/api/patreon/webhook", publicURL)
+	expectedURLPrefix := publicURL + (&processpatreonwebhook.Endpoint{}).Path()
 
 	for _, webhook := range webhooks {
 		// Only delete webhooks that match our public URL
@@ -310,6 +312,10 @@ func (io *PatreonJobs) UnregisterWebhook(ctx context.Context, credentialsID int6
 	return nil
 }
 
+func webhookURLFor(publicURL string, credentialID int64) string {
+	return publicURL + (&processpatreonwebhook.Endpoint{}).Path() + "?credential_id=" + strconv.FormatInt(credentialID, 10)
+}
+
 func (io *PatreonJobs) withWebhooks() bool {
 	return io.env.PublicURL() != ""
 }
@@ -332,7 +338,7 @@ func (io *PatreonJobs) registerWebhookForCredentialID(ctx context.Context, crede
 		return fmt.Errorf("failed to list existing webhooks: %w", err)
 	}
 
-	expectedURL := fmt.Sprintf("%s/api/patreon/webhook?credential_id=%d", publicURL, credentialID)
+	expectedURL := webhookURLFor(publicURL, credentialID)
 	for _, webhook := range webhooks {
 		if webhook.Attributes.URI == expectedURL {
 			io.logger.Info("webhook already exists for credential", "credentialID", credentialID, "webhookID", webhook.ID)
@@ -373,7 +379,7 @@ func (io *PatreonJobs) unregisterWebhookForCredentialID(ctx context.Context, cre
 		return fmt.Errorf("failed to list webhooks: %w", err)
 	}
 
-	expectedURL := fmt.Sprintf("%s/api/patreon/webhook?credential_id=%d", publicURL, credentialID)
+	expectedURL := webhookURLFor(publicURL, credentialID)
 
 	for _, webhook := range webhooks {
 		if webhook.Attributes.URI == expectedURL {

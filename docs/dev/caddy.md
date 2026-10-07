@@ -4,7 +4,7 @@
 
 Two purposes in development:
 
-1. **Frontend dev server isolation** — `http://localhost:9081` proxies `/graphql`, `/api/*`, `/_system/*`, `/assets/*` to the Go server (`:8081`), and everything else to the $mol dev server (`:9080`). This lets you develop frontend with hot reload while still talking to the real backend.
+1. **Frontend dev server isolation** — `http://localhost:9081` proxies `/graphql`, `/_system/*`, `/assets/*` to the Go server (`:8081`), and everything else to the $mol dev server (`:9080`). This lets you develop frontend with hot reload while still talking to the real backend.
 
 2. **HTTPS for third-party integrations** — `https://localhost:7081` provides TLS for features that require secure context (Cloudflare Turnstile captcha, OAuth callbacks, etc.). All traffic goes directly to the Go server.
 
