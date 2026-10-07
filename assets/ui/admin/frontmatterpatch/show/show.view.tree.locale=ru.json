@@ -1,7 +1,6 @@
 {
 	"$trip2g_admin_frontmatterpatch_show_title": "Патч метаданных",
-	"$trip2g_admin_frontmatterpatch_show_Edit_title": "Редактировать",
-	"$trip2g_admin_frontmatterpatch_show_Details_labeler_title": "Детали патча метаданных",
+	"$trip2g_admin_frontmatterpatch_show_EditLink_title": "Редактировать",
 	"$trip2g_admin_frontmatterpatch_show_Id_labeler_title": "ID",
 	"$trip2g_admin_frontmatterpatch_show_Description_labeler_title": "Описание",
 	"$trip2g_admin_frontmatterpatch_show_Priority_labeler_title": "Приоритет",

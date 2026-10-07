@@ -1,3 +1,5 @@
 {
-	"$trip2g_admin_tgbot_catalog_menu_title": "TG боты"
+	"$trip2g_admin_tgbot_catalog_menu_title": "TG боты",
+	"$trip2g_admin_tgbot_catalog_CreatedAt_title": "Создано",
+	"$trip2g_admin_tgbot_catalog_CreatedBy_title": "Создатель"
 }

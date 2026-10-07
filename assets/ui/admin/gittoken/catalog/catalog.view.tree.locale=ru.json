@@ -1,3 +1,7 @@
 {
-	"$trip2g_admin_gittoken_catalog_menu_title": "Git токены"
+	"$trip2g_admin_gittoken_catalog_menu_title": "Git токены",
+	"$trip2g_admin_gittoken_catalog_CreatedAt_title": "Создано",
+	"$trip2g_admin_gittoken_catalog_CreatedBy_title": "Создатель",
+	"$trip2g_admin_gittoken_catalog_DisabledAt_title": "Отключено",
+	"$trip2g_admin_gittoken_catalog_DisabledBy_title": "Отключил"
 }

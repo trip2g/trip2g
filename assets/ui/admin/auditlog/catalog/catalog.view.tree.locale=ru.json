@@ -1,3 +1,4 @@
 {
-	"$trip2g_admin_auditlog_catalog_menu_title": "Журнал аудита"
+	"$trip2g_admin_auditlog_catalog_menu_title": "Журнал аудита",
+	"$trip2g_admin_auditlog_catalog_CreatedAt_title": "Время"
 }

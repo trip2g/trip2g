@@ -1,3 +1,5 @@
 {
-	"$trip2g_admin_release_catalog_menu_title": "Релизы"
+	"$trip2g_admin_release_catalog_menu_title": "Релизы",
+	"$trip2g_admin_release_catalog_CreatedAt_title": "Создано",
+	"$trip2g_admin_release_catalog_CreatedBy_title": "Создатель"
 }
