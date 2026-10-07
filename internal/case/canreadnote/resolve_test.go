@@ -703,3 +703,88 @@ func TestResolve_ScopedReadPatterns(t *testing.T) {
 		})
 	}
 }
+
+func TestResolve_FreeNoteForEveryReader(t *testing.T) {
+	paid := &model.NoteSubgraph{Name: "paid"}
+	signin := &model.NoteSubgraph{Name: "members", RequireSignin: true}
+
+	freeInPaid := &model.NoteView{
+		Path:          "public.md",
+		Free:          true,
+		SubgraphNames: []string{"paid"},
+		Subgraphs:     map[string]*model.NoteSubgraph{"paid": paid},
+	}
+	closedInPaid := &model.NoteView{
+		Path:          "chapter.md",
+		SubgraphNames: []string{"paid"},
+		Subgraphs:     map[string]*model.NoteSubgraph{"paid": paid},
+	}
+	freeUntagged := &model.NoteView{Path: "about.md", Free: true}
+	freeNoIndex := &model.NoteView{
+		Path:          "landing.md",
+		Free:          true,
+		NoIndex:       true,
+		SubgraphNames: []string{"paid"},
+		Subgraphs:     map[string]*model.NoteSubgraph{"paid": paid},
+	}
+	freeHTML := &model.NoteView{Path: "_layouts/page.html", Free: true}
+	closedInSignin := &model.NoteView{
+		Path:          "members/page.md",
+		SubgraphNames: []string{"members"},
+		Subgraphs:     map[string]*model.NoteSubgraph{"members": signin},
+	}
+
+	guest := (*usertoken.Data)(nil)
+	member := &usertoken.Data{ID: 7, Role: "user"}
+	admin := &usertoken.Data{ID: 1, Role: "admin"}
+
+	tests := []struct {
+		name   string
+		token  *usertoken.Data
+		grants []string
+		note   *model.NoteView
+		want   bool
+	}{
+		{name: "guest reads a free note in a paid subgraph", token: guest, note: freeInPaid, want: true},
+		{name: "signed-in user without grants reads a free note in a paid subgraph", token: member, note: freeInPaid, want: true},
+		{
+			name:   "signed-in user with another grant reads a free note in a paid subgraph",
+			token:  member,
+			grants: []string{"other"},
+			note:   freeInPaid,
+			want:   true,
+		},
+		{name: "signed-in user without grants reads a free note with no subgraph", token: member, note: freeUntagged, want: true},
+		{name: "signed-in user without grants reads a free noindex note", token: member, note: freeNoIndex, want: true},
+		{name: "admin reads a free note in a paid subgraph", token: admin, note: freeInPaid, want: true},
+		{name: "signed-in user without grants cannot read a closed note in the same subgraph", token: member, note: closedInPaid, want: false},
+		{
+			name:   "signed-in user with another grant cannot read a closed note in the paid subgraph",
+			token:  member,
+			grants: []string{"other"},
+			note:   closedInPaid,
+			want:   false,
+		},
+		{name: "guest cannot read a closed note in a sign-in subgraph", token: guest, note: closedInSignin, want: false},
+		{name: "signed-in user without grants cannot read a free html template", token: member, note: freeHTML, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := &EnvMock{
+				CurrentFederatedScopeFunc: noFedScope,
+				CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
+					return tt.token, nil
+				},
+				ListActiveUserSubgraphsFunc: func(context.Context, int64) ([]string, error) {
+					return tt.grants, nil
+				},
+			}
+
+			got, err := canreadnote.Resolve(context.Background(), env, tt.note)
+
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
