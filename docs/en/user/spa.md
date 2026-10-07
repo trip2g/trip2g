@@ -342,7 +342,7 @@ Most results are unions: ask for `__typename` and one `... on` fragment per type
 | Signed-in admin | Session cookie, or `Authorization: Bearer t2g_…` | Everything below, `admin { … }` included |
 | API key | `X-Api-Key: …` | Everything but `admin { … }`; writes only within the key's write patterns |
 | Webhook token | `Authorization: Bearer eyJ…` | What an API key reaches, within the token's read and write patterns, except `hideNotes`, `pushNotes` and `commitNotes` |
-| Any visitor | Nothing | `search`, and `noteChanges` once signed in |
+| Any visitor | Nothing | `search`, `submitForm`, and `noteChanges` once signed in |
 
 An app on a page visitors open authenticates with the admin's session cookie, which `credentials: 'include'` sends. Don't put an API key in a bundle: anyone who loads the page can read it.
 
@@ -712,18 +712,25 @@ Call it from a page on the same site. The server sends CORS headers only to the 
 
 An app may need more than notes: a report built from another database, a call to a paid service, a job that runs for a minute. Put that in an API of your own and let trip2g decide who may call it. The API asks trip2g on the user's behalf, so it keeps no users, no passwords and no access rules of its own.
 
-**Mount it on the same host.** The session cookie, `trip2g_token`, is `HttpOnly`, `Secure`, `SameSite=Lax` with `Path=/`, and has no `Domain` attribute. Without `Domain` the browser sends it only to the exact host that set it: not to a subdomain, not to a parent domain. So the API lives under a path on the site's own host, `https://notes.example.com/api/…`, and not on `api.example.com`. Route that path to the API in the reverse proxy in front of trip2g; everything else keeps going to trip2g.
+**Mount it on the same host.** The session cookie, `trip2g_token`, is `HttpOnly`, `Secure`, `SameSite=Lax` with `Path=/`, and has no `Domain` attribute. Without `Domain` the browser sends it only to the exact host that set it: not to a subdomain, not to a parent domain. So the API lives under a path on the site's own host, not on `api.example.com`.
+
+**Under `/_system/extra/`.** This prefix is reserved for the site owner: trip2g serves nothing under it and never will, and a test in trip2g's router fails if one of its routes starts with it. Mount each API at `/_system/extra/<name>`, such as `https://notes.example.com/_system/extra/report`, and route `/_system/extra/` to your APIs in the reverse proxy in front of trip2g; everything else keeps going to trip2g. Two nearby choices are not safe:
+
+- **`/api/…`** is also a note path: a note `api/report.md` is served at `/api/report`, and the proxy rule would hide it. trip2g answers a few `/api/` paths itself as well, such as its payment webhooks.
+- **`/_system/<name>`** is where trip2g's own routes live: `/_system/graphql`, `/_system/mcp`, `/_system/admin`, `/_system/auth/…` and more. A later release may add one with your name.
+
+No note is ever served under `/_system/`, so the prefix can't hide content either. A request to `/_system/extra/…` that reaches trip2g, because no proxy rule took it, gets the site's "Page not found" page with HTTP 404, for `GET` and `POST` alike.
 
 **The flow.**
 
-1. The app calls `fetch('/api/report', …)`. The request is same-origin, so the browser attaches the cookie.
+1. The app calls `fetch('/_system/extra/report', …)`. The request is same-origin, so the browser attaches the cookie.
 2. The API takes the request's `Cookie` header and sends it unchanged to trip2g's `/_system/graphql` over the internal network, with a query that asks who this is.
 3. trip2g answers as it would answer the browser. The API decides from that answer, and refuses whenever trip2g refused.
 
 The layout gives the app the note's id, adding `"pathId", note.PathID()` to the data block from [[en/user/spa#The layout: ship the note in the page|the layout]], and the app sends it:
 
 ```js
-const res = await fetch('/api/report', {
+const res = await fetch('/_system/extra/report', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ pathId: data.pathId }),
@@ -786,6 +793,63 @@ Now the access rules live in one place, the vault's subgraphs and paywalls, and 
 
 trip2g asks nothing more of a call from another process: no `Origin`, no `Referer`, no CSRF token or custom header. It reads the cookie from the `Cookie` header of any `POST` with `Content-Type: application/json`, the same as from a browser. The `Secure` flag only tells browsers not to send the cookie over plain HTTP; the server accepts it either way, so a plain-HTTP call on the internal network works.
 
+### Accept data without a backend: forms {#forms}
+
+An app that collects something, such as an order, a sign-up or feedback, needs no server of its own to keep it. A trip2g form already stores the submissions, decides who may send one and keeps spam out. Declare the form in the note's frontmatter as [[en/user/forms|Forms in notes]] describes, and the app sends it with the `submitForm` mutation:
+
+- **Fields from the definition.** The layout prints `note.FormSpecJSON()` into a `<script type="application/json" id="form-spec">`, and the app builds its inputs from it: names, types, `required`, limits. It also carries `note_version_id`, which the submit sends as `noteVersionId`. See [[en/user/forms#Custom layout|Forms → Custom layout]].
+- **The submit** goes to `/_system/graphql` like every other call on this page. The fields and every result are in [[en/user/forms#Submitting via GraphQL|Forms → Submitting via GraphQL]].
+- **Spam protection.** Cloudflare Turnstile is on for every form unless it sets `turnstile: false`. Without a valid token the result is `TurnstileRequiredPayload` with the site's `siteKey`: the app shows the widget and sends the same input again with the token.
+- **Submissions** are listed in the admin panel under Forms, and each one sends the site's admins an email. An admin reads them over GraphQL with `admin { formSubmits … }`, an admin call: [[en/user/forms#Reading submissions|Forms → Reading submissions]].
+
+```js
+const submitForm = makeRequest(`mutation ($input: SubmitFormInput!) {
+  submitForm(input: $input) {
+    __typename
+    ... on SubmitFormPayload { submitId }
+    ... on FormSubmitDeniedPayload { reason }
+    ... on TurnstileRequiredPayload { siteKey }
+    ... on ErrorPayload { message }
+  }
+}`)
+
+const spec = JSON.parse(document.getElementById('form-spec').textContent)
+
+async function send(fields, turnstileToken) {
+  const input = { noteVersionId: spec.note_version_id, formId: '', fields, turnstileToken }
+  const { submitForm: result } = await submitForm({ input })
+  if (result.__typename === 'TurnstileRequiredPayload') {
+    turnstile.render('#captcha', {
+      sitekey: result.siteKey,
+      callback: (token) => send(fields, token),
+    })
+  }
+  return result
+}
+
+await send([{ name: 'email', stringValue: 'alice@example.com' }])
+```
+
+`turnstile` comes from Cloudflare's script, `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>`, in the layout, and `#captcha` is an empty element for the widget. `formId` is `""` for a single `form:`, or the key of one form under `forms:`.
+
+**Who may submit.** The server checks two things, in this order:
+
+1. **May the visitor read the note?** A note the visitor can't open answers `ErrorPayload` with `form_not_found`, as if it had no form.
+2. **`can_submit`.** Omitted or `guest`: anyone who passed the first check, signed in or not. `admin`: only a signed-in admin; anyone else gets `FormSubmitDeniedPayload` with `reason: "admin_required"`. `paid_user` isn't enforced yet and refuses everyone, the admin included, with `reason: "not_implemented"`. A value trip2g doesn't know, such as `user`, counts as `guest` and opens the form to everyone.
+
+**What that means for members.** No `can_submit` value means "signed-in members only". The note's own access is what narrows a form to them: put the form on a note without `free: true` in a subgraph marked Require sign-in, and any signed-in user may submit while a guest gets `form_not_found`; in a paid subgraph, only those with access may. A form on a note open to everyone takes submissions from everyone. So a shop with member accounts can't make a form members-only with `can_submit` yet; it has to rely on the note's access, see [[en/user/subgraphs|Subgraphs]]. When the submitter is signed in, the submission keeps their account, readable as `user` in `formSubmits`.
+
+### For example: a small shop {#shop-example}
+
+How the pieces on this page could fit together for a shop. This is an illustration, not a shop feature: trip2g has no catalogue, cart or checkout of its own.
+
+- **Products are notes,** one per product, with the price and stock in the frontmatter: `price: 1200`, `stock: 5`.
+- **The storefront is a layout** that lists them with `nvs.ByGlob("shop/*.md").Public()` and reads each one's `M().GetInt("price", 0)`; see [[en/user/jet-functions|Jet functions]].
+- **The cart lives in the browser,** in `localStorage`, or in an API of your own at `/_system/extra/cart` that asks trip2g's `viewer` who the shopper is, as in [[en/user/spa#own-api|Your own API]].
+- **The order is a trip2g form,** not your API: a checkout note declares a `form:` with the buyer's contacts and a text field for the cart, and the app submits it as in [[en/user/spa#forms|Forms]]. It arrives in the admin panel and the admins' mail.
+
+Nothing here changes the stock or checks the price: the order holds whatever the browser sent, and the stock goes down when someone edits the product note.
+
 ### Where to find more
 
 The operations above are tested against the schema. For anything else:
@@ -815,7 +879,8 @@ The operations above are tested against the schema. For anything else:
 - [ ] Edit controls show only when the layout's `currentUser.IsAdmin()` says so; a visitor sees the note read-only and the header's sign-in button.
 - [ ] Every save passes `expectedHash` and handles `UpdateNotesHashMismatchPayload` and an `errors` entry.
 - [ ] MCP calls go to `/_system/mcp` by a relative URL, as `POST` with `Content-Type: application/json` and the browser's default `Accept`, and handle both a JSON-RPC `error` and a result with `isError`.
-- [ ] An API of your own sits under a path on the site's host, not a subdomain; it sends the `Cookie` header only to trip2g at its internal address, never logs or stores it, and refuses `GET` on endpoints that change anything.
+- [ ] An API of your own sits under `/_system/extra/` on the site's host, not on a subdomain, `/api/` or another `/_system/` path; it sends the `Cookie` header only to trip2g at its internal address, never logs or stores it, and refuses `GET` on endpoints that change anything.
+- [ ] Data the app collects goes through a trip2g form: the app handles `TurnstileRequiredPayload`, `FormSubmitDeniedPayload` and `ErrorPayload`, and a form meant for members sits on a note only they can read.
 
 ### See also
 
@@ -823,6 +888,8 @@ The operations above are tested against the schema. For anything else:
 - [[en/user/update_notes|updateNotes]] — the write API in full
 - [[en/user/graphql|GraphQL API]]
 - [[en/user/mcp|MCP Server]] — the tools `/_system/mcp` offers
+- [[en/user/forms|Forms in notes]] — form fields, `can_submit`, `turnstile` and reading submissions
+- [[en/user/subgraphs|Subgraphs]] — who may read a note, and so who may submit its form
 - [MCP Graph Walk](https://trip2g.com/search_visualizer) and its layout, [docs/_layouts/search_visualizer.html](https://github.com/trip2g/trip2g/blob/main/docs/_layouts/search_visualizer.html)
 - [[en/user/jet-functions#json and writeJson|json() and writeJson()]]
 - [[en/user/templates|Templates]]

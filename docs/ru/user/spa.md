@@ -342,7 +342,7 @@ const { notePaths } = await readNote({ paths: [data.path] })
 | Вошедший админ | Cookie сессии или `Authorization: Bearer t2g_…` | Всё ниже, включая `admin { … }` |
 | API-ключ | `X-Api-Key: …` | Всё, кроме `admin { … }`; запись только в пределах write patterns ключа |
 | Токен вебхука | `Authorization: Bearer eyJ…` | То же, что API-ключу, в пределах read и write patterns токена, кроме `hideNotes`, `pushNotes` и `commitNotes` |
-| Любой посетитель | Ничего | `search`, а после входа — `noteChanges` |
+| Любой посетитель | Ничего | `search`, `submitForm`, а после входа — `noteChanges` |
 
 Приложение на странице, которую открывают посетители, авторизуется cookie сессии админа, её отправляет `credentials: 'include'`. Не кладите API-ключ в бандл: его прочитает любой, кто загрузит страницу.
 
@@ -712,18 +712,25 @@ const html = section.content.map((part) => part.text).join('\n')
 
 Приложению может понадобиться больше, чем заметки: отчёт из другой базы данных, вызов платного сервиса, задача на минуту. Вынесите это в своё API, а решать, кому его можно вызывать, оставьте trip2g. API спрашивает trip2g от имени пользователя, поэтому своих пользователей, паролей и правил доступа у него нет.
 
-**Разместите его на том же хосте.** Cookie сессии, `trip2g_token`, — `HttpOnly`, `Secure`, `SameSite=Lax` с `Path=/`, и атрибута `Domain` у неё нет. Без `Domain` браузер отправляет её только тому хосту, который её поставил: ни поддомену, ни родительскому домену. Поэтому API живёт по пути на хосте самого сайта, `https://notes.example.com/api/…`, а не на `api.example.com`. Направьте этот путь в API в обратном прокси перед trip2g; всё остальное по-прежнему уходит в trip2g.
+**Разместите его на том же хосте.** Cookie сессии, `trip2g_token`, — `HttpOnly`, `Secure`, `SameSite=Lax` с `Path=/`, и атрибута `Domain` у неё нет. Без `Domain` браузер отправляет её только тому хосту, который её поставил: ни поддомену, ни родительскому домену. Поэтому API живёт по пути на хосте самого сайта, а не на `api.example.com`.
+
+**Под `/_system/extra/`.** Этот префикс зарезервирован за владельцем сайта: trip2g ничего под ним не отдаёт и никогда не будет, а тест в роутере trip2g падает, если какой-то из его маршрутов начинается с этого префикса. Размещайте каждое API по адресу `/_system/extra/<имя>`, например `https://notes.example.com/_system/extra/report`, и направьте `/_system/extra/` в свои API в обратном прокси перед trip2g; всё остальное по-прежнему уходит в trip2g. Два соседних варианта небезопасны:
+
+- **`/api/…`** — это ещё и путь заметки: заметка `api/report.md` открывается по адресу `/api/report`, и правило прокси её спрячет. К тому же несколько путей под `/api/` trip2g обслуживает сам, например вебхуки платежей.
+- **`/_system/<имя>`** — место собственных маршрутов trip2g: `/_system/graphql`, `/_system/mcp`, `/_system/admin`, `/_system/auth/…` и другие. В следующем релизе там может появиться маршрут с вашим именем.
+
+Под `/_system/` заметки не отдаются никогда, поэтому и контент этот префикс спрятать не может. Запрос на `/_system/extra/…`, который дошёл до trip2g, потому что его не забрало ни одно правило прокси, получает страницу сайта «Страница не найдена» с HTTP 404 — и на `GET`, и на `POST`.
 
 **Как это работает.**
 
-1. Приложение вызывает `fetch('/api/report', …)`. Запрос same-origin, поэтому браузер прикладывает cookie.
+1. Приложение вызывает `fetch('/_system/extra/report', …)`. Запрос same-origin, поэтому браузер прикладывает cookie.
 2. API берёт заголовок `Cookie` из запроса и без изменений отправляет его в `/_system/graphql` trip2g по внутренней сети, с запросом «кто это».
 3. trip2g отвечает так же, как ответил бы браузеру. API решает по этому ответу и отказывает всякий раз, когда отказал trip2g.
 
 Шаблон отдаёт приложению id заметки — добавьте `"pathId", note.PathID()` в блок данных из [[ru/user/spa#Шаблон: заметка внутри страницы|шаблона]], — и приложение отправляет его:
 
 ```js
-const res = await fetch('/api/report', {
+const res = await fetch('/_system/extra/report', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ pathId: data.pathId }),
@@ -786,6 +793,63 @@ if (!allowed?.note) return res.writeHead(403).end()
 
 Большего вызов из другого процесса trip2g не требует: ни `Origin`, ни `Referer`, ни CSRF-токена или своего заголовка. Сервер читает cookie из заголовка `Cookie` любого `POST` с `Content-Type: application/json` — так же, как от браузера. Флаг `Secure` только запрещает браузерам слать cookie по простому HTTP; сервер принимает её в любом случае, поэтому вызов по простому HTTP во внутренней сети работает.
 
+### Принимать данные без своего бэкенда: формы {#forms}
+
+Приложению, которое что-то собирает — заказ, заявку, отзыв, — свой сервер для хранения не нужен. Форма trip2g уже хранит отправки, решает, кому можно отправлять, и защищает от спама. Объявите форму во frontmatter заметки, как описано в [[ru/user/forms|Формах в заметках]], а приложение отправит её мутацией `submitForm`:
+
+- **Поля из описания формы.** Шаблон выводит `note.FormSpecJSON()` в `<script type="application/json" id="form-spec">`, и приложение строит поля ввода по нему: имена, типы, `required`, ограничения. Там же `note_version_id`, который отправка передаёт как `noteVersionId`. См. [[ru/user/forms#Кастомный layout|Формы → Кастомный layout]].
+- **Отправка** идёт в `/_system/graphql`, как и все остальные вызовы на этой странице. Поля и все варианты результата — в [[ru/user/forms#Сабмит через GraphQL|Формы → Сабмит через GraphQL]].
+- **Защита от спама.** Cloudflare Turnstile включён у каждой формы, если она не задаёт `turnstile: false`. Без действительного токена результат — `TurnstileRequiredPayload` с `siteKey` сайта: приложение показывает виджет и отправляет тот же ввод ещё раз с токеном.
+- **Отправки** видны в админке в разделе Forms, и о каждой админам сайта уходит письмо. Админ читает их через GraphQL запросом `admin { formSubmits … }` — это админский вызов: [[ru/user/forms#Чтение сабмитов|Формы → Чтение сабмитов]].
+
+```js
+const submitForm = makeRequest(`mutation ($input: SubmitFormInput!) {
+  submitForm(input: $input) {
+    __typename
+    ... on SubmitFormPayload { submitId }
+    ... on FormSubmitDeniedPayload { reason }
+    ... on TurnstileRequiredPayload { siteKey }
+    ... on ErrorPayload { message }
+  }
+}`)
+
+const spec = JSON.parse(document.getElementById('form-spec').textContent)
+
+async function send(fields, turnstileToken) {
+  const input = { noteVersionId: spec.note_version_id, formId: '', fields, turnstileToken }
+  const { submitForm: result } = await submitForm({ input })
+  if (result.__typename === 'TurnstileRequiredPayload') {
+    turnstile.render('#captcha', {
+      sitekey: result.siteKey,
+      callback: (token) => send(fields, token),
+    })
+  }
+  return result
+}
+
+await send([{ name: 'email', stringValue: 'alice@example.com' }])
+```
+
+`turnstile` берётся из скрипта Cloudflare, `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>`, в шаблоне, а `#captcha` — пустой элемент для виджета. `formId` — `""` для одиночного `form:` или ключ одной из форм под `forms:`.
+
+**Кому можно отправлять.** Сервер проверяет две вещи, в таком порядке:
+
+1. **Может ли посетитель читать заметку?** На заметку, которую посетитель открыть не может, ответ — `ErrorPayload` с `form_not_found`, как будто формы у неё нет.
+2. **`can_submit`.** Не задан или `guest`: любой, кто прошёл первую проверку, вошёл он или нет. `admin`: только вошедший админ; остальные получают `FormSubmitDeniedPayload` с `reason: "admin_required"`. `paid_user` пока не реализован и отказывает всем, включая админа, с `reason: "not_implemented"`. Значение, которого trip2g не знает, например `user`, считается `guest` и открывает форму всем.
+
+**Что это значит для участников.** Значения `can_submit` «только вошедшие участники» нет. Сузить форму до них может только доступ к самой заметке: поставьте форму на заметку без `free: true` в подграфе с флагом Require sign-in — отправить сможет любой вошедший пользователь, а гость получит `form_not_found`; в платном подграфе — только те, у кого есть доступ. Форма на заметке, открытой всем, принимает отправки от всех. Поэтому магазин с аккаунтами покупателей пока не может сделать форму только для участников через `can_submit` — остаётся опираться на доступ к заметке, см. [[ru/user/subgraphs|Подграфы]]. Если отправитель вошёл, отправка сохраняет его аккаунт — он виден как `user` в `formSubmits`.
+
+### Например: небольшой магазин {#shop-example}
+
+Как части этой страницы могли бы сложиться в магазин. Это иллюстрация, а не функция магазина: своего каталога, корзины и оформления заказа у trip2g нет.
+
+- **Товары — заметки,** по одной на товар, с ценой и остатком во frontmatter: `price: 1200`, `stock: 5`.
+- **Витрина — шаблон,** который перечисляет их через `nvs.ByGlob("shop/*.md").Public()` и читает у каждого `M().GetInt("price", 0)`; см. [[ru/user/jet-functions|Справочник функций Jet]].
+- **Корзина живёт в браузере,** в `localStorage`, или в своём API по адресу `/_system/extra/cart`, которое спрашивает у `viewer` trip2g, кто покупатель, как в разделе [[ru/user/spa#own-api|Своё API]].
+- **Заказ — форма trip2g,** а не ваше API: заметка оформления объявляет `form:` с контактами покупателя и текстовым полем для корзины, и приложение отправляет её, как в разделе [[ru/user/spa#forms|Формы]]. Заказ приходит в админку и на почту админам.
+
+Ничто здесь не уменьшает остаток и не проверяет цену: в заказе то, что прислал браузер, а остаток уменьшается, когда кто-то правит заметку товара.
+
 ### Где искать остальное
 
 Запросы выше проверены тестом по схеме. Для всего остального:
@@ -815,7 +879,8 @@ if (!allowed?.note) return res.writeHead(403).end()
 - [ ] Кнопки редактирования видны, только когда так решил `currentUser.IsAdmin()` в шаблоне; посетитель видит заметку только для чтения и кнопку входа в шапке.
 - [ ] Каждое сохранение передаёт `expectedHash` и обрабатывает `UpdateNotesHashMismatchPayload` и запись в `errors`.
 - [ ] Вызовы MCP идут в `/_system/mcp` по относительному адресу, методом `POST` с `Content-Type: application/json` и браузерным `Accept` по умолчанию, и обрабатывают и JSON-RPC `error`, и результат с `isError`.
-- [ ] Своё API живёт по пути на хосте сайта, а не на поддомене; отправляет заголовок `Cookie` только в trip2g по внутреннему адресу, не пишет его в лог и не сохраняет, и не принимает `GET` на эндпоинтах, которые что-то меняют.
+- [ ] Своё API живёт под `/_system/extra/` на хосте сайта, а не на поддомене, не под `/api/` и не по другому пути `/_system/`; отправляет заголовок `Cookie` только в trip2g по внутреннему адресу, не пишет его в лог и не сохраняет, и не принимает `GET` на эндпоинтах, которые что-то меняют.
+- [ ] Данные, которые собирает приложение, идут через форму trip2g: приложение обрабатывает `TurnstileRequiredPayload`, `FormSubmitDeniedPayload` и `ErrorPayload`, а форма для участников стоит на заметке, которую читают только они.
 
 ### Смотрите также
 
@@ -823,6 +888,8 @@ if (!allowed?.note) return res.writeHead(403).end()
 - [[ru/user/update_notes|updateNotes]] — API записи целиком
 - [[ru/user/graphql|GraphQL API]]
 - [[ru/user/mcp|MCP-сервер]] — инструменты, которые даёт `/_system/mcp`
+- [[ru/user/forms|Формы в заметках]] — поля формы, `can_submit`, `turnstile` и чтение отправок
+- [[ru/user/subgraphs|Подграфы]] — кто может читать заметку, а значит и отправлять её форму
 - [MCP Graph Walk](https://trip2g.com/search_visualizer) и его шаблон, [docs/_layouts/search_visualizer.html](https://github.com/trip2g/trip2g/blob/main/docs/_layouts/search_visualizer.html)
 - [[ru/user/jet-functions#json и writeJson|json() и writeJson()]]
 - [[ru/user/templates|Шаблоны]]
