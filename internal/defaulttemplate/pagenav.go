@@ -52,7 +52,7 @@ func (ctx *Ctx) sidebarPageNav() PageNav {
 			if sidebar == nil {
 				continue
 			}
-			links := ctx.Notes.Unwrap().NavLinks(sidebar.Unwrap())
+			links := templateviews.NoteViews(ctx.Notes).NavLinks(templateviews.NoteView(sidebar))
 			if nav, found := findPageNav(links, ctx.Note.PathID()); found {
 				return nav
 			}

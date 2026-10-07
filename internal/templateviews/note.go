@@ -173,8 +173,9 @@ func (n *Note) M() *Meta {
 	return &Meta{raw: n.nv.RawMeta}
 }
 
-// Unwrap returns the underlying NoteView (for internal use).
-func (n *Note) Unwrap() *model.NoteView {
+// NoteView returns the engine note behind n. A function, not a method,
+// so Jet templates can't reach it.
+func NoteView(n *Note) *model.NoteView {
 	return n.nv
 }
 

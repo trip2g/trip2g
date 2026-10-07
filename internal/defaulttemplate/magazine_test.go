@@ -72,7 +72,7 @@ func TestMagazineExcludeFiles_NoExclude(t *testing.T) {
 func TestMagazineExcludeFiles_ExcludeDrafts(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
-	indexNote.Unwrap().RawMeta["magazine_exclude_files"] = "drafts/**"
+	templateviews.NoteView(indexNote).RawMeta["magazine_exclude_files"] = "drafts/**"
 
 	ctx := &Ctx{
 		Note:  indexNote,
@@ -90,8 +90,8 @@ func TestMagazineExcludeFiles_ExcludeDrafts(t *testing.T) {
 func TestMagazineExcludeFiles_ExcludeMultipleWithInclude(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
-	indexNote.Unwrap().RawMeta["magazine_include_files"] = "blog/*.md"
-	indexNote.Unwrap().RawMeta["magazine_exclude_files"] = "blog/post1.md"
+	templateviews.NoteView(indexNote).RawMeta["magazine_include_files"] = "blog/*.md"
+	templateviews.NoteView(indexNote).RawMeta["magazine_exclude_files"] = "blog/post1.md"
 
 	ctx := &Ctx{
 		Note:  indexNote,
@@ -114,7 +114,7 @@ func TestMagazineExcludeFiles_DefaultEmpty(t *testing.T) {
 func TestMagazineExcludeFiles_ReturnsValue(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
-	indexNote.Unwrap().RawMeta["magazine_exclude_files"] = "drafts/**"
+	templateviews.NoteView(indexNote).RawMeta["magazine_exclude_files"] = "drafts/**"
 
 	ctx := &Ctx{
 		Note: indexNote,
@@ -125,7 +125,7 @@ func TestMagazineExcludeFiles_ReturnsValue(t *testing.T) {
 func TestMagazineExcludeFiles_TelegramGlob(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
-	indexNote.Unwrap().RawMeta["magazine_exclude_files"] = "**/*Telegram.md"
+	templateviews.NoteView(indexNote).RawMeta["magazine_exclude_files"] = "**/*Telegram.md"
 
 	ctx := &Ctx{
 		Note:  indexNote,
@@ -148,7 +148,7 @@ func TestMagazineExcludeProperty_NoExclude(t *testing.T) {
 func TestMagazineExcludeProperty_ReturnsValue(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
-	indexNote.Unwrap().RawMeta["magazine_exclude_property"] = "telegram_publish_at"
+	templateviews.NoteView(indexNote).RawMeta["magazine_exclude_property"] = "telegram_publish_at"
 
 	ctx := &Ctx{
 		Note: indexNote,
@@ -159,7 +159,7 @@ func TestMagazineExcludeProperty_ReturnsValue(t *testing.T) {
 func TestMagazineExcludeProperty_ExcludesByProperty(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
-	indexNote.Unwrap().RawMeta["magazine_exclude_property"] = "telegram_publish_at"
+	templateviews.NoteView(indexNote).RawMeta["magazine_exclude_property"] = "telegram_publish_at"
 
 	ctx := &Ctx{
 		Note:  indexNote,
@@ -178,13 +178,13 @@ func TestMagazineExcludeProperty_CombinedWithIncludeProperty(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
 	// Add "published" to some notes
-	nvs.NoteByPath("blog/post1.md").Unwrap().RawMeta = map[string]interface{}{"published": true}
-	nvs.NoteByPath("blog/post2.md").Unwrap().RawMeta = map[string]interface{}{"published": true}
+	templateviews.NoteView(nvs.NoteByPath("blog/post1.md")).RawMeta = map[string]interface{}{"published": true}
+	templateviews.NoteView(nvs.NoteByPath("blog/post2.md")).RawMeta = map[string]interface{}{"published": true}
 	// post2.Telegram has both published and telegram_publish_at
-	nvs.NoteByPath("blog/post2. Telegram.md").Unwrap().RawMeta["published"] = true
+	templateviews.NoteView(nvs.NoteByPath("blog/post2. Telegram.md")).RawMeta["published"] = true
 
-	indexNote.Unwrap().RawMeta["magazine_include_property"] = "published"
-	indexNote.Unwrap().RawMeta["magazine_exclude_property"] = "telegram_publish_at"
+	templateviews.NoteView(indexNote).RawMeta["magazine_include_property"] = "published"
+	templateviews.NoteView(indexNote).RawMeta["magazine_exclude_property"] = "telegram_publish_at"
 
 	ctx := &Ctx{
 		Note:  indexNote,
@@ -238,8 +238,8 @@ func TestMagazineTierCounts(t *testing.T) {
 func TestMagazineItems_CustomTierCounts(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
-	indexNote.Unwrap().RawMeta["magazine_featured"] = 0
-	indexNote.Unwrap().RawMeta["magazine_grid"] = 0
+	templateviews.NoteView(indexNote).RawMeta["magazine_featured"] = 0
+	templateviews.NoteView(indexNote).RawMeta["magazine_grid"] = 0
 
 	ctx := &Ctx{
 		Note:  indexNote,
@@ -271,7 +271,7 @@ func TestMagazineGridColumns_Default(t *testing.T) {
 func TestMagazineFeaturedCount_ReturnsValue(t *testing.T) {
 	nvs := createMagazineTestNVS()
 	indexNote := nvs.NoteByPath("index.md")
-	indexNote.Unwrap().RawMeta["magazine_featured"] = 3
+	templateviews.NoteView(indexNote).RawMeta["magazine_featured"] = 3
 
 	ctx := &Ctx{Note: indexNote}
 	require.Equal(t, 3, ctx.MagazineFeaturedCount())
