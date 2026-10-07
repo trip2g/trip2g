@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"trip2g/internal/obsidiancanvas"
 	rl2 "trip2g/internal/russkayalatinica2"
@@ -399,6 +400,8 @@ type NoteViews struct {
 	// that declare glob patterns for automatic matching.
 	// Collected during Load() from notes with {section}_includes frontmatter fields.
 	LayoutSections []LayoutSectionEntry `json:"-"`
+
+	navLinks *sync.Map // *NoteView -> []NoteNavLink, see NavLinks
 }
 
 // LayoutSectionEntry represents a vault note that acts as a layout section
@@ -1169,6 +1172,7 @@ func NewNoteViews() *NoteViews {
 		RouteMap:           make(map[string]map[string]*NoteView),
 		DomainSitemaps:     make(map[string][]byte),
 		customDomainRoutes: make(map[int64]struct{ Host, Path string }),
+		navLinks:           &sync.Map{},
 	}
 }
 

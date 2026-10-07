@@ -70,10 +70,10 @@ func findPageNav(links []model.NoteNavLink, pathID int64) (PageNav, bool) {
 
 		var nav PageNav
 		if i > 0 {
-			nav.Prev = &NavLink{Label: links[i-1].Note.Title, Href: links[i-1].Note.PermalinkEncoded()}
+			nav.Prev = sidebarNavLink(links[i-1])
 		}
 		if i+1 < len(links) {
-			nav.Next = &NavLink{Label: links[i+1].Note.Title, Href: links[i+1].Note.PermalinkEncoded()}
+			nav.Next = sidebarNavLink(links[i+1])
 		}
 		if link.Heading != "" {
 			crumb := NavLink{Label: link.Heading}
@@ -85,6 +85,15 @@ func findPageNav(links []model.NoteNavLink, pathID int64) (PageNav, bool) {
 		return nav, true
 	}
 	return PageNav{}, false
+}
+
+// sidebarNavLink labels a link with its sidebar text, falling back to the note title.
+func sidebarNavLink(link model.NoteNavLink) *NavLink {
+	label := link.Label
+	if label == "" {
+		label = link.Note.Title
+	}
+	return &NavLink{Label: label, Href: link.Note.PermalinkEncoded()}
 }
 
 // noteNavLink resolves a "[[Note]]" or path frontmatter value; false or a miss gives nil.

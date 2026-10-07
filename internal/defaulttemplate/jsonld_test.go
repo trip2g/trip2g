@@ -6,7 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"trip2g/internal/logger"
+	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
+	"trip2g/internal/templateviews"
 
 	"github.com/stretchr/testify/require"
 )
@@ -151,4 +154,95 @@ func extractLDJSON(t *testing.T, out string) string {
 	j := strings.Index(rest, "</script>")
 	require.GreaterOrEqual(t, j, 0, "missing closing script tag")
 	return rest[:j]
+}
+
+func TestJSONLDBreadcrumbFromVisibleCrumbs(t *testing.T) {
+	page := func(path, frontmatter string) mdloader.SourceFile {
+		return mdloader.SourceFile{Path: path, Content: []byte("---\n" + frontmatter + "\n---\nbody")}
+	}
+	srcs := []mdloader.SourceFile{
+		{Path: "docs/_sidebar.md", Content: []byte("### Start\n\n- [[a]]\n\n### [[guide|Guide]]\n\n- [[b]]\n")},
+		page("docs/a.md", "title: A\nleft_sidebar: docs/_sidebar.md"),
+		page("docs/b.md", "title: B\nleft_sidebar: docs/_sidebar.md"),
+		page("docs/guide.md", "title: Guide page"),
+		page("docs/fm.md", `title: FM
+breadcrumbs:
+  - {label: Home, href: /}
+  - "[[docs/guide]]"
+  - {label: Plain}
+  - {label: Ext, href: "https://other.com/x"}`),
+		page("docs/sub/none.md", "title: None"),
+	}
+	for i := range srcs {
+		srcs[i].PathID = int64(i + 1)
+	}
+	pages, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+	nvs := templateviews.NewNVS(pages, "")
+
+	home := JSONLDCrumb{Name: "Home", Item: "https://ex.com/"}
+	tests := []struct {
+		name string
+		path string
+		want []JSONLDCrumb
+	}{
+		{
+			name: "plain-text crumb is skipped",
+			path: "docs/a.md",
+			want: []JSONLDCrumb{home, {Name: "A", Item: "https://ex.com/docs/a"}},
+		},
+		{
+			name: "linked heading crumb",
+			path: "docs/b.md",
+			want: []JSONLDCrumb{
+				home,
+				{Name: "Guide", Item: "https://ex.com/docs/guide"},
+				{Name: "B", Item: "https://ex.com/docs/b"},
+			},
+		},
+		{
+			name: "frontmatter crumbs, home not repeated",
+			path: "docs/fm.md",
+			want: []JSONLDCrumb{
+				home,
+				{Name: "Guide page", Item: "https://ex.com/docs/guide"},
+				{Name: "Ext", Item: "https://other.com/x"},
+				{Name: "FM", Item: "https://ex.com/docs/fm"},
+			},
+		},
+		{
+			name: "no visible crumbs falls back to the URL path",
+			path: "docs/sub/none.md",
+			want: []JSONLDCrumb{
+				home,
+				{Name: "docs", Item: "https://ex.com/docs"},
+				{Name: "sub", Item: "https://ex.com/docs/sub"},
+				{Name: "None", Item: "https://ex.com/docs/sub/none"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := &Ctx{Note: nvs.NoteByPath(tt.path), Notes: nvs, PublicURL: "https://ex.com"}
+			require.Equal(t, tt.want, ctx.JSONLDBreadcrumb())
+
+			ctx.OGTags = map[string]string{"og:url": "https://ex.com" + ctx.Note.Permalink()}
+			var doc struct {
+				Graph []struct {
+					Type  string `json:"@type"`
+					Items []struct {
+						Position int    `json:"position"`
+						Item     string `json:"item"`
+					} `json:"itemListElement"`
+				} `json:"@graph"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(extractLDJSON(t, JSONLD(ctx))), &doc))
+			require.Equal(t, "BreadcrumbList", doc.Graph[1].Type)
+			for i, item := range doc.Graph[1].Items {
+				require.Equal(t, i+1, item.Position)
+				require.NotEmpty(t, item.Item)
+			}
+		})
+	}
 }

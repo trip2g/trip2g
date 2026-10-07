@@ -1,11 +1,13 @@
 package model_test
 
 import (
+	"sync"
 	"testing"
 
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -116,4 +118,64 @@ func TestNavLinks(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestNavLinkLabels(t *testing.T) {
+	sidebar := "### [[guide|Guide]]\n\n" +
+		"- [[a]]\n- [[a|Alpha]]\n- [[a\\|Escaped]]\n- [Markdown **bold**](a.md)\n- [](a.md)\n- [[a#Part|Skipped]]\n"
+
+	srcs := []mdloader.SourceFile{
+		{Path: "_sidebar.md", Content: []byte(sidebar), PathID: 1},
+		{Path: "a.md", Content: []byte("body"), PathID: 2},
+		{Path: "guide.md", Content: []byte("body"), PathID: 3},
+	}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+
+	var got []string
+	for _, link := range nvs.NavLinks(nvs.PathMap["_sidebar.md"]) {
+		got = append(got, link.Label)
+	}
+	require.Equal(t, []string{"", "Alpha", "Escaped", "Markdown bold", ""}, got)
+}
+
+func TestNavLinksCached(t *testing.T) {
+	srcs := []mdloader.SourceFile{
+		{Path: "_sidebar.md", Content: []byte("- [[a]]\n"), PathID: 1},
+		{Path: "a.md", Content: []byte("body"), PathID: 2},
+	}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+
+	sidebar := nvs.PathMap["_sidebar.md"]
+	first := nvs.NavLinks(sidebar)
+	require.Len(t, first, 1)
+
+	second := nvs.NavLinks(sidebar)
+	require.Same(t, &first[0], &second[0])
+
+	// Copy shares the cache with the snapshot it copies.
+	copied := nvs.Copy().NavLinks(sidebar)
+	require.Same(t, &first[0], &copied[0])
+}
+
+func TestNavLinksConcurrent(t *testing.T) {
+	srcs := []mdloader.SourceFile{
+		{Path: "_sidebar.md", Content: []byte("- [[a]]\n- [[b|Bee]]\n"), PathID: 1},
+		{Path: "a.md", Content: []byte("body"), PathID: 2},
+		{Path: "b.md", Content: []byte("body"), PathID: 3},
+	}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+
+	sidebar := nvs.PathMap["_sidebar.md"]
+	var wg sync.WaitGroup
+	for range 8 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			assert.Len(t, nvs.NavLinks(sidebar), 2)
+		}()
+	}
+	wg.Wait()
 }
