@@ -716,7 +716,7 @@ An app may need more than notes: a report built from another database, a call to
 
 **Under `/_system/extra/`.** This prefix is reserved for the site owner: trip2g serves nothing under it and never will, and a test in trip2g's router fails if one of its routes starts with it. Mount each API at `/_system/extra/<name>`, such as `https://notes.example.com/_system/extra/report`, and route `/_system/extra/` to your APIs in the reverse proxy in front of trip2g; everything else keeps going to trip2g. Two nearby choices are not safe:
 
-- **`/api/…`** is also a note path: a note `api/report.md` is served at `/api/report`, and the proxy rule would hide it. trip2g answers a few `/api/` paths itself as well, such as its payment webhooks.
+- **`/api/…`** is also a note path: a note `api/report.md` is served at `/api/report`, and the proxy rule would hide it.
 - **`/_system/<name>`** is where trip2g's own routes live: `/_system/graphql`, `/_system/mcp`, `/_system/admin`, `/_system/auth/…` and more. A later release may add one with your name.
 
 No note is ever served under `/_system/`, so the prefix can't hide content either. A request to `/_system/extra/…` that reaches trip2g, because no proxy rule took it, gets the site's "Page not found" page with HTTP 404, for `GET` and `POST` alike.
