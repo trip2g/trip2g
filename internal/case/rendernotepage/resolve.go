@@ -95,11 +95,6 @@ type Request struct {
 	UserToken *usertoken.Data
 }
 
-type VersionBanner struct {
-	Label     string
-	Permalink string
-}
-
 type Response struct {
 	Title string
 	Note  *model.NoteView
@@ -115,8 +110,6 @@ type Response struct {
 	UserToken *usertoken.Data
 	UserRole  string
 	Time      int
-
-	versionBanner *VersionBanner
 
 	DefaultVersion string
 
@@ -270,10 +263,6 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		response.domainHost = normalizedHost
 	}
 
-	if isAdmin {
-		checkLatestBanner(env, &response, isLatest, path, note)
-	}
-
 	// TODO: extract subgraphs
 	// TODO: hide all _* pages (system)
 	// TODO: add hideSidebar logic
@@ -385,48 +374,6 @@ func resolveTelegramLinks(ctx context.Context, env Env, note *model.NoteView) []
 	}
 
 	return links
-}
-
-func checkLatestBanner(
-	env Env,
-	response *Response,
-	isLatest bool,
-	path string,
-	note *model.NoteView,
-) {
-	var alternativeNotes *model.NoteViews
-	var alternativeVersion string
-
-	if isLatest {
-		alternativeNotes = env.LiveNoteViews()
-		alternativeVersion = versionLive
-	} else {
-		alternativeNotes = env.LatestNoteViews()
-		alternativeVersion = versionLatest
-	}
-
-	alternativeNote := alternativeNotes.GetByPath(path)
-	if alternativeNote != nil && alternativeNote.VersionID != note.VersionID {
-		// Build permalink with version parameter for switching.
-		permalink := alternativeNote.Permalink
-		u, err := url.Parse(permalink)
-		if err == nil {
-			query := u.Query()
-			query.Set("version", alternativeVersion)
-			u.RawQuery = query.Encode()
-			permalink = u.String()
-		}
-
-		response.versionBanner = &VersionBanner{
-			Permalink: permalink,
-		}
-
-		if isLatest {
-			response.versionBanner.Label = "Это последняя загруженная версия, которая отличается от опубликованной"
-		} else {
-			response.versionBanner.Label = "Это последняя опубликованная версия, которая отличается от загруженной"
-		}
-	}
 }
 
 // handleUserToken processes user token and updates response with user-specific data.

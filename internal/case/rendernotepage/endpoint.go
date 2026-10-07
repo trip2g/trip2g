@@ -26,8 +26,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-//go:generate go tool github.com/valyala/quicktemplate/qtc -dir=. -ext=html
-
 type Endpoint struct{}
 
 const noIndexRobots = "noindex"
@@ -403,7 +401,14 @@ func renderLayout(
 	if layout.View == nil && len(layout.Warnings) > 0 {
 		env.Logger().Error("layout has parse error", "name", layoutName, "warnings", layout.Warnings)
 		if resp.UserToken.IsAdmin() {
-			WriteLayoutError(ctx, resp, layoutName, layout.Warnings)
+			messages := make([]string, 0, len(layout.Warnings))
+			for _, w := range layout.Warnings {
+				messages = append(messages, w.Message)
+			}
+			defaulttemplate.WriteServerError(ctx, env, defaulttemplate.ServerErrorParams{
+				Admin:  true,
+				Detail: fmt.Sprintf("Layout %q failed to parse.\n\n%s", layoutName, strings.Join(messages, "\n")),
+			})
 			return true, nil
 		}
 		// Non-admin: fallback to default rendering
