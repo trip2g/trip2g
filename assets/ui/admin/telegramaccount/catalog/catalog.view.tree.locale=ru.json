@@ -1,3 +1,5 @@
 {
-	"$trip2g_admin_telegramaccount_catalog_menu_title": "Telegram аккаунты"
+	"$trip2g_admin_telegramaccount_catalog_menu_title": "Telegram аккаунты",
+	"$trip2g_admin_telegramaccount_catalog_CreatedAt_title": "Создано",
+	"$trip2g_admin_telegramaccount_catalog_CreatedBy_title": "Создатель"
 }
