@@ -6,6 +6,8 @@ lang_redirect: "[[en/user/spa]]"
 
 Свой шаблон не обязан рисовать страницу. Он может отдать JavaScript-приложение, которое показывает заметку как что-то интерактивное и записывает изменения обратно. Заметка остаётся обычным markdown: Obsidian, агент и приложение правят один и тот же файл.
 
+По сути это интерактивное приложение-представление: заметка, показанная как приложение, а markdown-файлы — его база данных. Одна заметка — дом приложения, а читать и писать оно может и многие другие.
+
 Так устроен [[ru/user/kanban|шаблон канбан-доски]]. Он превращает заметку в формате obsidian-kanban в доску с перетаскиванием карточек, и каждое перемещение сохраняется обратно в markdown заметки. Эта страница описывает схему, по которой он сделан, чтобы вы могли собрать своё приложение: чек-лист, редактор таблицы, конструктор форм, дашборд.
 
 Если вы ещё не делали шаблоны, начните с [[ru/user/templates|Шаблонов]].
@@ -650,6 +652,140 @@ query NoteVersion($id: Int64!) {
 
 Поверхность API описана в [[ru/user/update_notes|updateNotes]], [[ru/user/graphql|GraphQL API]] и в запросах выше, а файл операций плагина Obsidian ниже показывает, что он выполняет.
 
+### Приложение над всей базой знаний: MCP из браузера {#mcp}
+
+Приложение не обязано быть про ту заметку, на которой оно стоит. [MCP Graph Walk](https://trip2g.com/search_visualizer) показывает, как модель вживую ищет и читает этот сайт документации: каждый вызов — шаг на анимированной карте. Его страница — одна заметка, `docs/search_visualizer.md` с `layout: search_visualizer`, а шаблон, [docs/_layouts/search_visualizer.html](https://github.com/trip2g/trip2g/blob/main/docs/_layouts/search_visualizer.html), и есть всё приложение. Оно:
+
+- вызывает `/_system/mcp` из браузера через JSON-RPC `tools/call`: `search`, `note_html`, `expand`, `similar` и их федеративные версии;
+- читает граф знаний всего сайта и ничего не пишет;
+- работает на весь экран со своей шапкой, без `defaultTemplate.Header()`;
+- говорит с моделью по API-ключу, который вставляет посетитель. Страница хранит ключ в `localStorage` браузера и отправляет его только провайдеру модели; trip2g его не видит.
+
+| | Заметка — это | Приложение говорит с |
+|---|---|---|
+| Канбан | Данные: приложение правит заметку, на которой стоит | GraphQL: `updateNotes`, `noteChanges` |
+| Graph walk | Дом приложения: данные — весь сайт | MCP: `search`, `note_html` |
+
+**MCP или GraphQL.** MCP — чтобы искать и читать по всей базе: результаты поиска со сниппетами и `match_id` у каждого попадания, чтение одного раздела по его `toc_path`, обход оглавления заметки через `expand`, похожие заметки через `similar` и поиск по подключённым базам. Это та же поверхность инструментов, которой пользуются агенты, поэтому страницу, которая показывает, что нашёл бы агент, строят на ней. Инструменты описаны в [[ru/user/mcp|MCP-сервере]]. GraphQL — для всего остального: запись (`updateNotes`), живые обновления (`noteChanges`), типизированные запросы, которые возвращают ровно запрошенные поля, и `viewer`.
+
+**Вызов.** Эндпоинт без состояния, поэтому `tools/call` работает без предварительного `initialize`. `initialize` нужен, только чтобы прочитать инструкции сайта для агентов, а `tools/list` — чтобы получить схему входа каждого инструмента; graph walk отправляет оба, потому что передаёт схемы модели.
+
+```js
+let rpcId = 0
+
+async function callTool(name, args) {
+  const res = await fetch('/_system/mcp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: ++rpcId,
+      method: 'tools/call',
+      params: { name, arguments: args },
+    }),
+  })
+  const body = await res.json()
+  if (body.error) throw new Error(body.error.message)
+  if (body.result.isError) throw new Error(body.result.content[0].text)
+  return body.result
+}
+
+const found = await callTool('search', { query: 'release plan', limit: 5 })
+const hits = found.structuredContent.results
+const section = await callTool('note_html', { path: hits[0].note_path })
+const html = section.content.map((part) => part.text).join('\n')
+```
+
+У каждого попадания в `structuredContent.results` есть `title`, `note_path`, `url` и `matches`; в `content` тот же ответ текстом, и для `note_html` этот текст — HTML заметки. Запрос должен быть `POST` с `Content-Type: application/json`, на всё остальное ответ HTTP 415. `Accept` оставьте браузерным по умолчанию: на один `Accept: application/json` эндпоинт отвечает HTTP 400, ему нужен `application/json, text/event-stream` или `*/*`.
+
+**Доступ.** MCP читает ту же cookie сессии, что и GraphQL. Запрос идёт на тот же origin, браузер прикладывает cookie, и сервер проверяет её, прежде чем запустить инструмент:
+
+- **Посетитель, который не вошёл,** находит и читает только заметки, открытые всем. Остальные поиск не показывает вовсе, в отличие от GraphQL `search`, который ставит их в конец без `document`.
+- **Вошедший читатель** получает ещё и заметки подграфов, к которым у него есть доступ: те же заметки, что он мог бы открыть на сайте.
+- **Вошедший админ** получает все заметки.
+- **На заметку, которую посетитель читать не может,** `note_html` отвечает ошибкой `Note not found` — так же, как на несуществующую.
+- **Ничто из того, что шлёт браузер, не открывает запись.** Инструментам, которые выполняют GraphQL от имени админа, `graphql_request` и `graphql_introspection`, нужен API-ключ с включёнными админскими MCP-инструментами; cookie сессии, даже админская, до них не дотягивается. Со страницы MCP только читает.
+
+Вызывайте его со страницы того же сайта. CORS-заголовки сервер отдаёт только плагину Obsidian, поэтому страница с другого origin ответов не прочитает.
+
+### Своё API рядом с trip2g, а доступ проверяет trip2g {#own-api}
+
+Приложению может понадобиться больше, чем заметки: отчёт из другой базы данных, вызов платного сервиса, задача на минуту. Вынесите это в своё API, а решать, кому его можно вызывать, оставьте trip2g. API спрашивает trip2g от имени пользователя, поэтому своих пользователей, паролей и правил доступа у него нет.
+
+**Разместите его на том же хосте.** Cookie сессии, `trip2g_token`, — `HttpOnly`, `Secure`, `SameSite=Lax` с `Path=/`, и атрибута `Domain` у неё нет. Без `Domain` браузер отправляет её только тому хосту, который её поставил: ни поддомену, ни родительскому домену. Поэтому API живёт по пути на хосте самого сайта, `https://notes.example.com/api/…`, а не на `api.example.com`. Направьте этот путь в API в обратном прокси перед trip2g; всё остальное по-прежнему уходит в trip2g.
+
+**Как это работает.**
+
+1. Приложение вызывает `fetch('/api/report', …)`. Запрос same-origin, поэтому браузер прикладывает cookie.
+2. API берёт заголовок `Cookie` из запроса и без изменений отправляет его в `/_system/graphql` trip2g по внутренней сети, с запросом «кто это».
+3. trip2g отвечает так же, как ответил бы браузеру. API решает по этому ответу и отказывает всякий раз, когда отказал trip2g.
+
+Шаблон отдаёт приложению id заметки — добавьте `"pathId", note.PathID()` в блок данных из [[ru/user/spa#Шаблон: заметка внутри страницы|шаблона]], — и приложение отправляет его:
+
+```js
+const res = await fetch('/api/report', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ pathId: data.pathId }),
+})
+if (!res.ok) throw new Error(`report: ${res.status}`)
+const report = await res.json()
+```
+
+API, здесь на Node 18 или новее, спрашивает trip2g, кто вызывает:
+
+```js
+import { createServer } from 'node:http'
+
+const askTrip2g = (query) => async (cookie, variables) => {
+  const res = await fetch(process.env.TRIP2G_GRAPHQL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: JSON.stringify({ query, variables }),
+  })
+  const body = await res.json()
+  return body.errors ? null : body.data
+}
+
+const whoIs = askTrip2g(`query { viewer { role user { email } } }`)
+
+createServer(async (req, res) => {
+  if (req.method !== 'POST') return res.writeHead(405).end()
+  const cookie = req.headers.cookie ?? ''
+  const who = await whoIs(cookie)
+  if (!who || who.viewer.role === 'GUEST') return res.writeHead(401).end()
+  let raw = ''
+  for await (const chunk of req) raw += chunk
+  const { pathId } = JSON.parse(raw)
+  res.writeHead(200, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify(await buildReport(pathId, who.viewer.user)))
+}).listen(8080)
+```
+
+`TRIP2G_GRAPHQL` — GraphQL-эндпоинт trip2g по внутреннему адресу, `buildReport` — собственная работа API. `viewer.role` — `GUEST`, `USER` или `ADMIN`. Посетитель, который не вошёл или у которого истекла cookie, получает `GUEST` и `user: null`; заблокированный пользователь получает запись в `errors`, и `askTrip2g` превращает её в `null`. Id пользователя в схеме нет: человека определяет `user.email`, и он `null` у аккаунта, вошедшего без почты.
+
+**Строже: проверяйте ресурс, а не только человека.** Прежде чем отдать данные о заметке, спросите у trip2g эту заметку от имени пользователя. Публичный запрос `note` отвечает, только если пользователь может открыть заметку на сайте; иначе он возвращает запись в `errors` (`Need auth`, `Need subscription`, `Sign in required`, `page not found`) и не возвращает заметку. Отказывайте всякий раз, когда отказал trip2g:
+
+```js
+const canRead = askTrip2g(`query ($pathId: Int64!) {
+  note(input: { pathId: $pathId, referer: "" }) { pathId }
+}`)
+
+const allowed = await canRead(cookie, { pathId })
+if (!allowed?.note) return res.writeHead(403).end()
+```
+
+Теперь правила доступа живут в одном месте — в подграфах и платном доступе хранилища, — и API не может от них разойтись. Отдавайте данные ровно по тому `pathId`, который проверили. Успешная проверка вошедшего читателя засчитывается как просмотр заметки в его истории чтения, как если бы он открыл страницу.
+
+**Правила.**
+
+- **Пересланная cookie — это вся сессия пользователя.** С ней работает любой вызов trip2g, доступный этому пользователю, у админа — включая запись. Отправляйте её только в trip2g; никогда не пишите в лог, не сохраняйте и не передавайте другому сервису. Выход из аккаунта только удаляет cookie из браузера: копия, которую кто-то сохранил, действует, пока не истечёт, по умолчанию 30 дней.
+- **Не принимайте `GET` там, где что-то меняется.** `SameSite=Lax` не пускает cookie в межсайтовый `POST`, но браузер всё равно отправляет её при переходе по ссылке `GET` с другого сайта. Эндпоинт, который только читает, может отвечать на `GET`.
+- **Каждый вызов API стоит вызова trip2g.** Ответ trip2g можно кешировать на несколько секунд по значению cookie. Тогда блокировка или отозванная подписка дойдёт до API, только когда истечёт закешированный ответ.
+- **Обращайтесь к trip2g по внутреннему адресу,** а не по публичному домену. Тогда cookie не идёт через интернет второй раз, а вызов не проходит снова через прокси.
+
+Большего вызов из другого процесса trip2g не требует: ни `Origin`, ни `Referer`, ни CSRF-токена или своего заголовка. Сервер читает cookie из заголовка `Cookie` любого `POST` с `Content-Type: application/json` — так же, как от браузера. Флаг `Secure` только запрещает браузерам слать cookie по простому HTTP; сервер принимает её в любом случае, поэтому вызов по простому HTTP во внутренней сети работает.
+
 ### Где искать остальное
 
 Запросы выше проверены тестом по схеме. Для всего остального:
@@ -678,11 +814,15 @@ query NoteVersion($id: Int64!) {
 - [ ] В странице нет API-ключа или токена, у приложения нет своего экрана входа.
 - [ ] Кнопки редактирования видны, только когда так решил `currentUser.IsAdmin()` в шаблоне; посетитель видит заметку только для чтения и кнопку входа в шапке.
 - [ ] Каждое сохранение передаёт `expectedHash` и обрабатывает `UpdateNotesHashMismatchPayload` и запись в `errors`.
+- [ ] Вызовы MCP идут в `/_system/mcp` по относительному адресу, методом `POST` с `Content-Type: application/json` и браузерным `Accept` по умолчанию, и обрабатывают и JSON-RPC `error`, и результат с `isError`.
+- [ ] Своё API живёт по пути на хосте сайта, а не на поддомене; отправляет заголовок `Cookie` только в trip2g по внутреннему адресу, не пишет его в лог и не сохраняет, и не принимает `GET` на эндпоинтах, которые что-то меняют.
 
 ### Смотрите также
 
 - [[ru/user/kanban|Шаблон канбан-доски]] и его исходники, [github.com/trip2g/kanban_template](https://github.com/trip2g/kanban_template)
 - [[ru/user/update_notes|updateNotes]] — API записи целиком
 - [[ru/user/graphql|GraphQL API]]
+- [[ru/user/mcp|MCP-сервер]] — инструменты, которые даёт `/_system/mcp`
+- [MCP Graph Walk](https://trip2g.com/search_visualizer) и его шаблон, [docs/_layouts/search_visualizer.html](https://github.com/trip2g/trip2g/blob/main/docs/_layouts/search_visualizer.html)
 - [[ru/user/jet-functions#json и writeJson|json() и writeJson()]]
 - [[ru/user/templates|Шаблоны]]

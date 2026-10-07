@@ -87,7 +87,7 @@ func readDocInlineOperations(t *testing.T, page string) []string {
 	data, err := os.ReadFile("../../docs/" + page + ".md")
 	require.NoError(t, err)
 
-	inline := regexp.MustCompile("(?s)make(?:Request|Subscription)\\(`(.*?)`\\)")
+	inline := regexp.MustCompile("(?s)(?:make(?:Request|Subscription)|askTrip2g)\\(`(.*?)`\\)")
 
 	var ops []string
 	for _, m := range inline.FindAllStringSubmatch(string(data), -1) {
@@ -102,7 +102,7 @@ func TestSPADocInlineOperationsMatchSchema(t *testing.T) {
 
 	en := readDocInlineOperations(t, "en/user/spa")
 	ru := readDocInlineOperations(t, "ru/user/spa")
-	require.Len(t, en, 2)
+	require.Len(t, en, 4)
 	require.Equal(t, en, ru, "en and ru spa pages must carry identical inline operations")
 
 	for _, op := range en {

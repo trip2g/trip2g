@@ -6,6 +6,8 @@ lang_redirect: "[[ru/user/spa]]"
 
 A custom layout doesn't have to render a page. It can ship a JavaScript app that shows a note as something interactive and writes the changes back. The note stays plain markdown: Obsidian, an agent and the app all edit the same file.
 
+Think of it as an interactive view app: a note rendered as an app, with markdown files as its database. One note is the app's home, and the app can read and write many more.
+
 The [[en/user/kanban|Kanban board template]] works this way. It turns an obsidian-kanban note into a drag-and-drop board, and every move is saved back into the note's markdown. This page describes the pattern it follows, so you can build your own app: a checklist, a table editor, a form builder, a dashboard.
 
 New to layouts? Read [[en/user/templates|Templates]] first.
@@ -650,6 +652,140 @@ An app may use admin calls; Kanban reads version history with them. Keep them to
 
 The API surface is documented in [[en/user/update_notes|updateNotes]], [[en/user/graphql|GraphQL API]] and the operations above, and the Obsidian plugin's operations file below lists what it runs.
 
+### An app over the whole knowledge base: MCP from the browser {#mcp}
+
+An app doesn't have to be about the note it is on. [MCP Graph Walk](https://trip2g.com/search_visualizer) shows a model searching and reading this documentation site live, every call a step on an animated map. Its page is one note, `docs/search_visualizer.md` with `layout: search_visualizer`, and the layout, [docs/_layouts/search_visualizer.html](https://github.com/trip2g/trip2g/blob/main/docs/_layouts/search_visualizer.html), is the whole app. It:
+
+- calls `/_system/mcp` from the browser with JSON-RPC `tools/call`: `search`, `note_html`, `expand`, `similar` and their federated versions;
+- reads the knowledge graph of the whole site and writes nothing;
+- runs full-screen with its own header, without `defaultTemplate.Header()`;
+- talks to a model with an API key the visitor pastes. The page keeps the key in the browser's `localStorage` and sends it only to the model provider; trip2g never sees it.
+
+| | The note is | The app talks to |
+|---|---|---|
+| Kanban | The data: the app edits the note it is on | GraphQL: `updateNotes`, `noteChanges` |
+| Graph walk | The app's home: the data is the whole site | MCP: `search`, `note_html` |
+
+**MCP or GraphQL.** Use MCP to search and read across the base: search results with snippets and a `match_id` per hit, one section read by its `toc_path`, a note's table of contents walked with `expand`, related notes with `similar`, and search across connected bases. It is the same tool surface agents use, so a page that shows what an agent would find is built on it. The tools are described in [[en/user/mcp|MCP Server]]. Use GraphQL for everything else: writes (`updateNotes`), live updates (`noteChanges`), typed queries that return exactly the fields you ask for, and `viewer`.
+
+**A call.** The endpoint is stateless, so a `tools/call` works without an `initialize` first. Send `initialize` only to read the site's instructions for agents, and `tools/list` to get each tool's input schema; the graph walk sends both because it hands the schemas to the model.
+
+```js
+let rpcId = 0
+
+async function callTool(name, args) {
+  const res = await fetch('/_system/mcp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: ++rpcId,
+      method: 'tools/call',
+      params: { name, arguments: args },
+    }),
+  })
+  const body = await res.json()
+  if (body.error) throw new Error(body.error.message)
+  if (body.result.isError) throw new Error(body.result.content[0].text)
+  return body.result
+}
+
+const found = await callTool('search', { query: 'release plan', limit: 5 })
+const hits = found.structuredContent.results
+const section = await callTool('note_html', { path: hits[0].note_path })
+const html = section.content.map((part) => part.text).join('\n')
+```
+
+Each hit in `structuredContent.results` has `title`, `note_path`, `url` and `matches`; `content` holds the same answer as text, and for `note_html` that text is the note's HTML. The request must be a `POST` with `Content-Type: application/json`; anything else gets HTTP 415. Leave `Accept` at the browser's default: `Accept: application/json` alone is refused with HTTP 400, because the endpoint wants `application/json, text/event-stream` or `*/*`.
+
+**Access.** MCP reads the same session cookie as GraphQL. The request goes to the same origin, the browser attaches the cookie, and the server checks it before it runs a tool:
+
+- **A visitor who isn't signed in** finds and reads only the notes open to everyone. Search leaves the rest out entirely, unlike GraphQL `search`, which lists them last without a `document`.
+- **A signed-in reader** also reaches the notes of the subgraphs they have access to: the same notes they could open on the site.
+- **A signed-in admin** reaches every note.
+- **A note the visitor can't read** answers `note_html` with the error `Note not found`, the same as a note that doesn't exist.
+- **Nothing the browser sends unlocks a write.** The tools that run GraphQL as admin, `graphql_request` and `graphql_introspection`, need an API key with MCP admin tools turned on; a session cookie, even the admin's, doesn't reach them. From a page, MCP is read-only.
+
+Call it from a page on the same site. The server sends CORS headers only to the Obsidian plugin, so a page on another origin can't read the answers.
+
+### Your own API next to trip2g, with trip2g as the access check {#own-api}
+
+An app may need more than notes: a report built from another database, a call to a paid service, a job that runs for a minute. Put that in an API of your own and let trip2g decide who may call it. The API asks trip2g on the user's behalf, so it keeps no users, no passwords and no access rules of its own.
+
+**Mount it on the same host.** The session cookie, `trip2g_token`, is `HttpOnly`, `Secure`, `SameSite=Lax` with `Path=/`, and has no `Domain` attribute. Without `Domain` the browser sends it only to the exact host that set it: not to a subdomain, not to a parent domain. So the API lives under a path on the site's own host, `https://notes.example.com/api/…`, and not on `api.example.com`. Route that path to the API in the reverse proxy in front of trip2g; everything else keeps going to trip2g.
+
+**The flow.**
+
+1. The app calls `fetch('/api/report', …)`. The request is same-origin, so the browser attaches the cookie.
+2. The API takes the request's `Cookie` header and sends it unchanged to trip2g's `/_system/graphql` over the internal network, with a query that asks who this is.
+3. trip2g answers as it would answer the browser. The API decides from that answer, and refuses whenever trip2g refused.
+
+The layout gives the app the note's id, adding `"pathId", note.PathID()` to the data block from [[en/user/spa#The layout: ship the note in the page|the layout]], and the app sends it:
+
+```js
+const res = await fetch('/api/report', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ pathId: data.pathId }),
+})
+if (!res.ok) throw new Error(`report: ${res.status}`)
+const report = await res.json()
+```
+
+The API, here in Node 18 or later, asks trip2g who the caller is:
+
+```js
+import { createServer } from 'node:http'
+
+const askTrip2g = (query) => async (cookie, variables) => {
+  const res = await fetch(process.env.TRIP2G_GRAPHQL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: JSON.stringify({ query, variables }),
+  })
+  const body = await res.json()
+  return body.errors ? null : body.data
+}
+
+const whoIs = askTrip2g(`query { viewer { role user { email } } }`)
+
+createServer(async (req, res) => {
+  if (req.method !== 'POST') return res.writeHead(405).end()
+  const cookie = req.headers.cookie ?? ''
+  const who = await whoIs(cookie)
+  if (!who || who.viewer.role === 'GUEST') return res.writeHead(401).end()
+  let raw = ''
+  for await (const chunk of req) raw += chunk
+  const { pathId } = JSON.parse(raw)
+  res.writeHead(200, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify(await buildReport(pathId, who.viewer.user)))
+}).listen(8080)
+```
+
+`TRIP2G_GRAPHQL` is trip2g's GraphQL endpoint at its internal address, and `buildReport` is the API's own work. `viewer.role` is `GUEST`, `USER` or `ADMIN`. A visitor who isn't signed in, or whose cookie has expired, gets `GUEST` and `user: null`; a banned user gets an `errors` entry, which `askTrip2g` turns into `null`. The schema has no user id: `user.email` is what identifies the person, and it is `null` for an account signed in without an email.
+
+**Stronger: check the resource, not just the person.** Before serving data about a note, ask trip2g for that note on the user's behalf. The public `note` query answers only when the user may open the note on the site; otherwise it returns an `errors` entry (`Need auth`, `Need subscription`, `Sign in required`, `page not found`) and no note. Refuse whenever trip2g did:
+
+```js
+const canRead = askTrip2g(`query ($pathId: Int64!) {
+  note(input: { pathId: $pathId, referer: "" }) { pathId }
+}`)
+
+const allowed = await canRead(cookie, { pathId })
+if (!allowed?.note) return res.writeHead(403).end()
+```
+
+Now the access rules live in one place, the vault's subgraphs and paywalls, and the API can't drift from them. Serve exactly the `pathId` you checked. A successful check by a signed-in reader counts as a view of the note in their reading history, as opening the page would.
+
+**Rules.**
+
+- **The forwarded cookie is the user's whole session.** It works for every trip2g call that user could make, writes included for an admin. Send it only to trip2g; never log it, store it or pass it to another service. Signing out only deletes the cookie from the browser: a copy someone kept stays valid until it expires, 30 days by default.
+- **Refuse `GET` on anything that changes state.** `SameSite=Lax` keeps the cookie off a cross-site `POST`, but the browser still sends it with a top-level `GET` navigation from another site. An endpoint that only reads may answer `GET`.
+- **Every API call costs a trip2g call.** You can cache trip2g's answer for a few seconds, keyed by the cookie value. Then a ban or a revoked subscription reaches the API only when the cached answer expires.
+- **Call trip2g at its internal address,** not the public domain. The cookie then doesn't cross the internet a second time, and the call doesn't go back through the proxy.
+
+trip2g asks nothing more of a call from another process: no `Origin`, no `Referer`, no CSRF token or custom header. It reads the cookie from the `Cookie` header of any `POST` with `Content-Type: application/json`, the same as from a browser. The `Secure` flag only tells browsers not to send the cookie over plain HTTP; the server accepts it either way, so a plain-HTTP call on the internal network works.
+
 ### Where to find more
 
 The operations above are tested against the schema. For anything else:
@@ -678,11 +814,15 @@ The operations above are tested against the schema. For anything else:
 - [ ] No API key or token in the page, no login screen of the app's own.
 - [ ] Edit controls show only when the layout's `currentUser.IsAdmin()` says so; a visitor sees the note read-only and the header's sign-in button.
 - [ ] Every save passes `expectedHash` and handles `UpdateNotesHashMismatchPayload` and an `errors` entry.
+- [ ] MCP calls go to `/_system/mcp` by a relative URL, as `POST` with `Content-Type: application/json` and the browser's default `Accept`, and handle both a JSON-RPC `error` and a result with `isError`.
+- [ ] An API of your own sits under a path on the site's host, not a subdomain; it sends the `Cookie` header only to trip2g at its internal address, never logs or stores it, and refuses `GET` on endpoints that change anything.
 
 ### See also
 
 - [[en/user/kanban|Kanban board template]] and its source, [github.com/trip2g/kanban_template](https://github.com/trip2g/kanban_template)
 - [[en/user/update_notes|updateNotes]] — the write API in full
 - [[en/user/graphql|GraphQL API]]
+- [[en/user/mcp|MCP Server]] — the tools `/_system/mcp` offers
+- [MCP Graph Walk](https://trip2g.com/search_visualizer) and its layout, [docs/_layouts/search_visualizer.html](https://github.com/trip2g/trip2g/blob/main/docs/_layouts/search_visualizer.html)
 - [[en/user/jet-functions#json and writeJson|json() and writeJson()]]
 - [[en/user/templates|Templates]]
