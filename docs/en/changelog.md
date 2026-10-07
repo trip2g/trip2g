@@ -8,7 +8,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
-## Unreleased
+## v0.11.0 (2026-10-07)
 
 ### Previous/next links and breadcrumbs
 
@@ -36,13 +36,13 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ### Wider reading column on large screens
 
-- **What.** The default template's reading column grows on wide screens: 80 characters from 1440px, 90 characters and a 1680px layout from 1800px. Laptops and phones are unchanged.
+- **What.** The default template's reading column grows on wide screens: 80 characters from 1440px. From 1536px the column is 56rem wide, the layout grows to 1680px with wider side columns, and the base font size stays at 18px instead of growing with the screen. Below 1440px nothing changes.
 - **Why.** On a large monitor text was squeezed into a narrow strip and tables and code examples needed sideways scrolling. `wide: true` fixed that but hid both sidebars.
 - **How.** Nothing to do. `wide: true` stays for pages that need the full width (boards, big diagrams).
 
 ### Wikilinks to a heading scroll to it
 
-- **What.** `[[Note#Heading text]]` and `[[#Heading text]]` now link to the heading's id, the same one the page and its table of contents use. The heading text is matched exactly, then ignoring case and extra spaces; an id such as `faq-2` or one set with `{#id}` works too. A fragment that matches no heading keeps the broken-link mark, and `trip2g lint` reports it as `broken link: Note#Heading`.
+- **What.** `[[Note#Heading text]]` and `[[#Heading text]]` now link to the heading's id, the same one the page and its table of contents use. The heading text is matched exactly, then ignoring case and extra spaces; an id such as `faq-2` or one set with `{#id}` works too. A fragment that matches no heading now marks the link as broken, and `trip2g lint` reports it as `broken link: Note#Heading`.
 - **Why.** The fragment went into the URL as typed (`#Heading%20text`) and matched no id, so the link opened the top of the page, and a link to a heading in the same note was marked as broken.
 - **How to use.** Nothing to do: links written the Obsidian way now work. See [[en/user/markdown#heading-anchors|Markdown syntax]].
 
@@ -73,13 +73,13 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ### Search finds a note by its alias
 
-- **What.** Site search and MCP search now read the `aliases` (and `alias`) frontmatter field. When the query as a whole equals a note's title or one of its aliases, that note moves to the top of the results. Case, extra spaces and `ё`/`е` don't matter.
+- **What.** Site search and MCP search now read the `aliases` (and `alias`) frontmatter field. When the query as a whole equals a note's title or one of its aliases, that note gets a boost worth twice a text or vector match, which normally puts it first. Case, extra spaces and `ё`/`е` don't matter.
 - **Why.** Aliases used to play no part in search: a note everyone calls "Starred" but titled "Bookmarks" could not be found by "Starred". On Obsidian's help docs, queries equal to an alias now find the right page almost every time (nDCG@5 0.81 → 0.98), and results for other queries did not change.
 - **How to use.** List alternative names in the frontmatter, as in Obsidian: `aliases: [Starred, Favourites]`. Aliases do not create new URLs.
 
 ### MinIO image replaced with Silo
 
-- **What.** The Compose files and the self-hosting guides now run `pgsty/silo` instead of `minio/minio`.
+- **What.** The Compose files and the self-hosting guides now run `pgsty/silo` instead of `minio/minio` (`quay.io/minio/minio` in `docker-compose.yaml`).
 - **Why.** MinIO ended its open-source distribution and deleted the `minio/minio` images from Docker Hub on 11 September 2026. `docker compose up` fails with `pull access denied for minio/minio`. Silo is the last open-source MinIO server, rebuilt and patched by the Pigsty project: same S3 API, same `MINIO_*` variables, same on-disk format.
 - **How.** In your own `docker-compose.yml`, change `image: minio/minio:latest` to `image: pgsty/silo:latest` and run `docker compose up -d`. Keep the volume: Silo reads the existing data as is. See [[en/user/selfhosted|Self-hosting]].
 
@@ -98,44 +98,308 @@ Older tags (`v0.2.0` and below) live in git history only.
 ### `noindex: true` keeps a page out of search engines and sitemap.xml
 
 - **What.** A new `noindex` note property. A note with `noindex: true` is left out of `sitemap.xml` (the main one and every custom domain's), out of RSS feeds and any `.Public()` listing in a layout, and carries no JSON-LD. Its page gets `<meta name="robots" content="noindex">` in the default template and an `X-Robots-Tag: noindex` header on every response, custom layouts included.
-- **Why.** A page meant for a direct link only — an offer, a draft, a demo — could print its own robots meta tag from a custom layout, but it still showed up in `sitemap.xml`, so its URL was public to anyone who read the sitemap.
+- **Why.** A page meant for a direct link only (an offer, a draft, a demo) could print its own robots meta tag from a custom layout, but it still showed up in `sitemap.xml`, so its URL was public to anyone who read the sitemap.
 - **How.** Add `noindex: true` to the note's frontmatter, or set it for a folder with a frontmatter patch. It is not access control: anyone with the link can still open the page. See [[en/user/seo|SEO]].
 
 ### Closed pages say they are closed, and offer sign-in instead of a wait list
 
 - **What.** A page a visitor has no access to now reads "This page is closed", tells them to ask the owner of the knowledge base for access, and shows the sign-in form right there. The wait-list block (Telegram bot, e-mail field) is off by default and appears only if you turn on the new **show_waitlists** config value; it still shows only when nothing is on sale.
-- **Why.** The wait-list e-mail field was the only input on the page, while the text above it said "please sign in" — visitors typed their sign-in address into a wait list and waited for a letter that was never coming. Most knowledge bases are closed to keep them private, not to sell access later.
+- **Why.** The wait-list e-mail field was the only input on the page, while the text above it said "please sign in", so visitors typed their sign-in address into a wait list and waited for a letter that was never coming. Most knowledge bases are closed to keep them private, not to sell access later.
 - **How.** Nothing to do: closed pages get the new text and the sign-in form automatically. If you do collect contacts while offers are not ready, set **show_waitlists** to true in Admin → System → Config.
 
 ### Obsidian on the phone: open a note on the site, and close the warnings view (plugin v0.11.0)
 
 - **What.** The note's `...` menu now has **Open on site** and **Copy site link** (only for notes that are actually published), plus a new **Open published URL in browser** command. The sync warnings view got a **Close** button, and its toolbar buttons are large enough to hit with a thumb.
 - **Why.** Neither was reachable on mobile. The published-URL indicator lives in the status bar, which Obsidian mobile doesn't show, so the only route to a note's page was the "Copy published URL" command; and dismissing the warnings tab meant a detour through the tab switcher.
-- **How.** Update the plugin to 0.11.0, then tap `...` on a note → **Open on site**. For one-tap access, pin **Open published URL in browser** in Obsidian's Settings → Toolbar (mobile).
+- **How.** Update the plugin to 0.11.0 or later, then tap `...` on a note → **Open on site**. For one-tap access, pin **Open published URL in browser** in Obsidian's Settings → Toolbar (mobile).
 
 ### Delivery chains: trace every webhook step across the agent graph
 
-- **What.** Every webhook delivery now records which delivery caused it and which chain it belongs to. A new **System → Delivery Chains** screen lists the chains, and opening one walks its steps: what each step wrote, which write triggered it, its status, what it cost and how deep in the chain it sat. Chains span separate agent hosts — one host running the code role, another running the LLM roles — without either knowing the other exists.
+- **What.** Every webhook delivery now records which delivery caused it and which chain it belongs to. A new **System → Delivery Chains** screen lists the chains, and opening one walks its steps: what each step wrote, which write triggered it, its status, what it cost and how deep in the chain it sat. Chains span separate agent hosts (one host running the code role, another running the LLM roles) without either knowing the other exists.
 - **Why.** When a change triggers a webhook that writes a note that triggers another webhook, the full sequence was previously invisible: you could see individual delivery records but not the chain that connected them. This makes the entire propagation path inspectable from a single admin screen.
-- **How.** Open Admin → System → Delivery Chains and pick a chain to see its steps. Chains that wrote nothing are hidden — a schedule that finds no work still runs, and those runs would bury the rest — turn on **Show empty** to see them. Nothing to configure: every delivery made after the upgrade is linked.
+- **How.** Open Admin → System → Delivery Chains and pick a chain to see its steps. Chains that wrote nothing are hidden: a schedule that finds no work still runs, and those runs would bury the rest. Turn on **Show empty** to see them. Nothing to configure: every delivery made after the upgrade is linked.
 
 ### Agents report what a run cost in their own units
 
 - **What.** A webhook agent's response now carries a `costs` object instead of the fixed `tokens_used` and `steps` fields: `{"costs": {"tokens": 5186, "steps": 2}}`. The unit is the key, so an agent that bills money reports `{"usd": 0.004}` and one that counts anything else reports that. The admin shows whatever arrived, per step and summed per unit over the whole chain.
-- **Why.** Tokens and steps are one executor's vocabulary. Anything else — a paid API, a credit balance, a queue quota — had nowhere to report itself, and trip2g carried a notion of "tokens" it has no business knowing about.
-- **How.** Return `costs` as an object of numbers from your webhook agent. Values must be plain numbers; anything else is dropped. The old `tokens_used` and `steps` fields are gone — an agent that still sends them simply reports no cost.
+- **Why.** Tokens and steps are one executor's vocabulary. Anything else (a paid API, a credit balance, a queue quota) had nowhere to report itself, and trip2g carried a notion of "tokens" it has no business knowing about.
+- **How.** Return `costs` as an object of numbers from your webhook agent. Every value must be a number: a string or an object under `costs` makes trip2g read the whole response as unparseable, so its `changes` are not applied either. The old `tokens_used` and `steps` fields are gone; an agent that still sends them simply reports no cost.
 
 ### Idempotent writes no longer fire change events
 
-- **What.** A `updateNotes` call whose content equals what is already stored creates no new version and raises no change event. No webhook delivery is queued, no SSE event is emitted, no re-embedding runs, and no Telegram publish-view refresh happens. Changing at least one byte still fires normally. Hiding a note and unhiding it (writing to the hidden path is the only way to unhide) both still work; unhiding refreshes the served snapshot but deliberately raises no change event.
+- **What.** An `updateNotes` call, a sync push or a change in a webhook agent's response whose content equals what is already stored creates no new version and raises no change event. No webhook delivery is queued, no SSE event is emitted, no re-embedding runs, and no Telegram publish-view refresh happens. Changing at least one byte still fires normally. Hiding a note still works and raises no event. Writing to a hidden path brings the note back (the only way to unhide); through `updateNotes` or a sync push that counts as a change, so the restored note fires the usual events.
 - **Why.** An agent that re-applied identical content re-triggered the webhook that caused it on every cycle, at full LLM cost, bounded only by `max_depth`. The fix stops the loop at the write layer: if nothing changed, nothing downstream needs to know.
 - **How.** Automatic. Agents that write back the full note content unchanged no longer cause runaway chains. The `max_depth` guard remains useful for agents that do produce genuine changes.
 
-### Frontmatter key index
+### Filter note paths by frontmatter
 
-- **What.** Note paths can be filtered by effective frontmatter keys and values through GraphQL. The server materializes frontmatter after patches and tracks whether each key is present in the latest or live note set.
-- **Why.** Key-aware filtering can narrow the candidate notes before evaluating JSON values such as `fleet_id`, without exposing SQL through the API.
-- **How.** Use `notePaths(filter: { frontmatter: [{ key: "fleet_id", equals: "codellm" }] })`. The index is built from latest/live snapshots; historical `note_versions` are not reparsed or backfilled, so metadata that existed only in an old version is not represented in the key index.
+- **What.** `notePaths` accepts `filter: { frontmatter: [...] }`. Each predicate names a `key` and either `exists: true`, `exists: false` or `equals: "<string>"`. Every predicate has to match, and they also apply on top of `paths`, `like` and `search`. They check the frontmatter of each note's latest version after frontmatter patches. `equals` matches string values only: `equals: "5"` does not find `count: 5`, and `equals: "true"` does not find `draft: true`.
+- **Why.** To find every note with a given property (for example, every role with `fleet_id: codellm`), a script had to load the notes one by one and parse their frontmatter.
+- **How.** `notePaths(filter: { frontmatter: [{ key: "fleet_id", equals: "codellm" }] })`, with an API key in `X-Api-Key` as before. The server saves the frontmatter of each note version it loads. On startup it fills in the current latest and live versions. Older versions are not processed, so a key that exists only in old versions is not indexed.
+
+### A note lookup that finds nothing is `nil` in a layout
+
+- **What.** In a custom layout, `nvs.ByPath`, `nvs.ByPermalink`, `nvs.ByWikilink`, a query's `.First()` and `.Last()`, `note.LangAlternative(...)`, `PartialRenderer().Section(...)`, a section's `Section(...)` and `FirstList()` return `nil` when nothing matches. Both `{{ if x }}` and `{{ if x == nil }}` now test the result.
+- **Why.** A miss returned an empty pointer of a concrete type. `{{ if x }}` treated it as empty, but `x == nil` was false, so a template that checked `x == nil` went on to use a note that did not exist.
+- **How to use.** Nothing to do: templates written with `{{ if x }}` keep working. To look up and test in one tag, write `{{ if about := nvs.ByPermalink("/about"); about }}`. See [[en/user/templates#Assignment in if (Go-style)|Templates]].
+
+### Layouts with try/catch, exec, `range _` or a hyphenated folder now load
+
+- **What.** A layout that uses `{{ try }}…{{ catch err }}…{{ end }}`, `{{ return }}` in a file called with `exec("path", data)`, or `{{ range _, x := list }}` now loads and renders. A page that starts with `{{ extends "..." }}` gets its components auto-imported. `@lid` now turns every character a Jet block name cannot hold (`-`, `.`, a space) into `_`, and puts `_` in front of a leading digit: `my-theme/card.html` gives `my_theme_card`, `2col/card.html` gives `_2col_card`.
+- **Why.** The loader's template walker stopped on these constructs, and the layout failed to load with a parse error. In a page with `extends`, auto-import put the components above the `extends` line, where Jet does not accept them. A component in a folder such as `my-theme/` got an `@lid` with a hyphen, which is not a valid block name.
+- **How to use.** Nothing to do. `yield_blocks` prefixes follow the `@lid` form: `yield_blocks("_style_my_theme_")`. See [[en/user/templates#Data from another layout: exec and return|Templates]] and [[en/user/yield_blocks|yield_blocks]].
+
+### Default template: code blocks, wide tables and the side menu
+
+- **What.** A code block marked `jet` is highlighted as a Jet template. The copy button no longer scrolls away with a long line; its label follows the page `lang` (Russian for `ru`, English otherwise), and "Copied" is announced to screen readers. A block in a language the highlighter does not know is shown as plain text. A wide table scrolls inside its own box instead of widening the page. From 1024px the left menu scrolls on its own, opens scrolled to the current page, and marks the current page with a tinted background.
+- **Why.** The copy button sat inside the scrolling code and moved with it. A wide table pushed the whole page sideways. In a long menu the current page could be out of view, and its mark was hard to see.
+- **How.** Nothing to do.
+
+### More of the interface in the reader's language
+
+- **What.** The default template's 404 and 500 pages, the "Read in:" label of the language switcher, the menu buttons' labels, the logo's alt text and the "not supported yet" text for Canvas, Excalidraw and Bases files now follow the interface language. In Russian, the editor's "Edit page" button, file search, save list and version compare, the live-reload and follow-editor toggles and the theme switch are translated too.
+- **Why.** These strings were hardcoded in English, or their Russian translations sat where the frontend build did not pick them up.
+- **How.** Nothing to do. The interface language comes from the language cookie or the browser's `Accept-Language`.
+
+### Readers no longer download the page editor
+
+- **What.** The page editor is now a bundle of its own, `/assets/ui/editor/pane/-/web.js`. Only the editor frame loads it, when an admin opens the editor; the bundle every reader loads no longer contains it.
+- **Why.** The editor was part of the public bundle, so every reader downloaded code that only an admin ever runs.
+- **How.** Nothing to do with the release binaries or the Docker image. A custom layout that prints `{{ defaultTemplate.UserSpaceScripts() }}` passes the editor's URL along by itself. If you build the frontend yourself, also build `trip2g/editor/pane` (`npm start trip2g/editor/pane`), as the Dockerfile now does.
+
+### Name the SSO button, and turn off sign-in by email
+
+- **What.** The OIDC sign-in button can carry its own label instead of "Sign in with SSO": set `OIDC_DISPLAY_NAME` for the provider configured in the environment, or `displayName` in `createOIDCCredentials` for one created through the API. Sign-in by email code can be turned off: `DISABLE_EMAIL_SIGNIN=true` in the environment, or the `email_signin_enabled` switch in Admin → System → Config. When it is off, the sign-in screen hides the email field, its button and the captcha, and `requestEmailSignInCode` and `signInByEmail` answer with the `email_sign_in_disabled` error. New GraphQL: `Query.emailSignInEnabled`, `OAuthUrlPayload.label`, `AdminOIDCCredentials.displayName`.
+- **Why.** "SSO" names a protocol, not the place the reader is about to go. On an instance where every account comes from an identity provider, the email form invited people to request a code for an account that does not exist.
+- **How.** The environment variable wins: while `DISABLE_EMAIL_SIGNIN` is set, the admin switch cannot turn email sign-in back on. Make sure a provider works before you turn email off, or nobody can sign in, you included. An empty label keeps the default wording. See [[en/user/oidc#Rename the sign-in button|OIDC]] and [[en/user/oauth#Turning off sign-in by email|OAuth]].
+
+### Sign-in returns to the page it started on, and redirects stay on this site
+
+- **What.** After signing in with Google, GitHub or OIDC, the reader lands back on the page where they pressed the button, not on the home page. Sign-in redirects now send a relative `Location`, so behind a proxy that terminates TLS they no longer switch the browser from https to http. Every redirect target built from a request (the OAuth return address, and the clean URL after a `?hat=` sign-in link from a payment) is parsed and rebuilt as a path on this site; anything naming another host, a protocol-relative `//host`, `/\host` or a URL with control characters becomes `/`.
+- **Why.** The button sent the full page URL and the server threw away every absolute URL, so each sign-in ended on `/`. Behind a TLS proxy the redirect pointed at `http://`, the browser did not send the `Secure` cookie it had just received, and a sign-in that worked looked like one that failed. The `?hat=` redirect copied the request line as is, so a request with an absolute-form URL could send the browser to another site.
+- **How.** Nothing to do.
+
+### Backlinks in GraphQL respect read access
+
+- **What.** `NoteView.inLinks` lists only the linking notes the caller can read.
+- **Why.** It returned every note that links to the current one, with its `content` and `html`, including notes in subgraphs the caller has no access to.
+- **How.** Nothing to do.
+
+### Vector search sees new notes without a restart
+
+- **What.** Embeddings computed after a sync now reach vector search and similar notes while the server runs. The server re-reads the embeddings and chunks from the database after the embedding jobs finish, at most once per `EMBEDDING_RELOAD_INTERVAL` (default `5s`) while jobs keep finishing, and once more after the last one. No note is re-rendered.
+- **Why.** Embeddings were loaded into memory with the notes, before the background jobs had written them, so a note synced after boot was invisible to vector search until the next restart.
+- **How.** Nothing to do. During a long push search improves as jobs finish instead of after it ends.
+
+### MCP: expand reads a leaf, lists only the ends of a long note, and federation errors name the bases
+
+- **What.** `expand` on a section without subsections returns the section itself, the same text `note_html` gives for that `toc_path`, plus `section_html` in the structured payload. New `first` and `last` arguments on `expand` and `federated_expand` list only the oldest N and newest N subsections; the summary says the listing is partial ("newest 30 of 365 subsection(s)", "… 330 subsection(s) not listed …" between the two ends) and the payload carries `total_children` and `omitted`. A `federation_not_configured` answer now lists the bases the agent can address (`connected_kb_ids`), and when a peer reports the miss it also lists the bases connected directly to this hub. Search results and notes that point to another base show their `kb_id` in the text.
+- **Why.** An agent reading a leaf had to call `note_html` with the same arguments. A note that gains a dated section a day returns a listing of tens of thousands of characters to someone who wants the latest entry. A not-configured error named no valid `kb_id`, so the agent could not correct itself.
+- **How.** `{ "name": "expand", "arguments": { "path": "log.md", "first": 5, "last": 30 } }`. Ends that meet or overlap return the whole listing. See [[en/user/expand#A long listing: the ends only|expand]].
+
+### A knowledge base in one container
+
+- **What.** `Dockerfile.docs` builds an image with a vault baked in. `docker run` starts trip2g, pushes the vault into it once with the sync client from the instance's own onboarding archive, and keeps serving. No volume, no sign-in, no configuration: the database and the secrets are created inside the container at start. The internal listener is bound to `127.0.0.1`. By default the image holds this documentation.
+- **Why.** Shipping a read-only knowledge base (for a team, or for an MCP client) took a running instance plus a separate sync step.
+- **How.** `docker build -f Dockerfile.docs -t trip2g-docs .` then `docker run --rm -p 8080:8080 trip2g-docs`. Replace the `COPY` lines with your own folder, and pass `-e PUBLIC_URL=...` for the public address. See [[en/user/docs-image|A knowledge base in one container]].
+
+### Fleet: pause a role, and safer code runs
+
+- **What.**
+  - A role note with `enabled: false` leaves the registry on the next poll, and its webhooks are removed, so a cron role stops firing; the note stays. `--dry-run` shows `STATUS: DISABLED (enabled: false)`. A value other than true/false (`yes`/`no`, `on`/`off`, `1`/`0` are accepted) is a parse error.
+  - A retried call to codellm no longer runs the code twice: fleet sends one `Idempotency-Key` per call and repeats it on every retry, and codellm answers a repeat from its record for 10 minutes. Replays are counted in `codellm_exec_replays_total`.
+  - Final stdout over the limit now fails the run with "stdout limit exceeded" (HTTP 422 from `/v1/chat/completions`) instead of passing on a cut-off prefix. The default limit is 10 MiB (was 1 MiB); set it with `CODELLM_MAX_STDOUT_BYTES` or `--max-stdout-bytes`.
+  - The writes returned by the `exec` tool are checked as one batch before any is applied: an out-of-scope path is dropped and named in the tool result, and a patch whose `find` is missing or not unique rejects the whole batch.
+  - codellm refuses to unseal a role whose `unseal_env_key` is covered by `CODELLM_EXPOSE_ENV_PREFIX`, as it already did for exact names in `CODELLM_EXPOSE_ENV`.
+  - The agent system prompt puts the fixed text first and the per-delivery instruction last, so a provider's prompt cache can reuse it; `fleet_llm_tokens_total` gets `kind="cached"` (a part of `prompt`, not extra spend).
+- **Why.** A cron expression that never comes due is not a reliable pause. A network retry could run code with side effects a second time. A truncated stdout looked like a result. A batch could end with half its writes applied and a success line in front of the model. A prefix allowlist could hand the seal key to the code it protects.
+- **How.** Add `enabled: false` to a role's frontmatter to pause it, remove the line to resume. See [[en/user/fleet|Fleet]] and [[en/user/codellm-secrets|codellm secrets]].
+
+### Admins can make a sign-in link for a user
+
+- **What.** The user page in the admin has a **Sign-in link** button, and the admin GraphQL API has `createHatLink(input: { email, redirectUrl, expiresInMinutes })`. It returns a one-click `/_system/hat?token=...` URL that signs that person in. The link lives 5 minutes by default and at most 60, and `redirectUrl` must be a path on the same site. It signs in an existing user only: it never creates an account and never grants admin. A dead link now opens a short page that says what to do ("This link has expired", "This link doesn't work", "No account for this link") instead of an error.
+- **Why.** Getting someone in without a mail round trip meant the server CLI and its signing secret. When a link failed, the visitor saw a raw error with nothing to act on.
+- **How.** Open Admin → Users → the user → **Sign-in link**, copy the link and send it. The request is written to the audit log; the link itself is not.
+
+### Personal access tokens for other users
+
+- **What.** An admin can issue a personal token (`t2g_...`) for any user with `adminCreateUserToken(input: { userId, name, expiresInDays })` (expiry 1 to 365 days, optional) and revoke any token by id with `adminRevokeUserToken`. Admin → Users → **Personal Tokens** lists every token on the instance; the **Personal tokens** link on a user page opens it filtered to that user, with the new-token form prefilled. `CreateUserTokenPayload` has a new `instructions` field: a ready text with the MCP endpoint and the token, to hand to whoever will use it. In the account dialog, tokens got their own screens, and the account home shows the signed-in email and starred notes.
+- **Why.** A token could only be created by the user for themselves, so giving an agent access meant signing in as that person first.
+- **How.** Admin → Users → the user → **Personal tokens** → new token. Copy the instructions block once: it already carries the token. See [[en/user/mcp#Personal access tokens|MCP]].
+
+### Closed pages answer 401 or 403 and leak no description
+
+- **What.** A page shown behind the sign-in wall or the paywall now answers `401` to a visitor who is not signed in and `403` to one who is signed in but has no access, with `Cache-Control: no-store` on both. The page body is the same wall as before. A closed note also gets no automatic `<meta name="description">` from its first paragraph; only an explicit `description` in its frontmatter is used.
+- **Why.** Walls were served with `200`, so crawlers, link previews and API clients took them for the real page. The description fallback was built from the note body and printed in the `<head>` of the wall itself, so the opening lines of a closed note were readable without access.
+- **How.** Nothing to do. To give a closed page a description for search results, set `description` in its frontmatter.
+
+### Site logo loads for anonymous visitors
+
+- **What.** Images used in `_header.md` and `_footer.md` (in any folder) are served to visitors who are not signed in, whether or not those notes are `free`. Assets of other system notes follow the same rule as a normal note: anonymous when the note is readable without a session.
+- **Why.** The site logo answered `401` to every anonymous visitor: assets were public only when an owning note could be listed publicly, and system notes such as `_header.md` never can. Admins are always signed in, so they did not see the problem.
+- **How.** Nothing to do. Chrome attached under another name with the `header:` frontmatter field still needs `free: true` for its images to be public.
+
+### Links keep the reader on the host they came to
+
+- **What.** On a custom domain, the header, footer, sidebar, backlinks and template queries now render links the same way as the page body: a link to a note on the same host is relative, not an absolute URL. A note reached through its own `route` frontmatter is served at that path instead of being redirected to its permalink.
+- **Why.** Shared chrome was rendered once for the main domain, so on a custom domain its links pointed back to the main domain or to an absolute URL that does not resolve on an internal or preview host. The route redirect depended on whether the file name had characters that get transliterated, and on a custom domain it led to a 404.
+- **How.** Nothing to do. `rel=canonical`, `og:url` and JSON-LD stay absolute.
+
+### MCP: standard transport, federated arguments and search fixes
+
+- **What.** The MCP endpoint `/_system/mcp` now runs on the official Go MCP SDK (Streamable HTTP, stateless, JSON responses). Tool names, descriptions and schemas did not change. Along with it:
+  - Federated calls pass every argument through to the peer. `federated_search` used to send only the query, so `limit`, `detail_limit` and similar were lost; `federated_note_html` now takes `toc_path`. A call to a single `kb_id` has the same timeout as a fan-out call.
+  - An API key sees KB-notes (`mcp_federation_kb_url`) that are not `free`, as it sees every other note. Before, `federated_*` calls on such a KB answered "not configured".
+  - Search chunks no longer start with a broken character in non-Latin text.
+  - `expand` leaves out the title H1 and shows a short preview after headings that are too short to tell apart. `toc_path` from `search` is trimmed the same way.
+  - Notes registered as tools (`mcp_method`) no longer show up in search results.
+  - Each search match has `section_url`, a link to the matched heading on the site.
+- **Why.** The hand-written protocol layer drifted from the spec, and federated agents got different results from the same call made locally.
+- **Migration.** A request must send `Accept: application/json, text/event-stream`; without it the endpoint answers `400`. Real MCP clients send it. Update curl scripts and custom integrations (the stdio adapter in the docs is updated). An instance on an older version calling this one through federation does not send the header, so update both sides. Other visible changes: `notifications/initialized` answers `202` with an empty body, `tools/list` is sorted by name. See [[en/user/mcp|MCP]].
+
+### Reranking is a per-search choice
+
+- **What.** With a reranker configured, each search can ask for it: a `rerank` argument on the MCP `search` and `federated_search` tools, and `rerank` on the GraphQL `SearchInput`. A new `vector_search.reranker.default` in `FEATURES` decides what happens when a request says nothing; it is `false`. The MCP argument is shown only when a reranker is configured.
+- **Why.** The cross-encoder costs about a second per candidate on CPU, so a search with `top_n` 20 took about 20 seconds. That is acceptable for an agent doing research, not for a person at a search box.
+- **Migration.** `reranker.enabled: true` no longer reranks every search. To keep the old behaviour, add `"default": true` to the `reranker` object. This also applies to `memcli up --reranker`.
+
+### Full-text search index can live on disk
+
+- **What.** A new `SEARCH_INDEX_PATH` setting (`--search-index-path`) keeps the full-text index in that directory instead of in memory. A restart reopens the existing index instead of rebuilding it, and notes deleted while the server was down are removed from it on the next load. Empty keeps the in-memory index, as before.
+- **Why.** The in-memory index costs about 35 times the size of the text. On a vault with 10 MB of markdown it held 350 MB of heap, and large vaults ran out of memory on restart. On disk the same vault takes 4 MB of heap and about 45 MB of disk, and a restart opens the index in milliseconds.
+- **How.** Set `SEARCH_INDEX_PATH` to a directory on a persistent volume. Do not point two instances at the same directory.
+
+### Federation: one handover key, rotated on install
+
+- **What.** Adding an inbound secret now gives one handover key that already carries the address and key ID; the peer pastes it into Add Outbound. Before the row is stored, the receiving hub asks the issuing peer to adopt a fresh random key, so the value that went through a chat stops working. An outbound key's page has a **Rotate key** button (also `rotateFederationSecret`), shows when the key last rotated, and lists what the peer granted, read from the peer's new `/_system/mcp/federation` endpoint. Subgraphs have a one-line description that the peer sees next to the name. The admin list shows each key's direction.
+- **Why.** A shared key handed over in a message stays in that message history, and in an agent's transcript when an agent relayed it. Operators also had no way to see what a pairing actually granted.
+- **How.** Add Inbound → copy the handover key → send it → the other side pastes it into Add Outbound. The **Replace the key before storing it** switch is on by default; turn it off for a peer that cannot rotate (a public base, an adapter, an older instance), otherwise the peer refuses and nothing is stored. Rotation is refused against an `http://` peer unless private federation addresses are allowed. See [[en/user/federation#Key rotation|Federation]].
+
+### Webhook agents: run logs, longer history, private addresses
+
+- **What.** A webhook agent can return `logs`, a list of `{ts, level, msg, data}` entries, and the admin shows them on the chain step under **Log**. Up to 500 entries or 64 KB are kept per delivery; the rest is replaced by one entry saying how much was dropped. Delivery records and their request and response bodies are now kept 90 days, set with `--webhook-deliveries-retention` and `--webhook-delivery-logs-retention`. A new `--webhook-allow-private` (`WEBHOOK_ALLOW_PRIVATE`) lets webhooks reach private and internal addresses without turning on dev mode. Notes that an agent returns in its response body now trigger change webhooks, SSE and frontmatter indexing like any other write, and count one level deeper in the chain.
+- **Why.** An operator could see that a run failed but not what the agent did. Records went away after 30 days and the bodies after one day, before anyone looked. Agents running next to trip2g on a private network were blocked by the SSRF guard. Notes written through the response body did not trigger the next role in a chain.
+- **How.** Return `logs` next to `changes` and `costs`. Bodies are now stored 90 times longer, so plan disk space or set the retention lower.
+
+### Fleet signs in with a personal token, and agents cannot write role notes
+
+- **What.** Fleet authenticates with an admin's personal token (`--trip2g-admin-personal-token`, `TRIP2G_FLEET_TRIP2G_ADMIN_PERSONAL_TOKEN`) instead of the server's JWT secret. Set `OWNER_PERSONAL_TOKEN_VALUE` on the server to a `t2g_` value and it seeds that token for the owner (`OWNER_EMAIL`) at boot; `memcli up` generates one. Fleet refuses a write or patch from an agent that would create or edit a role note (any note with `fleet_id` in its frontmatter), and a patch applies only if the note is unchanged since that check. `--allow-role-authoring` turns the guard off. Fleet and codellm also serve Prometheus `/metrics`, pprof and health probes on a loopback listener: `--metrics-addr` (fleet `127.0.0.1:18090`, codellm `127.0.0.1:18087`, `CODELLM_METRICS_ADDR`); empty turns it off.
+- **Why.** With the JWT secret, fleet could mint a session for anyone and could not be cut off without changing the secret. A role declares its own `write_patterns`, so an agent tricked by note content into writing a role note could give itself more access.
+- **Migration.** `--jwt-secret`, `--admin-email` and `--admin-api-key` are gone from fleet. Set `OWNER_PERSONAL_TOKEN_VALUE` on the server and pass the same value to fleet. Revoking that token in the admin stops fleet within about half a minute. See [[en/user/fleet|Fleet]].
+
+### Code roles: a toolbox, fleetkit and sealed secrets
+
+- **What.** The codellm image is now Debian-based with Python 3, Node 24 and common tools (`jq`, `sqlite3`, `git`, `gh`, `ripgrep`, `curl` and others) plus libraries such as `requests`, `httpx`, `pydantic`, `jsonschema`, `axios`, `zod` and `ajv`. A `fleetkit` helper for Python and Node builds the output a code role prints (`note`, `write`, `patch`, `emit`) and reads its input (`bag`, `frontmatter`, `secrets`, `note_frontmatter`). A role note can carry encrypted values: list them in `unseal`, and codellm opens them with its `SEAL_KEY` (or the key named in `unseal_env_key`) for that run only. Values are sealed with `codellm seal` or the form at `/_system/codellm/seal` (`CODELLM_SEAL_PATH`). A role can narrow the env vars its code sees with `env_passthrough` and `env_prefix`, within the operator's allowlist.
+- **Why.** Code roles had bare Python and no libraries, assembled notes and JSON by hand, and every credential meant editing the codellm deployment and restarting it.
+- **How.** See [[en/user/fleet#Code roles|Fleet]] and [[en/user/codellm-secrets|Secrets for code roles]].
+
+### Re-embed all notes from the admin, and copy a heading link
+
+- **What.** The admin **Note Views** page has a **Re-embed all notes** button. It calls `regenerateNoteEmbeddings(input: { force: true })`, which queues every note even when its stored hash says it is up to date; chunks whose own hash did not change are not re-sent to the model. In the default template a `#` link appears next to a heading on hover.
+- **Why.** After a change to chunking, every note still looked up to date, so the new chunks never reached the vector index. Linking to a section meant reading its id from the table of contents.
+- **How.** Admin → Note Views → **Re-embed all notes**. Needs vector search to be on.
+
+### trip2g-sync CLI: a graphql command, and a failed fetch stops the sync
+
+- **What.** `trip2g-sync graphql '<query>' ['<variables>']` runs a GraphQL query against the instance the vault is set up for, using the key in `.obsidian/plugins/trip2g/data.json`; `graphql --introspect '<pattern>'` shows matching schema types. Queries go through MCP, where an API key carries its admin rights. If the CLI cannot fetch the server's note list, it now stops with an error and exit code 1. Bare asset links such as `![[logo.png]]` resolve to the file anywhere in the vault (the shallowest match wins), in the CLI and in browser sync. The downloaded onboarding vault now includes `AGENTS.md` and `CLAUDE.md` for AI agents working in it. The `trip2g-sync` CLI (plugin 0.12.0) prints what will happen to each non-empty line of the sync plan, for example that "Remote only" files are downloaded as new local files and "Local deleted" notes are hidden on the server. Its help now says that deleting a file locally hides the note on the server with no flag needed, and that `--two-way` downloads notes that exist only on the server.
+- **Why.** A failed fetch was read as an empty server: the run reported every local note as deleted on the server and exited 0. An asset link without a folder found nothing unless the file sat next to the note.
+- **How.** Run from the vault folder, for example `node .obsidian/plugins/trip2g/trip2g-sync.mjs graphql '{ viewer { id } }'`. These CLI changes ship with plugin and CLI 0.12.0.
+
+### Files in notes are served by the site, with access checks
+
+- **What.** Images and other files from notes and layouts are served at `/_system/assets/<sha256>/<file name>`. They are no longer presigned links to the storage server (`MINIO_PUBLIC_URL`) or, with local storage, `/_assets/...`. A file used by a layout or by a note anyone can read is public and cached for a year as immutable. Any other file needs a signed-in reader who can read at least one note that uses it, a valid API key in `X-API-Key`, or an admin. Such files are cached privately for 5 minutes, so the access check runs again after that. A file that no current note or layout uses is for admins only. Range requests and `ETag` work. URLs that leave the site (Telegram posts, `og:image`, JSON-LD, RSS, the asset URLs `pushNotes` returns) are made absolute with the site's public URL.
+- **Why.** A presigned link expired after a few days and worked for anyone who had it, even for a file from a paid or closed note. It also needed the storage server to be reachable from readers' browsers.
+- **How.** Nothing to do for content: pages use the new URLs as soon as the server runs the new version. `MINIO_PUBLIC_URL` and `MINIO_URL_EXPIRES_IN` are now ignored, and the storage server no longer needs a public address. Old links copied from pages before the upgrade stop working.
+
+### Forms: submit checks note access, a misconfigured captcha blocks, `forms:` works
+
+- **What.** `submitForm` first checks that the visitor can read the note the form belongs to. If not, it answers `form_not_found`, the same as for a missing form. Every text and email field is capped at 8192 characters, and `min_length` / `max_length` now count characters, not bytes. If `turnstile-site-key` is set but `turnstile-secret-key` is empty, the Turnstile check now fails instead of letting every request through; it also guards the email sign-in captcha. Several forms on one note through the `forms:` key now work.
+- **Why.** The note version id in a submit is easy to guess, so a guest could post to a form on a paid, sign-in-only or subgraph note. A half-configured Turnstile looked like it was protecting forms but checked nothing. A field had no size limit other than the request body limit. `forms:` was never found in real frontmatter, because the YAML parser returns its keys in a type the code did not expect.
+- **How.** Nothing to do. If you set only the Turnstile site key, add the secret key, or remove both to turn the captcha off. Non-Latin text that was close to its `max_length` now has more room, since the limit no longer counts bytes. See [[en/user/forms|Forms]].
+
+### Without SMTP, sign-in codes go to the server log
+
+- **What.** When `SMTP_HOST` is empty, requesting an email sign-in code works again. The code is written to the server log at warning level together with the email. `LOG_SIGN_IN_CODES=true` still logs codes when SMTP is configured.
+- **Why.** The previous release made a code request without SMTP return an error unless `LOG_SIGN_IN_CODES` was set, which locked dev setups and fresh installs out of email sign-in.
+- **How.** On a public server, configure SMTP: anyone who can read the server log can sign in as any user who asks for a code. See [[en/user/smtp|SMTP]].
+
+### A custom layout that fails returns an error page
+
+- **What.** A custom layout is rendered into a buffer first. If it fails, nothing from it reaches the reader. The response is status 500 with the default template's error page. An admin sees the layout name and the Jet error with its line on the same page. Everyone else sees a generic error.
+- **Why.** Jet writes everything up to the failing expression before it stops. Visitors could get half a page, and admins got the raw error text glued to the end of that half page.
+- **How.** Nothing to do. Open the page as admin to see what broke.
+
+### Layout warnings reach the sync tool, which stops on critical ones
+
+- **What.** `pushNotes` now returns the warnings of each layout file. Before, they were replaced with an empty list. The CLI sync tool (`trip2g-sync.mjs`) prints warnings grouped by file, with `CRITICAL` in red, and exits with code 1 if any warning is `CRITICAL` (for example, a layout that does not parse). A new `WARNING` reports a layout that writes its own expanded `@lid` name as plain text (`mesh-bar` in `mesh/bar.html`): a renamed file keeps the old name there, while the placeholder would follow the rename. Matches inside HTML comments and URLs are ignored.
+- **Why.** A broken layout was pushed without a word, and the site found out at render time.
+- **How.** Update the CLI and run it as before. In CI, a critical layout warning now fails the job. See [[en/user/cli|CLI sync tool]].
+
+### `coalesce()` in layouts
+
+- **What.** A new global function for Jet layouts: `coalesce(a, b, ...)` returns the first argument that is set and not empty, otherwise the last argument. A missing map key, `nil`, `""`, an empty list and an empty map count as empty; `0` and `false` count as values.
+- **Why.** Jet's `||` returns a boolean, so `videos[lang] || videos["en"]` could not pick a fallback value.
+- **How.** `{{ coalesce(videos[note.Lang()], videos["en"]) }}`. See [[en/user/jet-functions#Global functions|Jet functions]].
+
+### Mermaid diagrams: a second renderer, zoom, fullscreen and export
+
+- **What.** Flowchart, state, sequence, class, ER and xychart diagrams are drawn by beautiful-mermaid. Other types (gantt, pie, gitGraph, mindmap and so on), and any diagram it fails to parse, use mermaid.js as before. Each diagram gets buttons for zoom in, zoom out, reset, fullscreen and PNG / SVG export, and can be dragged. A diagram is at most 80% of the screen height and is scaled to fit its box.
+- **Why.** Dragging a diagram never worked. Large diagrams shrank until they could not be read, and wide, short ones became a thin strip.
+- **How.** Nothing to do. See [[en/user/mermaid|Mermaid]].
+
+### Magazine: choose how many cards are large, medium and small
+
+- **What.** Three frontmatter keys on the page that hosts the magazine: `magazine_featured` (large cards, default `1`), `magazine_grid` (medium cards after them, default `4`) and `magazine_grid_columns` (columns in the medium grid, default `2`). The rest of the notes go to the list. `0` skips a tier, and counts larger than the number of notes are capped. Card excerpts also skip tables now.
+- **Why.** The layout was fixed at one large card, four medium ones and a list. A table at the start of a note broke its card.
+- **How.** For example, `magazine_featured: 0` and `magazine_grid: 8` give no large card and eight cards in the grid. The defaults keep the old layout. See [[en/user/default-template#Magazine layout|Default template]].
+
+### Widgets in the `content:` list
+
+- **What.** The default template's `content:` list now accepts `toc`, `backlinks` (or `inlinks`), `outlinks` and `similar`, the same keywords as the sidebars. Each one renders its block in the main column.
+- **Why.** The template could already draw these blocks in the main column, but `content:` treated the words as file names and showed nothing.
+- **How.** For example, `content: [self, backlinks, similar]` puts backlinks and similar notes under the article.
+
+### Callouts in Telegram posts
+
+- **What.** Obsidian callouts (`> [!note] Title`) in a Telegram post become a quote with the title in bold on the first line. A callout without a title uses its type, capitalized. A collapsed callout (`[!type]-`) becomes an expandable quote that shows only the title until opened.
+- **Why.** The Telegram converter did not know callouts: it dropped the whole block and logged `unexpected markdown node`.
+- **How.** Nothing to do: write callouts as in Obsidian.
+
+### Webhook tokens stay inside their write scope
+
+- **What.** The short-lived token a webhook passes to an agent (**Pass API key**) is now held to its `write_patterns` everywhere it can write. `uploadNoteAsset` checks that the note belongs to a path the token may write. `pushNotes`, `hideNotes` and `commitNotes` refuse such a token with `ErrorPayload`, because they have no per-path scope. In `updateNotes`, a token with no `write_patterns` can no longer write anywhere.
+- **Why.** These calls let a token write outside its `write_patterns`: attach files to any note, push or hide any note, or, in some cases, write anywhere through `updateNotes` when `write_patterns` was empty.
+- **How.** Nothing to do for agents that use `updateNotes` within their scope. An agent that called `pushNotes`, `hideNotes` or `commitNotes` with its webhook token must switch to `updateNotes` (the `hide` change hides a note). See [[en/user/webhooks#API token for agents|Webhooks]].
+
+### Note graph: groups, saved positions and live readers
+
+- **What.** The admin note graph (Notes & Content → Note Graph) has **Auto layout**, **Save positions** and **Public outside** in its header, and a **Group by:** field. Notes with the same value of that frontmatter key (default `subgraph`) are pulled into one cluster. A dragged node keeps its position. While the graph is open, signed-in readers moving between notes show up as animated moves, also available as the admin-only GraphQL subscription `readerMoves` (admin session or instance API key). A reader appears under an anonymous key that changes every hour, never as a user id. The server does no extra work for this while no one is subscribed.
+- **Why.** Notes were spread at random, the layout was lost on every reload, and there was no way to see how people move through the site.
+- **How.** Open the graph, type a key into **Group by:** and press **Auto layout**. To group whole folders, add a frontmatter patch. See [[en/user/admin_graph|Note graph]].
+
+### Fleet: roles pick a fleet by `fleet_id`, code runs in codellm
+
+- **What.** A role chooses the fleet that runs it with the `fleet_id` frontmatter key. Fleet's `--fleet-id` (`TRIP2G_FLEET_FLEET_ID`) is now required and has no default (it used to be a marker that defaulted to `fleet1`). A fleet runs only roles with its own `fleet_id`. A role without `fleet_id` runs nowhere, and fleet reports it as an error during discovery. The `executor` key is gone. Code roles run in codellm, a separate service with an OpenAI-compatible API (`cmd/codellm`, image `Dockerfile.codellm`). A fleet whose `--llm-base-url` points at codellm runs role bodies as code. Fleet no longer runs code itself: its `--allowed-programs` flag is gone, and the interpreter list, sandbox and network access are codellm settings (`CODELLM_ALLOWED_PROGRAMS`, `CODELLM_SANDBOX`, `CODELLM_SANDBOX_NETWORK`). codellm can require a key (`CODELLM_API_KEY`), which fleet sends with `--llm-api-key` or `--exec-api-key`. Fleet also serves a read-only GraphQL API with the roles and how they trigger each other (`--graphql-addr`, default `127.0.0.1:9093`), open only to admins of the hub.
+- **Why.** Code execution and its sandbox lived inside the agent process. Moving them to their own service lets a code role and an LLM role run on different hosts, and a role moves between them by changing one line.
+- **How.** Before upgrading fleet: add `fleet_id` to every role, start one fleet per `fleet_id` with a matching `--fleet-id`, and for code roles run codellm and point that fleet's `--llm-base-url` at it. Move `--allowed-programs` to codellm's `CODELLM_ALLOWED_PROGRAMS`. See [[en/user/fleet#Code roles|Fleet]].
+
+### Smaller fixes
+
+- **A revoked personal token stops working at once.** `revokeUserToken` and `adminRevokeUserToken` now drop the token from the server's cache. Before, a revoked token kept working for up to 30 seconds.
+- **A custom domain with nothing to index gets an empty sitemap.** Its `/sitemap.xml` is an empty `<urlset>`. Before, it served the main domain's sitemap, with the pages of another site. See [[en/user/multidomains#SEO on a custom domain|Multi-domains]].
+- **Browsers pick up new built-in scripts and styles after an upgrade.** Files under `/assets/` now carry an `ETag` and a `Cache-Control` header: a URL with the file's current `?h=` hash is cached for a year as immutable, any other URL for an hour and then revalidated. Before, the server answered every `If-Modified-Since` with "304 Not Modified", because embedded files have no modification time, so a browser could keep an old script after an upgrade.
+- **Faster asset sync.** `uploadNoteAsset` checks whether the file is already stored before it parses the note, and a layout version loads only the `_layouts/` files instead of every note. Re-syncing a vault full of images no longer parses each note once per image.
+- **Commit in the startup log.** The server logs `trip2g starting` with the git `commit` it was built from.
+- **Email check.** Creating or editing a user in the admin, and `createHatLink`, check only that an address is well formed. They no longer look up the domain's MX record, so a domain without mail no longer fails and the form no longer waits on DNS.
+- **Long inline code.** In the default template a long URL or path in inline code wraps instead of making the page wider.
+- **Admin dates.** The audit log and the wait-list screens show their dates correctly; they were formatted twice.
+- **$mol in the header.** A $mol component in the header no longer takes the whole header row while its styles load.
+- **Admin Sign out.** The **Sign out** button in the admin panel signs you out. Before, it did nothing.
+- **Callout titles.** In the light theme, callout titles use the callout's own color and are readable. A callout type that starts with a non-Latin letter (`[!заметка]`) gets a correct capital letter in its default title, on the site and in Telegram.
+- **Telegram rate limits.** Sending and editing Telegram posts (by bot and by account) makes at most three attempts when Telegram answers with a rate-limit error, and the wait between them stops when the server shuts down. Before, the retries had no limit.
+- **Storage at startup.** The server waits up to 45 seconds for the S3 storage to come up instead of exiting on the first failed bucket check. Wrong credentials or a bad bucket name still fail at once. `MINIO_SECRET_ACCESS_KEY` is accepted as the secret key name.
+- **Missing files in storage.** When a client uploads a file whose record already exists but whose data is gone from storage (for example, after the bucket was wiped), the server stores the file again. Before, it only linked the record and the file stayed missing.
+- **Starter vault name.** `/_system/onboarding-vault?name=<name>` sets both the zip file name and the folder inside it. Letters, digits, dot, dash and underscore, up to 64 characters. An invalid name returns 400.
 
 ---
 
