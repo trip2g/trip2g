@@ -96,6 +96,69 @@ wide: true
 ---
 ```
 
+#### Previous/next links and breadcrumbs
+
+The default template adds "Previous" and "Next" links under the page and a breadcrumb above it. It builds them from the sidebar navigation, so you don't have to set anything.
+
+How it works:
+
+1. trip2g takes the sidebar notes the page shows: left sidebar first, then right. Widgets like `toc` or `backlinks` don't count.
+2. In the first sidebar note that links to the page, it lists the links to notes in document order. If the page appears twice, the first link wins.
+3. **Previous** and **Next** are the links just before and after the page in that list. Neighbours come from the same sidebar note only.
+4. The **breadcrumb** is the nearest heading above the link. If the heading itself contains a link to a note, the breadcrumb is a link to that note; otherwise it is plain text.
+
+Labels are the target notes' titles, not the link text: `[[guide|Start here]]` shows the title of `guide`.
+
+Example sidebar `docs/_sidebar.md`:
+
+```markdown
+### Basics
+
+- [[docs/install]]
+- [Configuration](config.md)
+
+### [[docs/guide|Guide]]
+
+- [Writing](./guide/writing.md)
+- [[docs/publishing]]
+```
+
+On the `config.md` page: Previous is "install", Next is "writing", the breadcrumb is "Basics" (plain text). On the `writing.md` page the breadcrumb "Guide" links to `docs/guide`.
+
+Both wikilinks and markdown links count:
+
+| Link | How it is found |
+|------|-----------------|
+| `[[Note]]`, `[[folder/Note]]` | Like any wikilink, see [[en/user/wikilink-resolution\|wikilink resolution]] |
+| `[x](page.md)`, `[x](page)` | In the sidebar note's folder first, then like a wikilink |
+| `[x](./sub/page.md)`, `[x](../page.md)` | Relative to the sidebar note's folder |
+| `[x](/docs/page)` | By the page's URL, including a `route:` address — exactly as it opens on the site |
+| `[x](page%20name.md)` | Encoded characters are decoded first |
+
+Skipped: embeds (`![[...]]`), links to a heading (`[[Note#Part]]`, `page.md#part`), external links (`https://`, `mailto:` and so on), files that are not notes (`image.png`), and links to notes that don't exist.
+
+**Overriding in frontmatter.** `prev`, `next` and `breadcrumbs` replace what the sidebar gives. `false` hides the element:
+
+```yaml
+---
+prev: false
+next: docs/publishing.md
+breadcrumbs:
+  - docs/guide.md
+  - label: Changelog
+    href: /changelog
+  - label: Draft
+---
+```
+
+- `prev` and `next` take a note: a file path or a wikilink. The label is the note's title.
+- `breadcrumbs` takes a list. Each item is a note (a file path or a wikilink) or a `{label, href}` pair. `href` is used as is; an item with only `label` is plain text.
+- A note that isn't found is dropped.
+
+Wikilinks in these fields resolve the same way as in note text, from this note: `[[Note]]`, `[[Note|alias]]` and `[[Note#heading]]` work. See [[en/user/wikilink-resolution#Links in frontmatter|Wikilink resolution]].
+
+To turn these off for a whole folder, set `prev: false`, `next: false` and `breadcrumbs: false` with a [[en/user/frontmatter-patches|frontmatter patch]].
+
 #### Glob sections (different headers for different site sections)
 
 When you need different headers or sidebars for different parts of your site, add glob fields to a note's frontmatter — and it will automatically apply to the matching pages.

@@ -90,3 +90,9 @@ other = "Excalidraw-файлы пока не поддерживаются."
 
 [unsupported_bases]
 other = "Bases пока не поддерживаются."
+
+[pager_prev]
+other = "Назад"
+
+[pager_next]
+other = "Далее"

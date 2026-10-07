@@ -40,6 +40,11 @@ func (n *NVS) wrap(nv *model.NoteView) *Note {
 	return NewNoteWithDomain(nv, n.domainHost)
 }
 
+// Unwrap returns the underlying NoteViews (for internal use).
+func (n *NVS) Unwrap() *model.NoteViews {
+	return n.nvs
+}
+
 // ByPath is the template-facing NoteByPath. A miss is an untyped nil, so a
 // template can test the result with both {{ if x }} and {{ if x == nil }}.
 func (n *NVS) ByPath(path string) any {
