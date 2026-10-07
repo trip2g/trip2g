@@ -13,6 +13,9 @@ query {
 					id
 					email
 				}
+				revoke {
+					createdAt
+				}
 			}
 		}
 	}

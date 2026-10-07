@@ -16,6 +16,14 @@ namespace $.$$ {
 			return data.userSubgraphAccess
 		}
 
+		override body() {
+			if (this.data().revoke) {
+				return [this.Revoked(), this.Form()]
+			}
+
+			return [this.Form(), this.Revoke_form()]
+		}
+
 		@$mol_mem
 		expires_at_moment(next?: any) {
 			if (next === undefined) {
@@ -52,6 +60,40 @@ namespace $.$$ {
 			if (res.admin.payload.__typename === 'ErrorPayload') {
 				this.result(res.admin.payload.message)
 			}
+		}
+
+		override revoke() {
+			const res = $trip2g_admin_usersubgraphaccesses_show_revoke({
+				input: {
+					id: this.access_id(),
+					reason: this.revoke_reason(),
+				},
+			})
+
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.revoke_result(res.admin.payload.message)
+			}
+		}
+
+		revoke_data() {
+			const revoke = this.data().revoke
+			if (!revoke) {
+				throw new Error('Access is not revoked')
+			}
+
+			return revoke
+		}
+
+		override revoked_at(): string {
+			return new $mol_time_moment(this.revoke_data().createdAt).toString('YYYY-MM-DD hh:mm')
+		}
+
+		override revoked_by(): string {
+			return this.revoke_data().by.email || `#${this.revoke_data().by.id}`
+		}
+
+		override revoked_reason(): string {
+			return this.revoke_data().reason || ''
 		}
 	}
 }

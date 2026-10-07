@@ -109,6 +109,7 @@ type ResolverRoot interface {
 	AdminRedirectsConnection() AdminRedirectsConnectionResolver
 	AdminRelease() AdminReleaseResolver
 	AdminReleasesConnection() AdminReleasesConnectionResolver
+	AdminRevoke() AdminRevokeResolver
 	AdminStorageEntry() AdminStorageEntryResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
 	AdminTelegramAccount() AdminTelegramAccountResolver
@@ -377,6 +378,7 @@ type AdminMutationResolver interface {
 	UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.UpdateSubgraphInput) (model.UpdateSubgraphOrErrorPayload, error)
 	UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error)
 	CreateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.CreateUserSubgraphAccessInput) (model.CreateUserSubgraphAccessOrErrorPayload, error)
+	RevokeUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.RevokeUserSubgraphAccessInput) (model.RevokeUserSubgraphAccessOrErrorPayload, error)
 	CreateOffer(ctx context.Context, obj *model1.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error)
 	UpdateOffer(ctx context.Context, obj *model1.AdminMutation, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error)
 	ResetNotFoundPath(ctx context.Context, obj *model1.AdminMutation, input model.ResetNotFoundPathInput) (model.ResetNotFoundPathOrErrorPayload, error)
@@ -635,6 +637,9 @@ type AdminReleaseResolver interface {
 type AdminReleasesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminReleasesConnection) ([]db.Release, error)
 }
+type AdminRevokeResolver interface {
+	By(ctx context.Context, obj *db.Revoke) (*db.User, error)
+}
 type AdminStorageEntryResolver interface {
 	Limit(ctx context.Context, obj *model1.AdminStorageEntry, format *model.StorageSizeFormat) (float64, error)
 	Current(ctx context.Context, obj *model1.AdminStorageEntry, format *model.StorageSizeFormat) (float64, error)
@@ -728,6 +733,7 @@ type AdminUserBansConnectionResolver interface {
 type AdminUserSubgraphAccessResolver interface {
 	User(ctx context.Context, obj *db.UserSubgraphAccess) (*db.User, error)
 	Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error)
+	Revoke(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Revoke, error)
 }
 type AdminUserSubgraphAccessesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error)
@@ -1047,6 +1053,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputResolveWikilinksFilter,
 		ec.unmarshalInputRestoreBoostyCredentialsInput,
 		ec.unmarshalInputRestorePatreonCredentialsInput,
+		ec.unmarshalInputRevokeUserSubgraphAccessInput,
 		ec.unmarshalInputRevokeUserTokenInput,
 		ec.unmarshalInputRunCronJobInput,
 		ec.unmarshalInputSearchInput,
@@ -1334,6 +1341,14 @@ type AdminUserSubgraphAccess @goModel(model: "trip2g/internal/db.UserSubgraphAcc
 
   user: AdminUser!
   subgraph: AdminSubgraph!
+  revoke: AdminRevoke @goField(forceResolver: true)
+}
+
+type AdminRevoke @goModel(model: "trip2g/internal/db.Revoke") {
+  id: Int64!
+  createdAt: Time!
+  reason: String
+  by: AdminUser! @goField(forceResolver: true)
 }
 
 type NoteWarning {
@@ -3565,6 +3580,21 @@ type CreateUserSubgraphAccessPayload {
 union CreateUserSubgraphAccessOrErrorPayload = CreateUserSubgraphAccessPayload | ErrorPayload
 
 #
+# revokeUserSubgraphAccess
+#
+
+input RevokeUserSubgraphAccessInput {
+  id: Int64!
+  reason: String!
+}
+
+type RevokeUserSubgraphAccessPayload {
+  access: AdminUserSubgraphAccess!
+}
+
+union RevokeUserSubgraphAccessOrErrorPayload = RevokeUserSubgraphAccessPayload | ErrorPayload
+
+#
 # unbanUser
 #
 
@@ -4592,6 +4622,7 @@ type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
   createUserSubgraphAccess(input: CreateUserSubgraphAccessInput!): CreateUserSubgraphAccessOrErrorPayload!
+  revokeUserSubgraphAccess(input: RevokeUserSubgraphAccessInput!): RevokeUserSubgraphAccessOrErrorPayload!
 
   createOffer(input: CreateOfferInput!): CreateOfferOrErrorPayload!
   updateOffer(input: UpdateOfferInput!): UpdateOfferOrErrorPayload!
@@ -5930,6 +5961,17 @@ func (ec *executionContext) field_AdminMutation_revokeFederationSecret_args(ctx 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_revokeUserSubgraphAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRevokeUserSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐRevokeUserSubgraphAccessInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -15920,6 +15962,47 @@ func (ec *executionContext) fieldContext_AdminMutation_createUserSubgraphAccess(
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_revokeUserSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_revokeUserSubgraphAccess,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().RevokeUserSubgraphAccess(ctx, obj, fc.Args["input"].(model.RevokeUserSubgraphAccessInput))
+		},
+		nil,
+		ec.marshalNRevokeUserSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRevokeUserSubgraphAccessOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_revokeUserSubgraphAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RevokeUserSubgraphAccessOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_revokeUserSubgraphAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminMutation_createOffer(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -25404,6 +25487,8 @@ func (ec *executionContext) fieldContext_AdminQuery_userSubgraphAccess(ctx conte
 				return ec.fieldContext_AdminUserSubgraphAccess_user(ctx, field)
 			case "subgraph":
 				return ec.fieldContext_AdminUserSubgraphAccess_subgraph(ctx, field)
+			case "revoke":
+				return ec.fieldContext_AdminUserSubgraphAccess_revoke(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUserSubgraphAccess", field.Name)
 		},
@@ -27509,6 +27594,134 @@ func (ec *executionContext) fieldContext_AdminReleasesConnection_nodes(_ context
 				return ec.fieldContext_AdminRelease_isLive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminRelease", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRevoke_id(ctx context.Context, field graphql.CollectedField, obj *db.Revoke) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminRevoke_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminRevoke_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRevoke",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRevoke_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.Revoke) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminRevoke_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminRevoke_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRevoke",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRevoke_reason(ctx context.Context, field graphql.CollectedField, obj *db.Revoke) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminRevoke_reason,
+		func(ctx context.Context) (any, error) {
+			return obj.Reason, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminRevoke_reason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRevoke",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRevoke_by(ctx context.Context, field graphql.CollectedField, obj *db.Revoke) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminRevoke_by,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminRevoke().By(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminRevoke_by(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRevoke",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			case "admin":
+				return ec.fieldContext_AdminUser_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
 		},
 	}
 	return fc, nil
@@ -31860,6 +32073,45 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccess_subgraph(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminUserSubgraphAccess_revoke(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminUserSubgraphAccess_revoke,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminUserSubgraphAccess().Revoke(ctx, obj)
+		},
+		nil,
+		ec.marshalOAdminRevoke2ᚖtrip2gᚋinternalᚋdbᚐRevoke,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminUserSubgraphAccess_revoke(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserSubgraphAccess",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminRevoke_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminRevoke_createdAt(ctx, field)
+			case "reason":
+				return ec.fieldContext_AdminRevoke_reason(ctx, field)
+			case "by":
+				return ec.fieldContext_AdminRevoke_by(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminRevoke", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminUserSubgraphAccessesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminUserSubgraphAccessesConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -31898,6 +32150,8 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccessesConnection_nod
 				return ec.fieldContext_AdminUserSubgraphAccess_user(ctx, field)
 			case "subgraph":
 				return ec.fieldContext_AdminUserSubgraphAccess_subgraph(ctx, field)
+			case "revoke":
+				return ec.fieldContext_AdminUserSubgraphAccess_revoke(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUserSubgraphAccess", field.Name)
 		},
@@ -34526,6 +34780,8 @@ func (ec *executionContext) fieldContext_CreateUserSubgraphAccessPayload_accesse
 				return ec.fieldContext_AdminUserSubgraphAccess_user(ctx, field)
 			case "subgraph":
 				return ec.fieldContext_AdminUserSubgraphAccess_subgraph(ctx, field)
+			case "revoke":
+				return ec.fieldContext_AdminUserSubgraphAccess_revoke(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUserSubgraphAccess", field.Name)
 		},
@@ -37132,6 +37388,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_updateUserSubgraphAccess(ctx, field)
 			case "createUserSubgraphAccess":
 				return ec.fieldContext_AdminMutation_createUserSubgraphAccess(ctx, field)
+			case "revokeUserSubgraphAccess":
+				return ec.fieldContext_AdminMutation_revokeUserSubgraphAccess(ctx, field)
 			case "createOffer":
 				return ec.fieldContext_AdminMutation_createOffer(ctx, field)
 			case "updateOffer":
@@ -42136,6 +42394,53 @@ func (ec *executionContext) fieldContext_RevokeFederationSecretPayload_revokedId
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RevokeUserSubgraphAccessPayload_access(ctx context.Context, field graphql.CollectedField, obj *model.RevokeUserSubgraphAccessPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RevokeUserSubgraphAccessPayload_access,
+		func(ctx context.Context) (any, error) {
+			return obj.Access, nil
+		},
+		nil,
+		ec.marshalNAdminUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RevokeUserSubgraphAccessPayload_access(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RevokeUserSubgraphAccessPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUserSubgraphAccess_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_AdminUserSubgraphAccess_userId(ctx, field)
+			case "subgraphId":
+				return ec.fieldContext_AdminUserSubgraphAccess_subgraphId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUserSubgraphAccess_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_AdminUserSubgraphAccess_expiresAt(ctx, field)
+			case "user":
+				return ec.fieldContext_AdminUserSubgraphAccess_user(ctx, field)
+			case "subgraph":
+				return ec.fieldContext_AdminUserSubgraphAccess_subgraph(ctx, field)
+			case "revoke":
+				return ec.fieldContext_AdminUserSubgraphAccess_revoke(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUserSubgraphAccess", field.Name)
 		},
 	}
 	return fc, nil
@@ -52312,6 +52617,40 @@ func (ec *executionContext) unmarshalInputRestorePatreonCredentialsInput(ctx con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRevokeUserSubgraphAccessInput(ctx context.Context, obj any) (model.RevokeUserSubgraphAccessInput, error) {
+	var it model.RevokeUserSubgraphAccessInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "reason"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "reason":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reason"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Reason = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRevokeUserTokenInput(ctx context.Context, obj any) (model.RevokeUserTokenInput, error) {
 	var it model.RevokeUserTokenInput
 	asMap := map[string]any{}
@@ -55903,6 +56242,29 @@ func (ec *executionContext) _RevokeFederationSecretOrErrorPayload(ctx context.Co
 			return graphql.Null
 		}
 		return ec._RevokeFederationSecretPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RevokeUserSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RevokeUserSubgraphAccessOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RevokeUserSubgraphAccessPayload:
+		return ec._RevokeUserSubgraphAccessPayload(ctx, sel, &obj)
+	case *model.RevokeUserSubgraphAccessPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RevokeUserSubgraphAccessPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -62882,6 +63244,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_createUserSubgraphAccess(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "revokeUserSubgraphAccess":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_revokeUserSubgraphAccess(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -71737,6 +72135,88 @@ func (ec *executionContext) _AdminReleasesConnection(ctx context.Context, sel as
 	return out
 }
 
+var adminRevokeImplementors = []string{"AdminRevoke"}
+
+func (ec *executionContext) _AdminRevoke(ctx context.Context, sel ast.SelectionSet, obj *db.Revoke) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminRevokeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminRevoke")
+		case "id":
+			out.Values[i] = ec._AdminRevoke_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminRevoke_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "reason":
+			out.Values[i] = ec._AdminRevoke_reason(ctx, field, obj)
+		case "by":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminRevoke_by(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminRevokeUserTokenPayloadImplementors = []string{"AdminRevokeUserTokenPayload", "AdminRevokeUserTokenOrErrorPayload"}
 
 func (ec *executionContext) _AdminRevokeUserTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.AdminRevokeUserTokenPayload) graphql.Marshaler {
@@ -74818,6 +75298,39 @@ func (ec *executionContext) _AdminUserSubgraphAccess(ctx context.Context, sel as
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "revoke":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminUserSubgraphAccess_revoke(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -77539,7 +78052,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "FederationPeerScopeOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "RevokeUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "FederationPeerScopeOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -81410,6 +81923,45 @@ func (ec *executionContext) _RevokeFederationSecretPayload(ctx context.Context, 
 			out.Values[i] = graphql.MarshalString("RevokeFederationSecretPayload")
 		case "revokedId":
 			out.Values[i] = ec._RevokeFederationSecretPayload_revokedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var revokeUserSubgraphAccessPayloadImplementors = []string{"RevokeUserSubgraphAccessPayload", "RevokeUserSubgraphAccessOrErrorPayload"}
+
+func (ec *executionContext) _RevokeUserSubgraphAccessPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RevokeUserSubgraphAccessPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, revokeUserSubgraphAccessPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RevokeUserSubgraphAccessPayload")
+		case "access":
+			out.Values[i] = ec._RevokeUserSubgraphAccessPayload_access(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -89251,6 +89803,16 @@ func (ec *executionContext) marshalNAdminUserSubgraphAccess2ᚕtrip2gᚋinternal
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v *db.UserSubgraphAccess) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminUserSubgraphAccess(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
 	return ec._AdminUserSubgraphAccessesConnection(ctx, sel, &v)
 }
@@ -91971,6 +92533,21 @@ func (ec *executionContext) marshalNRevokeFederationSecretOrErrorPayload2trip2g�
 	return ec._RevokeFederationSecretOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNRevokeUserSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐRevokeUserSubgraphAccessInput(ctx context.Context, v any) (model.RevokeUserSubgraphAccessInput, error) {
+	res, err := ec.unmarshalInputRevokeUserSubgraphAccessInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRevokeUserSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRevokeUserSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RevokeUserSubgraphAccessOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RevokeUserSubgraphAccessOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNRevokeUserTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐRevokeUserTokenInput(ctx context.Context, v any) (model.RevokeUserTokenInput, error) {
 	res, err := ec.unmarshalInputRevokeUserTokenInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -93734,6 +94311,13 @@ func (ec *executionContext) marshalOAdminRedirect2ᚖtrip2gᚋinternalᚋdbᚐRe
 		return graphql.Null
 	}
 	return ec._AdminRedirect(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminRevoke2ᚖtrip2gᚋinternalᚋdbᚐRevoke(ctx context.Context, sel ast.SelectionSet, v *db.Revoke) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminRevoke(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v *db.Subgraph) graphql.Marshaler {

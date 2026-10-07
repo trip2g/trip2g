@@ -120,6 +120,17 @@ update user_subgraph_accesses
  where id = ?
 returning *;
 
+-- name: CreateRevoke :one
+insert into revokes (target_type, target_id, by_id, reason)
+values (?, ?, ?, ?)
+returning *;
+
+-- name: RevokeUserSubgraphAccess :one
+update user_subgraph_accesses
+   set revoke_id = ?
+ where id = ?
+returning *;
+
 -- name: BanUser :exec
 insert into user_bans (user_id, banned_by, reason)
 values (?, ?, ?);

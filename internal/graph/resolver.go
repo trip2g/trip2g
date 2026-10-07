@@ -67,6 +67,7 @@ import (
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/revokefederationsecret"
+	"trip2g/internal/case/admin/revokeusersubgraphaccess"
 	adminrevokeusertoken "trip2g/internal/case/admin/revokeusertoken"
 	"trip2g/internal/case/admin/rotatefederationsecret"
 	"trip2g/internal/case/admin/runcronjob"
@@ -222,6 +223,7 @@ type Env interface {
 	SubgraphByID(ctx context.Context, id int64) (db.Subgraph, error)
 	SubgraphByName(ctx context.Context, name string) (db.Subgraph, error)
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
+	RevokeByID(ctx context.Context, id int64) (db.Revoke, error)
 	OfferByID(ctx context.Context, id int64) (db.Offer, error)
 	PurchaseByID(ctx context.Context, id string) (db.Purchase, error)
 	RedirectByID(ctx context.Context, id int64) (db.Redirect, error)
@@ -310,6 +312,7 @@ type Env interface {
 	createadmin.Env
 	createhatlink.Env
 	createusersubgraphaccess.Env
+	revokeusersubgraphaccess.Env
 	deleteadmin.Env
 	updateoffer.Env
 	updateuser.Env

@@ -185,6 +185,9 @@ select *
   from user_subgraph_accesses
  where id = ?;
 
+-- name: RevokeByID :one
+select * from revokes where id = ?;
+
 -- name: SubgraphByID :one
 select * from subgraphs where id = ?;
 

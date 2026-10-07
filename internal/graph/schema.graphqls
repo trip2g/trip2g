@@ -126,6 +126,14 @@ type AdminUserSubgraphAccess @goModel(model: "trip2g/internal/db.UserSubgraphAcc
 
   user: AdminUser!
   subgraph: AdminSubgraph!
+  revoke: AdminRevoke @goField(forceResolver: true)
+}
+
+type AdminRevoke @goModel(model: "trip2g/internal/db.Revoke") {
+  id: Int64!
+  createdAt: Time!
+  reason: String
+  by: AdminUser! @goField(forceResolver: true)
 }
 
 type NoteWarning {
@@ -2357,6 +2365,21 @@ type CreateUserSubgraphAccessPayload {
 union CreateUserSubgraphAccessOrErrorPayload = CreateUserSubgraphAccessPayload | ErrorPayload
 
 #
+# revokeUserSubgraphAccess
+#
+
+input RevokeUserSubgraphAccessInput {
+  id: Int64!
+  reason: String!
+}
+
+type RevokeUserSubgraphAccessPayload {
+  access: AdminUserSubgraphAccess!
+}
+
+union RevokeUserSubgraphAccessOrErrorPayload = RevokeUserSubgraphAccessPayload | ErrorPayload
+
+#
 # unbanUser
 #
 
@@ -3384,6 +3407,7 @@ type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
   createUserSubgraphAccess(input: CreateUserSubgraphAccessInput!): CreateUserSubgraphAccessOrErrorPayload!
+  revokeUserSubgraphAccess(input: RevokeUserSubgraphAccessInput!): RevokeUserSubgraphAccessOrErrorPayload!
 
   createOffer(input: CreateOfferInput!): CreateOfferOrErrorPayload!
   updateOffer(input: UpdateOfferInput!): UpdateOfferOrErrorPayload!

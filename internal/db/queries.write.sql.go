@@ -205,6 +205,38 @@ func (q *WriteQueries) ClearUncommittedPaths(ctx context.Context) error {
 	return err
 }
 
+const createRevoke = `-- name: CreateRevoke :one
+insert into revokes (target_type, target_id, by_id, reason)
+values (?, ?, ?, ?)
+returning id, target_type, target_id, created_at, by_id, reason
+`
+
+type CreateRevokeParams struct {
+	TargetType string  `json:"target_type"`
+	TargetID   int64   `json:"target_id"`
+	ByID       int64   `json:"by_id"`
+	Reason     *string `json:"reason"`
+}
+
+func (q *WriteQueries) CreateRevoke(ctx context.Context, arg CreateRevokeParams) (Revoke, error) {
+	row := q.db.QueryRowContext(ctx, createRevoke,
+		arg.TargetType,
+		arg.TargetID,
+		arg.ByID,
+		arg.Reason,
+	)
+	var i Revoke
+	err := row.Scan(
+		&i.ID,
+		&i.TargetType,
+		&i.TargetID,
+		&i.CreatedAt,
+		&i.ByID,
+		&i.Reason,
+	)
+	return i, err
+}
+
 const createUserSubgraphAccess = `-- name: CreateUserSubgraphAccess :one
 insert into user_subgraph_accesses (user_id, subgraph_id, purchase_id, expires_at)
 values (?, ?, ?, ?)
@@ -3268,6 +3300,34 @@ func (q *WriteQueries) RevokeSupersededOwnerTokens(ctx context.Context, arg Revo
 		return 0, err
 	}
 	return result.RowsAffected()
+}
+
+const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :one
+update user_subgraph_accesses
+   set revoke_id = ?
+ where id = ?
+returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id, created_by
+`
+
+type RevokeUserSubgraphAccessParams struct {
+	RevokeID *int64 `json:"revoke_id"`
+	ID       int64  `json:"id"`
+}
+
+func (q *WriteQueries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) (UserSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, revokeUserSubgraphAccess, arg.RevokeID, arg.ID)
+	var i UserSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.SubgraphID,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.RevokeID,
+		&i.PurchaseID,
+		&i.CreatedBy,
+	)
+	return i, err
 }
 
 const revokeUserToken = `-- name: RevokeUserToken :one

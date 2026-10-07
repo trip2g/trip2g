@@ -80,6 +80,7 @@ import (
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/revokefederationsecret"
+	"trip2g/internal/case/admin/revokeusersubgraphaccess"
 	adminrevokeusertoken "trip2g/internal/case/admin/revokeusertoken"
 	"trip2g/internal/case/admin/rotatefederationsecret"
 	"trip2g/internal/case/admin/runcronjob"
@@ -852,6 +853,11 @@ func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, ob
 // CreateUserSubgraphAccess is the resolver for the createUserSubgraphAccess field.
 func (r *adminMutationResolver) CreateUserSubgraphAccess(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateUserSubgraphAccessInput) (model.CreateUserSubgraphAccessOrErrorPayload, error) {
 	return createusersubgraphaccess.Resolve(ctx, r.env(ctx), input)
+}
+
+// RevokeUserSubgraphAccess is the resolver for the revokeUserSubgraphAccess field.
+func (r *adminMutationResolver) RevokeUserSubgraphAccess(ctx context.Context, obj *appmodel.AdminMutation, input model.RevokeUserSubgraphAccessInput) (model.RevokeUserSubgraphAccessOrErrorPayload, error) {
+	return revokeusersubgraphaccess.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateOffer is the resolver for the createOffer field.
@@ -2282,6 +2288,11 @@ func (r *adminReleasesConnectionResolver) Nodes(ctx context.Context, obj *model.
 	return r.env(ctx).ListAllReleases(ctx)
 }
 
+// By is the resolver for the by field.
+func (r *adminRevokeResolver) By(ctx context.Context, obj *db.Revoke) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.ByID, r.env(ctx).UserByID)
+}
+
 // Limit is the resolver for the limit field.
 func (r *adminStorageEntryResolver) Limit(ctx context.Context, obj *appmodel.AdminStorageEntry, format *model.StorageSizeFormat) (float64, error) {
 	return convertStorageSize(obj.LimitBytes, format), nil
@@ -2637,6 +2648,11 @@ func (r *adminUserSubgraphAccessResolver) User(ctx context.Context, obj *db.User
 // Subgraph is the resolver for the subgraph field.
 func (r *adminUserSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error) {
 	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.env(ctx).SubgraphByID)
+}
+
+// Revoke is the resolver for the revoke field.
+func (r *adminUserSubgraphAccessResolver) Revoke(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Revoke, error) {
+	return resolveOnePtr[db.Revoke](ctx, obj.RevokeID, r.env(ctx).RevokeByID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -4024,6 +4040,9 @@ func (r *Resolver) AdminReleasesConnection() generated.AdminReleasesConnectionRe
 	return &adminReleasesConnectionResolver{r}
 }
 
+// AdminRevoke returns generated.AdminRevokeResolver implementation.
+func (r *Resolver) AdminRevoke() generated.AdminRevokeResolver { return &adminRevokeResolver{r} }
+
 // AdminStorageEntry returns generated.AdminStorageEntryResolver implementation.
 func (r *Resolver) AdminStorageEntry() generated.AdminStorageEntryResolver {
 	return &adminStorageEntryResolver{r}
@@ -4355,6 +4374,7 @@ type adminRedirectResolver struct{ *Resolver }
 type adminRedirectsConnectionResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
+type adminRevokeResolver struct{ *Resolver }
 type adminStorageEntryResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminTelegramAccountResolver struct{ *Resolver }

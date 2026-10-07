@@ -1,0 +1,15 @@
+mutation ($input: RevokeUserSubgraphAccessInput!) {
+	admin {
+		payload: revokeUserSubgraphAccess(input: $input) {
+			__typename
+			... on RevokeUserSubgraphAccessPayload {
+				access {
+					id
+				}
+			}
+			... on ErrorPayload {
+				message
+			}
+		}
+	}
+}

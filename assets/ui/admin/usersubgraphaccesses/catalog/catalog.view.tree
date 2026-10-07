@@ -36,3 +36,7 @@ $trip2g_admin_usersubgraphaccesses_catalog $trip2g_admin_catalog
 						title \Expires At
 						Content <= Row_expires_at* $trip2g_admin_cell
 							content <= row_expires_at* \
+					<= Row_revoked_at_labeler* $mol_labeler
+						title \Revoked At
+						Content <= Row_revoked_at* $trip2g_admin_cell
+							content <= row_revoked_at* \

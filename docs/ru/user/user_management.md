@@ -79,6 +79,30 @@ mutation {
 
 `subgraphIds` — массив: в одном вызове можно открыть доступ к нескольким подграфам. Чтобы доступ был постоянным, передайте `null` в `expiresAt` или не указывайте его вовсе. Для временного доступа — метка времени в формате ISO 8601.
 
+### Отозвать доступ к подграфу
+
+```graphql
+mutation {
+  admin {
+    revokeUserSubgraphAccess(input: {
+      id: 12
+      reason: "Вернули деньги"
+    }) {
+      __typename
+      ... on RevokeUserSubgraphAccessPayload {
+        access {
+          id
+          revoke { createdAt reason by { email } }
+        }
+      }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+`id` — номер доступа из `createUserSubgraphAccess` или `allUserSubgraphAccesses`. Причина обязательна. Пользователь теряет подграф со следующего запроса. Доступ остаётся в списке с датой отзыва, а его страница показывает, кто, когда и почему его отозвал. Отозвать его второй раз нельзя. В админке: **Users → Subgraph Accesses → открыть доступ → указать причину → Revoke**.
+
 ### Шаг 4. Назначить администратора (необязательно)
 
 ```graphql

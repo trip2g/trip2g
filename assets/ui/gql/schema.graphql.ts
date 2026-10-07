@@ -678,6 +678,7 @@ export type AdminMutation = {
   restoreBoostyCredentials: RestoreBoostyCredentialsOrErrorPayload;
   restorePatreonCredentials: RestorePatreonCredentialsOrErrorPayload;
   revokeFederationSecret: RevokeFederationSecretOrErrorPayload;
+  revokeUserSubgraphAccess: RevokeUserSubgraphAccessOrErrorPayload;
   rotateFederationSecret: RotateFederationSecretOrErrorPayload;
   runCronJob: RunCronJobOrErrorPayload;
   sendTelegramPublishNoteNow: SendTelegramPublishNoteNowOrErrorPayload;
@@ -1028,6 +1029,11 @@ export type AdminMutationrestorePatreonCredentialsArgs = {
 
 export type AdminMutationrevokeFederationSecretArgs = {
   id: Scalars['Int64']['input'];
+};
+
+
+export type AdminMutationrevokeUserSubgraphAccessArgs = {
+  input: RevokeUserSubgraphAccessInput;
 };
 
 
@@ -1772,6 +1778,14 @@ export type AdminReleasesConnection = {
   nodes: Array<AdminRelease>;
 };
 
+export type AdminRevoke = {
+  __typename?: 'AdminRevoke';
+  by: AdminUser;
+  createdAt: Scalars['Time']['output'];
+  id: Scalars['Int64']['output'];
+  reason?: Maybe<Scalars['String']['output']>;
+};
+
 export type AdminRevokeUserTokenInput = {
   id: Scalars['ID']['input'];
 };
@@ -2121,6 +2135,7 @@ export type AdminUserSubgraphAccess = {
   createdAt: Scalars['Time']['output'];
   expiresAt?: Maybe<Scalars['Time']['output']>;
   id: Scalars['Int64']['output'];
+  revoke?: Maybe<AdminRevoke>;
   subgraph: AdminSubgraph;
   subgraphId: Scalars['Int64']['output'];
   user: AdminUser;
@@ -3684,6 +3699,18 @@ export type RevokeFederationSecretOrErrorPayload = ErrorPayload | RevokeFederati
 export type RevokeFederationSecretPayload = {
   __typename?: 'RevokeFederationSecretPayload';
   revokedId: Scalars['Int64']['output'];
+};
+
+export type RevokeUserSubgraphAccessInput = {
+  id: Scalars['Int64']['input'];
+  reason: Scalars['String']['input'];
+};
+
+export type RevokeUserSubgraphAccessOrErrorPayload = ErrorPayload | RevokeUserSubgraphAccessPayload;
+
+export type RevokeUserSubgraphAccessPayload = {
+  __typename?: 'RevokeUserSubgraphAccessPayload';
+  access: AdminUserSubgraphAccess;
 };
 
 export type RevokeUserTokenInput = {
