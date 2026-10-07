@@ -164,7 +164,7 @@ func (ctx *Ctx) AllTelegramLinks() []model.TelegramPostLink {
 			continue
 		}
 
-		link, hasLink := resolved.Unwrap().ExtractTelegramPublishMessageLink()
+		link, hasLink := templateviews.NoteView(resolved).ExtractTelegramPublishMessageLink()
 		if !hasLink {
 			continue
 		}
@@ -501,7 +501,7 @@ func (ctx *Ctx) FormSpecJSON() []byte {
 	if ctx.Note == nil {
 		return nil
 	}
-	nv := ctx.Note.Unwrap()
+	nv := templateviews.NoteView(ctx.Note)
 	rawMeta := nv.RawMeta
 
 	// Resolve form_ref if present
@@ -516,7 +516,7 @@ func (ctx *Ctx) FormSpecJSON() []byte {
 		if ref == nil {
 			return nil
 		}
-		rawMeta = ref.Unwrap().RawMeta
+		rawMeta = templateviews.NoteView(ref).RawMeta
 	}
 
 	// Build forms map: key "" for single form:, named keys for forms: map

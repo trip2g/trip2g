@@ -40,8 +40,9 @@ func (n *NVS) wrap(nv *model.NoteView) *Note {
 	return NewNoteWithDomain(nv, n.domainHost)
 }
 
-// Unwrap returns the underlying NoteViews (for internal use).
-func (n *NVS) Unwrap() *model.NoteViews {
+// NoteViews returns the engine notes behind n. A function, not a method,
+// so Jet templates can't reach it.
+func NoteViews(n *NVS) *model.NoteViews {
 	return n.nvs
 }
 
@@ -157,7 +158,7 @@ func (n *NVS) NoteByWikilinkFrom(source *Note, target string) *Note {
 
 	var src *model.NoteView
 	if source != nil {
-		src = source.Unwrap()
+		src = source.nv
 	}
 
 	nv := n.nvs.ResolveWikilinkTarget(src, target)
