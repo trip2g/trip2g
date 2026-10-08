@@ -6,5 +6,6 @@
 	"$trip2g_admin_telegrampublishnote_catalog_Row_status_labeler_title": "Статус",
 	"$trip2g_admin_telegrampublishnote_catalog_Row_seconds_until_publish_labeler_title": "До публикации",
 	"$trip2g_admin_telegrampublishnote_catalog_empty_text": "Ничего не запланировано",
-	"$trip2g_admin_telegrampublishnote_catalog_menu_title": "Telegram посты"
+	"$trip2g_admin_telegrampublishnote_catalog_menu_title": "Telegram посты",
+	"$trip2g_admin_telegrampublishnote_catalog_Row_error_count_labeler_title": "Ошибки"
 }

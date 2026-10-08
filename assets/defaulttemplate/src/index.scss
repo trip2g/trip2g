@@ -128,12 +128,17 @@ body {
   min-height: 56px;
 }
 
+// The logo is the only item that may shrink, so a wide logo on a narrow screen
+// scales down instead of pushing the right hamburger past the viewport.
 .site-header__logo {
-  flex-shrink: 0;
+  min-width: 0;
   text-decoration: none;
 
   img {
     height: 48px;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: left center;
     display: block;
   }
 }

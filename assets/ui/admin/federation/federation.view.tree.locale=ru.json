@@ -1,7 +1,6 @@
 {
 	"$trip2g_admin_federation_catalog_menu_title": "Федерация",
 	"$trip2g_admin_federation_catalog_Kid_title": "Ключ (kid)",
-	"$trip2g_admin_federation_catalog_KbUrl_title": "URL базы знаний",
 	"$trip2g_admin_federation_catalog_SubgraphCount_title": "Подграфы",
 	"$trip2g_admin_federation_catalog_CreatedAt_title": "Создан",
 	"$trip2g_admin_federation_catalog_RevokedAt_title": "Отозван",

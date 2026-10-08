@@ -1,3 +1,5 @@
 {
-	"$trip2g_admin_notfoundpattern_catalog_menu_title": "Игнорируемые шаблоны 404"
+	"$trip2g_admin_notfoundpattern_catalog_menu_title": "Игнорируемые шаблоны 404",
+	"$trip2g_admin_notfoundpattern_catalog_CreatedAt_title": "Создано",
+	"$trip2g_admin_notfoundpattern_catalog_CreatedBy_title": "Создатель"
 }

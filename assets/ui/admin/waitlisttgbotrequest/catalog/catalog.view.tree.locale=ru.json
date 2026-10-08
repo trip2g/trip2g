@@ -1,3 +1,4 @@
 {
-	"$trip2g_admin_waitlisttgbotrequest_catalog_menu_title": "Запросы в очередь по Telegram"
+	"$trip2g_admin_waitlisttgbotrequest_catalog_menu_title": "Запросы в очередь по Telegram",
+	"$trip2g_admin_waitlisttgbotrequest_catalog_CreatedAt_title": "Создано"
 }

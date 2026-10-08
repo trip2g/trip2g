@@ -1,6 +1,6 @@
 {
 	"$trip2g_admin_backgroundqueue_catalog_empty_text": "Пусто",
-	"$trip2g_admin_backgroundqueue_catalog_Row_name_labeler_title": "Название очереди",
+	"$trip2g_admin_backgroundqueue_catalog_Name_title": "Название очереди",
 	"$trip2g_admin_backgroundqueue_catalog_Row_pending_labeler_title": "Ожидающих",
 	"$trip2g_admin_backgroundqueue_catalog_Row_retry_labeler_title": "Повторных",
 	"$trip2g_admin_backgroundqueue_catalog_Row_status_labeler_title": "Статус",

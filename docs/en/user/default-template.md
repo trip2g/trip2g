@@ -107,7 +107,7 @@ How it works:
 3. **Previous** and **Next** are the links just before and after the page in that list. Neighbours come from the same sidebar note only.
 4. The **breadcrumb** is the nearest heading above the link. If the heading itself contains a link to a note, the breadcrumb is a link to that note; otherwise it is plain text.
 
-Labels are the target notes' titles, not the link text: `[[guide|Start here]]` shows the title of `guide`.
+Labels are the link text from the sidebar: `[[guide|Start here]]` and `[Start here](guide.md)` both show "Start here". A wikilink without an alias, `[[guide]]`, shows the title of `guide`.
 
 Example sidebar `docs/_sidebar.md`:
 
@@ -123,7 +123,7 @@ Example sidebar `docs/_sidebar.md`:
 - [[docs/publishing]]
 ```
 
-On the `config.md` page: Previous is "install", Next is "writing", the breadcrumb is "Basics" (plain text). On the `writing.md` page the breadcrumb "Guide" links to `docs/guide`.
+On the `config.md` page: Previous is the title of `install`, Next is "Writing", the breadcrumb is "Basics" (plain text). On the `writing.md` page the breadcrumb "Guide" links to `docs/guide`.
 
 Both wikilinks and markdown links count:
 

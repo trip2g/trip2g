@@ -16,6 +16,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** An MCP client that checks tool schemas strictly could refuse `expand`, or the whole tool list, because of it.
 - **How to use.** Nothing to do. A client that cached the tool list picks up the fixed schema on its next `tools/list`.
 
+### A signed-in reader opens a `free: true` note
+
+- **What.** A note with `free: true` opens for every reader: a guest, a signed-in user with no access to its subgraph, and an admin. Before, a signed-in user without a grant got a paywall on a free note that a guest could open, and a form on that note answered `form_not_found` to them. The page, the GraphQL `note` query, search, similar notes, MCP, assets, live note updates and form submission all read the same check, so all of them change together. Other notes of a paid or sign-in subgraph stay closed as before.
+- **Why.** `free: true` publishes a note for everyone. Signing in must not close what a guest can read.
+- **How to use.** Nothing to do.
+
 ## v0.11.1 (2026-10-07)
 
 ### Payment webhooks moved under `/_system/`

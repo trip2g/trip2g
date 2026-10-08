@@ -137,9 +137,10 @@ func (ctx *Ctx) JSONLDLogo() string {
 	return model.AbsoluteURL(ctx.PublicURL, note.FirstImageURL())
 }
 
-// JSONLDBreadcrumb builds the breadcrumb trail (Home → …segments) from the
-// note's permalink. Returns nil for the home page / single-level pages, where a
-// breadcrumb adds nothing.
+// JSONLDBreadcrumb builds the breadcrumb trail: Home → the visible breadcrumbs
+// that have a link → the page, or, without visible breadcrumbs, Home → …segments
+// of the note's permalink. Returns nil for the home page / single-level pages,
+// where a breadcrumb adds nothing.
 func (ctx *Ctx) JSONLDBreadcrumb() []JSONLDCrumb {
 	if ctx.Note == nil || ctx.PublicURL == "" {
 		return nil
@@ -147,6 +148,18 @@ func (ctx *Ctx) JSONLDBreadcrumb() []JSONLDCrumb {
 	base := strings.TrimRight(ctx.PublicURL, "/")
 
 	crumbs := []JSONLDCrumb{{Name: "Home", Item: base + "/"}}
+
+	if visible := ctx.PageNav().Breadcrumbs; len(visible) > 0 {
+		for _, c := range visible {
+			// Every ListItem but the last needs an item URL, so plain-text crumbs are dropped.
+			item := model.AbsoluteURL(ctx.PublicURL, c.Href)
+			if c.Href == "" || item == crumbs[0].Item {
+				continue
+			}
+			crumbs = append(crumbs, JSONLDCrumb{Name: c.Label, Item: item})
+		}
+		return append(crumbs, JSONLDCrumb{Name: ctx.Note.Title(), Item: base + ctx.Note.PermalinkEncoded()})
+	}
 
 	cum := ""
 	for _, seg := range strings.Split(strings.Trim(ctx.Note.Permalink(), "/"), "/") {

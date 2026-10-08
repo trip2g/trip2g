@@ -19,7 +19,7 @@ func TestFindPageNav(t *testing.T) {
 
 	links := []model.NoteNavLink{
 		{Note: a},
-		{Note: b, Heading: "Start"},
+		{Note: b, Heading: "Start", Label: "Bee"},
 		{Note: c, Heading: "Guide", HeadingNote: sec},
 		{Note: a, Heading: "Guide", HeadingNote: sec},
 	}
@@ -33,7 +33,7 @@ func TestFindPageNav(t *testing.T) {
 		{
 			name:   "first link has no prev and no heading",
 			pathID: 1,
-			want:   PageNav{Next: &NavLink{Label: "B", Href: "/b"}},
+			want:   PageNav{Next: &NavLink{Label: "Bee", Href: "/b"}},
 			found:  true,
 		},
 		{
@@ -50,7 +50,7 @@ func TestFindPageNav(t *testing.T) {
 			name:   "linked heading becomes a linked crumb",
 			pathID: 3,
 			want: PageNav{
-				Prev:        &NavLink{Label: "B", Href: "/b"},
+				Prev:        &NavLink{Label: "Bee", Href: "/b"},
 				Next:        &NavLink{Label: "A", Href: "/a"},
 				Breadcrumbs: []NavLink{{Label: "Guide", Href: "/sec"}},
 			},
@@ -92,7 +92,7 @@ func TestCtxPageNav(t *testing.T) {
 	}
 	srcs := []mdloader.SourceFile{
 		{Path: "docs/_sidebar.md", Content: []byte(pageNavSidebar)},
-		{Path: "docs/_right.md", Content: []byte("- [[d]]\n- [[guide]]\n")},
+		{Path: "docs/_right.md", Content: []byte("- [Dee](d.md)\n- [[guide]]\n")},
 		page("docs/a.md", "title: A\nleft_sidebar: docs/_sidebar.md"),
 		page("docs/b.md", "title: B\nleft_sidebar: docs/_sidebar.md"),
 		page("docs/c.md", "title: C\nleft_sidebar: docs/_sidebar.md"),
@@ -136,17 +136,17 @@ breadcrumbs:
 		{
 			path: "docs/c.md",
 			want: PageNav{
-				Prev:        &NavLink{Label: "B", Href: "/docs/b"},
+				Prev:        &NavLink{Label: "Bee", Href: "/docs/b"},
 				Next:        &NavLink{Label: "A", Href: "/docs/a"},
 				Breadcrumbs: []NavLink{{Label: "Guide", Href: "/docs/guide"}},
 			},
 		},
 		{
 			path: "docs/guide.md",
-			want: PageNav{Prev: &NavLink{Label: "D", Href: "/docs/d"}},
+			want: PageNav{Prev: &NavLink{Label: "Dee", Href: "/docs/d"}},
 		},
 		{
-			// Not in the left sidebar note, so the right one is used.
+			// Not in the left sidebar note, so the right one is used. A bare wikilink keeps the title.
 			path: "docs/d.md",
 			want: PageNav{Next: &NavLink{Label: "Guide page", Href: "/docs/guide"}},
 		},
