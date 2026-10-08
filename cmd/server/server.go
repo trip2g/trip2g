@@ -37,7 +37,7 @@ func (a *app) serveHTTP(s *fasthttp.Server) error {
 	return s.ListenAndServe(a.config.ListenAddr)
 }
 
-func (a *app) startServer() { //nolint:gocognit // server startup wiring
+func (a *app) requestHandler() fasthttp.RequestHandler {
 	makeGraphQLHandler := a.prepareGraphQLHandler()
 	handleGraphQL := makeGraphQLHandler("/_system/graphql")
 	handleGraphQLCompatRaw := makeGraphQLHandler("/graphql")
@@ -142,6 +142,12 @@ func (a *app) startServer() { //nolint:gocognit // server startup wiring
 		ctx.SetStatusCode(http.StatusNotFound)
 		ctx.SetBodyString("404 Not Found")
 	}
+
+	return handler
+}
+
+func (a *app) startServer() {
+	handler := a.requestHandler()
 
 	handlerTimeout := 60 * time.Second
 	if a.config.DevMode {
