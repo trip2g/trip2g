@@ -42,8 +42,6 @@ func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 		return false, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
-	var userSubgraphs []string
-
 	if userToken != nil && userToken.IsAdmin() {
 		return true, nil
 	}
@@ -55,13 +53,17 @@ func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 		return false, nil
 	}
 
-	if userToken != nil {
-		userSubgraphs, err = env.ListActiveUserSubgraphs(ctx, int64(userToken.ID))
-		if err != nil {
-			return false, fmt.Errorf("failed to list user subgraphs: %w", err)
-		}
-	} else {
-		return note.Free, nil
+	if note.Free {
+		return true, nil
+	}
+
+	if userToken == nil {
+		return false, nil
+	}
+
+	userSubgraphs, err := env.ListActiveUserSubgraphs(ctx, int64(userToken.ID))
+	if err != nil {
+		return false, fmt.Errorf("failed to list user subgraphs: %w", err)
 	}
 
 	// Notes in require_signin subgraphs: any authenticated user can read.
