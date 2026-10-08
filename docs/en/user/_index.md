@@ -29,7 +29,7 @@ Below are the key pages, grouped by topic. The sidebar on the left lists everyth
 - [[en/user/two-way-sync|Two-way sync with Obsidian]] — changes made on the server reach your vault.
 - [[en/user/git|Git sync]] — clone your site, edit anywhere, push back.
 - [[en/user/editor|In-browser editor]] — edit notes and roll back versions without Obsidian.
-- [[en/user/live-editing|Live editing]] — an open page updates itself after you sync.
+- [[en/user/live-editing|Live editing]] — turn on "Live reload" in the ☰ menu and the open page reloads by itself after every edit.
 - [[en/user/wikilink-resolution|Wikilink resolution]] — which file `[[Name]]` opens when names collide.
 
 ## Telegram
