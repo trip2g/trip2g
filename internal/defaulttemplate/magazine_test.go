@@ -276,3 +276,70 @@ func TestMagazineFeaturedCount_ReturnsValue(t *testing.T) {
 	ctx := &Ctx{Note: indexNote}
 	require.Equal(t, 3, ctx.MagazineFeaturedCount())
 }
+
+type introTextStub struct {
+	model.NoteViewPartialRenderer
+	text string
+}
+
+func (s introTextStub) IntroText() string { return s.text }
+
+func TestMagazineItemExcerpt(t *testing.T) {
+	desc := "From frontmatter."
+	empty := ""
+
+	tests := []struct {
+		name string
+		nv   *model.NoteView
+		want string
+	}{
+		{
+			name: "description wins over intro",
+			nv:   &model.NoteView{Description: &desc, PartialRenderer: introTextStub{text: "Intro."}},
+			want: "From frontmatter.",
+		},
+		{
+			name: "empty description falls back to intro",
+			nv:   &model.NoteView{Description: &empty, PartialRenderer: introTextStub{text: "Intro."}},
+			want: "Intro.",
+		},
+		{
+			name: "no description uses intro",
+			nv:   &model.NoteView{PartialRenderer: introTextStub{text: "Intro."}},
+			want: "Intro.",
+		},
+		{
+			name: "no description and no renderer",
+			nv:   &model.NoteView{},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			item := MagazineItem{Note: templateviews.NewNote(tt.nv)}
+			require.Equal(t, tt.want, item.Excerpt())
+		})
+	}
+}
+
+func TestMagazineShowDate(t *testing.T) {
+	tests := []struct {
+		name string
+		meta map[string]interface{}
+		want bool
+	}{
+		{name: "default true", meta: map[string]interface{}{}, want: true},
+		{name: "explicit true", meta: map[string]interface{}{"magazine_show_date": true}, want: true},
+		{name: "false hides", meta: map[string]interface{}{"magazine_show_date": false}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := &Ctx{Note: templateviews.NewNote(&model.NoteView{RawMeta: tt.meta})}
+			require.Equal(t, tt.want, ctx.MagazineShowDate())
+		})
+	}
+
+	require.True(t, (&Ctx{}).MagazineShowDate())
+}

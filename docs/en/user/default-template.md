@@ -394,6 +394,7 @@ The magazine displays related notes as cards in a three-tier visual hierarchy: f
 | `magazine_featured` | `1` | How many top notes become large featured cards |
 | `magazine_grid` | `4` | How many notes after that go into the medium grid |
 | `magazine_grid_columns` | `2` | Number of columns in the grid |
+| `magazine_show_date` | `true` | Show the note date on each card |
 
 The model is simple: notes are consumed in order. First `magazine_featured` of them become featured cards, then the next `magazine_grid` become grid cards, and everything left over becomes the list. There are no special "unlimited" values to remember; setting a count to `0` skips that tier.
 
@@ -448,6 +449,14 @@ magazine_grid_columns: 3
 ```
 
 Default: `2`.
+
+**`magazine_show_date`** — Show the note date on each card
+
+```yaml
+magazine_show_date: false
+```
+
+Default: `true`, which suits a blog. Set it to `false` on a docs hub or catalog page, where a date carries no meaning and makes pages look stale.
 
 **`magazine_include_files`** — Glob pattern for which notes to include
 
@@ -536,10 +545,11 @@ Both approaches can be combined.
 
 Each magazine card shows:
 
-- **Thumbnail** — the first image in the note (if any)
-- **Title** — from frontmatter
-- **Description** — from the `description` frontmatter field (or the first paragraph if no description is set)
-- **Link** — to the full note
+- **Title** — from frontmatter, styled as a link
+- **Excerpt** — the note's `description` frontmatter field. Without it, the first paragraph of the note as plain text: links, bold and inline code become ordinary text; lists, code blocks, tables and images are skipped. The excerpt is cut to 3 lines (4 on a featured card, 2 in the list)
+- **Date** — the note's creation date, unless `magazine_show_date: false`
+
+The whole card is clickable and leads to the note. To control what a card says, write a one-sentence `description` in the note's frontmatter.
 
 ### Examples
 

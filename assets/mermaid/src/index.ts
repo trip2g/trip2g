@@ -270,11 +270,29 @@ function renderAll(blocks: Block[], done: () => void) {
   Promise.resolve(mermaid.run({ nodes: blocks.map((b) => b.el) })).then(done);
 }
 
+// Some mermaid.js diagrams (pie) carry only width="100%" and a viewBox. The
+// pan-zoom enhancer drops the viewBox, so `height: auto` then falls back to the
+// 150px replaced-element default. Pin the intrinsic size from the viewBox first.
+function sizeFromViewBox() {
+  for (const svg of Array.from(document.querySelectorAll<SVGSVGElement>('.mermaid > svg'))) {
+    if (/^\d+(\.\d+)?(px)?$/.test(svg.getAttribute('height') || '')) continue;
+    const vb = svg.viewBox.baseVal;
+    if (!vb || vb.width <= 0 || vb.height <= 0) continue;
+    svg.setAttribute('width', String(vb.width));
+    svg.setAttribute('height', String(vb.height));
+  }
+}
+
+function enhance() {
+  sizeFromViewBox();
+  enhanceMermaidDiagrams();
+}
+
 function runMermaidJsPath(mmBlocks: Block[]) {
   injectStyle(LABEL_STYLE_ID, LABEL_CSS);
   loadScript('mermaid-lib', 'mermaid', '/assets/mermaid.min.js', () => {
-    renderAll(mmBlocks, () => enhanceMermaidDiagrams());
-    onThemeChange(() => renderAll(mmBlocks, () => enhanceMermaidDiagrams()));
+    renderAll(mmBlocks, enhance);
+    onThemeChange(() => renderAll(mmBlocks, enhance));
   });
 }
 
@@ -319,7 +337,7 @@ function initMermaid() {
     if (mmBlocks.length > 0) {
       runMermaidJsPath(mmBlocks);
     } else {
-      enhanceMermaidDiagrams();
+      enhance();
     }
   });
 }

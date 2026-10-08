@@ -310,6 +310,7 @@ type stubPartialRenderer struct{}
 func (stubPartialRenderer) Sections(int) []model.NoteViewSection        { return nil }
 func (stubPartialRenderer) Section(string) any                          { return nil }
 func (stubPartialRenderer) Introduce() model.NoteViewSection            { return model.NoteViewSection{} }
+func (stubPartialRenderer) IntroText() string                           { return "" }
 func (stubPartialRenderer) HeadingBlocks(int) []model.NoteViewSection   { return nil }
 func (stubPartialRenderer) FirstList() any                              { return nil }
 func (stubPartialRenderer) Lists() []model.NoteViewList                 { return nil }

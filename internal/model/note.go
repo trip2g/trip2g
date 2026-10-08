@@ -142,6 +142,8 @@ type NoteViewPartialRenderer interface {
 	// Section returns a *NoteViewSection, or an untyped nil if none matches.
 	Section(title string) any
 	Introduce() NoteViewSection
+	// IntroText returns the first non-empty paragraph of the intro as plain text.
+	IntroText() string
 
 	// HeadingBlocks is deprecated, use Sections instead.
 	HeadingBlocks(level int) []NoteViewSection
