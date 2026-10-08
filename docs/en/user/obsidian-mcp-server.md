@@ -115,4 +115,4 @@ Yes, they are not exclusive. Many setups keep a local filesystem server for quic
 - [[en/user/agent-memory|Long-term memory for AI agents]]: full local setup with memcli
 - [[en/user/mcp|MCP reference]]: tools, tokens, entry points, access control
 - [[en/user/llm-wiki|LLM Wiki]]: structuring a vault agents can navigate
-- [[en/user/two-way-sync|Two-way sync]]: how the vault and server stay identical
+- [[en/user/two-way-sync|Two-way sync with Obsidian]]: how the vault and server stay identical

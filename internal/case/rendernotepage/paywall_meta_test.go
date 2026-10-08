@@ -20,6 +20,7 @@ func (r leakPartialRenderer) Section(string) any                   { return nil 
 func (r leakPartialRenderer) Introduce() model.NoteViewSection {
 	return model.NoteViewSection{ContentHTML: model.SafeHTML("<p>" + r.intro + "</p>")}
 }
+func (r leakPartialRenderer) IntroText() string                           { return r.intro }
 func (r leakPartialRenderer) HeadingBlocks(int) []model.NoteViewSection   { return nil }
 func (r leakPartialRenderer) FirstList() any                              { return nil }
 func (r leakPartialRenderer) Lists() []model.NoteViewList                 { return nil }

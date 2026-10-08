@@ -59,7 +59,7 @@ node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder .
 # Показать, что изменится, без внесения изменений
 node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder . --dry-run
 
-# Двухсторонняя синхронизация: ещё и скачать изменения с сервера
+# Двусторонняя синхронизация: ещё и скачать изменения с сервера
 node .obsidian/plugins/trip2g/trip2g-sync.mjs --folder . --two-way
 ```
 

@@ -401,17 +401,12 @@ window.__trip2g_settings = {
   {% else %}
   <h3 class="magazine-item__title"><a class="magazine-item__link" href="{%s= item.Note.PermalinkEncoded() %}">{%s item.Note.Title() %}</a></h3>
   {% endif %}
-  {% code pr := item.Note.PartialRenderer() %}
-  {% if pr != nil %}
-  {% code intro := pr.Introduce() %}
-  {% if intro.ContentHTML != "" %}
-  <p class="magazine-item__excerpt">{%s= intro.ContentHTML.String() %}</p>
+  {% if excerpt := item.Excerpt(); excerpt != "" %}
+  <p class="magazine-item__excerpt">{%s excerpt %}</p>
   {% endif %}
+  {% if ctx.MagazineShowDate() %}
+  <time class="magazine-item__date" datetime="{%s item.Note.CreatedAt().Format("2006-01-02") %}">{%s item.Note.CreatedAt().Format("2006-01-02") %}</time>
   {% endif %}
-  <div class="magazine-item__footer">
-    <a class="magazine-item__readmore" href="{%s= item.Note.PermalinkEncoded() %}">{%s ctx.T("readmore") %}</a>
-    <time class="magazine-item__date">{%s item.Note.CreatedAt().Format("2006-01-02") %}</time>
-  </div>
 </article>
 {% endfunc %}
 

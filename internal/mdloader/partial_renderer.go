@@ -336,6 +336,53 @@ func (pr *PartialRenderer) introduce() model.NoteViewSection {
 	}
 }
 
+// IntroText returns the first non-empty top-level paragraph before the first
+// heading or thematic break, as plain text with whitespace collapsed. Lists,
+// code, tables, quotes and embeds are skipped.
+func (pr *PartialRenderer) IntroText() string {
+	if pr.ast == nil || pr.content == nil {
+		return ""
+	}
+
+	for node := pr.ast.FirstChild(); node != nil; node = node.NextSibling() {
+		switch node.(type) {
+		case *ast.Heading, *ast.ThematicBreak:
+			return ""
+		case *ast.Paragraph:
+			var buf bytes.Buffer
+			pr.paragraphText(node, &buf)
+			if text := strings.Join(strings.Fields(buf.String()), " "); text != "" {
+				return text
+			}
+		}
+	}
+
+	return ""
+}
+
+func (pr *PartialRenderer) paragraphText(node ast.Node, buf *bytes.Buffer) {
+	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+		switch n := child.(type) {
+		case *ast.Image, *ast.RawHTML:
+			continue
+		case *wikilink.Node:
+			if n.Embed {
+				continue
+			}
+		case *ast.Text:
+			buf.Write(n.Segment.Value(pr.content))
+			if n.SoftLineBreak() || n.HardLineBreak() {
+				buf.WriteByte(' ')
+			}
+			continue
+		case *ast.String:
+			buf.Write(n.Value)
+			continue
+		}
+		pr.paragraphText(child, buf)
+	}
+}
+
 // renderExcerptRange renders nodes [start,end) like renderNodeRange, but drops
 // tables. A leading table would blow out the fixed-size magazine card, so the
 // excerpt keeps the surrounding prose and skips the table. Authors control the

@@ -21,6 +21,18 @@ type MagazineItem struct {
 	Size MagazineItemSize
 }
 
+// Excerpt returns the card text: the note's description frontmatter, or the
+// first intro paragraph as plain text.
+func (item MagazineItem) Excerpt() string {
+	if desc := item.Note.Description(); desc != "" {
+		return desc
+	}
+	if pr := item.Note.PartialRenderer(); pr != nil {
+		return pr.IntroText()
+	}
+	return ""
+}
+
 // MagazineItems returns magazine items for the current page.
 // Sorting: if magazine_sort_property is set, notes with that property come first
 // (sorted by its value desc); remaining notes follow sorted by created_at desc.
