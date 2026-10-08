@@ -68,13 +68,13 @@ gh release edit vX.Y.Z --notes-file release-vX.Y.Z.md   # set the description
 gh release view vX.Y.Z                                   # confirm all assets + .sha256 attached
 ```
 
-Smoke-check one binary and the image:
+Smoke-check one binary and the image. The binary keeps the `v` of the tag; the image tag drops it (`docker/metadata-action` with `type=semver`):
 
 ```sh
 curl -LO https://github.com/trip2g/trip2g/releases/download/vX.Y.Z/trip2g_vX.Y.Z_linux_amd64.tar.gz
 curl -LO https://github.com/trip2g/trip2g/releases/download/vX.Y.Z/trip2g_vX.Y.Z_linux_amd64.tar.gz.sha256
 sha256sum -c trip2g_vX.Y.Z_linux_amd64.tar.gz.sha256
-docker pull ghcr.io/trip2g/trip2g:vX.Y.Z
+docker pull ghcr.io/trip2g/trip2g:X.Y.Z
 ```
 
 ## If something goes wrong
