@@ -142,3 +142,45 @@ func TestRenderLayoutExecuteFailure(t *testing.T) {
 		})
 	}
 }
+
+// TestRenderLayoutParseError covers a layout that failed to parse (no View,
+// only warnings): admins get the default-template 500 page naming the layout
+// and listing each warning (escaped); everyone else falls back to the default
+// render.
+func TestRenderLayoutParseError(t *testing.T) {
+	env := renderLayoutEnv{layouts: &model.Layouts{
+		Map: map[string]model.Layout{"/broken": {
+			Path: "/broken",
+			Warnings: []model.NoteWarning{
+				{Level: model.NoteWarningWarning, Message: `unexpected "<script>" at line 3`},
+				{Level: model.NoteWarningWarning, Message: "unclosed block at line 9"},
+			},
+		}},
+	}}
+
+	t.Run("admin", func(t *testing.T) {
+		ctx := &fasthttp.RequestCtx{}
+		resp := &Response{UserToken: &usertoken.Data{ID: 1, Role: "admin"}}
+
+		processed, err := renderLayout(ctx, env, resp, "broken")
+		require.NoError(t, err)
+		require.True(t, processed)
+
+		require.Equal(t, http.StatusInternalServerError, ctx.Response.StatusCode())
+		body := string(ctx.Response.Body())
+		require.Contains(t, body, `&quot;broken&quot;`, "admin must see the layout name")
+		require.Contains(t, body, "unexpected &quot;&lt;script&gt;&quot; at line 3", "warning must be escaped")
+		require.Contains(t, body, "unclosed block at line 9")
+		require.NotContains(t, body, "<script>\"")
+	})
+
+	t.Run("public falls back to default render", func(t *testing.T) {
+		ctx := &fasthttp.RequestCtx{}
+		resp := &Response{UserToken: &usertoken.Data{ID: 2, Role: "reader"}}
+
+		processed, err := renderLayout(ctx, env, resp, "broken")
+		require.NoError(t, err)
+		require.False(t, processed)
+		require.Empty(t, ctx.Response.Body())
+	})
+}
