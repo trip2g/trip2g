@@ -49,15 +49,25 @@ func TestDeriveMetaDescription(t *testing.T) {
 		require.Empty(t, deriveMetaDescription(note))
 	})
 
-	t.Run("require_signin subgraph yields nothing", func(t *testing.T) {
+	t.Run("require_signin subgraph yields nothing for a closed note", func(t *testing.T) {
 		note := &model.NoteView{
-			Free:      true,
 			Subgraphs: map[string]*model.NoteSubgraph{"members": {RequireSignin: true}},
 			PartialRenderer: introPartialRenderer{
 				intro: model.NoteViewSection{ContentHTML: "<p>Members only</p>"},
 			},
 		}
 		require.Empty(t, deriveMetaDescription(note))
+	})
+
+	t.Run("free note in a require_signin subgraph is summarized", func(t *testing.T) {
+		note := &model.NoteView{
+			Free:      true,
+			Subgraphs: map[string]*model.NoteSubgraph{"members": {RequireSignin: true}},
+			PartialRenderer: introPartialRenderer{
+				intro: model.NoteViewSection{ContentHTML: "<p>Open to everyone</p>"},
+			},
+		}
+		require.Equal(t, "Open to everyone", deriveMetaDescription(note))
 	})
 
 	t.Run("truncates to about 155 chars with ellipsis on word boundary", func(t *testing.T) {

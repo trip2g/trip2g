@@ -285,7 +285,11 @@ func TestNoteQuery_Public(t *testing.T) {
 		Path: "blog/paid.md", Title: "Paid Post", Permalink: "/blog/paid", Free: false,
 	}
 	nvs.PathMap["blog/gated.md"] = &model.NoteView{
-		Path: "blog/gated.md", Title: "Gated Post", Permalink: "/blog/gated", Free: true,
+		Path: "blog/gated.md", Title: "Gated Post", Permalink: "/blog/gated", Free: false,
+		Subgraphs: map[string]*model.NoteSubgraph{"members": {RequireSignin: true}},
+	}
+	nvs.PathMap["blog/members-free.md"] = &model.NoteView{
+		Path: "blog/members-free.md", Title: "Members Free Post", Permalink: "/blog/members-free", Free: true,
 		Subgraphs: map[string]*model.NoteSubgraph{"members": {RequireSignin: true}},
 	}
 	nvs.PathMap["blog/noindex.md"] = &model.NoteView{
@@ -294,9 +298,10 @@ func TestNoteQuery_Public(t *testing.T) {
 	q := templateviews.NewNVS(nvs, "live")
 
 	all := q.ByGlob("blog/*.md").All()
-	require.Len(t, all, 4, "without Public() all notes are returned")
+	require.Len(t, all, 5, "without Public() all notes are returned")
 
-	public := q.ByGlob("blog/*.md").Public().All()
-	require.Len(t, public, 1, "Public() drops paid, sign-in-gated and noindex notes")
+	public := q.ByGlob("blog/*.md").Public().SortBy("title").All()
+	require.Len(t, public, 2, "Public() drops paid, sign-in-gated and noindex notes, and keeps every free one")
 	require.Equal(t, "Free Post", public[0].Title())
+	require.Equal(t, "Members Free Post", public[1].Title())
 }

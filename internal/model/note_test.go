@@ -851,13 +851,21 @@ func TestNoteView_IsAnonymouslyReadableVsPubliclyReadable(t *testing.T) {
 	tmpl := &NoteView{Path: "_layouts/base.html", Free: true}
 	require.False(t, tmpl.IsAnonymouslyReadable(), ".html files are never user content")
 
-	walled := &NoteView{
+	freeBehindSignin := &NoteView{
 		Path:      "post.md",
 		Free:      true,
 		Subgraphs: map[string]*NoteSubgraph{"members": {RequireSignin: true}},
 	}
+	require.True(t, freeBehindSignin.IsAnonymouslyReadable(), "free opens a note whatever its subgraphs say")
+	require.True(t, freeBehindSignin.IsPubliclyReadable())
+
+	walled := &NoteView{
+		Path:      "post.md",
+		Subgraphs: map[string]*NoteSubgraph{"members": {RequireSignin: true}},
+	}
 	require.False(t, walled.IsAnonymouslyReadable())
 	require.False(t, walled.IsPubliclyReadable())
+	require.True(t, walled.RequiresSignin())
 
 	require.False(t, (*NoteView)(nil).IsAnonymouslyReadable())
 	require.False(t, (*NoteView)(nil).IsPubliclyReadable(), "nil must not panic through IsSystem")

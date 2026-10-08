@@ -1670,10 +1670,8 @@ func (n *NoteView) IsSiteChrome() bool {
 }
 
 // IsAnonymouslyReadable reports whether the note's content may reach a
-// requester with no session — the same static gates anonymous page rendering
-// applies (canreadnote falls back to Free for a nil token; .html files are
-// never user content; a require_signin subgraph stops guests at the sign-in
-// wall).
+// requester with no session: a free note opens to everyone, whatever its
+// subgraphs say, and .html files are never user content.
 //
 // System notes pass this gate. They are never served as their own page, but
 // their rendered content ships inside public pages as chrome (_header,
@@ -1681,18 +1679,16 @@ func (n *NoteView) IsSiteChrome() bool {
 // already anonymous-visible. Being *listed* by an unauthenticated endpoint is
 // a stricter question; use IsPubliclyReadable for that.
 func (n *NoteView) IsAnonymouslyReadable() bool {
-	if n == nil || !n.Free {
-		return false
-	}
-	if strings.HasSuffix(n.Path, ".html") {
-		return false
-	}
+	return n != nil && n.Free && !strings.HasSuffix(n.Path, ".html")
+}
+
+func (n *NoteView) RequiresSignin() bool {
 	for _, subgraph := range n.Subgraphs {
 		if subgraph != nil && subgraph.RequireSignin {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 // IsPubliclyReadable reports whether a note may be exposed as an item through

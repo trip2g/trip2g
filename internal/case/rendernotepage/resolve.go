@@ -287,18 +287,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		note = &noteCopy
 	}
 
-	// Check sign-in wall before paywall.
-	// Uses RequireSignin preloaded into NoteSubgraph by noteloader enrichment.
-	if request.UserToken == nil {
-		for _, sg := range note.Subgraphs {
-			if sg != nil && sg.RequireSignin {
-				return &response, &SigninWallError{Message: "Sign in required"}
-			}
+	if request.UserToken == nil && !note.IsAnonymouslyReadable() {
+		if note.RequiresSignin() {
+			return &response, &SigninWallError{Message: "Sign in required"}
 		}
-	}
-
-	// hide all non-free pages from guests
-	if !note.Free && request.UserToken == nil {
 		return &response, &PaywallError{Message: "Need auth"}
 	}
 

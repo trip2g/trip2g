@@ -372,8 +372,9 @@ func TestPageCache_NonNoteBranchesBypass(t *testing.T) {
 		require.Equal(t, 0, pc.Len())
 	})
 
-	t.Run("sign-in wall (RequireSignin subgraph, anon)", func(t *testing.T) {
+	t.Run("sign-in wall (RequireSignin subgraph, non-free note, anon)", func(t *testing.T) {
 		note, views := cacheTestNote()
+		note.Free = false
 		note.Subgraphs = map[string]*model.NoteSubgraph{
 			"members": {Name: "members", RequireSignin: true},
 		}
@@ -383,6 +384,18 @@ func TestPageCache_NonNoteBranchesBypass(t *testing.T) {
 		runHandle(t, env, ctx, nil)
 		require.Empty(t, env.StoreCachedPageCalls())
 		require.Equal(t, 0, pc.Len())
+	})
+
+	t.Run("free note in a RequireSignin subgraph is cached like any free note", func(t *testing.T) {
+		note, views := cacheTestNote()
+		note.Subgraphs = map[string]*model.NoteSubgraph{
+			"members": {Name: "members", RequireSignin: true},
+		}
+		env, pc, _ := cacheTestEnv(views, nil)
+
+		ctx := newReqCtx(reqOpts{acceptEncoding: "gzip"})
+		runHandle(t, env, ctx, nil)
+		require.Equal(t, 1, pc.Len())
 	})
 
 	t.Run("onboarding (no notes)", func(t *testing.T) {

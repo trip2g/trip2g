@@ -22,6 +22,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** `free: true` publishes a note for everyone. Signing in must not close what a guest can read.
 - **How to use.** Nothing to do.
 
+### A guest opens a `free: true` note in a sign-in subgraph
+
+- **What.** A `free: true` note in a subgraph marked **Require sign-in** opens for a guest too. Before, a guest got the sign-in wall on its page and in the GraphQL `note` query, its assets answered 401, it never reached the page cache, and RSS feeds and other `.Public()` lists left it out, while search, similar notes and MCP already showed it to that same guest. Now every path answers the same. A note in such a subgraph without `free: true` still shows a guest the sign-in wall. The sitemap is unchanged: it still leaves out every note of a sign-in subgraph.
+- **Why.** `free: true` publishes a note for everyone, whatever its subgraphs say ([[en/user/subgraphs]]). The sign-in wall contradicted the rest of the site.
+- **How to use.** Nothing to do. Check your sign-in subgraphs for `free: true` notes you meant to keep for signed-in readers, and drop `free` from them. A free note shows the notes it embeds with `![[...]]` to whoever reads it, so a free note in a sign-in subgraph that embeds a closed note now shows that closed content to guests too.
+
 ## v0.11.1 (2026-10-07)
 
 ### Payment webhooks moved under `/_system/`

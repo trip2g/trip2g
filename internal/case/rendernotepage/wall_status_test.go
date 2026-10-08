@@ -37,6 +37,7 @@ func TestWallPagesAnswerWithAccessStatus(t *testing.T) {
 		{
 			name: "anonymous + require_signin subgraph -> 401",
 			setup: func(note *model.NoteView) {
+				note.Free = false
 				note.Subgraphs = map[string]*model.NoteSubgraph{
 					"members": {Name: "members", RequireSignin: true},
 				}
