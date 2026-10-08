@@ -25,6 +25,8 @@ form:
 
 This is a working example of a public form embedded in a note. The form spec lives in the note's frontmatter, the layout reads it, and submissions go to the `submitForm` GraphQL mutation.
 
+For a survey anyone can answer, with Turnstile on and the layout from [form_template](https://github.com/trip2g/form_template), see [[demo_form|the public demo form]].
+
 ## What's on this page
 
 - `form:` in the frontmatter — server-side source of truth for fields and validation

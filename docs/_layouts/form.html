@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="{{ note.Lang() }}">
+<head>
+  <meta charset="utf-8">
+  <script>try{var d=localStorage.getItem('$mol_lights')!=='true',r=document.documentElement;r.classList.toggle('dark',d);r.classList.toggle('light',!d);r.setAttribute('data-theme',d?'dark':'light')}catch(e){}</script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ title }}</title>
+  {{ defaultTemplate.Styles() }}
+  {{ defaultTemplate.UserSpaceScripts() }}
+  <style>
+    .survey { --survey-line: color-mix(in srgb, var(--pico-muted-color) 55%, transparent); margin-top: 2rem; color: var(--pico-color); }
+    .survey__form { margin: 0 0 2rem; padding: 1.5rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); }
+    .survey__title { margin-top: 0; }
+    .survey__field { margin: 0 0 1.75rem; padding: 0; border: 0; min-width: 0; }
+    .survey__label, .survey__hint, .survey__choice span, .survey__title, .survey__thanks { overflow-wrap: anywhere; }
+    .survey__label { display: block; max-width: 100%; margin-bottom: .35rem; padding: 0; font-weight: 600; color: var(--pico-color); }
+    .survey__required { color: var(--pico-del-color); }
+    .survey__hint { display: block; margin: 0 0 .6rem; color: var(--pico-muted-color); font-size: .875em; }
+    .survey__error { display: block; margin-top: .4rem; color: var(--pico-del-color); font-size: .875em; }
+    .survey__error:empty { display: none; }
+    .survey__input { display: block; box-sizing: border-box; width: 100%; margin: 0; padding: .6rem .75rem; font: inherit; color: var(--pico-color); background: var(--pico-background-color); border: 1px solid var(--survey-line); border-radius: var(--pico-border-radius); }
+    textarea.survey__input { min-height: 8rem; resize: vertical; }
+    .survey__input:focus { outline: 2px solid var(--pico-primary); outline-offset: 1px; }
+    .survey__input[aria-invalid=true] { border-color: var(--pico-del-color); }
+    .survey__choice { display: flex; align-items: flex-start; gap: .6rem; margin: 0 0 .55rem; font-weight: 400; color: var(--pico-color); cursor: pointer; }
+    .survey__choice input { flex: none; width: 1.15rem; height: 1.15rem; margin: .2em 0 0; accent-color: var(--pico-primary-background); }
+    .survey__choice input[aria-invalid=true] { outline: 2px solid var(--pico-del-color); outline-offset: 1px; }
+    .survey__scale { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .survey__step { position: relative; flex: 1 1 0; min-width: 2.25rem; max-width: 4rem; margin: 0; }
+    .survey__step input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+    .survey__step span { display: block; padding: .55rem 0; text-align: center; color: var(--pico-color); background: var(--pico-background-color); border: 1px solid var(--survey-line); border-radius: var(--pico-border-radius); cursor: pointer; font-variant-numeric: tabular-nums; }
+    .survey__step input:checked + span { color: var(--pico-primary-inverse); background: var(--pico-primary-background); border-color: var(--pico-primary-background); }
+    .survey__step input:focus-visible + span { outline: 2px solid var(--pico-primary); outline-offset: 2px; }
+    .survey__field[aria-invalid=true] .survey__step span { border-color: var(--pico-del-color); }
+    .survey__captcha:not(:empty) { margin-bottom: 1rem; }
+    .survey__submit { padding: .7rem 1.5rem; font: inherit; font-weight: 600; color: var(--pico-primary-inverse); background: var(--pico-primary-background); border: 0; border-radius: var(--pico-border-radius); cursor: pointer; }
+    .survey__submit:disabled { opacity: .6; cursor: progress; }
+    .survey__submit:focus-visible { outline: 2px solid var(--pico-primary); outline-offset: 2px; }
+    .survey__status { margin: .75rem 0 0; }
+    .survey__status:empty { display: none; }
+    .survey__status--error { color: var(--pico-del-color); }
+    .survey__thanks { margin: 0 0 2rem; padding: 1.5rem; color: var(--pico-color); background: var(--pico-card-sectioning-background-color); border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); }
+    .survey__thanks h2 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  {{ defaultTemplate.Header() }}
+  <div class="layout layout--no-sidebars">
+    <main class="layout__main">
+      <article class="content">
+        {{ if !note.HasH1() }}<h1 class="content__title">{{ note.Title() }}</h1>{{ end }}
+        <div class="content__body">{{ note.HTMLString() }}</div>
+        <div class="survey" id="survey"></div>
+      </article>
+    </main>
+  </div>
+  {{ ref := trimSpace(note.M().GetString("form_ref", "")) }}
+  {{ isLink := hasPrefix(ref, "[[") && hasSuffix(ref, "]]") }}
+  {{ specNote := ref == "" ? note : nvs.ByPermalink(isLink ? trimSpace(ref[2:len(ref) - 2]) : ref) }}
+  {{ if specNote }}
+  {{ sm := specNote.M() }}
+  {{ fm := sm.Has("forms") ? sm.Get("forms") : map("", sm.Get("form")) }}
+  <script type="application/json" id="form-spec">{{ specNote.FormSpecJSON() }}</script>
+  <script type="application/json" id="form-meta">{"versionId":{{ json(note.VersionID()) }},"forms":[null{{ range key, fdef := fm }}{{ if fdef }},{"form":{{ json(key) }},"title":{{ json(coalesce(fdef["title"], "")) }},"thanks":{{ json(coalesce(fdef["thanks"], "")) }},"fields":[null{{ if isset(fdef["fields"]) }}{{ range i, fd := fdef["fields"] }},{"name":{{ json(coalesce(fd["name"], "")) }},"label":{{ json(coalesce(fd["label"], "")) }},"hint":{{ json(coalesce(fd["hint"], "")) }},"group":{{ json(coalesce(fd["group"], "")) }}}{{ end }}{{ end }}]}{{ end }}{{ end }}]}</script>
+  {{ end }}
+  <script>
+    (function () {
+      var specEl = document.getElementById('form-spec');
+      var metaEl = document.getElementById('form-meta');
+      var root = document.getElementById('survey');
+      if (!specEl || !metaEl || !specEl.textContent.trim()) return;
+      var spec = JSON.parse(specEl.textContent);
+      var meta = JSON.parse(metaEl.textContent);
+      var versionId = Number(meta.versionId);
+      var ru = /^ru/i.test(document.documentElement.lang);
+      var T = ru ? {
+        submit: 'Отправить',
+        sending: 'Отправляем…',
+        thanksTitle: 'Спасибо!',
+        thanks: 'Ответ записан.',
+        required: 'Ответьте на этот вопрос.',
+        consent: 'Нужно ваше согласие.',
+        tooShort: 'Слишком коротко: не меньше {n} символов.',
+        tooLong: 'Слишком длинно: не больше {n} символов.',
+        email: 'Введите адрес почты, например name@example.com.',
+        tooSmall: 'Не меньше {n}.',
+        tooLarge: 'Не больше {n}.',
+        invalid: 'Выберите один из вариантов.',
+        fixField: 'Проверьте отмеченный вопрос.',
+        captcha: 'Подтвердите, что вы не робот, и форма отправится.',
+        adminOnly: 'Эту форму может отправить только администратор сайта. Войдите кнопкой вверху страницы.',
+        closed: 'Эта форма пока не принимает ответы.',
+        notFound: 'Форма изменилась или недоступна. Обновите страницу.',
+        noFiles: 'Поля для файлов не поддерживаются.',
+        failed: 'Не удалось отправить: ',
+        offline: 'проверьте подключение и попробуйте ещё раз.',
+        httpStatus: 'сервер ответил {n}.'
+      } : {
+        submit: 'Submit',
+        sending: 'Sending…',
+        thanksTitle: 'Thank you!',
+        thanks: 'Your answer has been recorded.',
+        required: 'Please answer this question.',
+        consent: 'Your consent is required.',
+        tooShort: 'Too short: at least {n} characters.',
+        tooLong: 'Too long: at most {n} characters.',
+        email: 'Enter an email address, like name@example.com.',
+        tooSmall: 'Must be at least {n}.',
+        tooLarge: 'Must be at most {n}.',
+        invalid: 'Choose one of the options.',
+        fixField: 'Check the highlighted question.',
+        captcha: 'Confirm you are human and the form will be sent.',
+        adminOnly: 'Only a site admin can submit this form. Sign in with the button at the top of the page.',
+        closed: 'This form does not accept answers yet.',
+        notFound: 'This form has changed or is not available. Reload the page.',
+        noFiles: 'File fields are not supported.',
+        failed: 'Could not send: ',
+        offline: 'check your connection and try again.',
+        httpStatus: 'the server answered {n}.'
+      };
+      var MUTATION = 'mutation ($input: SubmitFormInput!) { submitForm(input: $input) { __typename ' +
+        '... on SubmitFormPayload { submitId } ' +
+        '... on FormSubmitDeniedPayload { reason } ' +
+        '... on TurnstileRequiredPayload { siteKey } ' +
+        '... on ErrorPayload { message } } }';
+      var extras = {};
+      meta.forms.forEach(function (f) {
+        if (!f) return;
+        var fields = {};
+        f.fields.forEach(function (x) { if (x && x.name !== '') fields[String(x.name)] = x; });
+        extras[String(f.form)] = { title: String(f.title), thanks: String(f.thanks), fields: fields };
+      });
+      var turnstileReady = null;
+      var uid = 0;
+
+      function el(tag, cls, text) {
+        var node = document.createElement(tag);
+        if (cls) node.className = cls;
+        if (text !== undefined && text !== '') node.textContent = String(text);
+        return node;
+      }
+
+      function fmt(s, n) {
+        return s.replace('{n}', String(n));
+      }
+
+      function loadTurnstile() {
+        if (!turnstileReady) {
+          turnstileReady = new Promise(function (resolve, reject) {
+            var s = document.createElement('script');
+            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+            s.async = true;
+            s.onload = function () { resolve(window.turnstile); };
+            s.onerror = function () { turnstileReady = null; reject(new Error('Turnstile did not load')); };
+            document.head.appendChild(s);
+          });
+        }
+        return turnstileReady;
+      }
+
+      function gql(input) {
+        return fetch('/_system/graphql', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: MUTATION, variables: { input: input } })
+        }).catch(function () {
+          throw new Error(T.offline);
+        }).then(function (res) {
+          if (!res.ok) throw new Error(fmt(T.httpStatus, res.status));
+          return res.json();
+        }).then(function (body) {
+          if (body.errors && body.errors.length) throw new Error(body.errors[0].message);
+          return body.data.submitForm;
+        });
+      }
+
+      function isScale(f) {
+        return (f.int_enum && f.int_enum.length > 0) ||
+          (typeof f.min === 'number' && typeof f.max === 'number' && f.max >= f.min && f.max - f.min <= 10);
+      }
+
+      function scaleValues(f) {
+        if (f.int_enum && f.int_enum.length) return f.int_enum;
+        var out = [];
+        for (var v = f.min; v <= f.max; v++) out.push(v);
+        return out;
+      }
+
+      function header(wrap, f, x, forId, asLegend) {
+        var label = el(asLegend ? 'legend' : 'label', 'survey__label', (x.label || f.name) + (f.required ? '\u00a0' : ''));
+        if (forId) label.htmlFor = forId;
+        if (f.required) {
+          var star = el('span', 'survey__required', '*');
+          star.setAttribute('aria-hidden', 'true');
+          label.appendChild(star);
+        }
+        wrap.appendChild(label);
+        if (x.hint) wrap.appendChild(el('small', 'survey__hint', x.hint));
+      }
+
+      function choices(wrap, f, values, type) {
+        var name = 'survey-' + (++uid);
+        var inputs = values.map(function (v) {
+          var row = el('label', type === 'scale' ? 'survey__step' : 'survey__choice');
+          var input = el('input');
+          input.type = 'radio';
+          input.name = name;
+          input.value = String(v);
+          row.appendChild(input);
+          row.appendChild(el('span', '', String(v)));
+          return { row: row, input: input };
+        });
+        var box = el('div', type === 'scale' ? 'survey__scale' : 'survey__choices');
+        inputs.forEach(function (i) { box.appendChild(i.row); });
+        wrap.appendChild(box);
+        return function () {
+          for (var i = 0; i < inputs.length; i++) if (inputs[i].input.checked) return inputs[i].input.value;
+          return null;
+        };
+      }
+
+      function renderField(f, x) {
+        var id = 'survey-' + (++uid);
+        var wrap;
+        var read;
+        var setInvalid;
+        if (f.type === 'bool') {
+          wrap = el('div', 'survey__field');
+          var row = el('label', 'survey__choice');
+          var box = el('input');
+          box.type = 'checkbox';
+          box.id = id;
+          row.appendChild(box);
+          var mustTick = f.required || (f.bool_enum && f.bool_enum.length === 1 && f.bool_enum[0] === true);
+          var text = el('span', '', (x.label || f.name) + (mustTick ? '\u00a0' : ''));
+          if (mustTick) {
+            var star = el('span', 'survey__required', '*');
+            star.setAttribute('aria-hidden', 'true');
+            text.appendChild(star);
+          }
+          row.appendChild(text);
+          wrap.appendChild(row);
+          if (x.hint) wrap.appendChild(el('small', 'survey__hint', x.hint));
+          read = function () { return { name: f.name, boolValue: box.checked }; };
+          setInvalid = function (on) { if (on) box.setAttribute('aria-invalid', 'true'); else box.removeAttribute('aria-invalid'); };
+        } else if ((f.type === 'text' && f.string_enum && f.string_enum.length) || (f.type === 'int' && isScale(f))) {
+          wrap = el('fieldset', 'survey__field');
+          header(wrap, f, x, null, true);
+          var pick = f.type === 'text' ? choices(wrap, f, f.string_enum, 'list') : choices(wrap, f, scaleValues(f), 'scale');
+          read = function () {
+            var v = pick();
+            if (v === null) return null;
+            return f.type === 'int' ? { name: f.name, intValue: parseInt(v, 10) } : { name: f.name, stringValue: v };
+          };
+          setInvalid = function (on) { if (on) wrap.setAttribute('aria-invalid', 'true'); else wrap.removeAttribute('aria-invalid'); };
+        } else {
+          wrap = el('div', 'survey__field');
+          header(wrap, f, x, id, false);
+          var input;
+          if (f.type === 'text' && typeof f.max_length === 'number' && f.max_length > 200) {
+            input = el('textarea', 'survey__input');
+            input.rows = 5;
+          } else {
+            input = el('input', 'survey__input');
+            input.type = f.type === 'email' ? 'email' : f.type === 'int' ? 'number' : 'text';
+            if (f.type === 'int') {
+              input.inputMode = 'numeric';
+              if (typeof f.min === 'number') input.min = String(f.min);
+              if (typeof f.max === 'number') input.max = String(f.max);
+            }
+            if (f.type === 'email') input.autocomplete = 'email';
+          }
+          if (typeof f.max_length === 'number') input.maxLength = f.max_length;
+          input.id = id;
+          if (f.type === 'file') {
+            input.disabled = true;
+            input.placeholder = T.noFiles;
+          }
+          wrap.appendChild(input);
+          read = function () {
+            if (f.type === 'file' || input.value === '') return null;
+            if (f.type === 'int') {
+              var n = parseInt(input.value, 10);
+              return isNaN(n) ? null : { name: f.name, intValue: n };
+            }
+            return { name: f.name, stringValue: input.value };
+          };
+          setInvalid = function (on) { if (on) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid'); };
+        }
+        var error = el('small', 'survey__error');
+        error.id = id + '-error';
+        error.setAttribute('aria-live', 'polite');
+        wrap.appendChild(error);
+        return { node: wrap, read: read, error: error, setInvalid: setInvalid };
+      }
+
+      function renderGroup(title, members) {
+        var wrap = el('fieldset', 'survey__field');
+        wrap.appendChild(el('legend', 'survey__label', title));
+        var parts = members.map(function (m) {
+          var part = renderField(m.f, m.x);
+          part.node.className = '';
+          part.node.removeChild(part.error);
+          wrap.appendChild(part.node);
+          return part;
+        });
+        var error = el('small', 'survey__error');
+        error.setAttribute('aria-live', 'polite');
+        wrap.appendChild(error);
+        return {
+          node: wrap,
+          error: error,
+          names: members.map(function (m) { return m.f.name; }),
+          read: function () { return parts.map(function (p) { return p.read(); }); },
+          setInvalid: function (on) { parts.forEach(function (p) { p.setInvalid(on); }); }
+        };
+      }
+
+      function buildForm(formId, def, extra) {
+        var section = el('section', 'survey__form');
+        if (extra.title) section.appendChild(el('h2', 'survey__title', extra.title));
+        var form = el('form');
+        form.noValidate = true;
+        section.appendChild(form);
+        var items = [];
+        var byName = {};
+        var seenGroups = {};
+        def.fields.forEach(function (f) {
+          var x = extra.fields[f.name] || {};
+          var group = f.type === 'bool' && x.group ? String(x.group) : '';
+          var item;
+          if (group) {
+            if (seenGroups[group]) return;
+            seenGroups[group] = true;
+            var members = def.fields.filter(function (g) {
+              var gx = extra.fields[g.name] || {};
+              return g.type === 'bool' && String(gx.group || '') === group;
+            }).map(function (g) { return { f: g, x: extra.fields[g.name] || {} }; });
+            item = renderGroup(group, members);
+            item.names.forEach(function (n) { byName[n] = item; });
+          } else {
+            item = renderField(f, x);
+            byName[f.name] = item;
+          }
+          items.push(item);
+          form.appendChild(item.node);
+        });
+        var fieldsByName = {};
+        def.fields.forEach(function (f) { fieldsByName[f.name] = f; });
+        var captcha = el('div', 'survey__captcha');
+        form.appendChild(captcha);
+        var button = el('button', 'survey__submit', T.submit);
+        button.type = 'submit';
+        form.appendChild(button);
+        var status = el('p', 'survey__status');
+        status.setAttribute('role', 'status');
+        form.appendChild(status);
+
+        var token = '';
+        var widget = null;
+        var waiting = false;
+
+        function say(text, isError) {
+          status.textContent = text || '';
+          status.className = 'survey__status' + (isError ? ' survey__status--error' : '');
+        }
+
+        function clearErrors() {
+          items.forEach(function (it) { it.error.textContent = ''; it.setInvalid(false); });
+        }
+
+        function fieldMessage(f, code) {
+          if (code === 'required') return T.required;
+          if (code === 'too short') return fmt(T.tooShort, f.min_length);
+          if (code === 'too long') return fmt(T.tooLong, typeof f.max_length === 'number' ? f.max_length : 8192);
+          if (code === 'invalid email') return T.email;
+          if (code === 'too small') return fmt(T.tooSmall, f.min);
+          if (code === 'too large') return fmt(T.tooLarge, f.max);
+          if (code === 'invalid value') return f.type === 'bool' ? T.consent : T.invalid;
+          return code;
+        }
+
+        function showError(message) {
+          var m = /^(.*): (required|too short|too long|invalid email|too small|too large|invalid value)$/.exec(message);
+          if (m && byName[m[1]]) {
+            var item = byName[m[1]];
+            item.error.textContent = fieldMessage(fieldsByName[m[1]], m[2]);
+            item.setInvalid(true);
+            item.node.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            say(T.fixField, true);
+            return;
+          }
+          if (message === 'form_not_found') return say(T.notFound, true);
+          if (message === 'file_upload_not_supported') return say(T.noFiles, true);
+          say(T.failed + message, true);
+        }
+
+        function done() {
+          if (def.success_url) {
+            window.location.assign(def.success_url);
+            return;
+          }
+          var box = el('div', 'survey__thanks');
+          box.setAttribute('role', 'status');
+          box.appendChild(el('h2', '', T.thanksTitle));
+          box.appendChild(el('p', '', extra.thanks || T.thanks));
+          section.replaceWith(box);
+          box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+
+        function askCaptcha(siteKey) {
+          waiting = true;
+          say(T.captcha, false);
+          loadTurnstile().then(function (ts) {
+            if (widget !== null) {
+              ts.reset(widget);
+              return;
+            }
+            widget = ts.render(captcha, {
+              sitekey: siteKey,
+              callback: function (t) {
+                token = t;
+                if (waiting) {
+                  waiting = false;
+                  send();
+                }
+              },
+              'expired-callback': function () { token = ''; }
+            });
+          }).catch(function (err) { say(T.failed + err.message, true); });
+        }
+
+        function send() {
+          clearErrors();
+          var fields = [];
+          items.forEach(function (it) {
+            [].concat(it.read()).forEach(function (v) { if (v) fields.push(v); });
+          });
+          var input = { noteVersionId: versionId, formId: formId, fields: fields };
+          if (token) input.turnstileToken = token;
+          token = '';
+          button.disabled = true;
+          button.setAttribute('aria-busy', 'true');
+          say(T.sending, false);
+          gql(input).then(function (result) {
+            if (result.__typename === 'SubmitFormPayload') return done();
+            if (result.__typename === 'TurnstileRequiredPayload') return askCaptcha(result.siteKey);
+            if (widget !== null && window.turnstile) window.turnstile.reset(widget);
+            if (result.__typename === 'FormSubmitDeniedPayload') return say(result.reason === 'admin_required' ? T.adminOnly : T.closed, true);
+            showError(result.message);
+          }).catch(function (err) {
+            say(T.failed + err.message, true);
+          }).then(function () {
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+          });
+        }
+
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+          waiting = false;
+          send();
+        });
+        return section;
+      }
+
+      Object.keys(spec.forms).sort().forEach(function (formId) {
+        var def = spec.forms[formId];
+        if (!def || !def.fields) return;
+        root.appendChild(buildForm(formId, def, extras[formId] || { title: '', thanks: '', fields: {} }));
+      });
+    })();
+  </script>
+  {{ defaultTemplate.Footer() }}
+</body>
+</html>
