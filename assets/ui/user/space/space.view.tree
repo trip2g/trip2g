@@ -18,11 +18,14 @@ $trip2g_user_space $mol_view
 		hint @ \Open Admin Panel
 		sub / <= AdminIcon $mol_icon_cog
 	Editor $trip2g_editor
+	Live $trip2g_user_live
+	ChangePageWatcher $trip2g_user_live_reload_toggler
+	FollowPageWatcher $trip2g_user_live_follow_toggler
 	sub /
 		<= admin_link null $mol_view
 		<= open_button null $mol_view
 		<= Search $trip2g_user_search_toggle
-		<= Live $trip2g_user_live
+		<= live null $mol_view
 		<= Options_pop $mol_pop_over
 			hint \Click to show options menu
 			align \bottom_left
@@ -38,8 +41,8 @@ $trip2g_user_space $mol_view
 							en \English
 					<= Lighter $mol_lights_toggle
 						title @ \Toggle theme
-					<= ChangePageWatcher $trip2g_user_live_reload_toggler
-					<= FollowPageWatcher $trip2g_user_live_follow_toggler
+					<= change_page_watcher null $mol_view
+					<= follow_page_watcher null $mol_view
 		<= Dialog $mol_view
 			dom_name \dialog
 			attr * open <= open_status null null|string

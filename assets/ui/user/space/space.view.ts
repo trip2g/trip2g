@@ -23,6 +23,20 @@ namespace $.$$ {
 			return null
 		}
 
+		// The server sends note changes only to signed-in readers, so a guest's
+		// live toggles would do nothing.
+		override live() {
+			return this.viewer().user ? this.Live() : null
+		}
+
+		override change_page_watcher() {
+			return this.viewer().user ? this.ChangePageWatcher() : null
+		}
+
+		override follow_page_watcher() {
+			return this.viewer().user ? this.FollowPageWatcher() : null
+		}
+
 		override admin_link() {
 			const viewer = this.viewer()
 
