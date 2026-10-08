@@ -275,6 +275,30 @@ func TestGenerate(t *testing.T) {
 			notContains: []string{"offer"},
 		},
 		{
+			name: "free note in a sign-in subgraph listed",
+			nvs: &model.NoteViews{
+				List: []*model.NoteView{
+					{Permalink: "/members-free", Path: "members-free.md", Free: true, SubgraphNames: []string{"members"}},
+					{Permalink: "/members-noindex", Path: "members-noindex.md", Free: true, NoIndex: true, SubgraphNames: []string{"members"}},
+					{Permalink: "/members-closed", Path: "members-closed.md", SubgraphNames: []string{"members"}},
+				},
+				Subgraphs: map[string]*model.NoteSubgraph{"members": {Name: "members", RequireSignin: true}},
+			},
+			contains:    []string{"<loc>https://example.com/members-free</loc>"},
+			notContains: []string{"members-noindex", "members-closed"},
+		},
+		{
+			name: "html files excluded",
+			nvs: &model.NoteViews{
+				List: []*model.NoteView{
+					{Permalink: "/public", Path: "public.md", Free: true},
+					{Permalink: "/page.html", Path: "page.html", Free: true},
+				},
+			},
+			contains:    []string{"<loc>https://example.com/public</loc>"},
+			notContains: []string{"page.html"},
+		},
+		{
 			name: "empty notes",
 			nvs: &model.NoteViews{
 				List: []*model.NoteView{},
@@ -309,4 +333,57 @@ func TestGenerate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateForDomain_FreeNoteInSigninSubgraph(t *testing.T) {
+	nvs := model.NewNoteViews()
+	nvs.Subgraphs["members"] = &model.NoteSubgraph{Name: "members", RequireSignin: true}
+
+	free := &model.NoteView{
+		Permalink:         "/free",
+		PermalinkOriginal: "/free",
+		Path:              "free.md",
+		Free:              true,
+		SubgraphNames:     []string{"members"},
+		Routes:            []model.ParsedRoute{{Host: "foo.com", Path: "/free"}},
+	}
+	noindex := &model.NoteView{
+		Permalink:         "/quiet",
+		PermalinkOriginal: "/quiet",
+		Path:              "quiet.md",
+		Free:              true,
+		NoIndex:           true,
+		SubgraphNames:     []string{"members"},
+		Routes:            []model.ParsedRoute{{Host: "foo.com", Path: "/quiet"}},
+	}
+	nvs.RegisterNote(free)
+	nvs.RegisterNote(noindex)
+
+	result, err := GenerateForDomain(nvs, "foo.com", "https://foo.com")
+	require.NoError(t, err)
+
+	xml := string(result)
+	require.Contains(t, xml, "https://foo.com/free")
+	require.NotContains(t, xml, "quiet")
+}
+
+func TestGenerateForDomain_UnderscoreFolderRoutedToDomain(t *testing.T) {
+	nvs := model.NewNoteViews()
+
+	about := &model.NoteView{
+		Permalink:         "/_mysite/about",
+		PermalinkOriginal: "/_mysite/about",
+		Path:              "_mysite/about.md",
+		Free:              true,
+		Routes:            []model.ParsedRoute{{Host: "mysite.com", Path: "/about"}},
+	}
+	nvs.RegisterNote(about)
+
+	result, err := GenerateForDomain(nvs, "mysite.com", "https://mysite.com")
+	require.NoError(t, err)
+	require.Contains(t, string(result), "<loc>https://mysite.com/about</loc>")
+
+	main, err := Generate(nvs, "https://example.com")
+	require.NoError(t, err)
+	require.NotContains(t, string(main), "_mysite")
 }

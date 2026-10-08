@@ -24,9 +24,15 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ### A guest opens a `free: true` note in a sign-in subgraph
 
-- **What.** A `free: true` note in a subgraph marked **Require sign-in** opens for a guest too. Before, a guest got the sign-in wall on its page and in the GraphQL `note` query, its assets answered 401, it never reached the page cache, and RSS feeds and other `.Public()` lists left it out, while search, similar notes and MCP already showed it to that same guest. Now every path answers the same. A note in such a subgraph without `free: true` still shows a guest the sign-in wall. The sitemap is unchanged: it still leaves out every note of a sign-in subgraph.
+- **What.** A `free: true` note in a subgraph marked **Require sign-in** opens for a guest too. Before, a guest got the sign-in wall on its page and in the GraphQL `note` query, its assets answered 401, it never reached the page cache, and RSS feeds and other `.Public()` lists left it out, while search, similar notes and MCP already showed it to that same guest. Now every path answers the same. A note in such a subgraph without `free: true` still shows a guest the sign-in wall. The sitemap lists such a note too, see below.
 - **Why.** `free: true` publishes a note for everyone, whatever its subgraphs say ([[en/user/subgraphs]]). The sign-in wall contradicted the rest of the site.
 - **How to use.** Nothing to do. Check your sign-in subgraphs for `free: true` notes you meant to keep for signed-in readers, and drop `free` from them. A free note shows the notes it embeds with `![[...]]` to whoever reads it, so a free note in a sign-in subgraph that embeds a closed note now shows that closed content to guests too.
+
+### The sitemap lists a `free: true` note in a sign-in subgraph
+
+- **What.** `sitemap.xml`, the main one and each custom domain's, lists a `free: true` note of a subgraph marked **Require sign-in**. Before, it left out every note of such a subgraph, free or not. The sitemap now asks the same question as the page, RSS feeds and the page cache, so it cannot disagree with them again. It still leaves out notes without `free: true`, `noindex: true` notes, hidden notes, `.html` files and anything under a `/_` path.
+- **Why.** Such a note opens for a guest (see above), so a search engine should find it like any other free note.
+- **How to use.** Nothing to do. To keep a free note out of search engines, add `noindex: true`.
 
 ## v0.11.1 (2026-10-07)
 

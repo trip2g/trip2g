@@ -12,6 +12,8 @@ Sitemap.xml автоматически генерируется из всех о
 
 Заметки с `free: false` (за paywall) **не включаются** в sitemap.
 
+Открыта ли заметка, решает `NoteView.IsAnonymouslyReadable()` — та же проверка, что у страницы, GraphQL, RSS и page cache: `free: true` и не `.html`. Подграфы в ней не участвуют, поэтому заметка с `free: true` в подграфе с **Require sign-in** попадает в sitemap, раз её страница открыта гостю. Системность sitemap проверяет по адресу (`/_` в permalink или в пути маршрута), а не по `IsSystem()`: заметка из папки `_mysite/` с маршрутом `mysite.com/about` должна остаться в sitemap своего домена.
+
 Заметки с `noindex: true` тоже **не включаются** — ни в `Generate`, ни в `GenerateForDomain` — и не попадают в hreflang-альтернативы других записей. Для таких страниц рендер ставит `MetaRobots = "noindex"` и заголовок `X-Robots-Tag: noindex` (`internal/case/rendernotepage`, в том числе на ответах из page cache).
 
 ## Метаданные

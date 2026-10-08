@@ -26,7 +26,7 @@ Access checks run in this order:
 
 1. **Admins** see everything.
 2. **`free: true`** opens the note to everyone — anonymous visitors included — regardless of subgraphs. It's a separate axis: the subgraph groups the note, `free` publishes it.
-3. A subgraph marked **Require sign-in** (in the admin) opens its notes to any signed-in user, no subscription needed. A guest gets a sign-in wall on them, except on a `free: true` note: rule 2 has already opened it, and the guest reads it, its assets and its place in RSS like any free note.
+3. A subgraph marked **Require sign-in** (in the admin) opens its notes to any signed-in user, no subscription needed. A guest gets a sign-in wall on them, except on a `free: true` note: rule 2 has already opened it, and the guest reads it, its assets and its place in RSS like any free note, and the sitemap lists it.
 4. Everyone else needs an **active access grant** to at least one of the note's subgraphs. No grant — the visitor sees a paywall or a sign-in wall.
 
 **What "active access" means.** It's a non-expired, non-revoked access record tying a user to a subgraph. It appears one of two ways: the person **paid** for it (see [[en/user/monetization|Monetization]]), or you **granted it by hand** in the admin (no payment, one person at a time). "Active" = not yet expired and not revoked.
