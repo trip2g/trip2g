@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Site search can leave out notes the reader cannot open
+
+- **What.** A new `SEARCH_HIDE_UNREADABLE` setting (`--search-hide-unreadable`), off by default. When on, site search returns only notes the reader can open. When off, as before, every note the reader cannot open is listed after the results as a "Закрытый материал." placeholder with its real title and link.
+- **Why.** The placeholders show that locked material exists, which suits a paid site. A site whose closed notes should stay unseen had no way to keep their titles and links out of search.
+- **How to use.** Set `SEARCH_HIDE_UNREADABLE=true` and restart. Admins and readers with access are not affected, and neither is MCP search. See [[en/user/search#Notes a reader cannot open|How search works]].
+
 ### MCP `expand` declares `toc_path` as a list of strings again
 
 - **What.** The `expand` tool's input schema says `toc_path` is an array of strings, and `last` is a plain number. Since v0.11.0 the schema carried `toc_path` as an array with no item type and put that item type on `last`.

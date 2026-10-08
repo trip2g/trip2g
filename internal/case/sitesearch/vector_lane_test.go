@@ -130,7 +130,8 @@ func TestHybridSearch_ReadableBeyondCapSurfaces(t *testing.T) {
 		CanReadNoteFunc: func(_ context.Context, nv *appmodel.NoteView) (bool, error) {
 			return nv.Path == readable.NoteView.Path, nil
 		},
-		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
+		LoggerFunc:               func() logger.Logger { return &logger.DummyLogger{} },
+		SearchHideUnreadableFunc: func() bool { return false },
 	}
 
 	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
@@ -197,7 +198,8 @@ func TestRerank_OutputKTruncatesAfterPermissionFilter(t *testing.T) {
 		CanReadNoteFunc: func(_ context.Context, nv *appmodel.NoteView) (bool, error) {
 			return nv.Path != "a.md", nil // top blended result is unreadable
 		},
-		LoggerFunc: func() logger.Logger { return &logger.DummyLogger{} },
+		LoggerFunc:               func() logger.Logger { return &logger.DummyLogger{} },
+		SearchHideUnreadableFunc: func() bool { return false },
 	}
 
 	ctx := appreq.NewContext(context.Background(), &appreq.Request{})

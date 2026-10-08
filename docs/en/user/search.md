@@ -59,6 +59,12 @@ flowchart TD
     SF -->|No| IDX[Indexed - appears in search]
 ```
 
+### Notes a reader cannot open
+
+A note the reader has no access to, such as a note of a paid subgraph, still shows up in site search. It comes after the readable results, with its title and link and the text "Закрытый материал." in place of a snippet. This tells the reader that such material exists.
+
+To leave these notes out of site search instead, start the server with `SEARCH_HIDE_UNREADABLE=true` (or `--search-hide-unreadable`). Site search then lists only the notes the reader can open. Admins and readers with access see the same results as before. MCP search already leaves out notes the caller cannot read and is not affected.
+
 ### MCP server search
 
 The [[en/user/mcp|MCP server]] uses the same semantic search to let AI assistants query your knowledge base. The `search(query)` method runs a vector search and returns the most relevant notes.
