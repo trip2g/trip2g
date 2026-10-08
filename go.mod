@@ -33,6 +33,7 @@ require (
 	github.com/quailyquaily/goldmark-enclave v0.2.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.33.0
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/simukti/sqldb-logger v0.0.0-20230108155151-646c1a075551
 	github.com/stretchr/testify v1.11.1
@@ -302,7 +303,6 @@ require (
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/sashamelentyev/usestdlibvars v1.28.0 // indirect
 	github.com/securego/gosec/v2 v2.22.3 // indirect

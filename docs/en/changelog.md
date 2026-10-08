@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### MCP `expand` declares `toc_path` as a list of strings again
+
+- **What.** The `expand` tool's input schema says `toc_path` is an array of strings, and `last` is a plain number. Since v0.11.0 the schema carried `toc_path` as an array with no item type and put that item type on `last`.
+- **Why.** An MCP client that checks tool schemas strictly could refuse `expand`, or the whole tool list, because of it.
+- **How to use.** Nothing to do. A client that cached the tool list picks up the fixed schema on its next `tools/list`.
+
 ### A signed-in reader opens a `free: true` note
 
 - **What.** A note with `free: true` opens for every reader: a guest, a signed-in user with no access to its subgraph, and an admin. Before, a signed-in user without a grant got a paywall on a free note that a guest could open, and a form on that note answered `form_not_found` to them. The page, the GraphQL `note` query, search, similar notes, MCP, assets, live note updates and form submission all read the same check, so all of them change together. Other notes of a paid or sign-in subgraph stay closed as before.
