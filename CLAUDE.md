@@ -211,6 +211,7 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `bases.md` | Obsidian Bases (.base) data-views — design, not yet built |
 | `excalidraw.md` | Rendering Excalidraw drawings — design, not yet built |
 | `grid_layouts.md` | Flexible grid/flex page-layout DSL — subsumes magazine/wide/sidebars; design, not yet built |
+| `password_signin.md` | Password sign-in by default, email code only with SMTP, session cutoffs on reset — design, not yet built |
 
 ### Testing & Ops
 | Doc | When to read |
