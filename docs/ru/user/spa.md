@@ -802,6 +802,8 @@ if (!allowed?.note) return res.writeHead(403).end()
 - **Защита от спама.** Cloudflare Turnstile включён у каждой формы, если она не задаёт `turnstile: false`. Без действительного токена результат — `TurnstileRequiredPayload` с `siteKey` сайта: приложение показывает виджет и отправляет тот же ввод ещё раз с токеном.
 - **Отправки** видны в админке в разделе Forms, и о каждой админам сайта уходит письмо. Админ читает их через GraphQL запросом `admin { formSubmits … }` — это админский вызов: [[ru/user/forms#Чтение сабмитов|Формы → Чтение сабмитов]].
 
+Рабочий пример — [[demo_form|живая демо-форма]]; её шаблон — один файл, который можно прочитать и скопировать.
+
 ```js
 const submitForm = makeRequest(`mutation ($input: SubmitFormInput!) {
   submitForm(input: $input) {

@@ -8,6 +8,8 @@ Declare a form in a note's frontmatter and trip2g embeds it on the page as a `<s
 
 The note stays a normal note — visible at its permalink, indexed in search, exportable. The form is just a property of it.
 
+[[demo_form|▶ Try a live form]]: a short survey built from frontmatter alone, rendered by [form_template](https://github.com/trip2g/form_template) and guarded by Turnstile.
+
 ### A minimal example
 
 ```yaml
