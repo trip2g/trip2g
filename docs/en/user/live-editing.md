@@ -57,7 +57,7 @@ Pair it with `trip2g-sync --watch`: the daemon sends the agent's edits to the se
 
 Anyone signed in to the site. Each person gets updates only for notes they are allowed to read. Admins get all of them.
 
-If you are not signed in, the menu items are still there, but no updates arrive.
+Until you sign in, these menu items are hidden.
 
 ### Limits
 
