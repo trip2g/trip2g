@@ -7,6 +7,8 @@ $trip2g_editor_pane $mol_view
 	diff_from_version_id? 0
 	diff_to_version_id? 0
 	close null
+	plugins /
+		<= Theme $mol_theme_auto
 	sub /
 		<= watcher_result null
 		<= Navigation $mol_page
