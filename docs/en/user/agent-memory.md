@@ -300,15 +300,15 @@ To limit which paths the sync daemon follows from the server, pass `--include` a
 
 ### Watch the agent work in the browser
 
-Once `--watch` is running, open any page on your site and append `?#!live_follow=1` to the URL:
+Once `--watch` is running, sign in to your site, open any page and append `?#!live_follow=1` to the URL:
 
 ```
 http://localhost:24081/some-note?#!live_follow=1
 ```
 
-The browser enters live-follow (cinema) mode and automatically navigates to whichever note changes next. The setting persists across the auto-navigations, so the browser keeps following until you disable it.
+The browser turns on Live follow and goes to whichever note changes next. The setting persists across the jumps, so the browser keeps following until you turn it off in the ☰ menu.
 
-For full details on live-follow and the reload toggle, see [[en/user/live-editing]].
+For full details on Live follow and Live reload, see [[en/user/live-editing]].
 
 ## 5. Recall: search → expand → note_html
 
@@ -345,5 +345,5 @@ For a deeper explanation of the mechanism: [[Token Economy]].
 - [[en/user/mcp]]: all MCP methods, access control, and named entry points
 - [[en/user/expand]]: level-by-level TOC navigation explained
 - [[en/user/token-economy-bench]]: measured token savings, reproducible benchmark
-- [[en/user/live-editing]]: live-follow (cinema mode) and reload toggle for watching edits in real time
+- [[en/user/live-editing]]: Live follow and Live reload for watching edits in the browser
 - [[en/user/agent-status]]: auto-broadcast your status to teammates on session end

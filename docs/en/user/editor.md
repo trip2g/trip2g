@@ -30,7 +30,7 @@ The left side of the editor shows a folder tree of everything in your vault. Cli
 
 Type directly in the editor. Your changes stay in the browser — nothing is written to the server until you press **Save**. If you close the editor or navigate away before saving, the edits are lost.
 
-After you save, the page reflects the new content immediately. If [[live-editing]] is active on your site, the update appears to readers without a page reload.
+After you save, the page reflects the new content immediately. Readers who have turned on [[live-editing|Live reload]] see the change right away: their page reloads by itself.
 
 **Note:** if you edit a file in the browser and then sync the same note from Obsidian, the Obsidian version overwrites the browser edit. The rule is: the last sync wins.
 
@@ -63,6 +63,6 @@ The header of a published page with the ☰ menu open. The first item, **Edit th
 
 ### Related
 
-- [[live-editing]] — browser-pushed updates so readers see changes the moment you save
+- [[live-editing|Live editing]] — with "Live reload" on, the page in the browser reloads by itself after you save
 - [[en/user/publishing]] — frontmatter properties that control visibility and slugs
 - [[en/user/two-way-sync]] — how edits made here relate to Obsidian sync

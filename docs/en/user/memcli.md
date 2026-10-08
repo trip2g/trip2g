@@ -209,7 +209,7 @@ This lets an agent manage its own memory infrastructure as MCP tool calls — us
 
 The URL printed by `up` (e.g. `http://localhost:24081`) opens the memory vault as a navigable website. Useful for a human observer to review what the agent has written.
 
-Add `?#!live_follow=1` to any page URL and the browser enters cinema mode — it scrolls to whichever note the agent is currently editing in real time:
+Add `?#!live_follow=1` to any page URL and the browser turns on Live follow and goes to each note right after the agent changes it. You need to be signed in for this. Details: [[en/user/live-editing]]:
 
 ```
 http://localhost:24081/?#!live_follow=1
