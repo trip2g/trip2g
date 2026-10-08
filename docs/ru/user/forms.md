@@ -8,6 +8,8 @@ lang_redirect: "[[en/user/forms]]"
 
 Заметка остаётся обычной — открывается по permalink, попадает в поиск, экспортируется. Форма — её свойство.
 
+[[demo_form|▶ Попробовать живую форму]]: короткий опрос (на английском), собранный только из frontmatter, с шаблоном [form_template](https://github.com/trip2g/form_template) и защитой Turnstile.
+
 ### Минимальный пример
 
 ```yaml

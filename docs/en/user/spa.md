@@ -802,6 +802,8 @@ An app that collects something, such as an order, a sign-up or feedback, needs n
 - **Spam protection.** Cloudflare Turnstile is on for every form unless it sets `turnstile: false`. Without a valid token the result is `TurnstileRequiredPayload` with the site's `siteKey`: the app shows the widget and sends the same input again with the token.
 - **Submissions** are listed in the admin panel under Forms, and each one sends the site's admins an email. An admin reads them over GraphQL with `admin { formSubmits … }`, an admin call: [[en/user/forms#Reading submissions|Forms → Reading submissions]].
 
+A working example is the [[demo_form|live demo form]]; its layout is a single file you can read and copy.
+
 ```js
 const submitForm = makeRequest(`mutation ($input: SubmitFormInput!) {
   submitForm(input: $input) {
