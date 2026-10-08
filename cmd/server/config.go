@@ -50,6 +50,10 @@ func (a *app) EmailSignInEnabled(ctx context.Context) bool {
 	return a.SiteConfig(ctx).EmailSignInEnabled
 }
 
+func (a *app) SearchHideUnreadable() bool {
+	return a.config.SearchHideUnreadable
+}
+
 func (a *app) CurrentTx() *sql.Tx {
 	return a.currentTx
 }

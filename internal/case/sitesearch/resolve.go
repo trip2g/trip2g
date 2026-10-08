@@ -17,6 +17,7 @@ type Env interface {
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error)
 	SiteConfig(ctx context.Context) appmodel.SiteConfig
+	SearchHideUnreadable() bool
 }
 
 // hybridResultCap bounds the final hybrid result list when no reranker OutputK
@@ -46,13 +47,8 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	for _, res := range results {
 		if res.NoteView != nil { //nolint:nestif // per-result auth checks require nil-guard, scope check, and read-pattern gate
-			// Fail-closed: scoped shortapitoken → enforce read_patterns strictly.
-			// Empty patterns + scoped = deny-all (not "no restriction").
-			if appreq.Scoped(ctx) {
-				rp := appreq.WebhookReadPatterns(ctx)
-				if len(rp) == 0 || !webhookutil.MatchesAny(res.NoteView.Path, rp) {
-					continue
-				}
+			if outOfScope(ctx, res.NoteView.Path) {
+				continue
 			}
 
 			if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
@@ -66,6 +62,10 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 			if canRead {
 				conn.Nodes = append(conn.Nodes, res)
+				continue
+			}
+
+			if env.SearchHideUnreadable() {
 				continue
 			}
 
@@ -98,4 +98,15 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	}
 
 	return &conn, nil
+}
+
+// outOfScope fails closed: a scoped shortapitoken enforces read_patterns
+// strictly, and empty patterns under a scope deny everything.
+func outOfScope(ctx context.Context, path string) bool {
+	if !appreq.Scoped(ctx) {
+		return false
+	}
+
+	rp := appreq.WebhookReadPatterns(ctx)
+	return len(rp) == 0 || !webhookutil.MatchesAny(path, rp)
 }

@@ -259,6 +259,7 @@ func anonSiteEnv(env *EnvMock) *EnvMock {
 		return &usertoken.Data{}, nil
 	}
 	env.SiteConfigFunc = func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} }
+	env.SearchHideUnreadableFunc = func() bool { return false }
 	return env
 }
 
@@ -282,6 +283,30 @@ func TestGoldenResolve_ACLPlaceholders(t *testing.T) {
 		require.Nil(t, hidden.NoteView)
 		require.Equal(t, []string{"Закрытый материал."}, hidden.HighlightedContent)
 	}
+}
+
+// SEARCH_HIDE_UNREADABLE: unreadable notes are dropped instead of becoming
+// placeholders, and totalCount does not count them.
+func TestGoldenResolve_HideUnreadable(t *testing.T) {
+	srv := newEmbeddingServer(t, []float32{1, 0})
+	defer srv.Close()
+
+	env := anonSiteEnv(goldenEnv(t, srv.URL))
+	env.SearchHideUnreadableFunc = func() bool { return true }
+	env.CanReadNoteFunc = func(_ context.Context, nv *appmodel.NoteView) (bool, error) {
+		return nv.Path != "a.md" && nv.Path != "c.md", nil
+	}
+
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"/b", "/d", "/e"}, urlsOf(conn.Nodes))
+	for _, node := range conn.Nodes {
+		require.NotNil(t, node.NoteView)
+		require.NotEqual(t, []string{"Закрытый материал."}, node.HighlightedContent)
+	}
+	require.LessOrEqual(t, conn.TotalCount, int64(len(conn.Nodes)))
 }
 
 // Capping layer: the hybrid cap (20) applies AFTER permission filtering, so

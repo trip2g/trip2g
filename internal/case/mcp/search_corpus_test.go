@@ -251,3 +251,7 @@ func (siteSearchEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) 
 func (siteSearchEnv) SiteConfig(context.Context) appmodel.SiteConfig {
 	return appmodel.SiteConfig{}
 }
+
+func (siteSearchEnv) SearchHideUnreadable() bool {
+	return false
+}

@@ -51,6 +51,9 @@ var _ sitesearch.Env = &EnvMock{}
 //			OpenAIFunc: func() *openai.Client {
 //				panic("mock out the OpenAI method")
 //			},
+//			SearchHideUnreadableFunc: func() bool {
+//				panic("mock out the SearchHideUnreadable method")
+//			},
 //			SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
 //				panic("mock out the SearchLatestNotes method")
 //			},
@@ -93,6 +96,9 @@ type EnvMock struct {
 
 	// OpenAIFunc mocks the OpenAI method.
 	OpenAIFunc func() *openai.Client
+
+	// SearchHideUnreadableFunc mocks the SearchHideUnreadable method.
+	SearchHideUnreadableFunc func() bool
 
 	// SearchLatestNotesFunc mocks the SearchLatestNotes method.
 	SearchLatestNotesFunc func(query string) ([]appmodel.SearchResult, error)
@@ -138,6 +144,9 @@ type EnvMock struct {
 		// OpenAI holds details about calls to the OpenAI method.
 		OpenAI []struct {
 		}
+		// SearchHideUnreadable holds details about calls to the SearchHideUnreadable method.
+		SearchHideUnreadable []struct {
+		}
 		// SearchLatestNotes holds details about calls to the SearchLatestNotes method.
 		SearchLatestNotes []struct {
 			// Query is the query argument value.
@@ -154,18 +163,19 @@ type EnvMock struct {
 			Ctx context.Context
 		}
 	}
-	lockCanReadNote       sync.RWMutex
-	lockCurrentUserToken  sync.RWMutex
-	lockFeatures          sync.RWMutex
-	lockLatestNoteChunks  sync.RWMutex
-	lockLatestNoteViews   sync.RWMutex
-	lockLiveNoteChunks    sync.RWMutex
-	lockLiveNoteViews     sync.RWMutex
-	lockLogger            sync.RWMutex
-	lockOpenAI            sync.RWMutex
-	lockSearchLatestNotes sync.RWMutex
-	lockSearchLiveNotes   sync.RWMutex
-	lockSiteConfig        sync.RWMutex
+	lockCanReadNote          sync.RWMutex
+	lockCurrentUserToken     sync.RWMutex
+	lockFeatures             sync.RWMutex
+	lockLatestNoteChunks     sync.RWMutex
+	lockLatestNoteViews      sync.RWMutex
+	lockLiveNoteChunks       sync.RWMutex
+	lockLiveNoteViews        sync.RWMutex
+	lockLogger               sync.RWMutex
+	lockOpenAI               sync.RWMutex
+	lockSearchHideUnreadable sync.RWMutex
+	lockSearchLatestNotes    sync.RWMutex
+	lockSearchLiveNotes      sync.RWMutex
+	lockSiteConfig           sync.RWMutex
 }
 
 // CanReadNote calls CanReadNoteFunc.
@@ -422,6 +432,33 @@ func (mock *EnvMock) OpenAICalls() []struct {
 	mock.lockOpenAI.RLock()
 	calls = mock.calls.OpenAI
 	mock.lockOpenAI.RUnlock()
+	return calls
+}
+
+// SearchHideUnreadable calls SearchHideUnreadableFunc.
+func (mock *EnvMock) SearchHideUnreadable() bool {
+	if mock.SearchHideUnreadableFunc == nil {
+		panic("EnvMock.SearchHideUnreadableFunc: method is nil but Env.SearchHideUnreadable was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockSearchHideUnreadable.Lock()
+	mock.calls.SearchHideUnreadable = append(mock.calls.SearchHideUnreadable, callInfo)
+	mock.lockSearchHideUnreadable.Unlock()
+	return mock.SearchHideUnreadableFunc()
+}
+
+// SearchHideUnreadableCalls gets all the calls that were made to SearchHideUnreadable.
+// Check the length with:
+//
+//	len(mockedEnv.SearchHideUnreadableCalls())
+func (mock *EnvMock) SearchHideUnreadableCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockSearchHideUnreadable.RLock()
+	calls = mock.calls.SearchHideUnreadable
+	mock.lockSearchHideUnreadable.RUnlock()
 	return calls
 }
 

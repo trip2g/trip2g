@@ -68,6 +68,11 @@ type Config struct {
 	// 8 s a rebuild needs. See docs/dev/search_index_on_disk.md.
 	SearchIndexPath string
 
+	// SearchHideUnreadable drops notes the caller cannot read from site search.
+	// Off by default: such notes are listed as "Закрытый материал."
+	// placeholders with their title and URL, which paywalled sites rely on.
+	SearchHideUnreadable bool
+
 	LogQueries bool
 
 	// Application settings
@@ -543,6 +548,8 @@ func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.DatabaseFile, "db-file", c.DatabaseFile, "Database file")
 	flag.StringVar(&c.SearchIndexPath, "search-index-path", c.SearchIndexPath,
 		"directory for the on-disk full-text search index (SEARCH_INDEX_PATH); empty keeps the index in memory")
+	flag.BoolVar(&c.SearchHideUnreadable, "search-hide-unreadable", false,
+		"drop notes the caller cannot read from site search instead of listing them as placeholders (SEARCH_HIDE_UNREADABLE)")
 	flag.IntVar(&c.MaxRequestBodySize, "max-request-body-size", 10, "Max request body size in MB")
 	flag.BoolVar(&c.LogQueries, "log-queries", c.LogQueries, "Log database queries")
 	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
