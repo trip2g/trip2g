@@ -250,3 +250,54 @@ func TestIntroduceSkipsLeadingTable(t *testing.T) {
 	require.NotContains(t, html, "<table")
 	require.NotContains(t, html, "tail")
 }
+
+func TestIntroText(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want string
+	}{
+		{
+			name: "inline markup flattened",
+			body: "Hello **bold** and *em* with `code` and [link](https://x.y).\n\nSecond paragraph.\n",
+			want: "Hello bold and em with code and link.",
+		},
+		{
+			name: "wikilink label kept, embed dropped",
+			body: "![[pic.png]]\n\nSee [[Other note|the other note]] and [[Plain]].\n",
+			want: "See the other note and Plain.",
+		},
+		{
+			name: "markdown image alt dropped",
+			body: "![alt text](img.png) Caption *here*.\n",
+			want: "Caption here.",
+		},
+		{
+			name: "leading list and code skipped",
+			body: "- one\n- two\n\n```go\nx := 1\n```\n\nFirst real paragraph\nwraps here.\n",
+			want: "First real paragraph wraps here.",
+		},
+		{
+			name: "stops at first heading",
+			body: "## Heading\n\nAfter heading.\n",
+			want: "",
+		},
+		{
+			name: "stops at thematic break",
+			body: "- only a list\n\n---\n\nAfter break.\n",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pages, err := mdloader.Load(mdloader.Options{
+				Sources: []mdloader.SourceFile{{Path: "index.md", Content: []byte(tt.body)}},
+				Log:     &logger.TestLogger{},
+			})
+			require.NoError(t, err)
+			require.Len(t, pages.List, 1)
+			require.Equal(t, tt.want, pages.List[0].PartialRenderer.IntroText())
+		})
+	}
+}

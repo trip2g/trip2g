@@ -449,6 +449,15 @@ func (ctx *Ctx) MagazineGridColumns() int {
 	return ctx.Note.M().GetInt("magazine_grid_columns", 2)
 }
 
+// MagazineShowDate reports whether magazine cards show the note date.
+// Defaults to true; catalog-style pages set magazine_show_date: false.
+func (ctx *Ctx) MagazineShowDate() bool {
+	if ctx.Note == nil {
+		return true
+	}
+	return ctx.Note.M().GetBool("magazine_show_date", true)
+}
+
 // resolveLayoutSection finds the best matching layout section file for the given section type.
 // Returns nil if no layout section matches the current note.
 func (ctx *Ctx) resolveLayoutSection(section string) *model.LayoutSectionEntry {

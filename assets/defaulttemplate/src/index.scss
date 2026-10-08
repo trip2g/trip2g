@@ -739,6 +739,7 @@ body {
 // --- Magazine items ---
 
 .magazine-item {
+  position: relative;
   margin-bottom: 0;
 
   &--grid {
@@ -777,34 +778,58 @@ body {
   margin-bottom: 0.375rem;
 }
 
+// Stretched link: the title link covers the whole card.
 .magazine-item__link {
-  text-decoration: none;
-  color: var(--pico-contrast);
+  color: var(--pico-primary);
   font-weight: 600;
+  text-decoration: none;
 
-  &:hover {
-    color: var(--pico-primary);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--pico-border-radius);
+  }
+
+  .magazine-item:hover & {
+    color: var(--pico-primary-hover);
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    box-shadow: none;
+    outline: none;
+  }
+
+  &:focus-visible::after {
+    outline: 2px solid var(--pico-primary);
+    outline-offset: 2px;
   }
 }
 
 .magazine-item__excerpt {
   color: var(--pico-muted-color);
   font-size: 0.875rem;
-  margin-block: 0.375rem;
+  margin-block: 0.375rem 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: var(--magazine-excerpt-lines, 3);
+  line-clamp: var(--magazine-excerpt-lines, 3);
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
 
-.magazine-item__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.5rem;
+  .magazine-item--featured & {
+    --magazine-excerpt-lines: 4;
+    font-size: 1rem;
+  }
+
+  .magazine-item--list & {
+    --magazine-excerpt-lines: 2;
+  }
 }
 
 .magazine-item__date {
+  display: block;
+  margin-top: 0.5rem;
   font-size: 0.75rem;
   color: var(--pico-muted-color);
 }
