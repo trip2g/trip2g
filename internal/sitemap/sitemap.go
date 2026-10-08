@@ -87,19 +87,7 @@ func Generate(nvs *model.NoteViews, publicURL string) ([]byte, error) {
 	var urls []urlEntry
 
 	for _, note := range nvs.List {
-		if !note.Free || note.NoIndex {
-			continue
-		}
-
-		// Skip notes that require sign-in (they have noindex).
-		requiresSignin := false
-		for _, sgName := range note.SubgraphNames {
-			if sg, found := nvs.Subgraphs[sgName]; found && sg.RequireSignin {
-				requiresSignin = true
-				break
-			}
-		}
-		if requiresSignin {
+		if !note.IsAnonymouslyReadable() || note.NoIndex {
 			continue
 		}
 
@@ -151,19 +139,7 @@ func GenerateForDomain(nvs *model.NoteViews, domain, baseURL string) ([]byte, er
 	var urls []urlEntry
 
 	for path, note := range routes {
-		if !note.Free || note.NoIndex {
-			continue
-		}
-
-		// Skip notes that require sign-in (they have noindex).
-		requiresSignin := false
-		for _, sgName := range note.SubgraphNames {
-			if sg, found := nvs.Subgraphs[sgName]; found && sg.RequireSignin {
-				requiresSignin = true
-				break
-			}
-		}
-		if requiresSignin {
+		if !note.IsAnonymouslyReadable() || note.NoIndex {
 			continue
 		}
 
