@@ -628,11 +628,11 @@ func (m *freeNoteMatrix) requirePageCacheKeepsReadersApart(t *testing.T) {
 }
 
 const freeNoteAccessMatrix = `
-n1   admin    page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n1]
-n1   guest    page=401:signin[] gql=error search=[n1] mcp=[n1] asset=401 cache=- rss=- sitemap=- backlink=+ similar=[n1]
-n1   insider  page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n1]
-n1   member   page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n1]
-n1   outsider page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n1]
+n1   admin    page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=- rss=[n1] sitemap=- backlink=+ similar=[n1]
+n1   guest    page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=+ rss=[n1] sitemap=- backlink=+ similar=[n1]
+n1   insider  page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=- rss=[n1] sitemap=- backlink=+ similar=[n1]
+n1   member   page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=- rss=[n1] sitemap=- backlink=+ similar=[n1]
+n1   outsider page=200[n1] gql=[n1] search=[n1] mcp=[n1] asset=200 cache=- rss=[n1] sitemap=- backlink=+ similar=[n1]
 n2   admin    page=200[n2] gql=[n2] search=[n2] mcp=[n2] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n2]
 n2   guest    page=401:signin[] gql=error search=[] mcp=[] asset=401 cache=- rss=- sitemap=- backlink=+ similar=-
 n2   insider  page=200[n2] gql=[n2] search=[n2] mcp=[n2] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n2]
@@ -678,9 +678,9 @@ n9b  guest    page=200[n4,n9b] gql=[n4,n9b] search=[n4,n9b] mcp=[n4,n9b] asset=2
 n9b  insider  page=200[n4,n9b] gql=[n4,n9b] search=[n4,n9b] mcp=[n4,n9b] asset=200 cache=- rss=[n4,n9b] sitemap=+ backlink=+ similar=[n4,n9b]
 n9b  member   page=200[n4,n9b] gql=[n4,n9b] search=[n4,n9b] mcp=[n4,n9b] asset=200 cache=- rss=[n4,n9b] sitemap=+ backlink=+ similar=[n4,n9b]
 n9b  outsider page=200[n4,n9b] gql=[n4,n9b] search=[n4,n9b] mcp=[n4,n9b] asset=200 cache=- rss=[n4,n9b] sitemap=+ backlink=+ similar=[n4,n9b]
-n9c  admin    page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n2,n9c]
-n9c  guest    page=401:signin[] gql=error search=[n2,n9c] mcp=[n2,n9c] asset=401 cache=- rss=- sitemap=- backlink=+ similar=[n2,n9c]
-n9c  insider  page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n2,n9c]
-n9c  member   page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n2,n9c]
-n9c  outsider page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=- rss=- sitemap=- backlink=+ similar=[n2,n9c]
+n9c  admin    page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=- rss=[n2,n9c] sitemap=- backlink=+ similar=[n2,n9c]
+n9c  guest    page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=+ rss=[n2,n9c] sitemap=- backlink=+ similar=[n2,n9c]
+n9c  insider  page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=- rss=[n2,n9c] sitemap=- backlink=+ similar=[n2,n9c]
+n9c  member   page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=- rss=[n2,n9c] sitemap=- backlink=+ similar=[n2,n9c]
+n9c  outsider page=200[n2,n9c] gql=[n2,n9c] search=[n2,n9c] mcp=[n2,n9c] asset=200 cache=- rss=[n2,n9c] sitemap=- backlink=+ similar=[n2,n9c]
 `

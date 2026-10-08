@@ -54,8 +54,18 @@ func TestAssetOwnership_PrivateViaPaidNote(t *testing.T) {
 	require.Len(t, own.Notes, 1)
 }
 
-func TestAssetOwnership_FreeNoteInSigninSubgraphIsNotPublic(t *testing.T) {
+func TestAssetOwnership_FreeNoteInSigninSubgraphIsPublic(t *testing.T) {
 	note := noteWithAsset("post.md", "img.png", true)
+	note.Subgraphs = map[string]*model.NoteSubgraph{"members": {RequireSignin: true}}
+	idx := assetindex.New(&testEnv{nvs: views(note)})
+
+	own, ok := idx.AssetOwnership("h1", "img.png")
+	require.True(t, ok)
+	require.True(t, own.Public, "a free note opens its assets whatever its subgraphs say")
+}
+
+func TestAssetOwnership_ClosedNoteInSigninSubgraphIsNotPublic(t *testing.T) {
+	note := noteWithAsset("post.md", "img.png", false)
 	note.Subgraphs = map[string]*model.NoteSubgraph{"members": {RequireSignin: true}}
 	idx := assetindex.New(&testEnv{nvs: views(note)})
 

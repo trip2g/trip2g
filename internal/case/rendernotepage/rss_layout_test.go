@@ -66,7 +66,7 @@ func TestRSSLayout_RendersValidFeedAndHonorsAccessGates(t *testing.T) {
 	}
 	nvs.PathMap["blog/gated.md"] = &model.NoteView{
 		Path: "blog/gated.md", Title: "Gated Note", Permalink: "/blog/gated",
-		Free: true, CreatedAt: created,
+		Free: false, CreatedAt: created,
 		Subgraphs: map[string]*model.NoteSubgraph{"members": {RequireSignin: true}},
 	}
 	nvs.PathMap["blog/_secret.md"] = &model.NoteView{

@@ -12,7 +12,7 @@ func ResolveWithSubgraphs(ctx context.Context, env ResolveWithSubgraphsEnv, note
 	_ = ctx
 	_ = env
 
-	if note.Free {
+	if note.IsAnonymouslyReadable() {
 		return true, nil
 	}
 
@@ -20,7 +20,7 @@ func ResolveWithSubgraphs(ctx context.Context, env ResolveWithSubgraphsEnv, note
 		return false, nil
 	}
 
-	if anySubgraphRequiresSignin(note) {
+	if note.RequiresSignin() {
 		return true, nil
 	}
 

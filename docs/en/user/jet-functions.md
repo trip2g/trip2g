@@ -563,7 +563,7 @@ Documented in [[en/user/templates#What's available in a custom template|Template
 | `nvs.Sidebars(note)` | list of `note` | The note whose permalink is in the `sidebar` field (`sidebar: false` gives none), else the subgraph sidebars, else `/_sidebar` |
 | `nvs.HomePages(note)` | list of `note` | Home pages of the note's subgraphs |
 | `nvs.ResolveURL(note)` | `string` | The note's URL |
-| query `.Public()` | query | Keeps only notes an anonymous visitor may read: `free`, not behind sign-in, not under `_`, not `noindex`. Also mentioned in [[en/user/seo\|SEO]] |
+| query `.Public()` | query | Keeps only notes an anonymous visitor may read: `free` (a free note in a sign-in subgraph too), not under `_`, not `noindex`. Also mentioned in [[en/user/seo\|SEO]] |
 
 Behaviour of queries that the code defines:
 

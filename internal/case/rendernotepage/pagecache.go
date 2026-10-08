@@ -178,22 +178,12 @@ func serveCachedPageEarly(ctx *fasthttp.RequestCtx, env Env, request Request) bo
 		return false
 	}
 
-	// Independently enforce every anonymous-readability gate Resolve applies
+	// Independently enforce the anonymous-readability gate Resolve applies
 	// before the cacheable branch, BEFORE consulting the cache. This makes the
 	// early path provably no less strict than the full path (paywalled / signin /
 	// unreadable notes never reach a cache hit) and, like the full path, never
 	// consults the cache for them.
-	//
-	// Sign-in wall: a require_signin subgraph blocks anonymous readers
-	// (resolve.go). CanReadNote does NOT re-check this for anonymous viewers, so
-	// the explicit gate is load-bearing, not redundant.
-	for _, sg := range note.Subgraphs {
-		if sg != nil && sg.RequireSignin {
-			return false
-		}
-	}
-	// Paywall: non-free notes are never anonymously readable (resolve.go).
-	if !note.Free {
+	if !note.IsAnonymouslyReadable() {
 		return false
 	}
 

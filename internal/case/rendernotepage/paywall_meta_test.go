@@ -47,6 +47,7 @@ func TestPaywalledNoteBodyNeverLeaksIntoMeta(t *testing.T) {
 		{
 			name: "sign-in wall (require_signin subgraph)",
 			setup: func(note *model.NoteView) {
+				note.Free = false
 				note.Subgraphs = map[string]*model.NoteSubgraph{
 					"members": {Name: "members", RequireSignin: true},
 				}

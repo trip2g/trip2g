@@ -1612,13 +1612,13 @@ func TestResolve_SigninWall(t *testing.T) {
 		wantNoError bool // expect nil error
 	}{
 		{
-			name: "guest + require_signin subgraph -> SigninWallError",
+			name: "guest + require_signin subgraph + free note -> normal render",
 			note: makeNote(true, map[string]*model.NoteSubgraph{
 				"members": {Name: "members", RequireSignin: true},
 			}),
-			userToken:  nil,
-			envFunc:    func(nv *model.NoteViews) *EnvMock { return baseEnv(nv) },
-			wantSignin: true,
+			userToken:   nil,
+			envFunc:     func(nv *model.NoteViews) *EnvMock { return baseEnv(nv) },
+			wantNoError: true,
 		},
 		{
 			name: "authenticated user + require_signin -> normal render",
@@ -1657,8 +1657,8 @@ func TestResolve_SigninWall(t *testing.T) {
 			wantPaywall: true,
 		},
 		{
-			name: "guest + mixed subgraphs one require_signin one not -> SigninWallError",
-			note: makeNote(true, map[string]*model.NoteSubgraph{
+			name: "guest + mixed subgraphs one require_signin one not + non-free -> SigninWallError",
+			note: makeNote(false, map[string]*model.NoteSubgraph{
 				"public":  {Name: "public", RequireSignin: false},
 				"members": {Name: "members", RequireSignin: true},
 			}),
