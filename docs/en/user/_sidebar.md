@@ -17,8 +17,8 @@ title: "Navigation"
 - [[en/user/wikilink-resolution|Wikilink resolution]]
 - [[en/user/publishing|Publishing notes]]
 - [[en/user/editor|In-browser editor]]
-- [[en/user/two-way-sync|Two-way sync]]
-- [[en/user/git|Git access]]
+- [[en/user/two-way-sync|Two-way sync with Obsidian]]
+- [[en/user/git|Git sync]]
 - [[en/user/live-editing|Live editing]]
 - [[en/user/releases|Releases]]
 - [[en/changelog|Changelog]]
@@ -68,7 +68,6 @@ title: "Navigation"
 - [[en/user/codellm-secrets|Secrets for code roles]]
 - [[en/user/forms|Forms in notes]]
 - [[en/user/update_notes|updateNotes: programmatic editing]]
-- [[en/user/knowlume-adapter|Knowlume Adapter]]
 - [[en/user/rss|RSS feeds]]
 
 ### Hosting & Setup

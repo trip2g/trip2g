@@ -1,5 +1,5 @@
 ---
-title: "Доступ по Git"
+title: "Синхронизация через Git"
 free: true
 lang_redirect: "[[en/user/git]]"
 ---

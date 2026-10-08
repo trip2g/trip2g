@@ -63,7 +63,7 @@ Selling access to gated notes. The deep dive is [[en/user/monetization]].
 Keys and credentials that connect the outside world to your instance.
 
 - **API Keys** — keys for the Obsidian sync plugin, the [[en/user/mcp|MCP server]], and the GraphQL API. The first thing you create on a new instance — unless the [[en/user/onboarding-vault|onboarding vault]] already did it for you.
-- **Git Tokens** — tokens for [[en/user/git|Git access]] to your content.
+- **Git Tokens** — tokens for [[en/user/git|Git sync]] to your content.
 - **Google OAuth** / **GitHub OAuth** — let readers sign in with Google or GitHub. See [[en/user/oauth]].
 - **Federation Secrets** — inbound and outbound secrets for [[en/user/federation|MCP Federation]] between instances.
 

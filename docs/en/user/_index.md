@@ -20,7 +20,7 @@ New here? Follow **[[en/user/getting-started|Get your first note live]]**: insta
 
 ## What you can do
 
-- **Publish from Obsidian.** Your vault stays on your machine; sync pushes notes live, one-way or two-way. [[en/user/two-way-sync|Two-way sync →]]
+- **Publish from Obsidian.** Your vault stays on your machine; sync pushes notes live, one-way or two-way. [[en/user/two-way-sync|Two-way sync with Obsidian →]]
 - **Publish to Telegram.** Write once in Obsidian, post to your channel on a schedule, links stay intact. [[en/user/telegram|Telegram →]]
 - **Charge for content.** Leave `free: true` off and a note is subscriber-only; take payment via crypto, Patreon, or Boosty. [[en/user/monetization|Monetization →]]
 - **An AI that answers from your notes.** Connect any MCP client and readers query your knowledge base directly. [[en/user/mcp|MCP →]]

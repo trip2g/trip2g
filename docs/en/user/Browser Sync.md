@@ -45,5 +45,5 @@ For day-to-day publishing, the [[en/user/two-way-sync|trip2g sync Obsidian plugi
 
 ### Related
 
-- [[en/user/two-way-sync|Two-way sync]] — bidirectional sync and background publishing via the Obsidian plugin
+- [[en/user/two-way-sync|Two-way sync with Obsidian]] — bidirectional sync and background publishing via the Obsidian plugin
 - [[en/user/getting-started|Getting started]] — install the Obsidian plugin and publish your first note
