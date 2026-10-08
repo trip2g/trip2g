@@ -14,10 +14,10 @@ title: "Навигация"
 - [[ru/user/docs-image|База знаний в одном контейнере]]
 - [[ru/user/Свойства заметок|Свойства заметок]]
 - [[ru/user/markdown|Markdown]]
-- [[ru/user/wikilink-resolution|Разрешение вики-ссылок]]
+- [[ru/user/wikilink-resolution|Куда ведёт вики-ссылка]]
 - [[ru/user/editor|Редактор в браузере]]
-- [[ru/user/Двухсторонняя синхронизация|Синхронизация]]
-- [[ru/user/git|Доступ по Git]]
+- [[ru/user/Двухсторонняя синхронизация|Двусторонняя синхронизация с Obsidian]]
+- [[ru/user/git|Синхронизация через Git]]
 - [[ru/user/live-editing|Живое редактирование]]
 
 ### Примеры использования
@@ -74,7 +74,6 @@ title: "Навигация"
 - [[ru/user/codellm-secrets|Секреты для код-ролей]]
 - [[ru/user/update_notes|updateNotes: редактирование через API]]
 - [[ru/user/forms|Формы в заметках]]
-- [[ru/user/Knowlume Adapter|Knowlume Adapter]]
 - [[ru/user/frontmatter_patches|Frontmatter-патчи]]
 - [[ru/user/rss-feeds|RSS-ленты]]
 - [[ru/user/oauth|OAuth]]

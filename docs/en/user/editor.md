@@ -9,17 +9,18 @@ Fix a typo, reword a paragraph, or roll back to yesterday's version — without 
 
 The editor is available to admins only. Readers never see it.
 
-> 🖼️ **Screenshot (light theme) — `assets/admin/editor-open.png`**
-> The editor open on a note. Left: folder-tree file browser. Center: the note's markdown. Top-right: **Save** and **Versions**.
+![[images/editor_open_en.png]]
+
+The editor open on a note. Left: the folder tree. Center: the note's markdown. Top right: the version history icon, file download, and **Save**.
 
 ### How to open the editor
 
 The editor icon appears in two places:
 
-- **Top-right of the admin panel** — click it from any admin screen.
-- **Next to the search bar on every page** — visible only when you are logged in as admin.
+- **On the admin panel Dashboard** — top right.
+- **In the ☰ menu in every page header** — the **Edit this page** item. Only admins see it.
 
-Click the icon. The note for the page you were just viewing opens automatically.
+The note for the page you were just viewing opens automatically.
 
 ### Browse and switch files
 
@@ -37,13 +38,14 @@ After you save, the page reflects the new content immediately. If [[live-editing
 
 Every time you save, trip2g stores a version of the file.
 
-> 🖼️ **Screenshot (light theme) — `assets/admin/editor-versions.png`**
-> The versions panel on the right — a list of past saves with dates, one selected, with a **Restore** button.
+![[images/editor_versions_en.png]]
+
+The **Versions** panel on the right lists past versions with dates. The selected one is already loaded into the editor; press **Save** to keep it.
 
 To go back to an earlier state:
 
 1. Open the editor on the file you want to restore.
-2. Click **Versions** (top-right, next to **Save**).
+2. Click the history (clock) icon next to **Save**, top right. The **Versions** panel opens.
 3. Click a version in the list — its content loads into the editor.
 4. Click **Save** to make it the current version, or close the panel to discard.
 
@@ -55,8 +57,9 @@ This lets you jump through connected notes the same way you would in Obsidian.
 
 ### Where the editor icon sits
 
-> 🖼️ **Screenshot — `assets/admin/editor-icon-location.png`**
-> The top of a published page with the admin bar visible. The editor icon (pencil) is highlighted next to the search bar. A second instance of the same icon is shown in the admin panel header in a separate inset.
+![[images/editor_menu_en.png]]
+
+The header of a published page with the ☰ menu open. The first item, **Edit this page**, opens the editor.
 
 ### Related
 

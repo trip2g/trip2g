@@ -17,8 +17,9 @@ This means a heading edit repaints the heading. Adding a paragraph repaints the 
 
 Open your published site in a browser window. Open the same note in Obsidian. Edit the note, then hit sync in the plugin.
 
-> 🖼️ **Screenshot — `assets/admin/live-editing-side-by-side.png`**
-> Obsidian and a browser window open side by side. On the left: the note being edited in Obsidian with a visible change (e.g. a heading being retyped). On the right: the published page in the browser showing the updated content already reflected. Highlight that no reload indicator (spinner, flicker) is visible in the browser tab.
+![[images/live_editing_en.png]]
+
+The page in the browser right after a sync: a sentence was added to the first paragraph, and the changed paragraph is highlighted.
 
 The update arrives in under a second on a normal connection. The latency is the sync time itself — the browser receives the event the moment the server commits the note.
 
@@ -60,7 +61,7 @@ Combine with `trip2g-sync --watch` running as a sidecar to get a fully automated
 
 ### Related
 
-- [[en/user/two-way-sync|Two-way sync]] — receive server-side changes back into Obsidian automatically
+- [[en/user/two-way-sync|Two-way sync with Obsidian]] — receive server-side changes back into Obsidian automatically
 - [[en/user/publishing|Publishing notes]] — how notes reach the server
 - [[en/user/webhooks|Webhooks & automation]] — `noteChanges` as a webhook trigger for custom integrations
 - [[en/user/agent-memory]] — headless agent setup with `--watch` sidecar and live-follow

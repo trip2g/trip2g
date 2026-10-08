@@ -25,11 +25,15 @@ This is what Obsidian does. Vaults that were built and linked in Obsidian work o
 
 ### Opt-in: scoped mode
 
-For multilingual sites, you can switch to language-aware resolution. Set this in your site settings:
+For multilingual sites, you can switch to language-aware resolution in the site settings:
 
-```
-wikilink_resolution: scoped
-```
+1. Open the admin panel (`/admin`) → **System** → **Site Config**.
+2. Find `wikilink_resolution` (typing `wikilink` in the search box helps) and click the row.
+3. Type `scoped` in **New Value** and click **Save**.
+
+![[images/wikilink_resolution_admin_en.png]]
+
+The setting is saved at once, but published pages are rebuilt only on the next sync of any note or after a server restart. Until then, links keep pointing where they did. To go back to the default, save `global`.
 
 In scoped mode, trip2g walks a three-step ladder and stops at the first match:
 

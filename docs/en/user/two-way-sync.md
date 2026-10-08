@@ -1,6 +1,6 @@
 ---
 home_position: 75
-title: Two-Way Sync
+title: Two-Way Sync with Obsidian
 free: true
 lang_redirect: "[[ru/user/Двухсторонняя синхронизация]]"
 ---

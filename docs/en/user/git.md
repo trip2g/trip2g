@@ -1,5 +1,5 @@
 ---
-title: "Git Access"
+title: "Git Sync"
 free: true
 lang_redirect: "[[ru/user/git]]"
 ---
