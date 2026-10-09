@@ -2,9 +2,13 @@ package mcp_test
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/mcp"
@@ -152,7 +156,8 @@ func TestMCPEndpointMetrics(t *testing.T) {
 			},
 			assert: func(t *testing.T, reg *prometheus.Registry) {
 				requireHistogram(t, reg, "trip2g_mcp_fanout_bases", map[string]string{}, 2)
-				requireCounter(t, reg, "trip2g_mcp_federated_requests_total", map[string]string{"status": "ok"}, 2)
+				requireCounter(t, reg, "trip2g_mcp_federated_requests_total", map[string]string{"peer": "alice", "status": "ok"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_federated_requests_total", map[string]string{"peer": "bob", "status": "ok"}, 1)
 				requireCounter(t, reg, "trip2g_mcp_requests_total",
 					map[string]string{"method": "tools/call", "tool": "federated_search", "auth": "anonymous", "status": "ok"}, 1)
 			},
@@ -266,7 +271,7 @@ func TestMCPEndpointMetrics(t *testing.T) {
 				}
 			},
 			assert: func(t *testing.T, reg *prometheus.Registry) {
-				requireCounter(t, reg, "trip2g_mcp_federated_requests_total", map[string]string{"status": "error"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_federated_requests_total", map[string]string{"peer": "alice", "status": "error"}, 1)
 			},
 		},
 		{
@@ -381,5 +386,208 @@ func TestDynamicToolLabelBounded(t *testing.T) {
 		require.Nil(t, findRegMetric(t, reg, "trip2g_mcp_requests_total",
 			map[string]string{"method": "tools/call", "tool": name, "auth": "anonymous", "status": "ok"}),
 			"per-name series %q must not exist", name)
+	}
+}
+
+// federationBearer signs an HS256 federation JWT for kid the way a peer does.
+func federationBearer(t *testing.T, secret []byte, kid string) string {
+	t.Helper()
+	header, err := json.Marshal(map[string]string{"alg": "HS256", "typ": "JWT", "kid": kid})
+	require.NoError(t, err)
+	now := time.Now().Unix()
+	claims, err := json.Marshal(map[string]any{"iss": "https://peer.example", "iat": now, "exp": now + 30, "rid": "r"})
+	require.NoError(t, err)
+	unsigned := base64.RawURLEncoding.EncodeToString(header) + "." + base64.RawURLEncoding.EncodeToString(claims)
+	mac := hmac.New(sha256.New, secret)
+	mac.Write([]byte(unsigned))
+	return "Bearer " + unsigned + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+}
+
+// withInboundKey makes the base accept kid, scoped to subgraphs.
+func withInboundKey(env *EnvMock, secret []byte, kid string, subgraphs []string) {
+	env.FederationSecretByKIDFunc = func(_ context.Context, got string) (db.FederationSecret, bool, error) {
+		if got != kid {
+			return db.FederationSecret{}, false, nil
+		}
+		return db.FederationSecret{ID: 1, Kid: kid, SecretCrypt: secret}, true, nil
+	}
+	env.DecryptDataFunc = func(b []byte) ([]byte, error) { return b, nil }
+	env.ListFederationSecretSubgraphsByKIDFunc = func(_ context.Context, _ string) ([]string, error) {
+		return subgraphs, nil
+	}
+}
+
+func scopedNote(pathID int64, path string, subgraphs ...string) *appmodel.NoteView {
+	return &appmodel.NoteView{
+		Path:          path,
+		PathID:        pathID,
+		Title:         path,
+		Permalink:     "/" + path,
+		HTML:          "<h1>Title</h1><h2>Part</h2><p>body</p>",
+		SubgraphNames: subgraphs,
+	}
+}
+
+func withNotes(env *EnvMock, notes ...*appmodel.NoteView) {
+	nvs := &appmodel.NoteViews{PathMap: map[string]*appmodel.NoteView{}}
+	for _, note := range notes {
+		nvs.List = append(nvs.List, note)
+		nvs.PathMap[note.Path] = note
+	}
+	env.LatestNoteViewsFunc = func() *appmodel.NoteViews { return nvs }
+	env.LatestNoteChunksFunc = func() []appmodel.NoteChunk { return nil }
+	env.NoteURLFunc = func(n *appmodel.NoteView) string { return "https://x/" + n.Path }
+}
+
+func TestMCPFederatedInboundMetrics(t *testing.T) {
+	secret := []byte("0123456789abcdef0123456789abcdef")
+
+	cases := []struct {
+		name   string
+		body   []byte
+		auth   bool
+		setup  func(env *EnvMock)
+		assert func(t *testing.T, reg *prometheus.Registry)
+	}{
+		{
+			name: "search by a peer counts the request and each result under its subgraph",
+			body: mcpToolsCallBody(t, "search", map[string]any{"query": "alpha"}),
+			auth: true,
+			setup: func(env *EnvMock) {
+				docs := scopedNote(1, "docs.md", "docs")
+				both := scopedNote(2, "both.md", "sales", "docs")
+				hidden := scopedNote(3, "hidden.md", "private")
+				textSearch := func(_ string) ([]appmodel.SearchResult, error) {
+					return []appmodel.SearchResult{
+						{NoteView: docs, HighlightedContent: []string{"a"}},
+						{NoteView: both, HighlightedContent: []string{"a"}},
+						{NoteView: hidden, HighlightedContent: []string{"a"}},
+					}, nil
+				}
+				withSearchEnv(env)
+				env.SearchLiveNotesFunc = textSearch
+				env.SearchLatestNotesFunc = textSearch
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_requests_total",
+					map[string]string{"method": "tools/call", "tool": "search", "auth": "federation", "status": "ok"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_federated_inbound_requests_total",
+					map[string]string{"peer": "partner", "tool": "search"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_federated_results_served_total",
+					map[string]string{"peer": "partner", "subgraph": "docs"}, 2)
+				require.Nil(t, findRegMetric(t, reg, "trip2g_mcp_federated_results_served_total",
+					map[string]string{"peer": "partner", "subgraph": "private"}),
+					"a result the key cannot read is never returned, so never counted")
+			},
+		},
+		{
+			name: "note_html by a peer counts the note under the subgraph the key matched",
+			body: mcpToolsCallBody(t, "note_html", map[string]any{"path": "both.md"}),
+			auth: true,
+			setup: func(env *EnvMock) {
+				withNotes(env, scopedNote(2, "both.md", "sales", "docs"))
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_federated_inbound_requests_total",
+					map[string]string{"peer": "partner", "tool": "note_html"}, 1)
+				requireCounter(t, reg, "trip2g_mcp_federated_notes_served_total",
+					map[string]string{"peer": "partner", "subgraph": "docs"}, 1)
+			},
+		},
+		{
+			name: "expand by a peer counts the note it opened",
+			body: mcpToolsCallBody(t, "expand", map[string]any{"path": "docs.md"}),
+			auth: true,
+			setup: func(env *EnvMock) {
+				withNotes(env, scopedNote(1, "docs.md", "docs"))
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_federated_notes_served_total",
+					map[string]string{"peer": "partner", "subgraph": "docs"}, 1)
+			},
+		},
+		{
+			name: "a note outside every subgraph is counted as none",
+			body: mcpToolsCallBody(t, "note_html", map[string]any{"path": "open.md"}),
+			auth: true,
+			setup: func(env *EnvMock) {
+				withNotes(env, scopedNote(4, "open.md"))
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_federated_notes_served_total",
+					map[string]string{"peer": "partner", "subgraph": "none"}, 1)
+			},
+		},
+		{
+			name: "a refused read is not counted as served",
+			body: mcpToolsCallBody(t, "note_html", map[string]any{"path": "hidden.md"}),
+			auth: true,
+			setup: func(env *EnvMock) {
+				withNotes(env, scopedNote(3, "hidden.md", "private"))
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_federated_inbound_requests_total",
+					map[string]string{"peer": "partner", "tool": "note_html"}, 1)
+				require.Nil(t, findRegMetric(t, reg, "trip2g_mcp_federated_notes_served_total",
+					map[string]string{"peer": "partner", "subgraph": "none"}))
+				require.Nil(t, findRegMetric(t, reg, "trip2g_mcp_federated_notes_served_total",
+					map[string]string{"peer": "partner", "subgraph": "private"}))
+			},
+		},
+		{
+			name: "a non-tool request by a peer is labeled by its method",
+			body: mcpInitBody,
+			auth: true,
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				requireCounter(t, reg, "trip2g_mcp_federated_inbound_requests_total",
+					map[string]string{"peer": "partner", "tool": "initialize"}, 1)
+			},
+		},
+		{
+			name: "an anonymous read records no federated series",
+			body: mcpToolsCallBody(t, "note_html", map[string]any{"path": "open.md"}),
+			setup: func(env *EnvMock) {
+				withNotes(env, scopedNote(4, "open.md"))
+			},
+			assert: func(t *testing.T, reg *prometheus.Registry) {
+				families, err := reg.Gather()
+				require.NoError(t, err)
+				for _, mf := range families {
+					switch mf.GetName() {
+					case "trip2g_mcp_federated_inbound_requests_total",
+						"trip2g_mcp_federated_notes_served_total",
+						"trip2g_mcp_federated_results_served_total":
+						require.Empty(t, mf.GetMetric(), mf.GetName())
+					}
+				}
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			reg := prometheus.NewRegistry()
+			m := metrics.NewMCPMetrics(reg)
+
+			env := buildDispatchEnv(t, false)
+			env.MCPMetricsFunc = func() *metrics.MCPMetrics { return m }
+			withInboundKey(env, secret, "partner", []string{"docs"})
+			if tc.setup != nil {
+				tc.setup(env)
+			}
+
+			authHeader := ""
+			if tc.auth {
+				authHeader = federationBearer(t, secret, "partner")
+			}
+			fasthttpCtx := buildMCPFasthttpCtx(tc.body, authHeader)
+			req := wiredRequest(fasthttpCtx, env, nil)
+			defer appreq.Release(req)
+
+			_, err := (&mcp.Endpoint{}).Handle(req)
+			require.NoError(t, err)
+
+			tc.assert(t, reg)
+		})
 	}
 }

@@ -31,6 +31,12 @@ var _ Env = &EnvMock{}
 //			CountVisibleNotePathsFunc: func(ctx context.Context) (int64, error) {
 //				panic("mock out the CountVisibleNotePaths method")
 //			},
+//			ListAllFederationSecretScopesFunc: func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
+//				panic("mock out the ListAllFederationSecretScopes method")
+//			},
+//			ListFederationSecretsFunc: func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
+//				panic("mock out the ListFederationSecrets method")
+//			},
 //			ListGoqiteAllQueueStatsFunc: func(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error) {
 //				panic("mock out the ListGoqiteAllQueueStats method")
 //			},
@@ -55,6 +61,12 @@ type EnvMock struct {
 
 	// CountVisibleNotePathsFunc mocks the CountVisibleNotePaths method.
 	CountVisibleNotePathsFunc func(ctx context.Context) (int64, error)
+
+	// ListAllFederationSecretScopesFunc mocks the ListAllFederationSecretScopes method.
+	ListAllFederationSecretScopesFunc func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error)
+
+	// ListFederationSecretsFunc mocks the ListFederationSecrets method.
+	ListFederationSecretsFunc func(ctx context.Context) ([]db.ListFederationSecretsRow, error)
 
 	// ListGoqiteAllQueueStatsFunc mocks the ListGoqiteAllQueueStats method.
 	ListGoqiteAllQueueStatsFunc func(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error)
@@ -84,6 +96,16 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// ListAllFederationSecretScopes holds details about calls to the ListAllFederationSecretScopes method.
+		ListAllFederationSecretScopes []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// ListFederationSecrets holds details about calls to the ListFederationSecrets method.
+		ListFederationSecrets []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// ListGoqiteAllQueueStats holds details about calls to the ListGoqiteAllQueueStats method.
 		ListGoqiteAllQueueStats []struct {
 			// Ctx is the ctx argument value.
@@ -95,12 +117,14 @@ type EnvMock struct {
 			Ctx context.Context
 		}
 	}
-	lockCountAllNotePaths       sync.RWMutex
-	lockCountNoteAssets         sync.RWMutex
-	lockCountNoteVersions       sync.RWMutex
-	lockCountVisibleNotePaths   sync.RWMutex
-	lockListGoqiteAllQueueStats sync.RWMutex
-	lockSumNoteAssetsSizes      sync.RWMutex
+	lockCountAllNotePaths             sync.RWMutex
+	lockCountNoteAssets               sync.RWMutex
+	lockCountNoteVersions             sync.RWMutex
+	lockCountVisibleNotePaths         sync.RWMutex
+	lockListAllFederationSecretScopes sync.RWMutex
+	lockListFederationSecrets         sync.RWMutex
+	lockListGoqiteAllQueueStats       sync.RWMutex
+	lockSumNoteAssetsSizes            sync.RWMutex
 }
 
 // CountAllNotePaths calls CountAllNotePathsFunc.
@@ -228,6 +252,70 @@ func (mock *EnvMock) CountVisibleNotePathsCalls() []struct {
 	mock.lockCountVisibleNotePaths.RLock()
 	calls = mock.calls.CountVisibleNotePaths
 	mock.lockCountVisibleNotePaths.RUnlock()
+	return calls
+}
+
+// ListAllFederationSecretScopes calls ListAllFederationSecretScopesFunc.
+func (mock *EnvMock) ListAllFederationSecretScopes(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
+	if mock.ListAllFederationSecretScopesFunc == nil {
+		panic("EnvMock.ListAllFederationSecretScopesFunc: method is nil but Env.ListAllFederationSecretScopes was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListAllFederationSecretScopes.Lock()
+	mock.calls.ListAllFederationSecretScopes = append(mock.calls.ListAllFederationSecretScopes, callInfo)
+	mock.lockListAllFederationSecretScopes.Unlock()
+	return mock.ListAllFederationSecretScopesFunc(ctx)
+}
+
+// ListAllFederationSecretScopesCalls gets all the calls that were made to ListAllFederationSecretScopes.
+// Check the length with:
+//
+//	len(mockedEnv.ListAllFederationSecretScopesCalls())
+func (mock *EnvMock) ListAllFederationSecretScopesCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListAllFederationSecretScopes.RLock()
+	calls = mock.calls.ListAllFederationSecretScopes
+	mock.lockListAllFederationSecretScopes.RUnlock()
+	return calls
+}
+
+// ListFederationSecrets calls ListFederationSecretsFunc.
+func (mock *EnvMock) ListFederationSecrets(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
+	if mock.ListFederationSecretsFunc == nil {
+		panic("EnvMock.ListFederationSecretsFunc: method is nil but Env.ListFederationSecrets was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListFederationSecrets.Lock()
+	mock.calls.ListFederationSecrets = append(mock.calls.ListFederationSecrets, callInfo)
+	mock.lockListFederationSecrets.Unlock()
+	return mock.ListFederationSecretsFunc(ctx)
+}
+
+// ListFederationSecretsCalls gets all the calls that were made to ListFederationSecrets.
+// Check the length with:
+//
+//	len(mockedEnv.ListFederationSecretsCalls())
+func (mock *EnvMock) ListFederationSecretsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListFederationSecrets.RLock()
+	calls = mock.calls.ListFederationSecrets
+	mock.lockListFederationSecrets.RUnlock()
 	return calls
 }
 

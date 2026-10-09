@@ -284,6 +284,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	limit, detailLimit := resolveSearchLimits(log, args.Limit, args.DetailLimit)
 	payload := buildSearchPayload(args.Query, results, env.NoteURL, chunks, limit, detailLimit)
 	metricsFromContext(ctx).ObserveSearchResults("search", len(payload.Results))
+	recordFederatedResultsServed(ctx, servedSearchNotes(results, len(payload.Results)))
 
 	log.Debug("search completed", "query", args.Query, "results", len(results))
 
@@ -673,6 +674,7 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		return errorResponse(id, ErrCodeInternal, "Similar search failed: "+err.Error())
 	}
 	metricsFromContext(ctx).ObserveSearchResults("similar", len(results))
+	recordFederatedResultsServed(ctx, similarNotes(results))
 
 	// Format response
 	var sb strings.Builder
@@ -776,6 +778,16 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 
 	log.Debug("note html retrieved", "path", note.Path, "pid", note.PathID)
 
+	resp := noteHTMLAnswer(env, log, id, note, args)
+	if resp.Error == nil {
+		recordFederatedNoteServed(ctx, note)
+	}
+	return resp
+}
+
+// noteHTMLAnswer reads a note the caller is allowed to see: a section, a
+// focused chunk window, or the whole note.
+func noteHTMLAnswer(env Env, log logger.Logger, id any, note *model.NoteView, args *model.MCPNoteHTMLParams) Response {
 	// An explicit toc_path is navigation and wins over a match_id replayed
 	// from an earlier call; otherwise the same chunk comes back on every read.
 	if len(args.TocPath) > 0 {
@@ -893,9 +905,11 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		}
 		payload.SectionHTML = sectionHTML
 		log.Debug("expand read a leaf", "path", note.Path, "toc_path", args.TocPath)
+		recordFederatedNoteServed(ctx, note)
 		return successResponse(id, structuredToolResult(text, payload))
 	}
 	log.Debug("expand completed", "path", note.Path, "toc_path", args.TocPath, "children", len(children), "total", total, "omitted", omitted)
+	recordFederatedNoteServed(ctx, note)
 	return successResponse(id, structuredToolResult(expandSummary(note, args.TocPath, children, total, args.First, omitted), payload))
 }
 
