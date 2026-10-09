@@ -15,6 +15,9 @@ type MCPMetrics struct {
 	fanoutBases       prometheus.Histogram
 	federationDepth   prometheus.Histogram
 	federatedRequests *prometheus.CounterVec
+	federatedInbound  *prometheus.CounterVec
+	notesServed       *prometheus.CounterVec
+	resultsServed     *prometheus.CounterVec
 	searchResults     *prometheus.HistogramVec
 	toolErrors        *prometheus.CounterVec
 	auth              *prometheus.CounterVec
@@ -47,8 +50,20 @@ func NewMCPMetrics(reg prometheus.Registerer) *MCPMetrics {
 		}),
 		federatedRequests: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "trip2g_mcp_federated_requests_total",
-			Help: "Total number of outbound federated MCP requests to peer hubs",
-		}, []string{"status"}),
+			Help: "Total number of outbound federated MCP requests to peer hubs, by peer kb_id and status",
+		}, []string{"peer", "status"}),
+		federatedInbound: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "trip2g_mcp_federated_inbound_requests_total",
+			Help: "Total number of MCP requests authenticated by an inbound federation key, by key id and tool",
+		}, []string{"peer", "tool"}),
+		notesServed: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "trip2g_mcp_federated_notes_served_total",
+			Help: "Notes and sections handed to a federated peer (note_html, expand), by key id and the subgraph that granted the read",
+		}, []string{"peer", "subgraph"}),
+		resultsServed: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "trip2g_mcp_federated_results_served_total",
+			Help: "Search results returned to a federated peer (search, similar), by key id and the subgraph that granted each result",
+		}, []string{"peer", "subgraph"}),
 		searchResults: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "trip2g_mcp_search_results_returned",
 			Help:    "Number of results returned by MCP search tools",
@@ -83,7 +98,7 @@ func NewMCPMetrics(reg prometheus.Registerer) *MCPMetrics {
 
 	reg.MustRegister(
 		m.requests, m.duration, m.fanoutBases, m.federationDepth,
-		m.federatedRequests, m.searchResults, m.toolErrors, m.auth,
+		m.federatedRequests, m.federatedInbound, m.notesServed, m.resultsServed, m.searchResults, m.toolErrors, m.auth,
 		m.dynamicTools, m.toolsList,
 	)
 	return m
@@ -146,12 +161,37 @@ func (m *MCPMetrics) ObserveFanoutBases(n int) {
 	m.fanoutBases.Observe(float64(n))
 }
 
-// RecordFederatedRequest counts one outbound federated request (ok|error|timeout).
-func (m *MCPMetrics) RecordFederatedRequest(status string) {
+// RecordFederatedRequest counts one outbound federated request to peer
+// (the kb_id this base addresses it by) as ok|error|timeout.
+func (m *MCPMetrics) RecordFederatedRequest(peer, status string) {
 	if m == nil {
 		return
 	}
-	m.federatedRequests.WithLabelValues(status).Inc()
+	m.federatedRequests.WithLabelValues(peer, status).Inc()
+}
+
+// RecordFederatedInbound counts one request a peer made with an inbound key.
+func (m *MCPMetrics) RecordFederatedInbound(peer, tool string) {
+	if m == nil {
+		return
+	}
+	m.federatedInbound.WithLabelValues(peer, tool).Inc()
+}
+
+// RecordFederatedNoteServed counts one note or section handed to a peer.
+func (m *MCPMetrics) RecordFederatedNoteServed(peer, subgraph string) {
+	if m == nil {
+		return
+	}
+	m.notesServed.WithLabelValues(peer, subgraph).Inc()
+}
+
+// RecordFederatedResultServed counts one search result returned to a peer.
+func (m *MCPMetrics) RecordFederatedResultServed(peer, subgraph string) {
+	if m == nil {
+		return
+	}
+	m.resultsServed.WithLabelValues(peer, subgraph).Inc()
 }
 
 // ObserveSearchResults observes the result count returned by a search tool.

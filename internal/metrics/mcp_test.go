@@ -118,10 +118,31 @@ func TestNewMCPMetrics_Records(t *testing.T) {
 			wantHistSum:   f(4),
 		},
 		{
-			name:        "federated_requests_total counts by status",
-			record:      func(m *MCPMetrics) { m.RecordFederatedRequest("timeout") },
+			name:        "federated_requests_total counts by peer and status",
+			record:      func(m *MCPMetrics) { m.RecordFederatedRequest("alice", "timeout") },
 			metric:      "trip2g_mcp_federated_requests_total",
-			labels:      map[string]string{"status": "timeout"},
+			labels:      map[string]string{"peer": "alice", "status": "timeout"},
+			wantCounter: f(1),
+		},
+		{
+			name:        "federated_inbound_requests_total counts by peer and tool",
+			record:      func(m *MCPMetrics) { m.RecordFederatedInbound("partner", "search") },
+			metric:      "trip2g_mcp_federated_inbound_requests_total",
+			labels:      map[string]string{"peer": "partner", "tool": "search"},
+			wantCounter: f(1),
+		},
+		{
+			name:        "federated_notes_served_total counts by peer and subgraph",
+			record:      func(m *MCPMetrics) { m.RecordFederatedNoteServed("partner", "docs") },
+			metric:      "trip2g_mcp_federated_notes_served_total",
+			labels:      map[string]string{"peer": "partner", "subgraph": "docs"},
+			wantCounter: f(1),
+		},
+		{
+			name:        "federated_results_served_total counts by peer and subgraph",
+			record:      func(m *MCPMetrics) { m.RecordFederatedResultServed("partner", "docs") },
+			metric:      "trip2g_mcp_federated_results_served_total",
+			labels:      map[string]string{"peer": "partner", "subgraph": "docs"},
 			wantCounter: f(1),
 		},
 		{
@@ -172,7 +193,10 @@ func TestMCPMetrics_NilSafe(t *testing.T) {
 		m.RecordToolError("search", "internal")
 		m.ObserveFederationDepth(1)
 		m.ObserveFanoutBases(2)
-		m.RecordFederatedRequest("ok")
+		m.RecordFederatedRequest("alice", "ok")
+		m.RecordFederatedInbound("partner", "search")
+		m.RecordFederatedNoteServed("partner", "docs")
+		m.RecordFederatedResultServed("partner", "docs")
 		m.ObserveSearchResults("similar", 3)
 		m.SetDynamicToolsSource(func() int { return 4 })
 	})

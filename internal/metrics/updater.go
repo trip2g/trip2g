@@ -19,6 +19,8 @@ type Env interface {
 	SumNoteAssetsSizes(ctx context.Context) (int64, error)
 	CountNoteAssets(ctx context.Context) (int64, error)
 	ListGoqiteAllQueueStats(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error)
+	ListFederationSecrets(ctx context.Context) ([]db.ListFederationSecretsRow, error)
+	ListAllFederationSecretScopes(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error)
 }
 
 // Updater periodically updates Prometheus metrics.
@@ -30,6 +32,8 @@ type Updater struct {
 	noteAssetsSize   prometheus.Gauge
 	noteAssetsCount  prometheus.Gauge
 	queueDepth       *prometheus.GaugeVec
+	fedSecrets       *prometheus.GaugeVec
+	fedSubgraphs     *prometheus.GaugeVec
 	interval         time.Duration
 }
 
@@ -77,6 +81,18 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 	}, []string{"queue", "state"})
 	reg.MustRegister(queueDepth)
 
+	fedSecrets := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_secrets",
+		Help: "Number of live (not revoked) federation keys by direction (inbound, outbound)",
+	}, []string{"direction"})
+	reg.MustRegister(fedSecrets)
+
+	fedSubgraphs := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_secret_subgraphs",
+		Help: "Number of live federation keys scoped to each subgraph, by direction",
+	}, []string{"direction", "subgraph"})
+	reg.MustRegister(fedSubgraphs)
+
 	return &Updater{
 		env:              env,
 		allNotePaths:     allNotePaths,
@@ -85,6 +101,8 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 		noteAssetsSize:   noteAssetsSize,
 		noteAssetsCount:  noteAssetsCount,
 		queueDepth:       queueDepth,
+		fedSecrets:       fedSecrets,
+		fedSubgraphs:     fedSubgraphs,
 		interval:         interval,
 	}
 }
@@ -150,5 +168,55 @@ func (u *Updater) updateMetrics(ctx context.Context) {
 			u.queueDepth.WithLabelValues(s.Queue, "pending").Set(float64(s.PendingCount))
 			u.queueDepth.WithLabelValues(s.Queue, "retrying").Set(float64(s.RetryCount))
 		}
+	}
+
+	u.updateFederationMetrics(ctx)
+}
+
+// Federation key directions: an inbound key lets a peer read this base, an
+// outbound key lets this base read a peer (it carries the peer's kb_url).
+const (
+	directionInbound  = "inbound"
+	directionOutbound = "outbound"
+)
+
+func (u *Updater) updateFederationMetrics(ctx context.Context) {
+	secrets, err := u.env.ListFederationSecrets(ctx)
+	if err != nil {
+		return
+	}
+	scopes, err := u.env.ListAllFederationSecretScopes(ctx)
+	if err != nil {
+		return
+	}
+
+	subgraphsByKID := map[string][]string{}
+	for _, scope := range scopes {
+		subgraphsByKID[scope.Kid] = append(subgraphsByKID[scope.Kid], scope.SubgraphName)
+	}
+
+	keys := map[string]int{directionInbound: 0, directionOutbound: 0}
+	perSubgraph := map[[2]string]int{}
+	for _, secret := range secrets {
+		if secret.RevokedAt != nil {
+			continue
+		}
+		direction := directionInbound
+		if secret.KbUrl != nil {
+			direction = directionOutbound
+		}
+		keys[direction]++
+		for _, subgraph := range subgraphsByKID[secret.Kid] {
+			perSubgraph[[2]string{direction, subgraph}]++
+		}
+	}
+
+	for direction, n := range keys {
+		u.fedSecrets.WithLabelValues(direction).Set(float64(n))
+	}
+	// Reset so a subgraph whose last key was revoked or unscoped drops out.
+	u.fedSubgraphs.Reset()
+	for labels, n := range perSubgraph {
+		u.fedSubgraphs.WithLabelValues(labels[0], labels[1]).Set(float64(n))
 	}
 }
