@@ -210,6 +210,8 @@ func Load(options Options) (*model.NoteViews, error) {
 
 	ldr.resolveLangRedirects()
 
+	ldr.validateNotes()
+
 	err = ldr.generatePageHTMLs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate static pages: %w", err)
