@@ -132,7 +132,7 @@ local status(n) = std.get(n.meta, 'status', 'none');
 
 #### Notes per folder
 
-How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 4, "tasks": 3}`; an admin, who also sees the members-only post, gets `"blog": 4`:
+How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 4, "tasks": 3}`; an admin, who also sees the members-only post, gets `{"blog": 4, "queries": 4, "tasks": 3}`:
 
 ```jsonnet
 local folder(n) =
