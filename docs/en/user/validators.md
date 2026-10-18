@@ -320,7 +320,7 @@ Rules over the whole vault are planned, but how to build them is not settled yet
 - the target of `supersedes` is marked `deprecated`;
 - a `stale_after` date has passed.
 
-They need a different kind of validator: one that sees all notes and the current date, and runs without the per-note cache. The discussion is in [issue #436](https://github.com/trip2g/trip2g/issues/436). Until then, run such checks yourself next to trip2g, with a webhook as described above.
+They need a different kind of validator: one that sees all notes and the current date, and runs without the per-note cache. The discussion is in [issue #436](https://github.com/trip2g/trip2g/issues/436). Until then, a check of your own next to trip2g always works: a change or cron [[en/user/webhooks|webhook]] sends notes to your service, as described above.
 
 ### What else to check
 
