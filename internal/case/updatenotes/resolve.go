@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"trip2g/internal/db"
+	"trip2g/internal/frontmatteredit"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/webhookutil"
@@ -79,7 +80,6 @@ func normalizeAndAuthorize(ctx context.Context, raw string) (string, *model.Erro
 	return norm, nil
 }
 
-//nolint:gocognit // per-change branches share state with the outer loop; extraction would require threading paths/pathIDs and a multi-return payload sentinel through helpers.
 func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.UpdateNotesOrErrorPayload, error) {
 	nvs := env.LatestNoteViews()
 	var paths []string
@@ -100,39 +100,20 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 	// Note: if the same path appears more than once in changes, the second
 	// operation reads stale content — callers must not patch the same path twice per call.
 	for _, change := range input.Changes {
+		var saved appmodel.NoteSaveResult
+		var payload model.UpdateNotesOrErrorPayload
+		var err error
+		var path string
 		switch {
 		case change.Upsert != nil:
-			upsert := change.Upsert
-			saved, payload, err := applyUpsert(ctx, env, nvs, upsert)
-			if err != nil {
-				return nil, err
-			}
-			if payload != nil {
-				return payload, nil
-			}
-			pathIDs = append(pathIDs, saved.PathID)
-			versionIDs = append(versionIDs, saved.VersionID)
-			if saved.AffectsSnapshot() {
-				changedPathIDs = append(changedPathIDs, saved.PathID)
-				reload = true
-			}
-			paths = append(paths, upsert.Path)
+			saved, payload, err = applyUpsert(ctx, env, nvs, change.Upsert)
+			path = change.Upsert.Path
 		case change.Patch != nil:
-			patch := change.Patch
-			saved, payload, err := applyPatch(ctx, env, nvs, patch)
-			if err != nil {
-				return nil, err
-			}
-			if payload != nil {
-				return payload, nil
-			}
-			pathIDs = append(pathIDs, saved.PathID)
-			versionIDs = append(versionIDs, saved.VersionID)
-			if saved.AffectsSnapshot() {
-				changedPathIDs = append(changedPathIDs, saved.PathID)
-				reload = true
-			}
-			paths = append(paths, patch.Path)
+			saved, payload, err = applyPatch(ctx, env, nvs, change.Patch)
+			path = change.Patch.Path
+		case change.Meta != nil:
+			saved, payload, err = applyMeta(ctx, env, nvs, change.Meta)
+			path = change.Meta.Path
 		case change.Hide != nil:
 			// Hide is a metadata operation. Unlike the standalone hideNotes mutation,
 			// this does not trigger webhooks — extend Env if webhook support is needed.
@@ -145,7 +126,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			if input.ApiKey.CreatedBy == 0 {
 				return &model.ErrorPayload{Message: NoHideActorMessage}, nil
 			}
-			err := env.HideNotePath(ctx, db.HideNotePathParams{
+			err = env.HideNotePath(ctx, db.HideNotePathParams{
 				HiddenBy: &input.ApiKey.CreatedBy,
 				Value:    hide.Path,
 			})
@@ -154,9 +135,23 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotesInput) (model.
 			}
 			paths = append(paths, hide.Path)
 			hid = true
+			continue
 		default:
 			continue
 		}
+		if err != nil {
+			return nil, err
+		}
+		if payload != nil {
+			return payload, nil
+		}
+		pathIDs = append(pathIDs, saved.PathID)
+		versionIDs = append(versionIDs, saved.VersionID)
+		if saved.AffectsSnapshot() {
+			changedPathIDs = append(changedPathIDs, saved.PathID)
+			reload = true
+		}
+		paths = append(paths, path)
 	}
 
 	// A hide changes what the site serves just like a content write does, so it
@@ -309,4 +304,46 @@ func collectUpdated(nvs *appmodel.NoteViews, pathIDs, versionIDs []int64) []mode
 		updated = append(updated, model.NoteWriteResult{Path: nv.Path, VersionID: versionID})
 	}
 	return updated
+}
+
+// applyMeta sets and unsets top-level frontmatter keys of an existing note,
+// leaving every other byte as it was. A non-nil payload is a caller-visible
+// refusal (unauthorized path, missing note, hash mismatch, frontmatter that
+// cannot be edited key by key) that ends the whole batch.
+func applyMeta(
+	ctx context.Context,
+	env Env,
+	nvs *appmodel.NoteViews,
+	meta *model.NoteChangeMetaInput,
+) (appmodel.NoteSaveResult, model.UpdateNotesOrErrorPayload, error) {
+	norm, errp := normalizeAndAuthorize(ctx, meta.Path)
+	if errp != nil {
+		return appmodel.NoteSaveResult{}, errp, nil
+	}
+	meta.Path = norm
+
+	nv := nvs.PathMap[meta.Path]
+	if nv == nil {
+		return appmodel.NoteSaveResult{}, &model.ErrorPayload{Message: fmt.Sprintf("note not found: %s", meta.Path)}, nil
+	}
+	if meta.ExpectedHash != nil {
+		actualHash := hashContent(nv.Content)
+		if actualHash != *meta.ExpectedHash {
+			return appmodel.NoteSaveResult{}, model.UpdateNotesHashMismatchPayload{
+				Path:       meta.Path,
+				ActualHash: actualHash,
+			}, nil
+		}
+	}
+
+	newContent, err := frontmatteredit.Apply(string(nv.Content), meta.Set, meta.Unset)
+	if err != nil {
+		return appmodel.NoteSaveResult{}, &model.ErrorPayload{Message: fmt.Sprintf("meta %s: %s", meta.Path, err)}, nil
+	}
+
+	saved, err := env.InsertNote(ctx, appmodel.RawNote{Path: meta.Path, Content: newContent})
+	if err != nil {
+		return appmodel.NoteSaveResult{}, nil, fmt.Errorf("updatenotes: insert meta %s: %w", meta.Path, err)
+	}
+	return saved, nil, nil
 }
