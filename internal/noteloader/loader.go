@@ -122,6 +122,8 @@ type Loader struct {
 	// note (AST) cache held in l.nvs. It skips re-running the Jsonnet VM per note
 	// when neither the note's frontmatter nor the patch set changed.
 	patchCache *frontmatterpatch.ResultCache
+
+	validateCache *mdloader.ValidateCache
 }
 
 func New(version string, env Env, config mdloader.Config) *Loader {
@@ -129,9 +131,10 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 		env: env,
 		log: logger.WithPrefix(env.Logger(), version+" noteloader:"),
 
-		version:    version,
-		config:     config,
-		patchCache: frontmatterpatch.NewResultCache(),
+		version:       version,
+		config:        config,
+		patchCache:    frontmatterpatch.NewResultCache(),
+		validateCache: mdloader.NewValidateCache(),
 	}
 }
 
@@ -323,6 +326,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		FrontmatterPatches: l.frontmatterPatches,
 		ChartData:          l.chartData,
 		PatchCache:         l.patchCache,
+		ValidateCache:      l.validateCache,
 	}
 
 	nvs, err := mdloader.Load(mdOptions)

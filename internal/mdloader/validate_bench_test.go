@@ -31,15 +31,30 @@ func BenchmarkValidateDocs(b *testing.B) {
 
 	for _, c := range cases {
 		srcs := docsSources(b, c.validators)
-		b.Run(c.name, func(b *testing.B) {
-			log := logger.DummyLogger{}
-			for b.Loop() {
-				_, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
-				if err != nil {
-					b.Fatal(err)
-				}
+		for _, cached := range []bool{false, true} {
+			name := c.name
+			var cache *mdloader.ValidateCache
+			if cached {
+				// Warmed up below: each iteration is a sync where nothing changed.
+				name += "/cached"
+				cache = mdloader.NewValidateCache()
 			}
-		})
+			b.Run(name, func(b *testing.B) {
+				log := logger.DummyLogger{}
+				if cache != nil {
+					_, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, ValidateCache: cache})
+					if err != nil {
+						b.Fatal(err)
+					}
+				}
+				for b.Loop() {
+					_, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, ValidateCache: cache})
+					if err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		}
 	}
 }
 

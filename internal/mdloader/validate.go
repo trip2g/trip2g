@@ -41,15 +41,19 @@ type validateMessage struct {
 // frontmatter and records their messages as note warnings. It never blocks a
 // note: an "error" message only marks the note with a critical warning.
 func (ldr *loader) validateNotes() {
-	var vm *jsonnet.VM
-	blocks := map[*model.NoteView][]string{}
-	blockErrs := map[*model.NoteView]error{}
+	run := &validateRun{
+		blocks:    map[*model.NoteView][]string{},
+		blockErrs: map[*model.NoteView]error{},
+	}
 
 	paths := make([]string, 0, len(ldr.nvs.PathMap))
 	for path := range ldr.nvs.PathMap {
 		paths = append(paths, path)
 	}
 	sort.Strings(paths)
+
+	validated := map[string]bool{}
+	defer func() { ldr.validateCache.retain(validated) }()
 
 	for _, path := range paths {
 		note := ldr.nvs.PathMap[path]
@@ -64,51 +68,90 @@ func (ldr *loader) validateNotes() {
 			continue
 		}
 
-		metaJSON, err := json.Marshal(yamlutil.Normalize(note.RawMeta))
-		if err != nil {
-			note.AddWarning(model.NoteWarningCritical, "validate: %s", err)
+		validators := ldr.resolveValidators(note, targets)
+		if len(validators) == 0 {
 			continue
 		}
 
-		if vm == nil {
-			vm = jsonneteval.NewVM()
-			vm.NativeFunction(regexMatchNative())
+		validated[path] = true
+		key := validateKey(note, validators, ldr.patchSetHash)
+		if cached, hit := ldr.validateCache.get(path, key); hit {
+			note.Warnings = append(note.Warnings, cached...)
+			continue
 		}
-		vm.ExtVar("meta", string(metaJSON))
-		vm.ExtVar("path", note.Path)
-		vm.NativeFunction(nodesNative(note))
 
-		ran := map[*model.NoteView]bool{}
-		for _, target := range targets {
-			name := strings.TrimSuffix(stripWikilink(target), ".md")
-			validator := ldr.nvs.ResolveWikilinkTarget(note, name)
-			if validator == nil {
-				note.AddWarning(model.NoteWarningCritical, "validate: target not found: %s", target)
-				continue
-			}
-			if ran[validator] {
-				continue
-			}
-			ran[validator] = true
+		before := len(note.Warnings)
+		run.validate(note, validators)
+		ldr.validateCache.put(path, key, note.Warnings[before:])
+	}
+}
 
-			// Canvas, base and excalidraw files resolve like notes but have no AST.
-			if validator.Ast() == nil {
-				note.AddWarning(model.NoteWarningCritical, "validate: %s is not a markdown note", validator.Path)
-				continue
-			}
+// resolveValidators turns targets into validator notes, warning about the ones
+// that can't be used. A validator listed twice is kept once.
+func (ldr *loader) resolveValidators(note *model.NoteView, targets []string) []*model.NoteView {
+	var validators []*model.NoteView
+	seen := map[*model.NoteView]bool{}
 
-			if _, seen := blocks[validator]; !seen {
-				blocks[validator], blockErrs[validator] = extractJsonnetBlocks(validator.Ast(), validator.Content)
-			}
+	for _, target := range targets {
+		name, _, _ := strings.Cut(stripWikilink(target), "#")
+		name = strings.TrimSuffix(name, ".md")
+		validator := ldr.nvs.ResolveWikilinkTarget(note, name)
+		if validator == nil {
+			note.AddWarning(model.NoteWarningCritical, "validate: target not found: %s", target)
+			continue
+		}
+		if seen[validator] {
+			continue
+		}
+		seen[validator] = true
 
-			if blockErrs[validator] != nil {
-				note.AddWarning(model.NoteWarningCritical, "validate %s: %s", validator.Path, blockErrs[validator])
-				continue
-			}
+		// Canvas, base and excalidraw files resolve like notes but have no AST.
+		if validator.Ast() == nil {
+			note.AddWarning(model.NoteWarningCritical, "validate: %s is not a markdown note", validator.Path)
+			continue
+		}
 
-			for _, src := range blocks[validator] {
-				runValidator(vm, note, validator.Path, src)
-			}
+		validators = append(validators, validator)
+	}
+
+	return validators
+}
+
+// validateRun holds what one Load shares across notes: the VM and the jsonnet
+// blocks extracted from each validator.
+type validateRun struct {
+	vm        *jsonnet.VM
+	blocks    map[*model.NoteView][]string
+	blockErrs map[*model.NoteView]error
+}
+
+func (r *validateRun) validate(note *model.NoteView, validators []*model.NoteView) {
+	metaJSON, err := json.Marshal(yamlutil.Normalize(note.RawMeta))
+	if err != nil {
+		note.AddWarning(model.NoteWarningCritical, "validate: %s", err)
+		return
+	}
+
+	if r.vm == nil {
+		r.vm = jsonneteval.NewVM()
+		r.vm.NativeFunction(regexMatchNative())
+	}
+	r.vm.ExtVar("meta", string(metaJSON))
+	r.vm.ExtVar("path", note.Path)
+	r.vm.NativeFunction(nodesNative(note))
+
+	for _, validator := range validators {
+		if _, seen := r.blocks[validator]; !seen {
+			r.blocks[validator], r.blockErrs[validator] = extractJsonnetBlocks(validator.Ast(), validator.Content)
+		}
+
+		if r.blockErrs[validator] != nil {
+			note.AddWarning(model.NoteWarningCritical, "validate %s: %s", validator.Path, r.blockErrs[validator])
+			continue
+		}
+
+		for _, src := range r.blocks[validator] {
+			runValidator(r.vm, note, validator.Path, src)
 		}
 	}
 }
@@ -257,7 +300,8 @@ func flattenNodes(doc ast.Node, src []byte) []interface{} {
 			node["type"] = "heading"
 			node["level"] = v.Level
 			node["text"] = plainText(v, src)
-		case *ast.Paragraph:
+		case *ast.Paragraph, *ast.TextBlock:
+			// A tight list item holds a TextBlock; to a validator it's a paragraph.
 			node["type"] = "paragraph"
 			node["text"] = plainText(v, src)
 		case *ast.FencedCodeBlock:
