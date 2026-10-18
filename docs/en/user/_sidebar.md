@@ -84,6 +84,7 @@ title: "Navigation"
 - [[en/user/robots_and_llm|robots.txt and llms.txt]]
 - [[en/typography|Typography & Markdown]]
 - [[en/user/frontmatter-patches|Frontmatter patches]]
+- [[en/user/validators|Note validators]]
 - [[en/user/search|How search works]]
 - [[en/user/mermaid|Mermaid diagrams]]
 - [[en/user/canvas|Canvas, Base & Excalidraw]]

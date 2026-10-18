@@ -230,6 +230,30 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "frontmatter patch assigns a validator to a folder",
+			sources: map[string]string{
+				"rules.md": validatorNote(`[{level: 'error', msg: 'ran'}]`),
+				"patch.md": "---\ntype: frontmatter-patch\ninclude: [\"blog/**\"]\n---\n" +
+					"```jsonnet\n{ validate: ['[[rules]]'] }\n```\n",
+				"blog/post.md": "body\n",
+			},
+			path: "blog/post.md",
+			expected: []model.NoteWarning{
+				{Level: model.NoteWarningCritical, Message: "validate rules.md: ran"},
+			},
+		},
+		{
+			name: "heading fragment in a target is ignored",
+			sources: map[string]string{
+				"rules.md": validatorNote(`[{level: 'error', msg: 'ran'}]`),
+				"note.md":  "---\nvalidate: \"[[rules#Section]]\"\n---\nbody\n",
+			},
+			path: "note.md",
+			expected: []model.NoteWarning{
+				{Level: model.NoteWarningCritical, Message: "validate rules.md: ran"},
+			},
+		},
+		{
 			name: "regexMatch native",
 			sources: map[string]string{
 				"rules.md": validatorNote(`
@@ -288,6 +312,7 @@ func TestValidateNodes(t *testing.T) {
 		`validate rules.md: line 10: {"alt":"dog","depth":2,"line":10,"src":"dog.jpg","type":"image"}`,
 		`validate rules.md: line 12: {"depth":1,"line":12,"ordered":false,"type":"list"}`,
 		`validate rules.md: line 12: {"depth":2,"line":12,"type":"list_item"}`,
+		`validate rules.md: line 12: {"depth":3,"line":12,"text":"item","type":"paragraph"}`,
 		`validate rules.md: line 14: {"depth":1,"line":14,"type":"blockquote"}`,
 		`validate rules.md: line 14: {"depth":2,"line":14,"text":"quote","type":"paragraph"}`,
 		`validate rules.md: line 16: {"depth":1,"lang":"go","line":16,"type":"code_block"}`,
@@ -369,6 +394,28 @@ func TestValidateDemoVault(t *testing.T) {
 
 		if diff := pretty.Diff(want, got); len(diff) > 0 {
 			t.Errorf("%s:\n%s\ngot: %# v", path, diff, pretty.Formatter(got))
+		}
+	}
+}
+
+// TestValidateDocsSnippets keeps the examples on the user pages identical to
+// the demo validators that TestValidateDemoVault runs.
+func TestValidateDocsSnippets(t *testing.T) {
+	examples := []string{"required_frontmatter", "sections_order", "session_has_image", "media_hygiene", "seo"}
+
+	for _, page := range []string{"en/user/validators", "ru/user/validators"} {
+		doc, err := os.ReadFile("../../docs/" + page + ".md")
+		require.NoError(t, err)
+
+		for _, name := range examples {
+			src, readErr := os.ReadFile("testdata/validate/validators/" + name + ".md")
+			require.NoError(t, readErr)
+
+			_, block, ok := strings.Cut(string(src), "```jsonnet\n")
+			require.True(t, ok, name)
+			block, _, _ = strings.Cut(block, "\n```")
+
+			require.Contains(t, string(doc), "```jsonnet\n"+block+"\n```", "docs/%s.md lost the %s example", page, name)
 		}
 	}
 }
