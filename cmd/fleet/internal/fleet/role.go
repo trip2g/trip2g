@@ -148,11 +148,12 @@ func (r Role) EffectiveTimeoutSeconds() int {
 	return r.TimeoutSeconds
 }
 
-// Tool names that mutate the KB. A role listing either but with an empty
+// Tool names that mutate the KB. A role listing any of them with an empty
 // write_patterns will have every write denied (deny-all).
 const (
-	toolWriteNote = "write_note"
-	toolPatchNote = "patch_note"
+	toolWriteNote   = "write_note"
+	toolPatchNote   = "patch_note"
+	toolSetNoteMeta = "set_note_meta"
 )
 
 // DeclaresWriteToolsButNoWritePatterns reports the deny-all trap: the role lists
@@ -162,7 +163,7 @@ func (r Role) DeclaresWriteToolsButNoWritePatterns() bool {
 		return false
 	}
 	for _, t := range r.Tools {
-		if t == toolWriteNote || t == toolPatchNote {
+		if t == toolWriteNote || t == toolPatchNote || t == toolSetNoteMeta {
 			return true
 		}
 	}

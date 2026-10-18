@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"trip2g/internal/frontmatteredit"
 )
 
 // FileKB is a KB backed by a directory vault: each document is a file whose
@@ -113,6 +115,19 @@ func (f *FileKB) Patch(ctx context.Context, path, find, replace string) error {
 		return fmt.Errorf("patch find is ambiguous (multiple occurrences) in %s", path)
 	}
 	return f.Write(ctx, path, content[:idx]+replace+content[idx+len(find):])
+}
+
+// SetMeta reads the file, edits its frontmatter keys and writes it back.
+func (f *FileKB) SetMeta(ctx context.Context, path string, set map[string]any, unset []string) error {
+	content, err := f.Read(ctx, path)
+	if err != nil {
+		return err
+	}
+	edited, err := frontmatteredit.Apply(content, set, unset)
+	if err != nil {
+		return fmt.Errorf("meta %s: %w", path, err)
+	}
+	return f.Write(ctx, path, edited)
 }
 
 func snippet(s string) string {

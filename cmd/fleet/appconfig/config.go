@@ -25,7 +25,7 @@ const (
 	DefaultListenAddr    = ":9090"
 	DefaultTrip2gBaseURL = "http://localhost:8081"
 	DefaultModel         = "gpt-4o-mini"
-	DefaultOfferedTools  = "search,read_note,patch_note,write_note"
+	DefaultOfferedTools  = "search,read_note,patch_note,write_note,set_note_meta"
 
 	// DefaultGraphQLAddr binds the fleet GraphQL API to loopback by default so
 	// exposure is an explicit operator opt-in, with Caddy /_fleet/* as the sole

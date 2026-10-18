@@ -2,6 +2,7 @@ package fleet
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -161,4 +162,79 @@ func TestRemoteKB_PatchUpdatesOverlay(t *testing.T) {
 	// Only the FIRST occurrence must be replaced (unique patch per G5 contract).
 	require.Equal(t, "# Sprint\n@status:doing task A\n@status:todo task B", got)
 	require.Equal(t, 1, calls, "only the Patch mutation must hit the client; Read must be overlay-served")
+}
+
+func TestRemoteKB_SetMetaSendsMetaChangeAndUpdatesOverlay(t *testing.T) {
+	const success = `{"updateNotes":{"__typename":"UpdateNotesSuccessPayload","paths":["tasks/a.md"]}}`
+	tests := []struct {
+		name         string
+		call         func(kb *remoteKB) error
+		wantVariable string
+	}{
+		{
+			name: "unconditional",
+			call: func(kb *remoteKB) error {
+				return kb.SetMeta(context.Background(), "tasks/a.md", map[string]any{"status": "done"}, []string{"draft"})
+			},
+			wantVariable: `{"input":{"changes":[{"meta":{"path":"tasks/a.md","set":{"status":"done"},"unset":["draft"]}}]}}`,
+		},
+		{
+			name: "conditional on a hash",
+			call: func(kb *remoteKB) error {
+				return kb.SetMetaIfUnchanged(context.Background(), "tasks/a.md", map[string]any{"status": "done"}, []string{"draft"}, "h1")
+			},
+			wantVariable: `{"input":{"changes":[{"meta":{"expectedHash":"h1","path":"tasks/a.md","set":{"status":"done"},"unset":["draft"]}}]}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var sent string
+			gql := scopedGQL(func(body string) string {
+				sent = body
+				return success
+			})
+			kb := newRemoteKB(gql, map[string]string{"tasks/a.md": "---\nstatus: todo\ndraft: true\n---\nBody\n"})
+
+			require.NoError(t, tt.call(kb))
+
+			var req struct {
+				Variables json.RawMessage `json:"variables"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(sent), &req))
+			require.JSONEq(t, tt.wantVariable, string(req.Variables))
+
+			got, err := kb.Read(context.Background(), "tasks/a.md")
+			require.NoError(t, err)
+			require.Equal(t, "---\nstatus: done\n---\nBody\n", got)
+		})
+	}
+}
+
+func TestRemoteKB_SetMetaDropsAnOverlayItCannotReplay(t *testing.T) {
+	var calls int
+	gql := scopedGQL(func(body string) string {
+		calls++
+		if strings.Contains(body, "UpdateNotesScoped") {
+			return `{"updateNotes":{"__typename":"UpdateNotesSuccessPayload","paths":["tasks/a.md"]}}`
+		}
+		return `{"notePaths":[{"content":"fresh"}]}`
+	})
+	kb := newRemoteKB(gql, map[string]string{"tasks/a.md": "---\nunclosed: true\n"})
+
+	require.NoError(t, kb.SetMeta(context.Background(), "tasks/a.md", map[string]any{"a": 1}, nil))
+
+	got, err := kb.Read(context.Background(), "tasks/a.md")
+	require.NoError(t, err)
+	require.Equal(t, "fresh", got)
+	require.Equal(t, 2, calls)
+}
+
+func TestRemoteKB_SetMetaErrorPayloadReturnsError(t *testing.T) {
+	gql := scopedGQL(func(_ string) string {
+		return `{"updateNotes":{"__typename":"ErrorPayload","message":"note not found: tasks/a.md"}}`
+	})
+	kb := newRemoteKB(gql, nil)
+	err := kb.SetMeta(context.Background(), "tasks/a.md", map[string]any{"a": 1}, nil)
+	require.EqualError(t, err, "note not found: tasks/a.md")
 }

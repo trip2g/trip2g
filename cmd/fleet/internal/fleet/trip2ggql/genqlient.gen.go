@@ -1171,6 +1171,7 @@ type NoteChangeInput struct {
 	Upsert NoteChangeUpsertInput `json:"upsert"`
 	Patch  NoteChangePatchInput  `json:"patch"`
 	Hide   NoteChangeHideInput   `json:"hide"`
+	Meta   NoteChangeMetaInput   `json:"meta"`
 }
 
 // GetUpsert returns NoteChangeInput.Upsert, and is useful for accessing the field via an interface.
@@ -1181,6 +1182,34 @@ func (v *NoteChangeInput) GetPatch() NoteChangePatchInput { return v.Patch }
 
 // GetHide returns NoteChangeInput.Hide, and is useful for accessing the field via an interface.
 func (v *NoteChangeInput) GetHide() NoteChangeHideInput { return v.Hide }
+
+// GetMeta returns NoteChangeInput.Meta, and is useful for accessing the field via an interface.
+func (v *NoteChangeInput) GetMeta() NoteChangeMetaInput { return v.Meta }
+
+// Changes top-level frontmatter keys without rewriting the note.
+// set adds a key or replaces its value; unset removes keys, and removing an absent
+// key is not an error. Keys are top-level only: "a.b" is a key literally named
+// "a.b", not b inside a. The lines of other keys, their comments and the body are
+// kept byte for byte; new keys go after the last key, sorted. A note without
+// frontmatter gets a block. expectedHash works as for patch.
+type NoteChangeMetaInput struct {
+	Path         string         `json:"path"`
+	Set          map[string]any `json:"set"`
+	Unset        []string       `json:"unset"`
+	ExpectedHash string         `json:"expectedHash"`
+}
+
+// GetPath returns NoteChangeMetaInput.Path, and is useful for accessing the field via an interface.
+func (v *NoteChangeMetaInput) GetPath() string { return v.Path }
+
+// GetSet returns NoteChangeMetaInput.Set, and is useful for accessing the field via an interface.
+func (v *NoteChangeMetaInput) GetSet() map[string]any { return v.Set }
+
+// GetUnset returns NoteChangeMetaInput.Unset, and is useful for accessing the field via an interface.
+func (v *NoteChangeMetaInput) GetUnset() []string { return v.Unset }
+
+// GetExpectedHash returns NoteChangeMetaInput.ExpectedHash, and is useful for accessing the field via an interface.
+func (v *NoteChangeMetaInput) GetExpectedHash() string { return v.ExpectedHash }
 
 type NoteChangePatchInput struct {
 	Path         string `json:"path"`
@@ -1235,7 +1264,23 @@ func (v *NoteContentScopedResponse) GetNotePaths() []NoteContentScopedNotePathsN
 	return v.NotePaths
 }
 
+type NoteFrontmatterPredicate struct {
+	Key    string `json:"key"`
+	Exists bool   `json:"exists"`
+	Equals string `json:"equals"`
+}
+
+// GetKey returns NoteFrontmatterPredicate.Key, and is useful for accessing the field via an interface.
+func (v *NoteFrontmatterPredicate) GetKey() string { return v.Key }
+
+// GetExists returns NoteFrontmatterPredicate.Exists, and is useful for accessing the field via an interface.
+func (v *NoteFrontmatterPredicate) GetExists() bool { return v.Exists }
+
+// GetEquals returns NoteFrontmatterPredicate.Equals, and is useful for accessing the field via an interface.
+func (v *NoteFrontmatterPredicate) GetEquals() string { return v.Equals }
+
 type NotePathsFilter struct {
+	Frontmatter []NoteFrontmatterPredicate `json:"frontmatter"`
 	// LIKE pattern with % and _ wildcards supported.
 	// For example, to find all note paths starting with "myfolder/", use "myfolder/%".
 	Like string `json:"like"`
@@ -1244,6 +1289,9 @@ type NotePathsFilter struct {
 	// Only return these specific note paths. Search and like will be ignored if paths is set.
 	Paths []string `json:"paths"`
 }
+
+// GetFrontmatter returns NotePathsFilter.Frontmatter, and is useful for accessing the field via an interface.
+func (v *NotePathsFilter) GetFrontmatter() []NoteFrontmatterPredicate { return v.Frontmatter }
 
 // GetLike returns NotePathsFilter.Like, and is useful for accessing the field via an interface.
 func (v *NotePathsFilter) GetLike() string { return v.Like }
@@ -2708,7 +2756,7 @@ mutation UpdateNotesScoped ($input: UpdateNotesInput!) {
 }
 `
 
-// UpdateNotesScoped applies upsert/patch/hide changes via the scoped token.
+// UpdateNotesScoped applies upsert/patch/meta/hide changes via the scoped token.
 // The union covers every outcome so the caller can map each variant to an error.
 func UpdateNotesScoped(
 	ctx_ context.Context,
