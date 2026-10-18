@@ -21,9 +21,7 @@ import (
 //go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 type Env interface {
-	// LiveNoteViews is what the public site serves; a query must not see
-	// notes that aren't released yet.
-	LiveNoteViews() *appmodel.NoteViews
+	LatestNoteViews() *appmodel.NoteViews
 	CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error)
 }
 
@@ -41,7 +39,7 @@ type queryNote struct {
 }
 
 func Resolve(ctx context.Context, env Env, input model.NoteQueryInput) (model.NoteQueryOrErrorPayload, error) {
-	nvs := env.LiveNoteViews()
+	nvs := env.LatestNoteViews()
 
 	note := findQuery(nvs, input.Query)
 	if note == nil {

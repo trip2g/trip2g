@@ -22,8 +22,8 @@ var _ Env = &EnvMock{}
 //			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
-//			LiveNoteViewsFunc: func() *appmodel.NoteViews {
-//				panic("mock out the LiveNoteViews method")
+//			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+//				panic("mock out the LatestNoteViews method")
 //			},
 //		}
 //
@@ -35,8 +35,8 @@ type EnvMock struct {
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *appmodel.NoteView) (bool, error)
 
-	// LiveNoteViewsFunc mocks the LiveNoteViews method.
-	LiveNoteViewsFunc func() *appmodel.NoteViews
+	// LatestNoteViewsFunc mocks the LatestNoteViews method.
+	LatestNoteViewsFunc func() *appmodel.NoteViews
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -47,12 +47,12 @@ type EnvMock struct {
 			// Note is the note argument value.
 			Note *appmodel.NoteView
 		}
-		// LiveNoteViews holds details about calls to the LiveNoteViews method.
-		LiveNoteViews []struct {
+		// LatestNoteViews holds details about calls to the LatestNoteViews method.
+		LatestNoteViews []struct {
 		}
 	}
-	lockCanReadNote   sync.RWMutex
-	lockLiveNoteViews sync.RWMutex
+	lockCanReadNote     sync.RWMutex
+	lockLatestNoteViews sync.RWMutex
 }
 
 // CanReadNote calls CanReadNoteFunc.
@@ -91,29 +91,29 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 	return calls
 }
 
-// LiveNoteViews calls LiveNoteViewsFunc.
-func (mock *EnvMock) LiveNoteViews() *appmodel.NoteViews {
-	if mock.LiveNoteViewsFunc == nil {
-		panic("EnvMock.LiveNoteViewsFunc: method is nil but Env.LiveNoteViews was just called")
+// LatestNoteViews calls LatestNoteViewsFunc.
+func (mock *EnvMock) LatestNoteViews() *appmodel.NoteViews {
+	if mock.LatestNoteViewsFunc == nil {
+		panic("EnvMock.LatestNoteViewsFunc: method is nil but Env.LatestNoteViews was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockLiveNoteViews.Lock()
-	mock.calls.LiveNoteViews = append(mock.calls.LiveNoteViews, callInfo)
-	mock.lockLiveNoteViews.Unlock()
-	return mock.LiveNoteViewsFunc()
+	mock.lockLatestNoteViews.Lock()
+	mock.calls.LatestNoteViews = append(mock.calls.LatestNoteViews, callInfo)
+	mock.lockLatestNoteViews.Unlock()
+	return mock.LatestNoteViewsFunc()
 }
 
-// LiveNoteViewsCalls gets all the calls that were made to LiveNoteViews.
+// LatestNoteViewsCalls gets all the calls that were made to LatestNoteViews.
 // Check the length with:
 //
-//	len(mockedEnv.LiveNoteViewsCalls())
-func (mock *EnvMock) LiveNoteViewsCalls() []struct {
+//	len(mockedEnv.LatestNoteViewsCalls())
+func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockLiveNoteViews.RLock()
-	calls = mock.calls.LiveNoteViews
-	mock.lockLiveNoteViews.RUnlock()
+	mock.lockLatestNoteViews.RLock()
+	calls = mock.calls.LatestNoteViews
+	mock.lockLatestNoteViews.RUnlock()
 	return calls
 }

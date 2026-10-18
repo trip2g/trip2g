@@ -118,7 +118,7 @@ func TestResolve(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			nvs := load(t, vault)
 			env := &runnotequery.EnvMock{
-				LiveNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
+				LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
 				CanReadNoteFunc: func(_ context.Context, note *appmodel.NoteView) (bool, error) {
 					return !hidden[note.Path], nil
 				},

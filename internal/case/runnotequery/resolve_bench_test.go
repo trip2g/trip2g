@@ -48,8 +48,8 @@ func BenchmarkResolveDocs(b *testing.B) {
 		b.Fatal(err)
 	}
 	env := &runnotequery.EnvMock{
-		LiveNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
-		CanReadNoteFunc:   func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
+		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
+		CanReadNoteFunc:     func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 	}
 
 	for b.Loop() {

@@ -13,7 +13,7 @@ noteQuery(input: { query: "[[by_tag]]", params: "{\"tag\": \"go\"}" }) {
 
 - `query` is a vault path (`queries/by_tag.md`, with or without `.md`) or a wikilink target, resolved with `NoteViews.ResolveWikilinkTarget`.
 - Inside the block: `notes` — `[{path, title, permalink, meta}]` in path order, `meta` after frontmatter patches; `params` — the parsed `params`, `{}` when omitted, at most 16 KB.
-- Notes come from `LiveNoteViews()`, what the public site serves (latest only when `ShowDraftVersions` is on). An unreleased note never reaches a query, and an unreleased edit to a query note doesn't run until release.
+- Notes come from `LatestNoteViews()`. Releases (live versions) are not in use, so latest is what the site serves. Several readers pick live or latest by different rules; that is tracked in https://github.com/trip2g/trip2g/issues/438.
 - `notes` leaves out system notes (`_…`) and files without a markdown AST (`.canvas`, `.base`, `.excalidraw`).
 - A NaN or ±Inf in frontmatter (YAML allows them, JSON doesn't) becomes `null`, so one odd note can't break every query.
 - The result is compacted JSON. Any JSON value is allowed.
@@ -58,5 +58,4 @@ The program decides which fields leave the server. Raw frontmatter is never retu
 - One subgraph lookup per call instead of per note.
 - `links` / `backlinks` in `notes`, and the note body.
 - A time limit for a query program. `import` is blocked and `MaxStack` stops deep recursion, but a wide loop runs on the request goroutine, and the request context doesn't stop it. A public query whose loops depend on `params` (`std.range(1, params.n)`) lets a guest burn CPU; write queries that don't.
-- An admin reading the latest version (`?version=latest`, as pages allow).
 - User docs, and an admin-only `filterNotes` that runs caller-supplied jsonnet (raised in discussion; `notePaths(filter: {frontmatter: [...]})` already filters by `exists`/`equals` with an API key).
