@@ -63,7 +63,7 @@ The validator splits the name at ` – `, a dash with a space on each side, so a
 
 To make the whole vault follow the convention, don't add `validate` to every note. One [[en/user/frontmatter-patches|frontmatter patch]] attaches the validator to every note, new ones included:
 
-````markdown
+````
 ---
 type: frontmatter-patch
 include: ["**/*.md"]
@@ -86,7 +86,7 @@ The patch adds `file_name` to whatever validators a note already lists, instead 
 On the next sync, a badly named note gets a message such as:
 
 ```
-[CRITICAL] validate validators/file_name.md: name must be "{project} {type} title – YYYY-MM-DD – tool"
+[CRITICAL] validate validators/file_name.md: date "18.10.2026" must be YYYY-MM-DD
 ```
 
 The sync CLI exits with code 1, so an agent that wrote the note sees that it has to rename it. The admin panel lists every such note, and `trip2g lint` reports them in CI before a sync.

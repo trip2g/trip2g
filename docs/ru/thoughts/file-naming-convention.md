@@ -63,7 +63,7 @@ local problems =
 
 Чтобы соглашению следовало всё хранилище, не добавляйте `validate` в каждую заметку. Один [[ru/user/frontmatter_patches|frontmatter-патч]] подключает валидатор ко всем заметкам, включая новые:
 
-````markdown
+````
 ---
 type: frontmatter-patch
 include: ["**/*.md"]
@@ -86,7 +86,7 @@ local own = std.get(meta, 'validate', []);
 При следующей синхронизации заметка с неправильным именем получит сообщение:
 
 ```
-[CRITICAL] validate validators/file_name.md: name must be "{project} {type} title – YYYY-MM-DD – tool"
+[CRITICAL] validate validators/file_name.md: date "18.10.2026" must be YYYY-MM-DD
 ```
 
 CLI синхронизации завершится с кодом 1, и агент, который написал заметку, увидит, что её нужно переименовать. Админка покажет все такие заметки, а `trip2g lint` найдёт их в CI ещё до синхронизации.

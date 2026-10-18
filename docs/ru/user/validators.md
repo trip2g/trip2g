@@ -14,7 +14,7 @@ trip2g хранит каждую заметку в базе и работает 
 
 1\. Создайте заметку `validators/required_frontmatter.md`. Правила пишутся в блоке кода `jsonnet`:
 
-````markdown
+````
 Every article needs a title and a description, both strings.
 
 ```jsonnet
@@ -79,7 +79,7 @@ validate:
 
 Чтобы проверять целую папку, не правьте каждую заметку, а задайте `validate` [[ru/user/frontmatter_patches|frontmatter-патчем]]:
 
-````markdown
+````
 ---
 type: frontmatter-patch
 include: ["blog/**"]

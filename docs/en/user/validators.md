@@ -15,7 +15,7 @@ A validator is a note with rules written in [Jsonnet](https://jsonnet.org). You 
 
 1\. Create a note `validators/required_frontmatter.md`. The rules go in a `jsonnet` code block:
 
-````markdown
+````
 Every article needs a title and a description, both strings.
 
 ```jsonnet
@@ -80,7 +80,7 @@ Write each rule once and reuse it. Keep the validators in one folder, such as `v
 
 To check a whole folder, don't edit every note: set `validate` with a [[en/user/frontmatter-patches|frontmatter patch]]:
 
-````markdown
+````
 ---
 type: frontmatter-patch
 include: ["blog/**"]
