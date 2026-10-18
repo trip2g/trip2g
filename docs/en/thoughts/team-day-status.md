@@ -8,7 +8,7 @@ Every employee works with their own hermes agent, and each agent has its own tri
 
 There is no stand-up call and no form to fill. Nobody sends anybody a report.
 
-![[team-day-dashboard.png|The manager's page: one row per employee, assembled from their agents' notes]]
+![[team-day-dashboard.png|The manager's page: ten days of the team, drawn by a layout from copies of the agents' notes. Test agents; the days before today are seeded test data]]
 
 ## Two questions a day
 
@@ -42,8 +42,6 @@ The agent turns each answer into a few short lines of its own. It never keeps th
 
 Morning fills «План». Evening fills «Итог» and «Нужна помощь». One file per day: `daily-sync/YYYY-MM-DD.md`.
 
-![[team-day-note.png|One employee's day, as their agent keeps it]]
-
 ## Opened to the manager, and only that
 
 A frontmatter patch puts the folder into a subgraph of its own:
@@ -68,15 +66,59 @@ A script does this hourly, from another `no_agent` cron job. Search would not se
 
 The manager keeps a copy rather than reading live. That is deliberate. A day's status is a dated fact that nobody edits afterwards, so the copy cannot go stale. If an employee's base is offline in the evening, the page still shows that employee's day as last copied. And the manager's model reads local notes, not thirty peers.
 
-## The page
+## The page is a layout, without JavaScript
 
-One more cron job, this one with the model, reads today's copies and writes `dashboards/team-today.md`: a row per employee, a list of who needs help, and who has no status today. An empty day is information too, so the agent does not chase anyone.
+The dashboard is one note, `dashboards/team.md`, with `layout: team`. The layout is a Jet template, and it draws the grid on the server: no script, no request from the browser. The copier writes the two lists the template needs into the note's frontmatter every hour:
+
+```yaml
+---
+title: Команда — последние 10 дней
+layout: team
+people: [masha, petya]
+dates: ["2026-10-18", "2026-10-17", "2026-10-16", …]
+---
+```
+
+The template walks `people × dates` and looks each cell up by its path:
+
+```jet
+{{ range i, alias := people }}
+  {{ range j, day := dates }}
+    {{ if cell := nvs.ByPath("team/" + alias + "/" + day + ".md"); cell }}
+      {{ parts := cell.PartialRenderer() }}
+      <td class="{{ cell.M().GetBool("help", false) ? "t-help" : "t-done" }}">
+        {{ if plan := parts.Section("План"); plan }}{{ plan.ContentHTML }}{{ end }}
+        {{ if result := parts.Section("Итог"); result }}{{ result.ContentHTML }}{{ end }}
+      </td>
+    {{ else }}
+      <td class="t-empty">нет статуса</td>
+    {{ end }}
+  {{ end }}
+{{ end }}
+```
+
+`PartialRenderer().Section("План")` hands over the section of the copy as HTML, so the employee's list prints as it was written. The copier also sets `help: true` in a copy whose «Нужна помощь» holds a real ask, and the template turns that into an orange cell and a line at the top of the page. The date arithmetic and the parsing live in the script; the template only looks things up.
+
+## Or no copies at all
+
+A layout page can also read the employees' bases live. It calls `/_system/mcp` from the browser with the visitor's session cookie, and the federated tools are there too: `federated_note_html(kb_id, "daily-sync/<day>.md")`, signed by the manager's base with its own federation keys. The visitor reaches only the bases whose connection notes they may read.
+
+We kept the copies anyway. Ten days of thirty employees would be three hundred calls on every page view, each with a five-second timeout per peer, and an employee whose base is offline would vanish from the page. Live reads fit a page that shows one thing that changes by the minute.
+
+## Onboarding, the same way
+
+The same mechanism shows how each employee's onboarding goes. The onboarding agent sends each agent its steps: introductions, a first real task, a week later. The agent asks its person, does the task, and writes one note per finished step in its own words. A script with no model adds facts the agent does not write itself: the first conversation, how many, the kanban cards done. The manager's copier picks them up hourly, and a second layout draws people × steps.
+
+![[team-onboarding.png|Onboarding: the agents' own words for each finished step, next to the facts]]
+
+The point of this page is to read what each agent says about its person, and to see where the words and the facts disagree.
 
 ## What the first run taught
 
 - **The question has to be in the history.** Without `attach_to_session` the answer «дописываю КП» reaches the agent as a message out of nowhere.
 - **Say which skill takes the key.** A message carrying a handover block matches a generic "connect a knowledge base" skill first. The manager's agent needs a standing instruction that this kind of message belongs to the team status.
 - **The name comes from the person.** The agent takes the name from the Telegram profile until told otherwise.
+- **One note per step, not one note to keep updated.** Asked to rewrite a section of a running note, agents appended dated entries below it instead. A note that does not exist until the step is done leaves nothing to append to.
 - **Privacy is part of the design.** The person knows the manager reads their day, and the note holds a summary, never the conversation.
 
 ## Related
