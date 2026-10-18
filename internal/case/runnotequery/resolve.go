@@ -134,7 +134,7 @@ func resolve(ctx context.Context, env Env, input model.NoteQueryInput, query *st
 		return nil, fmt.Errorf("failed to compact query result: %w", err)
 	}
 
-	return &model.NoteQueryPayload{JSON: compact.String()}, nil
+	return &model.NoteQueryPayload{RawResult: json.RawMessage(compact.Bytes())}, nil
 }
 
 // findQuery looks the query up by vault path, then like a wikilink.

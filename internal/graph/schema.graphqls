@@ -2,6 +2,11 @@ scalar Int64
 scalar Time
 scalar Upload
 
+"""
+Any JSON value: an object, a list, a string, a number, a boolean or null.
+"""
+scalar JSON
+
 directive @goField(
 	forceResolver: Boolean
 	name: String
@@ -1619,9 +1624,10 @@ input NoteQueryInput {
 
 type NoteQueryPayload {
   """
-  The query's result as JSON.
+  Whatever the query program returned, as a JSON value. Its shape is set by
+  the query note, not by the schema.
   """
-  json: String!
+  rawResult: JSON!
 }
 
 union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload

@@ -2,6 +2,7 @@ package runnotequery_test
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -62,13 +63,13 @@ func TestResolve(t *testing.T) {
 		{
 			name:     "returns the query result as JSON",
 			input:    model.NoteQueryInput{Query: "queries/titles.md"},
-			expected: &model.NoteQueryPayload{JSON: `["A","B"]`},
+			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`["A","B"]`)},
 			observed: "queries/titles.md ok",
 		},
 		{
 			name:     "wikilink target and params",
 			input:    model.NoteQueryInput{Query: "[[by_tag]]", Params: str(`{"tag": "go"}`)},
-			expected: &model.NoteQueryPayload{JSON: `["blog/a.md"]`},
+			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`["blog/a.md"]`)},
 			observed: "queries/by_tag.md ok",
 		},
 		{
@@ -98,13 +99,13 @@ func TestResolve(t *testing.T) {
 		{
 			name:     "notes skip unreadable, system and non-markdown files",
 			input:    model.NoteQueryInput{Query: "queries/paths.md"},
-			expected: &model.NoteQueryPayload{JSON: `["blog/a.md","blog/b.md","odd.md"]`},
+			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`["blog/a.md","blog/b.md","odd.md"]`)},
 			observed: "queries/paths.md ok",
 		},
 		{
 			name:     "a non-finite number in frontmatter becomes null",
 			input:    model.NoteQueryInput{Query: "queries/nan.md"},
-			expected: &model.NoteQueryPayload{JSON: `[null]`},
+			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`[null]`)},
 			observed: "queries/nan.md ok",
 		},
 		{

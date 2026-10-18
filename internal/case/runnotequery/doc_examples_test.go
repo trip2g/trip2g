@@ -2,6 +2,7 @@ package runnotequery_test
 
 import (
 	"context"
+	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -58,7 +59,9 @@ func TestDocExamples(t *testing.T) {
 		require.NoError(t, resErr)
 		payload, ok := res.(*model.NoteQueryPayload)
 		require.True(t, ok, "%s: %#v", query, res)
-		return payload.JSON
+		raw, ok := payload.RawResult.(json.RawMessage)
+		require.True(t, ok, "%s: %T", query, payload.RawResult)
+		return string(raw)
 	}
 
 	tests := []struct {
@@ -76,6 +79,8 @@ func TestDocExamples(t *testing.T) {
 		{false, "[[latest]]", `{"limit": 2}`, `["Go on the web","Web basics"]`},
 		{false, "[[latest]]", ``, `["Go on the web","Web basics","Hello, Go"]`},
 		{false, "[[task_counts]]", ``, `{"done":1,"todo":2}`},
+		{false, "[[folder_counts]]", ``, `{"blog":3,"queries":4,"tasks":3}`},
+		{true, "[[folder_counts]]", ``, `{"blog":4,"queries":4,"tasks":3}`},
 	}
 	for _, tt := range tests {
 		require.JSONEq(t, tt.expected, run(tt.admin, tt.query, tt.params), "%s %s admin=%v", tt.query, tt.params, tt.admin)
@@ -89,7 +94,7 @@ func TestDocSnippets(t *testing.T) {
 		doc, err := os.ReadFile("../../../docs/" + page + ".md")
 		require.NoError(t, err)
 
-		for _, name := range []string{"by_tag", "latest", "task_counts"} {
+		for _, name := range []string{"by_tag", "latest", "task_counts", "folder_counts"} {
 			src, readErr := os.ReadFile(demoVault + "/queries/" + name + ".md")
 			require.NoError(t, readErr)
 

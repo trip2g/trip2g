@@ -42,7 +42,7 @@ local byDate = std.sort(tagged, function(n) std.get(n.meta, 'date', ''));
 const noteQuery = makeRequest(`query ($input: NoteQueryInput!) {
   noteQuery(input: $input) {
     __typename
-    ... on NoteQueryPayload { json }
+    ... on NoteQueryPayload { rawResult }
     ... on ErrorPayload { message }
   }
 }`)
@@ -50,11 +50,11 @@ const noteQuery = makeRequest(`query ($input: NoteQueryInput!) {
 const data = await noteQuery({
   input: { query: '[[by_tag]]', params: JSON.stringify({ tag: 'go' }) },
 })
-const posts = JSON.parse(data.noteQuery.json)
+const posts = data.noteQuery.rawResult
 // [{ title: 'Go on the web', url: '/blog/go_on_the_web', date: '2026-10-10' }, …]
 ```
 
-`query` names the query note: a path from the vault root such as `queries/by_tag.md`, or a wikilink such as `[[by_tag]]`. A bare name is found anywhere in the vault; when several notes share it, the one with the shortest path wins. `params` is a JSON string, up to 16 KB; without it the query gets `{}`. The result comes back as a JSON string in `json`.
+`query` names the query note: a path from the vault root such as `queries/by_tag.md`, or a wikilink such as `[[by_tag]]`. A bare name is found anywhere in the vault; when several notes share it, the one with the shortest path wins. `params` is a JSON string, up to 16 KB; without it the query gets `{}`. The result comes back in `rawResult` as a JSON value, so there is nothing to parse.
 
 ### What the query sees
 
@@ -65,7 +65,7 @@ const posts = JSON.parse(data.noteQuery.json)
 
 `meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. System notes (paths starting with `_`) and files that aren't markdown notes (canvas, base, excalidraw) are left out.
 
-The program can return any JSON value: a list, an object, a number.
+The program can return any JSON value: a list of notes, an object of counts, a single number. A query is not limited to listing notes; it can aggregate them.
 
 ### Who can run it, and what it sees
 
@@ -129,6 +129,34 @@ local status(n) = std.get(n.meta, 'status', 'none');
 ```
 
 `{ [key]: value for … }` builds an object with computed keys, and `std.set` removes duplicates and sorts.
+
+#### Notes per folder
+
+How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 4, "tasks": 3}`; an admin, who also sees the members-only post, gets `"blog": 4`:
+
+```jsonnet
+local folder(n) =
+  local parts = std.split(n.path, '/');
+  if std.length(parts) > 1 then parts[0] else '(root)';
+
+{
+  [f]: std.length([n for n in notes if folder(n) == f])
+  for f in std.set([folder(n) for n in notes])
+}
+```
+
+The counts follow the visitor's access, so the same query gives each reader the numbers they are allowed to see.
+
+#### Other aggregations
+
+The same pattern, a key per group and a value computed from the notes in it, covers:
+
+- **notes per tag** for a tag cloud, grouping by each item of `meta.tags`;
+- **an archive by month**, grouping by the first seven characters of `meta.date`;
+- **the newest note in each folder**, sorting each group and taking the first;
+- **a total of a number field**, such as hours estimated across tasks, with `std.foldl`;
+- **a completeness report**: the paths of notes that lack a field such as `description`;
+- **one call for a whole dashboard**: an object with several of these sections.
 
 ### Errors
 

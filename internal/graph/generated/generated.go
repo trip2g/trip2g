@@ -1219,6 +1219,11 @@ var sources = []*ast.Source{
 scalar Time
 scalar Upload
 
+"""
+Any JSON value: an object, a list, a string, a number, a boolean or null.
+"""
+scalar JSON
+
 directive @goField(
 	forceResolver: Boolean
 	name: String
@@ -2836,9 +2841,10 @@ input NoteQueryInput {
 
 type NoteQueryPayload {
   """
-  The query's result as JSON.
+  Whatever the query program returned, as a JSON value. Its shape is set by
+  the query note, not by the schema.
   """
-  json: String!
+  rawResult: JSON!
 }
 
 union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload
@@ -38066,30 +38072,30 @@ func (ec *executionContext) fieldContext_NotePath_assetReplaces(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _NoteQueryPayload_json(ctx context.Context, field graphql.CollectedField, obj *model.NoteQueryPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _NoteQueryPayload_rawResult(ctx context.Context, field graphql.CollectedField, obj *model.NoteQueryPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_NoteQueryPayload_json,
+		ec.fieldContext_NoteQueryPayload_rawResult,
 		func(ctx context.Context) (any, error) {
-			return obj.JSON, nil
+			return obj.RawResult, nil
 		},
 		nil,
-		ec.marshalNString2string,
+		ec.marshalNJSON2interface,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_NoteQueryPayload_json(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_NoteQueryPayload_rawResult(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "NoteQueryPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type JSON does not have child fields")
 		},
 	}
 	return fc, nil
@@ -79575,8 +79581,8 @@ func (ec *executionContext) _NoteQueryPayload(ctx context.Context, sel ast.Selec
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("NoteQueryPayload")
-		case "json":
-			out.Values[i] = ec._NoteQueryPayload_json(ctx, field, obj)
+		case "rawResult":
+			out.Values[i] = ec._NoteQueryPayload_rawResult(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -91493,6 +91499,28 @@ func (ec *executionContext) marshalNInt642ᚕint64ᚄ(ctx context.Context, sel a
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNJSON2interface(ctx context.Context, v any) (any, error) {
+	res, err := graphql.UnmarshalAny(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNJSON2interface(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalAny(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNLastNoteReadAtInput2trip2gᚋinternalᚋgraphᚋmodelᚐLastNoteReadAtInput(ctx context.Context, v any) (model.LastNoteReadAtInput, error) {

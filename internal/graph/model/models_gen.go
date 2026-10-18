@@ -2093,8 +2093,9 @@ type NoteQueryInput struct {
 }
 
 type NoteQueryPayload struct {
-	// The query's result as JSON.
-	JSON string `json:"json"`
+	// Whatever the query program returned, as a JSON value. Its shape is set by
+	// the query note, not by the schema.
+	RawResult any `json:"rawResult"`
 }
 
 func (NoteQueryPayload) IsNoteQueryOrErrorPayload() {}

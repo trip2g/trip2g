@@ -126,6 +126,8 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
+  JSON:
+    model: github.com/99designs/gqlgen/graphql.Any
   UnreleasedChange:
     model: trip2g/internal/graph/model.UnreleasedChange
   # Pinned: autobind would otherwise match the unrelated
