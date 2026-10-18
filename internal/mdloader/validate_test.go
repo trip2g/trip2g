@@ -401,7 +401,10 @@ func TestValidateDemoVault(t *testing.T) {
 		"notes/Weekly summary – 18.10.2026 – Notepad.md": {
 			"CRITICAL validate validators/file_name.md: name must start with {project} {type} and a title",
 			`CRITICAL validate validators/file_name.md: date "18.10.2026" must be YYYY-MM-DD`,
-			`CRITICAL validate validators/file_name.md: tool "Notepad" must be one of: Claude Code, Cursor, ChatGPT, Manual`,
+			`WARNING validate validators/file_name.md: new tool "Notepad"? add it to the list in this validator`,
+		},
+		"notes/{blog} {article} Weekly summary – 2026-10-18 – claude-code.md": {
+			`CRITICAL validate validators/file_name.md: tool "claude-code" must be a name like Claude Code, Cursor, ChatGPT, Gemini, Windsurf, Manual`,
 		},
 		"notes/{blog} {article} Weekly summary – 2026-10-17 – Claude Code.md": {
 			"CRITICAL validate validators/file_name.md: frontmatter date 2026-10-18 differs from 2026-10-17 in the name",

@@ -252,7 +252,7 @@ local date = std.toString(std.get(meta, 'date', ''));
 
 Некоторые команды называют заметки так, чтобы человек или агент понимал, что в файле, не открывая его: `{project} {type} title – YYYY-MM-DD – tool.md`. Например, `{blog} {article} Weekly summary – 2026-10-18 – Cursor.md`. Дата всегда стоит ближе к концу, а последняя часть называет инструмент, который написал заметку.
 
-Валидатор берёт имя файла из `path`, делит его по ` – ` и проверяет каждую часть. Если во frontmatter есть `date`, она должна совпадать с датой в имени:
+Валидатор берёт имя файла из `path`, делит его по ` – ` и проверяет каждую часть. Если во frontmatter есть `date`, она должна совпадать с датой в имени. Инструмент, написанный правильно, но которого нет в списке, например `Codex`, даёт только предупреждение, чтобы новый инструмент не ломал синхронизацию. Неправильно написанный, например `claude-code`, — ошибку:
 
 ```jsonnet
 local re = std.native('regexMatch');
@@ -260,29 +260,36 @@ local parts = std.split(path, '/');
 local file = parts[std.length(parts) - 1];
 local name = std.substr(file, 0, std.length(file) - 3);
 local chunks = std.split(name, ' – ');
-local tools = ['Claude Code', 'Cursor', 'ChatGPT', 'Manual'];
+local tools = [
+  'Claude Code', 'Cursor', 'ChatGPT', 'Gemini', 'Windsurf', 'Manual',
+];
+local err(msg) = {level: 'error', msg: msg};
+local warn(msg) = {level: 'warning', msg: msg};
 
-local problems =
-  if std.length(chunks) != 3 then [
-    'name must be "{project} {type} title – YYYY-MM-DD – tool"',
-  ] else
-    local head = chunks[0], date = chunks[1], tool = chunks[2];
-    (
-      if re('^\\{[a-z0-9]+\\} \\{[a-z]+\\} .+$', head) then []
-      else ['name must start with {project} {type} and a title']
-    ) + (
-      if re('^\\d{4}-\\d{2}-\\d{2}$', date) then []
-      else ['date "%s" must be YYYY-MM-DD' % date]
-    ) + (
-      if std.member(tools, tool) then []
-      else ['tool "%s" must be one of: %s' % [tool, std.join(', ', tools)]]
-    ) + (
-      local fmDate = std.toString(std.get(meta, 'date', date));
-      if fmDate == date then []
-      else ['frontmatter date %s differs from %s in the name' % [fmDate, date]]
-    );
+local checkTool(tool) =
+  if std.member(tools, tool) then []
+  else if re('^[A-Z][A-Za-z0-9 .]*$', tool) then [
+    warn('new tool "%s"? add it to the list in this validator' % tool),
+  ] else [
+    err('tool "%s" must be a name like %s' % [tool, std.join(', ', tools)]),
+  ];
 
-[{level: 'error', msg: p} for p in problems]
+if std.length(chunks) != 3 then [
+  err('name must be "{project} {type} title – YYYY-MM-DD – tool"'),
+] else
+  local head = chunks[0], date = chunks[1], tool = chunks[2];
+  (
+    if re('^\\{[a-z0-9]+\\} \\{[a-z]+\\} .+$', head) then []
+    else [err('name must start with {project} {type} and a title')]
+  ) + (
+    if re('^\\d{4}-\\d{2}-\\d{2}$', date) then []
+    else [err('date "%s" must be YYYY-MM-DD' % date)]
+  ) + checkTool(tool) + (
+    local fmDate = std.toString(std.get(meta, 'date', date));
+    if fmDate == date then []
+    else [err('frontmatter date %s differs from %s in the name'
+              % [fmDate, date])]
+  )
 ```
 
 `{blog} {2026-10-18} {article} Weekly summary.md` не проходит: дата стоит посередине, и имя не делится на три части.
