@@ -32,6 +32,7 @@ title: "Navigation"
 - [[en/thoughts/agent-team-digest|The agent keeps a team journal]]
 - [[en/thoughts/public-hub|One endpoint, many knowledge bases]]
 - [[en/thoughts/small-mcp-errors|Small MCP errors, and who pays for them]]
+- [[en/thoughts/file-naming-convention|A file name that explains the file]]
 
 **Tooling**
 - [[en/thoughts/patching-obsidian-canvas-on-minimal-linux|Patching Obsidian Canvas on minimal Linux]]

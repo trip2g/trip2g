@@ -67,6 +67,8 @@ type loader struct {
 	// cache's coarse invalidation key.
 	patchCache   *frontmatterpatch.ResultCache
 	patchSetHash string
+
+	validateCache *ValidateCache
 }
 
 type Config struct {
@@ -101,6 +103,10 @@ type Options struct {
 	// when nil, patches are applied directly (uncached). Reuse the same instance
 	// across reloads for the cache to help (it persists alongside the note cache).
 	PatchCache *frontmatterpatch.ResultCache
+
+	// ValidateCache keeps validator results across Load calls. Optional; reuse
+	// the same instance across reloads.
+	ValidateCache *ValidateCache
 }
 
 // Load transforms markdown files into pages.
@@ -124,6 +130,7 @@ func Load(options Options) (*model.NoteViews, error) {
 
 	ldr.frontmatterPatches = options.FrontmatterPatches
 	ldr.patchCache = options.PatchCache
+	ldr.validateCache = options.ValidateCache
 
 	renderOptions := []renderer.Option{
 		renderer.WithNodeRenderers(util.Prioritized(&chartRenderer{resolver: ldr.linkResolver}, 197)),
@@ -209,6 +216,8 @@ func Load(options Options) (*model.NoteViews, error) {
 	}
 
 	ldr.resolveLangRedirects()
+
+	ldr.validateNotes()
 
 	err = ldr.generatePageHTMLs()
 	if err != nil {

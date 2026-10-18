@@ -1,0 +1,348 @@
+---
+title: Валидаторы заметок
+free: true
+lang_redirect: "[[en/user/validators]]"
+---
+
+trip2g хранит каждую заметку в базе и работает с ней как с данными. Шаблоны, списки, поиск и API берут поля из frontmatter и разделы из текста. Карточке нужна картинка, списку — дата, сниппету в поиске — описание. Если поля нет или раздел назван иначе, страница ломается без ошибки: пустая карточка, список не в том порядке, обрезанный сниппет.
+
+Нейросети хорошо пишут markdown, но каждый раз по-разному. В одном запуске раздел называется `## Steps`, в другом — `## How to`. В одном `tags` — список, в другом — строка.
+
+Валидатор — это заметка с правилами на [Jsonnet](https://jsonnet.org). Вы подключаете её к другим заметкам, и при каждой синхронизации trip2g проверяет их по этим правилам. Синхронизация проходит как обычно. Заметка, которая нарушила правило, получает предупреждение, и видно, что именно исправить.
+
+### Быстрый старт
+
+1\. Создайте заметку `validators/required_frontmatter.md`. Правила пишутся в блоке кода `jsonnet`:
+
+````
+Every article needs a title and a description, both strings.
+
+```jsonnet
+local required = ['title', 'description'];
+
+[
+  {level: 'error', msg: 'missing frontmatter field: ' + f}
+  for f in required
+  if !std.objectHas(meta, f)
+] + [
+  {level: 'error', msg: f + ' must be a string'}
+  for f in required
+  if std.objectHas(meta, f) && !std.isString(meta[f])
+] + (
+  if std.objectHas(meta, 'tags') && !std.isArray(meta.tags)
+  then [{level: 'error', msg: 'tags must be a list'}]
+  else []
+)
+```
+````
+
+2\. Подключите её к заметке через поле `validate`:
+
+```yaml
+---
+title: Publishing a vault
+validate: "[[required_frontmatter]]"
+---
+```
+
+3\. Синхронизируйте хранилище. Если у заметки нет `description`, в выводе синхронизации появится:
+
+```
+notes/article.md
+  [CRITICAL] validate validators/required_frontmatter.md: missing frontmatter field: description
+```
+
+Заметка всё равно сохранится и опубликуется. Предупреждение висит на ней, пока вы её не исправите.
+
+### Где виден результат
+
+- **CLI синхронизации.** Сообщения выводятся под каждой заметкой. Если есть хотя бы один `error`, CLI завершается с кодом 1, и скрипт или ИИ-агент понимает, что нужно что-то исправить. Сообщения приходят с синхронизацией, которая отправляет заметки: если ничего не изменилось, CLI ничего не отправляет и ничего не показывает. См. [[ru/user/cli|CLI для синхронизации]].
+- **Админка.** Dashboard → «Предупреждения в заметках» всегда показывает все заметки с их сообщениями.
+- **Локально, без сервера.** `trip2g lint <папка>` выводит те же сообщения. Он строже синхронизации: завершается с кодом 1 и на `error`, и на `warning`. Поставьте его в CI, чтобы невалидные заметки не попадали на сайт. См. [[ru/user/lint|Линтер для хранилища]].
+
+### Как подключать валидаторы
+
+В `validate` можно указать один валидатор или список:
+
+```yaml
+validate:
+  - "[[required_frontmatter]]"
+  - "[[seo]]"
+  - validators/session_has_image.md
+```
+
+Валидатор можно указать вики-ссылкой или путём, с `.md` или без. Поиск работает так же, как для вики-ссылок в тексте; часть `#заголовок` игнорируется. Заметка проходит проверку, только если ни один её валидатор не вернул `error`.
+
+#### Один валидатор на много заметок
+
+Пишите каждое правило один раз и переиспользуйте. Держите валидаторы в одной папке, например `validators/`, по одному правилу на заметку: «обязательные поля», «SEO», «у каждой сессии есть картинка». Каждому типу заметок — свой набор. Воркшопу — `session_has_image` и `seo`. Статье — `required_frontmatter`, `seo` и `sections_order`.
+
+Чтобы проверять целую папку, не правьте каждую заметку, а добавьте валидаторы [[ru/user/frontmatter_patches|frontmatter-патчем]]:
+
+````
+---
+type: frontmatter-patch
+include: ["blog/**"]
+---
+
+Посты блога тоже проверяются на обязательные поля и SEO.
+
+```jsonnet
+local own = std.get(meta, 'validate', []);
+local list = if std.isString(own) then [own] else own;
+{ validate: list + ['[[required_frontmatter]]', '[[seo]]'] }
+```
+````
+
+Патч берёт собственный `validate` заметки (пустой список, если его нет), превращает одиночную строку в список из одного элемента и дописывает правила папки. Заметка без `validate` получит правила папки. Заметка с `validate: "[[sections_order]]"` получит все три.
+
+Такие патчи складываются. Каждый патч видит frontmatter, который оставили патчи до него, поэтому патч на `blog/**` и патч на `**/*.md` вместе дают посту блога оба набора правил и его собственные.
+
+Патч, который возвращает просто список, например `{ validate: ['[[seo]]'] }`, заменяет собственный `validate` заметки и всё, что добавили предыдущие патчи. Используйте эту форму, только если правила папки должны перекрыть правила заметки.
+
+Валидаторы видят frontmatter уже после патчей, поэтому поле, которое добавил патч, считается заполненным.
+
+### Как написать валидатор
+
+Валидаторы пишутся на Jsonnet, нужный синтаксис — на странице [[ru/user/jsonnet|Jsonnet в trip2g]]. В каждом блоке `jsonnet` валидатора доступны:
+
+| Имя | Что в нём |
+|---|---|
+| `meta` | frontmatter заметки после патчей |
+| `path` | путь заметки, например `blog/post.md` |
+| `nodes` | текст заметки списком элементов, сверху вниз |
+| `std.native('regexMatch')(pattern, text)` | `true`, если текст подходит под регулярное выражение |
+
+У каждого элемента в `nodes` есть `type`, `line` (строка в файле, считая frontmatter) и `depth` (глубина вложенности):
+
+| `type` | Дополнительные поля |
+|---|---|
+| `heading` | `level` (1–6), `text` |
+| `paragraph` | `text` (текст пункта плотного списка тоже приходит как `paragraph`) |
+| `image` | `src`, `alt` (и `![alt](src)`, и `![[src\|alt]]`) |
+| `link` | `url`, `text` |
+| `wikilink` | `target`, `embed` |
+| `code_block` | `lang`, пустой, если язык не указан |
+| `list` | `ordered` |
+| `list_item`, `blockquote`, `table` | — |
+
+Блок возвращает список сообщений. Пустой список значит, что с заметкой всё в порядке:
+
+```jsonnet
+[
+  {level: 'error', msg: 'what is wrong', line: 12},
+  {level: 'warning', msg: 'worth a look'},
+]
+```
+
+- `error` помечает заметку как невалидную: `CRITICAL` в CLI, CLI завершается с кодом 1.
+- `warning` — совет: `WARNING`, код выхода CLI синхронизации остаётся 0. `trip2g lint` на нём всё равно падает.
+- `line` необязателен. Если он указан, сообщение его покажет.
+
+Сломанный валидатор никогда не проходит молча. Опечатка в Jsonnet, результат не в виде списка, неизвестный `level` или ненайденный валидатор дают заметке сообщение `CRITICAL`.
+
+В валидаторе может быть несколько блоков `jsonnet`. Выполняется каждый, их сообщения складываются.
+
+### Примеры
+
+Эти валидаторы взяты из демо-хранилища, которое тесты trip2g прогоняют при каждой сборке.
+
+#### Обязательные поля
+
+```jsonnet
+local required = ['title', 'description'];
+
+[
+  {level: 'error', msg: 'missing frontmatter field: ' + f}
+  for f in required
+  if !std.objectHas(meta, f)
+] + [
+  {level: 'error', msg: f + ' must be a string'}
+  for f in required
+  if std.objectHas(meta, f) && !std.isString(meta[f])
+] + (
+  if std.objectHas(meta, 'tags') && !std.isArray(meta.tags)
+  then [{level: 'error', msg: 'tags must be a list'}]
+  else []
+)
+```
+
+#### Разделы в заданном порядке
+
+В статье ровно эти разделы второго уровня и в этом порядке:
+
+```jsonnet
+local want = ['Intro', 'Steps', 'FAQ'];
+local got = [n.text for n in nodes if n.type == 'heading' && n.level == 2];
+
+if got == want then []
+else [{
+  level: 'error',
+  msg: 'sections must be %s, got %s' % [
+    std.join(' → ', want),
+    std.join(' → ', got),
+  ],
+}]
+```
+
+#### У каждой сессии есть картинка
+
+Заметка делится на разделы по каждому `##`, и в каждом разделе считаются картинки. `std.foldl` проходит по списку элементов и несёт разделы с собой:
+
+```jsonnet
+local last(xs) = xs[std.length(xs) - 1];
+local init(xs) = xs[:std.length(xs) - 1];
+
+local sections = std.foldl(
+  function(acc, n)
+    if n.type == 'heading' && n.level == 2 then
+      acc + [{title: n.text, line: n.line, images: 0}]
+    else if n.type == 'image' && std.length(acc) > 0 then
+      init(acc) + [last(acc) + {images: super.images + 1}]
+    else acc,
+  nodes,
+  [],
+);
+
+[
+  {level: 'error', line: s.line, msg: '"%s" has no image' % s.title}
+  for s in sections
+  if std.startsWith(s.title, 'Session') && s.images == 0
+]
+```
+
+#### Картинки и код
+
+Нет alt-текста — предупреждение. Блок кода без языка — ошибка:
+
+```jsonnet
+[
+  {level: 'warning', line: n.line, msg: 'image %s has no alt text' % n.src}
+  for n in nodes
+  if n.type == 'image' && n.alt == ''
+] + [
+  {level: 'error', line: n.line, msg: 'code block without a language'}
+  for n in nodes
+  if n.type == 'code_block' && n.lang == ''
+]
+```
+
+#### Длина описания и формат даты
+
+```jsonnet
+local re = std.native('regexMatch');
+local desc = std.get(meta, 'description', '');
+local date = std.toString(std.get(meta, 'date', ''));
+
+(
+  if std.length(desc) > 160
+  then [{
+    level: 'warning',
+    msg: 'description is %d chars, keep it under 160' % std.length(desc),
+  }]
+  else []
+) + (
+  if !re('^\\d{4}-\\d{2}-\\d{2}$', date)
+  then [{level: 'error', msg: 'date must be YYYY-MM-DD, got "%s"' % date}]
+  else []
+)
+```
+
+#### Формат имени файла
+
+Некоторые команды называют заметки так, чтобы человек или агент понимал, что в файле, не открывая его: `{project} {type} title – YYYY-MM-DD – tool.md`. Например, `{blog} {article} Weekly summary – 2026-10-18 – Cursor.md`. Дата всегда стоит ближе к концу, а последняя часть называет инструмент, который написал заметку.
+
+Валидатор берёт имя файла из `path`, делит его по ` – ` и проверяет каждую часть. Если во frontmatter есть `date`, она должна совпадать с датой в имени. Инструмент, написанный правильно, но которого нет в списке, например `Codex`, даёт только предупреждение, чтобы новый инструмент не ломал синхронизацию. Неправильно написанный, например `claude-code`, — ошибку:
+
+```jsonnet
+local re = std.native('regexMatch');
+local parts = std.split(path, '/');
+local file = parts[std.length(parts) - 1];
+local name = std.substr(file, 0, std.length(file) - 3);
+local chunks = std.split(name, ' – ');
+local tools = [
+  'Claude Code', 'Cursor', 'ChatGPT', 'Gemini', 'Windsurf', 'Manual',
+];
+local err(msg) = {level: 'error', msg: msg};
+local warn(msg) = {level: 'warning', msg: msg};
+
+local checkTool(tool) =
+  if std.member(tools, tool) then []
+  else if re('^[A-Z][A-Za-z0-9 .]*$', tool) then [
+    warn('new tool "%s"? add it to the list in this validator' % tool),
+  ] else [
+    err('tool "%s" must be a name like %s' % [tool, std.join(', ', tools)]),
+  ];
+
+if std.length(chunks) != 3 then [
+  err('name must be "{project} {type} title – YYYY-MM-DD – tool"'),
+] else
+  local head = chunks[0], date = chunks[1], tool = chunks[2];
+  (
+    if re('^\\{[a-z0-9]+\\} \\{[a-z]+\\} .+$', head) then []
+    else [err('name must start with {project} {type} and a title')]
+  ) + (
+    if re('^\\d{4}-\\d{2}-\\d{2}$', date) then []
+    else [err('date "%s" must be YYYY-MM-DD' % date)]
+  ) + checkTool(tool) + (
+    local fmDate = std.toString(std.get(meta, 'date', date));
+    if fmDate == date then []
+    else [err('frontmatter date %s differs from %s in the name'
+              % [fmDate, date])]
+  )
+```
+
+`{blog} {2026-10-18} {article} Weekly summary.md` не проходит: дата стоит посередине, и имя не делится на три части.
+
+Такое правило подключайте к папке frontmatter-патчем, чтобы проверялись и новые файлы. Иначе файл, созданный без `validate`, не проверяется.
+
+### Если нужно больше
+
+Валидаторы проверяют одну заметку за раз и не знают текущего времени. Для всего остального запустите свою проверку вне trip2g:
+
+- **Change webhook** отправляет каждую изменённую заметку в ваш сервис. Сервис может проверить что угодно: другие заметки, внешние системы, текущую дату. См. [[ru/user/change_webhooks|Вебхуки]].
+- **Cron webhook** запускает проверку по расписанию — для правил, которые зависят от времени, например «перепроверить заметку после даты `stale_after`».
+
+API, который добавляет заметке предупреждение, в trip2g нет. Сервис возвращает результат, записывая заметки: в ответе вебхука (`changes[]`) или через API-токен. Два способа, которые работают уже сейчас:
+
+- **Заметка-отчёт.** Сервис пишет заметку, например `reports/validation.md`, со списком проблем. Она видна на сайте и в поиске, как любая другая.
+- **Поле и валидатор.** Сервис записывает проблемы в поле frontmatter проверенной заметки, например `external_errors: ["no backlinks"]`, а маленький валидатор превращает поле в сообщения:
+
+  ```jsonnet
+  [
+    {level: 'error', msg: e}
+    for e in std.get(meta, 'external_errors', [])
+  ]
+  ```
+
+  Сообщения появятся в выводе синхронизации и в админке, как любые другие. Это правит заметку автора на сервере, и она перестаёт совпадать с его локальной копией.
+
+### Планы
+
+Правила по всему хранилищу запланированы, но как их сделать, пока не решено:
+
+- у каждой заметки есть хотя бы одна связь, входящая или исходящая;
+- в каждой папке есть заметка-индекс;
+- цель `supersedes` помечена как `deprecated`;
+- дата `stale_after` прошла.
+
+Для них нужен другой вид валидатора: он видит все заметки и текущую дату и работает без кеша по заметкам. Обсуждение — в [issue #436](https://github.com/trip2g/trip2g/issues/436). Пока всегда можно сделать свою проверку рядом с trip2g: [[ru/user/change_webhooks|change]] или [[ru/user/cron_webhooks|cron]] вебхук отправит заметки в ваш сервис, как описано выше.
+
+### Что ещё можно проверять
+
+- **Договор с шаблоном.** Layout читает `cover`, `description` и раздел `## Summary`. Валидатор следит, чтобы они были у каждой заметки с этим layout.
+- **Заметки, которые пишут агенты.** Агент пишет заметку, запускает синхронизацию, получает код 1 со списком сообщений и исправляет заметку. Такой цикл ловит то, что модель сделала не так в конкретном запуске.
+- **Данные в заметках.** События, товары, люди: `price` — число, `status` — одно из `draft`, `review`, `published`, дата в формате ISO. Списки, графики и API получают чистые данные.
+- **SEO и доступность.** Один заголовок `#`, без пропуска уровней (`##`, а сразу за ним `####`), alt у картинок, описание короче 160 символов.
+- **Редакционный стиль.** Запрещённые слова, ссылки с текстом «нажмите здесь», слишком длинные предложения. Текст абзаца лежит в поле `text` у элементов `paragraph`. Текста из ячеек таблиц в `nodes` нет.
+- **Структура курса.** В каждом уроке есть видео и раздел `## Quiz`.
+- **Посты в Telegram.** Текст укладывается в лимит, картинок не больше одной.
+
+### Ограничения
+
+- **Валидатор видит одну заметку.** Он не проверит, что slug уникален во всём хранилище или что на заметку ссылается другая.
+- **Валидаторы не блокируют синхронизацию.** Невалидная заметка сохраняется и публикуется с предупреждением. Чтобы заблокировать её, запускайте `trip2g lint` в CI до синхронизации.
+- **Заметка-валидатор публикуется, как любая другая.**
+- **Результаты запоминаются между синхронизациями.** Заметка проверяется заново, только если изменилась она сама, изменился один из её валидаторов или стал указывать на другую заметку, или изменился любой frontmatter-патч. Запуск сервера, сохранение патча в админке или синхронизация с заметкой-патчем проверяют все заметки с `validate` ещё раз. С семью валидаторами на ~850 заметок такой проход занимает около 4 секунд.
+
+Как это устроено внутри и сколько стоит: [[dev/note_validators|валидаторы заметок (dev)]].

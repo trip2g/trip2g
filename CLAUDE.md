@@ -204,6 +204,7 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `task_loop.md` | Task loop workflow |
 | `subprocess_agent.md` | Subprocess agent (subot) |
 | `fleet_write_validation.md` | Fleet: surfacing scope denials and a `strict` linter for agent writes; testing plan — design, not yet built |
+| `note_validators.md` | Jsonnet note validators (`validate:` frontmatter): contract, `nodes` shape, cost per sync — MVP |
 | `update_note_mutation.md` | Atomic note updates via find/replace |
 | `obsidian_sync_refactoring.md` | Sync plugin refactoring plan |
 | `obsidian_sse_pulls.md` | Live note change subscriptions |

@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Note validators check notes against your rules on every sync
+
+- **What.** A note can list validator notes in a new `validate` frontmatter field. A validator is a note with a Jsonnet block that reads the frontmatter and the body's structure (headings, images, links, code blocks) and returns errors and warnings. An error marks the note `CRITICAL`: a sync that pushes notes exits with code 1, and the note shows under Note Warnings in the admin panel. `trip2g lint` reports the same messages without a server. The note is still saved and published.
+- **Why.** Templates, lists and the API read notes as data and break quietly when a field or a section is missing. Notes written by language models drift from run to run. A validator turns those slips into a message that says what to fix.
+- **How to use.** Add `validate: "[[my_rules]]"` to a note, or to a whole folder with a frontmatter patch. See [[en/user/validators|Note validators]].
+
 ### Site search can leave out notes the reader cannot open
 
 - **What.** A new `SEARCH_HIDE_UNREADABLE` setting (`--search-hide-unreadable`), off by default. When on, site search returns only notes the reader can open. When off, as before, every note the reader cannot open is listed after the results as a "Закрытый материал." placeholder with its real title and link.
