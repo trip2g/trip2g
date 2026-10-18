@@ -105,7 +105,7 @@ Validators see the frontmatter after patches are applied, so a field added by a 
 
 ### Writing a validator
 
-Each `jsonnet` block of a validator has access to:
+Validators are written in Jsonnet; the syntax you need is on [[en/user/jsonnet|Jsonnet in trip2g]]. Each `jsonnet` block of a validator has access to:
 
 | Name | What it holds |
 |---|---|

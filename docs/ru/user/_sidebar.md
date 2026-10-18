@@ -76,6 +76,7 @@ title: "Навигация"
 - [[ru/user/forms|Формы в заметках]]
 - [[ru/user/frontmatter_patches|Frontmatter-патчи]]
 - [[ru/user/validators|Валидаторы заметок]]
+- [[ru/user/jsonnet|Jsonnet в trip2g]]
 - [[ru/user/rss-feeds|RSS-ленты]]
 - [[ru/user/oauth|OAuth]]
 - [[ru/user/mermaid|Диаграммы Mermaid]]

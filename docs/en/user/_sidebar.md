@@ -85,6 +85,7 @@ title: "Navigation"
 - [[en/typography|Typography & Markdown]]
 - [[en/user/frontmatter-patches|Frontmatter patches]]
 - [[en/user/validators|Note validators]]
+- [[en/user/jsonnet|Jsonnet in trip2g]]
 - [[en/user/search|How search works]]
 - [[en/user/mermaid|Mermaid diagrams]]
 - [[en/user/canvas|Canvas, Base & Excalidraw]]
