@@ -143,6 +143,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/resolvewikilinks"
 	"trip2g/internal/case/revokeusertoken"
+	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/case/similarnotes"
@@ -3283,6 +3284,11 @@ func (r *queryResolver) Search(ctx context.Context, input model.SearchInput) (*m
 // SimilarNotes is the resolver for the similarNotes field.
 func (r *queryResolver) SimilarNotes(ctx context.Context, input model.SimilarNotesInput) ([]model.SimilarNote, error) {
 	return similarnotes.Resolve(ctx, r.env(ctx), input)
+}
+
+// NoteQuery is the resolver for the noteQuery field.
+func (r *queryResolver) NoteQuery(ctx context.Context, input model.NoteQueryInput) (model.NoteQueryOrErrorPayload, error) {
+	return runnotequery.Resolve(ctx, r.env(ctx), input)
 }
 
 // NotePaths is the resolver for the notePaths field.

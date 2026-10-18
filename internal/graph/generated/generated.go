@@ -849,6 +849,7 @@ type QueryResolver interface {
 	Note(ctx context.Context, input model.NoteInput) (*model.PublicNote, error)
 	Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
 	SimilarNotes(ctx context.Context, input model.SimilarNotesInput) ([]model.SimilarNote, error)
+	NoteQuery(ctx context.Context, input model.NoteQueryInput) (model.NoteQueryOrErrorPayload, error)
 	NotePaths(ctx context.Context, filter *model.NotePathsFilter) ([]db.NotePath, error)
 	ResolveWikilinks(ctx context.Context, filter model.ResolveWikilinksFilter) ([]model.WikilinkResolution, error)
 	UnreleasedChanges(ctx context.Context, filter model.NoteChangesFilter) (*model.UnreleasedChangesConnection, error)
@@ -1035,6 +1036,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNoteFrontmatterPredicate,
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputNotePathsFilter,
+		ec.unmarshalInputNoteQueryInput,
 		ec.unmarshalInputNoteVersionDiffFilter,
 		ec.unmarshalInputOAuthUrlInput,
 		ec.unmarshalInputPushNoteInput,
@@ -2819,6 +2821,28 @@ input NoteFrontmatterPredicate {
   equals: String
 }
 
+input NoteQueryInput {
+  """
+  The query note: a vault path (queries/decisions.md) or a wikilink target.
+  The note needs ` + "`" + `type: note-query` + "`" + ` and one jsonnet block.
+  """
+  query: String!
+
+  """
+  JSON value passed to the query as ` + "`" + `params` + "`" + `. Defaults to {}.
+  """
+  params: String
+}
+
+type NoteQueryPayload {
+  """
+  The query's result as JSON.
+  """
+  json: String!
+}
+
+union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload
+
 input SimilarNotesInput {
   """
   Note path (permalink) to find similar notes for.
@@ -2908,6 +2932,13 @@ type Query {
   Returns empty list if vector search is disabled or note has no embedding.
   """
   similarNotes(input: SimilarNotesInput!): [SimilarNote!]!
+
+  """
+  Runs a named query: a note with ` + "`" + `type: note-query` + "`" + ` whose jsonnet block gets
+  the notes the caller can read and ` + "`" + `params` + "`" + `. The caller must be able to read
+  the query note itself.
+  """
+  noteQuery(input: NoteQueryInput!): NoteQueryOrErrorPayload!
 
   """
   X-Api-Key header must be set.
@@ -7148,6 +7179,17 @@ func (ec *executionContext) field_Query_notePaths_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_noteQuery_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNNoteQueryInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteQueryInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -38024,6 +38066,35 @@ func (ec *executionContext) fieldContext_NotePath_assetReplaces(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteQueryPayload_json(ctx context.Context, field graphql.CollectedField, obj *model.NoteQueryPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteQueryPayload_json,
+		func(ctx context.Context) (any, error) {
+			return obj.JSON, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteQueryPayload_json(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteQueryPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NoteTaskItem_index(ctx context.Context, field graphql.CollectedField, obj *model.NoteTaskItem) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -40989,6 +41060,47 @@ func (ec *executionContext) fieldContext_Query_similarNotes(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_similarNotes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_noteQuery(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_noteQuery,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().NoteQuery(ctx, fc.Args["input"].(model.NoteQueryInput))
+		},
+		nil,
+		ec.marshalNNoteQueryOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐNoteQueryOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_noteQuery(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type NoteQueryOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_noteQuery_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -52054,6 +52166,40 @@ func (ec *executionContext) unmarshalInputNotePathsFilter(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNoteQueryInput(ctx context.Context, obj any) (model.NoteQueryInput, error) {
+	var it model.NoteQueryInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"query", "params"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "query":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Query = data
+		case "params":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Params = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNoteVersionDiffFilter(ctx context.Context, obj any) (model.NoteVersionDiffFilter, error) {
 	var it model.NoteVersionDiffFilter
 	asMap := map[string]any{}
@@ -55943,6 +56089,29 @@ func (ec *executionContext) _NoteChangeItem(ctx context.Context, sel ast.Selecti
 			return graphql.Null
 		}
 		return ec._NoteHideEvent(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _NoteQueryOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.NoteQueryOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.NoteQueryPayload:
+		return ec._NoteQueryPayload(ctx, sel, &obj)
+	case *model.NoteQueryPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._NoteQueryPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -78052,7 +78221,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "RevokeUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "FederationPeerScopeOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "NoteQueryOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "RevokeUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "FederationPeerScopeOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -79372,6 +79541,45 @@ func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var noteQueryPayloadImplementors = []string{"NoteQueryPayload", "NoteQueryOrErrorPayload"}
+
+func (ec *executionContext) _NoteQueryPayload(ctx context.Context, sel ast.SelectionSet, obj *model.NoteQueryPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteQueryPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteQueryPayload")
+		case "json":
+			out.Values[i] = ec._NoteQueryPayload_json(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -81038,6 +81246,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_similarNotes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "noteQuery":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_noteQuery(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -91603,6 +91833,21 @@ func (ec *executionContext) marshalNNotePath2ᚕtrip2gᚋinternalᚋdbᚐNotePat
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNNoteQueryInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteQueryInput(ctx context.Context, v any) (model.NoteQueryInput, error) {
+	res, err := ec.unmarshalInputNoteQueryInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNNoteQueryOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐNoteQueryOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.NoteQueryOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NoteQueryOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNNoteTaskItem2trip2gᚋinternalᚋgraphᚋmodelᚐNoteTaskItem(ctx context.Context, sel ast.SelectionSet, v model.NoteTaskItem) graphql.Marshaler {

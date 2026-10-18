@@ -282,6 +282,10 @@ type NoteChangeItem interface {
 	IsNoteChangeItem()
 }
 
+type NoteQueryOrErrorPayload interface {
+	IsNoteQueryOrErrorPayload()
+}
+
 type PushNotesOrErrorPayload interface {
 	IsPushNotesOrErrorPayload()
 }
@@ -1689,6 +1693,8 @@ func (ErrorPayload) IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayloa
 
 func (ErrorPayload) IsAdminImportTelegramAccountChannelOrErrorPayload() {}
 
+func (ErrorPayload) IsNoteQueryOrErrorPayload() {}
+
 func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 
 func (ErrorPayload) IsSignInOrErrorPayload() {}
@@ -2077,6 +2083,21 @@ type NotePathsFilter struct {
 	// Only return these specific note paths. Search and like will be ignored if paths is set.
 	Paths []string `json:"paths,omitempty"`
 }
+
+type NoteQueryInput struct {
+	// The query note: a vault path (queries/decisions.md) or a wikilink target.
+	// The note needs `type: note-query` and one jsonnet block.
+	Query string `json:"query"`
+	// JSON value passed to the query as `params`. Defaults to {}.
+	Params *string `json:"params,omitempty"`
+}
+
+type NoteQueryPayload struct {
+	// The query's result as JSON.
+	JSON string `json:"json"`
+}
+
+func (NoteQueryPayload) IsNoteQueryOrErrorPayload() {}
 
 type NoteTaskItem struct {
 	Index   int32  `json:"index"`
