@@ -46,7 +46,15 @@ func Resolve(ctx context.Context, env Env, input model.NoteQueryInput) (model.No
 	start := time.Now()
 	query := "unknown"
 
-	res, err := resolve(ctx, env, input, &query)
+	params, paramsErr := encodeParams(input.Params)
+
+	var res model.NoteQueryOrErrorPayload
+	var err error
+	if paramsErr != nil {
+		res = paramsErr
+	} else {
+		res, err = resolve(ctx, env, input.Query, params, &query)
+	}
 
 	result := "ok"
 	if p, isErr := res.(*model.ErrorPayload); isErr {
@@ -59,23 +67,35 @@ func Resolve(ctx context.Context, env Env, input model.NoteQueryInput) (model.No
 		result = "failed"
 	}
 
-	paramsBytes := 0
-	if input.Params != nil {
-		paramsBytes = len(*input.Params)
-	}
-	env.ObserveNoteQuery(query, result, time.Since(start), paramsBytes)
+	env.ObserveNoteQuery(query, result, time.Since(start), len(params))
 
 	return res, err
 }
 
 const errQueryNotFound = "query not found"
 
+// encodeParams turns the caller's params into the JSON the program reads.
+func encodeParams(params any) (string, *model.ErrorPayload) {
+	if params == nil {
+		return "{}", nil
+	}
+
+	b, err := json.Marshal(params)
+	if err != nil {
+		return "", &model.ErrorPayload{Message: "params must be JSON"}
+	}
+	if len(b) > maxParamsBytes {
+		return "", &model.ErrorPayload{Message: "params is larger than 16 KB"}
+	}
+	return string(b), nil
+}
+
 // resolve does the work; it sets *query to the query note's path once the
 // caller is known to be allowed to see it.
-func resolve(ctx context.Context, env Env, input model.NoteQueryInput, query *string) (model.NoteQueryOrErrorPayload, error) {
+func resolve(ctx context.Context, env Env, queryName, params string, query *string) (model.NoteQueryOrErrorPayload, error) {
 	nvs := env.LatestNoteViews()
 
-	note := findQuery(nvs, input.Query)
+	note := findQuery(nvs, queryName)
 	if note == nil {
 		return &model.ErrorPayload{Message: errQueryNotFound}, nil
 	}
@@ -100,17 +120,6 @@ func resolve(ctx context.Context, env Env, input model.NoteQueryInput, query *st
 	}
 	if len(blocks) != 1 {
 		return &model.ErrorPayload{Message: note.Path + ": a note-query needs exactly one jsonnet block"}, nil
-	}
-
-	params := "{}"
-	if input.Params != nil && strings.TrimSpace(*input.Params) != "" {
-		if len(*input.Params) > maxParamsBytes {
-			return &model.ErrorPayload{Message: "params is larger than 16 KB"}, nil
-		}
-		if !json.Valid([]byte(*input.Params)) {
-			return &model.ErrorPayload{Message: "params must be JSON"}, nil
-		}
-		params = *input.Params
 	}
 
 	notesJSON, err := readableNotes(ctx, env, nvs)

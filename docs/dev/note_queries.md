@@ -5,14 +5,14 @@
 ## Contract
 
 ```graphql
-noteQuery(input: { query: "[[by_tag]]", params: "{\"tag\": \"go\"}" }) {
+noteQuery(input: { query: "[[by_tag]]", params: { tag: "go" } }) {
   ... on NoteQueryPayload { rawResult }
   ... on ErrorPayload { message }
 }
 ```
 
 - `query` is a vault path (`queries/by_tag.md`, with or without `.md`) or a wikilink target, resolved with `NoteViews.ResolveWikilinkTarget`.
-- Inside the block: `notes` — `[{path, title, permalink, meta}]` in path order, `meta` after frontmatter patches; `params` — the parsed `params`, `{}` when omitted, at most 16 KB.
+- Inside the block: `notes` — `[{path, title, permalink, meta}]` in path order, `meta` after frontmatter patches; `params` — the caller's `params` (a `JSON` scalar, any value), `{}` when omitted, at most 16 KB once encoded.
 - Notes come from `LatestNoteViews()`. Releases (live versions) are not in use, so latest is what the site serves. Several readers pick live or latest by different rules; that is tracked in https://github.com/trip2g/trip2g/issues/438.
 - `notes` leaves out system notes (`_…`) and files without a markdown AST (`.canvas`, `.base`, `.excalidraw`).
 - A NaN or ±Inf in frontmatter (YAML allows them, JSON doesn't) becomes `null`, so one odd note can't break every query.
@@ -34,6 +34,10 @@ local tagged = [
 [{title: n.title, url: n.permalink} for n in tagged]
 ```
 ````
+
+## In Jet templates
+
+`runnotequery.JetFunc` is exposed as `noteQuery(query, params?)` in page renders (`rendernotepage/endpoint.go`) and the admin layout preview, running with the request's viewer. It returns the result as `[]any` / `map[string]any`; a failing query panics the render with its message (shown to admins). The load-time smoke render (`noteloader/smoke_render.go`) stubs it with an empty list. The anonymous page cache is keyed and served to guests only, so a guest's query result is never served to a signed-in viewer.
 
 ## Access
 

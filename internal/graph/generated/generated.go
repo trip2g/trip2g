@@ -2834,9 +2834,10 @@ input NoteQueryInput {
   query: String!
 
   """
-  JSON value passed to the query as ` + "`" + `params` + "`" + `. Defaults to {}.
+  Any JSON value passed to the query as ` + "`" + `params` + "`" + `, at most 16 KB once encoded.
+  Defaults to {}.
   """
-  params: String
+  params: JSON
 }
 
 type NoteQueryPayload {
@@ -52195,7 +52196,7 @@ func (ec *executionContext) unmarshalInputNoteQueryInput(ctx context.Context, ob
 			it.Query = data
 		case "params":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOJSON2interface(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -94817,6 +94818,24 @@ func (ec *executionContext) marshalOInt642ᚖint64(ctx context.Context, sel ast.
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalInt64(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOJSON2interface(ctx context.Context, v any) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalAny(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOJSON2interface(ctx context.Context, sel ast.SelectionSet, v any) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalAny(v)
 	return res
 }
 

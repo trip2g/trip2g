@@ -53,7 +53,9 @@ func TestDocExamples(t *testing.T) {
 		}
 		input := model.NoteQueryInput{Query: query}
 		if params != "" {
-			input.Params = &params
+			var v any
+			require.NoError(t, json.Unmarshal([]byte(params), &v))
+			input.Params = v
 		}
 		res, resErr := runnotequery.Resolve(context.Background(), env, input)
 		require.NoError(t, resErr)

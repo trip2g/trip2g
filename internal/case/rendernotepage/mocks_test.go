@@ -6,6 +6,7 @@ package rendernotepage_test
 import (
 	"context"
 	"sync"
+	"time"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/db"
 	"trip2g/internal/features"
@@ -87,6 +88,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			},
 //			NoteVersionEditorFunc: func(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error) {
 //				panic("mock out the NoteVersionEditor method")
+//			},
+//			ObserveNoteQueryFunc: func(query string, result string, elapsed time.Duration, paramsBytes int)  {
+//				panic("mock out the ObserveNoteQuery method")
 //			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
@@ -193,6 +197,9 @@ type EnvMock struct {
 
 	// NoteVersionEditorFunc mocks the NoteVersionEditor method.
 	NoteVersionEditorFunc func(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error)
+
+	// ObserveNoteQueryFunc mocks the ObserveNoteQuery method.
+	ObserveNoteQueryFunc func(query string, result string, elapsed time.Duration, paramsBytes int)
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
@@ -333,6 +340,17 @@ type EnvMock struct {
 			// VersionID is the versionID argument value.
 			VersionID int64
 		}
+		// ObserveNoteQuery holds details about calls to the ObserveNoteQuery method.
+		ObserveNoteQuery []struct {
+			// Query is the query argument value.
+			Query string
+			// Result is the result argument value.
+			Result string
+			// Elapsed is the elapsed argument value.
+			Elapsed time.Duration
+			// ParamsBytes is the paramsBytes argument value.
+			ParamsBytes int
+		}
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
@@ -415,6 +433,7 @@ type EnvMock struct {
 	lockLiveNoteViews                       sync.RWMutex
 	lockLogger                              sync.RWMutex
 	lockNoteVersionEditor                   sync.RWMutex
+	lockObserveNoteQuery                    sync.RWMutex
 	lockPublicURL                           sync.RWMutex
 	lockPublishReaderMove                   sync.RWMutex
 	lockReaderMovesActive                   sync.RWMutex
@@ -1080,6 +1099,50 @@ func (mock *EnvMock) NoteVersionEditorCalls() []struct {
 	mock.lockNoteVersionEditor.RLock()
 	calls = mock.calls.NoteVersionEditor
 	mock.lockNoteVersionEditor.RUnlock()
+	return calls
+}
+
+// ObserveNoteQuery calls ObserveNoteQueryFunc.
+func (mock *EnvMock) ObserveNoteQuery(query string, result string, elapsed time.Duration, paramsBytes int) {
+	if mock.ObserveNoteQueryFunc == nil {
+		panic("EnvMock.ObserveNoteQueryFunc: method is nil but Env.ObserveNoteQuery was just called")
+	}
+	callInfo := struct {
+		Query       string
+		Result      string
+		Elapsed     time.Duration
+		ParamsBytes int
+	}{
+		Query:       query,
+		Result:      result,
+		Elapsed:     elapsed,
+		ParamsBytes: paramsBytes,
+	}
+	mock.lockObserveNoteQuery.Lock()
+	mock.calls.ObserveNoteQuery = append(mock.calls.ObserveNoteQuery, callInfo)
+	mock.lockObserveNoteQuery.Unlock()
+	mock.ObserveNoteQueryFunc(query, result, elapsed, paramsBytes)
+}
+
+// ObserveNoteQueryCalls gets all the calls that were made to ObserveNoteQuery.
+// Check the length with:
+//
+//	len(mockedEnv.ObserveNoteQueryCalls())
+func (mock *EnvMock) ObserveNoteQueryCalls() []struct {
+	Query       string
+	Result      string
+	Elapsed     time.Duration
+	ParamsBytes int
+} {
+	var calls []struct {
+		Query       string
+		Result      string
+		Elapsed     time.Duration
+		ParamsBytes int
+	}
+	mock.lockObserveNoteQuery.RLock()
+	calls = mock.calls.ObserveNoteQuery
+	mock.lockObserveNoteQuery.RUnlock()
 	return calls
 }
 

@@ -53,6 +53,7 @@ type Env interface {
 	SiteConfig(ctx context.Context) model.SiteConfig
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
+	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
 	GetTelegramChatName(ctx context.Context, telegramChatID int64) (string, error)
 	GetTelegramPostLinksByNoteVersionID(
 		ctx context.Context,

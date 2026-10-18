@@ -1617,9 +1617,10 @@ input NoteQueryInput {
   query: String!
 
   """
-  JSON value passed to the query as `params`. Defaults to {}.
+  Any JSON value passed to the query as `params`, at most 16 KB once encoded.
+  Defaults to {}.
   """
-  params: String
+  params: JSON
 }
 
 type NoteQueryPayload {

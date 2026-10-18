@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,10 @@ type testEnv struct {
 func (e *testEnv) Logger() logger.Logger             { return e.log }
 func (e *testEnv) LatestNoteViews() *model.NoteViews { return e.nvs }
 func (e *testEnv) PreviewBuffer() *PreviewBuffer     { return e.buffer }
+func (e *testEnv) CanReadNote(context.Context, *model.NoteView) (bool, error) {
+	return true, nil
+}
+func (e *testEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 func (e *testEnv) LoadPreviewLayout(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string) {
 	return e.preview(main, extra)
 }

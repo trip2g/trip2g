@@ -3,6 +3,7 @@ package runnotequery_test
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -52,8 +53,6 @@ func TestResolve(t *testing.T) {
 	}
 	hidden := map[string]bool{"blog/paid.md": true, "queries/secret.md": true}
 
-	str := func(s string) *string { return &s }
-
 	tests := []struct {
 		name     string
 		input    model.NoteQueryInput
@@ -68,7 +67,7 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name:     "wikilink target and params",
-			input:    model.NoteQueryInput{Query: "[[by_tag]]", Params: str(`{"tag": "go"}`)},
+			input:    model.NoteQueryInput{Query: "[[by_tag]]", Params: map[string]any{"tag": "go"}},
 			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`["blog/a.md"]`)},
 			observed: "queries/by_tag.md ok",
 		},
@@ -92,9 +91,9 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name:     "params must be JSON",
-			input:    model.NoteQueryInput{Query: "queries/titles.md", Params: str(`{tag`)},
+			input:    model.NoteQueryInput{Query: "queries/titles.md", Params: math.Inf(1)},
 			expected: &model.ErrorPayload{Message: "params must be JSON"},
-			observed: "queries/titles.md error",
+			observed: "unknown error",
 		},
 		{
 			name:     "notes skip unreadable, system and non-markdown files",
@@ -116,9 +115,9 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name:     "params are capped",
-			input:    model.NoteQueryInput{Query: "queries/titles.md", Params: str(`"` + strings.Repeat("x", 17000) + `"`)},
+			input:    model.NoteQueryInput{Query: "queries/titles.md", Params: strings.Repeat("x", 17000)},
 			expected: &model.ErrorPayload{Message: "params is larger than 16 KB"},
-			observed: "queries/titles.md error",
+			observed: "unknown error",
 		},
 		{
 			name:     "runtime error",

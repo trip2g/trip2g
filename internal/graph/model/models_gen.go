@@ -2088,8 +2088,9 @@ type NoteQueryInput struct {
 	// The query note: a vault path (queries/decisions.md) or a wikilink target.
 	// The note needs `type: note-query` and one jsonnet block.
 	Query string `json:"query"`
-	// JSON value passed to the query as `params`. Defaults to {}.
-	Params *string `json:"params,omitempty"`
+	// Any JSON value passed to the query as `params`, at most 16 KB once encoded.
+	// Defaults to {}.
+	Params any `json:"params,omitempty"`
 }
 
 type NoteQueryPayload struct {

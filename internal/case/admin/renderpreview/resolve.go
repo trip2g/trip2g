@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/yuin/goldmark"
@@ -15,6 +16,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 
+	"trip2g/internal/case/runnotequery"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -24,6 +26,8 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	LatestNoteViews() *model.NoteViews
+	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
+	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
 	LoadPreviewLayout(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string)
 	PreviewBuffer() *PreviewBuffer
 }
@@ -120,6 +124,7 @@ func Resolve(ctx context.Context, env Env, input graphmodel.RenderLayoutInput) (
 		vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
 			"IsAdmin": func() bool { return false },
 		})
+		vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(ctx, env))
 		if err := executePreview(env, layout.View, &buf, vars); err != nil {
 			warnings.Layout = append(warnings.Layout, "runtime: "+err.Error())
 		}

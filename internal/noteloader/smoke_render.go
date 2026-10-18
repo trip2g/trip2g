@@ -101,6 +101,11 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
 		"IsAdmin": func() bool { return false },
 	})
+	// noteQuery needs the viewer and the vault; the smoke render returns an
+	// empty list so a layout that ranges over the result still renders.
+	vars["noteQuery"] = reflect.ValueOf(jet.Func(func(jet.Arguments) reflect.Value {
+		return reflect.ValueOf([]any{})
+	}))
 
 	if err := view.Execute(io.Discard, vars, nil); err != nil {
 		return &model.NoteWarning{

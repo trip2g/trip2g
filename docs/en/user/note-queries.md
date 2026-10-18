@@ -48,13 +48,13 @@ const noteQuery = makeRequest(`query ($input: NoteQueryInput!) {
 }`)
 
 const data = await noteQuery({
-  input: { query: '[[by_tag]]', params: JSON.stringify({ tag: 'go' }) },
+  input: { query: '[[by_tag]]', params: { tag: 'go' } },
 })
 const posts = data.noteQuery.rawResult
 // [{ title: 'Go on the web', url: '/blog/go_on_the_web', date: '2026-10-10' }, …]
 ```
 
-`query` names the query note: a path from the vault root such as `queries/by_tag.md`, or a wikilink such as `[[by_tag]]`. A bare name is found anywhere in the vault; when several notes share it, the one with the shortest path wins. `params` is a JSON string, up to 16 KB; without it the query gets `{}`. The result comes back in `rawResult` as a JSON value, so there is nothing to parse.
+`query` names the query note: a path from the vault root such as `queries/by_tag.md`, or a wikilink such as `[[by_tag]]`. A bare name is found anywhere in the vault; when several notes share it, the one with the shortest path wins. `params` is any JSON value, up to 16 KB once encoded; without it the query gets `{}`. The result comes back in `rawResult` as a JSON value, so there is nothing to parse.
 
 ### What the query sees
 
@@ -170,9 +170,23 @@ A failed call returns `ErrorPayload` with a message:
 | `params must be JSON`, `params is larger than 16 KB` | bad `params` |
 | `<path>: RUNTIME ERROR: …` | the program failed; the first line of the Jsonnet error |
 
+### In a template
+
+A [[en/user/templates|custom template]] calls the same query with `noteQuery(query, params)`. It runs with the access of whoever views the page and returns the result as lists and maps, so you can range over it:
+
+```jet
+{{ range _, p := noteQuery("[[by_tag]]", map("tag", "go")) }}
+  <a href="{{ p.url }}">{{ p.title }}</a>
+{{ end }}
+```
+
+`params` is optional; build it with `map(…)`. Range with two variables, as everywhere in Jet: with one, `range` gives the index. A failing query stops the render; an admin sees its message. The template preview in the admin panel runs queries too, while the check a layout gets on sync sees an empty list.
+
+A guest and a subscriber viewing the same page can get different lists. Pages a guest sees are cached for guests only, so a subscriber never gets a guest's list.
+
 ### Note queries or a template
 
-A [[en/user/templates|custom template]] can also list notes: `nvs.ByGlob("blog/*.md")` and `SortByMeta` build the list on the server while the page renders, and `json()` hands it to the page. That list is fixed when the page renders. Use a note query when the page needs a different answer for each visitor input, like a tag picked from a menu.
+A template can also list notes without a query: `nvs.ByGlob("blog/*.md")` and `SortByMeta` build the list on the server while the page renders, and `json()` hands it to the page. That list is fixed when the page renders. Use `noteQuery()` in a template for aggregates that are clumsy in Jet, or when a JavaScript page and a template should share one query; call it from JavaScript when the answer depends on visitor input, like a tag picked from a menu.
 
 ### Limits
 
