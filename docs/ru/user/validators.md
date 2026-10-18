@@ -90,6 +90,16 @@ include: ["blog/**"]
 ```
 ````
 
+Патч заменяет собственный `validate` заметки. Чтобы дополнить список, а не заменить его, объедините их, как в эссе [[ru/thoughts/file-naming-convention|Имя файла, которое объясняет файл]]:
+
+```jsonnet
+local own = std.get(meta, 'validate', []);
+{
+  validate: (if std.isString(own) then [own] else own)
+    + ['[[file_name]]'],
+}
+```
+
 Валидаторы видят frontmatter уже после патчей, поэтому поле, которое добавил патч, считается заполненным.
 
 ### Как написать валидатор
@@ -237,6 +247,47 @@ local date = std.toString(std.get(meta, 'date', ''));
   else []
 )
 ```
+
+#### Формат имени файла
+
+Некоторые команды называют заметки так, чтобы человек или агент понимал, что в файле, не открывая его: `{project} {type} title – YYYY-MM-DD – tool.md`. Например, `{blog} {article} Weekly summary – 2026-10-18 – Cursor.md`. Дата всегда стоит ближе к концу, а последняя часть называет инструмент, который написал заметку.
+
+Валидатор берёт имя файла из `path`, делит его по ` – ` и проверяет каждую часть. Если во frontmatter есть `date`, она должна совпадать с датой в имени:
+
+```jsonnet
+local re = std.native('regexMatch');
+local parts = std.split(path, '/');
+local file = parts[std.length(parts) - 1];
+local name = std.substr(file, 0, std.length(file) - 3);
+local chunks = std.split(name, ' – ');
+local tools = ['Claude Code', 'Cursor', 'ChatGPT', 'Manual'];
+
+local problems =
+  if std.length(chunks) != 3 then [
+    'name must be "{project} {type} title – YYYY-MM-DD – tool"',
+  ] else
+    local head = chunks[0], date = chunks[1], tool = chunks[2];
+    (
+      if re('^\\{[a-z0-9]+\\} \\{[a-z]+\\} .+$', head) then []
+      else ['name must start with {project} {type} and a title']
+    ) + (
+      if re('^\\d{4}-\\d{2}-\\d{2}$', date) then []
+      else ['date "%s" must be YYYY-MM-DD' % date]
+    ) + (
+      if std.member(tools, tool) then []
+      else ['tool "%s" must be one of: %s' % [tool, std.join(', ', tools)]]
+    ) + (
+      local fmDate = std.toString(std.get(meta, 'date', date));
+      if fmDate == date then []
+      else ['frontmatter date %s differs from %s in the name' % [fmDate, date]]
+    );
+
+[{level: 'error', msg: p} for p in problems]
+```
+
+`{blog} {2026-10-18} {article} Weekly summary.md` не проходит: дата стоит посередине, и имя не делится на три части.
+
+Такое правило подключайте к папке frontmatter-патчем, чтобы проверялись и новые файлы. Иначе файл, созданный без `validate`, не проверяется.
 
 ### Что ещё можно проверять
 

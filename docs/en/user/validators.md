@@ -91,6 +91,16 @@ include: ["blog/**"]
 ```
 ````
 
+A patch replaces the note's own `validate`. To add to the list instead, merge it, as in [[en/thoughts/file-naming-convention|A file name that explains the file]]:
+
+```jsonnet
+local own = std.get(meta, 'validate', []);
+{
+  validate: (if std.isString(own) then [own] else own)
+    + ['[[file_name]]'],
+}
+```
+
 Validators see the frontmatter after patches are applied, so a field added by a patch counts as present.
 
 ### Writing a validator
@@ -238,6 +248,47 @@ local date = std.toString(std.get(meta, 'date', ''));
   else []
 )
 ```
+
+#### File name format
+
+Some teams name notes so that a person or an agent can tell what a file is without opening it: `{project} {type} title – YYYY-MM-DD – tool.md`. For example, `{blog} {article} Weekly summary – 2026-10-18 – Cursor.md`. The date always sits near the end, and the last part names the tool that wrote the note.
+
+The validator takes the file name from `path`, splits it at ` – ` and checks each part. When the frontmatter has a `date`, it must match the date in the name:
+
+```jsonnet
+local re = std.native('regexMatch');
+local parts = std.split(path, '/');
+local file = parts[std.length(parts) - 1];
+local name = std.substr(file, 0, std.length(file) - 3);
+local chunks = std.split(name, ' – ');
+local tools = ['Claude Code', 'Cursor', 'ChatGPT', 'Manual'];
+
+local problems =
+  if std.length(chunks) != 3 then [
+    'name must be "{project} {type} title – YYYY-MM-DD – tool"',
+  ] else
+    local head = chunks[0], date = chunks[1], tool = chunks[2];
+    (
+      if re('^\\{[a-z0-9]+\\} \\{[a-z]+\\} .+$', head) then []
+      else ['name must start with {project} {type} and a title']
+    ) + (
+      if re('^\\d{4}-\\d{2}-\\d{2}$', date) then []
+      else ['date "%s" must be YYYY-MM-DD' % date]
+    ) + (
+      if std.member(tools, tool) then []
+      else ['tool "%s" must be one of: %s' % [tool, std.join(', ', tools)]]
+    ) + (
+      local fmDate = std.toString(std.get(meta, 'date', date));
+      if fmDate == date then []
+      else ['frontmatter date %s differs from %s in the name' % [fmDate, date]]
+    );
+
+[{level: 'error', msg: p} for p in problems]
+```
+
+`{blog} {2026-10-18} {article} Weekly summary.md` fails: the date is in the middle, so the name doesn't split into three parts.
+
+Attach a rule like this to a folder with a frontmatter patch, so that new files are checked too. A file created without `validate` is not checked otherwise.
 
 ### What else to check
 

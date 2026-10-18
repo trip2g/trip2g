@@ -371,6 +371,18 @@ func TestValidateDemoVault(t *testing.T) {
 		"notes/workshop_bad.md": {
 			`CRITICAL validate validators/session_has_image.md: line 8: "Session 2: publish" has no image`,
 		},
+		"notes/{blog} {article} Weekly summary – 2026-10-18 – Cursor.md": nil,
+		"notes/{blog} {2026-10-18} {article} Weekly summary.md": {
+			`CRITICAL validate validators/file_name.md: name must be "{project} {type} title – YYYY-MM-DD – tool"`,
+		},
+		"notes/Weekly summary – 18.10.2026 – Notepad.md": {
+			"CRITICAL validate validators/file_name.md: name must start with {project} {type} and a title",
+			`CRITICAL validate validators/file_name.md: date "18.10.2026" must be YYYY-MM-DD`,
+			`CRITICAL validate validators/file_name.md: tool "Notepad" must be one of: Claude Code, Cursor, ChatGPT, Manual`,
+		},
+		"notes/{blog} {article} Weekly summary – 2026-10-17 – Claude Code.md": {
+			"CRITICAL validate validators/file_name.md: frontmatter date 2026-10-18 differs from 2026-10-17 in the name",
+		},
 		"notes/workshop_and_seo.md": {
 			`CRITICAL validate validators/session_has_image.md: line 9: "Session 1: setup" has no image`,
 		},
@@ -401,13 +413,20 @@ func TestValidateDemoVault(t *testing.T) {
 // TestValidateDocsSnippets keeps the examples on the user pages identical to
 // the demo validators that TestValidateDemoVault runs.
 func TestValidateDocsSnippets(t *testing.T) {
-	examples := []string{"required_frontmatter", "sections_order", "session_has_image", "media_hygiene", "seo"}
+	examples := []string{"required_frontmatter", "sections_order", "session_has_image", "media_hygiene", "seo", "file_name"}
 
-	for _, page := range []string{"en/user/validators", "ru/user/validators"} {
+	pages := map[string][]string{
+		"en/user/validators":                 examples,
+		"ru/user/validators":                 examples,
+		"en/thoughts/file-naming-convention": {"file_name"},
+		"ru/thoughts/file-naming-convention": {"file_name"},
+	}
+
+	for page, names := range pages {
 		doc, err := os.ReadFile("../../docs/" + page + ".md")
 		require.NoError(t, err)
 
-		for _, name := range examples {
+		for _, name := range names {
 			src, readErr := os.ReadFile("testdata/validate/validators/" + name + ".md")
 			require.NoError(t, readErr)
 
