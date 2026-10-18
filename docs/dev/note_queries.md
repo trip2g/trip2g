@@ -64,8 +64,7 @@ go-jsonnet can't be cancelled (no context, step limit or settable hook; upstream
 
 ## Not in the MVP
 
-- A result cache keyed by (query note version, params, the caller's access set, vault version).
-- One subgraph lookup per call instead of per note.
+- A result cache keyed by access class, and one access check per call: https://github.com/trip2g/trip2g/issues/441.
 - `links` / `backlinks` in `notes`, and the note body.
 - A time limit or concurrency cap for query programs (see Observability). A public query whose loops depend on `params` (`std.range(1, params.n)`) lets a guest burn CPU; write queries that don't.
-- User docs, and an admin-only `filterNotes` that runs caller-supplied jsonnet (raised in discussion; `notePaths(filter: {frontmatter: [...]})` already filters by `exists`/`equals` with an API key).
+- An admin-only `filterNotes` that runs caller-supplied jsonnet (raised in discussion; `notePaths(filter: {frontmatter: [...]})` already filters by `exists`/`equals` with an API key).

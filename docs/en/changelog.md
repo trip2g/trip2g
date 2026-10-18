@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Note queries give a JavaScript page a list of notes
+
+- **What.** A note with `type: note-query` and a Jsonnet block is a named query. The GraphQL field `noteQuery` runs it with the notes the caller can read and the caller's `params`, and returns the JSON the program builds. A visitor can run it only if they can read the query note.
+- **Why.** A page built with JavaScript needs lists of notes by frontmatter (posts with a tag, tasks by status), but raw frontmatter, and notes a visitor can't read, must not leave the server.
+- **How to use.** Write a query note and call `noteQuery(input: {query: "[[by_tag]]", params: "{\"tag\":\"go\"}"})`. See [[en/user/note-queries|Note queries]].
+
 ### Note validators check notes against your rules on every sync
 
 - **What.** A note can list validator notes in a new `validate` frontmatter field. A validator is a note with a Jsonnet block that reads the frontmatter and the body's structure (headings, images, links, code blocks) and returns errors and warnings. An error marks the note `CRITICAL`: a sync that pushes notes exits with code 1, and the note shows under Note Warnings in the admin panel. `trip2g lint` reports the same messages without a server. The note is still saved and published.

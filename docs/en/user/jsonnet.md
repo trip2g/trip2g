@@ -5,7 +5,7 @@ lang: en
 lang_redirect: "[[ru/user/jsonnet]]"
 ---
 
-Three trip2g features take a short program instead of a fixed setting: a frontmatter patch decides which fields to add, a validator decides what is wrong with a note, a webhook transform decides what to send. These programs are written in [Jsonnet](https://jsonnet.org), a small language for producing JSON. This page covers the part of Jsonnet you need for trip2g and where trip2g runs it.
+Four trip2g features take a short program instead of a fixed setting: a frontmatter patch decides which fields to add, a validator decides what is wrong with a note, a note query decides which notes a page gets, a webhook transform decides what to send. These programs are written in [Jsonnet](https://jsonnet.org), a small language for producing JSON. This page covers the part of Jsonnet you need for trip2g and where trip2g runs it.
 
 ### What Jsonnet is
 
@@ -19,9 +19,10 @@ trip2g runs every program in a sandbox: `import` is blocked, and recursion deepe
 |---|---|---|
 | [[en/user/frontmatter-patches\|Frontmatter patches]] | `meta` (the note's frontmatter), `path` | an object whose fields are merged into the frontmatter |
 | [[en/user/validators\|Note validators]] | `meta` (after patches), `path`, `nodes`, `std.native('regexMatch')` | a list of messages `{level, msg, line?}` |
+| [[en/user/note-queries\|Note queries]] | `notes` (the notes the caller can read), `params` | any JSON, returned to the page |
 | [[en/user/webhooks\|Webhook]] body transform | `std.extVar('change')`, `std.extVar('attached_notes')` as JSON strings | the request body to send instead of the default one |
 
-In patches and validators the program sits in a ```` ```jsonnet ```` block inside an ordinary note. The webhook transform is the `transformJsonnet` field of a change or cron webhook in the GraphQL API; it replaces the whole body and can't be combined with **Pass API key**. `attached_notes` exists only when the webhook attaches notes; reading a missing one stops the program with `Undefined external variable`.
+In patches, validators and note queries the program sits in a ```` ```jsonnet ```` block inside an ordinary note. The webhook transform is the `transformJsonnet` field of a change or cron webhook in the GraphQL API; it replaces the whole body and can't be combined with **Pass API key**. `attached_notes` exists only when the webhook attaches notes; reading a missing one stops the program with `Undefined external variable`.
 
 ### Syntax in ten minutes
 
