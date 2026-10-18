@@ -52,10 +52,20 @@ The program decides which fields leave the server. Raw frontmatter is never retu
 
 `BenchmarkResolveDocs`: one query over the repo's `docs/` vault (857 notes) takes ~12 ms and ~11 MB per call, access checks mocked. Every call rebuilds `notes` and evaluates the program; nothing is cached. For a signed-in reader who isn't an admin, `CanReadNote` lists their active subgraphs from the database **once per note**, which this benchmark doesn't include.
 
+## Observability
+
+A query is the instance admin's own code, so trip2g doesn't sandbox it beyond `MaxStack`; it makes slow queries visible instead.
+
+- `trip2g_note_query_duration_seconds{query, result}` — histogram per query note. `query` is the note's path once the caller may see it, else `unknown` (a visitor's string never becomes a label). `result` is `ok`, `error` (an `ErrorPayload`), `not_found` or `failed` (a system error). Buckets run from 1 ms to ~16 s.
+- A call that takes a second or more is logged as `slow note query` with the query, result, seconds and params size (`cmd/server/note_query.go`).
+- The generic GraphQL metrics already cover the field: `trip2g_graphql_resolver_duration_seconds{object="Query",field="noteQuery"}`, and `trip2g_graphql_resolver_started_total` minus `…_done_total` shows calls still running — the sign of a runaway query.
+
+go-jsonnet can't be cancelled (no context, step limit or settable hook; upstream issue google/go-jsonnet#729), so a stuck query holds its goroutine until it finishes.
+
 ## Not in the MVP
 
 - A result cache keyed by (query note version, params, the caller's access set, vault version).
 - One subgraph lookup per call instead of per note.
 - `links` / `backlinks` in `notes`, and the note body.
-- A time limit for a query program. `import` is blocked and `MaxStack` stops deep recursion, but a wide loop runs on the request goroutine, and the request context doesn't stop it. A public query whose loops depend on `params` (`std.range(1, params.n)`) lets a guest burn CPU; write queries that don't.
+- A time limit or concurrency cap for query programs (see Observability). A public query whose loops depend on `params` (`std.range(1, params.n)`) lets a guest burn CPU; write queries that don't.
 - User docs, and an admin-only `filterNotes` that runs caller-supplied jsonnet (raised in discussion; `notePaths(filter: {frontmatter: [...]})` already filters by `exists`/`equals` with an API key).

@@ -10,6 +10,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 
 	"trip2g/internal/graph/model"
 	"trip2g/internal/jsonneteval"
@@ -23,6 +24,9 @@ import (
 type Env interface {
 	LatestNoteViews() *appmodel.NoteViews
 	CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error)
+	// ObserveNoteQuery records the call's duration for metrics and logs a
+	// slow one. query is the query note's path, or "unknown".
+	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
 }
 
 // queryPrelude gives the query `notes` and `params` as values. It shares the
@@ -39,11 +43,41 @@ type queryNote struct {
 }
 
 func Resolve(ctx context.Context, env Env, input model.NoteQueryInput) (model.NoteQueryOrErrorPayload, error) {
+	start := time.Now()
+	query := "unknown"
+
+	res, err := resolve(ctx, env, input, &query)
+
+	result := "ok"
+	if p, isErr := res.(*model.ErrorPayload); isErr {
+		result = "error"
+		if p.Message == errQueryNotFound {
+			result = "not_found"
+		}
+	}
+	if err != nil {
+		result = "failed"
+	}
+
+	paramsBytes := 0
+	if input.Params != nil {
+		paramsBytes = len(*input.Params)
+	}
+	env.ObserveNoteQuery(query, result, time.Since(start), paramsBytes)
+
+	return res, err
+}
+
+const errQueryNotFound = "query not found"
+
+// resolve does the work; it sets *query to the query note's path once the
+// caller is known to be allowed to see it.
+func resolve(ctx context.Context, env Env, input model.NoteQueryInput, query *string) (model.NoteQueryOrErrorPayload, error) {
 	nvs := env.LatestNoteViews()
 
 	note := findQuery(nvs, input.Query)
 	if note == nil {
-		return &model.ErrorPayload{Message: "query not found"}, nil
+		return &model.ErrorPayload{Message: errQueryNotFound}, nil
 	}
 
 	// A query the caller can't read must look the same as a missing one.
@@ -52,8 +86,9 @@ func Resolve(ctx context.Context, env Env, input model.NoteQueryInput) (model.No
 		return nil, fmt.Errorf("failed to check query access: %w", err)
 	}
 	if !canRead {
-		return &model.ErrorPayload{Message: "query not found"}, nil
+		return &model.ErrorPayload{Message: errQueryNotFound}, nil
 	}
+	*query = note.Path
 
 	if typ, _ := note.RawMeta["type"].(string); typ != "note-query" {
 		return &model.ErrorPayload{Message: note.Path + " is not a note-query"}, nil

@@ -6,6 +6,7 @@ package runnotequery
 import (
 	"context"
 	"sync"
+	"time"
 	appmodel "trip2g/internal/model"
 )
 
@@ -25,6 +26,9 @@ var _ Env = &EnvMock{}
 //			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
+//			ObserveNoteQueryFunc: func(query string, result string, elapsed time.Duration, paramsBytes int)  {
+//				panic("mock out the ObserveNoteQuery method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires Env
@@ -38,6 +42,9 @@ type EnvMock struct {
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *appmodel.NoteViews
 
+	// ObserveNoteQueryFunc mocks the ObserveNoteQuery method.
+	ObserveNoteQueryFunc func(query string, result string, elapsed time.Duration, paramsBytes int)
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// CanReadNote holds details about calls to the CanReadNote method.
@@ -50,9 +57,21 @@ type EnvMock struct {
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
+		// ObserveNoteQuery holds details about calls to the ObserveNoteQuery method.
+		ObserveNoteQuery []struct {
+			// Query is the query argument value.
+			Query string
+			// Result is the result argument value.
+			Result string
+			// Elapsed is the elapsed argument value.
+			Elapsed time.Duration
+			// ParamsBytes is the paramsBytes argument value.
+			ParamsBytes int
+		}
 	}
-	lockCanReadNote     sync.RWMutex
-	lockLatestNoteViews sync.RWMutex
+	lockCanReadNote      sync.RWMutex
+	lockLatestNoteViews  sync.RWMutex
+	lockObserveNoteQuery sync.RWMutex
 }
 
 // CanReadNote calls CanReadNoteFunc.
@@ -115,5 +134,49 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 	mock.lockLatestNoteViews.RLock()
 	calls = mock.calls.LatestNoteViews
 	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// ObserveNoteQuery calls ObserveNoteQueryFunc.
+func (mock *EnvMock) ObserveNoteQuery(query string, result string, elapsed time.Duration, paramsBytes int) {
+	if mock.ObserveNoteQueryFunc == nil {
+		panic("EnvMock.ObserveNoteQueryFunc: method is nil but Env.ObserveNoteQuery was just called")
+	}
+	callInfo := struct {
+		Query       string
+		Result      string
+		Elapsed     time.Duration
+		ParamsBytes int
+	}{
+		Query:       query,
+		Result:      result,
+		Elapsed:     elapsed,
+		ParamsBytes: paramsBytes,
+	}
+	mock.lockObserveNoteQuery.Lock()
+	mock.calls.ObserveNoteQuery = append(mock.calls.ObserveNoteQuery, callInfo)
+	mock.lockObserveNoteQuery.Unlock()
+	mock.ObserveNoteQueryFunc(query, result, elapsed, paramsBytes)
+}
+
+// ObserveNoteQueryCalls gets all the calls that were made to ObserveNoteQuery.
+// Check the length with:
+//
+//	len(mockedEnv.ObserveNoteQueryCalls())
+func (mock *EnvMock) ObserveNoteQueryCalls() []struct {
+	Query       string
+	Result      string
+	Elapsed     time.Duration
+	ParamsBytes int
+} {
+	var calls []struct {
+		Query       string
+		Result      string
+		Elapsed     time.Duration
+		ParamsBytes int
+	}
+	mock.lockObserveNoteQuery.RLock()
+	calls = mock.calls.ObserveNoteQuery
+	mock.lockObserveNoteQuery.RUnlock()
 	return calls
 }

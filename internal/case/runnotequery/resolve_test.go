@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/kr/pretty"
 	"github.com/stretchr/testify/require"
@@ -56,68 +57,84 @@ func TestResolve(t *testing.T) {
 		name     string
 		input    model.NoteQueryInput
 		expected model.NoteQueryOrErrorPayload
+		observed string // "query result" passed to ObserveNoteQuery
 	}{
 		{
 			name:     "returns the query result as JSON",
 			input:    model.NoteQueryInput{Query: "queries/titles.md"},
 			expected: &model.NoteQueryPayload{JSON: `["A","B"]`},
+			observed: "queries/titles.md ok",
 		},
 		{
 			name:     "wikilink target and params",
 			input:    model.NoteQueryInput{Query: "[[by_tag]]", Params: str(`{"tag": "go"}`)},
 			expected: &model.NoteQueryPayload{JSON: `["blog/a.md"]`},
+			observed: "queries/by_tag.md ok",
 		},
 		{
 			name:     "unknown query",
 			input:    model.NoteQueryInput{Query: "queries/nope.md"},
 			expected: &model.ErrorPayload{Message: "query not found"},
+			observed: "unknown not_found",
 		},
 		{
 			name:     "a query the caller can't read looks missing",
 			input:    model.NoteQueryInput{Query: "queries/secret.md"},
 			expected: &model.ErrorPayload{Message: "query not found"},
+			observed: "unknown not_found",
 		},
 		{
 			name:     "a note without type note-query is not a query",
 			input:    model.NoteQueryInput{Query: "queries/plain.md"},
 			expected: &model.ErrorPayload{Message: "queries/plain.md is not a note-query"},
+			observed: "queries/plain.md error",
 		},
 		{
 			name:     "params must be JSON",
 			input:    model.NoteQueryInput{Query: "queries/titles.md", Params: str(`{tag`)},
 			expected: &model.ErrorPayload{Message: "params must be JSON"},
+			observed: "queries/titles.md error",
 		},
 		{
 			name:     "notes skip unreadable, system and non-markdown files",
 			input:    model.NoteQueryInput{Query: "queries/paths.md"},
 			expected: &model.NoteQueryPayload{JSON: `["blog/a.md","blog/b.md","odd.md"]`},
+			observed: "queries/paths.md ok",
 		},
 		{
 			name:     "a non-finite number in frontmatter becomes null",
 			input:    model.NoteQueryInput{Query: "queries/nan.md"},
 			expected: &model.NoteQueryPayload{JSON: `[null]`},
+			observed: "queries/nan.md ok",
 		},
 		{
 			name:     "a query needs exactly one jsonnet block",
 			input:    model.NoteQueryInput{Query: "queries/two.md"},
 			expected: &model.ErrorPayload{Message: "queries/two.md: a note-query needs exactly one jsonnet block"},
+			observed: "queries/two.md error",
 		},
 		{
 			name:     "params are capped",
 			input:    model.NoteQueryInput{Query: "queries/titles.md", Params: str(`"` + strings.Repeat("x", 17000) + `"`)},
 			expected: &model.ErrorPayload{Message: "params is larger than 16 KB"},
+			observed: "queries/titles.md error",
 		},
 		{
 			name:     "runtime error",
 			input:    model.NoteQueryInput{Query: "queries/broken.md"},
 			expected: &model.ErrorPayload{Message: "queries/broken.md: RUNTIME ERROR: boom"},
+			observed: "queries/broken.md error",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			nvs := load(t, vault)
+			var observed []string
 			env := &runnotequery.EnvMock{
+				ObserveNoteQueryFunc: func(query, result string, _ time.Duration, _ int) {
+					observed = append(observed, query+" "+result)
+				},
 				LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
 				CanReadNoteFunc: func(_ context.Context, note *appmodel.NoteView) (bool, error) {
 					return !hidden[note.Path], nil
@@ -129,6 +146,7 @@ func TestResolve(t *testing.T) {
 			if diff := pretty.Diff(tt.expected, got); len(diff) > 0 {
 				t.Errorf("mismatch:\n%s\ngot: %# v", diff, pretty.Formatter(got))
 			}
+			require.Equal(t, []string{tt.observed}, observed)
 		})
 	}
 }

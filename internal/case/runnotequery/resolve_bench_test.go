@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/graph/model"
@@ -48,8 +49,9 @@ func BenchmarkResolveDocs(b *testing.B) {
 		b.Fatal(err)
 	}
 	env := &runnotequery.EnvMock{
-		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
-		CanReadNoteFunc:     func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
+		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
+		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
+		CanReadNoteFunc:      func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 	}
 
 	for b.Loop() {
