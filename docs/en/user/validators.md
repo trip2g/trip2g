@@ -311,6 +311,17 @@ trip2g has no API that adds a warning to a note. The service reports back by wri
 
   The messages then show in the sync output and the admin panel like any other. This edits the author's note on the server, so it no longer matches their local copy.
 
+### Plans
+
+Rules over the whole vault are planned, but how to build them is not settled yet:
+
+- every note has at least one link, in or out;
+- every folder has an index note;
+- the target of `supersedes` is marked `deprecated`;
+- a `stale_after` date has passed.
+
+They need a different kind of validator: one that sees all notes and the current date, and runs without the per-note cache. The discussion is in [issue #436](https://github.com/trip2g/trip2g/issues/436). Until then, run such checks yourself next to trip2g, with a webhook as described above.
+
 ### What else to check
 
 - **The contract with a template.** A layout reads `cover`, `description` and a `## Summary` section. The validator makes sure every note that uses the layout has them.
