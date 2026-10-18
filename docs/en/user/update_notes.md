@@ -4,7 +4,7 @@ free: true
 lang_redirect: "[[ru/user/update_notes]]"
 ---
 
-`updateNotes` is the GraphQL mutation for programmatically modifying note content. It handles three operations in a single call — create/replace (upsert), atomic find-and-replace (patch), and hiding a note from public view — and commits changes immediately without a separate `commitNotes` call.
+`updateNotes` is the GraphQL mutation for programmatically modifying note content. It handles four operations in a single call — create/replace (upsert), atomic find-and-replace (patch), changing frontmatter keys (meta), and hiding a note from public view — and commits changes immediately without a separate `commitNotes` call.
 
 Use `updateNotes` when you know exactly what to change. For a full vault sync from an Obsidian plugin, `pushNotes` + `commitNotes` remains the right path.
 
@@ -37,7 +37,7 @@ mutation UpdateNotes($input: UpdateNotesInput!) {
 
 ### Operation types
 
-Each item in `changes` is a `NoteChangeInput` with exactly one of three fields set.
+Each item in `changes` is a `NoteChangeInput` with exactly one of four fields set.
 
 #### upsert — create or fully replace a note
 
@@ -75,6 +75,32 @@ Rules:
 - Empty `replace` is valid — it deletes the matched string.
 
 Optional `expectedHash` works the same as for upsert.
+
+#### meta — change frontmatter keys
+
+```json
+{
+  "meta": {
+    "path": "todo.md",
+    "set": { "status": "done", "priority": 2 },
+    "unset": ["due"]
+  }
+}
+```
+
+Changes top-level keys of the note's frontmatter without sending the whole note or the exact text of the old value.
+
+Rules:
+- `set` adds a key that is absent and replaces the value of one that is present. A value can be a string, number, boolean, list, object or `null`.
+- `unset` removes keys. Removing a key the note does not have is not an error.
+- Only top-level keys: `"og.title"` is a key literally named `og.title`, not `title` inside `og`. To change a nested value, set the whole top-level key.
+- Every other key keeps its line, its order, its quoting and its comments. The note body is not touched. New keys are added after the last key, in sorted order.
+- A note without frontmatter gets a `---` block at the top; the body below it stays byte for byte the same.
+- Setting a key to the string, number or boolean it already holds keeps the line as it is, and the note gets no new version.
+- The note must exist. A missing note, or frontmatter that cannot be edited key by key (invalid YAML, a `{...}` flow mapping, a key declared twice, a block with no closing `---`), returns an `ErrorPayload`.
+- `set` and `unset` cannot both be empty, and one key cannot be in both.
+
+Optional `expectedHash` works the same as for patch.
 
 #### hide — remove a note from public view
 
@@ -239,7 +265,7 @@ With none of the three the request fails with `missing X-API-Key in request head
 
 Webhook agents receive a temporary `api_token` in the request payload (when **Pass API key** is enabled). That token can be used directly with `updateNotes` to write back to the vault.
 
-The agent response `changes[]` field also supports patch operations as an alternative to calling `updateNotes` directly — include `find` and `replace` instead of `content` in a change object. See [[webhooks]] for the full agent response format.
+The agent response `changes[]` field also supports patch operations as an alternative to calling `updateNotes` directly — include `find` and `replace` instead of `content` in a change object. A change with `"kind": "meta"` and `set` / `unset` instead of `content` edits frontmatter keys with the same rules as the meta operation. See [[webhooks]] for the full agent response format.
 
 Cron webhooks can trigger agents on a schedule. A cron agent might, for example, check all `todo/**` notes for overdue tasks and patch their status fields — running nightly without any external infrastructure.
 

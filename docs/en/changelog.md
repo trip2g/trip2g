@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### `updateNotes` changes one frontmatter key without rewriting the note
+
+- **What.** A new `meta` change in `updateNotes` takes `set` (keys to add or replace) and `unset` (keys to remove) for a note's top-level frontmatter. Every other key keeps its line, order, quoting and comments, and the body is not touched. A note without frontmatter gets a block. `expectedHash` works as for `patch`. Fleet roles get the same edit as a `set_note_meta` tool, and a webhook agent can return it as a change with `"kind": "meta"`.
+- **Why.** Changing one key meant rewriting the whole note with `upsert`, or a `patch` whose `find` had to repeat the current text exactly and failed when the formatting differed. LLM agents that rewrite frontmatter text also move and reformat keys they were not asked to touch.
+- **How to use.** Send `{"meta": {"path": "todo.md", "set": {"status": "done"}}}` in `changes`. See [[en/user/update_notes|updateNotes]].
+
 ### Note validators check notes against your rules on every sync
 
 - **What.** A note can list validator notes in a new `validate` frontmatter field. A validator is a note with a Jsonnet block that reads the frontmatter and the body's structure (headings, images, links, code blocks) and returns errors and warnings. An error marks the note `CRITICAL`: a sync that pushes notes exits with code 1, and the note shows under Note Warnings in the admin panel. `trip2g lint` reports the same messages without a server. The note is still saved and published.

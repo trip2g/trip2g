@@ -92,7 +92,7 @@ is not a promise that it never fires.
 
 ## Tools and scope
 
-An LLM role gets five tools:
+An LLM role gets six tools:
 
 | Tool | What it does |
 |------|-------------|
@@ -100,6 +100,7 @@ An LLM role gets five tools:
 | `read_note(path)` | read a note (read scope only) |
 | `write_note(path, content)` | create or replace a note (write scope only) |
 | `patch_note(path, find, replace)` | surgical find and replace; fails unless `find` matches exactly once |
+| `set_note_meta(path, set, unset)` | add, replace or remove top-level frontmatter keys of an existing note; other keys, comments and the body stay as they are |
 | `finish(answer)` | end the run with a summary |
 
 Every call is checked against `read_patterns` and `write_patterns` at the runtime level, not in the prompt. An out-of-scope request is denied and the denial is fed back to the model. Writes go through a per-delivery scoped token the hub mints for that one delivery, so the agent physically cannot reach paths outside its scope, and every write is a normal note version you can inspect and revert.
