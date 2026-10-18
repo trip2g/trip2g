@@ -93,6 +93,6 @@ Not done yet, and only worth doing if a full pass turns out to hurt:
 
 ## Out of the MVP
 
-Binding by `include`/`exclude` globs, `type: validator`, selectors over nodes, vault-wide rules (uniqueness, backlinks), and the speed-ups listed above.
+Binding by `include`/`exclude` globs, `type: validator`, selectors over nodes, and the speed-ups listed above. Vault-wide rules (orphans, folder indexes, `supersedes`, `stale_after` with a clock) are planned as a separate, uncached vault-validator type: https://github.com/trip2g/trip2g/issues/436. Reading another note from a note validator (`std.native('note')`) was deferred, because the per-note cache key would have to track every note it read.
 
 Also missing are a time limit and a memory limit for a validator. `import` is blocked and `MaxStack` stops deep recursion, but a wide loop like `std.makeArray(1e8, ...)` still runs inside the full-vault `Load` on every push. Frontmatter patches carry the same risk today. Validators multiply it, because each one runs once for every note that lists it.

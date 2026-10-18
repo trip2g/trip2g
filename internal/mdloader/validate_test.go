@@ -243,6 +243,29 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "appending patches stack with the note's own validate",
+			sources: map[string]string{
+				"own.md":    validatorNote(`[{level: 'error', msg: 'own'}]`),
+				"folder.md": validatorNote(`[{level: 'error', msg: 'folder'}]`),
+				"vault.md":  validatorNote(`[{level: 'error', msg: 'vault'}]`),
+				"p1.md": "---\ntype: frontmatter-patch\ninclude: [\"blog/**\"]\n---\n```jsonnet\n" +
+					"local own = std.get(meta, 'validate', []);\n" +
+					"local list = if std.isString(own) then [own] else own;\n" +
+					"{ validate: list + ['[[folder]]'] }\n```\n",
+				"p2.md": "---\ntype: frontmatter-patch\ninclude: [\"**/*.md\"]\npriority: 1\n---\n```jsonnet\n" +
+					"local own = std.get(meta, 'validate', []);\n" +
+					"local list = if std.isString(own) then [own] else own;\n" +
+					"{ validate: list + ['[[vault]]'] }\n```\n",
+				"blog/post.md": "---\nvalidate: \"[[own]]\"\n---\nbody\n",
+			},
+			path: "blog/post.md",
+			expected: []model.NoteWarning{
+				{Level: model.NoteWarningCritical, Message: "validate own.md: own"},
+				{Level: model.NoteWarningCritical, Message: "validate folder.md: folder"},
+				{Level: model.NoteWarningCritical, Message: "validate vault.md: vault"},
+			},
+		},
+		{
 			name: "heading fragment in a target is ignored",
 			sources: map[string]string{
 				"rules.md": validatorNote(`[{level: 'error', msg: 'ran'}]`),
@@ -422,6 +445,11 @@ func TestValidateDocsSnippets(t *testing.T) {
 		"ru/thoughts/file-naming-convention": {"file_name"},
 	}
 
+	// The folder patch on both user pages appends to the note's own validate.
+	appendPatch := "local own = std.get(meta, 'validate', []);\n" +
+		"local list = if std.isString(own) then [own] else own;\n" +
+		"{ validate: list + ['[[required_frontmatter]]', '[[seo]]'] }"
+
 	for page, names := range pages {
 		doc, err := os.ReadFile("../../docs/" + page + ".md")
 		require.NoError(t, err)
@@ -435,6 +463,9 @@ func TestValidateDocsSnippets(t *testing.T) {
 			block, _, _ = strings.Cut(block, "\n```")
 
 			require.Contains(t, string(doc), "```jsonnet\n"+block+"\n```", "docs/%s.md lost the %s example", page, name)
+		}
+		if len(names) > 1 {
+			require.Contains(t, string(doc), appendPatch, "docs/%s.md lost the folder patch", page)
 		}
 	}
 }

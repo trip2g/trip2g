@@ -78,7 +78,7 @@ A validator can be named as a wikilink or as a path, with or without `.md`. Look
 
 Write each rule once and reuse it. Keep the validators in one folder, such as `validators/`, one rule per note: "required fields", "SEO", "every session has an image". Each note type then lists the set it needs. A workshop gets `session_has_image` and `seo`. An article gets `required_frontmatter`, `seo` and `sections_order`.
 
-To check a whole folder, don't edit every note: set `validate` with a [[en/user/frontmatter-patches|frontmatter patch]]:
+To check a whole folder, don't edit every note: add the validators with a [[en/user/frontmatter-patches|frontmatter patch]]:
 
 ````
 ---
@@ -86,20 +86,20 @@ type: frontmatter-patch
 include: ["blog/**"]
 ---
 
-```jsonnet
-{ validate: ['[[required_frontmatter]]', '[[seo]]'] }
-```
-````
-
-A patch replaces the note's own `validate`. To add to the list instead, merge it, as in [[en/thoughts/file-naming-convention|A file name that explains the file]]:
+Blog posts also follow the required-fields and SEO rules.
 
 ```jsonnet
 local own = std.get(meta, 'validate', []);
-{
-  validate: (if std.isString(own) then [own] else own)
-    + ['[[file_name]]'],
-}
+local list = if std.isString(own) then [own] else own;
+{ validate: list + ['[[required_frontmatter]]', '[[seo]]'] }
 ```
+````
+
+The patch takes the note's own `validate` (an empty list when there is none), turns a single string into a one-item list, and adds the folder's rules. A note without `validate` gets the folder's rules; a note with `validate: "[[sections_order]]"` gets all three.
+
+Patches written this way stack. Each patch sees the frontmatter left by the patches before it, so a patch on `blog/**` and a patch on `**/*.md` together give a blog post both sets of rules, plus its own.
+
+A patch that returns a plain list instead, such as `{ validate: ['[[seo]]'] }`, replaces the note's own `validate` and anything earlier patches added. Use that form only when the folder's rules must override the note's.
 
 Validators see the frontmatter after patches are applied, so a field added by a patch counts as present.
 
@@ -289,6 +289,27 @@ local problems =
 `{blog} {2026-10-18} {article} Weekly summary.md` fails: the date is in the middle, so the name doesn't split into three parts.
 
 Attach a rule like this to a folder with a frontmatter patch, so that new files are checked too. A file created without `validate` is not checked otherwise.
+
+### Beyond the basics
+
+Validators cover rules about one note at a time, without a clock. For anything else, run your own checker outside trip2g:
+
+- **A change webhook** sends every changed note to your service. The service can check anything: other notes, external systems, the current date. See [[en/user/webhooks|Webhooks]].
+- **A cron webhook** runs the check on a schedule, for rules that depend on time, such as "re-check this note after its `stale_after` date".
+
+trip2g has no API that adds a warning to a note. The service reports back by writing notes: in the webhook response (`changes[]`) or through the API token. Two ways that work today:
+
+- **A report note.** The service writes a note such as `reports/validation.md` that lists the problems. It shows up on the site and in search like any other note.
+- **A field plus a validator.** The service writes the problems into a frontmatter field of the checked note, for example `external_errors: ["no backlinks"]`, and a small validator turns the field into messages:
+
+  ```jsonnet
+  [
+    {level: 'error', msg: e}
+    for e in std.get(meta, 'external_errors', [])
+  ]
+  ```
+
+  The messages then show in the sync output and the admin panel like any other. This edits the author's note on the server, so it no longer matches their local copy.
 
 ### What else to check
 
