@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	"net/url"
-	"slices"
 	"strings"
 	"time"
 
@@ -43,9 +42,22 @@ type Updater struct {
 	fedKeys          *prometheus.GaugeVec
 	fedKeySubgraphs  *prometheus.GaugeVec
 	fedPeers         *prometheus.GaugeVec
-	fedSelfLabels    []string
 	interval         time.Duration
+
+	lastQueueDepth      labelPairs
+	lastFedSubgraphs    labelPairs
+	lastFedSelf         labelPairs
+	lastFedKeys         labelTriples
+	lastFedKeySubgraphs labelPairs
+	lastFedPeers        labelPairs
 }
+
+// labelPairs and labelTriples hold the values of a two- and a three-label
+// gauge vector by their label values.
+type (
+	labelPairs   map[[2]string]float64
+	labelTriples map[[3]string]float64
+)
 
 // NewUpdater creates a metrics updater with Prometheus gauges, registered on reg.
 func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Updater {
@@ -99,7 +111,7 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 
 	fedSubgraphs := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "trip2g_federation_secret_subgraphs",
-		Help: "Number of live federation keys scoped to each subgraph, by direction",
+		Help: "Number of live inbound federation keys scoped to each subgraph (scope only applies to inbound keys)",
 	}, []string{"direction", "subgraph"})
 	reg.MustRegister(fedSubgraphs)
 
@@ -117,8 +129,8 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 
 	fedKeySubgraphs := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "trip2g_federation_key_subgraph_info",
-		Help: "One series per subgraph a live federation key is scoped to. Always 1",
-	}, []string{"direction", "kid", "subgraph"})
+		Help: "One series per subgraph a live inbound federation key is scoped to (scope only applies to inbound keys). Always 1",
+	}, []string{"kid", "subgraph"})
 	reg.MustRegister(fedKeySubgraphs)
 
 	fedPeers := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -197,15 +209,16 @@ func (u *Updater) updateMetrics(ctx context.Context) {
 		u.noteAssetsCount.Set(float64(assetsCount))
 	}
 
-	// Job queue depth, per queue. Reset first so a queue that drains to zero
-	// (and drops out of the grouped query) doesn't leave a stale nonzero value.
+	// Job queue depth, per queue. A queue that drains to zero drops out of the
+	// grouped query, so its series is deleted rather than left stale.
 	stats, err := u.env.ListGoqiteAllQueueStats(ctx)
 	if err == nil {
-		u.queueDepth.Reset()
+		depth := labelPairs{}
 		for _, s := range stats {
-			u.queueDepth.WithLabelValues(s.Queue, "pending").Set(float64(s.PendingCount))
-			u.queueDepth.WithLabelValues(s.Queue, "retrying").Set(float64(s.RetryCount))
+			depth[[2]string{s.Queue, "pending"}] = float64(s.PendingCount)
+			depth[[2]string{s.Queue, "retrying"}] = float64(s.RetryCount)
 		}
+		u.lastQueueDepth = replaceGauges(u.queueDepth, u.lastQueueDepth, depth, pair)
 	}
 
 	u.updateFederationMetrics(ctx)
@@ -225,24 +238,10 @@ func (u *Updater) updateFederationMetrics(ctx context.Context) {
 		return
 	}
 
-	// Replaced, not reset, so an always-present series never blinks out
-	// between a reset and a scrape.
-	self := []string{topology.Self.KBID, topology.Self.MCPURL}
-	if u.fedSelfLabels != nil && !slices.Equal(u.fedSelfLabels, self) {
-		u.fedSelf.DeleteLabelValues(u.fedSelfLabels...)
-	}
-	u.fedSelf.WithLabelValues(self...).Set(1)
-	u.fedSelfLabels = self
-
-	// Reset so a revoked or deleted key, and a subgraph whose last key was
-	// unscoped, drops out.
-	u.fedKeys.Reset()
-	u.fedKeySubgraphs.Reset()
-	u.fedSubgraphs.Reset()
-	u.fedPeers.Reset()
-
 	keys := map[string]int{directionInbound: 0, directionOutbound: 0}
-	perSubgraph := map[[2]string]int{}
+	perSubgraph := labelPairs{}
+	keyInfo := labelTriples{}
+	keySubgraphs := labelPairs{}
 	record := func(direction string, secrets []federationtopology.Secret) {
 		for _, secret := range secrets {
 			if secret.RevokedAt != nil {
@@ -253,25 +252,58 @@ func (u *Updater) updateFederationMetrics(ctx context.Context) {
 			if secret.KBURL != nil {
 				kbURL = labelURL(*secret.KBURL)
 			}
-			u.fedKeys.WithLabelValues(direction, secret.KID, kbURL).Set(1)
+			keyInfo[[3]string{direction, secret.KID, kbURL}] = 1
+			// Scope rows are keyed by kid alone and only gate inbound keys, so an
+			// outbound key sharing a kid would pick up an inbound key's scope.
+			if direction != directionInbound {
+				continue
+			}
 			for _, subgraph := range secret.Subgraphs {
 				perSubgraph[[2]string{direction, subgraph.Name}]++
-				u.fedKeySubgraphs.WithLabelValues(direction, secret.KID, subgraph.Name).Set(1)
+				keySubgraphs[[2]string{secret.KID, subgraph.Name}] = 1
 			}
 		}
 	}
 	record(directionInbound, topology.Inbound)
 	record(directionOutbound, topology.Outbound)
 
+	peers := labelPairs{}
+	for _, note := range topology.KBNotes {
+		peers[[2]string{note.KBID, labelURL(note.KBURL)}] = 1
+	}
+	self := labelPairs{{topology.Self.KBID, topology.Self.MCPURL}: 1}
+
 	for direction, n := range keys {
 		u.fedSecrets.WithLabelValues(direction).Set(float64(n))
 	}
-	for labels, n := range perSubgraph {
-		u.fedSubgraphs.WithLabelValues(labels[0], labels[1]).Set(float64(n))
+	u.lastFedSubgraphs = replaceGauges(u.fedSubgraphs, u.lastFedSubgraphs, perSubgraph, pair)
+	u.lastFedSelf = replaceGauges(u.fedSelf, u.lastFedSelf, self, pair)
+	u.lastFedKeys = replaceGauges(u.fedKeys, u.lastFedKeys, keyInfo, triple)
+	u.lastFedKeySubgraphs = replaceGauges(u.fedKeySubgraphs, u.lastFedKeySubgraphs, keySubgraphs, pair)
+	u.lastFedPeers = replaceGauges(u.fedPeers, u.lastFedPeers, peers, pair)
+}
+
+// replaceGauges sets every label set in next, then deletes the ones set last
+// round that are absent now. Unlike Reset-then-refill, a scrape never sees the
+// vector empty between the two steps.
+func replaceGauges[K comparable](vec *prometheus.GaugeVec, last, next map[K]float64, values func(K) []string) map[K]float64 {
+	for labels, v := range next {
+		vec.WithLabelValues(values(labels)...).Set(v)
 	}
-	for _, note := range topology.KBNotes {
-		u.fedPeers.WithLabelValues(note.KBID, labelURL(note.KBURL)).Set(1)
+	for labels := range last {
+		if _, ok := next[labels]; !ok {
+			vec.DeleteLabelValues(values(labels)...)
+		}
 	}
+	return next
+}
+
+func pair(labels [2]string) []string {
+	return labels[:]
+}
+
+func triple(labels [3]string) []string {
+	return labels[:]
 }
 
 // labelURL keeps scheme, host and path. A URL typed into a key or a KB-note
