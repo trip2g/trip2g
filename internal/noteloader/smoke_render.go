@@ -56,6 +56,9 @@ type smokeQueries struct {
 // NoteWarning entries on the layout so that CLI / pushNotes flows surface them
 // without needing a browser request.
 //
+// A note whose `layout:` names no loaded layout gets a warning here, once per
+// load, instead of a log line on every request to it.
+//
 // Skipped:
 //   - layouts with parse errors (View == nil) — already have Critical warning
 //   - layouts no note uses — nothing meaningful to render against
@@ -63,6 +66,8 @@ func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger
 	if layouts == nil || nvs == nil {
 		return
 	}
+
+	warnMissingLayouts(layouts, nvs, log)
 
 	byLayout := make(map[string][]*model.NoteView)
 	for _, guest := range []bool{true, false} {
@@ -91,6 +96,23 @@ func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger
 			layout.Warnings = append(layout.Warnings, warnings...)
 			layouts.Map[id] = layout
 		}
+	}
+}
+
+func warnMissingLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger.Logger) {
+	missing := make(map[string]int)
+	for _, n := range nvs.List {
+		if n == nil || n.Layout == "" {
+			continue
+		}
+		if _, ok := layouts.Map["/"+n.Layout]; ok {
+			continue
+		}
+		n.AddWarning(model.NoteWarningWarning, "layout %q not found", n.Layout)
+		missing[n.Layout]++
+	}
+	for name, notes := range missing {
+		log.Warn("layout not found", "name", name, "notes", notes)
 	}
 }
 

@@ -256,8 +256,11 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 // layout (e.g. robots.md → robots layout → robots.txt body). Without a layout
 // the raw note body is served with frontmatter stripped (e.g. llms.md). Both
 // paths skip the page cache (which only stores text/html).
+// A layout that is missing, or fails to parse for a non-admin, is not
+// processed; like the HTML path falling back to the default template, the
+// note then falls back to the no-layout raw body.
 // Returns (true, nil) when the response is fully written, (false, nil) when
-// content_type is not set, or (false, err) on layout error.
+// content_type is not set, or (true, err) on layout error.
 func handleContentTypeNote(ctx *fasthttp.RequestCtx, env Env, resp *Response, layout string) (bool, error) {
 	if resp.NoteView == nil || resp.Note == nil {
 		return false, nil
@@ -268,8 +271,10 @@ func handleContentTypeNote(ctx *fasthttp.RequestCtx, env Env, resp *Response, la
 	}
 	ctx.SetContentType(ct)
 	if layout != "" {
-		_, err := renderLayout(ctx, env, resp, layout)
-		return true, err
+		processed, err := renderLayout(ctx, env, resp, layout)
+		if processed || err != nil {
+			return true, err
+		}
 	}
 	ctx.SetBodyString(mdchunk.StripFrontmatter(string(resp.Note.Content)))
 	return true, nil
@@ -383,18 +388,7 @@ func renderLayout(
 ) (processed bool, err error) {
 	layout, layoutExists := env.Layouts().Map["/"+layoutName]
 	if !layoutExists {
-		layoutNames := []string{}
-
-		for name := range env.Layouts().Map {
-			layoutNames = append(layoutNames, name)
-		}
-
-		env.Logger().Warn(
-			"layout not found",
-			"name", resp.Note.Layout,
-			"available_layouts", layoutNames,
-		)
-
+		env.Logger().Debug("layout not found", "name", layoutName)
 		return false, nil
 	}
 
