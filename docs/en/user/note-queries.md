@@ -64,7 +64,7 @@ const posts = data.noteQuery.rawResult
 | `params` | the parsed `params`, `{}` when none were passed |
 | `currentUser` | who is asking: `{ id, role, isAdmin, signedIn }`; a guest has `null` for `id` and `role` |
 
-`meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. With `all_notes: true` each note also has `readable`. System notes (paths starting with `_`) and files that aren't markdown notes (canvas, base, excalidraw) are left out.
+`meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. With `all_notes: true` each note also has `readable`. System notes (paths starting with `_`), notes hidden from [[en/user/search|search]] with `search: false`, and files that aren't markdown notes (canvas, base, excalidraw) are left out.
 
 The program can return any JSON value: a list of notes, an object of counts, a single number. A query is not limited to listing notes; it can aggregate them.
 

@@ -181,7 +181,8 @@ func findQuery(nvs *appmodel.NoteViews, query string) *appmodel.NoteView {
 
 // queryNotes is the query's `notes` in path order, with frontmatter after
 // patches: the notes the caller can read, or with all set every note plus
-// `readable`. System notes (`_…`) are left out, as in other listings.
+// `readable`. System notes (`_…`) and `search: false` notes are left out, as
+// in other listings.
 func queryNotes(read canreadnote.Reader, nvs *appmodel.NoteViews, all bool) ([]byte, error) {
 	paths := make([]string, 0, len(nvs.PathMap))
 	for path := range nvs.PathMap {
@@ -192,7 +193,7 @@ func queryNotes(read canreadnote.Reader, nvs *appmodel.NoteViews, all bool) ([]b
 	notes := make([]queryNote, 0, len(paths))
 	for _, path := range paths {
 		note := nvs.PathMap[path]
-		if note.IsSystem() || note.Ast() == nil {
+		if note.IsSystem() || note.ExcludeSearch || note.Ast() == nil {
 			continue
 		}
 

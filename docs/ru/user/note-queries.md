@@ -63,7 +63,7 @@ const posts = data.noteQuery.rawResult
 | `params` | разобранные `params`, `{}`, если их не передали |
 | `currentUser` | кто спрашивает: `{ id, role, isAdmin, signedIn }`; у гостя `id` и `role` равны `null` |
 
-`meta` — frontmatter заметки после [[ru/user/frontmatter_patches|frontmatter-патчей]]. С `all_notes: true` у каждой заметки есть ещё `readable`. Служебные заметки (пути, начинающиеся с `_`) и файлы, которые не являются markdown-заметками (canvas, base, excalidraw), в список не попадают.
+`meta` — frontmatter заметки после [[ru/user/frontmatter_patches|frontmatter-патчей]]. С `all_notes: true` у каждой заметки есть ещё `readable`. Служебные заметки (пути, начинающиеся с `_`), заметки, скрытые из [[ru/user/search|поиска]] через `search: false`, и файлы, которые не являются markdown-заметками (canvas, base, excalidraw), в список не попадают.
 
 Программа может вернуть любой JSON: список заметок, объект со счётчиками, одно число. Запрос не ограничен списками заметок, он может их агрегировать.
 

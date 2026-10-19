@@ -44,6 +44,7 @@ func TestResolve(t *testing.T) {
 		"queries/plain.md":  "---\nfree: true\n---\n```jsonnet\n[]\n```\n",
 		"blog/a.md":         "---\ntitle: A\nfree: true\ntags: [go]\n---\na",
 		"blog/b.md":         "---\ntitle: B\nfree: true\ntags: [web]\n---\nb",
+		"unlisted.md":       "---\nfree: true\nsearch: false\n---\nunlisted",
 		"blog/paid.md":      "---\ntitle: Paid\ntags: [go]\n---\npaid",
 		"queries/paths.md":  query(`[n.path for n in notes if !std.startsWith(n.path, 'queries/')]`),
 		"queries/two.md":    query(`[]`) + "```jsonnet\n[]\n```\n",
@@ -99,7 +100,7 @@ func TestResolve(t *testing.T) {
 			observed: "unknown error",
 		},
 		{
-			name:     "notes skip unreadable, system and non-markdown files",
+			name:     "notes skip unreadable, system, search: false and non-markdown files",
 			input:    model.NoteQueryInput{Query: "queries/paths.md"},
 			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`["blog/a.md","blog/b.md","odd.md"]`)},
 			observed: "queries/paths.md ok",
