@@ -1,0 +1,263 @@
+{{ block @lid_link(raw="", cls="") }}
+{{ target := replace(replace(raw, "[[", "", -1), "]]", "", -1) }}
+{{ pieces := split(target, "|") }}
+{{ linked := nvs.ByPath(pieces[0] + ".md") }}
+{{ if linked }}<a class="{{ cls }}" href="{{ linked.Permalink() }}">{{ linked.Title() }}</a>{{ end }}
+{{ end }}
+
+{{ path := note.Path() }}
+{{ parts := split(path, "/") }}
+{{ base := parts[len(parts) - 1] }}
+{{ cut := len(path) - len(base) }}
+{{ dir := path[:cut] }}
+{{ hub := nvs.ByPath(dir + "_index.md") }}
+{{ if !hub }}{{ hub = note }}{{ end }}
+{{ lang := note.Lang() }}
+{{ ru := lang == "ru" }}
+{{ points := nvs.ByGlob(dir + "*.md").SortByMeta("order").SortBy("Title").All() }}
+{{ pageURL := publicURL + hub.Permalink() }}
+{{ ogImage := hub.OGImageURL() }}
+{{ if !ogImage }}{{ ogImage = asset("og.png") }}{{ end }}
+{{ if hasPrefix(ogImage, "/") }}{{ ogImage = publicURL + ogImage }}{{ end }}
+<!doctype html>
+<html lang="{{ coalesce(lang, "en") }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ hub.Title() }}</title>
+  <meta name="description" content="{{ hub.Description() }}">
+  <link rel="canonical" href="{{ pageURL }}">
+  <link rel="alternate" hreflang="{{ hub.Lang() }}" href="{{ pageURL }}">
+  {{ range i, alt := hub.LangAlternativesList() }}
+  <link rel="alternate" hreflang="{{ alt.Lang() }}" href="{{ publicURL + alt.Permalink() }}">
+  {{ end }}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ hub.Title() }}">
+  <meta property="og:description" content="{{ hub.Description() }}">
+  <meta property="og:image" content="{{ ogImage }}">
+  <meta property="og:url" content="{{ pageURL }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="{{ asset("favicon.png") }}" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0e0e0c;
+      --fg: #f5f5f2;
+      --muted: #8c8c84;
+      --muted-2: #5a5a55;
+      --rule: #2a2a26;
+      --accent: oklch(0.78 0.18 145);
+      --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+      --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--mono);
+      background-image: radial-gradient(circle at 1px 1px, rgba(245,245,242,0.04) 1px, transparent 0);
+      background-size: 16px 16px;
+    }
+    .@did { min-height: 100svh; display: flex; flex-direction: column; }
+    .@did__bar {
+      display: flex; align-items: center; gap: 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .@did__home {
+      padding: 12px 16px; border-right: 1px solid var(--rule);
+      color: var(--accent); font-weight: 600; text-decoration: none; text-transform: none;
+    }
+    .@did__home b { color: var(--fg); }
+    .@did__title {
+      flex: 1; margin: 0; padding: 12px 16px;
+      font-size: 11px; font-weight: 500; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .@did__lang { padding: 12px 14px; border-left: 1px solid var(--rule); color: var(--fg); text-decoration: none; }
+    .@did__lang:hover { background: var(--accent); color: var(--bg); }
+    .@did__lang--current { color: var(--muted); }
+
+    .@did__stage { position: relative; flex: 1; min-height: 0; padding: 24px 20px 32px; }
+    .@did__ring { display: none; }
+    .@did__tabs { display: none; list-style: none; margin: 0; padding: 0; }
+    .@did__vertex {
+      font: inherit; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); background: none; cursor: pointer;
+    }
+    .@did__vertex:focus-visible, .@did__nav-btn:focus-visible, .@did a:focus-visible {
+      outline: 2px solid var(--accent); outline-offset: 3px;
+    }
+    .@did__num { display: none; }
+    .@did__panel { max-width: 62ch; margin: 0 0 40px; }
+    .@did__viz { display: none; }
+    .@did__kicker { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
+    .@did__kicker::before { content: "// "; }
+    .@did__h { font-family: var(--sans); font-weight: 600; font-size: 24px; line-height: 1.2; margin: 0 0 12px; }
+    .@did__body { font-family: var(--sans); font-size: 15px; line-height: 1.55; color: #d6d6cf; }
+    .@did__body p { margin: 0 0 10px; }
+    .@did__body a { color: var(--fg); }
+    .@did__more { display: inline-block; margin-top: 6px; color: var(--accent); font-size: 13px; text-decoration: none; border-bottom: 1px solid currentColor; }
+    .@did__more::after { content: " →"; }
+    .@did__related { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; }
+    .@did__related a { color: var(--muted); text-decoration: none; }
+    .@did__related a:hover { color: var(--fg); text-decoration: underline; }
+    .@did__nav { display: none; }
+    .@did__intro { font-size: 11px; line-height: 1.6; color: var(--muted); max-width: 62ch; }
+    .@did__intro p { margin: 0; }
+    .@did__intro a { color: var(--fg); }
+
+    .@did--live .@did__stage { padding: 0; overflow: hidden; touch-action: pan-y; }
+    .@did--live .@did__ring { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .@did--live .@did__tabs { position: absolute; inset: 0; margin: 0; display: block; pointer-events: none; }
+    .@did--live .@did__tab { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+    .@did--live .@did__vertex {
+      position: absolute; left: 0; top: 0; pointer-events: auto;
+      border: 0; padding: 6px 8px; white-space: nowrap;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; transition: color .2s ease;
+    }
+    .@did--live .@did__vertex:hover { color: var(--fg); }
+    .@did--live .@did__vertex[aria-selected="true"] { background: none; color: var(--fg); font-weight: 600; }
+    .@did--live .@did__dot {
+      position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+      border-radius: 50%; background: var(--bg); border: 1.5px solid var(--muted);
+      pointer-events: none; transition: background .2s ease, border-color .2s ease, transform .2s ease;
+    }
+    .@did--live .@did__tab--on .@did__dot { background: var(--accent); border-color: var(--accent); transform: scale(1.35); box-shadow: 0 0 0 6px color-mix(in oklch, var(--accent) 18%, transparent); }
+    .@did--live .@did__vertex .@did__num { display: inline; color: var(--muted-2); font-weight: 400; }
+    .@did--live .@did__vertex[aria-selected="true"] .@did__num { color: var(--accent); }
+
+    .@did--live .@did__panels { position: absolute; left: 50%; top: 50%; width: var(--center-w, 460px); transform: translate(-50%, -50%); }
+    .@did--live .@did__panel { margin: 0; max-width: none; text-align: center; }
+    .@did--live .@did__panel[hidden] { display: none; }
+    .@did--live .@did__panel.is-entering { animation: mesh-circle-in .45s ease; }
+    .@did--live .@did__related { justify-content: center; }
+    .@did--live .@did__viz { display: block; width: 100%; height: var(--viz-h, 150px); margin-bottom: 10px; }
+    .@did--live .@did__viz[hidden] { display: none; }
+    .@did--live .@did__nav {
+      display: flex; align-items: center; gap: 14px;
+      position: absolute; right: 20px; bottom: 20px;
+      font-size: 11px; letter-spacing: 0.12em; color: var(--muted);
+    }
+    .@did__nav-btn {
+      width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+      font: inherit; font-size: 15px; color: var(--fg); background: var(--bg);
+      border: 1px solid var(--rule); cursor: pointer;
+    }
+    .@did__nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .@did--live .@did__intro { position: absolute; left: 20px; bottom: 20px; max-width: 34ch; }
+    @keyframes mesh-circle-in { from { opacity: 0; } to { opacity: 1; } }
+
+    @media (max-width: 760px) {
+      .@did__bar { letter-spacing: 0.06em; }
+      .@did__title { display: none; }
+      .@did__home { flex: 1; border-right: 0; }
+      .@did--live .@did__stage { overflow: visible; }
+      .@did--live .@did__wheel { position: relative; height: var(--wheel-h, 360px); overflow: hidden; }
+      .@did--live .@did__vertex { padding: 8px; }
+      .@did--live .@did__vertex .@did__label { display: none; }
+      .@did--live .@did__vertex .@did__num { color: var(--muted); font-size: 12px; }
+      .@did--live .@did__panels { position: static; transform: none; width: auto; padding: 0 16px 24px; }
+      .@did--live .@did__panel { text-align: left; }
+      .@did--live .@did__related { justify-content: flex-start; }
+      .@did--live .@did__viz {
+        position: absolute; left: 50%; top: calc(var(--wheel-h, 360px) / 2);
+        width: var(--center-w, 200px); height: var(--viz-h, 150px);
+        transform: translate(-50%, -50%); margin: 0;
+      }
+      .@did--live .@did__nav { position: static; justify-content: space-between; padding: 0 16px 14px; }
+      .@did--live .@did__intro { position: static; padding: 0 16px 24px; max-width: none; }
+      .@did__h { font-size: 21px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .@did--live .@did__panel.is-entering { animation: none; }
+    }
+  </style>
+  {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
+</head>
+<body>
+<main class="@did" id="circle" data-current="{{ note.PathID() }}">
+  <header class="@did__bar">
+    <a class="@did__home" href="{{ ru ? "/ru" : "/" }}">$ <b>trip2g</b></a>
+    <h1 class="@did__title">{{ hub.Title() }}</h1>
+    <span class="@did__lang @did__lang--current" aria-current="page">{{ lang }}</span>
+    {{ range i, alt := note.LangAlternativesList() }}
+    <a class="@did__lang" href="{{ alt.Permalink() }}" hreflang="{{ alt.Lang() }}" lang="{{ alt.Lang() }}">{{ alt.Lang() }}</a>
+    {{ end }}
+  </header>
+
+  <section class="@did__stage">
+    <div class="@did__wheel">
+      <svg class="@did__ring" aria-hidden="true"></svg>
+      <ol class="@did__tabs" role="tablist" aria-label="{{ hub.Title() }}">
+        {{ range i, p := points }}
+        {{ if p.M().GetString("label", "") != "" }}
+        <li class="@did__tab" role="presentation">
+          <span class="@did__dot" aria-hidden="true"></span>
+          <button type="button" class="@did__vertex" role="tab" id="circle-tab-{{ p.PathID() }}"
+                  aria-selected="false" aria-controls="circle-panel-{{ p.PathID() }}"
+                  aria-label="{{ p.Title() }}">
+            <span class="@did__num" aria-hidden="true"></span>
+            <span class="@did__label">{{ p.M().GetString("label", "") }}</span>
+          </button>
+        </li>
+        {{ end }}
+        {{ end }}
+      </ol>
+    </div>
+
+    <div class="@did__panels">
+      {{ range i, p := points }}
+      {{ if p.M().GetString("label", "") != "" }}
+      {{ pp := split(p.Path(), "/") }}
+      {{ slug := replace(pp[len(pp) - 1], ".md", "", 1) }}
+      <article class="@did__panel" role="tabpanel" id="circle-panel-{{ p.PathID() }}"
+               aria-labelledby="circle-tab-{{ p.PathID() }}"
+               data-id="{{ p.PathID() }}" data-slug="{{ slug }}"
+               data-viz="{{ p.M().GetString("motion_visualization", "") }}">
+        <canvas class="@did__viz" aria-hidden="true"></canvas>
+        <p class="@did__kicker">{{ p.M().GetString("label", "") }}</p>
+        <h2 class="@did__h">{{ p.Title() }}</h2>
+        <div class="@did__body">{{ p.HTMLString() | unsafe }}</div>
+        {{ yield @lid_link(raw=p.M().GetString("link", ""), cls="@did__more") }}
+        {{ related := p.M().GetStrings("related") }}
+        {{ if len(related) > 0 }}
+        <ul class="@did__related">
+          {{ range j, r := related }}
+          <li>{{ yield @lid_link(raw=r, cls="") }}</li>
+          {{ end }}
+        </ul>
+        {{ end }}
+      </article>
+      {{ end }}
+      {{ end }}
+    </div>
+
+    <nav class="@did__nav" aria-label="{{ hub.Title() }}">
+      <button type="button" class="@did__nav-btn" data-step="-1" aria-label="{{ ru ? "Предыдущая" : "Previous" }}">←</button>
+      <span class="@did__count" aria-live="polite"></span>
+      <button type="button" class="@did__nav-btn" data-step="1" aria-label="{{ ru ? "Следующая" : "Next" }}">→</button>
+    </nav>
+
+    {{ if hub.HTMLString() != "" }}
+    <div class="@did__intro">{{ hub.HTMLString() | unsafe }}</div>
+    {{ end }}
+  </section>
+</main>
+
+<script defer src="{{ asset("circle/viz_garden.js") }}"></script>
+<script defer src="{{ asset("circle/viz_channel.js") }}"></script>
+<script defer src="{{ asset("circle/viz_subscription.js") }}"></script>
+<script defer src="{{ asset("circle/viz_agents.js") }}"></script>
+<script defer src="{{ asset("circle/viz_federation.js") }}"></script>
+<script defer src="{{ asset("circle/viz_bot.js") }}"></script>
+<script defer src="{{ asset("circle/viz_calls.js") }}"></script>
+<script defer src="{{ asset("circle/viz_files.js") }}"></script>
+<script defer src="{{ asset("circle/circle.js") }}"></script>
+{{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
+</body>
+</html>

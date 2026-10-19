@@ -55,6 +55,44 @@ free: true
 
 That's it. Only `_blocks.html` needs an explicit import — it contains `index_layout` and shared blocks that are not auto-discovered. All component files (`bar.html`, `foot.html`, etc.) are imported automatically by the loader based on `{{ yield }}` calls.
 
+## Positioning wheel (`circle.html`)
+
+`/en/circle` and `/ru/circle`: one full-screen page, a polygon whose vertices are ways to use
+trip2g. Each vertex is its own note in the folder next to the page note:
+
+```
+en/circle/_index.md      ← the page: title, description, the short intro in the body
+en/circle/garden.md      ← one vertex
+ru/circle/…              ← the same set in Russian, each note pointing at its twin
+```
+
+A vertex note:
+
+```markdown
+---
+title: "A site and a digital garden from Obsidian"
+label: "digital garden"          # text at the vertex
+order: 1                         # position on the wheel, clockwise from the top
+motion_visualization: garden     # optional; omit for no animation
+link: "[[en/user/digital-garden]]"
+related:
+  - "[[en/thoughts/federation-of-gardens]]"
+layout: mesh/circle
+lang: en
+free: true
+noindex: true
+lang_redirect: "[[ru/circle/garden]]"
+---
+
+Two to four sentences shown in the center.
+```
+
+- The layout lists every note in the page's folder that has a `label`, sorted by `order`.
+- `link` and `related` are vault paths in wikilink brackets; each prints as a link with the target note's title. A path that resolves to nothing prints nothing.
+- Vertex notes use the same layout, so `/en/circle/garden` opens the wheel at that vertex. `noindex` keeps them out of the sitemap, and their canonical URL is the page.
+- All texts are in the server HTML; the script only switches which one is visible. Without JavaScript the page is a plain list of sections.
+- `motion_visualization` names a file in `circle/`: `viz_<name>.js` registers `window.trip2gCircleViz.<name> = function (ctx, t, w, h, colors)`, a drawing of a 2D canvas at time `t` seconds. With `prefers-reduced-motion` the page draws one still frame. A new visualization needs its `<script>` line in `circle.html`.
+
 ## Components
 
 All components live in this directory. Each file defines **one** `@lid` block plus a shared `_style_@lid` CSS block. Import the file and yield the block by its expanded name.
