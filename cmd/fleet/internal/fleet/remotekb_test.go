@@ -10,6 +10,8 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/stretchr/testify/require"
+
+	"trip2g/cmd/fleet/internal/agentruntime"
 )
 
 // scopedGQL builds a graphql.Client backed by a gqlDoerFunc that returns the
@@ -237,4 +239,36 @@ func TestRemoteKB_SetMetaErrorPayloadReturnsError(t *testing.T) {
 	kb := newRemoteKB(gql, nil)
 	err := kb.SetMeta(context.Background(), "tasks/a.md", map[string]any{"a": 1}, nil)
 	require.EqualError(t, err, "note not found: tasks/a.md")
+}
+
+func TestRemoteKB_SearchReturnsVaultPathReadNoteOpens(t *testing.T) {
+	const vaultPath = "people/Антон Розенблам.md"
+	var readFilter []string
+	gql := scopedGQL(func(body string) string {
+		var req struct {
+			OpName    string `json:"operationName"`
+			Variables struct {
+				Filter struct {
+					Paths []string `json:"paths"`
+				} `json:"filter"`
+			} `json:"variables"`
+		}
+		_ = json.Unmarshal([]byte(body), &req)
+		if req.OpName == "NoteContentScoped" {
+			readFilter = req.Variables.Filter.Paths
+			return `{"notePaths":[{"content":"# Anton"}]}`
+		}
+		require.Contains(t, body, "notePath")
+		return `{"search":{"nodes":[{"document":{"__typename":"PublicNote","notePath":"people/Антон Розенблам.md"}}]}}`
+	})
+	kb := agentruntime.NewScopedKB(newRemoteKB(gql, nil), []string{"people/**"}, nil)
+
+	docs, err := kb.Search(context.Background(), "Anton")
+	require.NoError(t, err)
+	require.Equal(t, []agentruntime.Doc{{Path: vaultPath}}, docs)
+
+	got, err := kb.Read(context.Background(), docs[0].Path)
+	require.NoError(t, err)
+	require.Equal(t, "# Anton", got)
+	require.Equal(t, []string{vaultPath}, readFilter)
 }

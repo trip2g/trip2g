@@ -38,11 +38,12 @@ func NewOzzoError(err error) *ErrorPayload {
 
 func ConvertNoteToPublic(note *model.NoteView) *PublicNote {
 	return &PublicNote{
-		PathID: note.PathID,
-		Path:   note.Permalink,
-		Title:  note.Title,
-		HTML:   string(note.HTML),
-		Toc:    prepareTOC(note),
+		PathID:   note.PathID,
+		Path:     note.Permalink,
+		NotePath: note.Path,
+		Title:    note.Title,
+		HTML:     string(note.HTML),
+		Toc:      prepareTOC(note),
 
 		NoteView: note,
 	}

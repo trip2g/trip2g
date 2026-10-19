@@ -2220,8 +2220,13 @@ type OAuthURLPayload struct {
 }
 
 type PublicNote struct {
-	PathID    int64           `json:"pathId"`
-	Path      string          `json:"path"`
+	PathID int64 `json:"pathId"`
+	// The note's permalink, a URL path such as `/people/anton_rozenblam`. Not a
+	// vault path: use `notePath` to read or edit the note.
+	Path string `json:"path"`
+	// The note's vault path, such as `people/Anton Rozenblam.md`: the path
+	// `notePaths`, `updateNotes` and read patterns operate on.
+	NotePath  string          `json:"notePath"`
 	URL       string          `json:"url"`
 	Title     string          `json:"title"`
 	HTML      string          `json:"html"`

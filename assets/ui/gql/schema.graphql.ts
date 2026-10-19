@@ -3445,6 +3445,15 @@ export enum PaymentType {
 export type PublicNote = {
   __typename?: 'PublicNote';
   html: Scalars['String']['output'];
+  /**
+   * The note's vault path, such as `people/Anton Rozenblam.md`: the path
+   * `notePaths`, `updateNotes` and read patterns operate on.
+   */
+  notePath: Scalars['String']['output'];
+  /**
+   * The note's permalink, a URL path such as `/people/anton_rozenblam`. Not a
+   * vault path: use `notePath` to read or edit the note.
+   */
   path: Scalars['String']['output'];
   pathId: Scalars['Int64']['output'];
   taskList: Array<NoteTaskItem>;
