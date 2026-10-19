@@ -195,24 +195,24 @@ func TestRelayRefusals(t *testing.T) {
 		},
 	}
 
+	peerSays := func(handler fasthttp.RequestHandler) func(t *testing.T) model.FederationAssetFetcher {
+		return func(t *testing.T) model.FederationAssetFetcher {
+			return peerFetcher(t, handler)
+		}
+	}
+
 	cases := []struct {
 		name    string
 		fetcher func(t *testing.T) model.FederationAssetFetcher
 		expires time.Duration
 		status  int
 	}{
-		{"an expired link", func(t *testing.T) model.FederationAssetFetcher { return peerFetcher(t, servesFile) }, -time.Minute, http.StatusNotFound},
-		{"the peer has no such attachment", func(t *testing.T) model.FederationAssetFetcher {
-			return peerFetcher(t, peerAnswers(http.StatusNotFound))
-		}, time.Minute, http.StatusNotFound},
-		{"the peer says it is too large", func(t *testing.T) model.FederationAssetFetcher {
-			return peerFetcher(t, peerAnswers(http.StatusRequestEntityTooLarge))
-		}, time.Minute, http.StatusRequestEntityTooLarge},
-		{"the peer sends no Content-Length", func(t *testing.T) model.FederationAssetFetcher { return peerFetcher(t, noLength) }, time.Minute, http.StatusBadGateway},
+		{"an expired link", peerSays(servesFile), -time.Minute, http.StatusNotFound},
+		{"the peer has no such attachment", peerSays(peerAnswers(http.StatusNotFound)), time.Minute, http.StatusNotFound},
+		{"the peer says it is too large", peerSays(peerAnswers(http.StatusRequestEntityTooLarge)), time.Minute, http.StatusRequestEntityTooLarge},
+		{"the peer sends no Content-Length", peerSays(noLength), time.Minute, http.StatusBadGateway},
 		{"the peer is unreachable", func(*testing.T) model.FederationAssetFetcher { return newFetcher(unreachable) }, time.Minute, http.StatusBadGateway},
-		{"the peer revoked the pairing", func(t *testing.T) model.FederationAssetFetcher {
-			return peerFetcher(t, peerAnswers(http.StatusUnauthorized))
-		}, time.Minute, http.StatusBadGateway},
+		{"the peer revoked the pairing", peerSays(peerAnswers(http.StatusUnauthorized)), time.Minute, http.StatusBadGateway},
 	}
 
 	for _, tc := range cases {

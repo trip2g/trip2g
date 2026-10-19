@@ -1,6 +1,8 @@
 package federatedassetlink
 
-var SigningKey = signingKey
+func SigningKey(secret string) []byte {
+	return signingKey(secret)
+}
 
 func (s *Spent) Len() int {
 	s.mu.Lock()
