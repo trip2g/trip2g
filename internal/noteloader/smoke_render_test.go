@@ -165,23 +165,31 @@ func TestSmokeRenderLayouts_SkipsLayoutsWithParseError(t *testing.T) {
 		"smoke must not add warnings to layouts with parse errors")
 }
 
-// A layout that reads an object a note query returns, the user doc's
-// dashboard pattern, renders against the real query as a guest.
-func TestSmokeRenderLayouts_RunsNoteQueryAsGuest(t *testing.T) {
+// A page a guest can open renders its queries as a guest: an object result
+// renders, and a members-only query warns. A page only signed-in viewers open
+// renders them as a reader of every query, so a members-only query is fine and
+// a missing one still warns.
+func TestSmokeRenderLayouts_RunsNoteQueryAsTheViewer(t *testing.T) {
 	sources := []model.LayoutSourceFile{
 		{ID: "/dash", Path: "_layouts/dash.html",
 			Content: `{{ c := noteQuery("queries/counts.md") }}{{ c.posts }}`},
 		{ID: "/paid", Path: "_layouts/paid.html",
 			Content: `{{ noteQuery("queries/paid.md") }}`},
+		{ID: "/club", Path: "_layouts/club.html",
+			Content: `{{ c := noteQuery("queries/paid.md") }}{{ len(c) }}`},
+		{ID: "/typo", Path: "_layouts/typo.html",
+			Content: `{{ noteQuery("queries/nope.md") }}`},
 	}
 	layouts := smokeLoadLayouts(t, sources)
 
 	srcs := []mdloader.SourceFile{
 		{Path: "queries/counts.md", Content: []byte("---\ntype: note-query\nfree: true\n---\n```jsonnet\n" +
 			"{posts: std.length(notes)}\n```\n")},
-		{Path: "queries/paid.md", Content: []byte("---\ntype: note-query\n---\n```jsonnet\n[]\n```\n")},
+		{Path: "queries/paid.md", Content: []byte("---\ntype: note-query\nsubgraphs: [club]\n---\n```jsonnet\n[]\n```\n")},
 		{Path: "dash.md", Content: []byte("---\nfree: true\nlayout: dash\n---\nd")},
 		{Path: "paid_page.md", Content: []byte("---\nfree: true\nlayout: paid\n---\np")},
+		{Path: "club_page.md", Content: []byte("---\nsubgraphs: [club]\nlayout: club\n---\nc")},
+		{Path: "typo_page.md", Content: []byte("---\nsubgraphs: [club]\nlayout: typo\n---\nt")},
 	}
 	for i := range srcs {
 		srcs[i].PathID = int64(i + 1)
@@ -192,10 +200,45 @@ func TestSmokeRenderLayouts_RunsNoteQueryAsGuest(t *testing.T) {
 	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
 
 	require.Empty(t, layouts.Map["/dash"].Warnings)
+	require.Empty(t, layouts.Map["/club"].Warnings, "a signed-in viewer runs the members-only query")
 
 	paid := layouts.Map["/paid"].Warnings
 	require.Len(t, paid, 1, "a guest can't run a members-only query")
 	require.Contains(t, paid[0].Message, `noteQuery("queries/paid.md"): query not found`)
+
+	typo := layouts.Map["/typo"].Warnings
+	require.Len(t, typo, 1, "a missing query warns on a members-only page too")
+	require.Contains(t, typo[0].Message, `noteQuery("queries/nope.md"): query not found`)
+}
+
+// A layout used by more members-only pages than the sample holds still
+// samples the page a guest can open, and warns for its members-only query.
+func TestSmokeRenderLayouts_SamplesGuestPagesFirst(t *testing.T) {
+	layouts := smokeLoadLayouts(t, []model.LayoutSourceFile{
+		{ID: "/mixed", Path: "_layouts/mixed.html", Content: `{{ noteQuery("queries/paid.md") }}`},
+	})
+
+	srcs := []mdloader.SourceFile{
+		{Path: "queries/paid.md", Content: []byte("---\ntype: note-query\nsubgraphs: [club]\n---\n```jsonnet\n[]\n```\n")},
+	}
+	for i := range smokeRenderLimit {
+		srcs = append(srcs, mdloader.SourceFile{
+			Path:    "club/" + strconv.Itoa(i) + ".md",
+			Content: []byte("---\nsubgraphs: [club]\nlayout: mixed\n---\nc"),
+		})
+	}
+	srcs = append(srcs, mdloader.SourceFile{Path: "zz_public.md", Content: []byte("---\nfree: true\nlayout: mixed\n---\np")})
+	for i := range srcs {
+		srcs[i].PathID = int64(i + 1)
+	}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
+
+	warnings := layouts.Map["/mixed"].Warnings
+	require.Len(t, warnings, 1)
+	require.Contains(t, warnings[0].Message, `"zz_public.md"`)
 }
 
 // A layout sampled for many notes runs each distinct noteQuery call once,

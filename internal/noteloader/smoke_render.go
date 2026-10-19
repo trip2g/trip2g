@@ -19,16 +19,19 @@ import (
 
 const smokeRenderLimit = 10
 
-// smokeQueryEnv runs noteQuery during the smoke render as a guest over the
-// notes being loaded.
-type smokeQueryEnv struct{ nvs *model.NoteViews }
+// smokeQueryEnv runs noteQuery during the smoke render over the notes being
+// loaded, as viewer: nil for a guest.
+type smokeQueryEnv struct {
+	nvs    *model.NoteViews
+	viewer *usertoken.Data
+}
 
 func (e smokeQueryEnv) LatestNoteViews() *model.NoteViews {
 	return e.nvs
 }
 
-func (smokeQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
-	return nil, nil
+func (e smokeQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
+	return e.viewer, nil
 }
 
 func (smokeQueryEnv) CurrentFederatedScope(context.Context) ([]string, bool) {
@@ -42,9 +45,10 @@ func (smokeQueryEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, 
 func (smokeQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 
 // smokeRenderLayouts executes each parsed layout against up to smokeRenderLimit
-// notes that select it via frontmatter `layout:`. Runtime errors and panics
-// from Jet's Execute are turned into NoteWarning entries on the layout so that
-// CLI / pushNotes flows surface them without needing a browser request.
+// notes that select it via frontmatter `layout:`, notes a guest can open
+// first. Runtime errors and panics from Jet's Execute are turned into
+// NoteWarning entries on the layout so that CLI / pushNotes flows surface them
+// without needing a browser request.
 //
 // Skipped:
 //   - layouts with parse errors (View == nil) — already have Critical warning
@@ -55,15 +59,17 @@ func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger
 	}
 
 	byLayout := make(map[string][]*model.NoteView)
-	for _, n := range nvs.List {
-		if n == nil || n.Layout == "" {
-			continue
+	for _, guest := range []bool{true, false} {
+		for _, n := range nvs.List {
+			if n == nil || n.Layout == "" || n.IsAnonymouslyReadable() != guest {
+				continue
+			}
+			key := "/" + n.Layout
+			if len(byLayout[key]) >= smokeRenderLimit {
+				continue
+			}
+			byLayout[key] = append(byLayout[key], n)
 		}
-		key := "/" + n.Layout
-		if len(byLayout[key]) >= smokeRenderLimit {
-			continue
-		}
-		byLayout[key] = append(byLayout[key], n)
 	}
 
 	for id, layout := range layouts.Map {
@@ -85,8 +91,16 @@ func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger
 func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *model.NoteViews, log logger.Logger, layoutID string) []model.NoteWarning {
 	var warnings []model.NoteWarning
 	nvsWrap := templateviews.NewNVS(nvs, "")
-	noteQuery := memoNoteQuery(runnotequery.JetFunc(context.Background(), smokeQueryEnv{nvs: nvs}))
+	guestQuery := memoNoteQuery(runnotequery.JetFunc(context.Background(), smokeQueryEnv{nvs: nvs}))
+	// A page a guest can't open is read signed in; an admin reads every query,
+	// so only a missing or broken one warns there.
+	signedIn := smokeQueryEnv{nvs: nvs, viewer: &usertoken.Data{Role: "admin"}}
+	signedInQuery := memoNoteQuery(runnotequery.JetFunc(context.Background(), signedIn))
 	for _, n := range notes {
+		noteQuery := signedInQuery
+		if n.IsAnonymouslyReadable() {
+			noteQuery = guestQuery
+		}
 		if w := executeSmoke(view, n, nvsWrap, noteQuery); w != nil {
 			log.Warn("layout smoke render failed",
 				"layout", layoutID, "note", n.Path, "msg", w.Message)
@@ -102,7 +116,7 @@ type noteQueryOutcome struct {
 }
 
 // memoNoteQuery runs each distinct (query, params) once per smoke render: every
-// sampled note gets the same guest answer, so re-running it only costs time.
+// sampled note with the same viewer gets the same answer, so re-running it only costs time.
 // A failure is remembered too and raised again for each note.
 func memoNoteQuery(next jet.Func) jet.Func {
 	seen := make(map[string]noteQueryOutcome)
