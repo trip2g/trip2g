@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"trip2g/internal/case/mcp"
@@ -36,17 +37,36 @@ func (a *app) FederationSecretByKID(ctx context.Context, kid string) (db.Federat
 	return secret, true, nil
 }
 
-func (a *app) HasFederationSecretForKBURL(ctx context.Context, kbURL string) (bool, error) {
-	rows, err := a.Queries.ListFederationSecrets(ctx)
-	if err != nil {
-		return false, err
-	}
+// pickOutboundKID chooses the outbound secret for a KB-note. A base may hold
+// several keys to one peer, each scoped to different subgraphs, so the key
+// whose kid equals the note's kb_id wins; a lone live key serves any kb_id.
+func pickOutboundKID(rows []db.ListFederationSecretsRow, kbID, kbURL string) (string, bool, error) {
+	var live []string
+	configured := false
 	for _, row := range rows {
-		if row.KbUrl != nil && *row.KbUrl == kbURL {
-			return true, nil
+		if row.KbUrl == nil || *row.KbUrl != kbURL {
+			continue
 		}
+		configured = true
+		if row.RevokedAt != nil {
+			continue
+		}
+		if row.Kid == kbID {
+			return row.Kid, true, nil
+		}
+		live = append(live, row.Kid)
 	}
-	return false, nil
+
+	switch {
+	case len(live) == 1:
+		return live[0], true, nil
+	case len(live) > 1:
+		return "", false, fmt.Errorf("kb_id %q: %d live federation secrets for %s (%s); set mcp_federation_kb_id to the kid of the one to use",
+			kbID, len(live), kbURL, strings.Join(live, ", "))
+	case configured:
+		return "", false, fmt.Errorf("no active federation secret for kb_id %q; the configured secret may be revoked", kbID)
+	}
+	return "", false, nil
 }
 
 func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Federation, error) {
@@ -77,22 +97,25 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 		if dbCtx == nil {
 			dbCtx = context.Background()
 		}
-		secretRow, ok, err := a.FederationSecretByKBURL(dbCtx, kb.URL)
+		rows, err := a.Queries.ListFederationSecrets(dbCtx)
 		if err != nil {
-			return nil, fmt.Errorf("get federation secret by kb url: %w", err)
+			return nil, fmt.Errorf("list federation secrets: %w", err)
+		}
+		kid, ok, err := pickOutboundKID(rows, kb.ID, kb.URL)
+		if err != nil {
+			return nil, err
 		}
 		if ok {
+			secretRow, found, findErr := a.FederationSecretByKID(dbCtx, kid)
+			if findErr != nil {
+				return nil, fmt.Errorf("get federation secret by kid: %w", findErr)
+			}
+			if !found {
+				return nil, fmt.Errorf("federation secret %q disappeared while connecting to kb_id %q", kid, kbID)
+			}
 			keyErr := a.loadPeerKeys(&peer, secretRow)
 			if keyErr != nil {
 				return nil, keyErr
-			}
-		} else {
-			configured, confErr := a.HasFederationSecretForKBURL(dbCtx, kb.URL)
-			if confErr != nil {
-				return nil, fmt.Errorf("check federation secret history by kb url: %w", confErr)
-			}
-			if configured {
-				return nil, fmt.Errorf("no active federation secret for kb_id %q; the configured secret may be revoked", kbID)
 			}
 		}
 
