@@ -8,6 +8,14 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
+## Unreleased
+
+### A revoked key named by `kb_id` fails the call
+
+- **What.** When the key a KB-note's `kb_id` names is revoked, a federated call now fails with `its federation secret is revoked`. Before, it fell back to another live key to the same peer.
+- **Why.** That other key can be granted different subgraphs, so the KB-note read with access it was never given.
+- **How to fix a base that gets the error.** Point the KB-note's `mcp_federation_kb_id` at a live key, or revoke the other keys to the peer so one live key is left. See [[en/user/federation|Federation]].
+
 ## v0.12.0 (2026-10-19)
 
 ### Note queries give a JavaScript page a list of notes

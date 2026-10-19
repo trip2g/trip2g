@@ -2,6 +2,7 @@
 import { test, expect } from '@playwright/test';
 import crypto from 'crypto';
 import { graphqlSignIn } from './helpers/auth.js';
+import { revokeLiveOutboundSecrets, revokeFederationSecret } from './helpers/federation.js';
 
 /**
  * MCP Federation E2E Tests
@@ -12,6 +13,9 @@ import { graphqlSignIn } from './helpers/auth.js';
  *
  * Federation secrets are bootstrapped in beforeAll using deterministic hex keys
  * and the createInboundFederationSecret(secretHex:) parameter.
+ *
+ * The spec tests the hub's seed KB-note "peer", so it owns PEER_KB_URL: no other
+ * spec pairs with that URL, and this one holds the only live key to it.
  */
 
 const HUB_URL = process.env.APP_URL || 'http://localhost:20081';
@@ -19,6 +23,7 @@ const PEER_URL = 'http://localhost:20091';
 const HUB_GRAPHQL = `${HUB_URL}/_system/graphql`;
 const PEER_GRAPHQL = `${PEER_URL}/_system/graphql`;
 const HUB_MCP = `${HUB_URL}/_system/mcp`;
+const PEER_KB_URL = 'http://app-peer:20091/_system/mcp';
 
 // Deterministic secret for reproducible test runs (64 hex chars = 32 bytes).
 const SECRET_HEX = 'a0b0c0d0e0f001020304050607080900010203040506070809a0b0c0d0e0f000';
@@ -75,11 +80,16 @@ test.describe.serial('Federation', () => {
   });
 
   test.afterAll(async () => {
+    if (outboundSecretId) {
+      await revokeFederationSecret(hubRequest, HUB_URL, hubCookie, outboundSecretId).catch(() => {});
+    }
     await hubRequest?.dispose();
     await peerRequest?.dispose();
   });
 
   test.beforeAll(async ({ playwright }) => {
+    await revokeLiveOutboundSecrets(hubRequest, HUB_URL, hubCookie, PEER_KB_URL);
+
     // 1. Create inbound secret on peer
     const inboundData = await gql(peerRequest, PEER_URL, peerCookie, `
       mutation($input: CreateInboundFederationSecretInput!) {
@@ -112,7 +122,7 @@ test.describe.serial('Federation', () => {
       input: {
         kid: KID,
         secretHex: SECRET_HEX,
-        kbURL: 'http://app-peer:20091/_system/mcp',
+        kbURL: PEER_KB_URL,
       },
     });
 
@@ -239,6 +249,7 @@ test.describe.serial('Federation', () => {
     `, { id: outboundSecretId });
 
     expect(revokeData.admin.revokeFederationSecret.revokedId).toBe(outboundSecretId);
+    outboundSecretId = null;
 
     // Federated search should now fail or return no results
     const result = await mcpCall(hubRequest, HUB_MCP, 'tools/call', {

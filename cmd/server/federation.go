@@ -49,12 +49,14 @@ func (a *app) FederationSecretByKID(ctx context.Context, kid string) (db.Federat
 func pickOutboundKID(rows []db.ListFederationSecretsRow, kbID, kbURL string) (string, bool, error) {
 	var live []string
 	configured := false
+	namedRevoked := false
 	for _, row := range rows {
 		if row.KbUrl == nil || *row.KbUrl != kbURL {
 			continue
 		}
 		configured = true
 		if row.RevokedAt != nil {
+			namedRevoked = namedRevoked || row.Kid == kbID
 			continue
 		}
 		if row.Kid == kbID {
@@ -64,6 +66,8 @@ func pickOutboundKID(rows []db.ListFederationSecretsRow, kbID, kbURL string) (st
 	}
 
 	switch {
+	case namedRevoked:
+		return "", false, fmt.Errorf("kb_id %q: its federation secret is revoked", kbID)
 	case len(live) == 1:
 		return live[0], true, nil
 	case len(live) > 1:

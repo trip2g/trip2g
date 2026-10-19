@@ -58,7 +58,7 @@ The hub stores no remote content. It holds your notes plus routing metadata: KB-
 
 **kb_id:** a short slug identifying a peer, used when you want to target a specific base instead of fanning out across all of them. Defaults to the URL hostname; you can override it with `mcp_federation_kb_id`.
 
-You can hold several outbound keys to the same peer, each granted different subgraphs. Give each its own KB-note with `mcp_federation_kb_id` equal to the key's ID: a call to that `kb_id` is signed with that key. A single live key to a peer serves any `kb_id`. Several live keys and a `kb_id` that names none of them is an error that lists the keys, not a guess.
+You can hold several outbound keys to the same peer, each granted different subgraphs. Give each its own KB-note with `mcp_federation_kb_id` equal to the key's ID: a call to that `kb_id` is signed with that key. A single live key to a peer serves any `kb_id`. Several live keys and a `kb_id` that names none of them is an error that lists the keys, not a guess. So is a `kb_id` whose key is revoked: the call fails rather than borrowing another key to the same peer.
 
 ### Adding a public peer
 

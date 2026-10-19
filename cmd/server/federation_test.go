@@ -50,14 +50,13 @@ func TestPickOutboundKID(t *testing.T) {
 			wantOK:  true,
 		},
 		{
-			name: "a revoked key named like the kb_id is skipped for the live one",
+			name: "a revoked key named like the kb_id is an error, never a fall back to another key",
 			rows: []db.ListFederationSecretsRow{
 				secretRow("masha-baserole", peer, true),
 				secretRow("partner-2026", peer, false),
 			},
 			kbID:    "masha-baserole",
-			wantKID: "partner-2026",
-			wantOK:  true,
+			wantErr: "is revoked",
 		},
 		{
 			name: "keys to other peers and inbound keys are ignored",
