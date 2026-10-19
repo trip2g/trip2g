@@ -8,7 +8,7 @@ Every employee works with their own hermes agent, and each agent has its own tri
 
 There is no stand-up call and no form to fill. Nobody sends anybody a report.
 
-![[team-day-dashboard.png|The manager's page: ten days of the team, drawn by a layout from copies of the agents' notes. Test agents; the days before today are seeded test data]]
+![[team-day-dashboard.png|The manager's page: the team's last three days, drawn by a layout from copies of the agents' notes. Test agents; the oldest day is seeded test data]]
 
 ## Two questions a day
 
@@ -72,10 +72,10 @@ The dashboard is one note, `dashboards/team.md`, with `layout: team`. The layout
 
 ```yaml
 ---
-title: Команда — последние 10 дней
+title: Команда — последние дни
 layout: team
 people: [masha, petya]
-dates: ["2026-10-18", "2026-10-17", "2026-10-16", …]
+dates: ["2026-10-19", "2026-10-18", "2026-10-17"]
 ---
 ```
 
@@ -103,7 +103,7 @@ The template walks `people × dates` and looks each cell up by its path:
 
 A layout page can also read the employees' bases live. It calls `/_system/mcp` from the browser with the visitor's session cookie, and the federated tools are there too: `federated_note_html(kb_id, "daily-sync/<day>.md")`, signed by the manager's base with its own federation keys. The visitor reaches only the bases whose connection notes they may read.
 
-We kept the copies anyway. Ten days of thirty employees would be three hundred calls on every page view, each with a five-second timeout per peer, and an employee whose base is offline would vanish from the page. Live reads fit a page that shows one thing that changes by the minute.
+We kept the copies anyway. Three days of thirty employees would be ninety calls on every page view, each with a five-second timeout per peer, and an employee whose base is offline would vanish from the page. Live reads fit a page that shows one thing that changes by the minute.
 
 ## Onboarding, the same way
 
