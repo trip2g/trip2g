@@ -4,71 +4,114 @@ free: true
 lang_redirect: "[[ru/thoughts/team-day-status]]"
 ---
 
-Every employee works with their own hermes agent, and each agent has its own trip2g. In the morning the agent asks its person what they plan, and in the evening how the day went. It keeps the answer as a note. The manager's agent copies these notes from every employee into its own base and builds one page of the team's day.
+Picture a team where every employee works with their own AI agent (ours is [[en/thoughts/hermes-wiki|hermes]]), and every agent keeps its memory in its own trip2g base. The manager wants to know each morning what the team plans and each evening how the day went. Without a stand-up call, without a form to fill, and without anyone sending a report.
 
-There is no stand-up call and no form to fill. Nobody sends anybody a report.
+trip2g already has the three pieces this takes: subgraphs, federation and templates. A small script ties them together. This essay walks through it step by step. A runnable version, three bases in Docker and no agents, is [trip2g/federation_team_sync](https://github.com/trip2g/federation_team_sync).
 
-![[team-day-dashboard.png|The manager's page: the team's last three days, drawn by a layout from copies of the agents' notes. Test agents; the oldest day is seeded test data]]
+![[team-day-dashboard.png|The manager's page: the team's last three days. Test agents; the oldest day is test data added by hand]]
 
-## Two questions a day
+## Three things in trip2g you need
 
-The questions cost nothing. A hermes cron job with `no_agent` runs a script that prints a fixed text, and the job delivers that text to the person's Telegram. No model runs, so no tokens are spent:
+- **A subgraph** is a named group of notes and the unit of access in trip2g. A note joins one through its frontmatter, `subgraph: daily_sync`. See [[en/user/subgraphs|Subgraphs]]. A [[en/user/frontmatter-patches|frontmatter patch]] sets that field on a whole folder at once, so nobody has to remember it note by note.
+- **Federation** lets one base read part of another. The employee's base issues a federation secret, grants it one subgraph, and hands the manager a handover key. The manager's base installs the key and adds a KB-note: a small note that points at the employee's base and gives it a short id, the `kb_id`. From then on the manager's base can read that one subgraph with the `federated_*` MCP tools, addressed by that id, and nothing else of the employee's base. See [[en/user/federation|MCP Federation]].
+- **A custom template**, or layout, is your own page for a note, written in Jet and stored as `_layouts/<name>.html`. A note picks it with `layout: <name>`. The template can look up other notes and lay them out however the page needs. See [[en/user/templates|Templates]] and [[en/user/jet-functions|Jet functions]].
 
+## How it fits together
+
+```mermaid
+flowchart LR
+    subgraph E1["Masha's base"]
+        N1["daily-sync/2026-10-19.md"] --> S1["subgraph daily_sync"]
+    end
+    subgraph E2["Petya's base"]
+        N2["daily-sync/2026-10-19.md"] --> S2["subgraph daily_sync"]
+    end
+    subgraph M["Manager's base"]
+        P["script, hourly"] --> C["team/masha/…<br/>team/petya/…"]
+        C --> L["template team"]
+        L --> D["dashboards/team"]
+    end
+    P -. "federated_note_html<br/>kb_id masha-daily" .-> S1
+    P -. "federated_note_html<br/>kb_id petya-daily" .-> S2
 ```
-09:00  daily-morning  → «Что сегодня в планах?»
-18:00  daily-evening  → «Как прошёл день? Что сделано, где нужна помощь?»
-```
 
-One flag matters: `attach_to_session`. Without it the question lives only in the cron job's own session, and the person's answer reaches the agent with no question in front of it. With it, the question is in the chat history, and the answer is understood as an answer.
+Each employee's base keeps a note per day and opens just those notes to the manager. A script in the manager's base reads them once an hour, keeps a copy, and one template draws the page from the copies.
 
-## The note of the day
+## Step 1. A note per day in the employee's base
 
-The agent turns each answer into a few short lines of its own. It never keeps the chat itself:
+Each employee's base holds one file per day, `daily-sync/YYYY-MM-DD.md`:
 
 ```markdown
-# 2026-10-18 — Маша
+---
+date: 2026-10-19
+person: Маша
+---
+
+# 2026-10-19 — Маша
 
 ## План
-- Дописать коммерческое предложение для «Альфа-Логистик».
-- В 15:00 провести созвон с «Альфа-Логистик».
+- Подготовить КП для «Вектора».
+- Обновить прайс в CRM.
 
 ## Итог
-- Коммерческое предложение отправлено.
-- Созвон проведён; клиент запросил скидку 10%.
+- КП отправлено, прайс перенесён на завтра.
 
 ## Нужна помощь
-- Требуется согласование руководителя на скидку 10%.
+- Решение руководителя по скидке 10% для «Альфа-Логистик».
 ```
 
-Morning fills «План». Evening fills «Итог» and «Нужна помощь». One file per day: `daily-sync/YYYY-MM-DD.md`.
+trip2g does not care who writes it. In our case the agent does: a scheduled job asks the employee in the morning and again in the evening, and the agent turns each answer into a few lines of its own.
 
-## Opened to the manager, and only that
+## Step 2. Open only those notes to the manager
 
-A frontmatter patch puts the folder into a subgraph of its own:
+A frontmatter patch puts the whole folder into one subgraph:
+
+````markdown
+---
+type: frontmatter-patch
+include:
+  - "daily-sync/**"
+---
 
 ```jsonnet
 { subgraph: "daily_sync" }
 ```
+````
 
-The employee's agent then mints a federation key with `federation_share`, scoped to `daily_sync` alone, and hands it to the manager's agent, which connects it once. The manager sees the days and nothing else of the employee's base: no notes, no memory, no other subgraph. Revoking that one key closes it.
+The employee's base then issues a federation secret named after the person, `masha-daily`, grants it `daily_sync` and nothing else, and sends the manager its handover key over a channel they would trust with a password. The manager's base installs the key and adds a KB-note for Masha's base with `mcp_federation_kb_id: masha-daily`, the same name as the key.
 
-## A fan-out, then a copy
+The manager can now read Masha's days and nothing else of her base: not her other notes, not her agent's memory. Revoking that one secret closes it.
 
-`federated_note_html` reads one note from one base, so thirty employees take thirty calls. The path is fixed by convention, which means nothing has to be searched:
+The names matter. The `-daily` suffix is how the manager's side tells a colleague's status key from every other key it holds, and a KB-note id equal to the key's name lets the script go from a key straight to a call.
+
+## Step 3. Copy the days into the manager's base
+
+A script runs in the manager's base once an hour and does three things.
+
+**Find the team.** It lists the base's federation secrets and keeps the outbound ones that are not revoked and whose name ends in `-daily`. The team is exactly the set of connected status keys, so there is no list for anyone to keep up to date:
+
+```graphql
+{ admin { federationSecrets { kid kbUrl revokedAt } } }
+```
+
+An outbound secret is one with a `kbUrl`, the address of the base it reads. This is an admin call, and trip2g promises less about admin calls than about the API, so check it after an upgrade. See [[en/user/spa#api-vs-admin|API calls and admin calls]].
+
+**Read each day.** For every key it calls the MCP tool `federated_note_html` with that id and a fixed path:
 
 ```
-for each connected base:
+for each -daily key:
     federated_note_html(kb_id, "daily-sync/<today>.md")
-    → write team/<person>/<today>.md if it changed
 ```
 
-A script does this hourly, from another `no_agent` cron job. Search would not serve here: `federated_search` without an explicit `kb_ids` list asks at most seven bases (`--federated-fanout-limit`), five at a time, five seconds each, and skips the rest.
+The path is fixed by convention, so nothing has to be searched.
 
-The manager keeps a copy rather than reading live. That is deliberate. A day's status is a dated fact that nobody edits afterwards, so the copy cannot go stale. If an employee's base is offline in the evening, the page still shows that employee's day as last copied. And the manager's model reads local notes, not thirty peers.
+**Keep a copy.** `federated_note_html` answers with HTML, so the script turns the three sections back into markdown headings and lists, drops the empty ones, and writes the result to `team/<person>/<date>.md`. It adds the frontmatter the page needs: `person` for the row's name, `date`, and `help: true` when «Нужна помощь» holds anything but «нет».
 
-## The page is a layout, without JavaScript
+Why a copy and not a live read? A past day is a dated fact that nobody edits afterwards, so its copy never goes stale; today's copy is rewritten every hour, so it trails the evening answer by an hour at most. If an employee's base is down, the page still shows their days. And the page reads only local notes.
 
-The dashboard is one note, `dashboards/team.md`, with `layout: team`. The layout is a Jet template, and it draws the grid on the server: no script, no request from the browser. The copier writes the two lists the template needs into the note's frontmatter every hour:
+## Step 4. Draw the page with a template
+
+The page is one note, `dashboards/team.md`, with `layout: team`, and the template is `_layouts/team.html`. The script writes the two lists the template needs into the note's frontmatter:
 
 ```yaml
 ---
@@ -79,7 +122,7 @@ dates: ["2026-10-19", "2026-10-18", "2026-10-17"]
 ---
 ```
 
-The template walks `people × dates` and looks each cell up by its path:
+The template walks people × dates and finds each cell by its path:
 
 ```jet
 {{ range i, alias := people }}
@@ -97,29 +140,27 @@ The template walks `people × dates` and looks each cell up by its path:
 {{ end }}
 ```
 
-`PartialRenderer().Section("План")` hands over the section of the copy as HTML, so the employee's list prints as it was written. The copier also sets `help: true` in a copy whose «Нужна помощь» holds a real ask, and the template turns that into an orange cell and a line at the top of the page. The date arithmetic and the parsing live in the script; the template only looks things up.
+`PartialRenderer().Section("План")` returns that markdown section of the copy as HTML, so the list prints exactly as written. The full template also lifts today's requests for help above the grid. The whole page renders on the server: no JavaScript, no request from the browser. The script does the dates and the HTML-to-markdown step; the template only fills in what it finds.
 
 ## Or no copies at all
 
-A layout page can also read the employees' bases live. It calls `/_system/mcp` from the browser with the visitor's session cookie, and the federated tools are there too: `federated_note_html(kb_id, "daily-sync/<day>.md")`, signed by the manager's base with its own federation keys. The visitor reaches only the bases whose connection notes they may read.
+A template page can also read the employees' bases live, from the visitor's browser. It calls the base's own `/_system/mcp` with the visitor's session cookie, and the federated tools are available there too. The base signs each call with its own federation secrets, and the visitor reaches only the peers they are allowed to read. See [[en/user/spa#mcp|MCP from the browser]].
 
-We kept the copies anyway. Three days of thirty employees would be ninety calls on every page view, each with a five-second timeout per peer, and an employee whose base is offline would vanish from the page. Live reads fit a page that shows one thing that changes by the minute.
+For this page we chose copies. Three days of thirty employees is ninety calls on every page view, with a two-second timeout per peer, and an employee whose base is offline would vanish from the page. A live read suits a page that shows one thing changing by the minute.
 
-## Onboarding, the same way
+## The same pattern: onboarding
 
-The same mechanism shows how each employee's onboarding goes. The onboarding agent sends each agent its steps: introductions, a first real task, a week later. The agent asks its person, does the task, and writes one note per finished step in its own words. A script with no model adds facts the agent does not write itself: the first conversation, how many, the kanban cards done. The manager's copier picks them up hourly, and a second layout draws people × steps.
+Swap days for steps and you get a page of how each newcomer's onboarding goes. The steps are introductions, a first real task, and a check-in a week later. The newcomer's agent asks the employee, does the task, and writes one note per finished step in its own words. A second script, reading the agent's own logs, adds facts the agent does not write itself: the date of the first conversation and how many there were. The manager's base copies both, and a second template draws people × steps.
 
-![[team-onboarding.png|Onboarding: the agents' own words for each finished step, next to the facts]]
+The point of that page is to read what each agent says about its employee, and to see where the words and the facts disagree.
 
-The point of this page is to read what each agent says about its person, and to see where the words and the facts disagree.
+## What to watch for
 
-## What the first run taught
-
-- **The question has to be in the history.** Without `attach_to_session` the answer «дописываю КП» reaches the agent as a message out of nowhere.
-- **Say which skill takes the key.** A message carrying a handover block matches a generic "connect a knowledge base" skill first. The manager's agent needs a standing instruction that this kind of message belongs to the team status.
-- **The name comes from the person.** The agent takes the name from the Telegram profile until told otherwise.
-- **One note per step, not one note to keep updated.** Asked to rewrite a section of a running note, agents appended dated entries below it instead. A note that does not exist until the step is done leaves nothing to append to.
-- **Privacy is part of the design.** The person knows the manager reads their day, and the note holds a summary, never the conversation.
+- **Put the question into the chat history.** If the morning question is sent by a scheduled job rather than by the agent in conversation, make sure it lands in the same chat session. Otherwise the agent receives the answer with no question in front of it.
+- **One note per step.** Asked to keep one running note up to date, an agent tends to append dated entries at the bottom instead of rewriting the right section. If the note does not exist until the step is done, there is nothing to append to.
+- **Name things by convention.** The `-daily` suffix puts a person on the page, and the KB-note id must equal the key's name. A name that breaks the convention silently leaves the person off.
+- **The employee's name comes from the employee.** An agent takes the name from the chat profile until told otherwise.
+- **Privacy is part of the design.** The employee knows the manager reads their day. The note holds a summary in the agent's words, never the conversation.
 
 ## Related
 
