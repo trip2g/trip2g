@@ -28,13 +28,28 @@ func loadWarnings(t *testing.T, sources map[string]string, path string) []model.
 	}
 
 	log := logger.TestLogger{}
-	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, Validate: true})
 	require.NoError(t, err)
 
 	note := nvs.PathMap[path]
 	require.NotNil(t, note, path)
 
 	return note.Warnings
+}
+
+func TestValidateOnlyWhenAsked(t *testing.T) {
+	srcs := []mdloader.SourceFile{
+		{Path: "rules.md", Content: []byte(validatorNote(`[{level: 'error', msg: 'ran'}]`))},
+		{Path: "note.md", Content: []byte("---\nvalidate: \"[[rules]]\"\n---\nbody\n")},
+		{Path: "missing.md", Content: []byte("---\nvalidate: \"[[nope]]\"\n---\nbody\n")},
+	}
+
+	log := logger.TestLogger{}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
+	require.NoError(t, err)
+
+	require.Empty(t, nvs.PathMap["note.md"].Warnings)
+	require.Empty(t, nvs.PathMap["missing.md"].Warnings)
 }
 
 func TestValidate(t *testing.T) {
@@ -368,7 +383,7 @@ func TestValidateDemoVault(t *testing.T) {
 	require.NoError(t, err)
 
 	log := logger.TestLogger{}
-	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, Validate: true})
 	require.NoError(t, err)
 
 	expected := map[string][]string{

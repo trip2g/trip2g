@@ -229,6 +229,15 @@ func (a *app) seedOwnerPersonalToken(ctx context.Context) error {
 	return nil
 }
 
+// createNoteLoaders builds the live and latest loaders. Only the latest
+// notes' warnings are read (admin, push, Telegram publish), so only that
+// loader runs validators.
+func (a *app) createNoteLoaders() {
+	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.latestNoteLoader.EnableValidation()
+}
+
 func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) error {
 	// Whole warmup (live + latest note loaders) shares one budget. Large vaults
 	// on a resource-starved box can need well over 10s; too tight a budget makes

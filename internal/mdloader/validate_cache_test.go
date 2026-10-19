@@ -25,7 +25,7 @@ func TestValidateCache(t *testing.T) {
 			srcs = append(srcs, SourceFile{Path: p, Content: []byte(c)})
 		}
 		log := logger.TestLogger{}
-		nvs, err := Load(Options{Sources: srcs, Log: &log, ValidateCache: cache})
+		nvs, err := Load(Options{Sources: srcs, Log: &log, Validate: true, ValidateCache: cache})
 		require.NoError(t, err)
 		return nvs.PathMap["note.md"].Warnings
 	}

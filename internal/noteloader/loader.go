@@ -123,6 +123,8 @@ type Loader struct {
 	// when neither the note's frontmatter nor the patch set changed.
 	patchCache *frontmatterpatch.ResultCache
 
+	// validate is set by EnableValidation. validateCache exists only then.
+	validate      bool
 	validateCache *mdloader.ValidateCache
 }
 
@@ -131,11 +133,21 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 		env: env,
 		log: logger.WithPrefix(env.Logger(), version+" noteloader:"),
 
-		version:       version,
-		config:        config,
-		patchCache:    frontmatterpatch.NewResultCache(),
-		validateCache: mdloader.NewValidateCache(),
+		version:    version,
+		config:     config,
+		patchCache: frontmatterpatch.NewResultCache(),
 	}
+}
+
+// EnableValidation makes Load run the validators notes list in "validate".
+// Only a loader whose warnings are read needs it; elsewhere it is wasted time,
+// and a loader holding part of the vault reports validators it can't see as
+// missing.
+func (l *Loader) EnableValidation() {
+	l.Lock()
+	defer l.Unlock()
+	l.validate = true
+	l.validateCache = mdloader.NewValidateCache()
 }
 
 // Close releases the search index. It matters only for an on-disk index: the
@@ -340,6 +352,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		FrontmatterPatches: l.frontmatterPatches,
 		ChartData:          l.chartData,
 		PatchCache:         l.patchCache,
+		Validate:           l.validate,
 		ValidateCache:      l.validateCache,
 	}
 

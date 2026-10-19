@@ -137,6 +137,25 @@ func TestLoader_RequireSignin_UpdatesAfterCacheHit(t *testing.T) {
 		"RequireSignin must be true after subgraph update even when note content is cached")
 }
 
+func TestLoader_ValidatesOnlyWhenEnabled(t *testing.T) {
+	notes := []noteloader.RawNote{
+		{Path: "note.md", PathID: 1, VersionID: 1, Content: "---\nvalidate: \"[[nope]]\"\n---\nbody\n"},
+	}
+	ctx := context.Background()
+
+	plain := noteloader.New("test", makeMinimalEnv(notes, func() bool { return false }), mdloader.Config{})
+	require.NoError(t, plain.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true}))
+	require.Empty(t, plain.NoteByPath("/note").Warnings)
+
+	validating := noteloader.New("test", makeMinimalEnv(notes, func() bool { return false }), mdloader.Config{})
+	validating.EnableValidation()
+	require.NoError(t, validating.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true}))
+	expected := []model.NoteWarning{
+		{Level: model.NoteWarningCritical, Message: "validate: target not found: [[nope]]"},
+	}
+	require.Equal(t, expected, validating.NoteByPath("/note").Warnings)
+}
+
 type cancelOnChartRows struct {
 	cancel context.CancelFunc
 }

@@ -36,6 +36,20 @@ func TestLint_BrokenWikilink(t *testing.T) {
 	require.NotContains(t, out, "clean.md", "clean.md must not appear in output")
 }
 
+// TestLint_RunsValidators verifies that a validator's error fails the lint.
+func TestLint_RunsValidators(t *testing.T) {
+	dir := t.TempDir()
+
+	writeFile(t, filepath.Join(dir, "rules.md"), "```jsonnet\n[{level: 'error', msg: 'always'}]\n```\n")
+	writeFile(t, filepath.Join(dir, "note.md"), "---\nvalidate: \"[[rules]]\"\n---\n# Note\n")
+
+	var buf strings.Builder
+	code, err := doclint.Run(context.Background(), dir, &buf, &logger.DummyLogger{})
+	require.NoError(t, err)
+	require.Equal(t, 1, code)
+	require.Contains(t, buf.String(), "validate rules.md: always")
+}
+
 // TestLint_CleanVault verifies exit 0 and empty output for a vault with no issues.
 func TestLint_CleanVault(t *testing.T) {
 	dir := t.TempDir()
