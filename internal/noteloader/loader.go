@@ -231,6 +231,20 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	assetMap := buildAssetMap(assets)
 
+	// Every database read happens before mdloader.Load: parsing, validating
+	// and rendering a large vault can use up ctx's deadline.
+	dbSubgraphs, err := l.env.ListAllSubgraphs(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list subgraphs: %w", err)
+	}
+
+	chunks, err := l.loadChunks(ctx)
+	if err != nil {
+		// Non-fatal: chunks may not exist yet (before first chunk embedding run)
+		l.log.Warn("failed to load note chunks", "err", err)
+		chunks = nil
+	}
+
 	mdSources := []mdloader.SourceFile{}
 	templateSources := []model.LayoutSourceFile{}
 	embeddingMap := make(map[int64][]byte) // version_id -> raw embedding bytes
@@ -335,10 +349,6 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	}
 
 	// Enrich NoteSubgraphs with DB flags (require_signin).
-	dbSubgraphs, err := l.env.ListAllSubgraphs(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to list subgraphs: %w", err)
-	}
 	dbSubgraphMap := make(map[string]db.Subgraph, len(dbSubgraphs))
 	for _, sg := range dbSubgraphs {
 		dbSubgraphMap[sg.Name] = sg
@@ -378,13 +388,6 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	}
 
 	l.assignEmbeddings(nvs, embeddingMap)
-
-	chunks, err := l.loadChunks(ctx)
-	if err != nil {
-		// Non-fatal: chunks may not exist yet (before first chunk embedding run)
-		l.log.Warn("failed to load note chunks", "err", err)
-		chunks = nil
-	}
 
 	err = l.generateSitemap(nvs)
 	if err != nil {
