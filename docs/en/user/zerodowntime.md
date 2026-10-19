@@ -39,6 +39,8 @@ Returns **200 only when the instance is fully ready to serve** (warmed up, write
 
 On boot trip2g builds its in-memory state (rendered note views, the search index) before it can serve a single page. That is seconds on a small vault, longer on a big one. If a deploy sends traffic to the new instance before that finishes, readers get errors. The fix: the new instance warms up **while the old one keeps serving**, and `/readyz` gates the switch so traffic only moves once the new instance is ready.
 
+Warmup loads two sets of notes: the live ones readers see, then the latest ones editors and sync work from. Each gets its own 60 s budget, so a slow live load does not eat into the latest one. If either fails or runs out of time, the instance exits instead of becoming ready, and the old instance keeps serving. That is on purpose for the latest notes too: an instance that started with an empty latest set would treat the vault as empty when it writes.
+
 ## The handoff knobs
 
 - `--shutdown-grace-period`: on shutdown trip2g flips `/readyz` to 503 and keeps serving for this long before it actually stops. Set it **≥ your load balancer's unhealthy-detection window** (e.g. 5 s for a 1-2 s health-check interval) so the balancer drains the old instance before it dies. If it is too short, expect a few `502 Bad Gateway` at the cutover.
