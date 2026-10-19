@@ -105,6 +105,10 @@ func (a *app) FederatedAssetLinkSecret() string {
 
 // FederatedAssetDownload issues the link federated_asset hands its caller.
 func (a *app) FederatedAssetDownload(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error) {
+	if a.PublicURL() == "" {
+		return mcp.FederatedAssetDownload{}, errors.New("federated_asset needs --public-url")
+	}
+
 	expiresAt := time.Now().Add(federatedAssetLinkTTL)
 	link := federatedassetlink.Link{KBID: kbID, NotePath: params.NotePath, Name: params.Name}
 

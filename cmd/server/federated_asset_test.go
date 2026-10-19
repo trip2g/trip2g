@@ -301,3 +301,13 @@ func TestFederatedAssetAcrossTwoStores(t *testing.T) {
 	status, _, _ = consumer.get(t, link.Path+"?link="+url.QueryEscape(link.Query().Get("link")+"x"))
 	require.Equal(t, http.StatusNotFound, status, "a tampered link reaches nothing")
 }
+
+func TestFederatedAssetDownloadNeedsAPublicURL(t *testing.T) {
+	a := &app{appState: &appState{config: &appconfig.Config{
+		UserToken: usertoken.Config{Secret: "secret"},
+	}}}
+	params := model.FederatedAssetParams{NotePath: "skills/reel.md", Name: "files/attach.zip"}
+
+	_, err := a.FederatedAssetDownload("peer", params)
+	require.EqualError(t, err, "federated_asset needs --public-url")
+}
