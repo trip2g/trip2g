@@ -6,9 +6,14 @@ import (
 	"io"
 )
 
-// ErrFederatedAssetTooLarge is a peer offering an attachment over this side's
-// limit, or streaming one without saying how large it is.
-var ErrFederatedAssetTooLarge = errors.New("federated asset exceeds the size limit")
+var (
+	// ErrFederatedAssetTooLarge is a peer offering an attachment over this
+	// side's limit.
+	ErrFederatedAssetTooLarge = errors.New("federated asset exceeds the size limit")
+	// ErrFederatedAssetSizeUnknown is a peer streaming an attachment without
+	// Content-Length, which this side cannot hold to its limit.
+	ErrFederatedAssetSizeUnknown = errors.New("federated asset sent without a size")
+)
 
 // FederatedAssetPath is where a base serves its notes' attachments to a
 // federation caller, relative to the base's MCP URL (a KB-note's url).

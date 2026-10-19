@@ -42,8 +42,13 @@ import (
 const (
 	fedTestKID    = "consumer-at-peer"
 	fedTestSecret = "0123456789abcdef0123456789abcdef"
-	fedTestZip    = "PK\x03\x04 the attachment the shared note links to"
 )
+
+// fedTestZipContent is larger than the asset client's 64 KiB buffer, so the relay
+// takes the streaming path rather than a buffered body.
+func fedTestZipContent() string {
+	return "PK\x03\x04" + strings.Repeat("the attachment the shared note links to ", 4096)
+}
 
 // store is one running instance, its handler reachable in process.
 type store struct {
@@ -235,6 +240,7 @@ func serve(t *testing.T, s *store) string {
 // from its own URL while the bytes come from the peer.
 func TestFederatedAssetAcrossTwoStores(t *testing.T) {
 	ctx := context.Background()
+	fedTestZip := fedTestZipContent()
 
 	peer := newStore(t, "http://peer.invalid")
 	for _, name := range []string{"shared", "other"} {
@@ -282,7 +288,7 @@ func TestFederatedAssetAcrossTwoStores(t *testing.T) {
 	require.Equal(t, http.StatusOK, status, body)
 	sum := sha256.Sum256([]byte(body))
 	require.Equal(t, assetPayload.Sha256, hex.EncodeToString(sum[:]))
-	require.Equal(t, `attachment; filename="attach.zip"`, string(header.Peek("Content-Disposition")))
+	require.Equal(t, `attachment; filename="attach.zip"; filename*=UTF-8''attach.zip`, string(header.Peek("Content-Disposition")))
 	require.Equal(t, "no-store", string(header.Peek("Cache-Control")))
 
 	refused := consumer.tool(t, "federated_asset", `{"kb_id":"peer","note_path":"private/plan.md","name":"plan.pdf"}`)

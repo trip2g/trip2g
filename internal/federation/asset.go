@@ -76,7 +76,11 @@ func (c *AssetClient) FetchAsset(ctx context.Context, params model.FederatedAsse
 	}
 
 	size := int64(resp.Header.ContentLength())
-	if size < 0 || size > c.limits.MaxSize {
+	if size < 0 {
+		releaseStreamed(resp)
+		return nil, model.ErrFederatedAssetSizeUnknown
+	}
+	if size > c.limits.MaxSize {
 		releaseStreamed(resp)
 		return nil, model.ErrFederatedAssetTooLarge
 	}
@@ -130,6 +134,9 @@ func (c *AssetClient) send(ctx context.Context, body []byte, rid string, secret 
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.SetBody(body)
+	// A body abandoned halfway would leave the rest of the file on a pooled
+	// connection, where the next response on it would be read from file bytes.
+	req.SetConnectionClose()
 
 	resp := fasthttp.AcquireResponse()
 

@@ -33,10 +33,12 @@ type FederatedAssetPayload struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-// NoteHTMLPayload is the structured half of a note read: the note's assets,
-// each named exactly as federated_asset accepts it.
+// NoteHTMLPayload is the structured half of a note read: the note's path and
+// its assets, each named exactly as federated_asset accepts them — the path
+// too, whichever reference the note was opened by.
 type NoteHTMLPayload struct {
-	Assets []model.NoteAssetInfo `json:"assets"`
+	NotePath string                `json:"note_path"`
+	Assets   []model.NoteAssetInfo `json:"assets"`
 }
 
 // FederatedAssetDownload is a link the caller can fetch without any other
@@ -152,7 +154,7 @@ func noteReadResult(note *model.NoteView, text string) CallToolResult {
 	if len(assets) > 0 {
 		text += "\n\n" + assetsText(assets)
 	}
-	return structuredToolResult(text, NoteHTMLPayload{Assets: assets})
+	return structuredToolResult(text, NoteHTMLPayload{NotePath: note.Path, Assets: assets})
 }
 
 func noteAssets(note *model.NoteView) []model.NoteAssetInfo {

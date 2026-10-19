@@ -12,6 +12,7 @@ import (
 	"errors"
 	"mime"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 
@@ -69,7 +70,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	h.Set("Cache-Control", "no-store")
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Content-Security-Policy", "sandbox")
-	h.Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
+	h.Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName)+"; filename*=UTF-8''"+url.PathEscape(fileName))
 	ctx.SetContentType(contentType(fileName))
 	ctx.SetBodyStream(asset.Body, int(asset.Size))
 

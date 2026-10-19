@@ -11,7 +11,6 @@ package federatedassetlink
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"time"
 
@@ -48,16 +47,12 @@ func Sign(link Link, secret string, expiresAt time.Time) (string, error) {
 }
 
 func Parse(token string, secret string) (Link, error) {
-	parsed, err := jwt.ParseWithClaims(token, &claims{}, func(*jwt.Token) (any, error) {
+	var c claims
+	_, err := jwt.ParseWithClaims(token, &c, func(*jwt.Token) (any, error) {
 		return signingKey(secret), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 	if err != nil {
 		return Link{}, fmt.Errorf("parse federated asset link: %w", err)
-	}
-
-	c, ok := parsed.Claims.(*claims)
-	if !ok || !parsed.Valid {
-		return Link{}, errors.New("not a federated asset link")
 	}
 
 	return c.Link, nil
