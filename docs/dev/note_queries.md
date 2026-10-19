@@ -58,7 +58,7 @@ The program decides which fields leave the server. Raw frontmatter is never retu
 
 ## Cost
 
-`BenchmarkResolveDocs`: one query over the repo's `docs/` vault (857 notes) takes ~12 ms and ~11 MB per call, access checks mocked. Every call rebuilds `notes` and evaluates the program; nothing is cached. For a signed-in reader who isn't an admin, `CanReadNote` lists their active subgraphs from the database **once per note**, which this benchmark doesn't include.
+`BenchmarkResolveDocs`: one query over the repo's `docs/` vault (857 notes) takes ~12 ms and ~11 MB per call, access checks mocked. Every call rebuilds `notes` and evaluates the program; nothing is cached. The viewer is resolved once per call (`canreadnote.NewReader`): an admin reads everything, a guest reads anonymously readable notes, a signed-in reader's active subgraphs are listed once; scoped tokens and federated identities go through `canreadnote.Resolve` per note, which reads no DB for them. `noteQuery` costs 10 in the GraphQL complexity limit of 30 (`internal/graph/handler.go`), so one request runs at most two queries.
 
 ## Observability
 
@@ -72,7 +72,7 @@ go-jsonnet can't be cancelled (no context, step limit or settable hook; upstream
 
 ## Not in the MVP
 
-- A result cache keyed by access class, and one access check per call: https://github.com/trip2g/trip2g/issues/441.
+- A result cache keyed by access class: https://github.com/trip2g/trip2g/issues/441.
 - `links` / `backlinks` in `notes`, and the note body.
 - A time limit or concurrency cap for query programs (see Observability). A public query whose loops depend on `params` (`std.range(1, params.n)`) lets a guest burn CPU; write queries that don't.
 - An admin-only `filterNotes` that runs caller-supplied jsonnet (raised in discussion; `notePaths(filter: {frontmatter: [...]})` already filters by `exists`/`equals` with an API key).

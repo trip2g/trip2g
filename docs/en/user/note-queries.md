@@ -216,6 +216,6 @@ A template can also list notes without a query: `nvs.ByGlob("blog/*.md")` and `S
 
 ### Limits
 
-- **Every call runs the program again.** There is no cache yet; over a vault of about 850 notes a call takes around 12 ms. For a signed-in visitor who isn't an admin, checking which notes they can read costs a database lookup per note. Both are tracked in [issue #441](https://github.com/trip2g/trip2g/issues/441).
+- **Every call runs the program again.** There is no cache yet; over a vault of about 850 notes a call takes around 12 ms. A cache is tracked in [issue #441](https://github.com/trip2g/trip2g/issues/441). A request runs at most two queries.
 - **A query runs until it finishes.** Jsonnet can't be stopped halfway, so don't write loops whose size comes from `params`, such as `std.range(1, params.n)`: any visitor could make them huge.
 - **Watching cost.** The instance's metrics have `trip2g_note_query_duration_seconds` per query note, and a call that takes a second or more is logged as `slow note query`.
