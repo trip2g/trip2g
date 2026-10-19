@@ -52,3 +52,4 @@ title: "Навигация"
 - [[ru/thoughts/ingest-as-a-note|Задание приезжает заметкой]]
 - [[ru/thoughts/alerts-in-a-knowledge-base|Алертам место в базе знаний]]
 - [[ru/thoughts/template-engine-hidden-work|Сколько работы прячет шаблонизатор]]
+- [[ru/thoughts/positioning-wheel|Как собрано колесо позиционирования]]

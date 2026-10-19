@@ -30,13 +30,17 @@
   .@did__nav { width: 100%; border-top: 1px solid var(--rule); }
   .@did__nav-link { flex: 1; padding: 10px 6px; text-align: center; white-space: nowrap; }
 }
+@media (max-width: 400px) {
+  .@did__nav-link { padding: 10px 2px; letter-spacing: 0.04em; }
+}
 {{ end }}
 
-{{ block @lid(lang="en", docs_label="Docs", start_label="start →", start_href="/en/user/getting_started") }}
+{{ block @lid(lang="en", wheel_label="9 doors", docs_label="Docs", start_label="start →", start_href="/en/user/getting_started") }}
 <header class="@did">
   <div class="@did__prompt">$ <b>trip2g</b></div>
   <div class="@did__spacer"></div>
   <nav class="@did__nav">
+    <a href="/{{ lang }}/circle" class="@did__nav-link">{{ wheel_label }}</a>
     <a href="/{{ lang }}/user" class="@did__nav-link">{{ docs_label }}</a>
     <a href="/" class="@did__nav-link{{ if lang == "en" }} @did__nav-link--key{{ end }}">EN</a>
     <a href="/ru" class="@did__nav-link{{ if lang == "ru" }} @did__nav-link--key{{ end }}">RU</a>

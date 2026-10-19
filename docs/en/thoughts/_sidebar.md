@@ -51,3 +51,4 @@ title: "Navigation"
 - [[en/thoughts/ingest-as-a-note|The job ships as a note]]
 - [[en/thoughts/alerts-in-a-knowledge-base|Alerts belong in a knowledge base]]
 - [[en/thoughts/template-engine-hidden-work|How much work a template engine hides]]
+- [[en/thoughts/positioning-wheel|How the positioning wheel is built]]
