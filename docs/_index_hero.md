@@ -9,4 +9,4 @@ description: "A knowledge base for AI agents: what they learn and do becomes pag
 
 A knowledge base for AI agents: what they learn and do becomes pages, dashboards and apps for your team and your customers right away. The editor is your Obsidian, the format is plain markdown.
 
-open source · MIT · one Go process on your own server
+open source · MIT · one Go process on your own server · [[en/circle/_index|nine tools in one: see the wheel →]]

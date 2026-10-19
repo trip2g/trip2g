@@ -31,6 +31,7 @@ import (
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
 	"trip2g/internal/simplebackup"
 	"trip2g/internal/webhookutil"
@@ -239,29 +240,58 @@ func (a *app) createNoteLoaders() {
 	a.latestNoteLoader.EnableValidation()
 }
 
-func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) error {
-	// Whole warmup (live + latest note loaders) shares one budget. Large vaults
-	// on a resource-starved box can need well over 10s; too tight a budget makes
-	// the startup warmup fail mid-DB-read and panic into a restart crash-loop.
-	startCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
+// noteLoaderBootBudget is how long each note loader may take at boot. Large
+// vaults on a resource-starved box can need well over 10s. Each loader gets
+// its own budget, so a slow live render cannot starve the latest loader's
+// database reads.
+const noteLoaderBootBudget = 60 * time.Second
 
-	// Patches are now loaded automatically by noteloader.Load()
-	err := a.liveNoteLoader.Load(startCtx, options)
+type bootNoteLoader interface {
+	Load(ctx context.Context, options noteloader.LoadOptions) error
+	NoteViews() *model.NoteViews
+}
+
+type bootNoteLoaders struct {
+	live   bootNoteLoader
+	latest bootNoteLoader
+	budget time.Duration
+	log    logger.Logger
+}
+
+func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) error {
+	loaders := bootNoteLoaders{
+		live:   a.liveNoteLoader,
+		latest: a.latestNoteLoader,
+		budget: noteLoaderBootBudget,
+		log:    a.log,
+	}
+
+	return loaders.load(ctx, options)
+}
+
+func (b bootNoteLoaders) load(ctx context.Context, options noteloader.LoadOptions) error {
+	err := b.loadOne(ctx, b.live, options)
 	if err != nil {
 		return fmt.Errorf("failed to load live notes: %w", err)
 	}
 
-	a.log.Info("loaded live notes", "count", len(a.liveNoteLoader.NoteViews().List))
+	b.log.Info("loaded live notes", "count", len(b.live.NoteViews().List))
 
-	err = a.latestNoteLoader.Load(startCtx, options)
+	err = b.loadOne(ctx, b.latest, options)
 	if err != nil {
 		return fmt.Errorf("failed to load latest notes: %w", err)
 	}
 
-	a.log.Info("loaded latest notes", "count", len(a.latestNoteLoader.NoteViews().List))
+	b.log.Info("loaded latest notes", "count", len(b.latest.NoteViews().List))
 
 	return nil
+}
+
+func (b bootNoteLoaders) loadOne(ctx context.Context, loader bootNoteLoader, options noteloader.LoadOptions) error {
+	loadCtx, cancel := context.WithTimeout(ctx, b.budget)
+	defer cancel()
+
+	return loader.Load(loadCtx, options)
 }
 
 // systemdListener returns the socket-activated listener passed by systemd via
