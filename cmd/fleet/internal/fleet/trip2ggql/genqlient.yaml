@@ -11,3 +11,6 @@ bindings:
   # trip2g's 64-bit integer scalar maps to a plain Go int64.
   Int64:
     type: int64
+  # trip2g's arbitrary JSON object scalar (updateNotes meta.set).
+  Map:
+    type: map[string]any

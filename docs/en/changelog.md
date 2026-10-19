@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### `updateNotes` changes one frontmatter key without rewriting the note
+
+- **What.** A new `meta` change in `updateNotes` takes `set` (keys to add or replace) and `unset` (keys to remove) for a note's top-level frontmatter. Every other key keeps its line, order, quoting and comments, and the body is not touched. A note without frontmatter gets a block. `expectedHash` works as for `patch`. Fleet roles get the same edit as a `set_note_meta` tool, and a webhook agent can return it as a change with `"kind": "meta"`.
+- **Why.** Changing one key meant rewriting the whole note with `upsert`, or a `patch` whose `find` had to repeat the current text exactly and failed when the formatting differed. LLM agents that rewrite frontmatter text also move and reformat keys they were not asked to touch.
+- **How to use.** Send `{"meta": {"path": "todo.md", "set": {"status": "done"}}}` in `changes`. See [[en/user/update_notes|updateNotes]].
+
 ### Note queries give a JavaScript page a list of notes
 
 - **What.** A note with `type: note-query` and a Jsonnet block is a named query. The GraphQL field `noteQuery` runs it with the notes the caller can read and the caller's `params`, and returns the JSON the program builds. A visitor can run it only if they can read the query note.

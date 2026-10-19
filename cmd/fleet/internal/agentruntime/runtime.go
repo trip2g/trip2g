@@ -20,12 +20,13 @@ const (
 
 // Tool names exposed to the model.
 const (
-	toolSearch    = "search"
-	toolReadNote  = "read_note"
-	toolWriteNote = "write_note"
-	toolPatchNote = "patch_note"
-	toolFinish    = "finish"
-	toolExec      = "exec"
+	toolSearch      = "search"
+	toolReadNote    = "read_note"
+	toolWriteNote   = "write_note"
+	toolPatchNote   = "patch_note"
+	toolSetNoteMeta = "set_note_meta"
+	toolFinish      = "finish"
+	toolExec        = "exec"
 )
 
 // fleetInputMessageName is the reserved message name that carries the delivery
@@ -34,8 +35,8 @@ const (
 const fleetInputMessageName = "fleet_input"
 
 // toolInvoker is the extension-point function type for the tool registry seam.
-// Built-in tools (search, read_note, write_note, patch_note, finish) are
-// handled by execTool's switch. Extension tools (exec, future MCP plug-ins)
+// Built-in tools (search, read_note, write_note, patch_note, set_note_meta,
+// finish) are handled by execTool's switch. Extension tools (exec, future MCP plug-ins)
 // register an invoker here via buildInvokers so the loop never needs a new
 // switch case. It returns the textual result for the model plus the outcome,
 // the same contract as the built-in tools, so an extension write is metered
@@ -436,6 +437,8 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall,
 		return execWriteNote(ctx, scoped, res, call)
 	case toolPatchNote:
 		return execPatchNote(ctx, scoped, res, call)
+	case toolSetNoteMeta:
+		return execSetNoteMeta(ctx, scoped, res, call)
 	default:
 		return "error: unknown tool " + call.Name, outcomeError
 	}
@@ -630,6 +633,35 @@ func execPatchNote(ctx context.Context, scoped *ScopedKB, res *Result, call Tool
 		Kind:    webhookutil.AgentChangeKindPatch,
 	})
 	return "ok: patched " + args.Path, outcomeOK
+}
+
+func execSetNoteMeta(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall) (string, string) {
+	var args struct {
+		Path  string         `json:"path"`
+		Set   map[string]any `json:"set"`
+		Unset []string       `json:"unset"`
+	}
+	if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil {
+		return "error: invalid arguments: " + err.Error(), outcomeInvalidArgs
+	}
+	if len(args.Set) == 0 && len(args.Unset) == 0 {
+		return "error: set or unset must name at least one key", outcomeInvalidArgs
+	}
+	err := scoped.SetMeta(ctx, args.Path, args.Set, args.Unset)
+	if denial, ok := writeDenial(err, "set meta", args.Path); ok {
+		res.Denials = append(res.Denials, denial)
+		return "error: " + err.Error(), outcomeDenied
+	}
+	if err != nil {
+		return "error: " + err.Error(), outcomeApplyFailed
+	}
+	res.Changes = append(res.Changes, webhookutil.AgentChange{
+		Path:  args.Path,
+		Set:   args.Set,
+		Unset: args.Unset,
+		Kind:  webhookutil.AgentChangeKindMeta,
+	})
+	return "ok: set meta of " + args.Path, outcomeOK
 }
 
 func finishAnswer(arguments string) string {
@@ -967,6 +999,29 @@ func toolDefs(execEnabled bool) []ToolDef {
 					"replace": map[string]any{"type": "string"},
 				},
 				"required": []string{"path", "find", "replace"},
+			},
+		},
+		{
+			Name: toolSetNoteMeta,
+			Description: "Change top-level frontmatter keys of an existing document (write scope only) without rewriting it. " +
+				"set adds each key or replaces its value; unset removes keys, and an absent key is not an error. " +
+				"Other keys, their comments and the body stay exactly as they are. Nested keys cannot be addressed: " +
+				`"a.b" is a key literally named "a.b".`,
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"path": map[string]any{"type": "string"},
+					"set": map[string]any{
+						"type":        "object",
+						"description": "Keys to add or replace, with their new values (string, number, boolean, list or object).",
+					},
+					"unset": map[string]any{
+						"type":        "array",
+						"items":       map[string]any{"type": "string"},
+						"description": "Keys to remove.",
+					},
+				},
+				"required": []string{"path"},
 			},
 		},
 		{

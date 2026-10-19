@@ -587,6 +587,6 @@ func TestRun_DefaultToolCountUnchangedWithoutExecLLM(t *testing.T) {
 		KB:           kb,
 	})
 	require.NoError(t, err)
-	require.Len(t, llm.seenTools, 5,
+	require.Len(t, llm.seenTools, 6,
 		"ExecLLM=nil must not add exec to the offered set")
 }

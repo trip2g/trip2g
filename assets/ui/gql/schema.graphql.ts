@@ -16,6 +16,7 @@ export type Scalars = {
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   Int64: { input: any; output: any; }
+  Map: { input: any; output: any; }
   Time: { input: any; output: any; }
   Upload: { input: any; output: any; }
 };
@@ -3130,11 +3131,27 @@ export type NoteChangeHideInput = {
 
 export type NoteChangeInput = {
   hide?: InputMaybe<NoteChangeHideInput>;
+  meta?: InputMaybe<NoteChangeMetaInput>;
   patch?: InputMaybe<NoteChangePatchInput>;
   upsert?: InputMaybe<NoteChangeUpsertInput>;
 };
 
 export type NoteChangeItem = NoteHideEvent | NoteUpsertEvent;
+
+/**
+ * Changes top-level frontmatter keys without rewriting the note.
+ * set adds a key or replaces its value; unset removes keys, and removing an absent
+ * key is not an error. Keys are top-level only: "a.b" is a key literally named
+ * "a.b", not b inside a. The lines of other keys, their comments and the body are
+ * kept byte for byte; new keys go after the last key, sorted. A note without
+ * frontmatter gets a block. expectedHash works as for patch.
+ */
+export type NoteChangeMetaInput = {
+  expectedHash?: InputMaybe<Scalars['String']['input']>;
+  path: Scalars['String']['input'];
+  set?: InputMaybe<Scalars['Map']['input']>;
+  unset?: InputMaybe<Array<Scalars['String']['input']>>;
+};
 
 export type NoteChangePatchInput = {
   expectedHash?: InputMaybe<Scalars['String']['input']>;

@@ -2023,6 +2023,20 @@ type NoteChangeInput struct {
 	Upsert *NoteChangeUpsertInput `json:"upsert,omitempty"`
 	Patch  *NoteChangePatchInput  `json:"patch,omitempty"`
 	Hide   *NoteChangeHideInput   `json:"hide,omitempty"`
+	Meta   *NoteChangeMetaInput   `json:"meta,omitempty"`
+}
+
+// Changes top-level frontmatter keys without rewriting the note.
+// set adds a key or replaces its value; unset removes keys, and removing an absent
+// key is not an error. Keys are top-level only: "a.b" is a key literally named
+// "a.b", not b inside a. The lines of other keys, their comments and the body are
+// kept byte for byte; new keys go after the last key, sorted. A note without
+// frontmatter gets a block. expectedHash works as for patch.
+type NoteChangeMetaInput struct {
+	Path         string         `json:"path"`
+	Set          map[string]any `json:"set,omitempty"`
+	Unset        []string       `json:"unset,omitempty"`
+	ExpectedHash *string        `json:"expectedHash,omitempty"`
 }
 
 type NoteChangePatchInput struct {

@@ -1030,6 +1030,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputMarkFormSubmitProcessedInput,
 		ec.unmarshalInputNoteChangeHideInput,
 		ec.unmarshalInputNoteChangeInput,
+		ec.unmarshalInputNoteChangeMetaInput,
 		ec.unmarshalInputNoteChangePatchInput,
 		ec.unmarshalInputNoteChangeUpsertInput,
 		ec.unmarshalInputNoteChangesFilter,
@@ -1218,6 +1219,7 @@ var sources = []*ast.Source{
 	{Name: "../schema.graphqls", Input: `scalar Int64
 scalar Time
 scalar Upload
+scalar Map
 
 """
 Any JSON value: an object, a list, a string, a number, a boolean or null.
@@ -3136,10 +3138,26 @@ input NoteChangeHideInput {
   path: String!
 }
 
+"""
+Changes top-level frontmatter keys without rewriting the note.
+set adds a key or replaces its value; unset removes keys, and removing an absent
+key is not an error. Keys are top-level only: "a.b" is a key literally named
+"a.b", not b inside a. The lines of other keys, their comments and the body are
+kept byte for byte; new keys go after the last key, sorted. A note without
+frontmatter gets a block. expectedHash works as for patch.
+"""
+input NoteChangeMetaInput {
+  path: String!
+  set: Map
+  unset: [String!]
+  expectedHash: String
+}
+
 input NoteChangeInput {
   upsert: NoteChangeUpsertInput
   patch: NoteChangePatchInput
   hide: NoteChangeHideInput
+  meta: NoteChangeMetaInput
 }
 
 input UpdateNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
@@ -51886,7 +51904,7 @@ func (ec *executionContext) unmarshalInputNoteChangeInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"upsert", "patch", "hide"}
+	fieldsInOrder := [...]string{"upsert", "patch", "hide", "meta"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -51914,6 +51932,61 @@ func (ec *executionContext) unmarshalInputNoteChangeInput(ctx context.Context, o
 				return it, err
 			}
 			it.Hide = data
+		case "meta":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("meta"))
+			data, err := ec.unmarshalONoteChangeMetaInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeMetaInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Meta = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNoteChangeMetaInput(ctx context.Context, obj any) (model.NoteChangeMetaInput, error) {
+	var it model.NoteChangeMetaInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "set", "unset", "expectedHash"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "set":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("set"))
+			data, err := ec.unmarshalOMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Set = data
+		case "unset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unset"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Unset = data
+		case "expectedHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedHash"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedHash = data
 		}
 	}
 
@@ -94846,11 +94919,37 @@ func (ec *executionContext) marshalOLayoutBlockParamValue2trip2gᚋinternalᚋgr
 	return ec._LayoutBlockParamValue(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]any) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalMap(v)
+	return res
+}
+
 func (ec *executionContext) unmarshalONoteChangeHideInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeHideInput(ctx context.Context, v any) (*model.NoteChangeHideInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputNoteChangeHideInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalONoteChangeMetaInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeMetaInput(ctx context.Context, v any) (*model.NoteChangeMetaInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNoteChangeMetaInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

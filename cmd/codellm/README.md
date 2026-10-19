@@ -63,6 +63,13 @@ fleetkit.emit(changes, 'ingested %d' % len(changes))
 | `note_frontmatter(path)` | the frontmatter of a note in the bag; raises if the bag has no such path |
 | `parse_frontmatter(content)` | the frontmatter block of a markdown string; empty when there is none |
 
+Each change carries `path` and the keys of exactly one kind: `content`
+replaces the whole note (`""` empties it), `find` and `replace` patch it, and
+`set` and `unset` change top-level frontmatter keys the way `set_note_meta`
+does — `{"path": "a.md", "set": {"status": "done"}, "unset": ["draft"]}`. An
+entry with none of these keys, or with keys of two kinds, fails the run with
+`parse_error` before anything is written.
+
 `note_frontmatter(path)` reads a note the delivery bag carries, so a lint role
 is plain code with no schema DSL to learn:
 
