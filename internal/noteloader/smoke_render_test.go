@@ -1,13 +1,17 @@
 package noteloader
 
 import (
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"trip2g/internal/layoutloader"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
+	"trip2g/internal/templateviews"
 
+	"github.com/CloudyKit/jet/v6"
 	"github.com/stretchr/testify/require"
 )
 
@@ -192,4 +196,44 @@ func TestSmokeRenderLayouts_RunsNoteQueryAsGuest(t *testing.T) {
 	paid := layouts.Map["/paid"].Warnings
 	require.Len(t, paid, 1, "a guest can't run a members-only query")
 	require.Contains(t, paid[0].Message, `noteQuery("queries/paid.md"): query not found`)
+}
+
+// A layout sampled for many notes runs each distinct noteQuery call once,
+// failures included.
+func TestSmokeRenderForLayout_RunsEachNoteQueryOnce(t *testing.T) {
+	layouts := smokeLoadLayouts(t, []model.LayoutSourceFile{
+		{ID: "/list", Path: "_layouts/list.html",
+			Content: `{{ noteQuery("a") }}{{ noteQuery("a") }}{{ noteQuery("a", map("tag", "go")) }}` +
+				`{{ noteQuery("a", map("tag", "web")) }}{{ noteQuery("b") }}{{ noteQuery("broken") }}`},
+	})
+
+	runs := map[string]int{}
+	next := func(a jet.Arguments) reflect.Value {
+		key, _ := noteQueryKey(a)
+		runs[key]++
+		if a.Get(0).Interface() == "broken" {
+			a.Panicf("boom")
+		}
+		return reflect.ValueOf("ok")
+	}
+	noteQuery := memoNoteQuery(next)
+
+	const sampled = 5
+	nvsWrap := templateviews.NewNVS(&model.NoteViews{}, "")
+	var failures int
+	for i := range sampled {
+		note := &model.NoteView{Path: "n" + strconv.Itoa(i) + ".md", Layout: "list"}
+		if executeSmoke(layouts.Map["/list"].View, note, nvsWrap, noteQuery) != nil {
+			failures++
+		}
+	}
+
+	require.Equal(t, map[string]int{
+		`["a"]`:               1,
+		`["a",{"tag":"go"}]`:  1,
+		`["a",{"tag":"web"}]`: 1,
+		`["b"]`:               1,
+		`["broken"]`:          1,
+	}, runs)
+	require.Equal(t, sampled, failures, "a failing query still fails every sampled note")
 }

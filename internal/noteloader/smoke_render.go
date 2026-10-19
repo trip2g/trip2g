@@ -2,6 +2,7 @@ package noteloader
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -84,7 +85,7 @@ func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger
 func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *model.NoteViews, log logger.Logger, layoutID string) []model.NoteWarning {
 	var warnings []model.NoteWarning
 	nvsWrap := templateviews.NewNVS(nvs, "")
-	noteQuery := runnotequery.JetFunc(context.Background(), smokeQueryEnv{nvs: nvs})
+	noteQuery := memoNoteQuery(runnotequery.JetFunc(context.Background(), smokeQueryEnv{nvs: nvs}))
 	for _, n := range notes {
 		if w := executeSmoke(view, n, nvsWrap, noteQuery); w != nil {
 			log.Warn("layout smoke render failed",
@@ -93,6 +94,62 @@ func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *mode
 		}
 	}
 	return warnings
+}
+
+type noteQueryOutcome struct {
+	value reflect.Value
+	panic any
+}
+
+// memoNoteQuery runs each distinct (query, params) once per smoke render: every
+// sampled note gets the same guest answer, so re-running it only costs time.
+// A failure is remembered too and raised again for each note.
+func memoNoteQuery(next jet.Func) jet.Func {
+	seen := make(map[string]noteQueryOutcome)
+	return func(a jet.Arguments) reflect.Value {
+		key, ok := noteQueryKey(a)
+		if !ok {
+			return next(a)
+		}
+		outcome, done := seen[key]
+		if !done {
+			outcome = callNoteQuery(next, a)
+			seen[key] = outcome
+		}
+		if outcome.panic != nil {
+			panic(outcome.panic)
+		}
+		return outcome.value
+	}
+}
+
+func noteQueryKey(a jet.Arguments) (string, bool) {
+	if a.NumOfArguments() < 1 || a.NumOfArguments() > 2 {
+		return "", false
+	}
+	args := make([]any, a.NumOfArguments())
+	for i := range args {
+		v := a.Get(i)
+		if !v.IsValid() {
+			return "", false
+		}
+		args[i] = v.Interface()
+	}
+	key, err := json.Marshal(args)
+	if err != nil {
+		return "", false
+	}
+	return string(key), true
+}
+
+//nolint:nonamedreturns // named return required so deferred recover can set it
+func callNoteQuery(next jet.Func, a jet.Arguments) (outcome noteQueryOutcome) {
+	defer func() {
+		if r := recover(); r != nil {
+			outcome.panic = r
+		}
+	}()
+	return noteQueryOutcome{value: next(a)}
 }
 
 //nolint:nonamedreturns // named return required so deferred recover can set it
