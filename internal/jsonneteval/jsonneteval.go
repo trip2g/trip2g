@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
 	jsonnet "github.com/google/go-jsonnet"
 )
@@ -15,11 +16,14 @@ import (
 // Snippets come from untrusted sources (note frontmatter patches, webhook
 // transforms), so import/importstr must not reach the server filesystem: an
 // empty MemoryImporter makes every import resolve to "file not found" instead
-// of leaking file contents into the rendered output.
+// of leaking file contents into the rendered output. std.trace output is
+// discarded: its author can't read the server's stderr, and anyone who can
+// edit a note could otherwise write to it on every load.
 func NewVM() *jsonnet.VM {
 	vm := jsonnet.MakeVM()
 	vm.MaxStack = 500 // Prevent stack overflow from recursive jsonnet.
 	vm.Importer(&jsonnet.MemoryImporter{})
+	vm.SetTraceOut(io.Discard)
 	return vm
 }
 
