@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
+	"trip2g/internal/pagecache"
 	"trip2g/internal/sitemap"
 
 	"github.com/blevesearch/bleve/v2"
@@ -516,6 +517,11 @@ func (l *Loader) generateSitemap(nvs *model.NoteViews) error {
 
 	nvs.Sitemap = sitemapBytes
 
+	nvs.SitemapGzip, err = pagecache.Gzip(sitemapBytes)
+	if err != nil {
+		return fmt.Errorf("failed to gzip sitemap: %w", err)
+	}
+
 	// Generate per-domain sitemaps.
 	scheme := "https"
 	if strings.HasPrefix(l.env.PublicURL(), "http://") {
@@ -528,9 +534,16 @@ func (l *Loader) generateSitemap(nvs *model.NoteViews) error {
 			l.log.Warn("failed to generate domain sitemap", "domain", domain, "err", domainErr)
 			continue
 		}
-		if len(domainSitemap) > 0 {
-			nvs.DomainSitemaps[domain] = domainSitemap
+		if len(domainSitemap) == 0 {
+			continue
 		}
+		domainSitemapGzip, gzipErr := pagecache.Gzip(domainSitemap)
+		if gzipErr != nil {
+			l.log.Warn("failed to gzip domain sitemap", "domain", domain, "err", gzipErr)
+			continue
+		}
+		nvs.DomainSitemaps[domain] = domainSitemap
+		nvs.DomainSitemapsGzip[domain] = domainSitemapGzip
 	}
 
 	return nil

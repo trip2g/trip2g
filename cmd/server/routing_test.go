@@ -69,3 +69,37 @@ func TestHandleCorsAllowsPluginOrigins(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteSitemap(t *testing.T) {
+	raw := []byte("<urlset/>")
+	gz := []byte("gzipped")
+
+	tests := []struct {
+		name           string
+		acceptEncoding string
+		wantBody       []byte
+		wantEncoding   string
+		wantVary       string
+	}{
+		{name: "gzip client gets pre-gzipped bytes", acceptEncoding: "gzip, deflate", wantBody: gz, wantEncoding: "gzip", wantVary: "Accept-Encoding"},
+		{name: "plain client gets raw bytes", acceptEncoding: "", wantBody: raw},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := &fasthttp.RequestCtx{}
+			ctx.Init(&fasthttp.Request{}, nil, nil)
+			if tt.acceptEncoding != "" {
+				ctx.Request.Header.Set("Accept-Encoding", tt.acceptEncoding)
+			}
+
+			writeSitemap(ctx, raw, gz)
+
+			require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode())
+			require.Equal(t, "application/xml; charset=utf-8", string(ctx.Response.Header.ContentType()))
+			require.Equal(t, tt.wantBody, ctx.Response.Body())
+			require.Equal(t, tt.wantEncoding, string(ctx.Response.Header.ContentEncoding()))
+			require.Equal(t, tt.wantVary, string(ctx.Response.Header.Peek("Vary")))
+		})
+	}
+}

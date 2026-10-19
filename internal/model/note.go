@@ -380,6 +380,10 @@ type NoteViews struct {
 
 	Sitemap []byte `json:"-"`
 
+	// SitemapGzip is Sitemap gzipped once at load, so the endpoint skips
+	// per-request compression.
+	SitemapGzip []byte `json:"-"`
+
 	Subgraphs map[string]*NoteSubgraph `json:"-"`
 
 	MCPFederationNotes []*MCPFederationNote `json:"-"`
@@ -393,6 +397,9 @@ type NoteViews struct {
 	// DomainSitemaps stores pre-generated sitemaps for each custom domain.
 	// Key = normalized domain (e.g., "foo.com").
 	DomainSitemaps map[string][]byte `json:"-"`
+
+	// DomainSitemapsGzip holds the gzipped DomainSitemaps, same keys.
+	DomainSitemapsGzip map[string][]byte `json:"-"`
 
 	// customDomainRoutes is a reverse index: noteID -> first custom domain route.
 	// Populated during RegisterNoteRoutes. Used by ResolveFullURL.
@@ -1175,6 +1182,7 @@ func NewNoteViews() *NoteViews {
 		Subgraphs:          make(map[string]*NoteSubgraph),
 		RouteMap:           make(map[string]map[string]*NoteView),
 		DomainSitemaps:     make(map[string][]byte),
+		DomainSitemapsGzip: make(map[string][]byte),
 		customDomainRoutes: make(map[int64]struct{ Host, Path string }),
 		navLinks:           &sync.Map{},
 	}
