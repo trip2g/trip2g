@@ -82,7 +82,13 @@
         }
       }
     }
-    ctx.restore();
     ctx.globalAlpha = 1;
+    var fadeH = h * 0.3;
+    var grad = ctx.createLinearGradient(0, 3, 0, 3 + fadeH);
+    grad.addColorStop(0, c.bg);
+    grad.addColorStop(1, c.bg + "00");
+    ctx.fillStyle = grad;
+    ctx.fillRect(x0 + 1, 3, winW - 2, fadeH);
+    ctx.restore();
   };
 })();

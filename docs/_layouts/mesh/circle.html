@@ -79,7 +79,7 @@
     }
     .@did__lang { padding: 12px 14px; border-left: 1px solid var(--rule); color: var(--fg); text-decoration: none; }
     .@did__lang:hover { background: var(--accent); color: var(--bg); }
-    .@did__lang--current { color: var(--muted); }
+    .@did__lang--current { color: var(--accent); }
 
     .@did__stage { position: relative; flex: 1; min-height: 0; padding: 24px 20px 32px; }
     .@did__ring { display: none; }
@@ -160,6 +160,7 @@
       .@did--live .@did__wheel { position: relative; height: var(--wheel-h, 360px); overflow: hidden; }
       .@did--live .@did__vertex { padding: 8px; }
       .@did--live .@did__vertex .@did__label { display: none; }
+      .@did--live .@did__tab--on .@did__vertex .@did__label { display: inline; }
       .@did--live .@did__vertex .@did__num { color: var(--muted); font-size: 12px; }
       .@did--live .@did__panels { position: static; transform: none; width: auto; padding: 0 16px 24px; }
       .@did--live .@did__panel { text-align: left; }
