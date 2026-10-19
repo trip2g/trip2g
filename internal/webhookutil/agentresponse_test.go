@@ -143,7 +143,7 @@ func TestAgentChangeIsPatch(t *testing.T) {
 	}{
 		{AgentChangeKindPatch, true},
 		{AgentChangeKindWrite, false},
-		{"", false},       // backward-compat: empty string = write
+		{"", false}, // backward-compat: empty string = write
 	}
 	for _, tc := range cases {
 		c := AgentChange{Path: "x.md", Kind: tc.kind}
