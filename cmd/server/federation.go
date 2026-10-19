@@ -106,12 +106,12 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 			return nil, err
 		}
 		if ok {
-			secretRow, found, findErr := a.FederationSecretByKID(dbCtx, kid)
-			if findErr != nil {
-				return nil, fmt.Errorf("get federation secret by kid: %w", findErr)
-			}
-			if !found {
+			secretRow, findErr := a.Queries.OutboundFederationSecretByKID(dbCtx, kid)
+			if errors.Is(findErr, sql.ErrNoRows) {
 				return nil, fmt.Errorf("federation secret %q disappeared while connecting to kb_id %q", kid, kbID)
+			}
+			if findErr != nil {
+				return nil, fmt.Errorf("get outbound federation secret by kid: %w", findErr)
 			}
 			keyErr := a.loadPeerKeys(&peer, secretRow)
 			if keyErr != nil {
