@@ -16,14 +16,14 @@ func TestDefaultConfig(t *testing.T) {
 	require.Equal(t, DefaultGraphQLAddr, cfg.GraphQLAddr) // loopback by default
 
 	cfg.Prepare()
-	require.Equal(t, []string{"search", "read_note", "patch_note", "write_note"}, cfg.OfferedTools)
+	require.Equal(t, []string{"search", "read_note", "patch_note", "write_note", "set_note_meta"}, cfg.OfferedTools)
 }
 
 func TestGetDefaults(t *testing.T) {
 	cfg, err := Get(context.Background(), nil)
 	require.NoError(t, err)
 	require.Equal(t, DefaultAgentsFolder, cfg.AgentsFolder)
-	require.Equal(t, []string{"search", "read_note", "patch_note", "write_note"}, cfg.OfferedTools)
+	require.Equal(t, []string{"search", "read_note", "patch_note", "write_note", "set_note_meta"}, cfg.OfferedTools)
 }
 
 func TestGetFlagsOverrideDefaults(t *testing.T) {

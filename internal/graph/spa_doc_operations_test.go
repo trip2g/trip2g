@@ -49,7 +49,7 @@ func readDocOperations(t *testing.T, page string) []docOperation {
 }
 
 func TestSPADocOperationsMatchSchema(t *testing.T) {
-	es := generated.NewExecutableSchema(generated.Config{Resolvers: &Resolver{}})
+	es := costedSchema{generated.NewExecutableSchema(generated.Config{Resolvers: &Resolver{}})}
 
 	en := readDocOperations(t, "en/user/spa")
 	ru := readDocOperations(t, "ru/user/spa")
@@ -98,7 +98,7 @@ func readDocInlineOperations(t *testing.T, page string) []string {
 }
 
 func TestSPADocInlineOperationsMatchSchema(t *testing.T) {
-	es := generated.NewExecutableSchema(generated.Config{Resolvers: &Resolver{}})
+	es := costedSchema{generated.NewExecutableSchema(generated.Config{Resolvers: &Resolver{}})}
 
 	en := readDocInlineOperations(t, "en/user/spa")
 	ru := readDocInlineOperations(t, "ru/user/spa")

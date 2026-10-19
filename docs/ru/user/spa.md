@@ -184,6 +184,10 @@ const data = JSON.parse(
 // data.path, data.content, data.editable
 ```
 
+### Списки других заметок {#lists}
+
+Приложение, которое показывает другие заметки, например посты с тегом или задачи из папки, получает их через [[ru/user/note-queries|запрос к заметкам]]: программу на Jsonnet в вашем хранилище, которая возвращает ровно тот JSON, который нужен приложению, и выполняется с правами посетителя.
+
 ### Сохранение: мутация `updateNotes` {#save}
 
 Приложение записывает заметку мутацией GraphQL `updateNotes` на `/_system/graphql`. Писать может вошедший админ сайта, остальные получат ошибку, поэтому браузер посетителя не изменит заметку, даже если приложение по ошибке покажет кнопки.
@@ -256,7 +260,7 @@ const expectedHash = await contentHash(data.content)
 
 На `UpdateNotesHashMismatchPayload` перезагрузите страницу или получите новое содержимое и примените своё изменение к нему. Канбан перечитывает последнюю версию админскими запросами `noteVersionHistory` и `noteVersion` и повторяет перемещение.
 
-**Маленькие правки.** Вместо `upsert`, который заменяет заметку целиком, изменение может быть `patch`: `{ patch: { path, find, replace, expectedHash } }` заменяет один точный кусок текста. Так канбан переключает чекбокс, и текст, который он не понимает, никогда не переписывается. Обе формы, пакеты изменений и ошибки — в [[ru/user/update_notes|updateNotes]].
+**Маленькие правки.** Вместо `upsert`, который заменяет заметку целиком, изменение может быть `patch`: `{ patch: { path, find, replace, expectedHash } }` заменяет один точный кусок текста. Так канбан переключает чекбокс, и текст, который он не понимает, никогда не переписывается. Чтобы поменять frontmatter, есть изменение `meta`: `{ meta: { path, set, unset, expectedHash } }` задаёт или удаляет ключи верхнего уровня и оставляет остальные строки заметки как были, так что приложению не нужен точный текст старого значения. Все три формы, пакеты изменений и ошибки — в [[ru/user/update_notes|updateNotes]].
 
 ### Живые обновления {#live}
 
@@ -483,6 +487,42 @@ mutation SaveNotes($input: UpdateNotesInput!) {
 ```
 
 `find` должен встречаться в заметке ровно один раз. Если его нет или он встречается больше одного раза, заметка остаётся как была, а результат — `UpdateNotesPatchNotFoundPayload`. Один вызов может нести несколько изменений для нескольких заметок, см. [[ru/user/update_notes|updateNotes]].
+
+#### Изменить ключи frontmatter
+
+Та же мутация `SaveNotes`, но с изменением `meta`. Она задаёт `status` и `priority` и удаляет `due`; остальные ключи заметки, их порядок и комментарии, и её текст остаются как были:
+
+```json
+{
+  "input": {
+    "changes": [
+      {
+        "meta": {
+          "path": "boards/todo.md",
+          "set": { "status": "done", "priority": 2 },
+          "unset": ["due"]
+        }
+      }
+    ]
+  }
+}
+```
+
+Из приложения, с `updateNotes` из [[ru/user/spa#save|Сохранения]]:
+
+```js
+async function setMeta(path, set, unset = []) {
+  const { updateNotes: result } = await updateNotes({ input: { changes: [{ meta: { path, set, unset } }] } })
+  if (result.__typename !== 'UpdateNotesSuccessPayload') {
+    throw new Error(result.message || result.__typename)
+  }
+}
+
+await setMeta('boards/todo.md', { hidden: true })
+await setMeta('boards/todo.md', {}, ['hidden'])
+```
+
+Меняются только ключи верхнего уровня. Если frontmatter нельзя править по ключам (невалидный YAML, flow-запись `{...}`, ключ объявлен дважды), вернётся `ErrorPayload`, и ничего не запишется. `expectedHash` необязателен и работает как у `patch`. Правила — в [[ru/user/update_notes|updateNotes]].
 
 #### Скрыть заметки
 

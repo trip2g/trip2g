@@ -282,6 +282,10 @@ type NoteChangeItem interface {
 	IsNoteChangeItem()
 }
 
+type NoteQueryOrErrorPayload interface {
+	IsNoteQueryOrErrorPayload()
+}
+
 type PushNotesOrErrorPayload interface {
 	IsPushNotesOrErrorPayload()
 }
@@ -1689,6 +1693,8 @@ func (ErrorPayload) IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayloa
 
 func (ErrorPayload) IsAdminImportTelegramAccountChannelOrErrorPayload() {}
 
+func (ErrorPayload) IsNoteQueryOrErrorPayload() {}
+
 func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 
 func (ErrorPayload) IsSignInOrErrorPayload() {}
@@ -2017,6 +2023,20 @@ type NoteChangeInput struct {
 	Upsert *NoteChangeUpsertInput `json:"upsert,omitempty"`
 	Patch  *NoteChangePatchInput  `json:"patch,omitempty"`
 	Hide   *NoteChangeHideInput   `json:"hide,omitempty"`
+	Meta   *NoteChangeMetaInput   `json:"meta,omitempty"`
+}
+
+// Changes top-level frontmatter keys without rewriting the note.
+// set adds a key or replaces its value; unset removes keys, and removing an absent
+// key is not an error. Keys are top-level only: "a.b" is a key literally named
+// "a.b", not b inside a. The lines of other keys, their comments and the body are
+// kept byte for byte; new keys go after the last key, sorted. A note without
+// frontmatter gets a block. expectedHash works as for patch.
+type NoteChangeMetaInput struct {
+	Path         string         `json:"path"`
+	Set          map[string]any `json:"set,omitempty"`
+	Unset        []string       `json:"unset,omitempty"`
+	ExpectedHash *string        `json:"expectedHash,omitempty"`
 }
 
 type NoteChangePatchInput struct {
@@ -2077,6 +2097,23 @@ type NotePathsFilter struct {
 	// Only return these specific note paths. Search and like will be ignored if paths is set.
 	Paths []string `json:"paths,omitempty"`
 }
+
+type NoteQueryInput struct {
+	// The query note: a vault path (queries/decisions.md) or a wikilink target.
+	// The note needs `type: note-query` and one jsonnet block.
+	Query string `json:"query"`
+	// Any JSON value passed to the query as `params`, at most 16 KB once encoded.
+	// Defaults to {}.
+	Params any `json:"params,omitempty"`
+}
+
+type NoteQueryPayload struct {
+	// Whatever the query program returned, as a JSON value. Its shape is set by
+	// the query note, not by the schema.
+	Result any `json:"result"`
+}
+
+func (NoteQueryPayload) IsNoteQueryOrErrorPayload() {}
 
 type NoteTaskItem struct {
 	Index   int32  `json:"index"`

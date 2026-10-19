@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/yuin/goldmark/ast"
+
+	"trip2g/internal/model"
 )
 
 // toStringSlice converts a YAML-parsed interface{} to []string.
@@ -95,4 +97,13 @@ func extractJsonnetBlocks(doc ast.Node, source []byte) ([]string, error) {
 	}
 
 	return blocks, nil
+}
+
+// JsonnetBlocks returns the jsonnet code blocks of a loaded note. Notes
+// without an AST (canvas, base, excalidraw) have none.
+func JsonnetBlocks(note *model.NoteView) ([]string, error) {
+	if note.Ast() == nil {
+		return nil, errors.New("not a markdown note")
+	}
+	return extractJsonnetBlocks(note.Ast(), note.Content)
 }

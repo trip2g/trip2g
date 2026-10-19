@@ -66,30 +66,36 @@ func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 		return false, fmt.Errorf("failed to list user subgraphs: %w", err)
 	}
 
+	return subgraphsGrant(note, userSubgraphs), nil
+}
+
+// subgraphsGrant is the verdict for a signed-in non-admin on a note that is
+// neither .html nor anonymously readable.
+func subgraphsGrant(note *model.NoteView, userSubgraphs []string) bool {
 	// Notes in require_signin subgraphs: any authenticated user can read.
 	// The sign-in wall already blocked guests in rendernotepage.
 	if note.RequiresSignin() {
-		return true, nil
+		return true
 	}
 
 	// if user has no active subscriptions, they can't see anything
 	if len(userSubgraphs) == 0 {
-		return false, nil
+		return false
 	}
 
 	// notes without subgraphs (general knowledge) are accessible to all users with active subscriptions
 	if len(note.SubgraphNames) == 0 {
-		return true, nil
+		return true
 	}
 
 	// check if user has access to any of the note's subgraphs
 	for _, noteSubgraph := range note.SubgraphNames {
 		for _, userSubgraph := range userSubgraphs {
 			if noteSubgraph == userSubgraph {
-				return true, nil
+				return true
 			}
 		}
 	}
 
-	return false, nil
+	return false
 }

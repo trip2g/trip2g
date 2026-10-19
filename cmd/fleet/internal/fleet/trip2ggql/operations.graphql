@@ -198,7 +198,7 @@ query NoteContentScoped($filter: NotePathsFilter!) {
   }
 }
 
-# UpdateNotesScoped applies upsert/patch/hide changes via the scoped token.
+# UpdateNotesScoped applies upsert/patch/meta/hide changes via the scoped token.
 # The union covers every outcome so the caller can map each variant to an error.
 mutation UpdateNotesScoped($input: UpdateNotesInput!) {
   updateNotes(input: $input) {

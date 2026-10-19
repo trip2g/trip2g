@@ -16,6 +16,18 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** An agent could read a peer's note but not the files it links to. The asset URLs in the HTML point at the peer, which the agent may not reach and which wants a federation key the agent must not hold.
 - **How to use.** Call `federated_note_html`, then `federated_asset` with a name from its `assets`, download the link with curl and check the sha256. Files are capped at 25 MB by default (`MCP_FEDERATION_ASSET_MAX_SIZE`). Both instances need this version. See [[en/user/federation#Attachments|Federation]].
 
+### `updateNotes` changes one frontmatter key without rewriting the note
+
+- **What.** A new `meta` change in `updateNotes` takes `set` (keys to add or replace) and `unset` (keys to remove) for a note's top-level frontmatter. Every other key keeps its line, order, quoting and comments, and the body is not touched. A note without frontmatter gets a block. `expectedHash` works as for `patch`. Fleet roles get the same edit as a `set_note_meta` tool, and a webhook agent can return it as a change with `"kind": "meta"`.
+- **Why.** Changing one key meant rewriting the whole note with `upsert`, or a `patch` whose `find` had to repeat the current text exactly and failed when the formatting differed. LLM agents that rewrite frontmatter text also move and reformat keys they were not asked to touch.
+- **How to use.** Send `{"meta": {"path": "todo.md", "set": {"status": "done"}}}` in `changes`. See [[en/user/update_notes|updateNotes]].
+
+### Note queries give a JavaScript page a list of notes
+
+- **What.** A note with `type: note-query` and a Jsonnet block is a named query. The GraphQL field `noteQuery` runs it with the notes the caller can read and the caller's `params`, and returns the JSON the program builds. A visitor can run it only if they can read the query note.
+- **Why.** A page built with JavaScript needs lists of notes by frontmatter (posts with a tag, tasks by status), but raw frontmatter, and notes a visitor can't read, must not leave the server.
+- **How to use.** Write a query note and call `noteQuery(input: {query: "[[by_tag]]", params: {tag: "go"}})`, or `noteQuery("[[by_tag]]", map("tag", "go"))` from a template. See [[en/user/note-queries|Note queries]].
+
 ### Note validators check notes against your rules on every sync
 
 - **What.** A note can list validator notes in a new `validate` frontmatter field. A validator is a note with a Jsonnet block that reads the frontmatter and the body's structure (headings, images, links, code blocks) and returns errors and warnings. An error marks the note `CRITICAL`: a sync that pushes notes exits with code 1, and the note shows under Note Warnings in the admin panel. `trip2g lint` reports the same messages without a server. The note is still saved and published.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/stretchr/testify/require"
@@ -12,6 +13,7 @@ import (
 	"trip2g/internal/layoutloader"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/usertoken"
 )
 
 type testEnv struct {
@@ -24,6 +26,16 @@ type testEnv struct {
 func (e *testEnv) Logger() logger.Logger             { return e.log }
 func (e *testEnv) LatestNoteViews() *model.NoteViews { return e.nvs }
 func (e *testEnv) PreviewBuffer() *PreviewBuffer     { return e.buffer }
+func (e *testEnv) CurrentFederatedScope(context.Context) ([]string, bool) {
+	return nil, false
+}
+func (e *testEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, error) {
+	return nil, nil
+}
+func (e *testEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
+func (e *testEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
+	return &usertoken.Data{Role: "admin"}, nil
+}
 func (e *testEnv) LoadPreviewLayout(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string) {
 	return e.preview(main, extra)
 }

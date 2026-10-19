@@ -184,6 +184,10 @@ const data = JSON.parse(
 // data.path, data.content, data.editable
 ```
 
+### Lists of other notes {#lists}
+
+An app that shows other notes, such as posts with a tag or tasks from a folder, asks for them with a [[en/user/note-queries|note query]]: a Jsonnet program in your vault that returns exactly the JSON the app needs, run with the visitor's access.
+
 ### Saving: the `updateNotes` mutation {#save}
 
 The app writes the note back with the `updateNotes` GraphQL mutation at `/_system/graphql`. A signed-in site admin is allowed to write; anyone else gets an error, so a visitor's browser can't change the note even if the app shows its controls by mistake.
@@ -256,7 +260,7 @@ A successful save doesn't return the new hash. The note now holds exactly the ma
 
 On `UpdateNotesHashMismatchPayload` reload the page, or fetch the new content and apply your change to it. Kanban re-reads the latest version through the admin `noteVersionHistory` and `noteVersion` queries and replays the move.
 
-**Small edits.** Instead of `upsert`, which replaces the whole note, a change can be a `patch`: `{ patch: { path, find, replace, expectedHash } }` replaces one exact piece of text. Kanban toggles a checkbox this way, so text it doesn't model is never rewritten. Both forms, batches and error cases are in [[en/user/update_notes|updateNotes]].
+**Small edits.** Instead of `upsert`, which replaces the whole note, a change can be a `patch`: `{ patch: { path, find, replace, expectedHash } }` replaces one exact piece of text. Kanban toggles a checkbox this way, so text it doesn't model is never rewritten. To change frontmatter, use a `meta` change: `{ meta: { path, set, unset, expectedHash } }` sets or removes top-level keys and leaves every other line of the note as it was, so the app doesn't need the old value's exact text. All three forms, batches and error cases are in [[en/user/update_notes|updateNotes]].
 
 ### Live updates {#live}
 
@@ -483,6 +487,42 @@ The same `SaveNotes` mutation, with a `patch` change:
 ```
 
 `find` must occur in the note exactly once. If it is missing, or appears more than once, the note is left as it is and the result is `UpdateNotesPatchNotFoundPayload`. One call can carry several changes, for several notes; see [[en/user/update_notes|updateNotes]].
+
+#### Change frontmatter keys
+
+The same `SaveNotes` mutation, with a `meta` change. It sets `status` and `priority` and removes `due`; the note's other keys, their order and comments, and its text stay as they are:
+
+```json
+{
+  "input": {
+    "changes": [
+      {
+        "meta": {
+          "path": "boards/todo.md",
+          "set": { "status": "done", "priority": 2 },
+          "unset": ["due"]
+        }
+      }
+    ]
+  }
+}
+```
+
+From the app, with `updateNotes` from [[en/user/spa#save|Saving]]:
+
+```js
+async function setMeta(path, set, unset = []) {
+  const { updateNotes: result } = await updateNotes({ input: { changes: [{ meta: { path, set, unset } }] } })
+  if (result.__typename !== 'UpdateNotesSuccessPayload') {
+    throw new Error(result.message || result.__typename)
+  }
+}
+
+await setMeta('boards/todo.md', { hidden: true })
+await setMeta('boards/todo.md', {}, ['hidden'])
+```
+
+Only top-level keys are addressed. Frontmatter that can't be edited key by key (invalid YAML, a `{...}` flow mapping, a duplicate key) returns `ErrorPayload` and writes nothing. `expectedHash` is optional and works as for `patch`. The rules are in [[en/user/update_notes|updateNotes]].
 
 #### Hide notes
 

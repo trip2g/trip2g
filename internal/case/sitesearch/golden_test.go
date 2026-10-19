@@ -370,7 +370,7 @@ func TestGoldenResolve_HideUnreadableTextLaneReachesPastClosed(t *testing.T) {
 	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"/free"}, urlsOf(conn.Nodes))
-	require.Len(t, env.SearchLiveNotesCalls(), 2)
+	require.Len(t, env.SearchLiveNotesCalls(), 3)
 
 	env = textOnlyClosedEnv(t, 25, false)
 	conn, err = sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
@@ -396,6 +396,53 @@ func TestGoldenResolve_HideUnreadableTextLaneIsBounded(t *testing.T) {
 	require.Empty(t, conn.Nodes)
 	require.Len(t, env.SearchLiveNotesCalls(), 10)
 	require.Len(t, env.CanReadNoteCalls(), 200)
+}
+
+// The loader drops hits whose note is gone, so page 0 comes back with 19 rows
+// while the index holds more. The lane must not read that as the end: the free
+// note on page 1 is still found.
+func TestGoldenResolve_HideUnreadableTextLaneReadsPastDroppedHits(t *testing.T) {
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+
+	notes, _ := closedCorpus(25)
+	paged := pagedTextLane(notes)
+	env := textOnlyClosedEnv(t, 25, true)
+	env.SearchLiveNotesFunc = func(q string, from, size int) ([]appmodel.SearchResult, error) {
+		page, err := paged(q, from, size)
+		if from == 0 {
+			page = page[1:]
+		}
+		return page, err
+	}
+
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"/free"}, urlsOf(conn.Nodes))
+}
+
+// A note that moves from one page to the next while the lane reads them is
+// returned once.
+func TestGoldenResolve_HideUnreadableTextLaneSkipsRepeatedHits(t *testing.T) {
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+
+	notes, _ := closedCorpus(25)
+	free := appmodel.SearchResult{NoteView: notes[25], URL: notes[25].Permalink}
+	paged := pagedTextLane(notes[:25])
+	env := textOnlyClosedEnv(t, 25, true)
+	env.SearchLiveNotesFunc = func(q string, from, size int) ([]appmodel.SearchResult, error) {
+		page, err := paged(q, from, size)
+		switch from {
+		case 0:
+			page = append(page[:size-1], free)
+		case size:
+			page = append([]appmodel.SearchResult{free}, page...)
+		}
+		return page, err
+	}
+
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"/free"}, urlsOf(conn.Nodes))
 }
 
 // Vector lane: 60 closed notes score above the only free one, past the 50

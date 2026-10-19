@@ -205,6 +205,7 @@ type appState struct {
 
 	mcpMetrics       *metrics.MCPMetrics
 	embeddingMetrics *metrics.EmbeddingMetrics
+	noteQueryMetrics *metrics.NoteQueryMetrics
 
 	redirectManager *redirectmanager.Manager
 
@@ -374,6 +375,7 @@ func main() {
 
 			mcpMetrics:       metrics.NewMCPMetrics(prometheus.DefaultRegisterer),
 			embeddingMetrics: metrics.NewEmbeddingMetrics(prometheus.DefaultRegisterer),
+			noteQueryMetrics: metrics.NewNoteQueryMetrics(prometheus.DefaultRegisterer),
 
 			purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 
