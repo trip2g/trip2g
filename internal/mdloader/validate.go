@@ -134,7 +134,7 @@ func (r *validateRun) validate(note *model.NoteView, validators []*model.NoteVie
 
 	if r.vm == nil {
 		r.vm = jsonneteval.NewVM()
-		r.vm.NativeFunction(regexMatchNative())
+		r.vm.NativeFunction(regexMatchNative(map[string]*regexp.Regexp{}))
 	}
 	r.vm.ExtVar("meta", string(metaJSON))
 	r.vm.ExtVar("path", note.Path)
@@ -245,7 +245,9 @@ func validateTargets(raw interface{}) ([]string, error) {
 	return targets, nil
 }
 
-func regexMatchNative() *jsonnet.NativeFunction {
+// regexMatchNative compiles each pattern once into compiled, which lives as
+// long as the VM: one validate run, evaluated on one goroutine.
+func regexMatchNative(compiled map[string]*regexp.Regexp) *jsonnet.NativeFunction {
 	return &jsonnet.NativeFunction{
 		Name:   "regexMatch",
 		Params: jsonnetast.Identifiers{"pattern", "str"},
@@ -255,7 +257,18 @@ func regexMatchNative() *jsonnet.NativeFunction {
 			if !ok1 || !ok2 {
 				return nil, errors.New("regexMatch(pattern, str) takes two strings")
 			}
-			return regexp.MatchString(pattern, str)
+
+			re, ok := compiled[pattern]
+			if !ok {
+				var err error
+				re, err = regexp.Compile(pattern)
+				if err != nil {
+					return nil, err
+				}
+				compiled[pattern] = re
+			}
+
+			return re.MatchString(str), nil
 		},
 	}
 }

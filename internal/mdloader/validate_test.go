@@ -343,12 +343,25 @@ func TestValidate(t *testing.T) {
 				"rules.md": validatorNote(`
 local re = std.native('regexMatch');
 [{level: 'error', msg: 'bad date'} for d in [meta.date] if !re('^\\d{4}-\\d{2}-\\d{2}$', d)]`),
-				"good.md": "---\nvalidate: \"[[rules]]\"\ndate: 2026-10-16\n---\nbody\n",
-				"bad.md":  "---\nvalidate: \"[[rules]]\"\ndate: 16.10.2026\n---\nbody\n",
+				"a_good.md": "---\nvalidate: \"[[rules]]\"\ndate: 2026-10-16\n---\nbody\n",
+				"b_bad.md":  "---\nvalidate: \"[[rules]]\"\ndate: 16.10.2026\n---\nbody\n",
 			},
-			path: "bad.md",
+			path: "b_bad.md",
 			expected: []model.NoteWarning{
 				{Level: model.NoteWarningCritical, Message: "validate rules.md: bad date"},
+			},
+		},
+		{
+			name: "invalid regexMatch pattern is critical",
+			sources: map[string]string{
+				"rules.md": validatorNote(`
+local re = std.native('regexMatch');
+[{level: 'error', msg: 'never'} for x in [1] if re('(', 'a')]`),
+				"note.md": "---\nvalidate: \"[[rules]]\"\n---\nbody\n",
+			},
+			path: "note.md",
+			expected: []model.NoteWarning{
+				{Level: model.NoteWarningCritical, Message: "validate rules.md: RUNTIME ERROR: error parsing regexp: missing closing ): `(`"},
 			},
 		},
 	}
