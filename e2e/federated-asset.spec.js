@@ -7,10 +7,14 @@ import { graphqlSignIn } from './helpers/auth.js';
  * federated_asset E2E: the hub hands out a download link for an attachment of a
  * peer note, and fetching the link streams the file from the peer, once.
  *
- * The pairing has its own kbURL (the peer's container name instead of its
- * service name), so its key never shares a URL with the other federation specs
- * running in parallel, and its KB-note is admin-only, so anonymous callers of
- * those specs do not see an extra base.
+ * The hub gets its own KB-note with kb_id equal to the pairing's kid, so the
+ * call is signed with this spec's key whatever other keys to the peer are live.
+ * It pairs through the peer's container name, since the service name belongs to
+ * federation.spec.js, and its KB-note is admin-only, so anonymous callers of the
+ * other specs do not see an extra base.
+ *
+ * The loader counts an attachment only when the note embeds it (![[…]]) and its
+ * extension is a media or document one, so both notes embed a .zip.
  */
 
 const HUB_URL = process.env.APP_URL || 'http://localhost:20081';
@@ -26,7 +30,7 @@ const OTHER_SUBGRAPH = 'e2e-asset-other';
 const GRANTED_NOTE = 'e2e_federated_asset/granted.md';
 const OTHER_NOTE = 'e2e_federated_asset/other.md';
 const GRANTED_ASSET = 'files/granted.zip';
-const OTHER_ASSET = 'files/other.bin';
+const OTHER_ASSET = 'files/other.zip';
 const HUB_KB_NOTE = 'e2e_federated_asset_kb.md';
 
 // Larger than the relay client's 64 KiB buffer, so the download streams.
@@ -59,7 +63,7 @@ async function uploadAsset(request, baseURL, apiKey, noteId, asset, bytes) {
         noteId,
         sha256Hash: sha256(bytes),
         path: asset.path,
-        absolutePath: asset.absolutePath,
+        absolutePath: asset.path,
       },
     },
   };
@@ -132,11 +136,11 @@ test.describe.serial('Federated asset', () => {
         updates: [
           {
             path: GRANTED_NOTE,
-            content: `---\nsubgraph: ${GRANTED_SUBGRAPH}\n---\nThe granted note.\n\n[[${GRANTED_ASSET}]]\n`,
+            content: `---\nsubgraph: ${GRANTED_SUBGRAPH}\n---\nThe granted note.\n\n![[${GRANTED_ASSET}]]\n`,
           },
           {
             path: OTHER_NOTE,
-            content: `---\nsubgraph: ${OTHER_SUBGRAPH}\n---\nThe note outside the grant.\n\n[[${OTHER_ASSET}]]\n`,
+            content: `---\nsubgraph: ${OTHER_SUBGRAPH}\n---\nThe note outside the grant.\n\n![[${OTHER_ASSET}]]\n`,
           },
         ],
       },
