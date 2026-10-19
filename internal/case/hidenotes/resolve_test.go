@@ -325,3 +325,35 @@ func TestResolve_ExpectedHashEmptyIsNoOp(t *testing.T) {
 	require.Empty(t, env.PublishNoteChangesCalls())
 	require.Empty(t, env.HandleNoteWebhooksCalls())
 }
+
+// The same path twice — across paths and notes, or within either — is refused
+// before any hash is read or any note is hidden.
+func TestResolve_DuplicatePath(t *testing.T) {
+	hash := "hash"
+
+	tests := []struct {
+		name  string
+		paths []string
+		notes []model.HideNoteInput
+	}{
+		{name: "within paths", paths: []string{"a.md", "b.md", "a.md"}},
+		{name: "within notes", notes: []model.HideNoteInput{{Path: "a.md"}, {Path: "a.md", ExpectedHash: &hash}}},
+		{name: "across paths and notes", paths: []string{"a.md"}, notes: []model.HideNoteInput{{Path: "a.md", ExpectedHash: &hash}}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := newTestEnv(func(_ context.Context, _ db.HideNotePathParams) error { return nil })
+
+			result, err := Resolve(context.Background(), env, model.HideNotesInput{
+				Paths:  tt.paths,
+				Notes:  tt.notes,
+				ApiKey: db.ApiKey{CreatedBy: 1},
+			})
+			require.NoError(t, err)
+			require.Equal(t, &model.ErrorPayload{Message: "path a.md is listed more than once"}, result)
+			require.Empty(t, env.HideNotePathCalls())
+			require.Empty(t, env.LatestNoteContentHashCalls())
+		})
+	}
+}

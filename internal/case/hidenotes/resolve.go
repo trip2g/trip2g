@@ -43,6 +43,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 	targets = append(targets, input.Notes...)
 
+	seen := make(map[string]struct{}, len(targets))
+	for _, target := range targets {
+		if _, dup := seen[target.Path]; dup {
+			return &model.ErrorPayload{Message: fmt.Sprintf("path %s is listed more than once", target.Path)}, nil
+		}
+		seen[target.Path] = struct{}{}
+	}
+
 	// Collect note info before hiding (notes may be removed from NoteViews after reload).
 	nvs := env.LatestNoteViews()
 	var webhookChanges []handlenotewebhooks.NoteChange

@@ -888,6 +888,25 @@ func TestResolve_ExpectedHashReadFails(t *testing.T) {
 	require.Empty(t, env.InsertNoteCalls())
 }
 
+// The same path twice in one push is refused before anything is written: the
+// second entry would silently replace the first, and expectedHash would judge
+// it against a note the first entry already changed.
+func TestResolve_DuplicatePath(t *testing.T) {
+	env := newEnvMock(&logger.TestLogger{})
+
+	result, err := pushnotes.Resolve(context.Background(), env, model.PushNotesInput{
+		Updates: []model.PushNoteInput{
+			{Path: "a.md", Content: "# one"},
+			{Path: "b.md", Content: "# two"},
+			{Path: "a.md", Content: "# three"},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, &model.ErrorPayload{Message: "path a.md is listed more than once"}, result)
+	require.Empty(t, env.InsertNoteCalls())
+	require.Empty(t, env.LatestNoteContentHashCalls())
+}
+
 func TestResolve_NoUpdatesReportsEmptyMismatches(t *testing.T) {
 	env := newEnvMock(&logger.TestLogger{})
 	env.LayoutsFunc = func() *appmodel.Layouts { return &appmodel.Layouts{Map: map[string]appmodel.Layout{}} }

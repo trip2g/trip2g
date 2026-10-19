@@ -73,10 +73,8 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	// Validate the whole batch before writing anything: callers (e.g. gitapi's
 	// applyDiff) roll back only their own state on failure, so a partially
 	// inserted prefix would diverge the DB from Git.
-	for _, update := range input.Updates {
-		if errPayload := validateUpdate(log, update); errPayload != nil {
-			return errPayload, nil
-		}
+	if errPayload := validateUpdates(log, input.Updates); errPayload != nil {
+		return errPayload, nil
 	}
 
 	for _, update := range input.Updates {
@@ -164,6 +162,23 @@ func checkExpectedHash(ctx context.Context, env Env, update model.PushNoteInput)
 	}
 
 	return &model.NoteHashMismatch{Path: update.Path, ActualHash: actualHash}, nil
+}
+
+func validateUpdates(log logger.Logger, updates []model.PushNoteInput) *model.ErrorPayload {
+	seen := make(map[string]struct{}, len(updates))
+	for _, update := range updates {
+		if errPayload := validateUpdate(log, update); errPayload != nil {
+			return errPayload
+		}
+
+		if _, dup := seen[update.Path]; dup {
+			log.Info("duplicate path rejected", "path", update.Path)
+			return &model.ErrorPayload{Message: fmt.Sprintf("path %s is listed more than once", update.Path)}
+		}
+		seen[update.Path] = struct{}{}
+	}
+
+	return nil
 }
 
 func validateUpdate(log logger.Logger, update model.PushNoteInput) *model.ErrorPayload {
