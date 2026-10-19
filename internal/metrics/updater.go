@@ -2,10 +2,13 @@ package metrics
 
 import (
 	"context"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"trip2g/internal/case/system/federationtopology"
 	"trip2g/internal/db"
 )
 
@@ -19,8 +22,7 @@ type Env interface {
 	SumNoteAssetsSizes(ctx context.Context) (int64, error)
 	CountNoteAssets(ctx context.Context) (int64, error)
 	ListGoqiteAllQueueStats(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error)
-	ListFederationSecrets(ctx context.Context) ([]db.ListFederationSecretsRow, error)
-	ListAllFederationSecretScopes(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error)
+	federationtopology.Env
 }
 
 // Updater periodically updates Prometheus metrics.
@@ -34,6 +36,10 @@ type Updater struct {
 	queueDepth       *prometheus.GaugeVec
 	fedSecrets       *prometheus.GaugeVec
 	fedSubgraphs     *prometheus.GaugeVec
+	fedSelf          *prometheus.GaugeVec
+	fedKeys          *prometheus.GaugeVec
+	fedKeySubgraphs  *prometheus.GaugeVec
+	fedPeers         *prometheus.GaugeVec
 	interval         time.Duration
 }
 
@@ -93,6 +99,30 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 	}, []string{"direction", "subgraph"})
 	reg.MustRegister(fedSubgraphs)
 
+	fedSelf := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_self_info",
+		Help: "This base as peers address it: its kb_id and MCP URL. Always 1",
+	}, []string{"kb_id", "mcp_url"})
+	reg.MustRegister(fedSelf)
+
+	fedKeys := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_key_info",
+		Help: "One series per live federation key, by direction, kid and the peer's kb_url (outbound only). Always 1",
+	}, []string{"direction", "kid", "kb_url"})
+	reg.MustRegister(fedKeys)
+
+	fedKeySubgraphs := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_key_subgraph_info",
+		Help: "One series per subgraph a live federation key is scoped to. Always 1",
+	}, []string{"direction", "kid", "subgraph"})
+	reg.MustRegister(fedKeySubgraphs)
+
+	fedPeers := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_peer_info",
+		Help: "One series per KB-note: the peer outbound calls are labelled with, and the kb_url it points to. Always 1",
+	}, []string{"peer", "kb_url"})
+	reg.MustRegister(fedPeers)
+
 	return &Updater{
 		env:              env,
 		allNotePaths:     allNotePaths,
@@ -103,6 +133,10 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 		queueDepth:       queueDepth,
 		fedSecrets:       fedSecrets,
 		fedSubgraphs:     fedSubgraphs,
+		fedSelf:          fedSelf,
+		fedKeys:          fedKeys,
+		fedKeySubgraphs:  fedKeySubgraphs,
+		fedPeers:         fedPeers,
 		interval:         interval,
 	}
 }
@@ -181,42 +215,60 @@ const (
 )
 
 func (u *Updater) updateFederationMetrics(ctx context.Context) {
-	secrets, err := u.env.ListFederationSecrets(ctx)
-	if err != nil {
-		return
-	}
-	scopes, err := u.env.ListAllFederationSecretScopes(ctx)
+	topology, err := federationtopology.Resolve(ctx, u.env)
 	if err != nil {
 		return
 	}
 
-	subgraphsByKID := map[string][]string{}
-	for _, scope := range scopes {
-		subgraphsByKID[scope.Kid] = append(subgraphsByKID[scope.Kid], scope.SubgraphName)
-	}
+	// Reset so a revoked or deleted key, and a subgraph whose last key was
+	// unscoped, drops out.
+	u.fedSelf.Reset()
+	u.fedKeys.Reset()
+	u.fedKeySubgraphs.Reset()
+	u.fedSubgraphs.Reset()
+	u.fedPeers.Reset()
+
+	u.fedSelf.WithLabelValues(topology.Self.KBID, topology.Self.MCPURL).Set(1)
 
 	keys := map[string]int{directionInbound: 0, directionOutbound: 0}
 	perSubgraph := map[[2]string]int{}
-	for _, secret := range secrets {
-		if secret.RevokedAt != nil {
-			continue
-		}
-		direction := directionInbound
-		if secret.KbUrl != nil {
-			direction = directionOutbound
-		}
-		keys[direction]++
-		for _, subgraph := range subgraphsByKID[secret.Kid] {
-			perSubgraph[[2]string{direction, subgraph}]++
+	record := func(direction string, secrets []federationtopology.Secret) {
+		for _, secret := range secrets {
+			if secret.RevokedAt != nil {
+				continue
+			}
+			keys[direction]++
+			kbURL := ""
+			if secret.KBURL != nil {
+				kbURL = labelURL(*secret.KBURL)
+			}
+			u.fedKeys.WithLabelValues(direction, secret.KID, kbURL).Set(1)
+			for _, subgraph := range secret.Subgraphs {
+				perSubgraph[[2]string{direction, subgraph.Name}]++
+				u.fedKeySubgraphs.WithLabelValues(direction, secret.KID, subgraph.Name).Set(1)
+			}
 		}
 	}
+	record(directionInbound, topology.Inbound)
+	record(directionOutbound, topology.Outbound)
 
 	for direction, n := range keys {
 		u.fedSecrets.WithLabelValues(direction).Set(float64(n))
 	}
-	// Reset so a subgraph whose last key was revoked or unscoped drops out.
-	u.fedSubgraphs.Reset()
 	for labels, n := range perSubgraph {
 		u.fedSubgraphs.WithLabelValues(labels[0], labels[1]).Set(float64(n))
 	}
+	for _, note := range topology.KBNotes {
+		u.fedPeers.WithLabelValues(note.KBID, labelURL(note.KBURL)).Set(1)
+	}
+}
+
+// labelURL keeps scheme, host and path. A URL typed into a key or a KB-note
+// may carry credentials in its userinfo or query, and /metrics has no auth.
+func labelURL(raw string) string {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || parsed.Host == "" {
+		return ""
+	}
+	return parsed.Scheme + "://" + parsed.Host + parsed.Path
 }

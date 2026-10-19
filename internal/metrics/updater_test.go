@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 )
 
 func TestUpdater_QueueDepth(t *testing.T) {
@@ -74,6 +75,14 @@ func emptyEnv() *EnvMock {
 		ListAllFederationSecretScopesFunc: func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
 			return nil, nil
 		},
+		PublicURLFunc: func() string { return "https://kb.example/" },
+		LoadSiteConfigFunc: func(ctx context.Context) (model.SiteConfig, error) {
+			return model.SiteConfig{}, nil
+		},
+		ListAllSubgraphsFunc: func(ctx context.Context) ([]db.Subgraph, error) {
+			return nil, nil
+		},
+		LatestNoteViewsFunc: func() *model.NoteViews { return &model.NoteViews{} },
 	}
 }
 
@@ -159,4 +168,97 @@ func TestUpdater_FederationSecrets_DropsUnscopedSubgraphs(t *testing.T) {
 	}
 	m := findMetric(t, reg, "trip2g_federation_secrets", map[string]string{"direction": "inbound"})
 	require.InDelta(t, 1, m.GetGauge().GetValue(), 1e-9)
+}
+
+func TestUpdater_FederationTopology(t *testing.T) {
+	reg := prometheus.NewRegistry()
+
+	peerURL := "https://user:pass@peer.example/_system/mcp?token=x#frag"
+	revokedAt := time.Now()
+	env := emptyEnv()
+	env.LoadSiteConfigFunc = func(ctx context.Context) (model.SiteConfig, error) {
+		return model.SiteConfig{KBID: "home"}, nil
+	}
+	env.ListFederationSecretsFunc = func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
+		return []db.ListFederationSecretsRow{
+			{ID: 1, Kid: "partner"},
+			{ID: 2, Kid: "gone", RevokedAt: &revokedAt},
+			{ID: 3, Kid: "peer", KbUrl: &peerURL},
+		}, nil
+	}
+	env.ListAllFederationSecretScopesFunc = func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
+		return []db.ListAllFederationSecretScopesRow{
+			{Kid: "partner", SubgraphID: 1, SubgraphName: "docs"},
+			{Kid: "partner", SubgraphID: 2, SubgraphName: "sales"},
+			{Kid: "gone", SubgraphID: 3, SubgraphName: "archive"},
+		}, nil
+	}
+	env.LatestNoteViewsFunc = func() *model.NoteViews {
+		return &model.NoteViews{MCPFederationNotes: []*model.MCPFederationNote{
+			{ID: "peer", URL: "https://peer.example/_system/mcp?token=x"},
+		}}
+	}
+
+	u := NewUpdater(env, 0, reg)
+	u.updateMetrics(context.Background())
+
+	series := []struct {
+		metric string
+		labels map[string]string
+	}{
+		{"trip2g_federation_self_info", map[string]string{"kb_id": "home", "mcp_url": "https://kb.example/_system/mcp"}},
+		{"trip2g_federation_key_info", map[string]string{"direction": "inbound", "kid": "partner", "kb_url": ""}},
+		{"trip2g_federation_key_info", map[string]string{"direction": "outbound", "kid": "peer", "kb_url": "https://peer.example/_system/mcp"}},
+		{"trip2g_federation_key_subgraph_info", map[string]string{"direction": "inbound", "kid": "partner", "subgraph": "docs"}},
+		{"trip2g_federation_key_subgraph_info", map[string]string{"direction": "inbound", "kid": "partner", "subgraph": "sales"}},
+		{"trip2g_federation_peer_info", map[string]string{"peer": "peer", "kb_url": "https://peer.example/_system/mcp"}},
+	}
+	for _, s := range series {
+		m := findMetric(t, reg, s.metric, s.labels)
+		require.InDelta(t, 1, m.GetGauge().GetValue(), 1e-9, "%s %v", s.metric, s.labels)
+	}
+
+	want := map[string]int{
+		"trip2g_federation_self_info":         1,
+		"trip2g_federation_key_info":          2,
+		"trip2g_federation_key_subgraph_info": 2,
+		"trip2g_federation_peer_info":         1,
+	}
+	families, err := reg.Gather()
+	require.NoError(t, err)
+	for _, mf := range families {
+		if n, ok := want[mf.GetName()]; ok {
+			require.Len(t, mf.GetMetric(), n, "%s: a revoked key must not be reported", mf.GetName())
+		}
+	}
+}
+
+func TestUpdater_FederationTopology_DropsRemovedKeys(t *testing.T) {
+	reg := prometheus.NewRegistry()
+
+	calls := 0
+	env := emptyEnv()
+	env.ListFederationSecretsFunc = func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
+		calls++
+		if calls == 1 {
+			return []db.ListFederationSecretsRow{{ID: 1, Kid: "partner"}}, nil
+		}
+		return nil, nil
+	}
+	env.ListAllFederationSecretScopesFunc = func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
+		return []db.ListAllFederationSecretScopesRow{{Kid: "partner", SubgraphID: 1, SubgraphName: "docs"}}, nil
+	}
+
+	u := NewUpdater(env, 0, reg)
+	u.updateMetrics(context.Background())
+	u.updateMetrics(context.Background())
+
+	families, err := reg.Gather()
+	require.NoError(t, err)
+	for _, mf := range families {
+		switch mf.GetName() {
+		case "trip2g_federation_key_info", "trip2g_federation_key_subgraph_info":
+			require.Empty(t, mf.GetMetric(), "%s: a deleted key must drop out", mf.GetName())
+		}
+	}
 }
