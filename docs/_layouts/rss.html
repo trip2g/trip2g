@@ -1,0 +1,17 @@
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+  <title>{{ html(note.M().GetString("rss_title", note.Title())) }}</title>
+  <link>{{ publicURL }}{{ note.Permalink() }}</link>
+  <description>{{ html(note.M().GetString("rss_description", note.Description())) }}</description>
+  {{ range i, n := nvs.ByGlob(note.M().GetString("rss_glob", "**")).Public().SortBy("created_at").Desc().Limit(note.M().GetInt("rss_limit", 20)).All() }}
+  <item>
+    <title>{{ html(n.Title()) }}</title>
+    <link>{{ publicURL }}{{ n.Permalink() }}</link>
+    <guid>{{ publicURL }}{{ n.Permalink() }}</guid>
+    <pubDate>{{ n.CreatedAt().Format("Mon, 02 Jan 2006 15:04:05 -0700") }}</pubDate>
+    {{ if n.Description() != "" }}<description>{{ html(n.Description()) }}</description>{{ end }}
+    <content:encoded>{{ html(n.HTMLString()) }}</content:encoded>
+  </item>
+  {{ end }}
+</channel>
+</rss>

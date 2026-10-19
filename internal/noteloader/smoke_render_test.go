@@ -280,3 +280,15 @@ func TestSmokeRenderForLayout_RunsEachNoteQueryOnce(t *testing.T) {
 	}, runs)
 	require.Equal(t, sampled, failures, "a failing query still fails every sampled note")
 }
+
+func TestSmokeRenderLayouts_MissingLayoutWarnsNote(t *testing.T) {
+	layouts := smokeLoadLayouts(t, nil)
+	feed := &model.NoteView{Path: "feed.md", Layout: "rss", Title: "feed"}
+	plain := &model.NoteView{Path: "plain.md", Title: "plain"}
+	nvs := &model.NoteViews{List: []*model.NoteView{feed, plain}}
+
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
+
+	require.Equal(t, []model.NoteWarning{{Level: model.NoteWarningWarning, Message: `layout "rss" not found`}}, feed.Warnings)
+	require.Empty(t, plain.Warnings)
+}

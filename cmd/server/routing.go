@@ -148,9 +148,7 @@ func (a *app) handleSitemap(req *appreq.Request) bool {
 		nvs := a.LiveNoteViews()
 		if nvs != nil {
 			if domainSitemap, ok := nvs.DomainSitemaps[host]; ok {
-				req.Req.SetContentType("application/xml; charset=utf-8")
-				req.Req.SetStatusCode(http.StatusOK)
-				req.Req.Response.SetBody(domainSitemap)
+				writeSitemap(req.Req, domainSitemap, nvs.DomainSitemapsGzip[host])
 				return true
 			}
 		}
@@ -161,11 +159,25 @@ func (a *app) handleSitemap(req *appreq.Request) bool {
 		return false
 	}
 
-	req.Req.SetContentType("application/xml; charset=utf-8")
-	req.Req.SetStatusCode(http.StatusOK)
-	req.Req.SetBody(nvs.Sitemap)
+	writeSitemap(req.Req, nvs.Sitemap, nvs.SitemapGzip)
 
 	return true
+}
+
+// writeSitemap serves the pre-gzipped copy to gzip-accepting clients. Setting
+// Content-Encoding makes fasthttp.CompressHandler skip it, so Vary is added here.
+func writeSitemap(ctx *fasthttp.RequestCtx, raw, gz []byte) {
+	ctx.SetContentType("application/xml; charset=utf-8")
+	ctx.SetStatusCode(http.StatusOK)
+
+	if len(gz) == 0 || !ctx.Request.Header.HasAcceptEncoding("gzip") {
+		ctx.Response.SetBody(raw)
+		return
+	}
+
+	ctx.Response.Header.SetContentEncoding("gzip")
+	ctx.Response.Header.Add("Vary", "Accept-Encoding")
+	ctx.Response.SetBody(gz)
 }
 
 // Middleware should return true if the request is fully handled.
