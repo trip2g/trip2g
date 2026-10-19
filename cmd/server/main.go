@@ -452,6 +452,8 @@ func main() {
 		a.openaiClient.SetMetrics(a.embeddingMetrics)
 	}
 
+	a.createNoteLoaders()
+
 	// Start the internal health server early so /livez answers 200 throughout
 	// the read-only warmup (loadAllNotes). Traefik active-health-checks /livez
 	// and would pull the backend out of rotation during ~12s warmup if this
@@ -475,7 +477,6 @@ func main() {
 		}
 	}
 
-	a.createNoteLoaders()
 	// Empty keeps both indexes in memory, which is the default everywhere that
 	// has not opted in. The single-note loaders in notes.go stay in memory
 	// regardless: they are throwaway and index nothing worth persisting.
