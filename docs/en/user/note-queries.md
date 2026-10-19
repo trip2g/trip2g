@@ -62,7 +62,7 @@ const posts = data.noteQuery.result
 |---|---|
 | `notes` | a list of notes, sorted by path: `{ path, title, permalink, meta }` |
 | `params` | the parsed `params`, `{}` when none were passed |
-| `currentUser` | who is asking: `{ id, role, isAdmin, signedIn }`; a guest has `null` for `id` and `role` |
+| `currentUser` | who is asking: `{ id, role, isAdmin, signedIn }`; a guest has `null` for `id` and `role`; a [[en/user/federation|federation]] peer has role `federated` and `null` for `id` |
 
 `meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. With `all_notes: true` each note also has `readable`. System notes (paths starting with `_`), notes hidden from [[en/user/search|search]] with `search: false`, and files that aren't markdown notes (canvas, base, excalidraw) are left out.
 
@@ -81,7 +81,7 @@ The query note is published like any other note, so readers who can run the quer
 
 #### Seeing every note: `all_notes: true`
 
-Sometimes a page should show more than the visitor can open: "3 open posts, 1 for members". Add `all_notes: true` to the query note's frontmatter. Then `notes` holds every note, and each has `readable`: `true` when the visitor can open it, worked out by the server with the same rules as the site. The program now decides what each visitor gets, so filter on `readable` before returning anything a visitor shouldn't see. Without the flag `notes` only has readable notes.
+Sometimes a page should show more than the visitor can open: "3 open posts, 1 for members". Add `all_notes: true` to the query note's frontmatter; it must be the YAML boolean `true`, not `"true"` or `yes`. Then `notes` holds every note, and each has `readable`: `true` when the visitor can open it, worked out by the server with the same rules as the site. The program now decides what each visitor gets, so filter on `readable` before returning anything a visitor shouldn't see. Without the flag `notes` only has readable notes.
 
 ```jsonnet
 local blog = [n for n in notes if std.startsWith(n.path, 'blog/')];

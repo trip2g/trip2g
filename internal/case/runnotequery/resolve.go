@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/jsonneteval"
 	"trip2g/internal/mdloader"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/usertoken"
 	"trip2g/internal/yamlutil"
 )
 
@@ -254,7 +255,7 @@ func finite(v any) any {
 }
 
 // currentUser is the query's `currentUser`: who is asking. A guest has a null
-// id and role.
+// id and role; a federation peer has a null id, since it is no user.
 func currentUser(ctx context.Context, env Env) (string, error) {
 	token, err := env.CurrentUserToken(ctx)
 	if err != nil {
@@ -268,8 +269,10 @@ func currentUser(ctx context.Context, env Env) (string, error) {
 		"signedIn": token != nil,
 	}
 	if token != nil {
-		user["id"] = token.ID
 		user["role"] = token.Role
+		if token.Role != usertoken.RoleFederated {
+			user["id"] = token.ID
+		}
 	}
 
 	b, err := json.Marshal(user)

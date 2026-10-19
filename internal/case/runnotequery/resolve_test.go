@@ -200,3 +200,23 @@ func TestResolveSignedInLooksUpSubgraphsOnce(t *testing.T) {
 	require.Equal(t, &model.NoteQueryPayload{Result: json.RawMessage(`["Free","General","Premium"]`)}, got)
 	require.Len(t, env.ListActiveUserSubgraphsCalls(), 1)
 }
+
+func TestResolveFederatedUserHasNoID(t *testing.T) {
+	nvs := load(t, map[string]string{
+		"queries/me.md": query(`currentUser`),
+	})
+	env := &runnotequery.EnvMock{
+		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
+		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
+		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
+			return &usertoken.Data{Role: usertoken.RoleFederated}, nil
+		},
+		CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, true },
+	}
+
+	got, err := runnotequery.Resolve(context.Background(), env, model.NoteQueryInput{Query: "queries/me.md"})
+	require.NoError(t, err)
+	require.Equal(t, &model.NoteQueryPayload{
+		Result: json.RawMessage(`{"id":null,"isAdmin":false,"role":"federated","signedIn":true}`),
+	}, got)
+}
