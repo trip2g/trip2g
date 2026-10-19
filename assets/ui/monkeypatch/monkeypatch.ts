@@ -24,6 +24,7 @@ namespace $ {
 	}
 
 	const old_make_link = $mol_state_arg.make_link
+	const old_embed_load = $$.$mol_embed_native.prototype.load
 
 	let applied = false
 
@@ -39,6 +40,17 @@ namespace $ {
 			return r.replace( /#!$/, '' )
 		}
 
+		// $mol_embed_native waits for the next onload, so a frame whose window()
+		// is recomputed after its srcdoc already loaded stays pending forever.
+		$$.$mol_embed_native.prototype.load = function( frame: HTMLIFrameElement ) {
+			const win = frame.contentWindow
+			if( win && frame.contentDocument?.readyState === 'complete' && win.location.href !== 'about:blank' ) {
+				return Promise.resolve( win )
+			}
+			return old_embed_load.call( this, frame )
+		}
+
+		applied = true
 		console.log('Monkeypatch applied')
 	}
 }
