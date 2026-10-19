@@ -16,6 +16,8 @@ export type Scalars = {
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   Int64: { input: any; output: any; }
+  /** Any JSON value: an object, a list, a string, a number, a boolean or null. */
+  JSON: { input: any; output: any; }
   Map: { input: any; output: any; }
   Time: { input: any; output: any; }
   Upload: { input: any; output: any; }
@@ -2967,14 +2969,26 @@ export enum HealthCheckStatus {
   WARNING = 'WARNING'
 }
 
+export type HideNoteInput = {
+  /**
+   * Hides the note only if its current content hash still equals this value.
+   * An empty string means the note must not exist (or be hidden already). Omit
+   * it to hide unconditionally. A refused path is reported in hashMismatches.
+   */
+  expectedHash?: InputMaybe<Scalars['String']['input']>;
+  path: Scalars['String']['input'];
+};
+
 export type HideNotesInput = {
-  paths: Array<Scalars['String']['input']>;
+  notes?: Array<HideNoteInput>;
+  paths?: Array<Scalars['String']['input']>;
 };
 
 export type HideNotesOrErrorPayload = ErrorPayload | HideNotesPayload;
 
 export type HideNotesPayload = {
   __typename?: 'HideNotesPayload';
+  hashMismatches: Array<NoteHashMismatch>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -3198,6 +3212,16 @@ export type NoteFrontmatterPredicate = {
   key: Scalars['String']['input'];
 };
 
+/**
+ * A note an expectedHash refused: it was left as it is, and actualHash is its
+ * current content hash ("" when it does not exist or is hidden).
+ */
+export type NoteHashMismatch = {
+  __typename?: 'NoteHashMismatch';
+  actualHash: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+};
+
 export type NoteHideEvent = {
   __typename?: 'NoteHideEvent';
   path: Scalars['String']['output'];
@@ -3232,6 +3256,47 @@ export type NotePathsFilter = {
   paths?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Full-text search on note paths. like will be ignored if search is set. */
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type NoteQueryInput = {
+  /**
+   * Any JSON value passed to the query as `params`, at most 16 KB once encoded.
+   * Defaults to {}.
+   */
+  params?: InputMaybe<Scalars['JSON']['input']>;
+  /**
+   * The query note: a vault path (queries/decisions.md) or a wikilink target.
+   * The note needs `type: note-query` and one jsonnet block.
+   */
+  query: Scalars['String']['input'];
+};
+
+export type NoteQueryOrErrorPayload = ErrorPayload | NoteQueryPayload;
+
+export type NoteQueryPayload = {
+  __typename?: 'NoteQueryPayload';
+  /**
+   * Whatever the query program returned, as a JSON value. Its shape is set by
+   * the query note, not by the schema.
+   */
+  result: Scalars['JSON']['output'];
+  /**
+   * The items of the result, one row each, when the result is a list; null
+   * otherwise.
+   */
+  rows?: Maybe<Array<NoteQueryRow>>;
+};
+
+export type NoteQueryRow = {
+  __typename?: 'NoteQueryRow';
+  /** The item as the query program returned it. */
+  data: Scalars['JSON']['output'];
+  /**
+   * The note the item names: by `version_id` (that version), else by `path_id`
+   * (its latest version), else by `path` (a vault path). Null when the item names
+   * no note, the note is unknown, or the caller can't read it.
+   */
+  note?: Maybe<PublicNote>;
 };
 
 export type NoteTaskItem = {
@@ -3398,6 +3463,12 @@ export type Purchase = {
 
 export type PushNoteInput = {
   content: Scalars['String']['input'];
+  /**
+   * Writes the note only if its current content hash still equals this value.
+   * An empty string means the note must not exist (or be hidden). Omit it to
+   * write unconditionally. A refused note is reported in hashMismatches.
+   */
+  expectedHash?: InputMaybe<Scalars['String']['input']>;
   path: Scalars['String']['input'];
 };
 
@@ -3410,6 +3481,7 @@ export type PushNotesOrErrorPayload = ErrorPayload | PushNotesPayload;
 
 export type PushNotesPayload = {
   __typename?: 'PushNotesPayload';
+  hashMismatches: Array<NoteHashMismatch>;
   notes: Array<PushedNote>;
   updated: Array<PushedNote>;
 };
@@ -3448,6 +3520,12 @@ export type Query = {
   note?: Maybe<PublicNote>;
   /** X-Api-Key header must be set. */
   notePaths: Array<NotePath>;
+  /**
+   * Runs a named query: a note with `type: note-query` whose jsonnet block gets
+   * the notes the caller can read and `params`. The caller must be able to read
+   * the query note itself.
+   */
+  noteQuery: NoteQueryOrErrorPayload;
   /** Returns OIDC URLs for authentication. */
   oidcAuthUrl: OAuthUrlPayload;
   /** Public URL of the application. Used for OAuth provider Homepage URL and other integrations. */
@@ -3491,6 +3569,11 @@ export type QuerynoteArgs = {
 
 export type QuerynotePathsArgs = {
   filter?: InputMaybe<NotePathsFilter>;
+};
+
+
+export type QuerynoteQueryArgs = {
+  input: NoteQueryInput;
 };
 
 

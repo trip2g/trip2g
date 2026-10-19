@@ -29,6 +29,9 @@ var _ Env = &EnvMock{}
 //			HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
 //				panic("mock out the HideNotePath method")
 //			},
+//			LatestNoteContentHashFunc: func(ctx context.Context, path string) (string, error) {
+//				panic("mock out the LatestNoteContentHash method")
+//			},
 //			LatestNoteViewsFunc: func() *internalmodel.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
@@ -53,6 +56,9 @@ type EnvMock struct {
 
 	// HideNotePathFunc mocks the HideNotePath method.
 	HideNotePathFunc func(ctx context.Context, params db.HideNotePathParams) error
+
+	// LatestNoteContentHashFunc mocks the LatestNoteContentHash method.
+	LatestNoteContentHashFunc func(ctx context.Context, path string) (string, error)
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *internalmodel.NoteViews
@@ -84,6 +90,13 @@ type EnvMock struct {
 			// Params is the params argument value.
 			Params db.HideNotePathParams
 		}
+		// LatestNoteContentHash holds details about calls to the LatestNoteContentHash method.
+		LatestNoteContentHash []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Path is the path argument value.
+			Path string
+		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
@@ -103,12 +116,13 @@ type EnvMock struct {
 			Batch notebus.Batch
 		}
 	}
-	lockHandleNoteWebhooks sync.RWMutex
-	lockHideNotePath       sync.RWMutex
-	lockLatestNoteViews    sync.RWMutex
-	lockLogger             sync.RWMutex
-	lockPrepareLatestNotes sync.RWMutex
-	lockPublishNoteChanges sync.RWMutex
+	lockHandleNoteWebhooks    sync.RWMutex
+	lockHideNotePath          sync.RWMutex
+	lockLatestNoteContentHash sync.RWMutex
+	lockLatestNoteViews       sync.RWMutex
+	lockLogger                sync.RWMutex
+	lockPrepareLatestNotes    sync.RWMutex
+	lockPublishNoteChanges    sync.RWMutex
 }
 
 // HandleNoteWebhooks calls HandleNoteWebhooksFunc.
@@ -184,6 +198,42 @@ func (mock *EnvMock) HideNotePathCalls() []struct {
 	mock.lockHideNotePath.RLock()
 	calls = mock.calls.HideNotePath
 	mock.lockHideNotePath.RUnlock()
+	return calls
+}
+
+// LatestNoteContentHash calls LatestNoteContentHashFunc.
+func (mock *EnvMock) LatestNoteContentHash(ctx context.Context, path string) (string, error) {
+	if mock.LatestNoteContentHashFunc == nil {
+		panic("EnvMock.LatestNoteContentHashFunc: method is nil but Env.LatestNoteContentHash was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Path string
+	}{
+		Ctx:  ctx,
+		Path: path,
+	}
+	mock.lockLatestNoteContentHash.Lock()
+	mock.calls.LatestNoteContentHash = append(mock.calls.LatestNoteContentHash, callInfo)
+	mock.lockLatestNoteContentHash.Unlock()
+	return mock.LatestNoteContentHashFunc(ctx, path)
+}
+
+// LatestNoteContentHashCalls gets all the calls that were made to LatestNoteContentHash.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteContentHashCalls())
+func (mock *EnvMock) LatestNoteContentHashCalls() []struct {
+	Ctx  context.Context
+	Path string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Path string
+	}
+	mock.lockLatestNoteContentHash.RLock()
+	calls = mock.calls.LatestNoteContentHash
+	mock.lockLatestNoteContentHash.RUnlock()
 	return calls
 }
 

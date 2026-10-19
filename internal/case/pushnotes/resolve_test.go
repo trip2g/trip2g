@@ -19,6 +19,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	InsertNote(ctx context.Context, update appmodel.RawNote) (appmodel.NoteSaveResult, error)
+	LatestNoteContentHash(ctx context.Context, path string) (string, error)
 	InsertUncommittedPath(ctx context.Context, notePathID int64) error
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
@@ -811,4 +812,78 @@ func TestResolve_TextContentValidation(t *testing.T) {
 			require.Empty(t, env.InsertNoteCalls())
 		})
 	}
+}
+
+// expectedHash gates each note on its own: a mismatch refuses that note only,
+// and a note without expectedHash is written as before.
+func TestResolve_ExpectedHash(t *testing.T) {
+	current := map[string]string{
+		"match.md":    "hash-match",
+		"conflict.md": "hash-server",
+		"free.md":     "hash-free",
+		"exists.md":   "hash-exists",
+	}
+	pathIDs := map[string]int64{"match.md": 1, "free.md": 2, "new.md": 3}
+	ptr := func(s string) *string { return &s }
+
+	env := newEnvMock(&logger.TestLogger{})
+	env.LatestNoteContentHashFunc = func(_ context.Context, path string) (string, error) {
+		return current[path], nil
+	}
+	env.InsertNoteFunc = func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+		return appmodel.NoteSaveResult{PathID: pathIDs[note.Path], VersionID: pathIDs[note.Path]}, nil
+	}
+	env.PrepareLatestNotesFunc = func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+		return appmodel.NewNoteViews(), nil
+	}
+	env.HandleLatestNotesAfterSaveFunc = func(_ context.Context, _ []int64) error { return nil }
+	env.LayoutsFunc = func() *appmodel.Layouts { return &appmodel.Layouts{Map: map[string]appmodel.Layout{}} }
+
+	result, err := pushnotes.Resolve(context.Background(), env, model.PushNotesInput{
+		Updates: []model.PushNoteInput{
+			{Path: "match.md", Content: "# mine", ExpectedHash: ptr("hash-match")},
+			{Path: "conflict.md", Content: "# mine", ExpectedHash: ptr("hash-base")},
+			{Path: "free.md", Content: "# mine"},
+			{Path: "new.md", Content: "# mine", ExpectedHash: ptr("")},
+			{Path: "exists.md", Content: "# mine", ExpectedHash: ptr("")},
+		},
+	})
+	require.NoError(t, err)
+
+	payload, ok := result.(*model.PushNotesPayload)
+	require.True(t, ok, "got %T", result)
+
+	written := []string{}
+	for _, call := range env.InsertNoteCalls() {
+		written = append(written, call.Update.Path)
+	}
+	require.Equal(t, []string{"match.md", "free.md", "new.md"}, written)
+	require.Equal(t, []model.NoteHashMismatch{
+		{Path: "conflict.md", ActualHash: "hash-server"},
+		{Path: "exists.md", ActualHash: "hash-exists"},
+	}, payload.HashMismatches)
+
+	checked := []string{}
+	for _, call := range env.LatestNoteContentHashCalls() {
+		checked = append(checked, call.Path)
+	}
+	require.Equal(t, []string{"match.md", "conflict.md", "new.md", "exists.md"}, checked,
+		"a note without expectedHash is written without reading its hash")
+
+	require.Len(t, env.HandleLatestNotesAfterSaveCalls(), 1)
+	require.Equal(t, []int64{1, 2, 3}, env.HandleLatestNotesAfterSaveCalls()[0].ChangedPathIDs)
+}
+
+func TestResolve_ExpectedHashReadFails(t *testing.T) {
+	env := newEnvMock(&logger.TestLogger{})
+	env.LatestNoteContentHashFunc = func(_ context.Context, _ string) (string, error) {
+		return "", errors.New("database error")
+	}
+	expected := "hash"
+
+	_, err := pushnotes.Resolve(context.Background(), env, model.PushNotesInput{
+		Updates: []model.PushNoteInput{{Path: "note.md", Content: "# mine", ExpectedHash: &expected}},
+	})
+	require.Error(t, err)
+	require.Empty(t, env.InsertNoteCalls())
 }
