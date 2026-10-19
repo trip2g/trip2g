@@ -24,10 +24,7 @@ type HrefLang struct {
 
 // RSSFeedLink is a single discovered RSS feed, rendered as a
 // <link rel="alternate" type="application/rss+xml"> autodiscovery tag.
-type RSSFeedLink struct {
-	Title string
-	Href  string
-}
+type RSSFeedLink = model.RSSFeedLink
 
 // OGTag is a single Open Graph / Twitter meta tag. It exists so the template can
 // emit ctx.OGTags in a stable (property-sorted) order — see OGTagsSorted.
@@ -191,33 +188,14 @@ func (ctx *Ctx) rootNote(name string) *templateviews.Note {
 	return ctx.Notes.NoteByPermalink("/" + strings.ToLower(strings.ReplaceAll(name, " ", "_")))
 }
 
-// RSSFeeds returns one RSSFeedLink per note whose content_type declares it as
-// an RSS feed (application/rss+xml, optionally with a charset suffix), for
-// <link rel="alternate"> autodiscovery. Empty if the site has no feed note.
+// RSSFeeds returns the site's RSS feed notes, precomputed at note load
+// (see templateviews.FindRSSFeeds). Empty if the site has no feed note.
 func (ctx *Ctx) RSSFeeds() []RSSFeedLink {
 	if ctx.Notes == nil {
 		return nil
 	}
 
-	var feeds []RSSFeedLink
-	for _, note := range ctx.Notes.List() {
-		ct := strings.ToLower(strings.TrimSpace(note.M().GetString("content_type", "")))
-		if !strings.HasPrefix(ct, "application/rss+xml") {
-			continue
-		}
-
-		title := note.M().GetString("rss_title", "")
-		if title == "" {
-			title = note.Title()
-		}
-		if title == "" {
-			title = "RSS"
-		}
-
-		feeds = append(feeds, RSSFeedLink{Title: title, Href: note.Permalink()})
-	}
-
-	return feeds
+	return templateviews.NoteViews(ctx.Notes).RSSFeeds
 }
 
 // SidebarWidgets returns widgets for the given position ("left" or "right").

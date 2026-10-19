@@ -4,6 +4,7 @@ package noteloader_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"trip2g/internal/db"
 	"trip2g/internal/frontmatterpatch"
@@ -11,6 +12,7 @@ import (
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
+	"trip2g/internal/templateviews"
 
 	"github.com/stretchr/testify/require"
 )
@@ -193,4 +195,48 @@ func TestLoader_DeadlineDuringMarkdownDoesNotFailDBReads(t *testing.T) {
 	require.NoError(t, loader.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true}))
 	require.Error(t, ctx.Err(), "the chart must have been rendered inside Load")
 	require.Len(t, loader.NoteChunks(), 1, "chunks must be read before the deadline")
+}
+
+// legacyRSSFeeds is the per-request scan RSSFeeds ran before the list was
+// precomputed at load; the loader's result must match it exactly.
+func legacyRSSFeeds(nvs *model.NoteViews) []model.RSSFeedLink {
+	var feeds []model.RSSFeedLink
+	for _, note := range templateviews.NewNVS(nvs, "live").List() {
+		ct := strings.ToLower(strings.TrimSpace(note.M().GetString("content_type", "")))
+		if !strings.HasPrefix(ct, "application/rss+xml") {
+			continue
+		}
+
+		title := note.M().GetString("rss_title", "")
+		if title == "" {
+			title = note.Title()
+		}
+		if title == "" {
+			title = "RSS"
+		}
+
+		feeds = append(feeds, model.RSSFeedLink{Title: title, Href: note.Permalink()})
+	}
+	return feeds
+}
+
+func TestLoader_RSSFeedsMatchLegacyScan(t *testing.T) {
+	notes := []noteloader.RawNote{
+		{Path: "feed.md", PathID: 1, VersionID: 1, Content: "---\ncontent_type: application/rss+xml; charset=utf-8\nrss_title: Main feed\n---\nx"},
+		{Path: "blog/feed.md", PathID: 2, VersionID: 2, Content: "---\ncontent_type: \"  Application/RSS+XML \"\ntitle: Blog\n---\nx"},
+		{Path: "news.md", PathID: 3, VersionID: 3, Content: "---\ncontent_type: application/rss+xml\n---\nx"},
+		{Path: "_system/feed.md", PathID: 4, VersionID: 4, Content: "---\ncontent_type: application/rss+xml\n---\nx"},
+		{Path: "atom.md", PathID: 5, VersionID: 5, Content: "---\ncontent_type: application/atom+xml\n---\nx"},
+		{Path: "post.md", PathID: 6, VersionID: 6, Content: "---\ntitle: Post\n---\nx"},
+	}
+
+	env := makeMinimalEnv(notes, func() bool { return false })
+	loader := noteloader.New("test", env, mdloader.Config{})
+	require.NoError(t, loader.Load(context.Background(), noteloader.LoadOptions{SkipSearchIndex: true}))
+
+	nvs := loader.NoteViews()
+	want := legacyRSSFeeds(nvs)
+	require.Len(t, want, 3)
+	require.Equal(t, want, nvs.RSSFeeds)
+	require.Equal(t, want, nvs.Copy().RSSFeeds)
 }

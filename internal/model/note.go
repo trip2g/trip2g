@@ -388,6 +388,10 @@ type NoteViews struct {
 
 	MCPFederationNotes []*MCPFederationNote `json:"-"`
 
+	// RSSFeeds lists the visible notes whose content_type is an RSS feed,
+	// computed once per load for <link rel="alternate"> autodiscovery.
+	RSSFeeds []RSSFeedLink `json:"-"`
+
 	// RouteMap indexes notes by host -> path -> *NoteView.
 	// host="" for main domain alias routes.
 	// host="foo.com" for custom domain routes.
@@ -413,6 +417,13 @@ type NoteViews struct {
 	LayoutSections []LayoutSectionEntry `json:"-"`
 
 	navLinks *sync.Map // *NoteView -> []NoteNavLink, see NavLinks
+}
+
+// RSSFeedLink is a single discovered RSS feed, rendered as a
+// <link rel="alternate" type="application/rss+xml"> autodiscovery tag.
+type RSSFeedLink struct {
+	Title string
+	Href  string
 }
 
 // LayoutSectionEntry represents a vault note that acts as a layout section

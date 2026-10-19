@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// makeVisibleNVS is like makeNVS but also populates NoteViews.List, which
-// NVS.List() (and thus RSSFeeds) iterates over via VisibleList().
+// makeVisibleNVS is like makeNVS but also populates NoteViews.List and the
+// RSSFeeds the loader precomputes from it.
 func makeVisibleNVS(notes []*model.NoteView) *templateviews.NVS {
 	nvs := model.NewNoteViews()
 	for _, nv := range notes {
@@ -18,6 +18,7 @@ func makeVisibleNVS(notes []*model.NoteView) *templateviews.NVS {
 		nvs.Map[nv.Permalink] = nv
 		nvs.List = append(nvs.List, nv)
 	}
+	nvs.RSSFeeds = templateviews.FindRSSFeeds(nvs)
 	return templateviews.NewNVS(nvs, "live")
 }
 
