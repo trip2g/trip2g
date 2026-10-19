@@ -1455,7 +1455,9 @@ func __marshalSearchScopedSearchSearchConnectionNodesSearchResultDocument(v *Sea
 // SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote includes the requested fields of the GraphQL type PublicNote.
 type SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote struct {
 	Typename string `json:"__typename"`
-	Path     string `json:"path"`
+	// The note's vault path, such as `people/Anton Rozenblam.md`: the path
+	// `notePaths`, `updateNotes` and read patterns operate on.
+	NotePath string `json:"notePath"`
 }
 
 // GetTypename returns SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote.Typename, and is useful for accessing the field via an interface.
@@ -1463,9 +1465,9 @@ func (v *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote) 
 	return v.Typename
 }
 
-// GetPath returns SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote.Path, and is useful for accessing the field via an interface.
-func (v *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote) GetPath() string {
-	return v.Path
+// GetNotePath returns SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote.NotePath, and is useful for accessing the field via an interface.
+func (v *SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote) GetNotePath() string {
+	return v.NotePath
 }
 
 // UpdateChangeWebhookAdminAdminMutation includes the requested fields of the GraphQL type AdminMutation.
@@ -2592,7 +2594,7 @@ query SearchScoped ($q: String!) {
 			document {
 				__typename
 				... on PublicNote {
-					path
+					notePath
 				}
 			}
 		}
@@ -2601,7 +2603,9 @@ query SearchScoped ($q: String!) {
 `
 
 // SearchScoped searches notes by query string using the scoped (Bearer) lane.
-// Only the path is fetched — the caller decides what to read from found notes.
+// Only the vault path is fetched — the caller decides what to read from found
+// notes. notePath, not path: path is the note's permalink, which read_note
+// cannot open.
 func SearchScoped(
 	ctx_ context.Context,
 	client_ graphql.Client,

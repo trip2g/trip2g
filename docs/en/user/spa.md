@@ -406,6 +406,7 @@ query Search($input: SearchInput!) {
       document {
         ... on PublicNote {
           path
+          notePath
           title
         }
       }
@@ -418,7 +419,7 @@ query Search($input: SearchInput!) {
 { "input": { "query": "release plan" } }
 ```
 
-The site's own search box, open to any visitor. Notes the visitor can't read come last, with a title and a URL but no `document`. An admin searches the latest versions; others search what is published, unless the site shows drafts to everyone.
+The site's own search box, open to any visitor. Notes the visitor can't read come last, with a title and a URL but no `document`. An admin searches the latest versions; others search what is published, unless the site shows drafts to everyone. `path` is the note's URL path (`/people/anna`); `notePath` is its path in the vault (`people/Anna.md`), the one `notePaths` and `updateNotes` take.
 
 #### Save a whole note
 

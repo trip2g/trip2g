@@ -600,6 +600,10 @@ func TestFreeNoteAccessMatrix(t *testing.T) {
 	t.Run("page cache never crosses readers", func(t *testing.T) {
 		m.requirePageCacheKeepsReadersApart(t)
 	})
+
+	t.Run("search document carries the vault path and the permalink", func(t *testing.T) {
+		m.requireSearchCarriesVaultPath(t)
+	})
 }
 
 func (m *freeNoteMatrix) requirePageCacheKeepsReadersApart(t *testing.T) {

@@ -96,7 +96,7 @@ An LLM role gets six tools:
 
 | Tool | What it does |
 |------|-------------|
-| `search(query)` | full-text search within the read scope |
+| `search(query)` | full-text search within the read scope; returns vault paths that `read_note` opens |
 | `read_note(path)` | read a note (read scope only) |
 | `write_note(path, content)` | create or replace a note (write scope only) |
 | `patch_note(path, find, replace)` | surgical find and replace; fails unless `find` matches exactly once |

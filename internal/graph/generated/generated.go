@@ -2767,7 +2767,16 @@ type NoteTaskItem {
 
 type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.NoteView") {
   pathId: Int64!
+  """
+  The note's permalink, a URL path such as ` + "`" + `/people/anton_rozenblam` + "`" + `. Not a
+  vault path: use ` + "`" + `notePath` + "`" + ` to read or edit the note.
+  """
   path: String!
+  """
+  The note's vault path, such as ` + "`" + `people/Anton Rozenblam.md` + "`" + `: the path
+  ` + "`" + `notePaths` + "`" + `, ` + "`" + `updateNotes` + "`" + ` and read patterns operate on.
+  """
+  notePath: String!
   url: String! @goField(forceResolver: true)
   title: String!
   html: String!
@@ -38364,6 +38373,8 @@ func (ec *executionContext) fieldContext_NoteQueryRow_note(_ context.Context, fi
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "notePath":
+				return ec.fieldContext_PublicNote_notePath(ctx, field)
 			case "url":
 				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
@@ -40054,6 +40065,35 @@ func (ec *executionContext) fieldContext_PublicNote_path(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _PublicNote_notePath(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PublicNote_notePath,
+		func(ctx context.Context) (any, error) {
+			return obj.NotePath, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PublicNote_notePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PublicNote_url(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -41265,6 +41305,8 @@ func (ec *executionContext) fieldContext_Query_note(ctx context.Context, field g
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "notePath":
+				return ec.fieldContext_PublicNote_notePath(ctx, field)
 			case "url":
 				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
@@ -44307,6 +44349,8 @@ func (ec *executionContext) fieldContext_SimilarNote_note(_ context.Context, fie
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "notePath":
+				return ec.fieldContext_PublicNote_notePath(ctx, field)
 			case "url":
 				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
@@ -44917,6 +44961,8 @@ func (ec *executionContext) fieldContext_ToggleFavoriteNotePayload_favoriteNotes
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "notePath":
+				return ec.fieldContext_PublicNote_notePath(ctx, field)
 			case "url":
 				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
@@ -46657,6 +46703,8 @@ func (ec *executionContext) fieldContext_User_favoriteNotes(_ context.Context, f
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "notePath":
+				return ec.fieldContext_PublicNote_notePath(ctx, field)
 			case "url":
 				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
@@ -81219,6 +81267,11 @@ func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSe
 			}
 		case "path":
 			out.Values[i] = ec._PublicNote_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "notePath":
+			out.Values[i] = ec._PublicNote_notePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

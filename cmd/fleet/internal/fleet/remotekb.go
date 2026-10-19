@@ -55,8 +55,8 @@ func (k *remoteKB) Search(ctx context.Context, query string) ([]agentruntime.Doc
 	out := make([]agentruntime.Doc, 0, len(resp.Search.Nodes))
 	for _, n := range resp.Search.Nodes {
 		pn, ok := n.Document.(*trip2ggql.SearchScopedSearchSearchConnectionNodesSearchResultDocumentPublicNote)
-		if ok && pn.Path != "" {
-			out = append(out, agentruntime.Doc{Path: pn.Path})
+		if ok && pn.NotePath != "" {
+			out = append(out, agentruntime.Doc{Path: pn.NotePath})
 		}
 	}
 	return out, nil

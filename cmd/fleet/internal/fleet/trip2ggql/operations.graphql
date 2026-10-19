@@ -173,13 +173,15 @@ mutation DeleteCronWebhook($input: DeleteCronWebhookInput!) {
 }
 
 # SearchScoped searches notes by query string using the scoped (Bearer) lane.
-# Only the path is fetched — the caller decides what to read from found notes.
+# Only the vault path is fetched — the caller decides what to read from found
+# notes. notePath, not path: path is the note's permalink, which read_note
+# cannot open.
 query SearchScoped($q: String!) {
   search(input: {query: $q}) {
     nodes {
       document {
         ... on PublicNote {
-          path
+          notePath
         }
       }
     }
