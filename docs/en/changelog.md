@@ -22,6 +22,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** A page built with JavaScript needs lists of notes by frontmatter (posts with a tag, tasks by status), but raw frontmatter, and notes a visitor can't read, must not leave the server.
 - **How to use.** Write a query note and call `noteQuery(input: {query: "[[by_tag]]", params: {tag: "go"}})`, or `noteQuery("[[by_tag]]", map("tag", "go"))` from a template. See [[en/user/note-queries|Note queries]].
 
+### A note query's rows bring back the notes themselves
+
+- **What.** When a note query returns a list, the GraphQL payload also has `rows`: each row's `data` is the item, and its `note` is the note the item names by `version_id`, `path_id` or `path`, or null when the visitor can't read it. Templates get the same with `noteQueryRows()` and `.Note()`. `notes` inside a query now carries `path_id` and `version_id`, and keeps notes marked `search: false` (their `meta.search` is `false`). Templates also get `note.Dir()`, the note's folder.
+- **Why.** A query that selects notes had to copy every field the page shows into its result, and the rendered HTML couldn't be copied at all. `search: false` hides a note from search; it shouldn't hide it from a page that lists it.
+- **How to use.** Return `[{version_id: n.version_id} for n in …]` and ask for `rows { note { title url html } }`, or range over `noteQueryRows("[[my_query]]")` in a template. See [[en/user/note-queries#Rows: the notes behind the result|Note queries]].
+
 ### Note validators check notes against your rules on every sync
 
 - **What.** A note can list validator notes in a new `validate` frontmatter field. A validator is a note with a Jsonnet block that reads the frontmatter and the body's structure (headings, images, links, code blocks) and returns errors and warnings. An error marks the note `CRITICAL`: a sync that pushes notes exits with code 1, and the note shows under Note Warnings in the admin panel. `trip2g lint` reports the same messages without a server. The note is still saved and published.

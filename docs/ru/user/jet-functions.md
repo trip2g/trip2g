@@ -465,6 +465,8 @@ trip2g регистрирует восемь глобальных функций
 | `defaultTemplate.Styles()` | Теги `<link>` со стилями дефолтного шаблона | Ниже |
 | `defaultTemplate.UserSpaceScripts()` | `<script>` с настройками и скрипты, нужные виджетам на клиенте | Ниже |
 | `currentUser.IsAdmin()` | `true`, если страницу смотрит админ сайта | Ниже; используется в [[ru/user/themes\|Темах]] |
+| `noteQuery(query, params)` | Результат [[ru/user/note-queries\|запроса к заметкам]] списками и картами | [[ru/user/note-queries#В шаблоне\|Запросы к заметкам]] |
+| `noteQueryRows(query, params)` | Строки результата-списка: `.Data()` — элемент, `.Note()` — заметка, которую он называет (по `version_id`, `path_id` или `path`), или nil | [[ru/user/note-queries#Строки: заметки за результатом\|Запросы к заметкам]] |
 
 Чтобы обернуть свой контент в шапку, подвал и стили дефолтного шаблона:
 
@@ -492,9 +494,18 @@ trip2g регистрирует восемь глобальных функций
 
 #### Методы `note`, `note.M()`, `nvs` и выборок
 
-Полный список — в [[ru/user/templates-advanced|Шаблонах: API]]: методы заметки (`Title`, `HTMLString`, `Tags`, `Lang`, `LangAlternativesList`, `HasCodeLanguage`…), доступ к frontmatter (`GetString`, `GetInt`, `GetBool`, `GetStrings`…), `nvs` (`ByPath`, `ByPermalink`, `ByWikilink`, `BackLinks`…), выборки (`ByGlob`, `SortBy`, `SortByMeta`, `Public`, `Limit`…) и `PartialRenderer`. Там же — что выборка возвращает без фильтров и как ведёт себя сортировка. `FormSpecJSON()` описан в [[ru/user/forms|Формах]], `debug()` и `note.M().Debug()` — в [[ru/user/jet-debugging|Отладке]].
+Полный список — в [[ru/user/templates-advanced|Шаблонах: API]]: методы заметки (`Title`, `HTMLString`, `Tags`, `Dir`, `Lang`, `LangAlternative`, `LangAlternativesList`, `HasCodeLanguage`…), доступ к frontmatter (`GetString`, `GetInt`, `GetBool`, `GetStrings`…), `nvs` (`ByPath`, `ByPermalink`, `ByWikilink`, `BackLinks`…), выборки (`ByGlob`, `SortBy`, `SortByMeta`, `Public`, `Limit`…) и `PartialRenderer`. Там же — что выборка возвращает без фильтров и как ведёт себя сортировка. `FormSpecJSON()` описан в [[ru/user/forms|Формах]], `debug()` и `note.M().Debug()` — в [[ru/user/jet-debugging|Отладке]].
 
 `PermalinkEncoded()` — это `Permalink()`, в котором каждый сегмент пути закодирован процентами: `/привет мир` → `/%D0%BF…%20%D0%BC…`. Это кодирование URL, а не HTML-экранирование. Раз вывод экранируется, `Permalink()` тоже безопасен в `href`. `PermalinkEncoded()` нужен, когда в пути есть не-ASCII символы или пробелы и нужен строго закодированный адрес: в sitemap, ленте или ссылке, которую читает другая программа.
+
+`Dir()` — папка заметки со слешем в конце: `en/circle/` для `en/circle/garden.md`, `""` для заметки в корне хранилища. С ней соседей заметки находят без ручной разбивки пути. Ссылка на `_index` той же папки, если она есть:
+
+```jet
+{{ note.Dir() }}            {* help/faq.md → help/ *}
+{{ if hub := nvs.ByPath(note.Dir() + "_index.md"); hub }}
+  <a href="{{ hub.Permalink() }}">{{ hub.Title() }}</a>
+{{ end }}
+```
 
 Языковой переключатель:
 

@@ -6,15 +6,15 @@
 
 ```graphql
 noteQuery(input: { query: "[[by_tag]]", params: { tag: "go" } }) {
-  ... on NoteQueryPayload { result }
+  ... on NoteQueryPayload { result rows { data note { title url html } } }
   ... on ErrorPayload { message }
 }
 ```
 
 - `query` is a vault path (`queries/by_tag.md`, with or without `.md`) or a wikilink target, resolved with `NoteViews.ResolveWikilinkTarget`.
-- Inside the block: `currentUser` (see Access); `notes` — `[{path, title, permalink, meta}]` in path order, `meta` after frontmatter patches; `params` — the caller's `params` (a `JSON` scalar, any value), `{}` when omitted, at most 16 KB once encoded.
+- Inside the block: `currentUser` (see Access); `notes` — `[{path, path_id, version_id, title, permalink, meta}]` in path order, `meta` after frontmatter patches; `params` — the caller's `params` (a `JSON` scalar, any value), `{}` when omitted, at most 16 KB once encoded.
 - Notes come from `LatestNoteViews()`. Releases (live versions) are not in use, so latest is what the site serves. Several readers pick live or latest by different rules; that is tracked in https://github.com/trip2g/trip2g/issues/438.
-- `notes` leaves out system notes (`_…`), `search: false` notes (`ExcludeSearch`, as search and embeddings do) and files without a markdown AST (`.canvas`, `.base`, `.excalidraw`).
+- `notes` leaves out system notes (`_…`) and files without a markdown AST (`.canvas`, `.base`, `.excalidraw`) — `queryable()` in `resolve.go`. `search: false` notes stay in: the flag is about discoverability, not access, and the note's `meta` carries `search: false`, so a program filters on it when it wants to. (Commit 951d08fc had excluded them, like search and embeddings; that was reverted.)
 - A NaN or ±Inf in frontmatter (YAML allows them, JSON doesn't) becomes `null`, so one odd note can't break every query.
 - The result comes back in `result`, typed with the `JSON` scalar (gqlgen `graphql.Any`): any JSON value, sent as is, without string-wrapping.
 
@@ -35,9 +35,17 @@ local tagged = [
 ```
 ````
 
+## Rows
+
+`rows: [NoteQueryRow!]` splits a list result into `{data, note}`; null when the result is not a list (`runnotequery.Rows`, which decodes `result` into `[]json.RawMessage`, so `data` is the item's exact JSON). `note: PublicNote` is resolved per row by `rowNotes.RowNote` (`rows.go`), by precedence: `version_id` (that version), else `path_id` (latest), else `path` (vault path). A present key that names nothing gives null; it does not fall through to the next key. A non-integer id or a non-object item gives null too.
+
+- **Lazy.** `Resolve` puts a `rowNotes` on the payload (`NoteQueryPayload.Notes`, a `goExtraField` holding the `model.NoteQueryRowNotes` interface), which does nothing until a row's `note` is resolved. The first lookup resolves the viewer (`canreadnote.NewReader`) and builds version / path-id indexes over the same `NoteViews` snapshot the program ran on; every row after it reuses them (`sync.Once`, gqlgen resolves rows concurrently). A request that doesn't select `note` pays nothing.
+- **Second wall.** The row's note goes through the reader again, independently of what the program saw. Without it `all_notes: true` (or a program returning ids from `params`) would hand out notes the viewer can't read. System notes and non-markdown files are refused like in `notes`.
+- **Versions.** Only the snapshot's versions resolve: a `version_id` that is no longer the note's latest gives null. Within one call the program and the rows share the snapshot, so ids the program returns always resolve.
+
 ## In Jet templates
 
-`runnotequery.JetFunc` is exposed as `noteQuery(query, params?)` in page renders (`rendernotepage/endpoint.go`) and the admin layout preview, running with the request's viewer. It returns the result as `[]any` / `map[string]any`; a failing query panics the render with its message (shown to admins). The load-time smoke render (`noteloader/smoke_render.go`) runs the real query as a guest over the notes being loaded (no token, metrics not recorded), so a layout reading an object result renders and a members-only query called unguarded warns. That runs each query once per smoke-rendered note, up to 10 per layout, on every load. The anonymous page cache is keyed and served to guests only, so a guest's query result is never served to a signed-in viewer.
+`runnotequery.JetFunc` is exposed as `noteQuery(query, params?)` in page renders (`rendernotepage/endpoint.go`) and the admin layout preview, running with the request's viewer. It returns the result as `[]any` / `map[string]any`; a failing query panics the render with its message (shown to admins). `runnotequery.JetRowsFunc` is `noteQueryRows(query, params?)`: the same call, whose result must be a list (else the render stops), as `[]*JetRow` with `Data()` (the item as maps and lists) and `Note()` (the `templateviews.Note` for the page's domain, or an untyped nil), with the same lookup and access re-check as `rows`. The load-time smoke render (`noteloader/smoke_render.go`) runs the real query as a guest over the notes being loaded (no token, metrics not recorded), so a layout reading an object result renders and a members-only query called unguarded warns. That runs each query once per smoke-rendered note, up to 10 per layout, on every load. The anonymous page cache is keyed and served to guests only, so a guest's query result is never served to a signed-in viewer.
 
 ## Access
 
@@ -46,7 +54,7 @@ Two checks, both through `CanReadNote` (`internal/case/canreadnote`):
 1. **Who may run a query:** whoever can read the query note. The author sets it like any note's access: `free`, subgraphs, sign-in. A query the caller can't read answers `query not found`, the same as a missing one.
 2. **What the program sees:** only notes the caller can read. A public query run by a guest never sees paid notes, so a mistake in the program's output can't leak their frontmatter or titles.
 
-`all_notes: true` in the query note's frontmatter is an explicit opt-out of rule 2: `notes` holds every note (still without system, `search: false` and non-markdown files), each with `readable` (the `CanReadNote` result). The author filters on `readable`. The flag sits in the query note, so it shows up in review.
+`all_notes: true` in the query note's frontmatter is an explicit opt-out of rule 2: `notes` holds every note (still without system and non-markdown files), each with `readable` (the `CanReadNote` result). The author filters on `readable`. The flag sits in the query note, so it shows up in review.
 
 Every query also gets `currentUser` — `{id, role, isAdmin, signedIn}` from `CurrentUserToken` (no email: it isn't in the token). A guest has null `id` and `role`. A result that reads `id` is per user, which the cache in #441 has to account for.
 
