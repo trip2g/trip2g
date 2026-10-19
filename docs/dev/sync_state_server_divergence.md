@@ -80,12 +80,18 @@ it. An agent choosing `--conflict-resolution` cannot influence this case.
 
 Whenever the server is reset, restored, or swapped while reusing a vault:
 
+Do not delete the state file. Without it every file that differs from the server is
+a first-sync conflict, and the default `--conflict-resolution local` pushes the local
+copy over the server's, which loses any server edit made since the vault was last
+synced. Move the state file away instead, and re-sync with conflicts surfaced:
+
 ```sh
-rm <vault>/.sync-state.json   # forget stale state → next sync treats local as new
-/opt/data/sync                # re-pushes everything (vault = source of truth)
+mv <vault>/.sync-state*.json /some/backup/        # keep it, do not delete it
+node trip2g-sync.mjs <vault> --dry-run                    # see what would be pushed
+node trip2g-sync.mjs <vault> --conflict-resolution fail   # or skip; resolve each conflict on purpose
 ```
 
 Document this in any DR / migration runbook. An agent that drives sync should, on
-seeing `N files deleted on server` for files it did **not** delete, clear the
-sync-state and re-sync rather than accept the silent divergence — but the structural
-fix (server epoch) should make that unnecessary.
+seeing `N files deleted on server` for files it did **not** delete, stop and ask
+rather than accept the silent divergence — but the structural fix (server epoch)
+should make that unnecessary.

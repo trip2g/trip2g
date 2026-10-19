@@ -22,7 +22,7 @@ Two-way sync can modify your local files. The plugin tracks changes and resolves
 If you and a colleague edit the same file simultaneously, the plugin shows a prompt:
 - Keep your version
 - Accept the server version
-- Save both versions
+- Save both versions: your file stays, and the server version is saved next to it as `note (server).md`, or `note (server 2).md` when that name is taken
 
 Complex conflicts can be subtle. Set up backups before enabling.
 

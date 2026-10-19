@@ -121,6 +121,15 @@ All three repositories publish to the same endpoint. The `subgraph` field tags e
 | `skip` | Skip conflicting files, continue with the rest |
 | `fail` | Stop with an error on the first conflict (recommended for CI) |
 
+### Exit status
+
+| Code | Meaning |
+|------|---------|
+| `0` | Every operation succeeded |
+| `1` | The run failed, wholly or in part: a push, pull, hide or asset transfer failed, a note has a critical warning, or the CLI could not start |
+
+After a partial failure the CLI prints the results and then exits with `1`. What succeeded is recorded in the sync state. What failed stays unsynced and is retried on the next run.
+
 ### GitHub Actions example
 
 ```yaml
@@ -156,6 +165,8 @@ Add it to `.gitignore` if you do not want to share sync state between machines:
 ```
 .sync-state.json
 ```
+
+The CLI writes notes and the state file atomically, so a crash never leaves a half-written file. If the state file cannot be read, the CLI refuses to sync and exits with `1` instead of starting from an empty state. Restore the file from a backup. Do not delete it to make the error go away: without a state, every file that differs from the server counts as a conflict, and the default `--conflict-resolution local` pushes your local copy over the server's. If you have to start over, move the file away and run the next sync with `--dry-run`, then with `--conflict-resolution fail` or `skip`, and resolve each conflict on purpose.
 
 ### Source code
 
