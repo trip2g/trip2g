@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -58,4 +59,19 @@ func TestBootNoteLoaders_LiveOverBudgetIsFatal(t *testing.T) {
 	err := loaders.load(context.Background(), noteloader.LoadOptions{})
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 	require.Nil(t, latest.nvs)
+}
+
+func TestBootNoteLoaders_LatestFailureIsFatal(t *testing.T) {
+	for _, latest := range []*fakeBootLoader{
+		{err: errors.New("database is locked")},
+		{takes: time.Second},
+	} {
+		live := &fakeBootLoader{}
+		loaders := bootNoteLoaders{live: live, latest: latest, budget: 20 * time.Millisecond, log: newSpyLogger()}
+
+		err := loaders.load(context.Background(), noteloader.LoadOptions{})
+		require.ErrorContains(t, err, "failed to load latest notes")
+		require.NotNil(t, live.nvs)
+		require.Nil(t, latest.nvs)
+	}
 }
