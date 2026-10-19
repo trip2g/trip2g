@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 import { execSync } from 'child_process';
 import crypto from 'crypto';
 import { graphqlSignIn, createPersonalToken, revokePersonalToken } from './helpers/auth.js';
+import { createApiKey, disableApiKey, hideNotes, upsertKBNote } from './helpers/federation.js';
 
 /**
  * Personal Token E2E Tests
@@ -403,6 +404,10 @@ test.describe.serial('Personal tokens', () => {
   test('11-12. Admin personal token -> federated_search returns peer notes', async ({ playwright }) => {
     const KID = `e2e-pt-fed-${crypto.randomBytes(4).toString('hex')}`;
     const SECRET_HEX = 'a0b1c2d3e4f5060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f';
+    // The seed KB-note "peer" belongs to federation.spec.js, so this pairing has
+    // its own URL (the peer's container name) and its own admin-only KB-note.
+    const PEER_KB_URL = 'http://trip2g-test-app-peer:20091/_system/mcp';
+    const HUB_KB_NOTE = 'e2e_personal_tokens_peer_kb.md';
 
     await gql(peerRequest, PEER_URL, peerCookie, `
       mutation($input: CreateInboundFederationSecretInput!) {
@@ -420,29 +425,29 @@ test.describe.serial('Personal tokens', () => {
           ... on ErrorPayload { message }
         } }
       }
-    `, { input: { kid: KID, secretHex: SECRET_HEX, kbURL: 'http://app-peer:20091/_system/mcp' } });
+    `, { input: { kid: KID, secretHex: SECRET_HEX, kbURL: PEER_KB_URL } });
     const outboundId = outboundData.admin.createOutboundFederationSecret.id;
+
+    const hubApiKey = await createApiKey(hubRequest, HUB_URL, hubCookie, `e2e personal tokens ${KID}`);
 
     const { plaintextToken, id: tokenId } = await createPersonalToken(hubRequest, HUB_URL, hubCookie, {
       name: 'e2e-fed-admin',
     });
 
     try {
+      await upsertKBNote(hubRequest, HUB_URL, hubApiKey.value, { path: HUB_KB_NOTE, kbURL: PEER_KB_URL, kbID: KID });
+
       const result = await mcpCallFresh(playwright, HUB_MCP, 'tools/call', {
         name: 'federated_search',
-        arguments: { kb_id: 'peer', query: 'team status' },
+        arguments: { kb_id: KID, query: 'team status' },
       }, { bearer: plaintextToken });
-
-      // Skip if federation_kb.md not loaded (fresh containers without vault sync)
-      if (result.result?.content?.[0]?.text?.includes('not configured')) {
-        test.skip(true, 'federation_kb.md not in LatestNoteViews; vault sync needed — skipping');
-        return;
-      }
 
       expect(result.error).toBeUndefined();
       const text = result.result?.content?.[0]?.text ?? '';
       expect(text).toContain('team');
     } finally {
+      await hideNotes(hubRequest, HUB_URL, hubApiKey.value, [HUB_KB_NOTE]).catch(() => {});
+      await disableApiKey(hubRequest, HUB_URL, hubCookie, hubApiKey.id).catch(() => {});
       await revokePersonalToken(hubRequest, HUB_URL, hubCookie, tokenId).catch(() => {});
       if (outboundId) {
         await gql(hubRequest, HUB_URL, hubCookie, `
