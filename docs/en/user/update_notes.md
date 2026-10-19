@@ -97,6 +97,8 @@ Rules:
 - Every other key keeps its line, its order, its quoting and its comments. The note body is not touched. New keys are added after the last key, in sorted order.
 - A note without frontmatter gets a `---` block at the top; the body below it stays byte for byte the same.
 - Setting a key to the string, number or boolean it already holds keeps the line as it is, and the note gets no new version.
+- A string that starts with a line break, or has a line of dashes only such as `---`, is written double-quoted on one line, `"one\n---\ntwo"`, so it keeps its value and cannot close the frontmatter early.
+- A `...` line ends the YAML document: keys after it are outside the frontmatter, trip2g does not read them as meta, and the edit leaves them alone.
 - JSON does not tell `1.0` from `1`, so a whole number is written without a fraction: `1.0` lands as `1`; send `"1.0"` as a string to keep it.
 - The note must exist. A missing note, or frontmatter that cannot be edited key by key (invalid YAML, a `{...}` flow mapping, keys indented from the start of the line, a YAML alias such as `*name`, a key declared twice, a block with no closing `---`), returns an `ErrorPayload`.
 - The edited note is read back before it is saved. If any key other than the named ones would read differently, or a named key would not get its value, nothing is saved and the mutation returns an `ErrorPayload`.
