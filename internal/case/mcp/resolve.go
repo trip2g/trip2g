@@ -284,7 +284,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	limit, detailLimit := resolveSearchLimits(log, args.Limit, args.DetailLimit)
 	payload := buildSearchPayload(args.Query, results, env.NoteURL, chunks, limit, detailLimit)
 	metricsFromContext(ctx).ObserveSearchResults("search", len(payload.Results))
-	recordFederatedResultsServed(ctx, servedSearchNotes(results, len(payload.Results)))
+	recordFederatedSearchServed(ctx, results, len(payload.Results))
 
 	log.Debug("search completed", "query", args.Query, "results", len(results))
 
@@ -674,7 +674,7 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		return errorResponse(id, ErrCodeInternal, "Similar search failed: "+err.Error())
 	}
 	metricsFromContext(ctx).ObserveSearchResults("similar", len(results))
-	recordFederatedResultsServed(ctx, similarNotes(results))
+	recordFederatedSimilarServed(ctx, results)
 
 	// Format response
 	var sb strings.Builder
