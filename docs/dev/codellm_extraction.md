@@ -132,7 +132,7 @@ Possible future hardening (not built): a per-skill manifest (`requires_secrets`)
 
 Fleet's existing loop (`runtime.go:172`) applies each `write_note`/`patch_note` through `ScopedKB` (the `write_patterns` check at `scope.go:141`), records `res.Changes`, then hits `finish` and returns the answer. **Scope enforcement is unchanged and still lives in fleet.** The whole run completes in a single loop turn because codellm returns all changes plus `finish` in one completion.
 
-`{changes}` → tool_calls mapping is mechanical: a `content`-only change → `write_note(path, content)`; a `find`/`replace` change → `patch_note(path, find, replace)`; the `answer` → a trailing `finish(answer)` (kept **last** so writes are applied before the loop returns). Token usage is `0` (matching the old `TokensUsed: 0` for code runs at `runcode.go:109`).
+`{changes}` → tool_calls mapping is mechanical: a `content`-only change → `write_note(path, content)`; a `find`/`replace` change → `patch_note(path, find, replace)`; a `set`/`unset` change → `set_note_meta(path, set, unset)`; a change with none of these keys or with keys of two kinds is a `parse_error`; the `answer` → a trailing `finish(answer)` (kept **last** so writes are applied before the loop returns). Token usage is `0` (matching the old `TokensUsed: 0` for code runs at `runcode.go:109`).
 
 ### Why not JSON-in-content
 
