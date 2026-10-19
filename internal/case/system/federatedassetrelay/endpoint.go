@@ -4,7 +4,7 @@
 // The bytes come from the peer and go out as they arrive; nothing is stored
 // here, and the federation key that fetches them never leaves this instance.
 // The link was issued to a caller who could reach that peer, and until it
-// expires it is the whole credential — see federatedassetlink.
+// expires it is the whole credential for one download — see federatedassetlink.
 package federatedassetrelay
 
 import (
@@ -12,9 +12,8 @@ import (
 	"errors"
 	"mime"
 	"net/http"
-	"net/url"
 	"path"
-	"strconv"
+	"time"
 
 	"trip2g/internal/appreq"
 	"trip2g/internal/federatedassetlink"
@@ -31,8 +30,11 @@ const (
 type Env interface {
 	model.FederationAssetFetcherFactory
 	FederatedAssetLinkSecret() string
+	SpendFederatedAssetLink(id string, expiresAt time.Time) bool
 	Logger() logger.Logger
 }
+
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg federatedassetrelay_test . Env
 
 type Endpoint struct{}
 
@@ -48,13 +50,22 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	env := req.Env.(Env)
 	ctx := req.Req
 
-	link, err := federatedassetlink.Parse(string(ctx.QueryArgs().Peek(LinkParam)), env.FederatedAssetLinkSecret())
+	claim, err := federatedassetlink.Parse(string(ctx.QueryArgs().Peek(LinkParam)), env.FederatedAssetLinkSecret())
 	if err != nil {
 		ctx.SetStatusCode(http.StatusNotFound)
 		ctx.SetBodyString("the link is invalid or has expired; call federated_asset again")
 		//nolint:nilerr // intentional: a bad link is a 404 for its holder, not a 500
 		return nil, nil
 	}
+
+	// Spent before the fetch: a failed download needs a fresh link too.
+	if !env.SpendFederatedAssetLink(claim.ID, claim.ExpiresAt) {
+		ctx.SetStatusCode(http.StatusGone)
+		ctx.SetBodyString("the link has already been used; call federated_asset again")
+		return nil, nil
+	}
+
+	link := claim.Link
 
 	asset, err := fetch(ctx, env, link)
 	if err != nil {
@@ -70,7 +81,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	h.Set("Cache-Control", "no-store")
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Content-Security-Policy", "sandbox")
-	h.Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName)+"; filename*=UTF-8''"+url.PathEscape(fileName))
+	h.Set("Content-Disposition", contentDisposition(fileName))
 	ctx.SetContentType(contentType(fileName))
 	ctx.SetBodyStream(asset.Body, int(asset.Size))
 
@@ -101,6 +112,14 @@ func relayStatus(err error) int {
 	}
 
 	return http.StatusBadGateway
+}
+
+func contentDisposition(fileName string) string {
+	d := mime.FormatMediaType("attachment", map[string]string{"filename": fileName})
+	if d == "" {
+		return "attachment"
+	}
+	return d
 }
 
 func contentType(fileName string) string {

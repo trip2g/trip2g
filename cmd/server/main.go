@@ -45,6 +45,7 @@ import (
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
 	"trip2g/internal/defaulttemplate"
+	"trip2g/internal/federatedassetlink"
 	"trip2g/internal/fedinstr"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/gitapi"
@@ -147,6 +148,8 @@ type appState struct {
 	fedHTTPClient     *fasthttp.Client
 	// fedAssetHTTPClient streams attachments from federation peers.
 	fedAssetHTTPClient *fasthttp.Client
+	// Spent holds the federated_asset links already downloaded in this process.
+	federatedassetlink.Spent
 
 	webhookTestCalls []webhookTestCall
 	webhookTestMu    sync.Mutex

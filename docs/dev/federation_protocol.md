@@ -333,7 +333,7 @@ Not a tool: an attachment is bytes, not a `CallToolResult`. The endpoint sits be
 - `404` — see Authorization.
 - `413` — the attachment is over the peer's `MCP_FEDERATION_ASSET_MAX_SIZE`.
 
-The hub applies its own `MCP_FEDERATION_ASSET_MAX_SIZE` as well, and `MCP_FEDERATION_ASSET_TIMEOUT` to the whole transfer. Its `federated_asset` tool asks with `describe` first, then hands its caller a five-minute link on the hub (`/_system/mcp/federated_asset?link=…`) that streams the file from the peer when fetched.
+The hub applies its own `MCP_FEDERATION_ASSET_MAX_SIZE` as well, and `MCP_FEDERATION_ASSET_TIMEOUT` to the whole transfer. Its `federated_asset` tool asks with `describe` first, then hands its caller a five-minute, single-use link on the hub (`/_system/mcp/federated_asset?link=…`) that streams the file from the peer when fetched. The link is a JWT with a random `jti`; the relay records the `jti` before it contacts the peer and answers `410` to any later request with it, so a failed download needs a fresh `federated_asset` call. The record is an in-memory set per process that drops each id once its `exp` passes, so a deployment with several processes serving GETs allows one download per process.
 
 ---
 

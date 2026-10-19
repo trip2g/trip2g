@@ -207,7 +207,7 @@ federated_note_html(kb_id="bob", path="skills/reel.md")
 federated_asset(kb_id="bob", note_path="skills/reel.md", name="files/attach.zip")
 ```
 
-`federated_asset` does not return the file itself. It returns `name`, `size`, `sha256`, a `url` on your own hub and `expires_at`. The agent downloads from the url, for example with `curl -o attach.zip <url>`, and checks the sha256. The url needs no token. It works for five minutes and only for that one file.
+`federated_asset` does not return the file itself. It returns `name`, `size`, `sha256`, a `url` on your own hub and `expires_at`. The agent downloads from the url, for example with `curl -o attach.zip <url>`, and checks the sha256. The url needs no token. It works for five minutes, for that one file and for one download: a second request to it is refused with `410`. A download counts from its start, so if it fails halfway, call `federated_asset` again for a fresh link. Each hub process remembers its own used links, so with read replicas behind a load balancer a leaked link can be downloaded at most once per process.
 
 Your hub fetches the file from the peer with the federation key and streams it to the agent. The agent never holds the key and never needs network access to the peer. The peer checks the same grant as for reading the note: an attachment of a note outside the subgraphs it gave you is refused, the same way as a name the note does not have.
 

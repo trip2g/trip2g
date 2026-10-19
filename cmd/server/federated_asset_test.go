@@ -288,8 +288,11 @@ func TestFederatedAssetAcrossTwoStores(t *testing.T) {
 	require.Equal(t, http.StatusOK, status, body)
 	sum := sha256.Sum256([]byte(body))
 	require.Equal(t, assetPayload.Sha256, hex.EncodeToString(sum[:]))
-	require.Equal(t, `attachment; filename="attach.zip"; filename*=UTF-8''attach.zip`, string(header.Peek("Content-Disposition")))
+	require.Equal(t, `attachment; filename=attach.zip`, string(header.Peek("Content-Disposition")))
 	require.Equal(t, "no-store", string(header.Peek("Cache-Control")))
+
+	status, _, _ = consumer.get(t, link.RequestURI())
+	require.Equal(t, http.StatusGone, status, "a link downloads once")
 
 	refused := consumer.tool(t, "federated_asset", `{"kb_id":"peer","note_path":"private/plan.md","name":"plan.pdf"}`)
 	require.NotNil(t, refused.Error, "a note outside the pairing's grant gives no assets")
