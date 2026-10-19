@@ -203,6 +203,7 @@ type appState struct {
 
 	mcpMetrics       *metrics.MCPMetrics
 	embeddingMetrics *metrics.EmbeddingMetrics
+	noteQueryMetrics *metrics.NoteQueryMetrics
 
 	redirectManager *redirectmanager.Manager
 
@@ -372,6 +373,7 @@ func main() {
 
 			mcpMetrics:       metrics.NewMCPMetrics(prometheus.DefaultRegisterer),
 			embeddingMetrics: metrics.NewEmbeddingMetrics(prometheus.DefaultRegisterer),
+			noteQueryMetrics: metrics.NewNoteQueryMetrics(prometheus.DefaultRegisterer),
 
 			purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 
@@ -473,8 +475,7 @@ func main() {
 		}
 	}
 
-	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
-	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.createNoteLoaders()
 	// Empty keeps both indexes in memory, which is the default everywhere that
 	// has not opted in. The single-note loaders in notes.go stay in memory
 	// regardless: they are throwaway and index nothing worth persisting.

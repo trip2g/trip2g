@@ -36,7 +36,19 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	useLatest := siteConfig.ShowDraftVersions || userToken.IsAdmin()
 
-	results, merged, err := Retrieve(ctx, env, input.Query, useLatest, input.Rerank)
+	hideUnreadable := env.SearchHideUnreadable()
+	visible := visibleFilter(ctx, env)
+
+	req := Request{
+		Query:     input.Query,
+		UseLatest: useLatest,
+		Rerank:    input.Rerank,
+	}
+	if hideUnreadable {
+		req.Keep = visible
+	}
+
+	results, merged, err := Retrieve(ctx, env, req)
 	if err != nil {
 		return nil, err
 	}
@@ -46,37 +58,31 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	hiddenResults := []appmodel.SearchResult{}
 
 	for _, res := range results {
-		if res.NoteView != nil { //nolint:nestif // per-result auth checks require nil-guard, scope check, and read-pattern gate
-			if outOfScope(ctx, res.NoteView.Path) {
-				continue
-			}
-
-			if res.NoteView.IsSystem() || res.NoteView.ExcludeSearch {
-				continue
-			}
-
-			canRead, readErr := env.CanReadNote(ctx, res.NoteView)
-			if readErr != nil {
-				return nil, fmt.Errorf("failed to check CanReadNote: %w", readErr)
-			}
-
-			if canRead {
-				conn.Nodes = append(conn.Nodes, res)
-				continue
-			}
-
-			if env.SearchHideUnreadable() {
-				continue
-			}
-
-			croppedResult := appmodel.SearchResult{
-				HighlightedTitle:   res.HighlightedTitle,
-				URL:                res.URL,
-				HighlightedContent: []string{"Закрытый материал."},
-			}
-
-			hiddenResults = append(hiddenResults, croppedResult)
+		if res.NoteView == nil || !searchable(ctx, res.NoteView) {
+			continue
 		}
+
+		canRead, readErr := visible(res.NoteView)
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		if canRead {
+			conn.Nodes = append(conn.Nodes, res)
+			continue
+		}
+
+		if hideUnreadable {
+			continue
+		}
+
+		croppedResult := appmodel.SearchResult{
+			HighlightedTitle:   res.HighlightedTitle,
+			URL:                res.URL,
+			HighlightedContent: []string{"Закрытый материал."},
+		}
+
+		hiddenResults = append(hiddenResults, croppedResult)
 	}
 
 	// Push hidden results to the end of the list
@@ -98,6 +104,35 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	}
 
 	return &conn, nil
+}
+
+// visibleFilter reports whether a note may appear in this request's results
+// as a readable hit. Answers are memoized per note: the lanes and the final
+// pass ask about the same notes.
+func visibleFilter(ctx context.Context, env Env) func(*appmodel.NoteView) (bool, error) {
+	answers := map[*appmodel.NoteView]bool{}
+	return func(note *appmodel.NoteView) (bool, error) {
+		if note == nil || !searchable(ctx, note) {
+			return false, nil
+		}
+
+		answer, ok := answers[note]
+		if ok {
+			return answer, nil
+		}
+
+		canRead, err := env.CanReadNote(ctx, note)
+		if err != nil {
+			return false, fmt.Errorf("failed to check CanReadNote: %w", err)
+		}
+
+		answers[note] = canRead
+		return canRead, nil
+	}
+}
+
+func searchable(ctx context.Context, note *appmodel.NoteView) bool {
+	return !outOfScope(ctx, note.Path) && !note.IsSystem() && !note.ExcludeSearch
 }
 
 // outOfScope fails closed: a scoped shortapitoken enforces read_patterns

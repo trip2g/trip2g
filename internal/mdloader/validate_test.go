@@ -28,13 +28,28 @@ func loadWarnings(t *testing.T, sources map[string]string, path string) []model.
 	}
 
 	log := logger.TestLogger{}
-	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, Validate: true})
 	require.NoError(t, err)
 
 	note := nvs.PathMap[path]
 	require.NotNil(t, note, path)
 
 	return note.Warnings
+}
+
+func TestValidateOnlyWhenAsked(t *testing.T) {
+	srcs := []mdloader.SourceFile{
+		{Path: "rules.md", Content: []byte(validatorNote(`[{level: 'error', msg: 'ran'}]`))},
+		{Path: "note.md", Content: []byte("---\nvalidate: \"[[rules]]\"\n---\nbody\n")},
+		{Path: "missing.md", Content: []byte("---\nvalidate: \"[[nope]]\"\n---\nbody\n")},
+	}
+
+	log := logger.TestLogger{}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
+	require.NoError(t, err)
+
+	require.Empty(t, nvs.PathMap["note.md"].Warnings)
+	require.Empty(t, nvs.PathMap["missing.md"].Warnings)
 }
 
 func TestValidate(t *testing.T) {
@@ -197,6 +212,52 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "empty value means no validators",
+			sources: map[string]string{
+				"note.md": "---\nvalidate:\n---\nbody\n",
+			},
+			path:     "note.md",
+			expected: nil,
+		},
+		{
+			name: "blank string means no validators",
+			sources: map[string]string{
+				"note.md": "---\nvalidate: \" \"\n---\nbody\n",
+			},
+			path:     "note.md",
+			expected: nil,
+		},
+		{
+			name: "patch switches validation off with null",
+			sources: map[string]string{
+				"off.md": "---\ntype: frontmatter-patch\ninclude: [\"note.md\"]\n---\n" +
+					"```jsonnet\n{ validate: null }\n```\n",
+				"note.md": "---\nvalidate: \"[[nope]]\"\n---\nbody\n",
+			},
+			path:     "note.md",
+			expected: nil,
+		},
+		{
+			name: "patch switches validation off with an empty string",
+			sources: map[string]string{
+				"off.md": "---\ntype: frontmatter-patch\ninclude: [\"note.md\"]\n---\n" +
+					"```jsonnet\n{ validate: '' }\n```\n",
+				"note.md": "---\nvalidate: \"[[nope]]\"\n---\nbody\n",
+			},
+			path:     "note.md",
+			expected: nil,
+		},
+		{
+			name: "blank item in a list is critical",
+			sources: map[string]string{
+				"note.md": "---\nvalidate:\n  - \"\"\n---\nbody\n",
+			},
+			path: "note.md",
+			expected: []model.NoteWarning{
+				{Level: model.NoteWarningCritical, Message: "validate: expected a note or a list of notes, got []"},
+			},
+		},
+		{
 			name: "same validator listed twice runs once",
 			sources: map[string]string{
 				"rules.md": validatorNote(`[{level: 'error', msg: 'ran'}]`),
@@ -282,12 +343,25 @@ func TestValidate(t *testing.T) {
 				"rules.md": validatorNote(`
 local re = std.native('regexMatch');
 [{level: 'error', msg: 'bad date'} for d in [meta.date] if !re('^\\d{4}-\\d{2}-\\d{2}$', d)]`),
-				"good.md": "---\nvalidate: \"[[rules]]\"\ndate: 2026-10-16\n---\nbody\n",
-				"bad.md":  "---\nvalidate: \"[[rules]]\"\ndate: 16.10.2026\n---\nbody\n",
+				"a_good.md": "---\nvalidate: \"[[rules]]\"\ndate: 2026-10-16\n---\nbody\n",
+				"b_bad.md":  "---\nvalidate: \"[[rules]]\"\ndate: 16.10.2026\n---\nbody\n",
 			},
-			path: "bad.md",
+			path: "b_bad.md",
 			expected: []model.NoteWarning{
 				{Level: model.NoteWarningCritical, Message: "validate rules.md: bad date"},
+			},
+		},
+		{
+			name: "invalid regexMatch pattern is critical",
+			sources: map[string]string{
+				"rules.md": validatorNote(`
+local re = std.native('regexMatch');
+[{level: 'error', msg: 'never'} for x in [1] if re('(', 'a')]`),
+				"note.md": "---\nvalidate: \"[[rules]]\"\n---\nbody\n",
+			},
+			path: "note.md",
+			expected: []model.NoteWarning{
+				{Level: model.NoteWarningCritical, Message: "validate rules.md: RUNTIME ERROR: error parsing regexp: missing closing ): `(`"},
 			},
 		},
 	}
@@ -368,7 +442,7 @@ func TestValidateDemoVault(t *testing.T) {
 	require.NoError(t, err)
 
 	log := logger.TestLogger{}
-	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, Validate: true})
 	require.NoError(t, err)
 
 	expected := map[string][]string{

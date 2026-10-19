@@ -74,7 +74,7 @@ func requireHistogram(t *testing.T, g prometheus.Gatherer, name string, labels m
 // note returned by text search, vector search disabled.
 func withSearchEnv(env *EnvMock) {
 	note := &appmodel.NoteView{Title: "Alpha", Path: "alpha.md", PathID: 1}
-	textSearch := func(_ string) ([]appmodel.SearchResult, error) {
+	textSearch := func(_ string, _, _ int) ([]appmodel.SearchResult, error) {
 		return []appmodel.SearchResult{{NoteView: note, URL: "/alpha", HighlightedContent: []string{"snippet"}}}, nil
 	}
 	env.SearchLiveNotesFunc = textSearch
@@ -457,7 +457,7 @@ func TestMCPFederatedInboundMetrics(t *testing.T) {
 				docs := scopedNote(1, "docs.md", "docs")
 				both := scopedNote(2, "both.md", "sales", "docs")
 				hidden := scopedNote(3, "hidden.md", "private")
-				textSearch := func(_ string) ([]appmodel.SearchResult, error) {
+				textSearch := func(_ string, _, _ int) ([]appmodel.SearchResult, error) {
 					return []appmodel.SearchResult{
 						{NoteView: docs, HighlightedContent: []string{"a"}},
 						{NoteView: both, HighlightedContent: []string{"a"}},

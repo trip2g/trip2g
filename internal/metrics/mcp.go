@@ -58,11 +58,11 @@ func NewMCPMetrics(reg prometheus.Registerer) *MCPMetrics {
 		}, []string{"peer", "tool"}),
 		notesServed: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "trip2g_mcp_federated_notes_served_total",
-			Help: "Notes and sections handed to a federated peer (note_html, expand), by key id and the subgraph that granted the read",
+			Help: "Notes and sections opened by a federated peer (note_html, expand), by key id and the subgraph that granted the read (none: the note is in no subgraph of the key's scope)",
 		}, []string{"peer", "subgraph"}),
 		resultsServed: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "trip2g_mcp_federated_results_served_total",
-			Help: "Search results returned to a federated peer (search, similar), by key id and the subgraph that granted each result",
+			Help: "Search results returned to a federated peer (search, similar), by key id and the subgraph that granted each result (none: the note is in no subgraph of the key's scope)",
 		}, []string{"peer", "subgraph"}),
 		searchResults: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "trip2g_mcp_search_results_returned",
@@ -178,7 +178,7 @@ func (m *MCPMetrics) RecordFederatedInbound(peer, tool string) {
 	m.federatedInbound.WithLabelValues(peer, tool).Inc()
 }
 
-// RecordFederatedNoteServed counts one note or section handed to a peer.
+// RecordFederatedNoteServed counts one note or section opened by a peer.
 func (m *MCPMetrics) RecordFederatedNoteServed(peer, subgraph string) {
 	if m == nil {
 		return

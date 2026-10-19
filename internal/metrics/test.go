@@ -7,6 +7,8 @@ import (
 	"context"
 	"sync"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
+	"trip2g/internal/model"
 )
 
 // Ensure, that EnvMock does implement Env.
@@ -31,14 +33,29 @@ var _ Env = &EnvMock{}
 //			CountVisibleNotePathsFunc: func(ctx context.Context) (int64, error) {
 //				panic("mock out the CountVisibleNotePaths method")
 //			},
+//			LatestNoteViewsFunc: func() *model.NoteViews {
+//				panic("mock out the LatestNoteViews method")
+//			},
 //			ListAllFederationSecretScopesFunc: func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
 //				panic("mock out the ListAllFederationSecretScopes method")
+//			},
+//			ListAllSubgraphsFunc: func(ctx context.Context) ([]db.Subgraph, error) {
+//				panic("mock out the ListAllSubgraphs method")
 //			},
 //			ListFederationSecretsFunc: func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
 //				panic("mock out the ListFederationSecrets method")
 //			},
 //			ListGoqiteAllQueueStatsFunc: func(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error) {
 //				panic("mock out the ListGoqiteAllQueueStats method")
+//			},
+//			LoadSiteConfigFunc: func(ctx context.Context) (model.SiteConfig, error) {
+//				panic("mock out the LoadSiteConfig method")
+//			},
+//			LoggerFunc: func() logger.Logger {
+//				panic("mock out the Logger method")
+//			},
+//			PublicURLFunc: func() string {
+//				panic("mock out the PublicURL method")
 //			},
 //			SumNoteAssetsSizesFunc: func(ctx context.Context) (int64, error) {
 //				panic("mock out the SumNoteAssetsSizes method")
@@ -62,14 +79,29 @@ type EnvMock struct {
 	// CountVisibleNotePathsFunc mocks the CountVisibleNotePaths method.
 	CountVisibleNotePathsFunc func(ctx context.Context) (int64, error)
 
+	// LatestNoteViewsFunc mocks the LatestNoteViews method.
+	LatestNoteViewsFunc func() *model.NoteViews
+
 	// ListAllFederationSecretScopesFunc mocks the ListAllFederationSecretScopes method.
 	ListAllFederationSecretScopesFunc func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error)
+
+	// ListAllSubgraphsFunc mocks the ListAllSubgraphs method.
+	ListAllSubgraphsFunc func(ctx context.Context) ([]db.Subgraph, error)
 
 	// ListFederationSecretsFunc mocks the ListFederationSecrets method.
 	ListFederationSecretsFunc func(ctx context.Context) ([]db.ListFederationSecretsRow, error)
 
 	// ListGoqiteAllQueueStatsFunc mocks the ListGoqiteAllQueueStats method.
 	ListGoqiteAllQueueStatsFunc func(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error)
+
+	// LoadSiteConfigFunc mocks the LoadSiteConfig method.
+	LoadSiteConfigFunc func(ctx context.Context) (model.SiteConfig, error)
+
+	// LoggerFunc mocks the Logger method.
+	LoggerFunc func() logger.Logger
+
+	// PublicURLFunc mocks the PublicURL method.
+	PublicURLFunc func() string
 
 	// SumNoteAssetsSizesFunc mocks the SumNoteAssetsSizes method.
 	SumNoteAssetsSizesFunc func(ctx context.Context) (int64, error)
@@ -96,8 +128,16 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// LatestNoteViews holds details about calls to the LatestNoteViews method.
+		LatestNoteViews []struct {
+		}
 		// ListAllFederationSecretScopes holds details about calls to the ListAllFederationSecretScopes method.
 		ListAllFederationSecretScopes []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// ListAllSubgraphs holds details about calls to the ListAllSubgraphs method.
+		ListAllSubgraphs []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
@@ -111,6 +151,17 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// LoadSiteConfig holds details about calls to the LoadSiteConfig method.
+		LoadSiteConfig []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// Logger holds details about calls to the Logger method.
+		Logger []struct {
+		}
+		// PublicURL holds details about calls to the PublicURL method.
+		PublicURL []struct {
+		}
 		// SumNoteAssetsSizes holds details about calls to the SumNoteAssetsSizes method.
 		SumNoteAssetsSizes []struct {
 			// Ctx is the ctx argument value.
@@ -121,9 +172,14 @@ type EnvMock struct {
 	lockCountNoteAssets               sync.RWMutex
 	lockCountNoteVersions             sync.RWMutex
 	lockCountVisibleNotePaths         sync.RWMutex
+	lockLatestNoteViews               sync.RWMutex
 	lockListAllFederationSecretScopes sync.RWMutex
+	lockListAllSubgraphs              sync.RWMutex
 	lockListFederationSecrets         sync.RWMutex
 	lockListGoqiteAllQueueStats       sync.RWMutex
+	lockLoadSiteConfig                sync.RWMutex
+	lockLogger                        sync.RWMutex
+	lockPublicURL                     sync.RWMutex
 	lockSumNoteAssetsSizes            sync.RWMutex
 }
 
@@ -255,6 +311,33 @@ func (mock *EnvMock) CountVisibleNotePathsCalls() []struct {
 	return calls
 }
 
+// LatestNoteViews calls LatestNoteViewsFunc.
+func (mock *EnvMock) LatestNoteViews() *model.NoteViews {
+	if mock.LatestNoteViewsFunc == nil {
+		panic("EnvMock.LatestNoteViewsFunc: method is nil but Env.LatestNoteViews was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLatestNoteViews.Lock()
+	mock.calls.LatestNoteViews = append(mock.calls.LatestNoteViews, callInfo)
+	mock.lockLatestNoteViews.Unlock()
+	return mock.LatestNoteViewsFunc()
+}
+
+// LatestNoteViewsCalls gets all the calls that were made to LatestNoteViews.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteViewsCalls())
+func (mock *EnvMock) LatestNoteViewsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLatestNoteViews.RLock()
+	calls = mock.calls.LatestNoteViews
+	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
 // ListAllFederationSecretScopes calls ListAllFederationSecretScopesFunc.
 func (mock *EnvMock) ListAllFederationSecretScopes(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
 	if mock.ListAllFederationSecretScopesFunc == nil {
@@ -284,6 +367,38 @@ func (mock *EnvMock) ListAllFederationSecretScopesCalls() []struct {
 	mock.lockListAllFederationSecretScopes.RLock()
 	calls = mock.calls.ListAllFederationSecretScopes
 	mock.lockListAllFederationSecretScopes.RUnlock()
+	return calls
+}
+
+// ListAllSubgraphs calls ListAllSubgraphsFunc.
+func (mock *EnvMock) ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error) {
+	if mock.ListAllSubgraphsFunc == nil {
+		panic("EnvMock.ListAllSubgraphsFunc: method is nil but Env.ListAllSubgraphs was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListAllSubgraphs.Lock()
+	mock.calls.ListAllSubgraphs = append(mock.calls.ListAllSubgraphs, callInfo)
+	mock.lockListAllSubgraphs.Unlock()
+	return mock.ListAllSubgraphsFunc(ctx)
+}
+
+// ListAllSubgraphsCalls gets all the calls that were made to ListAllSubgraphs.
+// Check the length with:
+//
+//	len(mockedEnv.ListAllSubgraphsCalls())
+func (mock *EnvMock) ListAllSubgraphsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListAllSubgraphs.RLock()
+	calls = mock.calls.ListAllSubgraphs
+	mock.lockListAllSubgraphs.RUnlock()
 	return calls
 }
 
@@ -348,6 +463,92 @@ func (mock *EnvMock) ListGoqiteAllQueueStatsCalls() []struct {
 	mock.lockListGoqiteAllQueueStats.RLock()
 	calls = mock.calls.ListGoqiteAllQueueStats
 	mock.lockListGoqiteAllQueueStats.RUnlock()
+	return calls
+}
+
+// LoadSiteConfig calls LoadSiteConfigFunc.
+func (mock *EnvMock) LoadSiteConfig(ctx context.Context) (model.SiteConfig, error) {
+	if mock.LoadSiteConfigFunc == nil {
+		panic("EnvMock.LoadSiteConfigFunc: method is nil but Env.LoadSiteConfig was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockLoadSiteConfig.Lock()
+	mock.calls.LoadSiteConfig = append(mock.calls.LoadSiteConfig, callInfo)
+	mock.lockLoadSiteConfig.Unlock()
+	return mock.LoadSiteConfigFunc(ctx)
+}
+
+// LoadSiteConfigCalls gets all the calls that were made to LoadSiteConfig.
+// Check the length with:
+//
+//	len(mockedEnv.LoadSiteConfigCalls())
+func (mock *EnvMock) LoadSiteConfigCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockLoadSiteConfig.RLock()
+	calls = mock.calls.LoadSiteConfig
+	mock.lockLoadSiteConfig.RUnlock()
+	return calls
+}
+
+// Logger calls LoggerFunc.
+func (mock *EnvMock) Logger() logger.Logger {
+	if mock.LoggerFunc == nil {
+		panic("EnvMock.LoggerFunc: method is nil but Env.Logger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogger.Lock()
+	mock.calls.Logger = append(mock.calls.Logger, callInfo)
+	mock.lockLogger.Unlock()
+	return mock.LoggerFunc()
+}
+
+// LoggerCalls gets all the calls that were made to Logger.
+// Check the length with:
+//
+//	len(mockedEnv.LoggerCalls())
+func (mock *EnvMock) LoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogger.RLock()
+	calls = mock.calls.Logger
+	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// PublicURL calls PublicURLFunc.
+func (mock *EnvMock) PublicURL() string {
+	if mock.PublicURLFunc == nil {
+		panic("EnvMock.PublicURLFunc: method is nil but Env.PublicURL was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockPublicURL.Lock()
+	mock.calls.PublicURL = append(mock.calls.PublicURL, callInfo)
+	mock.lockPublicURL.Unlock()
+	return mock.PublicURLFunc()
+}
+
+// PublicURLCalls gets all the calls that were made to PublicURL.
+// Check the length with:
+//
+//	len(mockedEnv.PublicURLCalls())
+func (mock *EnvMock) PublicURLCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockPublicURL.RLock()
+	calls = mock.calls.PublicURL
+	mock.lockPublicURL.RUnlock()
 	return calls
 }
 

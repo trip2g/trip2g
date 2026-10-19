@@ -75,7 +75,7 @@ func searchRerankEnv(t *testing.T, feats features.Features, embURL string) *EnvM
 	return &EnvMock{
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
-		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: noteA, URL: noteA.Permalink, Score: 2.0, HighlightedContent: []string{"alpha"}},
 				{NoteView: noteB, URL: noteB.Permalink, Score: 1.0, HighlightedContent: []string{"beta"}},

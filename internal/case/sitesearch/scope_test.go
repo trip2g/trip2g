@@ -25,14 +25,15 @@ func TestResolve_ReadPatternsOmitOutOfScope(t *testing.T) {
 	env := &EnvMock{
 		CurrentUserTokenFunc: func(_ context.Context) (*usertoken.Data, error) { return &usertoken.Data{}, nil },
 		SiteConfigFunc:       func(_ context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
-		SearchLiveNotesFunc: func(_ string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(_ string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{inScope, outScope}, nil
 		},
-		FeaturesFunc:      func() features.Features { return features.Features{} },
-		OpenAIFunc:        func() *openai.Client { return nil },
-		CanReadNoteFunc:   func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
-		LoggerFunc:        func() logger.Logger { return &logger.DummyLogger{} },
-		LiveNoteViewsFunc: appmodel.NewNoteViews,
+		FeaturesFunc:             func() features.Features { return features.Features{} },
+		OpenAIFunc:               func() *openai.Client { return nil },
+		CanReadNoteFunc:          func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
+		LoggerFunc:               func() logger.Logger { return &logger.DummyLogger{} },
+		LiveNoteViewsFunc:        appmodel.NewNoteViews,
+		SearchHideUnreadableFunc: func() bool { return false },
 	}
 
 	// WebhookScoped must be true: read-pattern enforcement is only triggered for
@@ -48,14 +49,15 @@ func TestResolve_ReadPatternsOmitOutOfScope(t *testing.T) {
 
 func makeSearchEnv(results []appmodel.SearchResult) *EnvMock {
 	return &EnvMock{
-		CurrentUserTokenFunc: func(_ context.Context) (*usertoken.Data, error) { return &usertoken.Data{}, nil },
-		SiteConfigFunc:       func(_ context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
-		SearchLiveNotesFunc:  func(_ string) ([]appmodel.SearchResult, error) { return results, nil },
-		FeaturesFunc:         func() features.Features { return features.Features{} },
-		OpenAIFunc:           func() *openai.Client { return nil },
-		CanReadNoteFunc:      func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
-		LoggerFunc:           func() logger.Logger { return &logger.DummyLogger{} },
-		LiveNoteViewsFunc:    appmodel.NewNoteViews,
+		CurrentUserTokenFunc:     func(_ context.Context) (*usertoken.Data, error) { return &usertoken.Data{}, nil },
+		SiteConfigFunc:           func(_ context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+		SearchLiveNotesFunc:      func(_ string, _, _ int) ([]appmodel.SearchResult, error) { return results, nil },
+		FeaturesFunc:             func() features.Features { return features.Features{} },
+		OpenAIFunc:               func() *openai.Client { return nil },
+		CanReadNoteFunc:          func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
+		LoggerFunc:               func() logger.Logger { return &logger.DummyLogger{} },
+		LiveNoteViewsFunc:        appmodel.NewNoteViews,
+		SearchHideUnreadableFunc: func() bool { return false },
 	}
 }
 

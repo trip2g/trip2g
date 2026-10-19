@@ -42,13 +42,13 @@ func BenchmarkValidateDocs(b *testing.B) {
 			b.Run(name, func(b *testing.B) {
 				log := logger.DummyLogger{}
 				if cache != nil {
-					_, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, ValidateCache: cache})
+					_, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, Validate: true, ValidateCache: cache})
 					if err != nil {
 						b.Fatal(err)
 					}
 				}
 				for b.Loop() {
-					_, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, ValidateCache: cache})
+					_, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, Validate: true, ValidateCache: cache})
 					if err != nil {
 						b.Fatal(err)
 					}

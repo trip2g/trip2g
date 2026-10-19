@@ -54,10 +54,10 @@ var _ sitesearch.Env = &EnvMock{}
 //			SearchHideUnreadableFunc: func() bool {
 //				panic("mock out the SearchHideUnreadable method")
 //			},
-//			SearchLatestNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+//			SearchLatestNotesFunc: func(query string, from int, size int) ([]appmodel.SearchResult, error) {
 //				panic("mock out the SearchLatestNotes method")
 //			},
-//			SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+//			SearchLiveNotesFunc: func(query string, from int, size int) ([]appmodel.SearchResult, error) {
 //				panic("mock out the SearchLiveNotes method")
 //			},
 //			SiteConfigFunc: func(ctx context.Context) appmodel.SiteConfig {
@@ -101,10 +101,10 @@ type EnvMock struct {
 	SearchHideUnreadableFunc func() bool
 
 	// SearchLatestNotesFunc mocks the SearchLatestNotes method.
-	SearchLatestNotesFunc func(query string) ([]appmodel.SearchResult, error)
+	SearchLatestNotesFunc func(query string, from int, size int) ([]appmodel.SearchResult, error)
 
 	// SearchLiveNotesFunc mocks the SearchLiveNotes method.
-	SearchLiveNotesFunc func(query string) ([]appmodel.SearchResult, error)
+	SearchLiveNotesFunc func(query string, from int, size int) ([]appmodel.SearchResult, error)
 
 	// SiteConfigFunc mocks the SiteConfig method.
 	SiteConfigFunc func(ctx context.Context) appmodel.SiteConfig
@@ -151,11 +151,19 @@ type EnvMock struct {
 		SearchLatestNotes []struct {
 			// Query is the query argument value.
 			Query string
+			// From is the from argument value.
+			From int
+			// Size is the size argument value.
+			Size int
 		}
 		// SearchLiveNotes holds details about calls to the SearchLiveNotes method.
 		SearchLiveNotes []struct {
 			// Query is the query argument value.
 			Query string
+			// From is the from argument value.
+			From int
+			// Size is the size argument value.
+			Size int
 		}
 		// SiteConfig holds details about calls to the SiteConfig method.
 		SiteConfig []struct {
@@ -463,19 +471,23 @@ func (mock *EnvMock) SearchHideUnreadableCalls() []struct {
 }
 
 // SearchLatestNotes calls SearchLatestNotesFunc.
-func (mock *EnvMock) SearchLatestNotes(query string) ([]appmodel.SearchResult, error) {
+func (mock *EnvMock) SearchLatestNotes(query string, from int, size int) ([]appmodel.SearchResult, error) {
 	if mock.SearchLatestNotesFunc == nil {
 		panic("EnvMock.SearchLatestNotesFunc: method is nil but Env.SearchLatestNotes was just called")
 	}
 	callInfo := struct {
 		Query string
+		From  int
+		Size  int
 	}{
 		Query: query,
+		From:  from,
+		Size:  size,
 	}
 	mock.lockSearchLatestNotes.Lock()
 	mock.calls.SearchLatestNotes = append(mock.calls.SearchLatestNotes, callInfo)
 	mock.lockSearchLatestNotes.Unlock()
-	return mock.SearchLatestNotesFunc(query)
+	return mock.SearchLatestNotesFunc(query, from, size)
 }
 
 // SearchLatestNotesCalls gets all the calls that were made to SearchLatestNotes.
@@ -484,9 +496,13 @@ func (mock *EnvMock) SearchLatestNotes(query string) ([]appmodel.SearchResult, e
 //	len(mockedEnv.SearchLatestNotesCalls())
 func (mock *EnvMock) SearchLatestNotesCalls() []struct {
 	Query string
+	From  int
+	Size  int
 } {
 	var calls []struct {
 		Query string
+		From  int
+		Size  int
 	}
 	mock.lockSearchLatestNotes.RLock()
 	calls = mock.calls.SearchLatestNotes
@@ -495,19 +511,23 @@ func (mock *EnvMock) SearchLatestNotesCalls() []struct {
 }
 
 // SearchLiveNotes calls SearchLiveNotesFunc.
-func (mock *EnvMock) SearchLiveNotes(query string) ([]appmodel.SearchResult, error) {
+func (mock *EnvMock) SearchLiveNotes(query string, from int, size int) ([]appmodel.SearchResult, error) {
 	if mock.SearchLiveNotesFunc == nil {
 		panic("EnvMock.SearchLiveNotesFunc: method is nil but Env.SearchLiveNotes was just called")
 	}
 	callInfo := struct {
 		Query string
+		From  int
+		Size  int
 	}{
 		Query: query,
+		From:  from,
+		Size:  size,
 	}
 	mock.lockSearchLiveNotes.Lock()
 	mock.calls.SearchLiveNotes = append(mock.calls.SearchLiveNotes, callInfo)
 	mock.lockSearchLiveNotes.Unlock()
-	return mock.SearchLiveNotesFunc(query)
+	return mock.SearchLiveNotesFunc(query, from, size)
 }
 
 // SearchLiveNotesCalls gets all the calls that were made to SearchLiveNotes.
@@ -516,9 +536,13 @@ func (mock *EnvMock) SearchLiveNotes(query string) ([]appmodel.SearchResult, err
 //	len(mockedEnv.SearchLiveNotesCalls())
 func (mock *EnvMock) SearchLiveNotesCalls() []struct {
 	Query string
+	From  int
+	Size  int
 } {
 	var calls []struct {
 		Query string
+		From  int
+		Size  int
 	}
 	mock.lockSearchLiveNotes.RLock()
 	calls = mock.calls.SearchLiveNotes
