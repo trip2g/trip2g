@@ -124,6 +124,7 @@ import (
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/admin/updatewebhook"
 	"trip2g/internal/case/calculatechangeselectors"
+	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/convertnoteviewtotgpost"
@@ -3584,25 +3585,38 @@ func (r *userResolver) SubgraphAccesses(ctx context.Context, obj *db.User) ([]db
 
 // FavoriteNotes is the resolver for the favoriteNotes field.
 func (r *userResolver) FavoriteNotes(ctx context.Context, obj *db.User) ([]model.PublicNote, error) {
-	// Get user's favorite notes
-	favoriteRows, err := r.env(ctx).ListUserFavoriteNotes(ctx, obj.ID)
+	env := r.env(ctx)
+
+	favoriteRows, err := env.ListUserFavoriteNotes(ctx, obj.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list user favorite notes: %w", err)
 	}
 
-	nvs := r.env(ctx).LiveNoteViews()
+	canRead, err := canreadnote.NewReader(ctx, env)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create note reader: %w", err)
+	}
 
-	favoriteNotes := make([]model.PublicNote, len(favoriteRows))
+	nvs := env.LiveNoteViews()
 
-	for i, row := range favoriteRows {
+	favoriteNotes := make([]model.PublicNote, 0, len(favoriteRows))
+
+	for _, row := range favoriteRows {
 		note := nvs.GetByPathID(row.PathID)
 		if note == nil {
 			continue
 		}
 
-		publicNote := model.ConvertNoteToPublic(note)
+		readable, readErr := canRead(note)
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to check note access: %w", readErr)
+		}
 
-		favoriteNotes[i] = *publicNote
+		if !readable {
+			continue
+		}
+
+		favoriteNotes = append(favoriteNotes, *model.ConvertNoteToPublic(note))
 	}
 
 	return favoriteNotes, nil

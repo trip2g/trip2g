@@ -109,6 +109,7 @@ import (
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/admin/updatewebhook"
 	"trip2g/internal/case/calculatechangeselectors"
+	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/convertnoteviewtotgpost"
@@ -243,6 +244,7 @@ type Env interface {
 
 	LatestNoteViews() *model.NoteViews
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
+	canreadnote.Env
 	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
 	AllLiveNotes(ctx context.Context) ([]db.AllLiveNotesRow, error)
 	calculatechangeselectors.Env
