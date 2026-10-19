@@ -39,6 +39,8 @@ const queryPrelude = `local notes = std.parseJson(std.extVar("notes")), params =
 
 type queryNote struct {
 	Path      string         `json:"path"`
+	PathID    int64          `json:"path_id"`
+	VersionID int64          `json:"version_id"`
 	Title     string         `json:"title"`
 	Permalink string         `json:"permalink"`
 	Meta      map[string]any `json:"meta"`
@@ -166,7 +168,11 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 		return nil, fmt.Errorf("failed to compact query result: %w", err)
 	}
 
-	return &model.NoteQueryPayload{Result: json.RawMessage(compact.Bytes())}, nil
+	payload := model.NoteQueryPayload{
+		Result: json.RawMessage(compact.Bytes()),
+		Notes:  newRowNotes(ctx, env, nvs),
+	}
+	return &payload, nil
 }
 
 // findQuery looks the query up by vault path, then like a wikilink.
@@ -185,8 +191,9 @@ func findQuery(nvs *appmodel.NoteViews, query string) *appmodel.NoteView {
 
 // queryNotes is the query's `notes` in path order, with frontmatter after
 // patches: the notes the caller can read, or with all set every note plus
-// `readable`. System notes (`_…`) and `search: false` notes are left out, as
-// in other listings.
+// `readable`. System notes (`_…`) and files without a markdown AST are left
+// out. `search: false` notes stay: it hides a note from search, not from
+// queries, and their meta carries `search: false` for a program to filter on.
 func queryNotes(read canreadnote.Reader, nvs *appmodel.NoteViews, all bool) ([]byte, error) {
 	paths := make([]string, 0, len(nvs.PathMap))
 	for path := range nvs.PathMap {
@@ -197,7 +204,7 @@ func queryNotes(read canreadnote.Reader, nvs *appmodel.NoteViews, all bool) ([]b
 	notes := make([]queryNote, 0, len(paths))
 	for _, path := range paths {
 		note := nvs.PathMap[path]
-		if note.IsSystem() || note.ExcludeSearch || note.Ast() == nil {
+		if !queryable(note) {
 			continue
 		}
 
@@ -216,6 +223,8 @@ func queryNotes(read canreadnote.Reader, nvs *appmodel.NoteViews, all bool) ([]b
 
 		qn := queryNote{
 			Path:      note.Path,
+			PathID:    note.PathID,
+			VersionID: note.VersionID,
 			Title:     note.Title,
 			Permalink: note.Permalink,
 			Meta:      meta,
@@ -231,6 +240,12 @@ func queryNotes(read canreadnote.Reader, nvs *appmodel.NoteViews, all bool) ([]b
 		return nil, fmt.Errorf("failed to marshal notes: %w", err)
 	}
 	return out, nil
+}
+
+// queryable reports whether a note can be in `notes`: not a system note and a
+// markdown file.
+func queryable(note *appmodel.NoteView) bool {
+	return !note.IsSystem() && note.Ast() != nil
 }
 
 // finite replaces NaN and ±Inf, which YAML allows and JSON doesn't, with nil,

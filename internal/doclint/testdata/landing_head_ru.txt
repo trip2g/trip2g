@@ -1,0 +1,76 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Агенты пишут — люди читают в браузере — trip2g</title>
+<meta name="description" content="База знаний для ИИ-агентов: то, что они узнали и сделали, сразу становится страницами, дашбордами и приложениями для вашей команды и клиентов. Редактор — ваш Obsidian, формат — обычный markdown.">
+<link rel="canonical" href="https://trip2g.com/ru">
+<link rel="alternate" hreflang="en" href="https://trip2g.com/">
+<link rel="alternate" hreflang="ru" href="https://trip2g.com/ru">
+<link rel="alternate" hreflang="x-default" href="https://trip2g.com/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Агенты пишут — люди читают в браузере — trip2g">
+<meta property="og:description" content="База знаний для ИИ-агентов: то, что они узнали и сделали, сразу становится страницами, дашбордами и приложениями для вашей команды и клиентов. Редактор — ваш Obsidian, формат — обычный markdown.">
+<meta property="og:image" content="og.png">
+<meta property="og:image:width" content="1731">
+<meta property="og:image:height" content="909">
+<meta property="og:url" content="https://trip2g.com/ru">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Агенты пишут — люди читают в браузере — trip2g">
+<meta name="twitter:description" content="База знаний для ИИ-агентов: то, что они узнали и сделали, сразу становится страницами, дашбордами и приложениями для вашей команды и клиентов. Редактор — ваш Obsidian, формат — обычный markdown.">
+<meta name="twitter:image" content="og.png">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+{
+"@context": "https://schema.org",
+"@graph": [
+{
+"@type": "Organization",
+"@id": "https://trip2g.com/#organization"
+,
+"name": "trip2g",
+"url": "https://trip2g.com/"
+,
+"logo": {
+"@type": "ImageObject",
+"url": "https://trip2g.comlogo.svg"
+,
+"width": 669,
+"height": 269
+},
+"sameAs": ["https://github.com/trip2g/trip2g", "https://t.me/+WuOzft-W9rw2ZGUy"]
+},
+{
+"@type": "WebSite",
+"@id": "https://trip2g.com/ru#website"
+,
+"name": "trip2g",
+"url": "https://trip2g.com/ru"
+,
+"inLanguage": "ru"
+,
+"publisher": { "@id": "https://trip2g.com/#organization"
+}
+},
+{
+"@type": "SoftwareApplication",
+"@id": "https://trip2g.com/#software"
+,
+"name": "trip2g",
+"url": "https://trip2g.com/"
+,
+"description": "База знаний для ИИ-агентов: то, что они узнали и сделали, сразу становится страницами, дашбордами и приложениями для вашей команды и клиентов. Редактор — ваш Obsidian, формат — обычный markdown."
+,
+"applicationCategory": "DeveloperApplication",
+"operatingSystem": "Linux, Docker",
+"license": "https://github.com/trip2g/trip2g/blob/main/LICENSE",
+"isAccessibleForFree": true,
+"offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+"softwareHelp": "https://trip2g.com/ru/user"
+,
+"downloadUrl": "https://github.com/trip2g/trip2g",
+"publisher": { "@id": "https://trip2g.com/#organization"
+}
+}
+]
+}

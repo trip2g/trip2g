@@ -31,6 +31,16 @@ func load(t *testing.T, sources map[string]string) *appmodel.NoteViews {
 	return nvs
 }
 
+// withoutNotes drops a payload's row note resolver so the payload compares by
+// its result.
+func withoutNotes(t *testing.T, res model.NoteQueryOrErrorPayload) {
+	t.Helper()
+	if p, ok := res.(*model.NoteQueryPayload); ok {
+		require.NotNil(t, p.Notes)
+		p.Notes = nil
+	}
+}
+
 func query(src string) string {
 	return "---\ntype: note-query\nfree: true\n---\n```jsonnet\n" + src + "\n```\n"
 }
@@ -101,9 +111,9 @@ func TestResolve(t *testing.T) {
 			observed: "unknown error",
 		},
 		{
-			name:     "notes skip unreadable, system, search: false and non-markdown files",
+			name:     "notes skip unreadable, system and non-markdown files but keep search: false",
 			input:    model.NoteQueryInput{Query: "queries/paths.md"},
-			expected: &model.NoteQueryPayload{Result: json.RawMessage(`["blog/a.md","blog/b.md","odd.md"]`)},
+			expected: &model.NoteQueryPayload{Result: json.RawMessage(`["blog/a.md","blog/b.md","odd.md","unlisted.md"]`)},
 			observed: "queries/paths.md ok",
 		},
 		{
@@ -167,6 +177,7 @@ func TestResolve(t *testing.T) {
 
 			got, err := runnotequery.Resolve(context.Background(), env, tt.input)
 			require.NoError(t, err)
+			withoutNotes(t, got)
 			if diff := pretty.Diff(tt.expected, got); len(diff) > 0 {
 				t.Errorf("mismatch:\n%s\ngot: %# v", diff, pretty.Formatter(got))
 			}
@@ -197,6 +208,7 @@ func TestResolveSignedInLooksUpSubgraphsOnce(t *testing.T) {
 
 	got, err := runnotequery.Resolve(context.Background(), env, model.NoteQueryInput{Query: "queries/titles.md"})
 	require.NoError(t, err)
+	withoutNotes(t, got)
 	require.Equal(t, &model.NoteQueryPayload{Result: json.RawMessage(`["Free","General","Premium"]`)}, got)
 	require.Len(t, env.ListActiveUserSubgraphsCalls(), 1)
 }

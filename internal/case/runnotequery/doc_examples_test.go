@@ -22,9 +22,9 @@ import (
 
 const demoVault = "testdata/vault"
 
-// TestDocExamples runs the demo queries from the user docs as a guest (only
-// free notes are readable) and as an admin.
-func TestDocExamples(t *testing.T) {
+// loadDemoVault loads the demo vault with ids, as a synced vault has them.
+func loadDemoVault(t *testing.T) *appmodel.NoteViews {
+	t.Helper()
 	var srcs []mdloader.SourceFile
 	err := filepath.WalkDir(demoVault, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -35,7 +35,8 @@ func TestDocExamples(t *testing.T) {
 			return readErr
 		}
 		rel, _ := filepath.Rel(demoVault, p)
-		srcs = append(srcs, mdloader.SourceFile{Path: filepath.ToSlash(rel), Content: content})
+		id := int64(len(srcs) + 1)
+		srcs = append(srcs, mdloader.SourceFile{Path: filepath.ToSlash(rel), PathID: id, VersionID: 100 + id, Content: content})
 		return nil
 	})
 	require.NoError(t, err)
@@ -43,6 +44,13 @@ func TestDocExamples(t *testing.T) {
 	log := logger.TestLogger{}
 	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
 	require.NoError(t, err)
+	return nvs
+}
+
+// TestDocExamples runs the demo queries from the user docs as a guest (only
+// free notes are readable) and as an admin.
+func TestDocExamples(t *testing.T) {
+	nvs := loadDemoVault(t)
 
 	run := func(admin bool, query, params string) string {
 		env := &runnotequery.EnvMock{
@@ -86,14 +94,47 @@ func TestDocExamples(t *testing.T) {
 		{false, "[[latest]]", `{"limit": 2}`, `["Go on the web","Web basics"]`},
 		{false, "[[latest]]", ``, `["Go on the web","Web basics","Hello, Go"]`},
 		{false, "[[task_counts]]", ``, `{"done":1,"todo":2}`},
-		{false, "[[folder_counts]]", ``, `{"blog":3,"queries":5,"tasks":3}`},
-		{true, "[[folder_counts]]", ``, `{"blog":4,"queries":5,"tasks":3}`},
+		{false, "[[folder_counts]]", ``, `{"blog":3,"queries":6,"tasks":3}`},
+		{true, "[[folder_counts]]", ``, `{"blog":4,"queries":6,"tasks":3}`},
 		{false, "[[teaser]]", ``, `{"locked":1,"open":["Go on the web","Hello, Go","Web basics"],"signedIn":false}`},
 		{true, "[[teaser]]", ``, `{"locked":0,"open":["Go on the web","Hello, Go","Members only","Web basics"],"signedIn":true}`},
 	}
 	for _, tt := range tests {
 		require.JSONEq(t, tt.expected, run(tt.admin, tt.query, tt.params), "%s %s admin=%v", tt.query, tt.params, tt.admin)
 	}
+}
+
+// TestDocRowsExample resolves the rows of the `newest` example the way
+// `rows { note { title } }` does.
+func TestDocRowsExample(t *testing.T) {
+	nvs := loadDemoVault(t)
+
+	titles := func(user *usertoken.Data) []string {
+		env := &runnotequery.EnvMock{
+			LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
+			ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
+			CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
+			CurrentUserTokenFunc:      func(context.Context) (*usertoken.Data, error) { return user, nil },
+		}
+		res, err := runnotequery.Resolve(context.Background(), env, model.NoteQueryInput{Query: "[[newest]]"})
+		require.NoError(t, err)
+		payload, ok := res.(*model.NoteQueryPayload)
+		require.True(t, ok, "%#v", res)
+
+		rows, err := runnotequery.Rows(payload)
+		require.NoError(t, err)
+		var out []string
+		for i := range rows {
+			note, noteErr := runnotequery.RowNote(&rows[i])
+			require.NoError(t, noteErr)
+			require.NotNil(t, note)
+			out = append(out, note.Title)
+		}
+		return out
+	}
+
+	require.Equal(t, []string{"Go on the web", "Web basics", "Hello, Go"}, titles(nil))
+	require.Equal(t, []string{"Members only", "Go on the web", "Web basics"}, titles(&usertoken.Data{ID: 1, Role: "admin"}))
 }
 
 // TestDocSnippets keeps the examples on the user pages identical to the demo
@@ -103,7 +144,7 @@ func TestDocSnippets(t *testing.T) {
 		doc, err := os.ReadFile("../../../docs/" + page + ".md")
 		require.NoError(t, err)
 
-		for _, name := range []string{"by_tag", "latest", "task_counts", "folder_counts", "teaser"} {
+		for _, name := range []string{"by_tag", "latest", "task_counts", "folder_counts", "teaser", "newest"} {
 			src, readErr := os.ReadFile(demoVault + "/queries/" + name + ".md")
 			require.NoError(t, readErr)
 

@@ -1,0 +1,76 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>One tool, nine doors — trip2g</title>
+<meta name="description" content="Nine ways people use trip2g: a site from Obsidian, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
+<link rel="canonical" href="https://trip2g.com/en/circle">
+<link rel="alternate" hreflang="en" href="https://trip2g.com/en/circle">
+<link rel="alternate" hreflang="ru" href="https://trip2g.com/ru/circle">
+<link rel="alternate" hreflang="x-default" href="https://trip2g.com/en/circle">
+<meta property="og:type" content="website">
+<meta property="og:title" content="One tool, nine doors — trip2g">
+<meta property="og:description" content="Nine ways people use trip2g: a site from Obsidian, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
+<meta property="og:image" content="og.png">
+<meta property="og:image:width" content="1731">
+<meta property="og:image:height" content="909">
+<meta property="og:url" content="https://trip2g.com/en/circle">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="One tool, nine doors — trip2g">
+<meta name="twitter:description" content="Nine ways people use trip2g: a site from Obsidian, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
+<meta name="twitter:image" content="og.png">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+{
+"@context": "https://schema.org",
+"@graph": [
+{
+"@type": "Organization",
+"@id": "https://trip2g.com/#organization"
+,
+"name": "trip2g",
+"url": "https://trip2g.com/"
+,
+"logo": {
+"@type": "ImageObject",
+"url": "https://trip2g.comlogo.svg"
+,
+"width": 669,
+"height": 269
+},
+"sameAs": ["https://github.com/trip2g/trip2g", "https://t.me/+WuOzft-W9rw2ZGUy"]
+},
+{
+"@type": "WebSite",
+"@id": "https://trip2g.com/en/circle#website"
+,
+"name": "trip2g",
+"url": "https://trip2g.com/en/circle"
+,
+"inLanguage": "en"
+,
+"publisher": { "@id": "https://trip2g.com/#organization"
+}
+},
+{
+"@type": "SoftwareApplication",
+"@id": "https://trip2g.com/#software"
+,
+"name": "trip2g",
+"url": "https://trip2g.com/"
+,
+"description": "Nine ways people use trip2g: a site from Obsidian, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS."
+,
+"applicationCategory": "DeveloperApplication",
+"operatingSystem": "Linux, Docker",
+"license": "https://github.com/trip2g/trip2g/blob/main/LICENSE",
+"isAccessibleForFree": true,
+"offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+"softwareHelp": "https://trip2g.com/en/user"
+,
+"downloadUrl": "https://github.com/trip2g/trip2g",
+"publisher": { "@id": "https://trip2g.com/#organization"
+}
+}
+]
+}

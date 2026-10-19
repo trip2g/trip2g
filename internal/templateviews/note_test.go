@@ -9,6 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNote_Dir(t *testing.T) {
+	tests := map[string]string{
+		"en/circle/garden.md": "en/circle/",
+		"en/circle/_index.md": "en/circle/",
+		"blog/post.md":        "blog/",
+		"about.md":            "",
+		"a/b/c/d.md":          "a/b/c/",
+	}
+	for path, expected := range tests {
+		require.Equal(t, expected, NewNote(&model.NoteView{Path: path}).Dir(), path)
+	}
+}
+
 func TestNote_HTMLString_MainDomainDomainHTML(t *testing.T) {
 	// Regression test: HTMLString() must use DomainHTML[""] on the main domain
 	// (domainHost == ""). Previously, the guard `domainHost != ""` caused it
