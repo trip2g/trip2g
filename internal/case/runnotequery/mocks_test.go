@@ -7,6 +7,7 @@ import (
 	"context"
 	"sync"
 	"time"
+	"trip2g/internal/case/canreadnote"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
@@ -21,6 +22,9 @@ var _ Env = &EnvMock{}
 //
 //		// make and configure a mocked Env
 //		mockedEnv := &EnvMock{
+//			CachedQueryNotesFunc: func(generation uint64, class canreadnote.Class, all bool, build func() ([]byte, error)) ([]byte, error) {
+//				panic("mock out the CachedQueryNotes method")
+//			},
 //			CurrentFederatedScopeFunc: func(ctx context.Context) ([]string, bool) {
 //				panic("mock out the CurrentFederatedScope method")
 //			},
@@ -43,6 +47,9 @@ var _ Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CachedQueryNotesFunc mocks the CachedQueryNotes method.
+	CachedQueryNotesFunc func(generation uint64, class canreadnote.Class, all bool, build func() ([]byte, error)) ([]byte, error)
+
 	// CurrentFederatedScopeFunc mocks the CurrentFederatedScope method.
 	CurrentFederatedScopeFunc func(ctx context.Context) ([]string, bool)
 
@@ -60,6 +67,17 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CachedQueryNotes holds details about calls to the CachedQueryNotes method.
+		CachedQueryNotes []struct {
+			// Generation is the generation argument value.
+			Generation uint64
+			// Class is the class argument value.
+			Class canreadnote.Class
+			// All is the all argument value.
+			All bool
+			// Build is the build argument value.
+			Build func() ([]byte, error)
+		}
 		// CurrentFederatedScope holds details about calls to the CurrentFederatedScope method.
 		CurrentFederatedScope []struct {
 			// Ctx is the ctx argument value.
@@ -92,11 +110,56 @@ type EnvMock struct {
 			ParamsBytes int
 		}
 	}
+	lockCachedQueryNotes        sync.RWMutex
 	lockCurrentFederatedScope   sync.RWMutex
 	lockCurrentUserToken        sync.RWMutex
 	lockLatestNoteViews         sync.RWMutex
 	lockListActiveUserSubgraphs sync.RWMutex
 	lockObserveNoteQuery        sync.RWMutex
+}
+
+// CachedQueryNotes calls CachedQueryNotesFunc.
+func (mock *EnvMock) CachedQueryNotes(generation uint64, class canreadnote.Class, all bool, build func() ([]byte, error)) ([]byte, error) {
+	if mock.CachedQueryNotesFunc == nil {
+		panic("EnvMock.CachedQueryNotesFunc: method is nil but Env.CachedQueryNotes was just called")
+	}
+	callInfo := struct {
+		Generation uint64
+		Class      canreadnote.Class
+		All        bool
+		Build      func() ([]byte, error)
+	}{
+		Generation: generation,
+		Class:      class,
+		All:        all,
+		Build:      build,
+	}
+	mock.lockCachedQueryNotes.Lock()
+	mock.calls.CachedQueryNotes = append(mock.calls.CachedQueryNotes, callInfo)
+	mock.lockCachedQueryNotes.Unlock()
+	return mock.CachedQueryNotesFunc(generation, class, all, build)
+}
+
+// CachedQueryNotesCalls gets all the calls that were made to CachedQueryNotes.
+// Check the length with:
+//
+//	len(mockedEnv.CachedQueryNotesCalls())
+func (mock *EnvMock) CachedQueryNotesCalls() []struct {
+	Generation uint64
+	Class      canreadnote.Class
+	All        bool
+	Build      func() ([]byte, error)
+} {
+	var calls []struct {
+		Generation uint64
+		Class      canreadnote.Class
+		All        bool
+		Build      func() ([]byte, error)
+	}
+	mock.lockCachedQueryNotes.RLock()
+	calls = mock.calls.CachedQueryNotes
+	mock.lockCachedQueryNotes.RUnlock()
+	return calls
 }
 
 // CurrentFederatedScope calls CurrentFederatedScopeFunc.

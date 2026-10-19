@@ -55,6 +55,7 @@ func TestDocExamples(t *testing.T) {
 	run := func(admin bool, query, params string) string {
 		env := &runnotequery.EnvMock{
 			LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
+			CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
 			ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
 			CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 			CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
@@ -112,6 +113,7 @@ func TestDocRowsExample(t *testing.T) {
 	titles := func(user *usertoken.Data) []string {
 		env := &runnotequery.EnvMock{
 			LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
+			CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
 			ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
 			CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 			CurrentUserTokenFunc:      func(context.Context) (*usertoken.Data, error) { return user, nil },

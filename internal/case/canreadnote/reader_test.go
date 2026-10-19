@@ -35,13 +35,17 @@ func TestNewReaderMatchesResolve(t *testing.T) {
 		subgraphs []string
 		federated []string
 		lookups   int
+		class     canreadnote.Class
 	}{
-		{name: "guest", ctx: context.Background()},
-		{name: "admin", ctx: context.Background(), token: &usertoken.Data{ID: 1, Role: "admin"}},
-		{name: "subscriber", ctx: context.Background(), token: &usertoken.Data{ID: 2}, subgraphs: []string{"premium"}, lookups: 1},
-		{name: "user without subscriptions", ctx: context.Background(), token: &usertoken.Data{ID: 3}, lookups: 1},
-		{name: "scoped token", ctx: scoped},
-		{name: "federated", ctx: context.Background(), federated: []string{"premium"}},
+		{name: "guest", ctx: context.Background(), class: "guest"},
+		{name: "admin", ctx: context.Background(), token: &usertoken.Data{ID: 1, Role: "admin"}, class: "admin"},
+		{
+			name: "subscriber", ctx: context.Background(), token: &usertoken.Data{ID: 2},
+			subgraphs: []string{"premium", "other", "premium"}, lookups: 1, class: "user:other\npremium",
+		},
+		{name: "user without subscriptions", ctx: context.Background(), token: &usertoken.Data{ID: 3}, lookups: 1, class: "user:"},
+		{name: "scoped token", ctx: scoped, class: "scoped:premium.md"},
+		{name: "federated", ctx: context.Background(), federated: []string{"premium"}, class: "federated:premium"},
 	}
 
 	for _, tt := range tests {
@@ -66,7 +70,7 @@ func TestNewReaderMatchesResolve(t *testing.T) {
 			}
 			before := len(env.ListActiveUserSubgraphsCalls())
 
-			read, err := canreadnote.NewReader(tt.ctx, env)
+			read, class, err := canreadnote.NewReader(tt.ctx, env)
 			require.NoError(t, err)
 
 			var got []bool
@@ -77,6 +81,7 @@ func TestNewReaderMatchesResolve(t *testing.T) {
 			}
 
 			require.Equal(t, want, got)
+			require.Equal(t, tt.class, class)
 			require.Equal(t, tt.lookups, len(env.ListActiveUserSubgraphsCalls())-before)
 		})
 	}

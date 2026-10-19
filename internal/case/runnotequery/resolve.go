@@ -26,6 +26,7 @@ import (
 type Env interface {
 	canreadnote.Env
 	LatestNoteViews() *appmodel.NoteViews
+	CachedQueryNotes(generation uint64, class canreadnote.Class, all bool, build func() ([]byte, error)) ([]byte, error)
 	// ObserveNoteQuery records the call's duration for metrics and logs a
 	// slow one. query is the query note's path, or "unknown".
 	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
@@ -107,7 +108,7 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 		return &model.ErrorPayload{Message: errQueryNotFound}, nil
 	}
 
-	read, err := canreadnote.NewReader(ctx, env)
+	read, class, err := canreadnote.NewReader(ctx, env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve the viewer: %w", err)
 	}
@@ -138,7 +139,9 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 	// filters. Without it the program sees only readable notes.
 	allNotes := note.RawMeta["all_notes"] == true
 
-	notesJSON, err := queryNotes(read, nvs, allNotes)
+	notesJSON, err := env.CachedQueryNotes(nvs.Generation, class, allNotes, func() ([]byte, error) {
+		return queryNotes(read, nvs, allNotes)
+	})
 	if err != nil {
 		return nil, err
 	}
