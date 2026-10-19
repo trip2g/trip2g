@@ -3,8 +3,9 @@ package frontmatterpatch
 import (
 	"testing"
 
-	jsonnet "github.com/google/go-jsonnet"
 	"github.com/stretchr/testify/require"
+
+	"trip2g/internal/jsonneteval"
 )
 
 // load simulates one note-loader Load: it builds a fresh pre-patch meta copy
@@ -13,7 +14,7 @@ import (
 // input in place, so each load must start from a fresh copy.
 func load(
 	c *ResultCache,
-	vm *jsonnet.VM,
+	vm *jsonneteval.VM,
 	patches []CompiledPatch,
 	patchSetHash, path string,
 	base map[string]interface{},

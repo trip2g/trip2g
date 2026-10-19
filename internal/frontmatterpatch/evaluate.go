@@ -4,20 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 
-	jsonnet "github.com/google/go-jsonnet"
-
 	"trip2g/internal/jsonneteval"
 	"trip2g/internal/yamlutil"
 )
 
 // NewVM creates a new jsonnet VM with safe stack limits.
 // Delegates to jsonneteval so the MaxStack limit has one source of truth.
-func NewVM() *jsonnet.VM {
+func NewVM() *jsonneteval.VM {
 	return jsonneteval.NewVM()
 }
 
 // Evaluate evaluates a compiled patch against raw frontmatter.
-func Evaluate(vm *jsonnet.VM, patch CompiledPatch, rawMeta map[string]interface{}, path string) (map[string]interface{}, error) {
+func Evaluate(vm *jsonneteval.VM, patch CompiledPatch, rawMeta map[string]interface{}, path string) (map[string]interface{}, error) {
 	// Marshal meta to JSON string for ExtVar
 	metaJSON, err := json.Marshal(yamlutil.Normalize(rawMeta))
 	if err != nil {
@@ -44,7 +42,7 @@ func Evaluate(vm *jsonnet.VM, patch CompiledPatch, rawMeta map[string]interface{
 }
 
 // ApplyPatches applies multiple patches to frontmatter in priority order.
-func ApplyPatches(vm *jsonnet.VM, patches []CompiledPatch, path string, rawMeta map[string]interface{}) ApplyResult {
+func ApplyPatches(vm *jsonneteval.VM, patches []CompiledPatch, path string, rawMeta map[string]interface{}) ApplyResult {
 	if rawMeta == nil {
 		rawMeta = map[string]interface{}{}
 	}

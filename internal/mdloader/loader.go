@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/enclavefix"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/image"
+	"trip2g/internal/jsonneteval"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader/callout"
 	"trip2g/internal/mdloader/highlight"
@@ -18,7 +19,6 @@ import (
 	"trip2g/internal/model"
 	"trip2g/internal/obsidiancanvas"
 
-	jsonnet "github.com/google/go-jsonnet"
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 
 	"github.com/yuin/goldmark"
@@ -60,7 +60,7 @@ type loader struct {
 	publicURL string
 
 	frontmatterPatches []frontmatterpatch.CompiledPatch
-	jsonnetVM          *jsonnet.VM
+	jsonnetVM          *jsonneteval.VM
 
 	// patchCache memoizes frontmatter-patch results across reloads (optional).
 	// patchSetHash identifies the merged patch set for this Load and is the

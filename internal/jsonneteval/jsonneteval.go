@@ -1,6 +1,7 @@
 // Package jsonneteval is the single source of truth for evaluating jsonnet
 // snippets against JSON ext-vars (outbound webhook transforms, frontmatter
-// patches). It owns the safe VM stack limit so every caller is consistent.
+// patches, note queries, validators). It owns the VM limits so every caller
+// is consistent.
 package jsonneteval
 
 import (
@@ -19,12 +20,22 @@ import (
 // of leaking file contents into the rendered output. std.trace output is
 // discarded: its author can't read the server's stderr, and anyone who can
 // edit a note could otherwise write to it on every load.
-func NewVM() *jsonnet.VM {
+func NewVM() *VM {
 	vm := jsonnet.MakeVM()
 	vm.MaxStack = 500 // Prevent stack overflow from recursive jsonnet.
 	vm.Importer(&jsonnet.MemoryImporter{})
 	vm.SetTraceOut(io.Discard)
-	return vm
+
+	b := &budget{}
+	installBudget(vm, b)
+
+	return &VM{
+		VM:           vm,
+		MaxDepth:     DefaultMaxDepth,
+		MaxAdditions: DefaultMaxAdditions,
+		Timeout:      DefaultTimeout,
+		budget:       b,
+	}
 }
 
 // EvalJSON evaluates src with the given ext-vars bound via std.extVar and
