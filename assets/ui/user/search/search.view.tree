@@ -45,11 +45,13 @@ $trip2g_user_search_panel $mol_view
 						<= ItemHeader* $mol_view
 							sub /
 								<= Title* $trip2g_user_search_dimmer
-									html <= result_title* \
+									segments <= result_title* /
+									needle <= result_needle* \
 								<= Score* $mol_view
 									sub / <= result_score* @ \Score:
-						<= Content* $mol_view
-							sub <= result_content* /$mol_view
+						<= Content* $trip2g_user_search_dimmer
+							segments <= result_content* /
+							needle <= result_needle* \
 						<= ItemFooter* $mol_view
 							sub /
 								<= ShowPageButton* $mol_view
@@ -59,4 +61,4 @@ $trip2g_user_search_panel $mol_view
 									sub / <= ReadMore @ \Read more
 
 $trip2g_user_search_dimmer $mol_dimmer
-	html \
+	segments /

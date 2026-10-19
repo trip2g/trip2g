@@ -2992,6 +2992,12 @@ export type HideNotesPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type HighlightSegment = {
+  __typename?: 'HighlightSegment';
+  match: Scalars['Boolean']['output'];
+  text: Scalars['String']['output'];
+};
+
 export type IntParamValue = {
   __typename?: 'IntParamValue';
   defaultValue?: Maybe<Scalars['Int']['output']>;
@@ -3882,11 +3888,20 @@ export enum SearchMatchOrigin {
 
 export type SearchResult = {
   __typename?: 'SearchResult';
+  contentSegments: Array<HighlightSegment>;
   document?: Maybe<SearchResultDocument>;
+  /** @deprecated HTML with <mark> around matches. Use contentSegments. */
   highlightedContent: Array<Scalars['String']['output']>;
+  /** @deprecated HTML with <mark> around matches. Use titleSegments. */
   highlightedTitle?: Maybe<Scalars['String']['output']>;
   matchOrigin: SearchMatchOrigin;
+  /**
+   * The matched words as they appear in the note, each once, for highlighting
+   * them on the page.
+   */
+  matchedTerms: Array<Scalars['String']['output']>;
   score: Scalars['Float']['output'];
+  titleSegments: Array<HighlightSegment>;
   url: Scalars['String']['output'];
 };
 
