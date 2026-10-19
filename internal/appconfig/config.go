@@ -111,6 +111,10 @@ type Config struct {
 	FederatedFanoutConcurrency int
 	FederatedFanoutLimit       int
 	FederatedFanoutTimeout     time.Duration
+	// MCPFederationAsset bounds one attachment moved by federated_asset, in
+	// both roles: what this instance serves to a peer and what it relays from one.
+	MCPFederationAssetMaxSize datasize.Size
+	MCPFederationAssetTimeout time.Duration
 
 	CronExecuteWebhooksSchedule string
 	CronTelegramPublishSchedule string
@@ -606,6 +610,12 @@ func (c *Config) defineServerFlags() {
 		"Max peers a blind (no kb_id) federated_search fan-out touches; the rest are reported as skipped (0 = unlimited)")
 	flag.DurationVar(&c.FederatedFanoutTimeout, "federated-fanout-timeout", 5*time.Second,
 		"Per-peer timeout for federated fan-out requests (0 = no extra timeout)")
+	datasize.FlagVar(
+		flag.CommandLine, &c.MCPFederationAssetMaxSize, "mcp-federation-asset-max-size",
+		25*datasize.Megabyte, "Largest note attachment federated_asset serves to a peer or relays from one, e.g. 25MB",
+	)
+	flag.DurationVar(&c.MCPFederationAssetTimeout, "mcp-federation-asset-timeout", time.Minute,
+		"Time one federated_asset transfer from a peer may take, first byte to last")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 	flag.BoolVar(
 		&c.SimpleBackup.BackupOnShutdown,

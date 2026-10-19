@@ -43,6 +43,7 @@ const (
 type Env interface {
 	similarnotes.Env
 	model.FederationClientFactory
+	federatedAssetEnv
 	SearchLatestNotes(query string, from, size int) ([]model.SearchResult, error)
 	SearchLiveNotes(query string, from, size int) ([]model.SearchResult, error)
 	LatestNoteChunks() []model.NoteChunk
@@ -203,6 +204,7 @@ func builtinToolHandlers() map[string]toolHandler {
 		"federated_note_html":       handleFederatedNoteHTML,
 		"federated_expand":          handleFederatedExpand,
 		"federated_instructions":    handleFederatedInstructions,
+		"federated_asset":           handleFederatedAsset,
 		rotateSecretToolName:        handleRotateSecret,
 		"federated_graphql_request": handleFederatedGraphQLRequest,
 		"graphql_introspection": func(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
@@ -797,7 +799,7 @@ func noteHTMLAnswer(env Env, log logger.Logger, id any, note *model.NoteView, ar
 	// from an earlier call; otherwise the same chunk comes back on every read.
 	if len(args.TocPath) > 0 {
 		if _, text, ok := sectionRead(note, args.TocPath); ok {
-			return successResponse(id, textToolResult(text))
+			return successResponse(id, noteReadResult(note, text))
 		}
 		log.Warn("toc_path did not resolve", "path", note.Path, "toc_path", args.TocPath)
 		return errorResponse(id, ErrCodeInvalidParams, sectionNotFoundMessage(note, args.TocPath))
@@ -807,7 +809,7 @@ func noteHTMLAnswer(env Env, log logger.Logger, id any, note *model.NoteView, ar
 	// ~300-token read into the whole-note anti-pattern. Fail loud and cheap.
 	if args.MatchID != "" {
 		if focused, ok := focusedChunkWindow(note, args.MatchID, env.LatestNoteChunks()); ok {
-			return successResponse(id, textToolResult(pointerNoteText(note, focused)))
+			return successResponse(id, noteReadResult(note, pointerNoteText(note, focused)))
 		}
 		log.Warn("match_id did not resolve", "path", note.Path, "match_id", args.MatchID)
 		return errorResponse(id, ErrCodeInvalidParams,
@@ -822,7 +824,7 @@ func noteHTMLAnswer(env Env, log logger.Logger, id any, note *model.NoteView, ar
 			fmt.Sprintf("note %q resolved but has no rendered content", note.Path))
 	}
 
-	return successResponse(id, textToolResult(pointerNoteText(note, string(note.HTML))))
+	return successResponse(id, noteReadResult(note, pointerNoteText(note, string(note.HTML))))
 }
 
 // sectionRead is the one way a section is read by toc_path: note_html and a

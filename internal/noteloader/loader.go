@@ -451,6 +451,7 @@ func buildAssetMap(assets []RawAsset) map[int64]map[string]*model.NoteAssetRepla
 			Hash:         asset.NoteAsset.Sha256Hash,
 			FileName:     asset.NoteAsset.FileName,
 			AbsolutePath: asset.AbsolutePath,
+			Size:         asset.NoteAsset.Size,
 		}
 	}
 

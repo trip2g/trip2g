@@ -276,6 +276,9 @@ func goldenEnv() *EnvMock {
 			{Text: "1", Level: 2, ID: "one"},
 			{Text: "2", Level: 2, ID: "two"},
 		},
+		AssetReplaces: map[string]*appmodel.NoteAssetReplace{
+			"files/meditations.pdf": {ID: 3, Hash: "c0ffee", FileName: "meditations.pdf", Size: 2048},
+		},
 	}
 	// A tool note without the leading-underscore naming convention: the
 	// path-based system-note rule misses it, so it used to surface in search.

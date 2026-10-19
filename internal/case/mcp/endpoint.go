@@ -442,6 +442,8 @@ Tools:
   federated_search, federated_note_html, federated_expand, federated_similar,
     federated_instructions — the same against a connected peer base, addressed by
     kb_id; nested bases are addressed <hub>/<base>.
+  federated_asset — a short-lived download URL for one attachment of a peer's
+    note, named as note_html lists it under assets.
 
 Extend MCP via note frontmatter:
   mcp_method: <name>    — expose a note as an MCP tool; the note's content becomes

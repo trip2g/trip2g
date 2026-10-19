@@ -101,7 +101,7 @@ free: true
 
 ### Кастомные инструменты и дискавери
 
-Любая заметка с полем `mcp_method` в фронтматтере (кроме зарезервированных: `initialize`, `search`, `similar`, `note_html`, `expand`, `federated_search`, `federated_similar`, `federated_note_html`, `federated_expand`) становится вызываемым инструментом. Инструмент автоматически появляется в `tools/list` — никакой дополнительной настройки не нужно.
+Любая заметка с полем `mcp_method` в фронтматтере (кроме зарезервированных: `initialize`, `search`, `similar`, `note_html`, `expand`, `federated_search`, `federated_similar`, `federated_note_html`, `federated_expand`, `federated_instructions`, `federated_asset`) становится вызываемым инструментом. Инструмент автоматически появляется в `tools/list` — никакой дополнительной настройки не нужно.
 
 ```yaml
 ---
