@@ -32,13 +32,13 @@ Adding a point is adding a note. Removing one is deleting a file. The polygon ta
 
 ## A layout that lists its own folder
 
-The page note `en/circle/_index.md` says `layout: mesh/circle`. The layout finds its folder from the note's own path and asks for every note in it:
+The page note `en/circle/_index.md` says `layout: mesh/circle`. The layout takes its folder from the note itself and asks a note query for the points in it:
 
 ```jet
-{{ points := nvs.ByGlob(dir + "*.md").SortByMeta("order").SortBy("Title").All() }}
+{{ points := noteQueryRows("queries/circle_points.md", map("dir", note.Dir())) }}
 ```
 
-Then it skips anything without a `label`, so the page note itself is not a vertex. Links are resolved by path, and each one prints with the target note's title, so retitling an article retitles its link on the wheel.
+The query is a few lines of Jsonnet in a note: the notes directly in that folder that have a `label`, sorted by `order`, each returned as just its `version_id`. The page note has no `label`, so it is not a vertex. For every row the layout calls `row.Note()` and gets the point note back, with its title, text and frontmatter. Links are resolved by path, and each one prints with the target note's title, so retitling an article retitles its link on the wheel.
 
 ## Text for search engines, script for the wheel
 
@@ -57,9 +57,9 @@ Because the drawing depends only on `t`, "reduced motion" is free: draw one fram
 ## Where it pushed back
 
 - **Scripts can't be chosen by name at runtime.** `asset()` only registers static string literals. So the layout has one `<script>` line per animation. A new point that reuses an animation is just a note. A new animation means a new file and a new line in the layout.
-- **No `dirname`.** I got the folder by splitting the path on `/` and slicing off the last piece. It works. It's three lines that a helper should be.
-- **Queries can't filter by a frontmatter field.** I filter inside the loop with `if`. `.Public()` would have been the natural filter, but it drops `noindex` notes, and the point notes are exactly that.
-- **The landing's page shell didn't fit.** The mesh theme's shared shell hardcodes its language links to the home page, so this page writes its own `<head>`.
+- **No `dirname`.** At first I got the folder by splitting the path on `/` and slicing off the last piece. It worked, but it was three lines that a helper should be. Now there is one: `note.Dir()` gives `en/circle/`.
+- **Template queries couldn't filter by a frontmatter field.** So I filtered inside the loop with `if`. `.Public()` would have been the natural filter, but it drops `noindex` notes, and the point notes are exactly that. We hadn't found `noteQuery` at first: a query note filters on any field. Even then it only gave back JSON, so the layout would have had to copy every field it shows into the query, and the rendered text can't be copied at all. Now a query can return only ids, and `noteQueryRows` hands each one back as a note through `.Note()`, with the reader's access checked again. The loop has no `if` left.
+- **The landing's page shell didn't fit.** The mesh theme's shared shell hardcoded its language links to the home page, so this page wrote its own `<head>`. Now the shell builds canonical, hreflang and `og:url` from the page it is given and that page's language twins (`note.LangAlternative()`), and the wheel uses it. Its slim top bar is part of the page, so it stayed.
 - **Captions inside animations are in the script.** The three-act company animation labels its acts in English or Russian by reading the page language. Those strings live in JavaScript, not in a note, which is the one place the "everything is a note" rule bends.
 - **One CSS trap took a while to find.** A fade-in on the text panel used `transform`. With `animation-fill-mode: both`, the transform stayed applied and quietly became the positioning parent of the canvas inside it, so on phones the animation jumped into the middle of the text. Animating only opacity fixed it.
 
