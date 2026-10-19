@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
 	"trip2g/internal/sitemap"
+	"trip2g/internal/templateviews"
 
 	"github.com/blevesearch/bleve/v2"
 )
@@ -409,6 +410,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	if err != nil {
 		return err
 	}
+
+	nvs.RSSFeeds = templateviews.FindRSSFeeds(nvs)
 
 	l.log.Debug("done")
 

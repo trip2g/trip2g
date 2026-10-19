@@ -46,6 +46,37 @@ func NoteViews(n *NVS) *model.NoteViews {
 	return n.nvs
 }
 
+// FindRSSFeeds scans the visible notes for ones whose content_type declares
+// an RSS feed (application/rss+xml, optionally with a charset suffix). The
+// loader stores the result in NoteViews.RSSFeeds so pages don't rescan.
+// A function, not a method, so Jet templates can't reach it.
+func FindRSSFeeds(nvs *model.NoteViews) []model.RSSFeedLink {
+	if nvs == nil {
+		return nil
+	}
+
+	var feeds []model.RSSFeedLink
+	for _, nv := range nvs.VisibleList() {
+		note := NewNote(nv)
+		ct := strings.ToLower(strings.TrimSpace(note.M().GetString("content_type", "")))
+		if !strings.HasPrefix(ct, "application/rss+xml") {
+			continue
+		}
+
+		title := note.M().GetString("rss_title", "")
+		if title == "" {
+			title = note.Title()
+		}
+		if title == "" {
+			title = "RSS"
+		}
+
+		feeds = append(feeds, model.RSSFeedLink{Title: title, Href: note.Permalink()})
+	}
+
+	return feeds
+}
+
 // ByPath is the template-facing NoteByPath. A miss is an untyped nil, so a
 // template can test the result with both {{ if x }} and {{ if x == nil }}.
 func (n *NVS) ByPath(path string) any {
