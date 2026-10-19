@@ -378,7 +378,11 @@ func (s *Server) serveChatCompletion(w http.ResponseWriter, r *http.Request) {
 		s.cfg.Metrics.RecordChange(ch.Kind)
 	}
 
-	resp := buildResponse(req.Model, changes, answer)
+	resp, err := buildResponse(req.Model, changes, answer)
+	if err != nil {
+		writeError(w, http.StatusUnprocessableEntity, "code_execution_error", err.Error())
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
 }
@@ -421,10 +425,13 @@ func (s *Server) logExposedEnv() {
 // tool_call — even an empty answer becomes finish(""). This is the
 // re-execution defense: fleet's stateless loop re-calls codellm (which
 // re-extracts and re-applies every write) unless a finish stops it.
-func buildResponse(model string, changes []webhookutil.AgentChange, answer string) goopenai.ChatCompletionResponse {
+func buildResponse(model string, changes []webhookutil.AgentChange, answer string) (goopenai.ChatCompletionResponse, error) {
 	toolCalls := make([]goopenai.ToolCall, 0, len(changes)+1)
 	for i, ch := range changes {
-		name, args := changeToToolCall(ch)
+		name, args, err := changeToToolCall(ch)
+		if err != nil {
+			return goopenai.ChatCompletionResponse{}, err
+		}
 		toolCalls = append(toolCalls, goopenai.ToolCall{
 			ID:       fmt.Sprintf("call_%d", i),
 			Type:     goopenai.ToolTypeFunction,
@@ -458,22 +465,34 @@ func buildResponse(model string, changes []webhookutil.AgentChange, answer strin
 		// codellm does no token accounting: usage is always zero (matching the
 		// old TokensUsed: 0 for in-process code runs).
 		Usage: goopenai.Usage{},
-	}
+	}, nil
 }
 
-// changeToToolCall maps one AgentChange to a tool name and JSON arguments.
-func changeToToolCall(ch webhookutil.AgentChange) (string, string) {
-	if ch.Kind == webhookutil.AgentChangeKindPatch {
+// changeToToolCall maps one AgentChange to a tool name and JSON arguments. A
+// kind it does not know is an error: guessing write_note would overwrite the
+// note with the change's (likely empty) content.
+func changeToToolCall(ch webhookutil.AgentChange) (string, string, error) {
+	switch ch.Kind {
+	case "", webhookutil.AgentChangeKindWrite:
+		return "write_note", mustJSON(map[string]string{
+			"path":    ch.Path,
+			"content": ch.Content,
+		}), nil
+	case webhookutil.AgentChangeKindPatch:
 		return "patch_note", mustJSON(map[string]string{
 			"path":    ch.Path,
 			"find":    ch.Find,
 			"replace": ch.Replace,
-		})
+		}), nil
+	case webhookutil.AgentChangeKindMeta:
+		return "set_note_meta", mustJSON(map[string]any{
+			"path":  ch.Path,
+			"set":   ch.Set,
+			"unset": ch.Unset,
+		}), nil
+	default:
+		return "", "", fmt.Errorf("change for %s has unknown kind %q", ch.Path, ch.Kind)
 	}
-	return "write_note", mustJSON(map[string]string{
-		"path":    ch.Path,
-		"content": ch.Content,
-	})
 }
 
 func (s *Server) handleModels(w http.ResponseWriter, _ *http.Request) {
