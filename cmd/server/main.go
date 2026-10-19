@@ -145,6 +145,8 @@ type appState struct {
 	*delivercronwebhook.DeliverCronWebhookJob
 	webhookHTTPClient *fasthttp.Client
 	fedHTTPClient     *fasthttp.Client
+	// fedAssetHTTPClient streams attachments from federation peers.
+	fedAssetHTTPClient *fasthttp.Client
 
 	webhookTestCalls []webhookTestCall
 	webhookTestMu    sync.Mutex

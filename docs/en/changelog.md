@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### MCP `federated_asset` hands an agent a peer note's attachment
+
+- **What.** `note_html` and `federated_note_html` list the note's attachments as `assets`, each with `name`, `size` and `sha256`. A new tool, `federated_asset(kb_id, note_path, name)`, returns a five-minute download link on your own hub for one of them; the hub streams the file from the peer as it is downloaded. The peer serves an attachment only of a note the pairing may read.
+- **Why.** An agent could read a peer's note but not the files it links to. The asset URLs in the HTML point at the peer, which the agent may not reach and which wants a federation key the agent must not hold.
+- **How to use.** Call `federated_note_html`, then `federated_asset` with a name from its `assets`, download the link with curl and check the sha256. Files are capped at 25 MB by default (`MCP_FEDERATION_ASSET_MAX_SIZE`). Both instances need this version. See [[en/user/federation#Attachments|Federation]].
+
 ### Note validators check notes against your rules on every sync
 
 - **What.** A note can list validator notes in a new `validate` frontmatter field. A validator is a note with a Jsonnet block that reads the frontmatter and the body's structure (headings, images, links, code blocks) and returns errors and warnings. An error marks the note `CRITICAL`: a sync that pushes notes exits with code 1, and the note shows under Note Warnings in the admin panel. `trip2g lint` reports the same messages without a server. The note is still saved and published.

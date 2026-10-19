@@ -144,6 +144,32 @@ HTTP 200 application/json
         "name": "expand"
       },
       {
+        "description": "Get one attachment of a remote note — a file, not text. Canonical loop: federated_note_html(kb_id, path) -> for each name in its assets: federated_asset(kb_id, note_path=<that path>, name=<name>). Returns the asset's size and sha256 and a short-lived download URL on this server that streams the file from the remote base; fetch it with curl (the URL needs no other credential) and check the sha256. The file itself never comes back in the tool result. Only a directly connected base: kb_id without '/'.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "kb_id": {
+              "type": "string",
+              "description": "Directly connected knowledge base id, as in federated_note_html"
+            },
+            "name": {
+              "type": "string",
+              "description": "One name from that note's assets, copied verbatim, e.g. \"files/attach.zip\""
+            },
+            "note_path": {
+              "type": "string",
+              "description": "The remote note's path, exactly as passed to federated_note_html"
+            }
+          },
+          "required": [
+            "kb_id",
+            "note_path",
+            "name"
+          ]
+        },
+        "name": "federated_asset"
+      },
+      {
         "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
         "inputSchema": {
           "type": "object",
@@ -485,6 +511,32 @@ HTTP 200 application/json
           }
         },
         "name": "expand"
+      },
+      {
+        "description": "Get one attachment of a remote note — a file, not text. Canonical loop: federated_note_html(kb_id, path) -> for each name in its assets: federated_asset(kb_id, note_path=<that path>, name=<name>). Returns the asset's size and sha256 and a short-lived download URL on this server that streams the file from the remote base; fetch it with curl (the URL needs no other credential) and check the sha256. The file itself never comes back in the tool result. Only a directly connected base: kb_id without '/'.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "kb_id": {
+              "type": "string",
+              "description": "Directly connected knowledge base id, as in federated_note_html"
+            },
+            "name": {
+              "type": "string",
+              "description": "One name from that note's assets, copied verbatim, e.g. \"files/attach.zip\""
+            },
+            "note_path": {
+              "type": "string",
+              "description": "The remote note's path, exactly as passed to federated_note_html"
+            }
+          },
+          "required": [
+            "kb_id",
+            "note_path",
+            "name"
+          ]
+        },
+        "name": "federated_asset"
       },
       {
         "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
@@ -870,6 +922,32 @@ HTTP 200 application/json
           }
         },
         "name": "expand"
+      },
+      {
+        "description": "Get one attachment of a remote note — a file, not text. Canonical loop: federated_note_html(kb_id, path) -> for each name in its assets: federated_asset(kb_id, note_path=<that path>, name=<name>). Returns the asset's size and sha256 and a short-lived download URL on this server that streams the file from the remote base; fetch it with curl (the URL needs no other credential) and check the sha256. The file itself never comes back in the tool result. Only a directly connected base: kb_id without '/'.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "kb_id": {
+              "type": "string",
+              "description": "Directly connected knowledge base id, as in federated_note_html"
+            },
+            "name": {
+              "type": "string",
+              "description": "One name from that note's assets, copied verbatim, e.g. \"files/attach.zip\""
+            },
+            "note_path": {
+              "type": "string",
+              "description": "The remote note's path, exactly as passed to federated_note_html"
+            }
+          },
+          "required": [
+            "kb_id",
+            "note_path",
+            "name"
+          ]
+        },
+        "name": "federated_asset"
       },
       {
         "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
@@ -1303,7 +1381,10 @@ HTTP 200 application/json
         "type": "text",
         "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e"
       }
-    ]
+    ],
+    "structuredContent": {
+      "assets": []
+    }
   }
 }
 
@@ -1318,7 +1399,10 @@ HTTP 200 application/json
         "type": "text",
         "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e"
       }
-    ]
+    ],
+    "structuredContent": {
+      "assets": []
+    }
   }
 }
 
@@ -1333,7 +1417,10 @@ HTTP 200 application/json
         "type": "text",
         "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e"
       }
-    ]
+    ],
+    "structuredContent": {
+      "assets": []
+    }
   }
 }
 
@@ -1359,7 +1446,10 @@ HTTP 200 application/json
         "type": "text",
         "text": "\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n"
       }
-    ]
+    ],
+    "structuredContent": {
+      "assets": []
+    }
   }
 }
 
@@ -1532,9 +1622,18 @@ HTTP 200 application/json
     "content": [
       {
         "type": "text",
-        "text": "\u003ch2 id=\"one\"\u003e1\u003c/h2\u003e\u003cp\u003eДуша моя, ужели ты никогда не будешь доброй и простой?\u003c/p\u003e"
+        "text": "\u003ch2 id=\"one\"\u003e1\u003c/h2\u003e\u003cp\u003eДуша моя, ужели ты никогда не будешь доброй и простой?\u003c/p\u003e\n\nAssets (name · bytes · sha256):\n- files/meditations.pdf · 2048 · c0ffee"
       }
-    ]
+    ],
+    "structuredContent": {
+      "assets": [
+        {
+          "name": "files/meditations.pdf",
+          "size": 2048,
+          "sha256": "c0ffee"
+        }
+      ]
+    }
   }
 }
 
@@ -1859,6 +1958,32 @@ HTTP 200 application/json
           }
         },
         "name": "expand"
+      },
+      {
+        "description": "Get one attachment of a remote note — a file, not text. Canonical loop: federated_note_html(kb_id, path) -> for each name in its assets: federated_asset(kb_id, note_path=<that path>, name=<name>). Returns the asset's size and sha256 and a short-lived download URL on this server that streams the file from the remote base; fetch it with curl (the URL needs no other credential) and check the sha256. The file itself never comes back in the tool result. Only a directly connected base: kb_id without '/'.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "kb_id": {
+              "type": "string",
+              "description": "Directly connected knowledge base id, as in federated_note_html"
+            },
+            "name": {
+              "type": "string",
+              "description": "One name from that note's assets, copied verbatim, e.g. \"files/attach.zip\""
+            },
+            "note_path": {
+              "type": "string",
+              "description": "The remote note's path, exactly as passed to federated_note_html"
+            }
+          },
+          "required": [
+            "kb_id",
+            "note_path",
+            "name"
+          ]
+        },
+        "name": "federated_asset"
       },
       {
         "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
@@ -2202,6 +2327,32 @@ HTTP 200 application/json
           }
         },
         "name": "expand"
+      },
+      {
+        "description": "Get one attachment of a remote note — a file, not text. Canonical loop: federated_note_html(kb_id, path) -> for each name in its assets: federated_asset(kb_id, note_path=<that path>, name=<name>). Returns the asset's size and sha256 and a short-lived download URL on this server that streams the file from the remote base; fetch it with curl (the URL needs no other credential) and check the sha256. The file itself never comes back in the tool result. Only a directly connected base: kb_id without '/'.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "kb_id": {
+              "type": "string",
+              "description": "Directly connected knowledge base id, as in federated_note_html"
+            },
+            "name": {
+              "type": "string",
+              "description": "One name from that note's assets, copied verbatim, e.g. \"files/attach.zip\""
+            },
+            "note_path": {
+              "type": "string",
+              "description": "The remote note's path, exactly as passed to federated_note_html"
+            }
+          },
+          "required": [
+            "kb_id",
+            "note_path",
+            "name"
+          ]
+        },
+        "name": "federated_asset"
       },
       {
         "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",
@@ -2556,6 +2707,32 @@ HTTP 200 application/json
           }
         },
         "name": "expand"
+      },
+      {
+        "description": "Get one attachment of a remote note — a file, not text. Canonical loop: federated_note_html(kb_id, path) -> for each name in its assets: federated_asset(kb_id, note_path=<that path>, name=<name>). Returns the asset's size and sha256 and a short-lived download URL on this server that streams the file from the remote base; fetch it with curl (the URL needs no other credential) and check the sha256. The file itself never comes back in the tool result. Only a directly connected base: kb_id without '/'.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "kb_id": {
+              "type": "string",
+              "description": "Directly connected knowledge base id, as in federated_note_html"
+            },
+            "name": {
+              "type": "string",
+              "description": "One name from that note's assets, copied verbatim, e.g. \"files/attach.zip\""
+            },
+            "note_path": {
+              "type": "string",
+              "description": "The remote note's path, exactly as passed to federated_note_html"
+            }
+          },
+          "required": [
+            "kb_id",
+            "note_path",
+            "name"
+          ]
+        },
+        "name": "federated_asset"
       },
       {
         "description": "Walk a remote note's table of contents level by level inside a connected knowledge base (progressive disclosure), same as expand. Canonical call: federated_expand(kb_id=..., path=<result.note_path>, toc_path=[...]). Omit toc_path for the top level, or pass a toc_path to list that node's subsections. A section with subsections lists them; a section without subsections is returned in full, as federated_note_html would return it — has_children on each listed child says where that happens.",

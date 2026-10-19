@@ -296,6 +296,8 @@ The peer is free to define a DSL inside `query` (telegram adapter accepts JSON D
 
 **`content[0].text`:** `"Loaded note <id-or-path>"` or a brief plain-text excerpt (≤500 chars).
 
+trip2g also returns `assets` in `structuredContent`: `[{"name", "size", "sha256"}]`, one entry per attachment of the note. `name` is the attachment's path as the note's markdown writes it, and the only form the asset endpoint (§6.5) accepts. A peer without attachments may omit it.
+
 ### 6.3 `similar`
 
 **Arguments:** at least one of `pid`, `note_id`, `path`, `href`. Optional `limit`.
@@ -314,6 +316,24 @@ Peers MAY chain to their own peers. If a peer chooses NOT to (telegram adapter d
 ```
 
 **Do NOT return JSON-RPC `error: -32601 method not found`** — hub treats peers as opaque; the method exists in the schema, the peer just chose not to walk further. Empty CallToolResult is correct.
+
+### 6.5 Attachments: `POST <base>/_system/mcp/federation/asset`
+
+Not a tool: an attachment is bytes, not a `CallToolResult`. The endpoint sits beside `/_system/mcp`, like the pairing description at `/_system/mcp/federation`.
+
+**Request:** `Content-Type: application/json`, body `{"note_path": "<note path>", "name": "<asset name>"}`, optionally `"describe": true`. Signed with the federation JWT of §2.2, and the token MUST carry `bh`, the base64url SHA-256 of the body. The peer refuses a token without `bh` here: the body is what names the file, so a token that does not cover it would open every attachment the pairing can read.
+
+**Authorization:** the note at `note_path` must be readable by the key's subgraph grant — the same check as `note_html` — and `name` must be one of that note's `assets`. A note outside the grant, an unknown note and an unknown name all answer `404`, so a refusal does not reveal what exists.
+
+**Responses:**
+- `200` with `"describe": true`: `{"name", "size", "sha256"}` as JSON.
+- `200` otherwise: the file, with `Content-Length` (required — the hub refuses a body of unknown size) and a `Content-Type` from the file name.
+- `400` — `note_path` or `name` missing.
+- `401` — the token does not verify or does not bind the body. The hub retries once with its previous key, as for tool calls.
+- `404` — see Authorization.
+- `413` — the attachment is over the peer's `MCP_FEDERATION_ASSET_MAX_SIZE`.
+
+The hub applies its own `MCP_FEDERATION_ASSET_MAX_SIZE` as well, and `MCP_FEDERATION_ASSET_TIMEOUT` to the whole transfer. Its `federated_asset` tool asks with `describe` first, then hands its caller a five-minute link on the hub (`/_system/mcp/federated_asset?link=…`) that streams the file from the peer when fetched.
 
 ---
 

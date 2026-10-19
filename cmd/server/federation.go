@@ -5,13 +5,20 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"trip2g/internal/case/mcp"
+	"trip2g/internal/case/system/federatedassetrelay"
 	"trip2g/internal/db"
+	"trip2g/internal/federatedassetlink"
 	"trip2g/internal/federation"
 	"trip2g/internal/metrics"
 	"trip2g/internal/model"
+	"trip2g/internal/ssrfsafe"
+
+	"github.com/valyala/fasthttp"
 )
 
 func (a *app) FederationSecretByKBURL(ctx context.Context, kbURL string) (db.FederationSecret, bool, error) {
@@ -50,9 +57,61 @@ func (a *app) HasFederationSecretForKBURL(ctx context.Context, kbURL string) (bo
 }
 
 func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Federation, error) {
+	peer, err := a.federationPeer(reqCtx, kbID)
+	if err != nil {
+		return nil, err
+	}
+	return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode, a.config.MCPFederationTimeout), nil
+}
+
+func (a *app) FederationAssetFetcher(reqCtx context.Context, kbID string) (model.FederationAssetFetcher, error) {
+	peer, err := a.federationPeer(reqCtx, kbID)
+	if err != nil {
+		return nil, err
+	}
+	limits := federation.AssetLimits{
+		MaxSize: a.FederatedAssetMaxSize(),
+		Timeout: a.config.MCPFederationAssetTimeout,
+	}
+	return federation.NewAssetClient(peer, a.fedAssetHTTPClient, limits), nil
+}
+
+func (a *app) FederatedAssetMaxSize() int64 {
+	return int64(a.config.MCPFederationAssetMaxSize.Bytes())
+}
+
+func (a *app) FederatedAssetLinkSecret() string {
+	return a.config.UserToken.Secret
+}
+
+// FederatedAssetDownload issues the link federated_asset hands its caller.
+func (a *app) FederatedAssetDownload(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error) {
+	expiresAt := time.Now().Add(federatedAssetLinkTTL)
+	link := federatedassetlink.Link{KBID: kbID, NotePath: params.NotePath, Name: params.Name}
+
+	token, err := federatedassetlink.Sign(link, a.FederatedAssetLinkSecret(), expiresAt)
+	if err != nil {
+		return mcp.FederatedAssetDownload{}, err
+	}
+
+	query := url.Values{federatedassetrelay.LinkParam: {token}}
+	download := mcp.FederatedAssetDownload{
+		URL:       strings.TrimRight(a.PublicURL(), "/") + federatedassetrelay.Path + "?" + query.Encode(),
+		ExpiresAt: expiresAt,
+	}
+	return download, nil
+}
+
+// federatedAssetLinkTTL is long enough for an agent to run curl after the tool
+// call, and short enough that a link left in a transcript is soon worthless.
+const federatedAssetLinkTTL = 5 * time.Minute
+
+// federationPeer is the outbound side of the pairing kbID names: the KB-note's
+// URL and the keys this instance signs with.
+func (a *app) federationPeer(reqCtx context.Context, kbID string) (model.FederationPeer, error) {
 	nvs := a.LatestNoteViews()
 	if nvs == nil {
-		return nil, fmt.Errorf("federation kb %q not found", kbID)
+		return model.FederationPeer{}, fmt.Errorf("federation kb %q not found", kbID)
 	}
 
 	depth := mcp.FederationDepthFromContext(reqCtx)
@@ -63,7 +122,7 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 		}
 
 		if kb.MaxDepth > 0 && depth >= kb.MaxDepth {
-			return nil, fmt.Errorf("federation kb %q max depth %d exceeded", kbID, kb.MaxDepth)
+			return model.FederationPeer{}, fmt.Errorf("federation kb %q max depth %d exceeded", kbID, kb.MaxDepth)
 		}
 
 		peer := model.FederationPeer{
@@ -79,27 +138,27 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 		}
 		secretRow, ok, err := a.FederationSecretByKBURL(dbCtx, kb.URL)
 		if err != nil {
-			return nil, fmt.Errorf("get federation secret by kb url: %w", err)
+			return model.FederationPeer{}, fmt.Errorf("get federation secret by kb url: %w", err)
 		}
 		if ok {
 			keyErr := a.loadPeerKeys(&peer, secretRow)
 			if keyErr != nil {
-				return nil, keyErr
+				return model.FederationPeer{}, keyErr
 			}
 		} else {
 			configured, confErr := a.HasFederationSecretForKBURL(dbCtx, kb.URL)
 			if confErr != nil {
-				return nil, fmt.Errorf("check federation secret history by kb url: %w", confErr)
+				return model.FederationPeer{}, fmt.Errorf("check federation secret history by kb url: %w", confErr)
 			}
 			if configured {
-				return nil, fmt.Errorf("no active federation secret for kb_id %q; the configured secret may be revoked", kbID)
+				return model.FederationPeer{}, fmt.Errorf("no active federation secret for kb_id %q; the configured secret may be revoked", kbID)
 			}
 		}
 
-		return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode, a.config.MCPFederationTimeout), nil
+		return peer, nil
 	}
 
-	return nil, fmt.Errorf("federation kb %q not found", kbID)
+	return model.FederationPeer{}, fmt.Errorf("federation kb %q not found", kbID)
 }
 
 func (a *app) FederationMaxDepth() int {
@@ -174,4 +233,19 @@ func (a *app) loadPeerKeys(peer *model.FederationPeer, row db.FederationSecret) 
 	peer.PrevSecret = previous
 
 	return nil
+}
+
+// newFederatedAssetHTTPClient builds the client attachments stream through.
+// fasthttp buffers a streamed response whole when it fits MaxResponseBodySize
+// and streams it only beyond that, so the cap here is a buffer size, not a
+// limit: the size limit is AssetLimits.MaxSize.
+func newFederatedAssetHTTPClient(allowPrivate bool) *fasthttp.Client {
+	c := &fasthttp.Client{
+		StreamResponseBody:  true,
+		MaxResponseBodySize: 64 << 10,
+	}
+	if !allowPrivate {
+		c.DialTimeout = ssrfsafe.DialTimeout
+	}
+	return c
 }
