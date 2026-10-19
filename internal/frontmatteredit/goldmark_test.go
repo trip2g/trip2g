@@ -1,6 +1,8 @@
 package frontmatteredit_test
 
 import (
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -48,4 +50,38 @@ func TestApplyIsReadBackByGoldmarkMeta(t *testing.T) {
 			require.Equal(t, tt.want, meta.Get(ctx))
 		})
 	}
+}
+
+// requireNothingLost reads both notes the way trip2g does and checks that every
+// key the edit did not name kept its value and every set key is there.
+func requireNothingLost(t *testing.T, before, after string, set map[string]any, unset []string) {
+	t.Helper()
+
+	was := readMeta(t, before)
+	now := readMeta(t, after)
+	for key, value := range was {
+		_, named := set[key]
+		if named || slices.Contains(unset, key) {
+			continue
+		}
+		require.Contains(t, now, key)
+		require.Equal(t, value, now[key], key)
+	}
+	for key := range set {
+		require.Contains(t, now, key)
+	}
+	for _, key := range unset {
+		require.NotContains(t, now, key)
+	}
+}
+
+func readMeta(t *testing.T, content string) map[string]any {
+	t.Helper()
+
+	source := []byte(strings.TrimPrefix(content, "\uFEFF"))
+	ctx := parser.NewContext()
+	goldmark.New(goldmark.WithExtensions(meta.Meta)).Parser().Parse(text.NewReader(source), parser.WithContext(ctx))
+	got, err := meta.TryGet(ctx)
+	require.NoError(t, err)
+	return got
 }

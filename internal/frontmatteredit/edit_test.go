@@ -194,6 +194,78 @@ func TestApply(t *testing.T) {
 			set:     map[string]any{"a: b": 1, "true": "x"},
 			want:    "---\n'a: b': 1\n\"true\": x\n---\n",
 		},
+		{
+			name:    "line separator inside a quoted value: set the next key",
+			content: "---\ntitle: \"a\u2028b\"\nstatus: draft\ntags: [x]\n---\nBody\n",
+			set:     map[string]any{"status": "done"},
+			want:    "---\ntitle: \"a\u2028b\"\nstatus: done\ntags: [x]\n---\nBody\n",
+		},
+		{
+			name:    "line separator inside a quoted value: unset the next key",
+			content: "---\ntitle: \"a\u2028b\"\nstatus: draft\ntags: [x]\n---\nBody\n",
+			unset:   []string{"status"},
+			want:    "---\ntitle: \"a\u2028b\"\ntags: [x]\n---\nBody\n",
+		},
+		{
+			name:    "paragraph separator inside a quoted value",
+			content: "---\ntitle: \"a\u2029b\"\nstatus: draft\ntags: [x]\n---\nBody\n",
+			set:     map[string]any{"status": "done"},
+			want:    "---\ntitle: \"a\u2029b\"\nstatus: done\ntags: [x]\n---\nBody\n",
+		},
+		{
+			name:    "next line character inside a quoted value",
+			content: "---\ntitle: \"a\u0085b\"\nstatus: draft\ntags: [x]\n---\nBody\n",
+			unset:   []string{"status"},
+			want:    "---\ntitle: \"a\u0085b\"\ntags: [x]\n---\nBody\n",
+		},
+		{
+			name:    "a lone carriage return separates keys",
+			content: "---\ntitle: a\rstatus: draft\n---\nBody\n",
+			set:     map[string]any{"status": "done"},
+			want:    "---\ntitle: a\rstatus: done\n---\nBody\n",
+		},
+		{
+			name:    "a new key goes before the ... document end marker",
+			content: "---\na: 1\n...\nignored: true\n---\nBody\n",
+			set:     map[string]any{"b": 2},
+			want:    "---\na: 1\nb: 2\n...\nignored: true\n---\nBody\n",
+		},
+		{
+			name:    "an indented comment before a key stays when the key above is replaced",
+			content: "---\na: 1\n  # about b\nb: 2\n---\n",
+			set:     map[string]any{"a": 5},
+			want:    "---\na: 5\n  # about b\nb: 2\n---\n",
+		},
+		{
+			name:    "an indented comment before a key stays when the key above is unset",
+			content: "---\na: 1\n  # about b\nb: 2\n---\n",
+			unset:   []string{"a"},
+			want:    "---\n  # about b\nb: 2\n---\n",
+		},
+		{
+			name:    "a # line inside a block scalar stays with the scalar",
+			content: "---\ndesc: |\n  x\n  # not a comment\n---\n",
+			set:     map[string]any{"b": 2},
+			want:    "---\ndesc: |\n  x\n  # not a comment\nb: 2\n---\n",
+		},
+		{
+			name:    "keep-chomped block scalar keeps its trailing blank lines",
+			content: "---\ndesc: |+\n  x\n\n\n---\n",
+			set:     map[string]any{"b": 2},
+			want:    "---\ndesc: |+\n  x\n\n\nb: 2\n---\n",
+		},
+		{
+			name:    "keep-chomped block scalar lets go of the comment after its blank lines",
+			content: "---\ndesc: |+\n  x\n\n# about b\nb: 1\n---\n",
+			set:     map[string]any{"desc": "y"},
+			want:    "---\ndesc: \"y\"\n# about b\nb: 1\n---\n",
+		},
+		{
+			name:    "an anchor nobody refers to is replaced",
+			content: "---\nbase: &b 1\nother: 2\n---\n",
+			unset:   []string{"base"},
+			want:    "---\nother: 2\n---\n",
+		},
 	}
 
 	for _, tt := range tests {
@@ -201,6 +273,7 @@ func TestApply(t *testing.T) {
 			got, err := frontmatteredit.Apply(tt.content, tt.set, tt.unset)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
+			requireNothingLost(t, tt.content, got, tt.set, tt.unset)
 		})
 	}
 }
@@ -261,12 +334,67 @@ func TestApplyRefuses(t *testing.T) {
 			set:     map[string]any{"a": 2},
 			wantErr: frontmatteredit.ErrInvalidYAML,
 		},
+		{
+			name:    "key with a newline",
+			content: "---\na: 1\n---\n",
+			set:     map[string]any{"a\nb": 1},
+			wantErr: frontmatteredit.ErrControlInKey,
+		},
+		{
+			name:    "unset key with a tab",
+			content: "---\na: 1\n---\n",
+			unset:   []string{"a\tb"},
+			wantErr: frontmatteredit.ErrControlInKey,
+		},
+		{
+			name:    "key with a line separator",
+			content: "---\na: 1\n---\n",
+			set:     map[string]any{"a\u2028b": 1},
+			wantErr: frontmatteredit.ErrControlInKey,
+		},
+		{
+			name:    "indented top-level mapping",
+			content: "---\n  a: 1\n  b: 2\n---\nBody\n",
+			set:     map[string]any{"c": 3},
+			wantErr: frontmatteredit.ErrIndentedMapping,
+		},
+		{
+			name:    "unset an anchored value an alias refers to",
+			content: "---\nbase: &b 1\nother: *b\n---\n",
+			unset:   []string{"base"},
+			wantErr: frontmatteredit.ErrAlias,
+		},
+		{
+			name:    "replace an anchored value an alias refers to",
+			content: "---\nbase: &b 1\nother: *b\n---\n",
+			set:     map[string]any{"base": 2},
+			wantErr: frontmatteredit.ErrAlias,
+		},
+		{
+			name:    "merge key alias",
+			content: "---\nbase: &b {x: 1}\nother:\n  <<: *b\n---\n",
+			set:     map[string]any{"c": 1},
+			wantErr: frontmatteredit.ErrAlias,
+		},
+		{
+			name:    "a value with a fence line would end the frontmatter early",
+			content: "---\na: 1\n---\nBody\n",
+			set:     map[string]any{"summary": "one\n---\ntwo"},
+			wantErr: frontmatteredit.ErrUnsafeEdit,
+		},
+		{
+			name:    "a key goldmark-meta reads under another name",
+			content: "---\n~: x\n---\nBody\n",
+			set:     map[string]any{"a": 1},
+			wantErr: frontmatteredit.ErrUnsafeEdit,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := frontmatteredit.Apply(tt.content, tt.set, tt.unset)
+			got, err := frontmatteredit.Apply(tt.content, tt.set, tt.unset)
 			require.ErrorIs(t, err, tt.wantErr)
+			require.Empty(t, got)
 		})
 	}
 }
