@@ -68,6 +68,14 @@ const maxQueryComplexity = 30
 // vault, so one operation fits at most two of them.
 const noteQueryComplexity = 10
 
+// searchComplexity prices search like noteQuery: each call runs a full-text
+// and vector lookup, so one operation fits at most two of them.
+const searchComplexity = 10
+
+// searchDocumentComplexity prices a search result's document, which carries
+// the whole note.
+const searchDocumentComplexity = 5
+
 // costedSchema adds field costs to the schema's default of 1 per field;
 // gqlgen.yml has omit_complexity, so the generated schema prices none.
 type costedSchema struct {
@@ -77,6 +85,12 @@ type costedSchema struct {
 func (s costedSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, args map[string]any) (int, bool) {
 	if typeName == "Query" && field == "noteQuery" {
 		return noteQueryComplexity + childComplexity, true
+	}
+	if typeName == "Query" && field == "search" {
+		return searchComplexity + childComplexity, true
+	}
+	if typeName == "SearchResult" && field == "document" {
+		return searchDocumentComplexity + childComplexity, true
 	}
 	return s.ExecutableSchema.Complexity(ctx, typeName, field, childComplexity, args)
 }

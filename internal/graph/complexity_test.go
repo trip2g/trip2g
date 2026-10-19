@@ -32,3 +32,28 @@ func TestNoteQueryComplexity(t *testing.T) {
 	require.LessOrEqual(t, cost(2), maxQueryComplexity)
 	require.Greater(t, cost(3), maxQueryComplexity)
 }
+
+func TestSearchComplexity(t *testing.T) {
+	es := costedSchema{generated.NewExecutableSchema(generated.Config{Resolvers: &Resolver{}})}
+
+	cost := func(calls int, selection string) int {
+		var q strings.Builder
+		q.WriteString("{")
+		for i := range calls {
+			q.WriteString(" s" + string(rune('a'+i)) + `: search(input: {query: "q"}) ` + selection)
+		}
+		q.WriteString(" }")
+
+		doc, errs := gqlparser.LoadQueryWithRules(es.Schema(), q.String(), rules.NewDefaultRules())
+		require.Empty(t, errs)
+		return complexity.Calculate(context.Background(), es, doc.Operations[0], map[string]any{})
+	}
+
+	const urls = `{ nodes { url } }`
+	const documents = `{ nodes { document { ... on PublicNote { html } } } }`
+
+	require.LessOrEqual(t, cost(2, urls), maxQueryComplexity)
+	require.Greater(t, cost(3, urls), maxQueryComplexity)
+	require.LessOrEqual(t, cost(1, documents), maxQueryComplexity)
+	require.Greater(t, cost(2, documents), maxQueryComplexity)
+}
