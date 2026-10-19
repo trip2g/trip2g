@@ -38,6 +38,13 @@ func resolveNeededFiles( //nolint:nonamedreturns // named returns used throughou
 	visited := make(map[string]bool)
 	addedFiles := make(map[string]bool)
 
+	own := &blockNameFinder{}
+	safeWalk(pageView, own)
+	definedInPage := make(map[string]bool, len(own.names))
+	for _, name := range own.names {
+		definedInPage[name] = true
+	}
+
 	yf := &yieldNameFinder{}
 	safeWalk(pageView, yf)
 	queue := yf.names
@@ -52,6 +59,9 @@ func resolveNeededFiles( //nolint:nonamedreturns // named returns used throughou
 		visited[blockName] = true
 
 		entry, ok := registry[blockName]
+		if !ok && definedInPage[blockName] {
+			continue
+		}
 		if !ok {
 			warnings = append(warnings, model.NoteWarning{
 				Level:   model.NoteWarningWarning,
