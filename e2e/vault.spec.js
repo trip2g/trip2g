@@ -504,14 +504,9 @@ test.describe('Broken Layout Handling', () => {
     // 2. Navigate to page with broken layout
     await page.goto('/broken_layout_test');
 
-    // Admin should see error message
-    await expect(page.getByText('Layout Error: broken-layout')).toBeVisible();
-
-    // Error details should be visible
-    await expect(page.getByText('parsing')).toBeVisible();
-
-    // Content should still be visible below the error
-    await expect(page.getByText('This page uses a broken layout')).toBeVisible();
+    // Admin gets the 500 page naming the layout and the parse error
+    await expect(page.getByText('Layout "broken-layout" failed to parse.')).toBeVisible();
+    await expect(page.getByText('parsing command')).toBeVisible();
   });
 });
 
