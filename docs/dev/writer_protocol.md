@@ -5,7 +5,7 @@ The trip2g writer protocol is the complete API surface for writing notes. Three 
 | Mutation | Kind | Concurrency | Auto-commits | Used by |
 |---|---|---|---|---|
 | `pushNotes` | Full content, blind upsert | Write-locked, no per-note check | Optional (`skipCommit`) | Obsidian plugin, memcli sidecar |
-| `updateNotes` | Per-change: upsert / patch / hide | Per-note `expectedHash` | Always (upsert/patch) | Kanban board, AI agents (direct), in-browser editors |
+| `updateNotes` | Per-change: upsert / patch / meta / hide | Per-note `expectedHash` | Always (upsert/patch/meta) | Kanban board, AI agents (direct), in-browser editors |
 | `hideNotes` | Soft-delete batch | None | Immediate | Obsidian plugin (server-only paths) |
 | `commitNotes` | Flush staged `pushNotes` batch | None | Yes | Obsidian plugin (explicit commit flow) |
 
@@ -97,7 +97,7 @@ mutation PushNotes($input: PushNotesInput!) {
 
 ## updateNotes
 
-Fine-grained batch of per-note changes. Each element in `changes` is a tagged union with exactly one field set: `upsert`, `patch`, or `hide`.
+Fine-grained batch of per-note changes. Each element in `changes` is a tagged union with exactly one field set: `upsert`, `patch`, `meta`, or `hide`.
 
 ```graphql
 input NoteChangeUpsertInput {
@@ -113,6 +113,13 @@ input NoteChangePatchInput {
   expectedHash: String
 }
 
+input NoteChangeMetaInput {
+  path: String!
+  set: Map              # top-level frontmatter keys to add or replace
+  unset: [String!]      # top-level frontmatter keys to remove
+  expectedHash: String
+}
+
 input NoteChangeHideInput {
   path: String!
 }
@@ -121,6 +128,7 @@ input NoteChangeInput {
   upsert: NoteChangeUpsertInput
   patch: NoteChangePatchInput
   hide: NoteChangeHideInput
+  meta: NoteChangeMetaInput
 }
 
 input UpdateNotesInput {
@@ -132,7 +140,7 @@ input UpdateNotesInput {
 
 ```graphql
 type UpdateNotesSuccessPayload {
-  paths: [String!]!  # paths that were touched (upsert, patch, and hide)
+  paths: [String!]!  # paths that were touched (upsert, patch, meta, and hide)
 }
 
 type UpdateNotesHashMismatchPayload {
@@ -152,7 +160,7 @@ union UpdateNotesOrErrorPayload =
   | ErrorPayload
 ```
 
-The mutation processes `changes` in order. The first change that returns a non-success payload aborts the batch and returns that payload immediately. Only content changes (upsert and patch) call `HandleLatestNotesAfterSave` afterward; hide-only batches still reload the in-memory index but skip webhook processing.
+The mutation processes `changes` in order. The first change that returns a non-success payload aborts the batch and returns that payload immediately. Only content changes (upsert, patch and meta) call `HandleLatestNotesAfterSave` afterward; hide-only batches still reload the in-memory index but skip webhook processing.
 
 **Note:** the resolver does not hold the note write mutex. Do not include the same `path` more than once in a single `updateNotes` call — the second operation would read stale in-memory content.
 
@@ -166,6 +174,13 @@ The mutation processes `changes` in order. The first change that returns a non-s
 - `find == replace` after substitution → `InsertNote` detects identical content and skips creating a new version (idempotent)
 - `replace` may be empty string (deletes the found substring)
 - `find` is a literal string, not a regular expression
+
+**meta** — sets and unsets top-level frontmatter keys of an existing note by splicing text (`internal/frontmatteredit`): every untouched key line, comment and the body come out byte for byte. Rules:
+- The note must already exist; a missing path → `ErrorPayload { message: "note not found: {path}" }`
+- `set` and `unset` cannot both be empty, a key cannot be in both, and a key cannot be blank or contain a control character
+- Frontmatter that cannot be edited key by key (invalid YAML, a `{...}` flow mapping, indented keys, aliases, a duplicate key, no closing fence) → `ErrorPayload`
+- The result is parsed back with yaml.v3 and with yaml.v2 (what goldmark-meta reads); if any untouched key reads differently or a set key does not hold its value, nothing is saved → `ErrorPayload`
+- Setting the scalar a key already holds keeps the line, so `InsertNote` sees identical content and skips the version
 
 **hide** — soft-deletes the path (sets `hidden_at` / `hidden_by`). Does NOT trigger webhooks from `updateNotes` (see code comment in `internal/case/updatenotes/resolve.go`); use the standalone `hideNotes` mutation when webhook notification is required.
 
@@ -191,7 +206,7 @@ union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
 
 ## expectedHash: Optimistic Concurrency
 
-`expectedHash` is available on `upsert` and `patch` changes. It is a Go pointer (`*string`), so the GraphQL field is truly optional: omitting it and setting it to `null` are equivalent.
+`expectedHash` is available on `upsert`, `patch` and `meta` changes. It is a Go pointer (`*string`), so the GraphQL field is truly optional: omitting it and setting it to `null` are equivalent.
 
 | `expectedHash` value | Behaviour |
 |---|---|
@@ -267,7 +282,7 @@ Uses `updateNotes` upsert with `expectedHash: ""` for the "create new file" flow
 
 When a change webhook fires with `pass_api_key: true`, the delivery payload includes `api_token` (a shortapitoken JWT with scoped `read_patterns` / `write_patterns`). Agents can use this token to call `updateNotes` or `pushNotes` directly for programmatic writes.
 
-Agents that return changes synchronously in their HTTP response body use the **webhook agent response format** (`internal/webhookutil/agentresponse.go`). This is a separate code path from the GraphQL mutations: the server parses `changes` and calls `InsertNote` directly. The current format supports only full content replacement:
+Agents that return changes synchronously in their HTTP response body use the **webhook agent response format** (`internal/webhookutil/agentresponse.go`). This is a separate code path from the GraphQL mutations: the server parses `changes` and calls `InsertNote` directly. A change without `kind` (or `"kind": "write"`) replaces the full content:
 
 ```json
 {
@@ -283,7 +298,7 @@ Agents that return changes synchronously in their HTTP response body use the **w
 }
 ```
 
-This response format does not yet support `patch` or `hide` operations. For those, agents should use the shortapitoken to call `updateNotes` directly via `/_system/graphql`.
+`"kind": "patch"` with `find` / `replace` and `"kind": "meta"` with `set` / `unset` follow the updateNotes patch and meta rules; `expected_hash` applies to every kind. The format has no `hide`; for that, agents use the shortapitoken to call `updateNotes` directly via `/_system/graphql`.
 
 ---
 
