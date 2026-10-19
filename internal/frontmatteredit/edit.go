@@ -424,11 +424,46 @@ func encodeNewKeys(set map[string]any, seen map[string]bool, nl string) (string,
 
 func valueNode(value any) (*yaml.Node, error) {
 	var node yaml.Node
-	err := node.Encode(normalize(value))
+	err := node.Encode(quoteUnsafeStrings(normalize(value)))
 	if err != nil {
 		return nil, fmt.Errorf("frontmatteredit: encode value: %w", err)
 	}
 	return &node, nil
+}
+
+// quoteUnsafeStrings double-quotes the strings a block scalar cannot carry: one
+// that starts with a line break, which a block scalar drops, and one with a line
+// of dashes only, which goldmark-meta would take for the closing fence.
+func quoteUnsafeStrings(value any) any {
+	switch v := value.(type) {
+	case string:
+		if !needsDoubleQuotes(v) {
+			return v
+		}
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Style: yaml.DoubleQuotedStyle, Value: v}
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for key, item := range v {
+			out[key] = quoteUnsafeStrings(item)
+		}
+		return out
+	case []any:
+		out := make([]any, len(v))
+		for i, item := range v {
+			out[i] = quoteUnsafeStrings(item)
+		}
+		return out
+	default:
+		return value
+	}
+}
+
+func needsDoubleQuotes(s string) bool {
+	if breakLen(s) > 0 {
+		return true
+	}
+	lines := splitYAMLLines(s)
+	return len(lines) > 1 && slices.ContainsFunc(lines, isFence)
 }
 
 func encodePair(key, value *yaml.Node, nl string) (string, error) {

@@ -110,6 +110,42 @@ func TestApply(t *testing.T) {
 			want:    "---\nsummary: |\n  one\n  two\n---\n",
 		},
 		{
+			name:    "a string that starts with a line break is double-quoted",
+			content: "---\na: 1\n---\nB\n",
+			set:     map[string]any{"v": "\nx"},
+			want:    "---\na: 1\nv: \"\\nx\"\n---\nB\n",
+		},
+		{
+			name:    "a lone line break is double-quoted",
+			content: "---\na: 1\n---\nB\n",
+			set:     map[string]any{"v": "\n"},
+			want:    "---\na: 1\nv: \"\\n\"\n---\nB\n",
+		},
+		{
+			name:    "a line break on both ends is double-quoted",
+			content: "---\na: 1\n---\nB\n",
+			set:     map[string]any{"v": "\nx\n"},
+			want:    "---\na: 1\nv: \"\\nx\\n\"\n---\nB\n",
+		},
+		{
+			name:    "a line break before an indented line is double-quoted",
+			content: "---\na: 1\n---\nB\n",
+			set:     map[string]any{"v": "\n x"},
+			want:    "---\na: 1\nv: \"\\n x\"\n---\nB\n",
+		},
+		{
+			name:    "a string with a fence line is double-quoted",
+			content: "---\na: 1\n---\nBody\n",
+			set:     map[string]any{"summary": "one\n---\ntwo"},
+			want:    "---\na: 1\nsummary: \"one\\n---\\ntwo\"\n---\nBody\n",
+		},
+		{
+			name:    "a nested string with an indented fence line is double-quoted",
+			content: "---\na: 1\n---\nBody\n",
+			set:     map[string]any{"m": map[string]any{"s": []any{"one\n  ----  \ntwo\n"}}},
+			want:    "---\na: 1\nm:\n  s:\n    - \"one\\n  ----  \\ntwo\\n\"\n---\nBody\n",
+		},
+		{
 			name:    "list value",
 			content: "---\ntitle: Hello\ntags: [old]\n---\n",
 			set:     map[string]any{"tags": []any{"a", "b"}},
@@ -375,12 +411,6 @@ func TestApplyRefuses(t *testing.T) {
 			content: "---\nbase: &b {x: 1}\nother:\n  <<: *b\n---\n",
 			set:     map[string]any{"c": 1},
 			wantErr: frontmatteredit.ErrAlias,
-		},
-		{
-			name:    "a value with a fence line would end the frontmatter early",
-			content: "---\na: 1\n---\nBody\n",
-			set:     map[string]any{"summary": "one\n---\ntwo"},
-			wantErr: frontmatteredit.ErrUnsafeEdit,
 		},
 		{
 			name:    "a key goldmark-meta reads under another name",
