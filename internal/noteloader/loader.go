@@ -136,6 +136,9 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 		version:    version,
 		config:     config,
 		patchCache: frontmatterpatch.NewResultCache(),
+
+		nvs:     model.NewNoteViews(),
+		layouts: &model.Layouts{},
 	}
 }
 
@@ -332,7 +335,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		// new/updated patches are applied (routes, etc. derived from patches would
 		// otherwise remain stale for content-unchanged notes).
 		NoteCache: func(source mdloader.SourceFile) *model.NoteView {
-			if patchesChanged || l.nvs == nil {
+			if patchesChanged {
 				return nil
 			}
 			old, ok := l.nvs.PathMap[source.Path]
@@ -563,9 +566,7 @@ func (l *Loader) ReloadEmbeddings(ctx context.Context) error {
 
 	l.Lock()
 	defer l.Unlock()
-	if l.nvs != nil {
-		l.assignEmbeddings(l.nvs, embeddingMap)
-	}
+	l.assignEmbeddings(l.nvs, embeddingMap)
 	l.chunks = chunks
 
 	return nil
