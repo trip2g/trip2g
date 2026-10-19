@@ -52,8 +52,10 @@ func BenchmarkResolveDocs(b *testing.B) {
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
 		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
-		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) { return nil, nil },
-		CanReadNoteFunc:      func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
+		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
+			return &usertoken.Data{ID: 1, Role: "admin"}, nil
+		},
+		CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 	}
 
 	for b.Loop() {

@@ -21,14 +21,17 @@ var _ Env = &EnvMock{}
 //
 //		// make and configure a mocked Env
 //		mockedEnv := &EnvMock{
-//			CanReadNoteFunc: func(ctx context.Context, note *appmodel.NoteView) (bool, error) {
-//				panic("mock out the CanReadNote method")
+//			CurrentFederatedScopeFunc: func(ctx context.Context) ([]string, bool) {
+//				panic("mock out the CurrentFederatedScope method")
 //			},
 //			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentUserToken method")
 //			},
 //			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 //				panic("mock out the LatestNoteViews method")
+//			},
+//			ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
+//				panic("mock out the ListActiveUserSubgraphs method")
 //			},
 //			ObserveNoteQueryFunc: func(query string, result string, elapsed time.Duration, paramsBytes int)  {
 //				panic("mock out the ObserveNoteQuery method")
@@ -40,8 +43,8 @@ var _ Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
-	// CanReadNoteFunc mocks the CanReadNote method.
-	CanReadNoteFunc func(ctx context.Context, note *appmodel.NoteView) (bool, error)
+	// CurrentFederatedScopeFunc mocks the CurrentFederatedScope method.
+	CurrentFederatedScopeFunc func(ctx context.Context) ([]string, bool)
 
 	// CurrentUserTokenFunc mocks the CurrentUserToken method.
 	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
@@ -49,17 +52,18 @@ type EnvMock struct {
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *appmodel.NoteViews
 
+	// ListActiveUserSubgraphsFunc mocks the ListActiveUserSubgraphs method.
+	ListActiveUserSubgraphsFunc func(ctx context.Context, userID int64) ([]string, error)
+
 	// ObserveNoteQueryFunc mocks the ObserveNoteQuery method.
 	ObserveNoteQueryFunc func(query string, result string, elapsed time.Duration, paramsBytes int)
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// CanReadNote holds details about calls to the CanReadNote method.
-		CanReadNote []struct {
+		// CurrentFederatedScope holds details about calls to the CurrentFederatedScope method.
+		CurrentFederatedScope []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// Note is the note argument value.
-			Note *appmodel.NoteView
 		}
 		// CurrentUserToken holds details about calls to the CurrentUserToken method.
 		CurrentUserToken []struct {
@@ -68,6 +72,13 @@ type EnvMock struct {
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
+		}
+		// ListActiveUserSubgraphs holds details about calls to the ListActiveUserSubgraphs method.
+		ListActiveUserSubgraphs []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID int64
 		}
 		// ObserveNoteQuery holds details about calls to the ObserveNoteQuery method.
 		ObserveNoteQuery []struct {
@@ -81,45 +92,42 @@ type EnvMock struct {
 			ParamsBytes int
 		}
 	}
-	lockCanReadNote      sync.RWMutex
-	lockCurrentUserToken sync.RWMutex
-	lockLatestNoteViews  sync.RWMutex
-	lockObserveNoteQuery sync.RWMutex
+	lockCurrentFederatedScope   sync.RWMutex
+	lockCurrentUserToken        sync.RWMutex
+	lockLatestNoteViews         sync.RWMutex
+	lockListActiveUserSubgraphs sync.RWMutex
+	lockObserveNoteQuery        sync.RWMutex
 }
 
-// CanReadNote calls CanReadNoteFunc.
-func (mock *EnvMock) CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error) {
-	if mock.CanReadNoteFunc == nil {
-		panic("EnvMock.CanReadNoteFunc: method is nil but Env.CanReadNote was just called")
+// CurrentFederatedScope calls CurrentFederatedScopeFunc.
+func (mock *EnvMock) CurrentFederatedScope(ctx context.Context) ([]string, bool) {
+	if mock.CurrentFederatedScopeFunc == nil {
+		panic("EnvMock.CurrentFederatedScopeFunc: method is nil but Env.CurrentFederatedScope was just called")
 	}
 	callInfo := struct {
-		Ctx  context.Context
-		Note *appmodel.NoteView
+		Ctx context.Context
 	}{
-		Ctx:  ctx,
-		Note: note,
+		Ctx: ctx,
 	}
-	mock.lockCanReadNote.Lock()
-	mock.calls.CanReadNote = append(mock.calls.CanReadNote, callInfo)
-	mock.lockCanReadNote.Unlock()
-	return mock.CanReadNoteFunc(ctx, note)
+	mock.lockCurrentFederatedScope.Lock()
+	mock.calls.CurrentFederatedScope = append(mock.calls.CurrentFederatedScope, callInfo)
+	mock.lockCurrentFederatedScope.Unlock()
+	return mock.CurrentFederatedScopeFunc(ctx)
 }
 
-// CanReadNoteCalls gets all the calls that were made to CanReadNote.
+// CurrentFederatedScopeCalls gets all the calls that were made to CurrentFederatedScope.
 // Check the length with:
 //
-//	len(mockedEnv.CanReadNoteCalls())
-func (mock *EnvMock) CanReadNoteCalls() []struct {
-	Ctx  context.Context
-	Note *appmodel.NoteView
+//	len(mockedEnv.CurrentFederatedScopeCalls())
+func (mock *EnvMock) CurrentFederatedScopeCalls() []struct {
+	Ctx context.Context
 } {
 	var calls []struct {
-		Ctx  context.Context
-		Note *appmodel.NoteView
+		Ctx context.Context
 	}
-	mock.lockCanReadNote.RLock()
-	calls = mock.calls.CanReadNote
-	mock.lockCanReadNote.RUnlock()
+	mock.lockCurrentFederatedScope.RLock()
+	calls = mock.calls.CurrentFederatedScope
+	mock.lockCurrentFederatedScope.RUnlock()
 	return calls
 }
 
@@ -179,6 +187,42 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 	mock.lockLatestNoteViews.RLock()
 	calls = mock.calls.LatestNoteViews
 	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// ListActiveUserSubgraphs calls ListActiveUserSubgraphsFunc.
+func (mock *EnvMock) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error) {
+	if mock.ListActiveUserSubgraphsFunc == nil {
+		panic("EnvMock.ListActiveUserSubgraphsFunc: method is nil but Env.ListActiveUserSubgraphs was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID int64
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockListActiveUserSubgraphs.Lock()
+	mock.calls.ListActiveUserSubgraphs = append(mock.calls.ListActiveUserSubgraphs, callInfo)
+	mock.lockListActiveUserSubgraphs.Unlock()
+	return mock.ListActiveUserSubgraphsFunc(ctx, userID)
+}
+
+// ListActiveUserSubgraphsCalls gets all the calls that were made to ListActiveUserSubgraphs.
+// Check the length with:
+//
+//	len(mockedEnv.ListActiveUserSubgraphsCalls())
+func (mock *EnvMock) ListActiveUserSubgraphsCalls() []struct {
+	Ctx    context.Context
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID int64
+	}
+	mock.lockListActiveUserSubgraphs.RLock()
+	calls = mock.calls.ListActiveUserSubgraphs
+	mock.lockListActiveUserSubgraphs.RUnlock()
 	return calls
 }
 

@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/yuin/goldmark"
@@ -21,15 +20,12 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
-	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	Logger() logger.Logger
 	LatestNoteViews() *model.NoteViews
-	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
-	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
-	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
+	runnotequery.Env
 	LoadPreviewLayout(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string)
 	PreviewBuffer() *PreviewBuffer
 }

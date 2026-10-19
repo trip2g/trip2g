@@ -26,8 +26,11 @@ type noteQueryEnv struct {
 }
 
 func (e noteQueryEnv) LatestNoteViews() *model.NoteViews { return e.nvs }
-func (e noteQueryEnv) CanReadNote(_ context.Context, n *model.NoteView) (bool, error) {
-	return n.Free, nil
+func (e noteQueryEnv) CurrentFederatedScope(context.Context) ([]string, bool) {
+	return nil, false
+}
+func (e noteQueryEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, error) {
+	return nil, nil
 }
 func (e noteQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 func (e noteQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {

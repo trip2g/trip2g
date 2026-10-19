@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"trip2g/internal/case/renderlayout"
+	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
@@ -53,8 +54,7 @@ type Env interface {
 	SiteConfig(ctx context.Context) model.SiteConfig
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
-	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
-	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
+	runnotequery.Env
 	GetTelegramChatName(ctx context.Context, telegramChatID int64) (string, error)
 	GetTelegramPostLinksByNoteVersionID(
 		ctx context.Context,

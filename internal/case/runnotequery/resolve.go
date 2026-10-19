@@ -12,20 +12,19 @@ import (
 	"strings"
 	"time"
 
+	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/jsonneteval"
 	"trip2g/internal/mdloader"
 	appmodel "trip2g/internal/model"
-	"trip2g/internal/usertoken"
 	"trip2g/internal/yamlutil"
 )
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 type Env interface {
+	canreadnote.Env
 	LatestNoteViews() *appmodel.NoteViews
-	CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error)
-	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	// ObserveNoteQuery records the call's duration for metrics and logs a
 	// slow one. query is the query note's path, or "unknown".
 	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
@@ -104,8 +103,13 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 		return &model.ErrorPayload{Message: errQueryNotFound}, nil
 	}
 
+	read, err := canreadnote.NewReader(ctx, env)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve the viewer: %w", err)
+	}
+
 	// A query the caller can't read must look the same as a missing one.
-	canRead, err := env.CanReadNote(ctx, note)
+	canRead, err := read(note)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check query access: %w", err)
 	}
@@ -130,7 +134,7 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 	// filters. Without it the program sees only readable notes.
 	allNotes := note.RawMeta["all_notes"] == true
 
-	notesJSON, err := queryNotes(ctx, env, nvs, allNotes)
+	notesJSON, err := queryNotes(read, nvs, allNotes)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +181,7 @@ func findQuery(nvs *appmodel.NoteViews, query string) *appmodel.NoteView {
 // queryNotes is the query's `notes` in path order, with frontmatter after
 // patches: the notes the caller can read, or with all set every note plus
 // `readable`. System notes (`_…`) are left out, as in other listings.
-func queryNotes(ctx context.Context, env Env, nvs *appmodel.NoteViews, all bool) ([]byte, error) {
+func queryNotes(read canreadnote.Reader, nvs *appmodel.NoteViews, all bool) ([]byte, error) {
 	paths := make([]string, 0, len(nvs.PathMap))
 	for path := range nvs.PathMap {
 		paths = append(paths, path)
@@ -191,7 +195,7 @@ func queryNotes(ctx context.Context, env Env, nvs *appmodel.NoteViews, all bool)
 			continue
 		}
 
-		canRead, err := env.CanReadNote(ctx, note)
+		canRead, err := read(note)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check note access: %w", err)
 		}

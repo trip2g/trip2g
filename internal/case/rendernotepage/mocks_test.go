@@ -42,6 +42,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			ConfigEpochFunc: func() uint64 {
 //				panic("mock out the ConfigEpoch method")
 //			},
+//			CurrentFederatedScopeFunc: func(ctx context.Context) ([]string, bool) {
+//				panic("mock out the CurrentFederatedScope method")
+//			},
 //			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentUserToken method")
 //			},
@@ -153,6 +156,9 @@ type EnvMock struct {
 
 	// ConfigEpochFunc mocks the ConfigEpoch method.
 	ConfigEpochFunc func() uint64
+
+	// CurrentFederatedScopeFunc mocks the CurrentFederatedScope method.
+	CurrentFederatedScopeFunc func(ctx context.Context) ([]string, bool)
 
 	// CurrentUserTokenFunc mocks the CurrentUserToken method.
 	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
@@ -270,6 +276,11 @@ type EnvMock struct {
 		}
 		// ConfigEpoch holds details about calls to the ConfigEpoch method.
 		ConfigEpoch []struct {
+		}
+		// CurrentFederatedScope holds details about calls to the CurrentFederatedScope method.
+		CurrentFederatedScope []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 		// CurrentUserToken holds details about calls to the CurrentUserToken method.
 		CurrentUserToken []struct {
@@ -429,6 +440,7 @@ type EnvMock struct {
 	lockCachedPage                          sync.RWMutex
 	lockCanReadNote                         sync.RWMutex
 	lockConfigEpoch                         sync.RWMutex
+	lockCurrentFederatedScope               sync.RWMutex
 	lockCurrentUserToken                    sync.RWMutex
 	lockEditorJSURL                         sync.RWMutex
 	lockEditorLocaleHashes                  sync.RWMutex
@@ -617,6 +629,38 @@ func (mock *EnvMock) ConfigEpochCalls() []struct {
 	mock.lockConfigEpoch.RLock()
 	calls = mock.calls.ConfigEpoch
 	mock.lockConfigEpoch.RUnlock()
+	return calls
+}
+
+// CurrentFederatedScope calls CurrentFederatedScopeFunc.
+func (mock *EnvMock) CurrentFederatedScope(ctx context.Context) ([]string, bool) {
+	if mock.CurrentFederatedScopeFunc == nil {
+		panic("EnvMock.CurrentFederatedScopeFunc: method is nil but Env.CurrentFederatedScope was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockCurrentFederatedScope.Lock()
+	mock.calls.CurrentFederatedScope = append(mock.calls.CurrentFederatedScope, callInfo)
+	mock.lockCurrentFederatedScope.Unlock()
+	return mock.CurrentFederatedScopeFunc(ctx)
+}
+
+// CurrentFederatedScopeCalls gets all the calls that were made to CurrentFederatedScope.
+// Check the length with:
+//
+//	len(mockedEnv.CurrentFederatedScopeCalls())
+func (mock *EnvMock) CurrentFederatedScopeCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockCurrentFederatedScope.RLock()
+	calls = mock.calls.CurrentFederatedScope
+	mock.lockCurrentFederatedScope.RUnlock()
 	return calls
 }
 

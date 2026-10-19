@@ -26,8 +26,11 @@ type testEnv struct {
 func (e *testEnv) Logger() logger.Logger             { return e.log }
 func (e *testEnv) LatestNoteViews() *model.NoteViews { return e.nvs }
 func (e *testEnv) PreviewBuffer() *PreviewBuffer     { return e.buffer }
-func (e *testEnv) CanReadNote(context.Context, *model.NoteView) (bool, error) {
-	return true, nil
+func (e *testEnv) CurrentFederatedScope(context.Context) ([]string, bool) {
+	return nil, false
+}
+func (e *testEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, error) {
+	return nil, nil
 }
 func (e *testEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 func (e *testEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {

@@ -46,11 +46,9 @@ func TestDocExamples(t *testing.T) {
 
 	run := func(admin bool, query, params string) string {
 		env := &runnotequery.EnvMock{
-			LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
-			ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
-			CanReadNoteFunc: func(_ context.Context, note *appmodel.NoteView) (bool, error) {
-				return admin || note.Free, nil
-			},
+			LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
+			ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
+			CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 			CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
 				if admin {
 					return &usertoken.Data{ID: 1, Role: "admin"}, nil

@@ -32,7 +32,7 @@ func load(t *testing.T, sources map[string]string) *appmodel.NoteViews {
 }
 
 func query(src string) string {
-	return "---\ntype: note-query\n---\n```jsonnet\n" + src + "\n```\n"
+	return "---\ntype: note-query\nfree: true\n---\n```jsonnet\n" + src + "\n```\n"
 }
 
 func TestResolve(t *testing.T) {
@@ -40,22 +40,21 @@ func TestResolve(t *testing.T) {
 		"queries/titles.md": query(`[n.title for n in notes if std.startsWith(n.path, 'blog/')]`),
 		"queries/by_tag.md": query(`[n.path for n in notes if std.member(std.get(n.meta, 'tags', []), params.tag)]`),
 		"queries/broken.md": query(`error 'boom'`),
-		"queries/secret.md": query(`[]`),
-		"queries/plain.md":  "```jsonnet\n[]\n```\n",
-		"blog/a.md":         "---\ntitle: A\ntags: [go]\n---\na",
-		"blog/b.md":         "---\ntitle: B\ntags: [web]\n---\nb",
+		"queries/secret.md": "---\ntype: note-query\n---\n```jsonnet\n[]\n```\n",
+		"queries/plain.md":  "---\nfree: true\n---\n```jsonnet\n[]\n```\n",
+		"blog/a.md":         "---\ntitle: A\nfree: true\ntags: [go]\n---\na",
+		"blog/b.md":         "---\ntitle: B\nfree: true\ntags: [web]\n---\nb",
 		"blog/paid.md":      "---\ntitle: Paid\ntags: [go]\n---\npaid",
 		"queries/paths.md":  query(`[n.path for n in notes if !std.startsWith(n.path, 'queries/')]`),
 		"queries/two.md":    query(`[]`) + "```jsonnet\n[]\n```\n",
 		"queries/nan.md":    query(`[n.meta.x for n in notes if std.objectHas(n.meta, 'x')]`),
 		"_footer.md":        "---\nfree: true\n---\nfooter",
 		"board.canvas":      `{"nodes":[],"edges":[]}`,
-		"odd.md":            "---\nx: .nan\n---\nodd",
-		"queries/all.md": "---\ntype: note-query\nall_notes: true\n---\n```jsonnet\n" +
+		"odd.md":            "---\nfree: true\nx: .nan\n---\nodd",
+		"queries/all.md": "---\ntype: note-query\nfree: true\nall_notes: true\n---\n```jsonnet\n" +
 			"{user: currentUser, notes: [[n.path, n.readable] for n in notes if std.startsWith(n.path, 'blog/')]}\n```\n",
 		"queries/no_user.md": query(`currentUser`),
 	}
-	hidden := map[string]bool{"blog/paid.md": true, "queries/secret.md": true}
 
 	tests := []struct {
 		name     string
@@ -153,11 +152,9 @@ func TestResolve(t *testing.T) {
 				ObserveNoteQueryFunc: func(query, result string, _ time.Duration, _ int) {
 					observed = append(observed, query+" "+result)
 				},
-				LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
-				CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) { return nil, nil },
-				CanReadNoteFunc: func(_ context.Context, note *appmodel.NoteView) (bool, error) {
-					return !hidden[note.Path], nil
-				},
+				LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
+				CurrentUserTokenFunc:      func(context.Context) (*usertoken.Data, error) { return nil, nil },
+				CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 			}
 
 			got, err := runnotequery.Resolve(context.Background(), env, tt.input)
@@ -168,4 +165,30 @@ func TestResolve(t *testing.T) {
 			require.Equal(t, []string{tt.observed}, observed)
 		})
 	}
+}
+
+func TestResolveSignedInLooksUpSubgraphsOnce(t *testing.T) {
+	nvs := load(t, map[string]string{
+		"queries/titles.md": query(`[n.title for n in notes if !std.startsWith(n.path, 'queries/')]`),
+		"free.md":           "---\ntitle: Free\nfree: true\n---\nf",
+		"general.md":        "---\ntitle: General\n---\ng",
+		"premium.md":        "---\ntitle: Premium\nsubgraph: premium\n---\np",
+		"other.md":          "---\ntitle: Other\nsubgraph: other\n---\no",
+	})
+	env := &runnotequery.EnvMock{
+		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
+		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
+		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
+			return &usertoken.Data{ID: 5, Role: "user"}, nil
+		},
+		CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
+		ListActiveUserSubgraphsFunc: func(context.Context, int64) ([]string, error) {
+			return []string{"premium"}, nil
+		},
+	}
+
+	got, err := runnotequery.Resolve(context.Background(), env, model.NoteQueryInput{Query: "queries/titles.md"})
+	require.NoError(t, err)
+	require.Equal(t, &model.NoteQueryPayload{RawResult: json.RawMessage(`["Free","General","Premium"]`)}, got)
+	require.Len(t, env.ListActiveUserSubgraphsCalls(), 1)
 }
