@@ -77,7 +77,7 @@
     var s = Math.max(5, Math.min(8, h * 0.05));
     var top = h * 0.3;
     var bottom = h * 0.84;
-    var grow = clamp(t / (ACT * 0.6));
+    var grow = clamp(t / (ACT * 0.33));
     var bases = [];
     var people = [];
     for (var b = 0; b < BASES; b++) bases.push({ x: w * (0.08 + 0.84 * b / (BASES - 1)), y: top });

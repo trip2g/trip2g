@@ -100,7 +100,7 @@
     .@did__body { font-family: var(--sans); font-size: 15px; line-height: 1.55; color: #d6d6cf; }
     .@did__body p { margin: 0 0 10px; }
     .@did__body a { color: var(--fg); }
-    .@did__more { display: inline-block; margin-top: 6px; color: var(--accent); font-size: 13px; text-decoration: none; border-bottom: 1px solid currentColor; }
+    .@did__more { display: inline-block; margin-top: 6px; color: var(--accent); font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
     .@did__more::after { content: " →"; }
     .@did__related { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; }
     .@did__related a { color: var(--muted); text-decoration: none; }
@@ -122,6 +122,8 @@
     }
     .@did--live .@did__vertex:hover { color: var(--fg); }
     .@did--near { cursor: pointer; }
+    .@did--live .@did__tab--near .@did__vertex { color: var(--fg); }
+    .@did--live .@did__tab--near .@did__dot { border-color: var(--fg); }
     .@did--live .@did__vertex[aria-selected="true"] { background: none; color: var(--fg); font-weight: 600; }
     .@did--live .@did__dot {
       position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px;

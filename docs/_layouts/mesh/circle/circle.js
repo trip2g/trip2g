@@ -291,8 +291,9 @@
 
   root.addEventListener("pointermove", function (e) {
     if (e.pointerType !== "mouse") return;
-    var near = !(e.target.closest && e.target.closest(IGNORE)) && vertexAt(e.clientX, e.clientY) >= 0;
-    root.classList.toggle(B + "--near", near);
+    var hit = e.target.closest && e.target.closest(IGNORE) ? -1 : vertexAt(e.clientX, e.clientY);
+    root.classList.toggle(B + "--near", hit >= 0);
+    tabs.forEach(function (li, k) { li.classList.toggle(B + "__tab--near", k === hit); });
   });
 
   var touch = null;
