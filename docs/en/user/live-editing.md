@@ -15,7 +15,7 @@ Edit a note in Obsidian or in the site's editor and see the result in the browse
 
 The browser remembers the setting for the whole site, so it stays on after a reload. Click the item again to turn it off.
 
-You can also turn it on with a link: add `?#!live_reload=1` to any page address.
+You can also turn it on with a link: add `?#!live_reload=1` to any page address. The link works once you are signed in.
 
 While "Live reload" is off, the page does not watch for changes.
 
@@ -41,7 +41,7 @@ The page updates whenever the note changes, whatever the source:
 
 "Live follow" in the same ☰ menu turns on a different mode: the browser goes to whichever note was just changed, anywhere on the site. Handy for watching an AI agent work through a vault note by note.
 
-Turn it on the same way: click "Live follow: OFF" in the ☰ menu, or add `?#!live_follow=1` to the address:
+Turn it on the same way: click "Live follow: OFF" in the ☰ menu, or, once you are signed in, add `?#!live_follow=1` to the address:
 
 ```
 https://yourdomain.com/any-note?#!live_follow=1
