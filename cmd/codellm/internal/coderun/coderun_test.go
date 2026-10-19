@@ -2,6 +2,7 @@ package coderun
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"sync"
@@ -123,6 +124,60 @@ func TestParseCodeOutput_PatchShape(t *testing.T) {
 	require.Equal(t, webhookutil.AgentChangeKindPatch, changes[0].Kind)
 	require.Equal(t, "@todo", changes[0].Find)
 	require.Equal(t, "@done", changes[0].Replace)
+}
+
+func TestParseCodeOutput_MetaShape(t *testing.T) {
+	stdout := `{"changes":[{"path":"a.md","set":{"status":"done","n":9007199254740993},"unset":["draft"]}],"answer":"ok"}`
+	changes, _, err := ParseCodeOutput(stdout)
+	require.NoError(t, err)
+	require.Equal(t, []webhookutil.AgentChange{{
+		Path:  "a.md",
+		Set:   map[string]any{"status": "done", "n": json.Number("9007199254740993")},
+		Unset: []string{"draft"},
+		Kind:  webhookutil.AgentChangeKindMeta,
+	}}, changes)
+}
+
+func TestParseCodeOutput_ExplicitEmptyContentIsAWrite(t *testing.T) {
+	changes, _, err := ParseCodeOutput(`{"changes":[{"path":"a.md","content":""}],"answer":""}`)
+	require.NoError(t, err)
+	require.Equal(t, []webhookutil.AgentChange{{Path: "a.md", Kind: webhookutil.AgentChangeKindWrite}}, changes)
+}
+
+func TestParseCodeOutput_RefusesMalformedChanges(t *testing.T) {
+	tests := []struct {
+		name    string
+		change  string
+		wantErr string
+	}{
+		{"no kind keys", `{"path":"a.md"}`, "has none of content, find/replace, set/unset"},
+		{"null content", `{"path":"a.md","content":null}`, "has none of content, find/replace, set/unset"},
+		{"content and find", `{"path":"a.md","content":"x","find":"a","replace":"b"}`, "mixes"},
+		{"content and set", `{"path":"a.md","content":"x","set":{"a":1}}`, "mixes"},
+		{"replace and unset", `{"path":"a.md","find":"a","replace":"b","unset":["c"]}`, "mixes"},
+		{"replace without find", `{"path":"a.md","replace":"b"}`, "has no find"},
+		{"empty find", `{"path":"a.md","find":"","replace":"b"}`, "has no find"},
+		{"empty set and unset", `{"path":"a.md","set":{},"unset":[]}`, "set or unset must name at least one key"},
+		{"key both set and unset", `{"path":"a.md","set":{"a":1},"unset":["a"]}`, "both set and unset"},
+		{"blank key", `{"path":"a.md","set":{" ":1}}`, "must not be empty"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := ParseCodeOutput(`{"changes":[` + tt.change + `],"answer":""}`)
+			require.ErrorContains(t, err, tt.wantErr)
+			var execErr *ExecError
+			require.ErrorAs(t, err, &execErr)
+			require.Equal(t, KindParseError, execErr.Kind)
+		})
+	}
+}
+
+func TestParseCodeOutput_RefusesTrailingData(t *testing.T) {
+	_, _, err := ParseCodeOutput(`{"changes":[],"answer":""} {"changes":[]}`)
+	require.ErrorContains(t, err, "parse stdout")
+
+	_, _, err = ParseCodeOutput("{\"changes\":[],\"answer\":\"\"}\n")
+	require.NoError(t, err)
 }
 
 func TestParseCodeOutput_BadJSON(t *testing.T) {
