@@ -98,7 +98,15 @@ local blog = [n for n in notes if std.startsWith(n.path, 'blog/')];
 }
 ```
 
-A guest gets `{"open": ["Go on the web", "Hello, Go", "Web basics"], "locked": 1, "signedIn": false}`: the titles of open posts and only the number of the locked one.
+A guest gets the titles of open posts and only the number of the locked one:
+
+```json
+{
+  "open": ["Go on the web", "Hello, Go", "Web basics"],
+  "locked": 1,
+  "signedIn": false
+}
+```
 
 ### Examples
 

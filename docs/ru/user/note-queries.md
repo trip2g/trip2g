@@ -97,7 +97,15 @@ local blog = [n for n in notes if std.startsWith(n.path, 'blog/')];
 }
 ```
 
-Гость получит `{"open": ["Go on the web", "Hello, Go", "Web basics"], "locked": 1, "signedIn": false}`: заголовки открытых постов и только число закрытых.
+Гость получит заголовки открытых постов и только число закрытых:
+
+```json
+{
+  "open": ["Go on the web", "Hello, Go", "Web basics"],
+  "locked": 1,
+  "signedIn": false
+}
+```
 
 ### Примеры
 
