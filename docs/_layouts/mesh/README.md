@@ -90,8 +90,9 @@ Two to four sentences shown in the center.
 - The layout lists every note in the page's folder that has a `label`, sorted by `order`.
 - `link` and `related` are vault paths in wikilink brackets; each prints as a link with the target note's title. A path that resolves to nothing prints nothing.
 - Vertex notes use the same layout, so `/en/circle/garden` opens the wheel at that vertex. `noindex` keeps them out of the sitemap, and their canonical URL is the page.
+- Navigation: a click near a vertex or its label, the ← → buttons, ← → / Space / Shift+Space / PageDown / PageUp, a swipe, or a click on empty page outside the wheel (next point; ignored on links, buttons, the center text and when text is selected).
 - All texts are in the server HTML; the script only switches which one is visible. Without JavaScript the page is a plain list of sections.
-- `motion_visualization` names a file in `circle/`: `viz_<name>.js` registers `window.trip2gCircleViz.<name> = function (ctx, t, w, h, colors)`, a drawing of a 2D canvas at time `t` seconds. With `prefers-reduced-motion` the page draws one still frame. A new visualization needs its `<script>` line in `circle.html`.
+- `motion_visualization` names a file in `circle/`: `viz_<name>.js` registers `window.trip2gCircleViz.<name> = function (ctx, t, w, h, colors)`, a drawing of a 2D canvas at time `t` seconds. With `prefers-reduced-motion` the page draws one still frame, at `draw.still` seconds if the function sets it. A new visualization needs its `<script>` line in `circle.html`.
 
 ## Components
 

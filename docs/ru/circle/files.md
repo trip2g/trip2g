@@ -1,7 +1,7 @@
 ---
 title: "Flat-file CMS без контента внутри"
 label: "flat-file CMS"
-order: 8
+order: 9
 motion_visualization: files
 link: "[[ru/thoughts/flat-file-cms]]"
 related:

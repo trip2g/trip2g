@@ -155,7 +155,7 @@
     function frame(now) {
       var s = size();
       ctx.clearRect(0, 0, s.w, s.h);
-      draw(ctx, reduced.matches ? 4.2 : (now - t0) / 1000, s.w, s.h, colors);
+      draw(ctx, reduced.matches ? (draw.still || 4.2) : Math.max(0, now - t0) / 1000, s.w, s.h, colors);
       if (!reduced.matches) raf = requestAnimationFrame(frame);
     }
     raf = requestAnimationFrame(frame);
@@ -227,8 +227,72 @@
     var tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable)) return;
     var inTabs = tabsEl.contains(e.target);
-    if (e.key === "ArrowRight" || (inTabs && e.key === "ArrowDown")) { e.preventDefault(); step(1, inTabs); }
-    if (e.key === "ArrowLeft" || (inTabs && e.key === "ArrowUp")) { e.preventDefault(); step(-1, inTabs); }
+    var onControl = !inTabs && (tag === "BUTTON" || tag === "A");
+    var forward = e.key === "ArrowRight" || e.key === "PageDown" || (inTabs && e.key === "ArrowDown");
+    var back = e.key === "ArrowLeft" || e.key === "PageUp" || (inTabs && e.key === "ArrowUp");
+    if (e.key === " " && !onControl) {
+      forward = !e.shiftKey;
+      back = e.shiftKey;
+    }
+    if (forward) { e.preventDefault(); step(1, inTabs); }
+    if (back) { e.preventDefault(); step(-1, inTabs); }
+  });
+
+  function vertexAt(x, y) {
+    var box = ring.getBoundingClientRect();
+    var side = 2 * geo.r * Math.sin(Math.PI / N);
+    var reach = Math.min(72, side * 0.45);
+    var best = -1;
+    var bestD = Infinity;
+    for (var i = 0; i < N; i++) {
+      var a = angleOf(i);
+      var dx = x - (box.left + geo.cx + geo.r * Math.cos(a));
+      var dy = y - (box.top + geo.cy + geo.r * Math.sin(a));
+      var d = Math.sqrt(dx * dx + dy * dy);
+      var label = buttons[i].getBoundingClientRect();
+      var inLabel = x >= label.left - 16 && x <= label.right + 16 && y >= label.top - 16 && y <= label.bottom + 16;
+      if (inLabel) d = Math.min(d, reach - 1);
+      if (d < reach && d < bestD) { best = i; bestD = d; }
+    }
+    return best;
+  }
+
+  function outsideWheel(x, y) {
+    var box = ring.getBoundingClientRect();
+    var dx = x - (box.left + geo.cx);
+    var dy = y - (box.top + geo.cy);
+    return Math.sqrt(dx * dx + dy * dy) > geo.r + 24;
+  }
+
+  var IGNORE = "a, button, input, textarea, select, label, ." + B + "__panels, ." + B + "__intro, ." + B + "__bar";
+
+  function hasSelection() {
+    var sel = window.getSelection && window.getSelection();
+    return !!sel && !sel.isCollapsed && String(sel).trim() !== "";
+  }
+
+  var press = null;
+  document.addEventListener("pointerdown", function (e) {
+    press = { x: e.clientX, y: e.clientY, selected: hasSelection() };
+  }, true);
+
+  document.addEventListener("click", function (e) {
+    if (e.button !== 0 || e.defaultPrevented) return;
+    if (e.target.closest && e.target.closest(IGNORE)) return;
+    if (hasSelection()) return;
+    if (press && (press.selected || Math.abs(e.clientX - press.x) > 6 || Math.abs(e.clientY - press.y) > 6)) return;
+    var hit = vertexAt(e.clientX, e.clientY);
+    if (hit >= 0) {
+      select(hit);
+      return;
+    }
+    if (outsideWheel(e.clientX, e.clientY)) step(1);
+  });
+
+  root.addEventListener("pointermove", function (e) {
+    if (e.pointerType !== "mouse") return;
+    var near = !(e.target.closest && e.target.closest(IGNORE)) && vertexAt(e.clientX, e.clientY) >= 0;
+    root.classList.toggle(B + "--near", near);
   });
 
   var touch = null;

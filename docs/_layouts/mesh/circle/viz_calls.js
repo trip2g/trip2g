@@ -37,13 +37,25 @@
 
     var done = Math.floor(t / CUT);
     var visible = Math.min(NOTES.length, 2 + (done % (NOTES.length + 2)));
+    var freshIndex = cut < 0.97 ? visible - 1 : -1;
+    var grow = ease((cut - 0.8) / 0.17);
     ctx.strokeStyle = c.muted;
     ctx.lineWidth = 1;
     for (var l = 0; l < LINKS.length; l++) {
-      if (LINKS[l][0] >= visible || LINKS[l][1] >= visible) continue;
+      var a = LINKS[l][0];
+      var b = LINKS[l][1];
+      if (a >= visible || b >= visible) continue;
+      var g = 1;
+      if (a === freshIndex || b === freshIndex) {
+        if (grow <= 0) continue;
+        g = grow;
+        if (a === freshIndex) { a = LINKS[l][1]; b = LINKS[l][0]; }
+      }
+      var ax = NOTES[a].x * w;
+      var ay = NOTES[a].y * h;
       ctx.beginPath();
-      ctx.moveTo(NOTES[LINKS[l][0]].x * w, NOTES[LINKS[l][0]].y * h);
-      ctx.lineTo(NOTES[LINKS[l][1]].x * w, NOTES[LINKS[l][1]].y * h);
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(ax + (NOTES[b].x * w - ax) * g, ay + (NOTES[b].y * h - ay) * g);
       ctx.stroke();
     }
 
@@ -52,9 +64,9 @@
     for (var n = 0; n < visible; n++) {
       var nx = NOTES[n].x * w;
       var ny = NOTES[n].y * h;
-      var fresh = n === visible - 1 && cut < 0.95;
+      var fresh = n === freshIndex;
       if (fresh) {
-        var p = ease((cut - 0.45) / 0.5);
+        var p = ease((cut - 0.45) / 0.25);
         nx = right + (nx - right) * p;
         ny = cy + (ny - cy) * p;
         if (cut < 0.45) continue;

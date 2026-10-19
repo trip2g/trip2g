@@ -1,14 +1,14 @@
 ---
-title: "Memory and knowledge for AI agents"
-label: "agent memory"
-order: 4
+title: "A knowledge base your agents query"
+label: "base for agents"
+order: 5
 motion_visualization: agents
-link: "[[en/user/agent-memory]]"
+link: "[[en/user/obsidian-mcp-server]]"
 related:
-  - "[[en/user/memcli]]"
-  - "[[en/user/obsidian-mcp-server]]"
+  - "[[en/user/ai-agent-mcp-adapter]]"
+  - "[[en/user/instructions_guide]]"
   - "[[en/user/llm-wiki]]"
-  - "[[en/user/trip2g-vs-mem0-vs-memgpt]]"
+  - "[[en/user/subgraph_for_agents]]"
 layout: mesh/circle
 lang: en
 free: true
@@ -16,4 +16,4 @@ noindex: true
 lang_redirect: "[[ru/circle/agents]]"
 ---
 
-Point an agent's MCP client at trip2g and your notes become its long-term memory: it searches them and reads only the section it needs, not the whole note. The memory is plain markdown you can read, diff and fix by hand. memcli boots a local server in one command; the agent reads and writes files, and the server indexes them at once.
+Your notes and docs answer agents over MCP: search returns the matching section with its place in the outline, and the agent reads just that part. Instructions written as an ordinary note reach the agent when it connects, and named entry points give one base several roles. Expose the whole base or one subgraph; the base's own access rules apply.

@@ -1,7 +1,7 @@
 ---
 title: "Calls into a knowledge base"
 label: "calls → notes"
-order: 7
+order: 8
 motion_visualization: calls
 link: "[[en/user/calls-knowledge-base]]"
 related:

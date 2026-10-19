@@ -1,12 +1,12 @@
 ---
 title: "A distributed knowledge base for a company"
 label: "company mesh"
-order: 5
+order: 6
 motion_visualization: federation
 link: "[[en/user/team-knowledge-base-mcp]]"
 related:
-  - "[[en/user/federation]]"
   - "[[en/user/hub]]"
+  - "[[en/user/federation]]"
   - "[[en/thoughts/public-hub]]"
   - "[[en/user/subgraph_for_agents]]"
 layout: mesh/circle
@@ -16,4 +16,4 @@ noindex: true
 lang_redirect: "[[ru/circle/company]]"
 ---
 
-Each person, team or agent writes only its own base. The company space is put together from those bases by federation: one MCP endpoint, a hub that fans a question out to every base and keeps each answer tied to the base it came from. Nobody maintains a permission matrix over one shared wiki; each owner decides what their base exposes. A data mesh, applied to knowledge, and a circle of friends is the same thing, only smaller.
+Everyone keeps their own base and writes only there. To reach a neighbour's knowledge you don't pile everything into one shared wiki or wire your agent to ten bases: your own hub routes the query. A neighbour's base is one note in your hub with its address; federated_search sends the question there, or to every base at once, and each answer keeps the name of the base it came from. A data mesh for knowledge, and a circle of friends is the same, only smaller.

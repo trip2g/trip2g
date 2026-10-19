@@ -121,6 +121,7 @@
       font-size: 12px; transition: color .2s ease;
     }
     .@did--live .@did__vertex:hover { color: var(--fg); }
+    .@did--near { cursor: pointer; }
     .@did--live .@did__vertex[aria-selected="true"] { background: none; color: var(--fg); font-weight: 600; }
     .@did--live .@did__dot {
       position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px;
@@ -253,6 +254,7 @@
 <script defer src="{{ asset("circle/viz_garden.js") }}"></script>
 <script defer src="{{ asset("circle/viz_channel.js") }}"></script>
 <script defer src="{{ asset("circle/viz_subscription.js") }}"></script>
+<script defer src="{{ asset("circle/viz_memory.js") }}"></script>
 <script defer src="{{ asset("circle/viz_agents.js") }}"></script>
 <script defer src="{{ asset("circle/viz_federation.js") }}"></script>
 <script defer src="{{ asset("circle/viz_bot.js") }}"></script>
