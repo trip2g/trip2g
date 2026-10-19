@@ -40,7 +40,12 @@ type Env interface {
 
 // Resolve finds the attachment params names, if caller may have it.
 func Resolve(ctx context.Context, env Env, caller mcp.FederationCaller, params model.FederatedAssetParams) (db.NoteAsset, error) {
-	note := env.LatestNoteViews().PathMap[params.NotePath]
+	nvs := env.LatestNoteViews()
+	if nvs == nil {
+		return db.NoteAsset{}, ErrAssetNotFound
+	}
+
+	note := nvs.PathMap[params.NotePath]
 	if note == nil {
 		return db.NoteAsset{}, ErrAssetNotFound
 	}

@@ -19,6 +19,7 @@ import (
 	"github.com/valyala/fasthttp/fasthttputil"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/mcp"
 	"trip2g/internal/case/system/federationasset"
 	"trip2g/internal/db"
 	"trip2g/internal/federation"
@@ -273,4 +274,13 @@ func unboundToken(t *testing.T) string {
 	mac := hmac.New(sha256.New, []byte(secretKey))
 	mac.Write([]byte(unsigned))
 	return unsigned + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+}
+
+func TestNoNotesLoadedYetIsNotFound(t *testing.T) {
+	p := newPeer(t)
+	p.env.LatestNoteViewsFunc = func() *model.NoteViews { return nil }
+	params := model.FederatedAssetParams{NotePath: "skills/reel.md", Name: "files/attach.zip"}
+
+	_, err := federationasset.Resolve(context.Background(), p.env, mcp.FederationCaller{}, params)
+	require.ErrorIs(t, err, federationasset.ErrAssetNotFound)
 }
