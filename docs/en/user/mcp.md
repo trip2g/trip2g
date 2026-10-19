@@ -161,6 +161,20 @@ free: true
 
 The client receives these instructions during the MCP handshake, before any tool calls. Add `free: true` if you want anonymous users to receive them as well.
 
+#### Server name
+
+The handshake also carries the name the server reports (`serverInfo.name` and `serverInfo.title`). It is `trip2g-mcp` unless you set another: the `-mcp-server-name` flag (`MCP_SERVER_NAME`) sets it for the instance, and a `title` in the instructions note's frontmatter overrides it:
+
+```yaml
+---
+mcp_method: initialize
+title: Acme Docs
+free: true
+---
+```
+
+The title comes from frontmatter only. A note without one keeps the configured name. With `?method=`, the selected note's title names the server, so each entry point can carry its own name.
+
 #### Step 3. Configure access
 
 Enable the MCP server in site settings. Access can be:

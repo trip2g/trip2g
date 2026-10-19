@@ -14,6 +14,7 @@ HTTP 200 application/json
     "protocolVersion": "2024-11-05",
     "serverInfo": {
       "name": "trip2g-mcp",
+      "title": "trip2g-mcp",
       "version": "1.0.0"
     }
   }
@@ -35,6 +36,7 @@ HTTP 200 application/json
     "protocolVersion": "2025-11-25",
     "serverInfo": {
       "name": "trip2g-mcp",
+      "title": "trip2g-mcp",
       "version": "1.0.0"
     }
   }
@@ -56,6 +58,7 @@ HTTP 200 application/json
     "protocolVersion": "2025-11-25",
     "serverInfo": {
       "name": "trip2g-mcp",
+      "title": "trip2g-mcp",
       "version": "1.0.0"
     }
   }

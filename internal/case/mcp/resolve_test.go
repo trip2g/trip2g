@@ -23,7 +23,8 @@ type Env interface {
 func TestResolve(t *testing.T) {
 	t.Run("initialize returns server info", func(t *testing.T) {
 		env := &EnvMock{
-			FeaturesFunc: func() features.Features { return features.Features{} },
+			MCPServerNameFunc: func() string { return "trip2g-mcp" },
+			FeaturesFunc:      func() features.Features { return features.Features{} },
 
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
@@ -64,7 +65,8 @@ func TestResolve(t *testing.T) {
 		}
 
 		env := &EnvMock{
-			FeaturesFunc: func() features.Features { return features.Features{} },
+			MCPServerNameFunc: func() string { return "trip2g-mcp" },
+			FeaturesFunc:      func() features.Features { return features.Features{} },
 
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
@@ -93,6 +95,59 @@ func TestResolve(t *testing.T) {
 		require.Equal(t, "These are instructions for the MCP server.", result["instructions"])
 	})
 
+	serverInfoFor := func(t *testing.T, configured string, notes ...*appmodel.NoteView) map[string]any {
+		env := &EnvMock{
+			MCPServerNameFunc:          func() string { return configured },
+			FeaturesFunc:               func() features.Features { return features.Features{} },
+			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
+			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+			SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				return &appmodel.NoteViews{List: notes, PathMap: map[string]*appmodel.NoteView{}}
+			},
+			CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
+				return true, nil
+			},
+		}
+
+		resp := callMCP(t, env, mcp.Request{JSONRPC: "2.0", Method: "initialize", ID: 3})
+
+		require.Nil(t, resp.Error)
+		return resp.Result.(map[string]any)["serverInfo"].(map[string]any)
+	}
+
+	t.Run("initialize reports the configured server name", func(t *testing.T) {
+		info := serverInfoFor(t, "Acme Docs")
+
+		require.Equal(t, "Acme Docs", info["name"])
+		require.Equal(t, "Acme Docs", info["title"])
+	})
+
+	t.Run("the instructions note's title overrides the configured name", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			MCPMethod: "initialize",
+			RawMeta:   map[string]interface{}{"mcp_method": "initialize", "title": "Acme Docs"},
+			Content:   []byte("---\nmcp_method: initialize\ntitle: Acme Docs\n---\n\nInstructions."),
+		}
+
+		info := serverInfoFor(t, "trip2g-mcp", note)
+
+		require.Equal(t, "Acme Docs", info["name"])
+		require.Equal(t, "Acme Docs", info["title"])
+	})
+
+	t.Run("an instructions note without a title keeps the configured name", func(t *testing.T) {
+		note := &appmodel.NoteView{
+			MCPMethod: "initialize",
+			RawMeta:   map[string]interface{}{"mcp_method": "initialize"},
+			Content:   []byte("---\nmcp_method: initialize\n---\n\nInstructions."),
+		}
+
+		info := serverInfoFor(t, "trip2g-mcp", note)
+
+		require.Equal(t, "trip2g-mcp", info["name"])
+	})
+
 	t.Run("initialize exposes internal execution plan and soul profile", func(t *testing.T) {
 		note := &appmodel.NoteView{
 			MCPMethod: "initialize",
@@ -119,7 +174,8 @@ soul_profile:
 		}
 
 		env := &EnvMock{
-			FeaturesFunc: func() features.Features { return features.Features{} },
+			MCPServerNameFunc: func() string { return "trip2g-mcp" },
+			FeaturesFunc:      func() features.Features { return features.Features{} },
 
 			FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },

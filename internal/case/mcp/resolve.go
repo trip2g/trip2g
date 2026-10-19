@@ -77,6 +77,7 @@ type Env interface {
 	// Federated GraphQL tools
 	GraphQLRequestScoped(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error)
 	FederatedGraphQLEnabled() bool
+	MCPServerName() string
 	// Prometheus metrics for the MCP endpoint; may be nil (record methods are nil-safe).
 	MCPMetrics() *metrics.MCPMetrics
 }
@@ -147,29 +148,37 @@ func Resolve(ctx context.Context, env Env, req Request) Response {
 	return resp
 }
 
-// initializeInstructions resolves the server instructions an initialize result
-// carries: the content of the note whose mcp_method matches the target, with
-// frontmatter stripped. methodOverride comes from ?method= and selects a note
-// other than the default `initialize` one.
+// initialization is what an initialize result carries beyond the protocol
+// fields: the name the server reports and its instructions.
+type initialization struct {
+	ServerName   string `json:"server_name"`
+	Instructions string `json:"instructions"`
+}
+
+// resolveInitialization reads the note whose mcp_method matches the target:
+// its content, frontmatter stripped, is the instructions, and its frontmatter
+// title, when set, is the server name in place of the configured one.
+// methodOverride comes from ?method= and selects a note other than the default
+// `initialize` one.
 //
 // A non-nil *Error means the request must fail outright rather than be served
 // without instructions — that only happens for an explicit override naming a
 // note that is missing or unreadable. A missing default initialize note is not
-// an error, it just yields "".
-func initializeInstructions(ctx context.Context, env Env, methodOverride string) (string, *Error) {
+// an error, it just yields no instructions.
+func resolveInitialization(ctx context.Context, env Env, methodOverride string) (initialization, *Error) {
 	target := methodOverride
 	if target == "" {
 		target = MCPMethodInitialize
 	}
 
-	instructions := ""
+	result := initialization{ServerName: env.MCPServerName()}
 	for _, note := range env.LatestNoteViews().List {
 		if note.MCPMethod != target {
 			continue
 		}
 		ok, err := canReadMCPNote(ctx, env, note)
 		if err != nil {
-			return "", &Error{Code: ErrCodeInternal, Message: "Instructions access check failed: " + err.Error()}
+			return initialization{}, &Error{Code: ErrCodeInternal, Message: "Instructions access check failed: " + err.Error()}
 		}
 		if !ok {
 			// The note exists but the caller cannot read it. For an explicit
@@ -177,14 +186,17 @@ func initializeInstructions(ctx context.Context, env Env, methodOverride string)
 			// a silent skip.
 			break
 		}
-		instructions = stripFrontmatter(string(note.Content))
+		result.Instructions = stripFrontmatter(string(note.Content))
+		if title, isString := note.RawMeta["title"].(string); isString && title != "" {
+			result.ServerName = title
+		}
 		break
 	}
 
-	if methodOverride != "" && instructions == "" {
-		return "", &Error{Code: ErrCodeMethodNotFound, Message: "Method not found: " + methodOverride}
+	if methodOverride != "" && result.Instructions == "" {
+		return initialization{}, &Error{Code: ErrCodeMethodNotFound, Message: "Method not found: " + methodOverride}
 	}
-	return instructions, nil
+	return result, nil
 }
 
 // toolHandler is the shape shared by every built-in tool implementation.

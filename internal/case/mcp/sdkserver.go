@@ -12,10 +12,7 @@ import (
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const (
-	serverName    = "trip2g-mcp"
-	serverVersion = "1.0.0"
-)
+const serverVersion = "1.0.0"
 
 // buildServer assembles the per-request MCP server. It is per-request because
 // both the tool set and the instructions depend on who is calling: an admin API
@@ -26,22 +23,22 @@ const (
 // every note and access-checking each mcp_method one — would put work on the
 // hot path that the endpoint never used to do. An empty scope is tools/list,
 // which is answered by a shared listing server (see listingServer).
-func buildServer(ctx context.Context, env Env, instructions, scope string) *mcpsdk.Server {
+func buildServer(ctx context.Context, env Env, initResult initialization, scope string) *mcpsdk.Server {
 	if scope == "" {
-		return listingServer(builtinTools(ctx, env), instructions)
+		return listingServer(builtinTools(ctx, env), initResult)
 	}
 
-	srv := newServer(instructions)
+	srv := newServer(initResult)
 	registerTools(srv, env, scope)
 	srv.AddReceivingMiddleware(unknownToolMiddleware())
 
 	return srv
 }
 
-func newServer(instructions string) *mcpsdk.Server {
+func newServer(initResult initialization) *mcpsdk.Server {
 	return mcpsdk.NewServer(
-		&mcpsdk.Implementation{Name: serverName, Version: serverVersion},
-		&mcpsdk.ServerOptions{Instructions: instructions},
+		&mcpsdk.Implementation{Name: initResult.ServerName, Title: initResult.ServerName, Version: serverVersion},
+		&mcpsdk.ServerOptions{Instructions: initResult.Instructions},
 	)
 }
 
@@ -85,14 +82,14 @@ var listingServers = struct { //nolint:gochecknoglobals // process-wide cache of
 
 const maxListingServers = 256
 
-func listingServer(specs []Tool, instructions string) *mcpsdk.Server {
+func listingServer(specs []Tool, initResult initialization) *mcpsdk.Server {
 	catalog := struct {
-		Tools        []Tool `json:"tools"`
-		Instructions string `json:"instructions"`
-	}{specs, instructions}
+		Tools []Tool         `json:"tools"`
+		Init  initialization `json:"init"`
+	}{specs, initResult}
 	key, err := json.Marshal(catalog)
 	if err != nil {
-		return buildListingServer(specs, instructions)
+		return buildListingServer(specs, initResult)
 	}
 
 	listingServers.Lock()
@@ -104,13 +101,13 @@ func listingServer(specs []Tool, instructions string) *mcpsdk.Server {
 	if len(listingServers.byCatalog) >= maxListingServers {
 		listingServers.byCatalog = map[string]*mcpsdk.Server{}
 	}
-	srv := buildListingServer(specs, instructions)
+	srv := buildListingServer(specs, initResult)
 	listingServers.byCatalog[string(key)] = srv
 	return srv
 }
 
-func buildListingServer(specs []Tool, instructions string) *mcpsdk.Server {
-	srv := newServer(instructions)
+func buildListingServer(specs []Tool, initResult initialization) *mcpsdk.Server {
+	srv := newServer(initResult)
 	for _, spec := range specs {
 		srv.AddTool(sdkTool(spec), noopToolHandler)
 	}

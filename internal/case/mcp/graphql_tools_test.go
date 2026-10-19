@@ -95,6 +95,7 @@ func (e *gqlRequestEnv) GraphQLRequestScoped(_ context.Context, _ string, _ map[
 	panic("unexpected")
 }
 func (e *gqlRequestEnv) FederatedGraphQLEnabled() bool { panic("unexpected") }
+func (e *gqlRequestEnv) MCPServerName() string         { panic("unexpected") }
 
 func TestFilterIntrospection_MatchAndExpand(t *testing.T) {
 	raw := []byte(`{

@@ -362,6 +362,7 @@ func goldenEnv() *EnvMock {
 	}
 
 	return &EnvMock{
+		MCPServerNameFunc:    func() string { return "trip2g-mcp" },
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return views },
 		LiveNoteViewsFunc:    func() *appmodel.NoteViews { return views },
 		LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },

@@ -223,6 +223,10 @@ func (a *app) GraphQLRequest(ctx context.Context, query string, variables map[st
 // FederatedGraphQLEnabled reports whether the federated_graphql_request MCP tool is enabled.
 func (a *app) FederatedGraphQLEnabled() bool { return a.config.MCPFederatedGraphQLEnabled }
 
+func (a *app) MCPServerName() string {
+	return a.config.MCPServerName
+}
+
 // GraphQLRequestScoped executes a GraphQL query with a federated-scoped token (never admin).
 func (a *app) GraphQLRequestScoped(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error) {
 	ctx = appreq.WithFederatedToken(ctx, allowedSubgraphs)
