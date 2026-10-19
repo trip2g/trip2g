@@ -35,11 +35,7 @@ type Env interface {
 // block's first line, so jsonnet error line numbers match the block.
 const maxParamsBytes = 16 << 10
 
-const queryPrelude = `local notes = std.parseJson(std.extVar("notes")), params = std.parseJson(std.extVar("params")); `
-
-// allNotesPrelude is the prelude of a query with `all_notes: true`: every note
-// with `readable`, plus who is asking.
-const allNotesPrelude = `local notes = std.parseJson(std.extVar("notes")), params = std.parseJson(std.extVar("params")), currentUser = std.parseJson(std.extVar("currentUser")); `
+const queryPrelude = `local notes = std.parseJson(std.extVar("notes")), params = std.parseJson(std.extVar("params")), currentUser = std.parseJson(std.extVar("currentUser")); `
 
 type queryNote struct {
 	Path      string         `json:"path"`
@@ -130,8 +126,8 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 		return &model.ErrorPayload{Message: note.Path + ": a note-query needs exactly one jsonnet block"}, nil
 	}
 
-	// all_notes: true hands the program every note and who is asking; the
-	// author filters. Without it the program sees only readable notes.
+	// all_notes: true hands the program every note with `readable`; the author
+	// filters. Without it the program sees only readable notes.
 	allNotes := note.RawMeta["all_notes"] == true
 
 	notesJSON, err := queryNotes(ctx, env, nvs, allNotes)
@@ -139,25 +135,16 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 		return nil, err
 	}
 
-	prelude := queryPrelude
-	extVars := map[string]string{
-		"notes":  string(notesJSON),
-		"params": params,
-	}
-	if allNotes {
-		token, tokenErr := env.CurrentUserToken(ctx)
-		if tokenErr != nil {
-			return nil, fmt.Errorf("failed to get current user: %w", tokenErr)
-		}
-		user, _ := json.Marshal(map[string]bool{
-			"isAdmin":  token.IsAdmin(),
-			"signedIn": token != nil,
-		})
-		extVars["currentUser"] = string(user)
-		prelude = allNotesPrelude
+	user, err := currentUser(ctx, env)
+	if err != nil {
+		return nil, err
 	}
 
-	out, err := jsonneteval.EvalJSON(prelude+blocks[0], extVars)
+	out, err := jsonneteval.EvalJSON(queryPrelude+blocks[0], map[string]string{
+		"notes":       string(notesJSON),
+		"params":      params,
+		"currentUser": user,
+	})
 	if err != nil {
 		msg := strings.TrimPrefix(err.Error(), "evaluate jsonnet: ")
 		msg, _, _ = strings.Cut(msg, "\n")
@@ -254,4 +241,30 @@ func finite(v any) any {
 		}
 	}
 	return v
+}
+
+// currentUser is the query's `currentUser`: who is asking. A guest has a null
+// id and role.
+func currentUser(ctx context.Context, env Env) (string, error) {
+	token, err := env.CurrentUserToken(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get current user: %w", err)
+	}
+
+	user := map[string]any{
+		"id":       nil,
+		"role":     nil,
+		"isAdmin":  token.IsAdmin(),
+		"signedIn": token != nil,
+	}
+	if token != nil {
+		user["id"] = token.ID
+		user["role"] = token.Role
+	}
+
+	b, err := json.Marshal(user)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal current user: %w", err)
+	}
+	return string(b), nil
 }

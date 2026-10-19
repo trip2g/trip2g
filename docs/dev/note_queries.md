@@ -12,7 +12,7 @@ noteQuery(input: { query: "[[by_tag]]", params: { tag: "go" } }) {
 ```
 
 - `query` is a vault path (`queries/by_tag.md`, with or without `.md`) or a wikilink target, resolved with `NoteViews.ResolveWikilinkTarget`.
-- Inside the block: `notes` — `[{path, title, permalink, meta}]` in path order, `meta` after frontmatter patches; `params` — the caller's `params` (a `JSON` scalar, any value), `{}` when omitted, at most 16 KB once encoded.
+- Inside the block: `currentUser` (see Access); `notes` — `[{path, title, permalink, meta}]` in path order, `meta` after frontmatter patches; `params` — the caller's `params` (a `JSON` scalar, any value), `{}` when omitted, at most 16 KB once encoded.
 - Notes come from `LatestNoteViews()`. Releases (live versions) are not in use, so latest is what the site serves. Several readers pick live or latest by different rules; that is tracked in https://github.com/trip2g/trip2g/issues/438.
 - `notes` leaves out system notes (`_…`) and files without a markdown AST (`.canvas`, `.base`, `.excalidraw`).
 - A NaN or ±Inf in frontmatter (YAML allows them, JSON doesn't) becomes `null`, so one odd note can't break every query.
@@ -46,7 +46,9 @@ Two checks, both through `CanReadNote` (`internal/case/canreadnote`):
 1. **Who may run a query:** whoever can read the query note. The author sets it like any note's access: `free`, subgraphs, sign-in. A query the caller can't read answers `query not found`, the same as a missing one.
 2. **What the program sees:** only notes the caller can read. A public query run by a guest never sees paid notes, so a mistake in the program's output can't leak their frontmatter or titles.
 
-`all_notes: true` in the query note's frontmatter is an explicit opt-out of rule 2: `notes` holds every note (still without system and non-markdown files), each with `readable` (the `CanReadNote` result), and the program also gets `currentUser` — `{isAdmin, signedIn}`, from `CurrentUserToken`. The author filters on `readable`. The flag sits in the query note, so it shows up in review; without it `currentUser` is an unknown variable.
+`all_notes: true` in the query note's frontmatter is an explicit opt-out of rule 2: `notes` holds every note (still without system and non-markdown files), each with `readable` (the `CanReadNote` result). The author filters on `readable`. The flag sits in the query note, so it shows up in review.
+
+Every query also gets `currentUser` — `{id, role, isAdmin, signedIn}` from `CurrentUserToken` (no email: it isn't in the token). A guest has null `id` and `role`. A result that reads `id` is per user, which the cache in #441 has to account for.
 
 The program decides which fields leave the server. Raw frontmatter is never returned unless a query returns it.
 

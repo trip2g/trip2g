@@ -124,18 +124,18 @@ func TestResolve(t *testing.T) {
 			observed: "unknown error",
 		},
 		{
-			name:  "all_notes shows every note with readable, and currentUser",
+			name:  "all_notes shows every note with readable",
 			input: model.NoteQueryInput{Query: "queries/all.md"},
 			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(
 				`{"notes":[["blog/a.md",true],["blog/b.md",true],["blog/paid.md",false]],` +
-					`"user":{"isAdmin":false,"signedIn":false}}`)},
+					`"user":{"id":null,"isAdmin":false,"role":null,"signedIn":false}}`)},
 			observed: "queries/all.md ok",
 		},
 		{
-			name:     "currentUser is only defined with all_notes",
+			name:     "currentUser is there without all_notes too",
 			input:    model.NoteQueryInput{Query: "queries/no_user.md"},
-			expected: &model.ErrorPayload{Message: "queries/no_user.md: transform:1:97-108 Unknown variable: currentUser"},
-			observed: "queries/no_user.md error",
+			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`{"id":null,"isAdmin":false,"role":null,"signedIn":false}`)},
+			observed: "queries/no_user.md ok",
 		},
 		{
 			name:     "runtime error",

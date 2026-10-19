@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/usertoken"
 )
 
 // BenchmarkResolveDocs runs a simple query over the repo's docs/ vault
@@ -51,6 +52,7 @@ func BenchmarkResolveDocs(b *testing.B) {
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
 		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
+		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) { return nil, nil },
 		CanReadNoteFunc:      func(context.Context, *appmodel.NoteView) (bool, error) { return true, nil },
 	}
 

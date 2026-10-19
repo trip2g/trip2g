@@ -20,7 +20,10 @@ import (
 	"trip2g/internal/usertoken"
 )
 
-type noteQueryEnv struct{ nvs *model.NoteViews }
+type noteQueryEnv struct {
+	nvs  *model.NoteViews
+	user *usertoken.Data
+}
 
 func (e noteQueryEnv) LatestNoteViews() *model.NoteViews { return e.nvs }
 func (e noteQueryEnv) CanReadNote(_ context.Context, n *model.NoteView) (bool, error) {
@@ -28,7 +31,7 @@ func (e noteQueryEnv) CanReadNote(_ context.Context, n *model.NoteView) (bool, e
 }
 func (e noteQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 func (e noteQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
-	return nil, nil
+	return e.user, nil
 }
 
 func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
@@ -40,6 +43,7 @@ func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
 			" if std.member(std.get(n.meta, 'tags', []), params.tag)]\n```\n")},
 		{Path: "queries/counts.md", Content: []byte("---\ntype: note-query\nfree: true\n---\n```jsonnet\n" +
 			"{posts: std.length([n for n in notes if std.startsWith(n.path, 'blog/')])}\n```\n")},
+		{Path: "queries/me.md", Content: []byte("---\ntype: note-query\nfree: true\n---\n```jsonnet\ncurrentUser\n```\n")},
 		{Path: "blog/a.md", Content: []byte("---\ntitle: A\nfree: true\ntags: [go]\n---\na")},
 		{Path: "blog/b.md", Content: []byte("---\ntitle: B\nfree: true\ntags: [web]\n---\nb")},
 		{Path: "blog/paid.md", Content: []byte("---\ntitle: Paid\ntags: [go]\n---\np")},
@@ -55,7 +59,8 @@ func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
 	require.NoError(t, err)
 
 	vars := make(jet.VarMap)
-	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs}))
+	user := &usertoken.Data{ID: 7, Role: "editor"}
+	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}))
 
 	var out strings.Builder
 	err = view.Execute(&out, vars, nil)
@@ -71,6 +76,10 @@ func TestNoteQueryInLayout(t *testing.T) {
 	got, err = renderWithNoteQuery(t, `{{ c := noteQuery("queries/counts.md") }}{{ c.posts }}`)
 	require.NoError(t, err)
 	require.Equal(t, "2", got)
+
+	got, err = renderWithNoteQuery(t, `{{ u := noteQuery("queries/me.md") }}{{ u.role }} {{ u.id }}`)
+	require.NoError(t, err)
+	require.Equal(t, "editor 7", got, "currentUser reaches a template query")
 
 	_, err = renderWithNoteQuery(t, `{{ noteQuery("[[nope]]") }}`)
 	require.ErrorContains(t, err, `noteQuery("[[nope]]"): query not found`)
