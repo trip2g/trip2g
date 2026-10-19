@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
 
@@ -83,6 +85,7 @@ func emptyEnv() *EnvMock {
 			return nil, nil
 		},
 		LatestNoteViewsFunc: func() *model.NoteViews { return &model.NoteViews{} },
+		LoggerFunc:          func() logger.Logger { return &logger.TestLogger{} },
 	}
 }
 
@@ -248,17 +251,114 @@ func TestUpdater_FederationTopology_DropsRemovedKeys(t *testing.T) {
 	env.ListAllFederationSecretScopesFunc = func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
 		return []db.ListAllFederationSecretScopesRow{{Kid: "partner", SubgraphID: 1, SubgraphName: "docs"}}, nil
 	}
+	env.LatestNoteViewsFunc = func() *model.NoteViews {
+		if calls == 1 {
+			return &model.NoteViews{MCPFederationNotes: []*model.MCPFederationNote{
+				{ID: "peer", URL: "https://peer.example/_system/mcp"},
+			}}
+		}
+		return &model.NoteViews{}
+	}
 
 	u := NewUpdater(env, 0, reg)
 	u.updateMetrics(context.Background())
+
+	findMetric(t, reg, "trip2g_federation_key_info", map[string]string{"direction": "inbound", "kid": "partner", "kb_url": ""})
+	findMetric(t, reg, "trip2g_federation_key_subgraph_info", map[string]string{"direction": "inbound", "kid": "partner", "subgraph": "docs"})
+	findMetric(t, reg, "trip2g_federation_peer_info", map[string]string{"peer": "peer", "kb_url": "https://peer.example/_system/mcp"})
+
 	u.updateMetrics(context.Background())
 
 	families, err := reg.Gather()
 	require.NoError(t, err)
 	for _, mf := range families {
 		switch mf.GetName() {
-		case "trip2g_federation_key_info", "trip2g_federation_key_subgraph_info":
-			require.Empty(t, mf.GetMetric(), "%s: a deleted key must drop out", mf.GetName())
+		case "trip2g_federation_key_info", "trip2g_federation_key_subgraph_info", "trip2g_federation_peer_info":
+			require.Empty(t, mf.GetMetric(), "%s: a deleted key or KB-note must drop out", mf.GetName())
 		}
+	}
+}
+
+func TestUpdater_FederationTopology_OutboundScopes(t *testing.T) {
+	reg := prometheus.NewRegistry()
+
+	peerURL := "https://peer.example/_system/mcp"
+	env := emptyEnv()
+	env.ListFederationSecretsFunc = func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
+		return []db.ListFederationSecretsRow{{ID: 1, Kid: "peer", KbUrl: &peerURL}}, nil
+	}
+	env.ListAllFederationSecretScopesFunc = func(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error) {
+		return []db.ListAllFederationSecretScopesRow{{Kid: "peer", SubgraphID: 1, SubgraphName: "docs"}}, nil
+	}
+
+	u := NewUpdater(env, 0, reg)
+	u.updateMetrics(context.Background())
+
+	findMetric(t, reg, "trip2g_federation_key_subgraph_info", map[string]string{"direction": "outbound", "kid": "peer", "subgraph": "docs"})
+}
+
+func TestUpdater_FederationTopology_KeepsLastValuesOnError(t *testing.T) {
+	reg := prometheus.NewRegistry()
+
+	calls := 0
+	env := emptyEnv()
+	env.ListFederationSecretsFunc = func(ctx context.Context) ([]db.ListFederationSecretsRow, error) {
+		return []db.ListFederationSecretsRow{{ID: 1, Kid: "partner"}}, nil
+	}
+	env.ListAllSubgraphsFunc = func(ctx context.Context) ([]db.Subgraph, error) {
+		calls++
+		if calls == 1 {
+			return nil, nil
+		}
+		return nil, errors.New("database is locked")
+	}
+
+	u := NewUpdater(env, 0, reg)
+	u.updateMetrics(context.Background())
+	require.Empty(t, env.LoggerCalls(), "a successful update must not log")
+
+	u.updateMetrics(context.Background())
+
+	findMetric(t, reg, "trip2g_federation_key_info", map[string]string{"direction": "inbound", "kid": "partner", "kb_url": ""})
+	require.Len(t, env.LoggerCalls(), 1, "a failed topology read must be logged")
+}
+
+func TestUpdater_FederationTopology_SelfFollowsPublicURL(t *testing.T) {
+	reg := prometheus.NewRegistry()
+
+	publicURL := "https://old.example"
+	env := emptyEnv()
+	env.PublicURLFunc = func() string { return publicURL }
+
+	u := NewUpdater(env, 0, reg)
+	u.updateMetrics(context.Background())
+	publicURL = "https://new.example"
+	u.updateMetrics(context.Background())
+
+	findMetric(t, reg, "trip2g_federation_self_info", map[string]string{"kb_id": "new.example", "mcp_url": "https://new.example/_system/mcp"})
+	families, err := reg.Gather()
+	require.NoError(t, err)
+	for _, mf := range families {
+		if mf.GetName() == "trip2g_federation_self_info" {
+			require.Len(t, mf.GetMetric(), 1, "the previous self must be replaced, not kept")
+		}
+	}
+}
+
+func TestLabelURL(t *testing.T) {
+	tests := []struct {
+		raw  string
+		want string
+	}{
+		{"https://user:pass@peer.example/_system/mcp?token=x#frag", "https://peer.example/_system/mcp"},
+		{"  https://peer.example:8443/_system/mcp  ", "https://peer.example:8443/_system/mcp"},
+		{"http://[::1]:8080/mcp", "http://[::1]:8080/mcp"},
+		{"https://peer.example/a%2Fb", "https://peer.example/a%2Fb"},
+		{"peer.example/_system/mcp", ""},
+		{"//peer.example/_system/mcp", ""},
+		{"::not a url", ""},
+	}
+	for _, tt := range tests {
+		require.Equal(t, tt.want, labelURL(tt.raw), tt.raw)
 	}
 }

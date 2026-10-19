@@ -7,6 +7,7 @@ import (
 	"context"
 	"sync"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
 
@@ -50,6 +51,9 @@ var _ Env = &EnvMock{}
 //			LoadSiteConfigFunc: func(ctx context.Context) (model.SiteConfig, error) {
 //				panic("mock out the LoadSiteConfig method")
 //			},
+//			LoggerFunc: func() logger.Logger {
+//				panic("mock out the Logger method")
+//			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
 //			},
@@ -92,6 +96,9 @@ type EnvMock struct {
 
 	// LoadSiteConfigFunc mocks the LoadSiteConfig method.
 	LoadSiteConfigFunc func(ctx context.Context) (model.SiteConfig, error)
+
+	// LoggerFunc mocks the Logger method.
+	LoggerFunc func() logger.Logger
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
@@ -149,6 +156,9 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// Logger holds details about calls to the Logger method.
+		Logger []struct {
+		}
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
 		}
@@ -168,6 +178,7 @@ type EnvMock struct {
 	lockListFederationSecrets         sync.RWMutex
 	lockListGoqiteAllQueueStats       sync.RWMutex
 	lockLoadSiteConfig                sync.RWMutex
+	lockLogger                        sync.RWMutex
 	lockPublicURL                     sync.RWMutex
 	lockSumNoteAssetsSizes            sync.RWMutex
 }
@@ -484,6 +495,33 @@ func (mock *EnvMock) LoadSiteConfigCalls() []struct {
 	mock.lockLoadSiteConfig.RLock()
 	calls = mock.calls.LoadSiteConfig
 	mock.lockLoadSiteConfig.RUnlock()
+	return calls
+}
+
+// Logger calls LoggerFunc.
+func (mock *EnvMock) Logger() logger.Logger {
+	if mock.LoggerFunc == nil {
+		panic("EnvMock.LoggerFunc: method is nil but Env.Logger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogger.Lock()
+	mock.calls.Logger = append(mock.calls.Logger, callInfo)
+	mock.lockLogger.Unlock()
+	return mock.LoggerFunc()
+}
+
+// LoggerCalls gets all the calls that were made to Logger.
+// Check the length with:
+//
+//	len(mockedEnv.LoggerCalls())
+func (mock *EnvMock) LoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogger.RLock()
+	calls = mock.calls.Logger
+	mock.lockLogger.RUnlock()
 	return calls
 }
 

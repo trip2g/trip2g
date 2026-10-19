@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 
 	"trip2g/internal/case/system/federationtopology"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 )
 
 //go:generate go tool github.com/matryer/moq -out test.go -pkg metrics . Env
@@ -22,6 +24,7 @@ type Env interface {
 	SumNoteAssetsSizes(ctx context.Context) (int64, error)
 	CountNoteAssets(ctx context.Context) (int64, error)
 	ListGoqiteAllQueueStats(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error)
+	Logger() logger.Logger
 	federationtopology.Env
 }
 
@@ -40,6 +43,7 @@ type Updater struct {
 	fedKeys          *prometheus.GaugeVec
 	fedKeySubgraphs  *prometheus.GaugeVec
 	fedPeers         *prometheus.GaugeVec
+	fedSelfLabels    []string
 	interval         time.Duration
 }
 
@@ -217,18 +221,25 @@ const (
 func (u *Updater) updateFederationMetrics(ctx context.Context) {
 	topology, err := federationtopology.Resolve(ctx, u.env)
 	if err != nil {
+		u.env.Logger().Error("federation metrics: resolve topology, keeping last values", "error", err)
 		return
 	}
 
+	// Replaced, not reset, so an always-present series never blinks out
+	// between a reset and a scrape.
+	self := []string{topology.Self.KBID, topology.Self.MCPURL}
+	if u.fedSelfLabels != nil && !slices.Equal(u.fedSelfLabels, self) {
+		u.fedSelf.DeleteLabelValues(u.fedSelfLabels...)
+	}
+	u.fedSelf.WithLabelValues(self...).Set(1)
+	u.fedSelfLabels = self
+
 	// Reset so a revoked or deleted key, and a subgraph whose last key was
 	// unscoped, drops out.
-	u.fedSelf.Reset()
 	u.fedKeys.Reset()
 	u.fedKeySubgraphs.Reset()
 	u.fedSubgraphs.Reset()
 	u.fedPeers.Reset()
-
-	u.fedSelf.WithLabelValues(topology.Self.KBID, topology.Self.MCPURL).Set(1)
 
 	keys := map[string]int{directionInbound: 0, directionOutbound: 0}
 	perSubgraph := map[[2]string]int{}
@@ -267,8 +278,8 @@ func (u *Updater) updateFederationMetrics(ctx context.Context) {
 // may carry credentials in its userinfo or query, and /metrics has no auth.
 func labelURL(raw string) string {
 	parsed, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || parsed.Host == "" {
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 		return ""
 	}
-	return parsed.Scheme + "://" + parsed.Host + parsed.Path
+	return parsed.Scheme + "://" + parsed.Host + parsed.EscapedPath()
 }
