@@ -18,8 +18,8 @@ import (
 // RetrieveEnv declares the dependencies of the shared retrieval core. It is a
 // subset of Env, and the MCP adapter's Env satisfies it too.
 type RetrieveEnv interface {
-	SearchLatestNotes(query string) ([]appmodel.SearchResult, error)
-	SearchLiveNotes(query string) ([]appmodel.SearchResult, error)
+	SearchLatestNotes(query string, from, size int) ([]appmodel.SearchResult, error)
+	SearchLiveNotes(query string, from, size int) ([]appmodel.SearchResult, error)
 	Features() features.Features
 	OpenAI() *openai.Client
 	LatestNoteViews() *appmodel.NoteViews
@@ -39,40 +39,43 @@ const rrfK = 60
 // list is capped after permission filtering (see hybridResultCap in Resolve).
 const vectorTopK = 50
 
+// textLaneSize is the number of text-lane candidates fed into fusion, and the
+// page size the text lane reads the index in.
+const textLaneSize = 20
+
+// keepScanLimit bounds how many candidates each lane checks against
+// Request.Keep, so a query whose matches are mostly rejected cannot walk the
+// whole index.
+const keepScanLimit = 200
+
 // exactNameWeight is the RRF weight of the exact-name list. A query that spells
 // out a note's title or alias almost always means that note, so this list
 // counts double against text and vector.
 const exactNameWeight = 2.0
 
+// Request is one retrieval. UseLatest selects the corpus (latest = drafts
+// included, live = published only). Rerank carries the caller's explicit
+// preference for the second stage: nil means "no preference", and the
+// instance's reranker.default decides; it can never turn on a reranker that is
+// not configured. Keep, when set, drops candidates inside the text and vector
+// lanes, before their caps, so rejected notes do not take the slots of the
+// ones after them.
+type Request struct {
+	Query     string
+	UseLatest bool
+	Rerank    *bool
+	Keep      func(*appmodel.NoteView) (bool, error)
+}
+
 // Retrieve runs the shared first-stage retrieval pipeline used by both the
 // site (GraphQL) search and the MCP search tool: text lane (bleve) + vector
-// lane + RRF fusion + optional blended cross-encoder rerank. useLatest selects
-// the corpus (latest = drafts included, live = published only). merged reports
+// lane + RRF fusion + optional blended cross-encoder rerank. merged reports
 // whether the vector lane contributed, so callers can apply hybrid-only caps.
 // Permission filtering and output shaping stay with the callers.
-//
-// rerank carries the caller's explicit preference for the second stage: nil
-// means "no preference", and the instance's reranker.default decides. It can
-// never turn on a reranker that is not configured.
-func Retrieve(
-	ctx context.Context,
-	env RetrieveEnv,
-	query string,
-	useLatest bool,
-	rerank *bool,
-) ([]appmodel.SearchResult, bool, error) {
-	var results []appmodel.SearchResult
-	var err error
-	if useLatest {
-		results, err = env.SearchLatestNotes(query)
-		if err != nil {
-			return nil, false, fmt.Errorf("failed to SearchLatestNotes: %w", err)
-		}
-	} else {
-		results, err = env.SearchLiveNotes(query)
-		if err != nil {
-			return nil, false, fmt.Errorf("failed to SearchLiveNotes: %w", err)
-		}
+func Retrieve(ctx context.Context, env RetrieveEnv, req Request) ([]appmodel.SearchResult, bool, error) {
+	results, err := textLane(env, req)
+	if err != nil {
+		return nil, false, err
 	}
 
 	// Mark text results
@@ -86,24 +89,22 @@ func Retrieve(
 	var passageByURL map[string]string
 	merged := false
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
-		vectorResults, passages, vectorErr := vectorSearch(ctx, env, query, useLatest)
+		candidates, vectorErr := vectorCandidates(ctx, env, req)
 		if vectorErr != nil {
 			// Log error but don't fail - text search still works
 			env.Logger().Warn("vector search failed", "error", vectorErr)
 		} else {
+			vectorResults, passages, laneErr := vectorLane(candidates, noteViewsOf(env, req.UseLatest), req.Keep)
+			if laneErr != nil {
+				return nil, false, laneErr
+			}
 			passageByURL = passages
 			results = mergeResults(results, vectorResults)
 			merged = true
 		}
 	}
 
-	var noteViews *appmodel.NoteViews
-	if useLatest {
-		noteViews = env.LatestNoteViews()
-	} else {
-		noteViews = env.LiveNoteViews()
-	}
-	if names := exactNameResults(query, noteViews); len(names) > 0 {
+	if names := exactNameResults(req.Query, noteViewsOf(env, req.UseLatest)); len(names) > 0 {
 		if !merged {
 			results = rankScores(results)
 		}
@@ -111,29 +112,82 @@ func Retrieve(
 	}
 
 	// Optional second-stage cross-encoder rerank, BLENDED with the RRF order.
-	results = rerankResults(ctx, env, query, results, passageByURL, rerank)
+	results = rerankResults(ctx, env, req.Query, results, passageByURL, req.Rerank)
 
 	return results, merged, nil
 }
 
-func vectorSearch(ctx context.Context, env RetrieveEnv, query string, useLatest bool) ([]appmodel.SearchResult, map[string]string, error) {
+func noteViewsOf(env RetrieveEnv, useLatest bool) *appmodel.NoteViews {
+	if useLatest {
+		return env.LatestNoteViews()
+	}
+	return env.LiveNoteViews()
+}
+
+// textLane returns the first textLaneSize text hits that req.Keep accepts,
+// reading the index page by page up to keepScanLimit hits.
+func textLane(env RetrieveEnv, req Request) ([]appmodel.SearchResult, error) {
+	search := env.SearchLiveNotes
+	if req.UseLatest {
+		search = env.SearchLatestNotes
+	}
+
+	if req.Keep == nil {
+		results, err := search(req.Query, 0, textLaneSize)
+		if err != nil {
+			return nil, fmt.Errorf("failed to search notes: %w", err)
+		}
+		return results, nil
+	}
+
+	var kept []appmodel.SearchResult
+	for from := 0; from < keepScanLimit; from += textLaneSize {
+		page, err := search(req.Query, from, textLaneSize)
+		if err != nil {
+			return nil, fmt.Errorf("failed to search notes: %w", err)
+		}
+
+		for _, r := range page {
+			ok, keepErr := req.Keep(r.NoteView)
+			if keepErr != nil {
+				return nil, keepErr
+			}
+			if !ok {
+				continue
+			}
+			kept = append(kept, r)
+			if len(kept) == textLaneSize {
+				return kept, nil
+			}
+		}
+
+		if len(page) < textLaneSize {
+			break
+		}
+	}
+
+	return kept, nil
+}
+
+type vectorCandidate struct {
+	path  string
+	chunk appmodel.NoteChunk
+	sim   float64
+}
+
+// vectorCandidates scores every chunk against the query, best first.
+func vectorCandidates(ctx context.Context, env RetrieveEnv, req Request) ([]vectorCandidate, error) {
 	queryPrefix := env.Features().VectorSearch.ResolvedQueryPrefix()
-	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+query, openai.KindQuery)
+	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+req.Query, openai.KindQuery)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create query embedding: %w", err)
+		return nil, fmt.Errorf("failed to create query embedding: %w", err)
 	}
 
 	var chunks []appmodel.NoteChunk
-	if useLatest {
+	if req.UseLatest {
 		chunks = env.LatestNoteChunks()
 	} else {
 		chunks = env.LiveNoteChunks()
-	}
-
-	type scored struct {
-		path  string
-		chunk appmodel.NoteChunk
-		sim   float64
 	}
 
 	// Score all chunks, no absolute threshold — E5 models compress scores
@@ -142,7 +196,7 @@ func vectorSearch(ctx context.Context, env RetrieveEnv, query string, useLatest 
 	// returns L2-normalised unit vectors (TEI always normalizes /v1/embeddings output),
 	// making cosine ≡ dot product at lower compute cost.
 	scanStart := time.Now()
-	var candidates []scored
+	var candidates []vectorCandidate
 	mismatched := 0
 	for _, c := range chunks {
 		// A stored vector with a different dimensionality (model switch without
@@ -153,7 +207,7 @@ func vectorSearch(ctx context.Context, env RetrieveEnv, query string, useLatest 
 			continue
 		}
 		sim := dotSimilarity(embedding.Vector, c.Embedding)
-		candidates = append(candidates, scored{c.NotePath, c, sim})
+		candidates = append(candidates, vectorCandidate{c.NotePath, c, sim})
 	}
 	if mismatched > 0 {
 		env.Logger().Warn("vector search: embedding dimension mismatch, skipping stale chunks (model switch without re-embedding?)",
@@ -168,13 +222,16 @@ func vectorSearch(ctx context.Context, env RetrieveEnv, query string, useLatest 
 		return candidates[i].path < candidates[j].path
 	})
 
-	var noteViews *appmodel.NoteViews
-	if useLatest {
-		noteViews = env.LatestNoteViews()
-	} else {
-		noteViews = env.LiveNoteViews()
-	}
+	return candidates, nil
+}
 
+// vectorLane deduplicates candidates by note path and takes the top vectorTopK
+// unique notes that keep accepts, checking at most keepScanLimit of them.
+func vectorLane(
+	candidates []vectorCandidate,
+	noteViews *appmodel.NoteViews,
+	keep func(*appmodel.NoteView) (bool, error),
+) ([]appmodel.SearchResult, map[string]string, error) {
 	// Deduplicate by note path, take top-K unique notes.
 	// passageByURL records the highest-similarity chunk per note — a window-sized
 	// passage (chunks are capped ~450 tokens, under the CE ~512-token window) so
@@ -182,6 +239,7 @@ func vectorSearch(ctx context.Context, env RetrieveEnv, query string, useLatest 
 	seen := map[string]bool{}
 	passageByURL := make(map[string]string)
 	var results []appmodel.SearchResult
+	checked := 0
 	for _, c := range candidates {
 		if seen[c.path] {
 			continue
@@ -190,6 +248,19 @@ func vectorSearch(ctx context.Context, env RetrieveEnv, query string, useLatest 
 		note := noteViews.PathMap[c.path]
 		if note == nil {
 			continue
+		}
+		if keep != nil {
+			if checked == keepScanLimit {
+				break
+			}
+			checked++
+			ok, err := keep(note)
+			if err != nil {
+				return nil, nil, err
+			}
+			if !ok {
+				continue
+			}
 		}
 		title := note.Title
 		chunkIndex := c.chunk.ChunkIndex

@@ -46,7 +46,7 @@ func TestSearchTextNamesFederationPointer(t *testing.T) {
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
-		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
 				URL:                note.Permalink,

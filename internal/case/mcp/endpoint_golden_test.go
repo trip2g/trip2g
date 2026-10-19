@@ -363,10 +363,10 @@ func goldenEnv() *EnvMock {
 		LiveNoteViewsFunc:    func() *appmodel.NoteViews { return views },
 		LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
 		LiveNoteChunksFunc:   func() []appmodel.NoteChunk { return nil },
-		SearchLatestNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLatestNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return searchHits, nil
 		},
-		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return searchHits, nil
 		},
 		CanReadNoteFunc: func(_ context.Context, n *appmodel.NoteView) (bool, error) {

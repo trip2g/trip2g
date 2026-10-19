@@ -1,6 +1,7 @@
 package noteloader
 
 import (
+	"strconv"
 	"testing"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -50,7 +51,7 @@ func TestIncrementalIndexing(t *testing.T) {
 	// Verify search works
 	loader.searchIndex = index
 	loader.nvs = notes1
-	results, err := loader.Search("Content")
+	results, err := loader.Search("Content", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, results, 2, "should find both notes")
 
@@ -130,12 +131,12 @@ func TestEnglishStemming(t *testing.T) {
 	loader.nvs = notes
 
 	// English stemming: "run race" should match "running races".
-	res, err := loader.Search("run race")
+	res, err := loader.Search("run race", 0, 20)
 	require.NoError(t, err)
 	require.True(t, hasURL(res, "/en-note"), "english query should match english note via en analyzer")
 
 	// Russian still works.
-	resRu, err := loader.Search("бег тренировка")
+	resRu, err := loader.Search("бег тренировка", 0, 20)
 	require.NoError(t, err)
 	require.True(t, hasURL(resRu, "/ru-note"), "russian query should still match russian note")
 }
@@ -156,7 +157,7 @@ func TestIncrementalIndexing_RemovesNoteWhenSearchDisabled(t *testing.T) {
 	loader.searchIndex = index
 	loader.nvs = before
 
-	results, err := loader.Search(canary)
+	results, err := loader.Search(canary, 0, 20)
 	require.NoError(t, err)
 	require.Len(t, results, 1, "precondition: note must initially be indexed")
 
@@ -171,7 +172,7 @@ func TestIncrementalIndexing_RemovesNoteWhenSearchDisabled(t *testing.T) {
 	loader.searchIndex = index
 	loader.nvs = after
 
-	results, err = loader.Search(canary)
+	results, err = loader.Search(canary, 0, 20)
 	require.NoError(t, err)
 	require.Empty(t, results, "search:false must remove an already-indexed document")
 }
@@ -195,4 +196,33 @@ func TestExtractTextDropsHeadingAttributes(t *testing.T) {
 
 	note := pages.PathMap["note.md"]
 	require.Equal(t, "Setup\nbody", extractText(note.Ast(), note.Content))
+}
+
+func TestSearchPages(t *testing.T) {
+	loader := &Loader{log: &logger.TestLogger{}}
+
+	notes := model.NewNoteViews()
+	for i := range 5 {
+		permalink := "/note" + strconv.Itoa(i)
+		note := createNoteWithAST(int64(i+1), permalink, "Note", []byte("pager"))
+		notes.List = append(notes.List, note)
+		notes.Map[permalink] = note
+	}
+
+	index, err := loader.buildSearchIndex(notes)
+	require.NoError(t, err)
+	loader.searchIndex = index
+	loader.nvs = notes
+
+	seen := map[string]bool{}
+	for from, want := range map[int]int{0: 2, 2: 2, 4: 1, 6: 0} {
+		page, pageErr := loader.Search("pager", from, 2)
+		require.NoError(t, pageErr)
+		require.Len(t, page, want, "page from %d", from)
+		for _, r := range page {
+			require.False(t, seen[r.URL], "%s returned twice", r.URL)
+			seen[r.URL] = true
+		}
+	}
+	require.Len(t, seen, 5)
 }

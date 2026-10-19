@@ -43,8 +43,8 @@ const (
 type Env interface {
 	similarnotes.Env
 	model.FederationClientFactory
-	SearchLatestNotes(query string) ([]model.SearchResult, error)
-	SearchLiveNotes(query string) ([]model.SearchResult, error)
+	SearchLatestNotes(query string, from, size int) ([]model.SearchResult, error)
+	SearchLiveNotes(query string, from, size int) ([]model.SearchResult, error)
 	LatestNoteChunks() []model.NoteChunk
 	LiveNoteChunks() []model.NoteChunk
 	LiveNoteViews() *model.NoteViews
@@ -264,7 +264,12 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	// else gets the live corpus, like anonymous site visitors.
 	siteConfig := env.SiteConfig(ctx)
 	useLatest := siteConfig.ShowDraftVersions || mcpAPIKeyAuthed(ctx)
-	results, _, err := sitesearch.Retrieve(ctx, env, args.Query, useLatest, args.Rerank)
+	retrieveReq := sitesearch.Request{
+		Query:     args.Query,
+		UseLatest: useLatest,
+		Rerank:    args.Rerank,
+	}
+	results, _, err := sitesearch.Retrieve(ctx, env, retrieveReq)
 	if err != nil {
 		log.Error("search failed", "error", err, "query", args.Query)
 		return errorResponse(id, ErrCodeInternal, "Search failed: "+err.Error())

@@ -69,15 +69,16 @@ func TestVectorSearch_DimensionMismatchYieldsNothing(t *testing.T) {
 	env := &EnvMock{
 		CurrentUserTokenFunc: func(_ context.Context) (*usertoken.Data, error) { return &usertoken.Data{}, nil },
 		SiteConfigFunc:       func(_ context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
-		SearchLiveNotesFunc:  func(_ string) ([]appmodel.SearchResult, error) { return nil, nil },
+		SearchLiveNotesFunc:  func(_ string, _, _ int) ([]appmodel.SearchResult, error) { return nil, nil },
 		FeaturesFunc: func() features.Features {
 			return features.Features{VectorSearch: features.VectorSearchConfig{Enabled: true}}
 		},
-		OpenAIFunc:         func() *openai.Client { return openai.New("test-key", "test-model", srv.URL+"/v1") },
-		LiveNoteChunksFunc: func() []appmodel.NoteChunk { return chunks },
-		LiveNoteViewsFunc:  func() *appmodel.NoteViews { return &appmodel.NoteViews{PathMap: notes} },
-		CanReadNoteFunc:    func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
-		LoggerFunc:         func() logger.Logger { return &logger.DummyLogger{} },
+		OpenAIFunc:               func() *openai.Client { return openai.New("test-key", "test-model", srv.URL+"/v1") },
+		LiveNoteChunksFunc:       func() []appmodel.NoteChunk { return chunks },
+		LiveNoteViewsFunc:        func() *appmodel.NoteViews { return &appmodel.NoteViews{PathMap: notes} },
+		CanReadNoteFunc:          func(_ context.Context, _ *appmodel.NoteView) (bool, error) { return true, nil },
+		LoggerFunc:               func() logger.Logger { return &logger.DummyLogger{} },
+		SearchHideUnreadableFunc: func() bool { return false },
 	}
 
 	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
@@ -118,7 +119,7 @@ func TestHybridSearch_ReadableBeyondCapSurfaces(t *testing.T) {
 	env := &EnvMock{
 		CurrentUserTokenFunc: func(_ context.Context) (*usertoken.Data, error) { return &usertoken.Data{}, nil },
 		SiteConfigFunc:       func(_ context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
-		SearchLiveNotesFunc:  func(_ string) ([]appmodel.SearchResult, error) { return textResults, nil },
+		SearchLiveNotesFunc:  func(_ string, _, _ int) ([]appmodel.SearchResult, error) { return textResults, nil },
 		FeaturesFunc: func() features.Features {
 			return features.Features{VectorSearch: features.VectorSearchConfig{Enabled: true}}
 		},
@@ -179,7 +180,7 @@ func TestRerank_OutputKTruncatesAfterPermissionFilter(t *testing.T) {
 	env := &EnvMock{
 		CurrentUserTokenFunc: func(_ context.Context) (*usertoken.Data, error) { return &usertoken.Data{}, nil },
 		SiteConfigFunc:       func(_ context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
-		SearchLiveNotesFunc:  func(_ string) ([]appmodel.SearchResult, error) { return nil, nil },
+		SearchLiveNotesFunc:  func(_ string, _, _ int) ([]appmodel.SearchResult, error) { return nil, nil },
 		FeaturesFunc: func() features.Features {
 			return features.Features{VectorSearch: features.VectorSearchConfig{
 				Enabled: true,
