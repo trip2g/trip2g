@@ -63,7 +63,7 @@ flowchart TD
 
 A note the reader has no access to, such as a note of a paid subgraph, still shows up in site search. It comes after the readable results, with its title and link and the text "Закрытый материал." in place of a snippet. This tells the reader that such material exists.
 
-To leave these notes out of site search instead, start the server with `SEARCH_HIDE_UNREADABLE=true` (or `--search-hide-unreadable`). Site search then lists only the notes the reader can open. Admins and readers with access see the same results as before. MCP search already leaves out notes the caller cannot read and is not affected.
+To leave these notes out of site search instead, start the server with `SEARCH_HIDE_UNREADABLE=true` (or `--search-hide-unreadable`). Site search then lists only the notes the reader can open. Closed notes do not take up its places: search looks through the first 200 text matches and the first 200 semantic matches for notes the reader can open, so a readable note ranked below many closed ones still shows up. Admins and readers with access see the same results as before. MCP search already leaves out notes the caller cannot read and is not affected.
 
 ### MCP server search
 

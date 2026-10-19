@@ -6,7 +6,7 @@ Status: **IMPLEMENTED** in PR #176 (merged 2026-07-11). Sections 1–3 describe 
 
 ## 0. Implemented architecture (PR #176)
 
-- **One core:** `sitesearch.Retrieve(ctx, env RetrieveEnv, query, useLatest) ([]model.SearchResult, merged bool, error)` (`internal/case/sitesearch/retrieve.go`) — text lane (bleve) + vector lane (dot similarity, dim-mismatch guard, deterministic tie-breaks) + RRF fusion + optional blended CE rerank.
+- **One core:** `sitesearch.Retrieve(ctx, env RetrieveEnv, req sitesearch.Request) ([]model.SearchResult, merged bool, error)` (`internal/case/sitesearch/retrieve.go`) — text lane (bleve) + vector lane (dot similarity, dim-mismatch guard, deterministic tie-breaks) + RRF fusion + optional blended CE rerank. `Request.Keep`, when set, drops candidates inside both lanes before their caps (text: 20 kept, read in pages of 20; vector: 50 kept), checking at most 200 per lane; the site search sets it to the read check under `SEARCH_HIDE_UNREADABLE`.
 - **Site adapter:** `sitesearch.Resolve` = corpus choice (`ShowDraftVersions || admin` → latest) → `Retrieve` → scope/permission filter → "Закрытый материал." placeholders (dropped instead when `SEARCH_HIDE_UNREADABLE` is on) → post-ACL output caps.
 - **MCP adapter:** `handleSearch` = corpus choice (`mcpAPIKeyAuthed` → latest; anonymous and federation-JWT clients → live) → `Retrieve` → `filterSearchResults`/`canReadMCPNote` → `buildSearchPayload` (`match_id`, `toc_path`).
 - The unused server-rendered `/search` page (`internal/case/rendersearchpage`) is **deleted**; GraphQL search remains the transport for the site widget and `notePaths(filter:{search})`.

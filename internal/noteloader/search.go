@@ -339,7 +339,8 @@ func (l *Loader) adoptPersistedIndex(index bleve.Index, notes *model.NoteViews) 
 	return nil
 }
 
-func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
+// Search returns up to size hits of queryString, skipping the first from.
+func (l *Loader) Search(queryString string, from, size int) ([]model.SearchResult, error) {
 	if l.searchIndex == nil {
 		return nil, ErrSearchNotAvailable
 	}
@@ -368,7 +369,8 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 	searchRequest.IncludeLocations = true
 	searchRequest.Highlight = highlight
 	searchRequest.Fields = []string{"*"}
-	searchRequest.Size = 20
+	searchRequest.From = from
+	searchRequest.Size = size
 
 	searchResult, err := l.searchIndex.Search(searchRequest)
 	if err != nil {

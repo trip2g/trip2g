@@ -36,10 +36,10 @@ func (e *gqlRequestEnv) CanReadNote(_ context.Context, _ *model.NoteView) (bool,
 func (e *gqlRequestEnv) FederationClient(_ context.Context, _ string) (model.Federation, error) {
 	panic("unexpected")
 }
-func (e *gqlRequestEnv) SearchLatestNotes(_ string) ([]model.SearchResult, error) {
+func (e *gqlRequestEnv) SearchLatestNotes(_ string, _, _ int) ([]model.SearchResult, error) {
 	panic("unexpected")
 }
-func (e *gqlRequestEnv) SearchLiveNotes(_ string) ([]model.SearchResult, error) {
+func (e *gqlRequestEnv) SearchLiveNotes(_ string, _, _ int) ([]model.SearchResult, error) {
 	panic("unexpected")
 }
 func (e *gqlRequestEnv) LiveNoteChunks() []model.NoteChunk             { panic("unexpected") }

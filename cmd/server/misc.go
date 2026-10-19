@@ -27,12 +27,12 @@ func (a *app) IDHash(entity string, id int64) string {
 	return hex.EncodeToString(sha256.Sum(nil))
 }
 
-func (a *app) SearchLiveNotes(query string) ([]model.SearchResult, error) {
-	return a.liveNoteLoader.Search(query)
+func (a *app) SearchLiveNotes(query string, from, size int) ([]model.SearchResult, error) {
+	return a.liveNoteLoader.Search(query, from, size)
 }
 
-func (a *app) SearchLatestNotes(query string) ([]model.SearchResult, error) {
-	return a.latestNoteLoader.Search(query)
+func (a *app) SearchLatestNotes(query string, from, size int) ([]model.SearchResult, error) {
+	return a.latestNoteLoader.Search(query, from, size)
 }
 
 func (a *app) EnqueueGenerateNoteVersionEmbedding(ctx context.Context, versionID int64) error {
