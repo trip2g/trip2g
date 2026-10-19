@@ -67,13 +67,13 @@ func TestResolve(t *testing.T) {
 		{
 			name:     "returns the query result as JSON",
 			input:    model.NoteQueryInput{Query: "queries/titles.md"},
-			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`["A","B"]`)},
+			expected: &model.NoteQueryPayload{Result: json.RawMessage(`["A","B"]`)},
 			observed: "queries/titles.md ok",
 		},
 		{
 			name:     "wikilink target and params",
 			input:    model.NoteQueryInput{Query: "[[by_tag]]", Params: map[string]any{"tag": "go"}},
-			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`["blog/a.md"]`)},
+			expected: &model.NoteQueryPayload{Result: json.RawMessage(`["blog/a.md"]`)},
 			observed: "queries/by_tag.md ok",
 		},
 		{
@@ -103,13 +103,13 @@ func TestResolve(t *testing.T) {
 		{
 			name:     "notes skip unreadable, system, search: false and non-markdown files",
 			input:    model.NoteQueryInput{Query: "queries/paths.md"},
-			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`["blog/a.md","blog/b.md","odd.md"]`)},
+			expected: &model.NoteQueryPayload{Result: json.RawMessage(`["blog/a.md","blog/b.md","odd.md"]`)},
 			observed: "queries/paths.md ok",
 		},
 		{
 			name:     "a non-finite number in frontmatter becomes null",
 			input:    model.NoteQueryInput{Query: "queries/nan.md"},
-			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`[null]`)},
+			expected: &model.NoteQueryPayload{Result: json.RawMessage(`[null]`)},
 			observed: "queries/nan.md ok",
 		},
 		{
@@ -127,7 +127,7 @@ func TestResolve(t *testing.T) {
 		{
 			name:  "all_notes shows every note with readable",
 			input: model.NoteQueryInput{Query: "queries/all.md"},
-			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(
+			expected: &model.NoteQueryPayload{Result: json.RawMessage(
 				`{"notes":[["blog/a.md",true],["blog/b.md",true],["blog/paid.md",false]],` +
 					`"user":{"id":null,"isAdmin":false,"role":null,"signedIn":false}}`)},
 			observed: "queries/all.md ok",
@@ -135,7 +135,7 @@ func TestResolve(t *testing.T) {
 		{
 			name:     "currentUser is there without all_notes too",
 			input:    model.NoteQueryInput{Query: "queries/no_user.md"},
-			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`{"id":null,"isAdmin":false,"role":null,"signedIn":false}`)},
+			expected: &model.NoteQueryPayload{Result: json.RawMessage(`{"id":null,"isAdmin":false,"role":null,"signedIn":false}`)},
 			observed: "queries/no_user.md ok",
 		},
 		{
@@ -197,6 +197,6 @@ func TestResolveSignedInLooksUpSubgraphsOnce(t *testing.T) {
 
 	got, err := runnotequery.Resolve(context.Background(), env, model.NoteQueryInput{Query: "queries/titles.md"})
 	require.NoError(t, err)
-	require.Equal(t, &model.NoteQueryPayload{RawResult: json.RawMessage(`["Free","General","Premium"]`)}, got)
+	require.Equal(t, &model.NoteQueryPayload{Result: json.RawMessage(`["Free","General","Premium"]`)}, got)
 	require.Len(t, env.ListActiveUserSubgraphsCalls(), 1)
 }

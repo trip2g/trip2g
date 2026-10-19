@@ -2845,7 +2845,7 @@ type NoteQueryPayload {
   Whatever the query program returned, as a JSON value. Its shape is set by
   the query note, not by the schema.
   """
-  rawResult: JSON!
+  result: JSON!
 }
 
 union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload
@@ -38073,14 +38073,14 @@ func (ec *executionContext) fieldContext_NotePath_assetReplaces(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _NoteQueryPayload_rawResult(ctx context.Context, field graphql.CollectedField, obj *model.NoteQueryPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _NoteQueryPayload_result(ctx context.Context, field graphql.CollectedField, obj *model.NoteQueryPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_NoteQueryPayload_rawResult,
+		ec.fieldContext_NoteQueryPayload_result,
 		func(ctx context.Context) (any, error) {
-			return obj.RawResult, nil
+			return obj.Result, nil
 		},
 		nil,
 		ec.marshalNJSON2interface,
@@ -38089,7 +38089,7 @@ func (ec *executionContext) _NoteQueryPayload_rawResult(ctx context.Context, fie
 	)
 }
 
-func (ec *executionContext) fieldContext_NoteQueryPayload_rawResult(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_NoteQueryPayload_result(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "NoteQueryPayload",
 		Field:      field,
@@ -79582,8 +79582,8 @@ func (ec *executionContext) _NoteQueryPayload(ctx context.Context, sel ast.Selec
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("NoteQueryPayload")
-		case "rawResult":
-			out.Values[i] = ec._NoteQueryPayload_rawResult(ctx, field, obj)
+		case "result":
+			out.Values[i] = ec._NoteQueryPayload_result(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

@@ -42,7 +42,7 @@ local byDate = std.sort(tagged, function(n) std.get(n.meta, 'date', ''));
 const noteQuery = makeRequest(`query ($input: NoteQueryInput!) {
   noteQuery(input: $input) {
     __typename
-    ... on NoteQueryPayload { rawResult }
+    ... on NoteQueryPayload { result }
     ... on ErrorPayload { message }
   }
 }`)
@@ -50,11 +50,11 @@ const noteQuery = makeRequest(`query ($input: NoteQueryInput!) {
 const data = await noteQuery({
   input: { query: '[[by_tag]]', params: { tag: 'go' } },
 })
-const posts = data.noteQuery.rawResult
+const posts = data.noteQuery.result
 // [{ title: 'Go on the web', url: '/blog/go_on_the_web', date: '2026-10-10' }, …]
 ```
 
-`query` names the query note: a path from the vault root such as `queries/by_tag.md`, or a wikilink such as `[[by_tag]]`. A bare name is found anywhere in the vault; when several notes share it, the one with the shortest path wins. `params` is any JSON value, up to 16 KB once encoded; without it the query gets `{}`. The result comes back in `rawResult` as a JSON value, so there is nothing to parse.
+`query` names the query note: a path from the vault root such as `queries/by_tag.md`, or a wikilink such as `[[by_tag]]`. A bare name is found anywhere in the vault; when several notes share it, the one with the shortest path wins. `params` is any JSON value, up to 16 KB once encoded; without it the query gets `{}`. The result comes back in the `result` field as a JSON value, so there is nothing to parse.
 
 ### What the query sees
 

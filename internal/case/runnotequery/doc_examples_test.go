@@ -66,8 +66,8 @@ func TestDocExamples(t *testing.T) {
 		require.NoError(t, resErr)
 		payload, ok := res.(*model.NoteQueryPayload)
 		require.True(t, ok, "%s: %#v", query, res)
-		raw, ok := payload.RawResult.(json.RawMessage)
-		require.True(t, ok, "%s: %T", query, payload.RawResult)
+		raw, ok := payload.Result.(json.RawMessage)
+		require.True(t, ok, "%s: %T", query, payload.Result)
 		return string(raw)
 	}
 

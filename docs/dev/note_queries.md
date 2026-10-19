@@ -1,12 +1,12 @@
 # Named note queries (`noteQuery`) — MVP
 
-**Summary:** a note with `type: note-query` and one ```` ```jsonnet ```` block is a query. `noteQuery(input: {query, params})` runs it: the program gets `notes` (every note the caller can read) and `params` (JSON from the caller), and its result comes back as a JSON value in `rawResult`. The vault author writes the code; a visitor only passes params. This is the answer to "an SPA needs frontmatter queries" without letting visitors run their own jsonnet or see raw frontmatter.
+**Summary:** a note with `type: note-query` and one ```` ```jsonnet ```` block is a query. `noteQuery(input: {query, params})` runs it: the program gets `notes` (every note the caller can read) and `params` (JSON from the caller), and its result comes back as a JSON value in `result`. The vault author writes the code; a visitor only passes params. This is the answer to "an SPA needs frontmatter queries" without letting visitors run their own jsonnet or see raw frontmatter.
 
 ## Contract
 
 ```graphql
 noteQuery(input: { query: "[[by_tag]]", params: { tag: "go" } }) {
-  ... on NoteQueryPayload { rawResult }
+  ... on NoteQueryPayload { result }
   ... on ErrorPayload { message }
 }
 ```
@@ -16,7 +16,7 @@ noteQuery(input: { query: "[[by_tag]]", params: { tag: "go" } }) {
 - Notes come from `LatestNoteViews()`. Releases (live versions) are not in use, so latest is what the site serves. Several readers pick live or latest by different rules; that is tracked in https://github.com/trip2g/trip2g/issues/438.
 - `notes` leaves out system notes (`_…`), `search: false` notes (`ExcludeSearch`, as search and embeddings do) and files without a markdown AST (`.canvas`, `.base`, `.excalidraw`).
 - A NaN or ±Inf in frontmatter (YAML allows them, JSON doesn't) becomes `null`, so one odd note can't break every query.
-- The result comes back in `rawResult`, typed with the `JSON` scalar (gqlgen `graphql.Any`): any JSON value, sent as is, without string-wrapping.
+- The result comes back in `result`, typed with the `JSON` scalar (gqlgen `graphql.Any`): any JSON value, sent as is, without string-wrapping.
 
 Example query note:
 

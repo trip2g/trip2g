@@ -36,7 +36,7 @@ func JetFunc(ctx context.Context, env Env) jet.Func {
 		case *model.ErrorPayload:
 			a.Panicf("noteQuery(%q): %s", query, p.Message)
 		case *model.NoteQueryPayload:
-			raw, _ := p.RawResult.(json.RawMessage)
+			raw, _ := p.Result.(json.RawMessage)
 			var v any
 			err = json.Unmarshal(raw, &v)
 			if err != nil {

@@ -41,7 +41,7 @@ local byDate = std.sort(tagged, function(n) std.get(n.meta, 'date', ''));
 const noteQuery = makeRequest(`query ($input: NoteQueryInput!) {
   noteQuery(input: $input) {
     __typename
-    ... on NoteQueryPayload { rawResult }
+    ... on NoteQueryPayload { result }
     ... on ErrorPayload { message }
   }
 }`)
@@ -49,11 +49,11 @@ const noteQuery = makeRequest(`query ($input: NoteQueryInput!) {
 const data = await noteQuery({
   input: { query: '[[by_tag]]', params: { tag: 'go' } },
 })
-const posts = data.noteQuery.rawResult
+const posts = data.noteQuery.result
 // [{ title: 'Go on the web', url: '/blog/go_on_the_web', date: '2026-10-10' }, …]
 ```
 
-`query` называет заметку-запрос: путём от корня хранилища, например `queries/by_tag.md`, или вики-ссылкой, например `[[by_tag]]`. Голое имя ищется по всему хранилищу; если имя повторяется, побеждает заметка с самым коротким путём. `params` — любое JSON-значение, до 16 КБ в закодированном виде; без него запрос получает `{}`. Результат приходит в поле `rawResult` готовым JSON-значением, разбирать ничего не нужно.
+`query` называет заметку-запрос: путём от корня хранилища, например `queries/by_tag.md`, или вики-ссылкой, например `[[by_tag]]`. Голое имя ищется по всему хранилищу; если имя повторяется, побеждает заметка с самым коротким путём. `params` — любое JSON-значение, до 16 КБ в закодированном виде; без него запрос получает `{}`. Результат приходит в поле `result` готовым JSON-значением, разбирать ничего не нужно.
 
 ### Что видит запрос
 

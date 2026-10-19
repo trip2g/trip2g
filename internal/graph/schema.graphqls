@@ -1628,7 +1628,7 @@ type NoteQueryPayload {
   Whatever the query program returned, as a JSON value. Its shape is set by
   the query note, not by the schema.
   """
-  rawResult: JSON!
+  result: JSON!
 }
 
 union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload

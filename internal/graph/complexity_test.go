@@ -20,7 +20,7 @@ func TestNoteQueryComplexity(t *testing.T) {
 		var q strings.Builder
 		q.WriteString("{")
 		for i := range calls {
-			q.WriteString(" q" + string(rune('a'+i)) + `: noteQuery(input: {query: "q"}) { ... on NoteQueryPayload { rawResult } }`)
+			q.WriteString(" q" + string(rune('a'+i)) + `: noteQuery(input: {query: "q"}) { ... on NoteQueryPayload { result } }`)
 		}
 		q.WriteString(" }")
 
