@@ -70,6 +70,7 @@ pass_api_key    = true
 on_update       = true
 max_depth       = 1
 concurrency_mode= skip
+max_retries     = 4             # role retries (default 3) + the first attempt
 transform_jsonnet = ""           # identity; fleet expects the native payload
 description     = "fleet:<FleetID>:roles/triage.md#<ver>"   # reconcile marker, no managed_by column
 ```
