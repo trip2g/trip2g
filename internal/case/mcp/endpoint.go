@@ -274,6 +274,10 @@ func checkToolCallParams(rpcReq Request) *Response {
 // simply never registered — depend on the name being the tool's, not the
 // transport method's.
 func restoreMethodNotFound(body []byte, rpcReq Request) (Response, bool) {
+	if responseError(body) == nil {
+		return Response{}, false
+	}
+
 	var resp Response
 	if json.Unmarshal(body, &resp) != nil || resp.Error == nil {
 		return Response{}, false
@@ -322,11 +326,25 @@ func methodNotFoundMessage(rpcErr *Error, rpcReq Request) string {
 // decodeResponse re-reads the transport's own output so request metrics keep
 // classifying results the way they did when this handler owned the dispatch.
 func decodeResponse(body []byte) Response {
-	var resp Response
-	if json.Unmarshal(body, &resp) != nil {
-		return Response{}
+	return Response{Error: responseError(body)}
+}
+
+// responseError reads only the error member of a JSON-RPC response. A success
+// carries the whole result, and decoding it into interface values just to
+// learn there was no error cost a tools/list as much as building its answer.
+// A body without the member's key cannot carry one, so it is not parsed at all.
+func responseError(body []byte) *Error {
+	if !bytes.Contains(body, []byte(`"error":`)) {
+		return nil
 	}
-	return resp
+
+	var envelope struct {
+		Error *Error `json:"error"`
+	}
+	if json.Unmarshal(body, &envelope) != nil {
+		return nil
+	}
+	return envelope.Error
 }
 
 // authenticateAnonymousRequest resolves API-key or federation-JWT auth when no
