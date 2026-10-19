@@ -488,13 +488,13 @@ echo "🎭 Running main Playwright tests..."
 echo ""
 
 if [ "$1" = "--headed" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|coexistence" --headed
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|Federation ACL|coexistence" --headed
 elif [ "$1" = "--debug" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|coexistence" --debug
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|Federation ACL|coexistence" --debug
 elif [ "$1" = "--ui" ]; then
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|coexistence" --ui
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|Federation ACL|coexistence" --ui
 else
-  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|coexistence"
+  npx playwright test --grep-invert "Setup|Layout CSS|Webhook|Screenshot|Bidirectional Federation|Federation ACL|coexistence"
 fi
 
 TEST_EXIT_CODE=$?
@@ -572,6 +572,17 @@ npx playwright test e2e/renderall.spec.js || {
   exit 1
 }
 echo -e "${GREEN}✓ Render-all E2E tests passed${NC}"
+
+# Run federation ACL E2E tests alone. They hold their own outbound key to peer2
+# while federation-graphql holds another; with both live a call to kb_id peer2
+# names neither key and is refused, so the two specs must not overlap.
+echo ""
+echo "🔐 Running federation ACL E2E tests..."
+npx playwright test e2e/federation-acl.spec.js || {
+  echo -e "${RED}✗ Federation ACL E2E tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ Federation ACL E2E tests passed${NC}"
 
 # Run bidirectional federation E2E tests
 echo ""
