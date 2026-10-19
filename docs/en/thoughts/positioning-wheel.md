@@ -22,6 +22,8 @@ motion_visualization: channel
 link: "[[en/user/telegram-blog-from-obsidian]]"
 related:
   - "[[en/user/telegram]]"
+lang: en
+lang_redirect: "[[ru/circle/channel]]"
 ```
 
 The body is the two to four sentences shown in the center. `link` is the main article, `related` the small links under it. `lang` and `lang_redirect` pair the twins, like every other bilingual note on this site.

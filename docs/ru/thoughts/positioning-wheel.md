@@ -22,6 +22,8 @@ motion_visualization: channel
 link: "[[ru/user/telegram-blog-from-obsidian]]"
 related:
   - "[[ru/user/telegram]]"
+lang: ru
+lang_redirect: "[[en/circle/channel]]"
 ```
 
 Тело заметки — те два-четыре предложения, что видны в центре. `link` — главная статья, `related` — мелкие ссылки под ней. `lang` и `lang_redirect` связывают двойников, как у любой двуязычной заметки на этом сайте.
