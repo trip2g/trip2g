@@ -16,6 +16,7 @@ In this article:
 - [Tools and scope](#tools-and-scope)
 - [Code roles](#code-roles)
 - [Fan-out and templating](#fan-out-and-templating)
+- [Retries](#retries)
 - [Budgets, spend, and shutdown](#budgets-spend-and-shutdown)
 - [Worked example: a knowledge base that builds itself](#worked-example-a-knowledge-base-that-builds-itself)
 - [Running fleet](#running-fleet)
@@ -70,6 +71,7 @@ The keys, verified against the runtime:
 | `max_tokens`, `max_steps`, `timeout_seconds` | per-run budget (timeout defaults to 300s) |
 | `max_depth` | cascade depth limit; loop protection |
 | `concurrency` | `skip`, `queue_one`, or `allow_overlap` when deliveries pile up |
+| `retries` | how many times the hub re-delivers a failed run; default 3, `0` turns retries off. See [Retries](#retries) |
 | `env_passthrough`, `env_prefix` | code roles only: which env vars the code receives, narrowing what the codellm operator allowlisted |
 | `unseal`, `unseal_env_key` | code roles only: which frontmatter fields hold sealed secrets, and which key opens them |
 
@@ -138,6 +140,18 @@ A code role that needs a token reads it from the run environment, which the code
 The role body is a Jet template rendered per delivery. Four variables are available: `changed_files` (the notes that triggered the delivery), `change_file` (the single current note when fanning out), `attached_notes` (context pre-loaded via `attach_notes`), and `depth`. Secrets never enter the template, and referencing an undefined variable stops the delivery before any model call.
 
 `for_each: changed_files` runs the agent once per changed note; `for_each: attached_notes` once per attached note. A batch of ten edits becomes ten focused runs instead of one confused run, and one item failing does not abort the rest.
+
+## Retries
+
+A run fails when it errors out on every item of the delivery: an LLM provider answering 502 after the runtime's own attempts, say, or a run that hits its timeout. Fleet then answers the hub with an error, and the hub delivers the same changes again, up to `retries` more times. The retried delivery carries the same `changes` and, in `previous_error`, why the last attempt failed. Retries start right away, with no pause between attempts.
+
+Only a run where everything failed is retried. When a fan-out run succeeds on some items and fails on others, fleet reports it as `partial`, the hub records it as done, and the failed items are not tried again: retrying them would rerun the items that already succeeded.
+
+Set `retries: 0` on a role that is not idempotent: one that appends to a note, sends a message, posts to an outside service or charges something. A retry runs the whole delivery again, and a run that failed late may already have done part of its work. A role that overwrites its output with the same result each time can keep the default.
+
+A retry is the same delivery tried again, so `concurrency` sees it as still in flight. Under `skip` the role stays busy while it retries, and changes that arrive meanwhile are skipped. Under `queue_one` and `allow_overlap` a newer delivery can run alongside a retry.
+
+Changing `retries` re-registers the role's webhooks on the next poll, the same as changing any other key in the table.
 
 ## Budgets, spend, and shutdown
 
