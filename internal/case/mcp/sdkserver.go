@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
@@ -23,28 +24,30 @@ const (
 // scope names the single tool a request needs registered. A tools/call only
 // dispatches one tool, so registering the whole catalog — which means walking
 // every note and access-checking each mcp_method one — would put work on the
-// hot path that the endpoint never used to do. An empty scope registers
-// everything, which is what tools/list needs.
+// hot path that the endpoint never used to do. An empty scope is tools/list,
+// which is answered by a shared listing server (see listingServer).
 func buildServer(ctx context.Context, env Env, instructions, scope string) *mcpsdk.Server {
-	srv := mcpsdk.NewServer(
-		&mcpsdk.Implementation{Name: serverName, Version: serverVersion},
-		&mcpsdk.ServerOptions{Instructions: instructions},
-	)
-
-	registerTools(ctx, srv, env, scope)
 	if scope == "" {
-		srv.AddReceivingMiddleware(listedToolsMiddleware(ctx, env))
+		return listingServer(builtinTools(ctx, env), instructions)
 	}
+
+	srv := newServer(instructions)
+	registerTools(srv, env, scope)
 	srv.AddReceivingMiddleware(unknownToolMiddleware())
 
 	return srv
 }
 
-// registerTools registers the callable tools in scope. The callable set is
-// deliberately wider than what tools/list advertises — graphql_request stays
-// callable by a federation peer that never sees it listed — so the listing is
-// narrowed separately by listedToolsMiddleware.
-func registerTools(ctx context.Context, srv *mcpsdk.Server, env Env, scope string) {
+func newServer(instructions string) *mcpsdk.Server {
+	return mcpsdk.NewServer(
+		&mcpsdk.Implementation{Name: serverName, Version: serverVersion},
+		&mcpsdk.ServerOptions{Instructions: instructions},
+	)
+}
+
+// registerTools registers the one tool a tools/call dispatches, or for any
+// other method the bare names initialize advertises the tools capability with.
+func registerTools(srv *mcpsdk.Server, env Env, scope string) {
 	handlers := builtinToolHandlers()
 
 	if scope == scopeCapabilities {
@@ -54,46 +57,64 @@ func registerTools(ctx context.Context, srv *mcpsdk.Server, env Env, scope strin
 		return
 	}
 
-	if scope != "" {
-		// Only the named tool can be dispatched, and a call never echoes tool
-		// metadata, so the descriptive catalog is not built here. Arguments are
-		// validated by the handlers themselves (AddTool leaves that to the
-		// caller), and an unknown name falls through to handleDynamicMethod,
-		// which resolves the backing note and enforces its ACL exactly as it
-		// did when this package owned the dispatch.
-		spec := &mcpsdk.Tool{Name: scope, InputSchema: &jsonschema.Schema{Type: "object"}}
-		if handler, ok := handlers[scope]; ok {
-			srv.AddTool(spec, builtinToolAdapter(env, handler))
-			return
-		}
-		srv.AddTool(spec, dynamicToolHandler(env, scope))
+	// Only the named tool can be dispatched, and a call never echoes tool
+	// metadata, so the descriptive catalog is not built here. Arguments are
+	// validated by the handlers themselves (AddTool leaves that to the
+	// caller), and an unknown name falls through to handleDynamicMethod,
+	// which resolves the backing note and enforces its ACL exactly as it
+	// did when this package owned the dispatch.
+	spec := &mcpsdk.Tool{Name: scope, InputSchema: &jsonschema.Schema{Type: "object"}}
+	if handler, ok := handlers[scope]; ok {
+		srv.AddTool(spec, builtinToolAdapter(env, handler))
 		return
 	}
+	srv.AddTool(spec, dynamicToolHandler(env, scope))
+}
 
-	specs := builtinTools(ctx, env)
-	registered := make(map[string]bool, len(specs))
+// listingServers keeps one tools/list server per distinct visible catalog.
+// Building a server registers every tool, and the SDK re-parses each schema
+// twice in AddTool, which made a static 15 KB listing cost about a millisecond
+// of CPU and 1.6 MB of garbage. A listing server holds no-op handlers and no
+// caller state, so callers who see the same catalog can share it. The catalogs
+// are few (anonymous, API key, admin key, per-ACL note tools); the map is
+// cleared if note edits ever accumulate past maxListingServers of them.
+var listingServers = struct { //nolint:gochecknoglobals // process-wide cache of caller-free listing servers
+	sync.Mutex
+	byCatalog map[string]*mcpsdk.Server
+}{byCatalog: map[string]*mcpsdk.Server{}}
+
+const maxListingServers = 256
+
+func listingServer(specs []Tool, instructions string) *mcpsdk.Server {
+	catalog := struct {
+		Tools        []Tool `json:"tools"`
+		Instructions string `json:"instructions"`
+	}{specs, instructions}
+	key, err := json.Marshal(catalog)
+	if err != nil {
+		return buildListingServer(specs, instructions)
+	}
+
+	listingServers.Lock()
+	defer listingServers.Unlock()
+
+	if srv, ok := listingServers.byCatalog[string(key)]; ok {
+		return srv
+	}
+	if len(listingServers.byCatalog) >= maxListingServers {
+		listingServers.byCatalog = map[string]*mcpsdk.Server{}
+	}
+	srv := buildListingServer(specs, instructions)
+	listingServers.byCatalog[string(key)] = srv
+	return srv
+}
+
+func buildListingServer(specs []Tool, instructions string) *mcpsdk.Server {
+	srv := newServer(instructions)
 	for _, spec := range specs {
-		registered[spec.Name] = true
+		srv.AddTool(sdkTool(spec), noopToolHandler)
 	}
-
-	// Add metadata for the callable-but-unlisted tools so they can be invoked.
-	for _, spec := range append(adminGraphQLTools(), federatedGraphQLTool(defaultKBIDNote)) {
-		if !registered[spec.Name] {
-			registered[spec.Name] = true
-			specs = append(specs, spec)
-		}
-	}
-
-	for _, spec := range specs {
-		handler, ok := handlers[spec.Name]
-		if !ok {
-			// No built-in implementation: a note-registered (mcp_method) tool,
-			// whose response is the note body.
-			srv.AddTool(sdkTool(spec), dynamicToolHandler(env, spec.Name))
-			continue
-		}
-		srv.AddTool(sdkTool(spec), builtinToolAdapter(env, handler))
-	}
+	return srv
 }
 
 // sdkTool converts our tool metadata into the SDK's shape, keeping the
@@ -102,8 +123,40 @@ func sdkTool(t Tool) *mcpsdk.Tool {
 	return &mcpsdk.Tool{
 		Name:        t.Name,
 		Description: t.Description,
-		InputSchema: inputSchemaToJSONSchema(t.InputSchema),
+		InputSchema: marshaledInputSchema(t.InputSchema),
 	}
+}
+
+// renderedSchemas holds each distinct input schema as the bytes jsonschema
+// renders for it. Every tools/list registers the whole catalog on a fresh
+// server, and jsonschema's MarshalJSON, run once in AddTool and again for the
+// response, was most of that request's CPU. The schemas are a small, fixed set
+// (the compiled-in tools plus the notes' mcp_method ones), so the map stays
+// small.
+var renderedSchemas sync.Map //nolint:gochecknoglobals // process-wide cache of rendered schemas
+
+func marshaledInputSchema(in *InputSchema) json.RawMessage {
+	key, err := json.Marshal(in)
+	if err != nil {
+		return mustMarshalSchema(inputSchemaToJSONSchema(in))
+	}
+	if cached, ok := renderedSchemas.Load(string(key)); ok {
+		rendered, isRaw := cached.(json.RawMessage)
+		if isRaw {
+			return rendered
+		}
+	}
+	rendered := mustMarshalSchema(inputSchemaToJSONSchema(in))
+	renderedSchemas.Store(string(key), rendered)
+	return rendered
+}
+
+func mustMarshalSchema(s *jsonschema.Schema) json.RawMessage {
+	b, err := json.Marshal(s)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
 func inputSchemaToJSONSchema(in *InputSchema) *jsonschema.Schema {
@@ -148,7 +201,8 @@ func dynamicToolHandler(env Env, name string) mcpsdk.ToolHandler {
 }
 
 // noopToolHandler is never invoked: it backs the name-only registrations that
-// exist purely so initialize advertises the tools capability.
+// exist purely so initialize advertises the tools capability, and the shared
+// tools/list servers, which only ever list.
 func noopToolHandler(context.Context, *mcpsdk.CallToolRequest) (*mcpsdk.CallToolResult, error) {
 	return nil, &jsonrpc.Error{Code: ErrCodeInternal, Message: "Internal Error"}
 }
@@ -181,37 +235,6 @@ func toSDKResult(resp Response) (*mcpsdk.CallToolResult, error) {
 		StructuredContent: result.StructuredContent,
 		IsError:           result.IsError,
 	}, nil
-}
-
-// listedToolsMiddleware narrows tools/list to the tools this caller may see.
-// Registration covers everything callable, so without this filter a federation
-// peer would start seeing graphql_request advertised.
-func listedToolsMiddleware(buildCtx context.Context, env Env) mcpsdk.Middleware {
-	return func(next mcpsdk.MethodHandler) mcpsdk.MethodHandler {
-		return func(ctx context.Context, method string, req mcpsdk.Request) (mcpsdk.Result, error) {
-			res, err := next(ctx, method, req)
-			if method != mcpMethodToolsList || err != nil {
-				return res, err
-			}
-			listing, ok := res.(*mcpsdk.ListToolsResult)
-			if !ok {
-				return res, err
-			}
-
-			visible := make(map[string]bool)
-			for _, t := range builtinTools(buildCtx, env) {
-				visible[t.Name] = true
-			}
-			kept := make([]*mcpsdk.Tool, 0, len(listing.Tools))
-			for _, t := range listing.Tools {
-				if visible[t.Name] {
-					kept = append(kept, t)
-				}
-			}
-			listing.Tools = kept
-			return listing, nil
-		}
-	}
 }
 
 // unknownToolMiddleware restores the endpoint's long-standing answer for a tool

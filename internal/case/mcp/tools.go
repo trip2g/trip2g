@@ -29,10 +29,6 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 	MCPMethodInitialize:         true,
 }
 
-// defaultKBIDNote describes kb_id for tool metadata built outside a listing,
-// where the federation depth is not part of the message.
-const defaultKBIDNote = "Target knowledge base id"
-
 // builtinTools returns the tools advertised by tools/list for this request.
 // Registration (registerTools) is deliberately wider: a few tools are callable
 // but unlisted, so the two sets are computed separately.
