@@ -1,27 +1,32 @@
-{{ block index_layout() }}
+{{ block index_layout(page=nil, wrap=true) }}{{ if !page }}{{ page = note }}{{ end }}
 <!doctype html>
-<html lang="{{ note.M().GetString("lang", "en") }}">
+<html lang="{{ page.M().GetString("lang", "en") }}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Title / description / og_image come from the _index note frontmatter.
        Canonical, hreflang and og values must be absolute: publicURL (PUBLIC_URL,
        no trailing slash) is prefixed to the site-relative paths. -->
-  {{ lang := note.M().GetString("lang", "en") }}
-  {{ ogTitle := note.Title() }}
-  {{ ogDesc := note.Description() }}
-  {{ ogImage := note.OGImageURL() }}
+  {{ lang := page.M().GetString("lang", "en") }}
+  {{ ogTitle := page.Title() }}
+  {{ ogDesc := page.Description() }}
+  {{ ogImage := page.OGImageURL() }}
   {{ if !ogImage }}{{ ogImage = asset("og.png") }}{{ end }}
   {{ if hasPrefix(ogImage, "/") }}{{ ogImage = publicURL + ogImage }}{{ end }}
-  {{ pageURL := publicURL + note.Permalink() }}
+  {{ pageURL := publicURL + page.Permalink() }}
   {{ homeURL := publicURL + "/" }}
-  {{ ruURL := publicURL + "/ru" }}
+  {{ enPage := page.LangAlternative("en") }}{{ if !enPage }}{{ enPage = page }}{{ end }}
   <title>{{ ogTitle }}</title>
   <meta name="description" content="{{ ogDesc }}">
   <link rel="canonical" href="{{ pageURL }}">
-  <link rel="alternate" hreflang="en" href="{{ homeURL }}">
-  <link rel="alternate" hreflang="ru" href="{{ ruURL }}">
-  <link rel="alternate" hreflang="x-default" href="{{ homeURL }}">
+  <link rel="alternate" hreflang="{{ enPage.Lang() }}" href="{{ publicURL + enPage.Permalink() }}">
+  {{- if page.Permalink() != enPage.Permalink() }}
+  <link rel="alternate" hreflang="{{ page.Lang() }}" href="{{ pageURL }}">
+  {{- end }}
+  {{- range _, alt := page.LangAlternativesList() }}{{ if alt.Lang() != "en" }}
+  <link rel="alternate" hreflang="{{ alt.Lang() }}" href="{{ publicURL + alt.Permalink() }}">
+  {{- end }}{{ end }}
+  <link rel="alternate" hreflang="x-default" href="{{ publicURL + enPage.Permalink() }}">
   <meta property="og:type" content="website">
   <meta property="og:title" content="{{ ogTitle }}">
   <meta property="og:description" content="{{ ogDesc }}">
@@ -126,9 +131,13 @@
   {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
 </head>
 <body>
+  {{- if wrap }}
   <div class="wrap">
     {{ yield content }}
   </div>
+  {{- else }}
+  {{ yield content }}
+  {{- end }}
 
   {{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
 </body>

@@ -459,6 +459,7 @@ func renderLayout(
 	vars["defaultTemplate"] = defaultTemplateNS
 	vars["currentUser"] = currentUserNS
 	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(ctx, env))
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(ctx, env, resp.domainHost))
 
 	// Attach the admin-only "last edited by" resolver so layouts can render the
 	// version author (gated on currentUser.IsAdmin()).

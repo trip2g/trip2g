@@ -2111,9 +2111,23 @@ type NoteQueryPayload struct {
 	// Whatever the query program returned, as a JSON value. Its shape is set by
 	// the query note, not by the schema.
 	Result any `json:"result"`
+	// The items of the result, one row each, when the result is a list; null
+	// otherwise.
+	Rows  []NoteQueryRow    `json:"rows,omitempty"`
+	Notes NoteQueryRowNotes `json:"-"`
 }
 
 func (NoteQueryPayload) IsNoteQueryOrErrorPayload() {}
+
+type NoteQueryRow struct {
+	// The item as the query program returned it.
+	Data any `json:"data"`
+	// The note the item names: by `version_id` (that version), else by `path_id`
+	// (its latest version), else by `path` (a vault path). Null when the item names
+	// no note, the note is unknown, or the caller can't read it.
+	Note  *PublicNote       `json:"note,omitempty"`
+	Notes NoteQueryRowNotes `json:"-"`
+}
 
 type NoteTaskItem struct {
 	Index   int32  `json:"index"`

@@ -1,3 +1,5 @@
+{{ import "_blocks" }}
+
 {{ block @lid_link(raw="", cls="") }}
 {{ target := replace(replace(raw, "[[", "", -1), "]]", "", -1) }}
 {{ pieces := split(target, "|") }}
@@ -5,62 +7,15 @@
 {{ if linked }}<a class="{{ cls }}" href="{{ linked.Permalink() }}">{{ linked.Title() }}</a>{{ end }}
 {{ end }}
 
-{{ path := note.Path() }}
-{{ parts := split(path, "/") }}
-{{ base := parts[len(parts) - 1] }}
-{{ cut := len(path) - len(base) }}
-{{ dir := path[:cut] }}
+{{ dir := note.Dir() }}
 {{ hub := nvs.ByPath(dir + "_index.md") }}
 {{ if !hub }}{{ hub = note }}{{ end }}
 {{ lang := note.Lang() }}
 {{ ru := lang == "ru" }}
-{{ points := nvs.ByGlob(dir + "*.md").SortByMeta("order").SortBy("Title").All() }}
-{{ pageURL := publicURL + hub.Permalink() }}
-{{ ogImage := hub.OGImageURL() }}
-{{ if !ogImage }}{{ ogImage = asset("og.png") }}{{ end }}
-{{ if hasPrefix(ogImage, "/") }}{{ ogImage = publicURL + ogImage }}{{ end }}
-<!doctype html>
-<html lang="{{ coalesce(lang, "en") }}">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ hub.Title() }}</title>
-  <meta name="description" content="{{ hub.Description() }}">
-  <link rel="canonical" href="{{ pageURL }}">
-  <link rel="alternate" hreflang="{{ hub.Lang() }}" href="{{ pageURL }}">
-  {{ range i, alt := hub.LangAlternativesList() }}
-  <link rel="alternate" hreflang="{{ alt.Lang() }}" href="{{ publicURL + alt.Permalink() }}">
-  {{ end }}
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="{{ hub.Title() }}">
-  <meta property="og:description" content="{{ hub.Description() }}">
-  <meta property="og:image" content="{{ ogImage }}">
-  <meta property="og:url" content="{{ pageURL }}">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="{{ asset("favicon.png") }}" type="image/png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+{{ points := noteQueryRows("queries/circle_points.md", map("dir", dir)) }}
+
+{{ yield index_layout(page=hub, wrap=false) content }}
   <style>
-    :root {
-      --bg: #0e0e0c;
-      --fg: #f5f5f2;
-      --muted: #8c8c84;
-      --muted-2: #5a5a55;
-      --rule: #2a2a26;
-      --accent: oklch(0.78 0.18 145);
-      --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
-      --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-    }
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--fg);
-      font-family: var(--mono);
-      background-image: radial-gradient(circle at 1px 1px, rgba(245,245,242,0.04) 1px, transparent 0);
-      background-size: 16px 16px;
-    }
     .@did { min-height: 100svh; display: flex; flex-direction: column; }
     .@did__bar {
       display: flex; align-items: center; gap: 0;
@@ -181,9 +136,7 @@
       .@did--live .@did__panel.is-entering { animation: none; }
     }
   </style>
-  {{ range i, injection := htmlInjectionsHead }}{{ injection.Content | unsafe }}{{ end }}
-</head>
-<body>
+
 <main class="@did" id="circle" data-current="{{ note.PathID() }}">
   <header class="@did__bar">
     <a class="@did__home" href="{{ ru ? "/ru" : "/" }}">$ <b>trip2g</b></a>
@@ -198,8 +151,8 @@
     <div class="@did__wheel">
       <svg class="@did__ring" aria-hidden="true"></svg>
       <ol class="@did__tabs" role="tablist" aria-label="{{ hub.Title() }}">
-        {{ range i, p := points }}
-        {{ if p.M().GetString("label", "") != "" }}
+        {{ range i, row := points }}
+        {{ p := row.Note() }}
         <li class="@did__tab" role="presentation">
           <span class="@did__dot" aria-hidden="true"></span>
           <button type="button" class="@did__vertex" role="tab" id="circle-tab-{{ p.PathID() }}"
@@ -210,15 +163,13 @@
           </button>
         </li>
         {{ end }}
-        {{ end }}
       </ol>
     </div>
 
     <div class="@did__panels">
-      {{ range i, p := points }}
-      {{ if p.M().GetString("label", "") != "" }}
-      {{ pp := split(p.Path(), "/") }}
-      {{ slug := replace(pp[len(pp) - 1], ".md", "", 1) }}
+      {{ range i, row := points }}
+      {{ p := row.Note() }}
+      {{ slug := replace(replace(p.Path(), p.Dir(), "", 1), ".md", "", 1) }}
       <article class="@did__panel" role="tabpanel" id="circle-panel-{{ p.PathID() }}"
                aria-labelledby="circle-tab-{{ p.PathID() }}"
                data-id="{{ p.PathID() }}" data-slug="{{ slug }}"
@@ -237,7 +188,6 @@
         </ul>
         {{ end }}
       </article>
-      {{ end }}
       {{ end }}
     </div>
 
@@ -263,6 +213,4 @@
 <script defer src="{{ asset("circle/viz_calls.js") }}"></script>
 <script defer src="{{ asset("circle/viz_files.js") }}"></script>
 <script defer src="{{ asset("circle/circle.js") }}"></script>
-{{ range i, injection := htmlInjectionsBodyEnd }}{{ injection.Content | unsafe }}{{ end }}
-</body>
-</html>
+{{ end }}

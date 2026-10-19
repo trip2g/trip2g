@@ -87,7 +87,8 @@ lang_redirect: "[[ru/circle/garden]]"
 Two to four sentences shown in the center.
 ```
 
-- The layout lists every note in the page's folder that has a `label`, sorted by `order`.
+- The layout lists every note in the page's folder (`note.Dir()`) that has a `label`, sorted by `order`. The selection is the note query `queries/circle_points.md`; the layout calls it with `noteQueryRows` and takes each point's title, text and frontmatter from `.Note()`.
+- The page uses the shared shell, `index_layout(page=hub, wrap=false)`: title, canonical, hreflang and og tags come from the folder's `_index` note, and the content runs full width.
 - `link` and `related` are vault paths in wikilink brackets; each prints as a link with the target note's title. A path that resolves to nothing prints nothing.
 - Vertex notes use the same layout, so `/en/circle/garden` opens the wheel at that vertex. `noindex` keeps them out of the sitemap, and their canonical URL is the page.
 - Navigation: a click near a vertex or its label, the ← → buttons, ← → / Space / Shift+Space / PageDown / PageUp, a swipe, or a click on empty page outside the wheel (next point; ignored on links, buttons, the center text and when text is selected).
@@ -152,7 +153,7 @@ Parameterized blocks available everywhere after `{{ import "_blocks" }}`:
 
 | Block | Parameters | Description |
 |-------|-----------|-------------|
-| `index_layout` | — | Full HTML page wrapper (`<html>`, `<head>`, `<body>`, global CSS, JS). Title/description/og:image read from the page note frontmatter (`title`, `description`, `og_image`). |
+| `index_layout` | `page` (default: `note`), `wrap` (default: `true`) | Full HTML page wrapper (`<html>`, `<head>`, `<body>`, global CSS, JS). Title/description/og:image read from `page`'s frontmatter (`title`, `description`, `og_image`). Canonical and og:url are `page`'s URL; hreflang lists `page` and its language twins (`LangAlternative`), x-default is the English one. `wrap=false` drops the 1280px `.wrap` around the content. |
 | `section_header` | `lhs`, `rhs` | Section heading with left and right labels |
 | `mesh_section` | `path` | Transcludes a hidden section note's rendered body by vault path via `nvs.ByPath(path).HTMLString()`. The landing copy lives in `_index_*.md` notes; the layout supplies only structure and style. |
 | `how_step` | `num`, `title` | Numbered step with `{{ yield content }}` |

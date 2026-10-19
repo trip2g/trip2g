@@ -1624,12 +1624,34 @@ input NoteQueryInput {
   params: JSON
 }
 
-type NoteQueryPayload {
+type NoteQueryPayload
+  @goExtraField(name: "Notes", type: "trip2g/internal/graph/model.NoteQueryRowNotes") {
   """
   Whatever the query program returned, as a JSON value. Its shape is set by
   the query note, not by the schema.
   """
   result: JSON!
+
+  """
+  The items of the result, one row each, when the result is a list; null
+  otherwise.
+  """
+  rows: [NoteQueryRow!] @goField(forceResolver: true)
+}
+
+type NoteQueryRow
+  @goExtraField(name: "Notes", type: "trip2g/internal/graph/model.NoteQueryRowNotes") {
+  """
+  The item as the query program returned it.
+  """
+  data: JSON!
+
+  """
+  The note the item names: by `version_id` (that version), else by `path_id`
+  (its latest version), else by `path` (a vault path). Null when the item names
+  no note, the note is unknown, or the caller can't read it.
+  """
+  note: PublicNote @goField(forceResolver: true)
 }
 
 union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload

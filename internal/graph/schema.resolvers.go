@@ -2985,6 +2985,16 @@ func (r *notePathResolver) AssetReplaces(ctx context.Context, obj *db.NotePath) 
 	return res, nil
 }
 
+// Rows is the resolver for the rows field.
+func (r *noteQueryPayloadResolver) Rows(ctx context.Context, obj *model.NoteQueryPayload) ([]model.NoteQueryRow, error) {
+	return runnotequery.Rows(obj)
+}
+
+// Note is the resolver for the note field.
+func (r *noteQueryRowResolver) Note(ctx context.Context, obj *model.NoteQueryRow) (*model.PublicNote, error) {
+	return runnotequery.RowNote(obj)
+}
+
 // ChangedHTMLSelectors is the resolver for the changedHtmlSelectors field.
 func (r *noteUpsertEventResolver) ChangedHTMLSelectors(ctx context.Context, obj *model.NoteUpsertEvent) ([]string, error) {
 	return calculatechangeselectors.Resolve(ctx, r.DefaultEnv, obj.PathID)
@@ -4212,6 +4222,14 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 // NotePath returns generated.NotePathResolver implementation.
 func (r *Resolver) NotePath() generated.NotePathResolver { return &notePathResolver{r} }
 
+// NoteQueryPayload returns generated.NoteQueryPayloadResolver implementation.
+func (r *Resolver) NoteQueryPayload() generated.NoteQueryPayloadResolver {
+	return &noteQueryPayloadResolver{r}
+}
+
+// NoteQueryRow returns generated.NoteQueryRowResolver implementation.
+func (r *Resolver) NoteQueryRow() generated.NoteQueryRowResolver { return &noteQueryRowResolver{r} }
+
 // NoteUpsertEvent returns generated.NoteUpsertEventResolver implementation.
 func (r *Resolver) NoteUpsertEvent() generated.NoteUpsertEventResolver {
 	return &noteUpsertEventResolver{r}
@@ -4416,6 +4434,8 @@ type formSubmitResolver struct{ *Resolver }
 type layoutBlockParamResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type notePathResolver struct{ *Resolver }
+type noteQueryPayloadResolver struct{ *Resolver }
+type noteQueryRowResolver struct{ *Resolver }
 type noteUpsertEventResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
 type noteWarningResolver struct{ *Resolver }

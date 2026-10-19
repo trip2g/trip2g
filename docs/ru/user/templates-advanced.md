@@ -36,6 +36,7 @@ model.NoteView, model.NoteViews
 | `PathID()` | `int64` | ID для data-атрибутов |
 | `VersionID()` | `string` | ID текущей версии заметки |
 | `Path()` | `string` | Путь файла в хранилище, например `blog/post.md` |
+| `Dir()` | `string` | Папка `Path()` со слешем в конце: `en/circle/` для `en/circle/garden.md`, `""` для заметки в корне |
 | `Permalink()` | `string` | URL страницы |
 | `PermalinkEncoded()` | `string` | `Permalink()`, где каждый сегмент пути закодирован процентами: `/привет мир` → `/%D0%BF…%20%D0%BC…`. Это кодирование URL, не HTML-экранирование; `Permalink()` в `href` тоже безопасен. Нужен для строго закодированного адреса, когда в пути есть не-ASCII символы или пробелы |
 | `CreatedAt()` | `time.Time` | Дата создания; если в frontmatter есть `created_at` / `created_on` — она |

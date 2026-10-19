@@ -123,6 +123,7 @@ func Resolve(ctx context.Context, env Env, input graphmodel.RenderLayoutInput) (
 			"IsAdmin": func() bool { return false },
 		})
 		vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(ctx, env))
+		vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(ctx, env, ""))
 		if err := executePreview(env, layout.View, &buf, vars); err != nil {
 			warnings.Layout = append(warnings.Layout, "runtime: "+err.Error())
 		}

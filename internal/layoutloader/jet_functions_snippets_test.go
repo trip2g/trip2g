@@ -304,6 +304,14 @@ func jetFunctionsSnippets() []docSnippet {
 			want: ``,
 		},
 		{
+			name: "folder of the note",
+			src: `{{ note.Dir() }}            {* help/faq.md → help/ *}
+{{ if hub := nvs.ByPath(note.Dir() + "_index.md"); hub }}
+  <a href="{{ hub.Permalink() }}">{{ hub.Title() }}</a>
+{{ end }}`,
+			want: `help/`,
+		},
+		{
 			name: "lookup in if",
 			src: `{{ if about := nvs.ByPermalink("/about"); about }}
   <a href="{{ about.PermalinkEncoded() }}">{{ about.Title() }}</a>
