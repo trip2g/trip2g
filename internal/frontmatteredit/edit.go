@@ -40,7 +40,7 @@ const bom = "\uFEFF"
 // The result is parsed back before it is returned; when any key other than the
 // ones named would read differently, Apply returns ErrUnsafeEdit and no content.
 func Apply(content string, set map[string]any, unset []string) (string, error) {
-	err := validate(set, unset)
+	err := Validate(set, unset)
 	if err != nil {
 		return "", err
 	}
@@ -63,7 +63,10 @@ func Apply(content string, set map[string]any, unset []string) (string, error) {
 	return prefix + edited, nil
 }
 
-func validate(set map[string]any, unset []string) error {
+// Validate checks set and unset alone, before any note is read: at least one
+// key, no blank key, no control character or line break in a key, no key named
+// in both.
+func Validate(set map[string]any, unset []string) error {
 	if len(set) == 0 && len(unset) == 0 {
 		return ErrNothingToChange
 	}

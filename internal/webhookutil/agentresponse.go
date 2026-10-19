@@ -93,10 +93,7 @@ func (c AgentChange) Validate() error {
 		if err != nil {
 			return fmt.Errorf("path: %w", err)
 		}
-		if len(c.Set) == 0 && len(c.Unset) == 0 {
-			return frontmatteredit.ErrNothingToChange
-		}
-		return nil
+		return frontmatteredit.Validate(c.Set, c.Unset)
 	}
 	if c.IsPatch() {
 		return ozzo.ValidateStruct(&c,
