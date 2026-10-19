@@ -18,6 +18,8 @@ title: "Navigation"
 - [[en/thoughts/contentless-cms|Contentless CMS]]
 - [[en/thoughts/admin-panel|Admin panel as universal config]]
 - [[en/thoughts/three-zones|Three zones: private, public, paid]]
+- [[en/thoughts/one-writer-per-base|One writer per base]]
+- [[en/thoughts/data-mesh-for-knowledge|Data mesh for knowledge]]
 
 **Knowledge & Content**
 - [[en/thoughts/obsidian-and-wikilinks|Obsidian and note connections]]

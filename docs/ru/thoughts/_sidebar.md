@@ -18,6 +18,8 @@ title: "Навигация"
 - [[ru/thoughts/contentless-cms|Contentless CMS]]
 - [[ru/thoughts/admin-panel|Админка как универсальный конфиг]]
 - [[ru/thoughts/three-zones|Три зоны: приватное, публичное, платное]]
+- [[ru/thoughts/one-writer-per-base|Один автор на базу]]
+- [[ru/thoughts/data-mesh-for-knowledge|Data mesh для знаний]]
 
 **Знания и контент**
 - [[ru/thoughts/obsidian-and-wikilinks|Obsidian и связи между заметками]]
