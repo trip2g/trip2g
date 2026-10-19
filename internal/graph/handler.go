@@ -310,9 +310,10 @@ func NewExecutor(env Env) *executor.Executor {
 	config.Directives.SkipTx = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
 		return next(ctx)
 	}
-	schema := generated.NewExecutableSchema(config)
+	schema := costedSchema{generated.NewExecutableSchema(config)}
 	exec := executor.New(schema)
 	exec.Use(extension.Introspection{})
+	exec.Use(extension.FixedComplexityLimit(maxQueryComplexity))
 
 	// Programmatic (MCP) dispatch must share the HTTP path's tx lifecycle:
 	// without this middleware, multi-step mutations run outside a transaction

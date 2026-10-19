@@ -120,3 +120,33 @@ func TestMakeAroundOperations_CommitErrorBecomesGraphQLError(t *testing.T) {
 	require.NotEmpty(t, resp.Errors,
 		"a failed commit must surface as a GraphQL error, not a silent success")
 }
+
+func TestNewExecutor_RejectsThreeNoteQueries(t *testing.T) {
+	exec := NewExecutor(&recordingTxEnv{})
+
+	ctx := graphql.StartOperationTrace(context.Background())
+	now := graphql.Now()
+
+	field := `noteQuery(input: {query: "q"}) { ... on NoteQueryPayload { result } }`
+	_, errList := exec.CreateOperationContext(ctx, &graphql.RawParams{
+		Query:    "{ a: " + field + " b: " + field + " c: " + field + " }",
+		ReadTime: graphql.TraceTiming{Start: now, End: now},
+	})
+
+	require.Len(t, errList, 1)
+	require.Contains(t, errList[0].Message, "operation has complexity")
+}
+
+func TestNewExecutor_IntrospectionFitsComplexityLimit(t *testing.T) {
+	exec := NewExecutor(&recordingTxEnv{})
+
+	ctx := graphql.StartOperationTrace(context.Background())
+	now := graphql.Now()
+
+	_, errList := exec.CreateOperationContext(ctx, &graphql.RawParams{
+		Query:    `{ __schema { types { name fields { name args { name type { kind name ofType { kind name } } } } } } }`,
+		ReadTime: graphql.TraceTiming{Start: now, End: now},
+	})
+
+	require.Empty(t, errList)
+}
