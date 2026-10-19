@@ -214,7 +214,12 @@ func firstLine(s string) string {
 
 // validateTargets reads "validate" as one target or a list of them. An
 // unquoted [[x]] is YAML for a nested list, so a one-item list counts as x.
+// Null or a blank string lists no validators, so a patch can switch them off.
 func validateTargets(raw interface{}) ([]string, error) {
+	if s, isString := raw.(string); raw == nil || isString && strings.TrimSpace(s) == "" {
+		return nil, nil
+	}
+
 	items, ok := raw.([]interface{})
 	if !ok {
 		items = []interface{}{raw}

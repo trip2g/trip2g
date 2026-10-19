@@ -212,6 +212,52 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "empty value means no validators",
+			sources: map[string]string{
+				"note.md": "---\nvalidate:\n---\nbody\n",
+			},
+			path:     "note.md",
+			expected: nil,
+		},
+		{
+			name: "blank string means no validators",
+			sources: map[string]string{
+				"note.md": "---\nvalidate: \" \"\n---\nbody\n",
+			},
+			path:     "note.md",
+			expected: nil,
+		},
+		{
+			name: "patch switches validation off with null",
+			sources: map[string]string{
+				"off.md": "---\ntype: frontmatter-patch\ninclude: [\"note.md\"]\n---\n" +
+					"```jsonnet\n{ validate: null }\n```\n",
+				"note.md": "---\nvalidate: \"[[nope]]\"\n---\nbody\n",
+			},
+			path:     "note.md",
+			expected: nil,
+		},
+		{
+			name: "patch switches validation off with an empty string",
+			sources: map[string]string{
+				"off.md": "---\ntype: frontmatter-patch\ninclude: [\"note.md\"]\n---\n" +
+					"```jsonnet\n{ validate: '' }\n```\n",
+				"note.md": "---\nvalidate: \"[[nope]]\"\n---\nbody\n",
+			},
+			path:     "note.md",
+			expected: nil,
+		},
+		{
+			name: "blank item in a list is critical",
+			sources: map[string]string{
+				"note.md": "---\nvalidate:\n  - \"\"\n---\nbody\n",
+			},
+			path: "note.md",
+			expected: []model.NoteWarning{
+				{Level: model.NoteWarningCritical, Message: "validate: expected a note or a list of notes, got []"},
+			},
+		},
+		{
 			name: "same validator listed twice runs once",
 			sources: map[string]string{
 				"rules.md": validatorNote(`[{level: 'error', msg: 'ran'}]`),
