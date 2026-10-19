@@ -35,12 +35,12 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	kid, err := mcp.VerifyFederationBearer(req.Req, env, token, nil)
+	caller, err := mcp.VerifyFederationBearer(req.Req, env, token, nil)
 	if err != nil {
 		req.Req.SetStatusCode(http.StatusUnauthorized)
 		//nolint:nilerr // intentional: a caller who cannot prove a pairing gets 401 and no detail, not a 500
 		return nil, nil
 	}
 
-	return Resolve(req.Req, env, kid)
+	return Resolve(req.Req, env, caller.KID)
 }

@@ -27,8 +27,12 @@ type rerankEnv struct {
 func (e *rerankEnv) Features() features.Features { return e.feats }
 func (e *rerankEnv) Logger() logger.Logger       { return &logger.DummyLogger{} }
 
-func (e *rerankEnv) SearchLatestNotes(string) ([]appmodel.SearchResult, error) { panic("unused") }
-func (e *rerankEnv) SearchLiveNotes(string) ([]appmodel.SearchResult, error)   { panic("unused") }
+func (e *rerankEnv) SearchLatestNotes(string, int, int) ([]appmodel.SearchResult, error) {
+	panic("unused")
+}
+func (e *rerankEnv) SearchLiveNotes(string, int, int) ([]appmodel.SearchResult, error) {
+	panic("unused")
+}
 func (e *rerankEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) { panic("unused") }
 func (e *rerankEnv) CanReadNote(context.Context, *appmodel.NoteView) (bool, error) {
 	panic("unused")

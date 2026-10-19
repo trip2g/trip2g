@@ -60,11 +60,13 @@ const posts = data.noteQuery.result
 
 | Name | What it holds |
 |---|---|
-| `notes` | a list of notes, sorted by path: `{ path, title, permalink, meta }` |
+| `notes` | a list of notes, sorted by path: `{ path, path_id, version_id, title, permalink, meta }` |
 | `params` | the parsed `params`, `{}` when none were passed |
 | `currentUser` | who is asking: `{ id, role, isAdmin, signedIn }`; a guest has `null` for `id` and `role`; a [[en/user/federation|federation]] peer has role `federated` and `null` for `id` |
 
-`meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. With `all_notes: true` each note also has `readable`. System notes (paths starting with `_`), notes hidden from [[en/user/search|search]] with `search: false`, and files that aren't markdown notes (canvas, base, excalidraw) are left out.
+`meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. `path_id` names the note and stays the same across edits; `version_id` names its current version. With `all_notes: true` each note also has `readable`. System notes (paths starting with `_`) and files that aren't markdown notes (canvas, base, excalidraw) are left out.
+
+A note hidden from [[en/user/search|search]] with `search: false` is still in `notes`: the flag hides a note from search, not from a page that lists it. Its `meta.search` is `false`, so a query that should skip such notes says so: `if std.get(n.meta, 'search', true)`.
 
 The program can return any JSON value: a list of notes, an object of counts, a single number. A query is not limited to listing notes; it can aggregate them.
 
@@ -157,7 +159,7 @@ local status(n) = std.get(n.meta, 'status', 'none');
 
 #### Notes per folder
 
-How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 5, "tasks": 3}`; an admin, who also sees the members-only post, gets `{"blog": 4, "queries": 5, "tasks": 3}`:
+How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 6, "tasks": 3}`; an admin, who also sees the members-only post, gets `{"blog": 4, "queries": 6, "tasks": 3}`:
 
 ```jsonnet
 local folder(n) =
@@ -183,6 +185,52 @@ The same pattern, a key per group and a value computed from the notes in it, cov
 - **a completeness report**: the paths of notes that lack a field such as `description`;
 - **one call for a whole dashboard**: an object with several of these sections.
 
+### Rows: the notes behind the result
+
+A query often selects notes and the page shows them: titles, links, the rendered text. The program doesn't have to copy those fields. It can return only an id for each note, and the server hands back the notes themselves.
+
+When the result is a list, `rows` has one row per item. A row's `data` is the item as the program returned it. Its `note` is the note the item names:
+
+- `version_id`: that version of the note;
+- else `path_id`: the note's latest version;
+- else `path`: the note at that vault path.
+
+`note` is `null` when the item names no note, names one that doesn't exist, or names one the visitor can't read. The server checks access again here, on its own, so a query with `all_notes: true` can't hand out a note the visitor can't open, even when the program returns its id. System notes and non-markdown files are never returned, as in `notes`. When the result isn't a list, `rows` is `null`.
+
+The `newest` query from the demo vault returns the three newest posts as ids:
+
+```jsonnet
+local posts = [n for n in notes if std.startsWith(n.path, 'blog/')];
+local byDate = std.sort(posts, function(n) std.get(n.meta, 'date', ''));
+
+[{ version_id: n.version_id } for n in std.reverse(byDate)][:3]
+```
+
+A JavaScript page takes everything else from `note`:
+
+```js
+const newest = makeRequest(`query {
+  noteQuery(input: { query: "[[newest]]" }) {
+    ... on NoteQueryPayload {
+      rows { note { title url html } }
+    }
+    ... on ErrorPayload { message }
+  }
+}`)
+
+const data = await newest()
+const posts = data.noteQuery.rows.map((row) => row.note)
+// [{ title: 'Go on the web', url: '…/blog/go_on_the_web', html: '…' }, …]
+```
+
+`note` is the same type as the `note` query returns. The server finds a row's note only when the request asks for `note`, so a query that only reads `result` or `rows { data }` costs nothing extra.
+
+Which to use:
+
+- **Counts, sums, a dashboard.** The program builds the numbers and the page reads `result`. No ids needed.
+- **A selection of notes.** Return `[{ version_id: n.version_id }]` (or `path_id`) and take the title, link and HTML from `rows { note { … } }` in GraphQL or `.Note()` in a template. The program stays short, and the page gets fields a program can't build, such as the rendered HTML.
+- **Both.** Put the fields the page needs next to the id: `{ version_id: n.version_id, date: n.meta.date }`; the page reads them from `data`.
+
 ### Errors
 
 A failed call returns `ErrorPayload` with a message:
@@ -207,6 +255,18 @@ A [[en/user/templates|custom template]] calls the same query with `noteQuery(que
 ```
 
 `params` is optional; build it with `map(…)`. Range with two variables, as everywhere in Jet: with one, `range` gives the index. A failing query stops the render; an admin sees its message. The template preview in the admin panel runs queries too, and so does the check a layout gets on sync. It renders the layout with the pages that use it: a page a guest can open runs its queries as a guest, so calling a members-only query there gets a warning; a page only signed-in visitors open warns only for a query that is missing or broken.
+
+`noteQueryRows(query, params)` runs the same query and gives its rows. A row has `.Data()`, the item as the program returned it, and `.Note()`, the note it names or `nil`, by the same rules as `rows` above:
+
+```jet
+{{ range _, row := noteQueryRows("[[newest]]") }}
+  {{ if post := row.Note(); post }}
+    <a href="{{ post.Permalink() }}">{{ post.Title() }}</a>
+  {{ end }}
+{{ end }}
+```
+
+`.Note()` is the same `note` as everywhere in a template: `Title()`, `HTMLString()`, `M()` and the rest. When the result isn't a list, `noteQueryRows` stops the render.
 
 A guest and a subscriber viewing the same page can get different lists. Pages a guest sees are cached for guests only, so a subscriber never gets a guest's list.
 

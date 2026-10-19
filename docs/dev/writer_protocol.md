@@ -1,12 +1,12 @@
 # Writer Protocol
 
-The trip2g writer protocol is the complete API surface for writing notes. Three GraphQL mutations cover all write paths: `pushNotes` for bulk blind sync, `updateNotes` for fine-grained batched changes, and `hideNotes` for deletion.
+The trip2g writer protocol is the complete API surface for writing notes. Three GraphQL mutations cover all write paths: `pushNotes` for bulk sync, `updateNotes` for fine-grained batched changes, and `hideNotes` for deletion.
 
 | Mutation | Kind | Concurrency | Auto-commits | Used by |
 |---|---|---|---|---|
-| `pushNotes` | Full content, blind upsert | Write-locked, no per-note check | Optional (`skipCommit`) | Obsidian plugin, memcli sidecar |
-| `updateNotes` | Per-change: upsert / patch / hide | Per-note `expectedHash` | Always (upsert/patch) | Kanban board, AI agents (direct), in-browser editors |
-| `hideNotes` | Soft-delete batch | None | Immediate | Obsidian plugin (server-only paths) |
+| `pushNotes` | Full content, upsert | Write-locked; optional per-note `expectedHash` | Optional (`skipCommit`) | Obsidian plugin, memcli sidecar |
+| `updateNotes` | Per-change: upsert / patch / meta / hide | Per-note `expectedHash` | Always (upsert/patch/meta) | Kanban board, AI agents (direct), in-browser editors |
+| `hideNotes` | Soft-delete batch | Optional per-path `expectedHash` | Immediate | Obsidian plugin (server-only paths) |
 | `commitNotes` | Flush staged `pushNotes` batch | None | Yes | Obsidian plugin (explicit commit flow) |
 
 ---
@@ -31,12 +31,13 @@ Admin session cookie is also accepted for browser-based tools (e.g., the kanban 
 
 ## pushNotes
 
-Blind bulk upsert. No per-note concurrency check. Accepts all content types the vault can store.
+Bulk upsert. Accepts all content types the vault can store. A note without `expectedHash` is written unconditionally; a note with one is written only if the server still holds that hash (see [expectedHash](#expectedhash-optimistic-concurrency)).
 
 ```graphql
 input PushNoteInput {
   path: String!
   content: String!
+  expectedHash: String     # optional; see the expectedHash section
 }
 
 input PushNotesInput {
@@ -44,9 +45,15 @@ input PushNotesInput {
   updates: [PushNoteInput!]!
 }
 
+type NoteHashMismatch {
+  path: String!
+  actualHash: String!      # "" when the note does not exist or is hidden
+}
+
 type PushNotesPayload {
   notes: [PushedNote!]!    # all notes currently indexed
   updated: [PushedNote!]!  # only the notes just pushed
+  hashMismatches: [NoteHashMismatch!]!  # notes expectedHash refused
 }
 
 union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
@@ -57,6 +64,8 @@ union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
 **`skipCommit` flag:** when absent or `false`, `HandleLatestNotesAfterSave` runs immediately — webhooks fire, the in-memory index refreshes, SSE subscribers are notified. When `true`, the path IDs are saved to an uncommitted staging table and nothing further happens until `commitNotes` is called. This lets a client batch many pushes (e.g., first sync of a large vault) and commit atomically.
 
 The resolver holds a process-wide write mutex for the duration of the call. Concurrent `pushNotes` calls are serialised.
+
+**Per-note `expectedHash`:** a mismatch refuses only that note. The rest of the batch is written, and the refused note is listed in `hashMismatches` with the hash the server holds now. It is not in `updated`, and none of its side effects (webhooks, SSE, uncommitted staging) happen. Validation still applies to the whole batch first: an unsupported extension or binary content returns `ErrorPayload` and writes nothing.
 
 **`commitNotes`** (no input) flushes all paths staged with `skipCommit: true`:
 
@@ -97,7 +106,7 @@ mutation PushNotes($input: PushNotesInput!) {
 
 ## updateNotes
 
-Fine-grained batch of per-note changes. Each element in `changes` is a tagged union with exactly one field set: `upsert`, `patch`, or `hide`.
+Fine-grained batch of per-note changes. Each element in `changes` is a tagged union with exactly one field set: `upsert`, `patch`, `meta`, or `hide`.
 
 ```graphql
 input NoteChangeUpsertInput {
@@ -113,6 +122,13 @@ input NoteChangePatchInput {
   expectedHash: String
 }
 
+input NoteChangeMetaInput {
+  path: String!
+  set: Map              # top-level frontmatter keys to add or replace
+  unset: [String!]      # top-level frontmatter keys to remove
+  expectedHash: String
+}
+
 input NoteChangeHideInput {
   path: String!
 }
@@ -121,6 +137,7 @@ input NoteChangeInput {
   upsert: NoteChangeUpsertInput
   patch: NoteChangePatchInput
   hide: NoteChangeHideInput
+  meta: NoteChangeMetaInput
 }
 
 input UpdateNotesInput {
@@ -132,7 +149,7 @@ input UpdateNotesInput {
 
 ```graphql
 type UpdateNotesSuccessPayload {
-  paths: [String!]!  # paths that were touched (upsert, patch, and hide)
+  paths: [String!]!  # paths that were touched (upsert, patch, meta, and hide)
 }
 
 type UpdateNotesHashMismatchPayload {
@@ -152,7 +169,7 @@ union UpdateNotesOrErrorPayload =
   | ErrorPayload
 ```
 
-The mutation processes `changes` in order. The first change that returns a non-success payload aborts the batch and returns that payload immediately. Only content changes (upsert and patch) call `HandleLatestNotesAfterSave` afterward; hide-only batches still reload the in-memory index but skip webhook processing.
+The mutation processes `changes` in order. The first change that returns a non-success payload aborts the batch and returns that payload immediately. Only content changes (upsert, patch and meta) call `HandleLatestNotesAfterSave` afterward; hide-only batches still reload the in-memory index but skip webhook processing.
 
 **Note:** the resolver does not hold the note write mutex. Do not include the same `path` more than once in a single `updateNotes` call — the second operation would read stale in-memory content.
 
@@ -167,6 +184,13 @@ The mutation processes `changes` in order. The first change that returns a non-s
 - `replace` may be empty string (deletes the found substring)
 - `find` is a literal string, not a regular expression
 
+**meta** — sets and unsets top-level frontmatter keys of an existing note by splicing text (`internal/frontmatteredit`): every untouched key line, comment and the body come out byte for byte. Rules:
+- The note must already exist; a missing path → `ErrorPayload { message: "note not found: {path}" }`
+- `set` and `unset` cannot both be empty, a key cannot be in both, and a key cannot be blank or contain a control character
+- Frontmatter that cannot be edited key by key (invalid YAML, a `{...}` flow mapping, indented keys, aliases, a duplicate key, no closing fence) → `ErrorPayload`
+- The result is parsed back with yaml.v3 and with yaml.v2 (what goldmark-meta reads). Each parser must see exactly the expected keys, each untouched key must read as that parser read it before the edit, and each set key must hold the value sent, compared with the value itself (numbers by worth, NaN equal to NaN) rather than with what the encoder wrote; otherwise nothing is saved → `ErrorPayload`
+- Setting the scalar a key already holds keeps the line, so `InsertNote` sees identical content and skips the version
+
 **hide** — soft-deletes the path (sets `hidden_at` / `hidden_by`). Does NOT trigger webhooks from `updateNotes` (see code comment in `internal/case/updatenotes/resolve.go`); use the standalone `hideNotes` mutation when webhook notification is required.
 
 ---
@@ -176,22 +200,31 @@ The mutation processes `changes` in order. The first change that returns a non-s
 Standalone soft-delete. Triggers webhooks and publishes to the `noteChanges` SSE bus.
 
 ```graphql
+input HideNoteInput {
+  path: String!
+  expectedHash: String     # optional; see the expectedHash section
+}
+
 input HideNotesInput {
-  paths: [String!]!
+  paths: [String!]! = []        # hidden unconditionally
+  notes: [HideNoteInput!]! = [] # hidden per expectedHash
 }
 
 type HideNotesPayload {
   success: Boolean!
+  hashMismatches: [NoteHashMismatch!]!  # paths expectedHash refused
 }
 
 union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
 ```
 
+`paths` and `notes` are both optional and are processed in that order; a path in `paths` behaves like a `notes` entry without `expectedHash`. A refused path stays visible, is listed in `hashMismatches`, and fires no webhook or SSE event. `success` is `true` whenever the request was processed, mismatches included. Hiding a delete that saw an old hash is the case this guards: if the note was edited after the client listed it, the hide is refused instead of hiding the edit.
+
 ---
 
 ## expectedHash: Optimistic Concurrency
 
-`expectedHash` is available on `upsert` and `patch` changes. It is a Go pointer (`*string`), so the GraphQL field is truly optional: omitting it and setting it to `null` are equivalent.
+`expectedHash` is available on `updateNotes`' `upsert`, `patch` and `meta` changes, on each `pushNotes` update and on each `hideNotes` `notes` entry. It is a Go pointer (`*string`), so the GraphQL field is truly optional: omitting it and setting it to `null` are equivalent.
 
 | `expectedHash` value | Behaviour |
 |---|---|
@@ -202,6 +235,20 @@ union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
 **Create-only sentinel detail:** when a note doesn't exist, the server computes `actualHash = ""` (empty string, because there is no content to hash). Setting `expectedHash: ""` makes the equality check `"" == ""` pass, so the note is created. If the note already exists, `actualHash` is a non-empty hash and the check fails, returning `UpdateNotesHashMismatchPayload { path, actualHash }` with the current hash. This is the race-proof "fail-if-exists" primitive.
 
 This behaviour is enforced in `internal/case/updatenotes/resolve.go` and tested by `TestResolve_UpsertCreateOnly` in `resolve_test.go`.
+
+### pushNotes and hideNotes
+
+The values mean the same, with three differences from `updateNotes`:
+
+- **Per note, not per batch.** `updateNotes` stops the whole batch at the first mismatch and returns `UpdateNotesHashMismatchPayload`. `pushNotes` and `hideNotes` skip only the refused note and list it in `hashMismatches`.
+- **Checked against the database.** The current hash is `note_paths.latest_content_hash` read inside the request transaction (`LatestNoteContentHash` in `cmd/server/notes.go`), not the in-memory note views `updateNotes` reads.
+- **A hidden note counts as absent.** Its `actualHash` is `""`, so `expectedHash: ""` on `pushNotes` writes it and brings it back, and `expectedHash: ""` on `hideNotes` hides nothing new.
+
+For `hideNotes`, `""` means "hide only if absent", which is a no-op; the useful value is the hash the client last saw.
+
+**Why the check cannot race.** Every GraphQL mutation runs in one request transaction on the single write connection, opened with `BEGIN IMMEDIATE` (see `internal/graph/handler.go` and [sqlite.md](sqlite.md)). A second writer waits for that transaction to commit, so nothing lands between the hash read and the write, and of two pushes that quote the same hash, the second sees the first one's hash and is refused. `TestPushNotesExpectedHashConcurrentWrites` in `cmd/server/note_expected_hash_test.go` runs exactly this sequence.
+
+A client that listed hashes with `notePaths { value latestContentHash }` sends the hash it classified against: the last-synced hash for a plain push or delete, the remote hash it saw when it resolves a conflict in favour of the local copy.
 
 ### Three upsert modes
 
@@ -240,6 +287,7 @@ const hash = btoa(String.fromCharCode(...new Uint8Array(buf)))
 | `UpdateNotesHashMismatchPayload` | Conflict | `expectedHash` mismatch | Re-read `actualHash`, rebase change onto current content, retry |
 | `UpdateNotesPatchNotFoundPayload` | Find failed | `find` string absent or appeared more than once | Choose a more specific string; surface error to caller |
 | `ErrorPayload` | Validation / system | Note not found, write denied, etc. | `message` is human-readable |
+| `PushNotesPayload.hashMismatches`, `HideNotesPayload.hashMismatches` | Per-note conflict | `expectedHash` mismatch on one note | The other notes were applied. Treat each listed path as a conflict against `actualHash` |
 
 **Rebase loop (HashMismatch):** fetch the current content of the note via `admin { noteVersionHistory }` then `noteVersion { content }`, recompute the desired change against the new content, set `expectedHash` to `actualHash` from the payload, and retry. The kanban template implements this in `templates/kanban/src/api.ts`.
 
@@ -267,7 +315,7 @@ Uses `updateNotes` upsert with `expectedHash: ""` for the "create new file" flow
 
 When a change webhook fires with `pass_api_key: true`, the delivery payload includes `api_token` (a shortapitoken JWT with scoped `read_patterns` / `write_patterns`). Agents can use this token to call `updateNotes` or `pushNotes` directly for programmatic writes.
 
-Agents that return changes synchronously in their HTTP response body use the **webhook agent response format** (`internal/webhookutil/agentresponse.go`). This is a separate code path from the GraphQL mutations: the server parses `changes` and calls `InsertNote` directly. The current format supports only full content replacement:
+Agents that return changes synchronously in their HTTP response body use the **webhook agent response format** (`internal/webhookutil/agentresponse.go`). This is a separate code path from the GraphQL mutations: the server parses `changes` and calls `InsertNote` directly. A change without `kind` (or `"kind": "write"`) replaces the full content:
 
 ```json
 {
@@ -283,7 +331,7 @@ Agents that return changes synchronously in their HTTP response body use the **w
 }
 ```
 
-This response format does not yet support `patch` or `hide` operations. For those, agents should use the shortapitoken to call `updateNotes` directly via `/_system/graphql`.
+`"kind": "patch"` with `find` / `replace` and `"kind": "meta"` with `set` / `unset` follow the updateNotes patch and meta rules; `expected_hash` applies to every kind. The format has no `hide`; for that, agents use the shortapitoken to call `updateNotes` directly via `/_system/graphql`.
 
 ---
 
@@ -398,6 +446,21 @@ mutation HideNotes($input: HideNotesInput!) {
 { "input": { "paths": ["drafts/abandoned.md"] } }
 ```
 
+To hide only if nobody edited the note since you read it, pass its hash and ask for the mismatches:
+
+```graphql
+mutation HideNotes($input: HideNotesInput!) {
+  hideNotes(input: $input) {
+    ... on HideNotesPayload { success hashMismatches { path actualHash } }
+    ... on ErrorPayload { message }
+  }
+}
+```
+
+```json
+{ "input": { "notes": [{ "path": "drafts/abandoned.md", "expectedHash": "<hash you read>" }] } }
+```
+
 Use `hideNotes` (not `updateNotes` hide) when you need webhooks to fire on removal.
 
 ---
@@ -413,6 +476,8 @@ Use `hideNotes` (not `updateNotes` hide) when you need webhooks to fire on remov
 | Content identical to current version | `InsertNote` skips creating a new version; `paths` still includes the path in the success payload |
 | Same path appears twice in one `updateNotes` call | Second change reads stale in-memory content — callers must avoid this |
 | `pushNotes` with unsupported extension | `ErrorPayload` |
+| `pushNotes` update with a stale `expectedHash` | That note is skipped and listed in `hashMismatches`; the rest of the batch is written |
+| `hideNotes` entry with a stale `expectedHash` | That path stays visible and is listed in `hashMismatches`; the rest are hidden |
 | File content detected as binary | `ErrorPayload` (MIME check on first 512 bytes) |
 | Shortapitoken with `wp: []` (empty write patterns) | HTTP 403 for any write |
 | `updateNotes` hide | Does NOT fire webhooks; use standalone `hideNotes` for that |

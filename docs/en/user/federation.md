@@ -58,6 +58,8 @@ The hub stores no remote content. It holds your notes plus routing metadata: KB-
 
 **kb_id:** a short slug identifying a peer, used when you want to target a specific base instead of fanning out across all of them. Defaults to the URL hostname; you can override it with `mcp_federation_kb_id`.
 
+You can hold several outbound keys to the same peer, each granted different subgraphs. Give each its own KB-note with `mcp_federation_kb_id` equal to the key's ID: a call to that `kb_id` is signed with that key. A single live key to a peer serves any `kb_id`. Several live keys and a `kb_id` that names none of them is an error that lists the keys, not a guess. So is a `kb_id` whose key is revoked: the call fails rather than borrowing another key to the same peer.
+
 ### Adding a public peer
 
 Create a note anywhere in your vault with the following frontmatter:
@@ -188,10 +190,28 @@ Your hub exposes the same MCP methods regardless of how many peers are connected
 | `federated_note_html(note_id, kb_id)` | Note content from a specific peer |
 | `federated_expand(kb_id, pid, toc_path?)` | Walk a remote note's table of contents on a specific peer; same interface as [[en/user/expand\|expand]], applied to a remote base — a section without subsections comes back as content, as `federated_note_html` would return it |
 | `federated_instructions(kb_id)` | A peer's own guidance, to read before searching it |
+| `federated_asset(kb_id, note_path, name)` | A download link for one attachment of a peer's note (see below) |
 
 `federated_search` without `kb_id` fans out to all accessible peers in parallel and merges results. With `kb_id="bob"` it targets Bob's base only. With `kb_ids=["bob","philosophy"]` it hits exactly those two.
 
 When the agent's local `search` surfaces a KB-note, it returns a `kind: "federation_kb"` marker with an inline instruction telling the agent to call `federated_search` with that `kb_id`. The agent assembles context incrementally as it queries, without an upfront dump.
+
+#### Attachments
+
+`note_html` and `federated_note_html` list the note's attachments next to its text: in the structured result as `assets`, and as an `Assets` list at the end of the text. Each entry has `name`, `size` and `sha256`. The name is the attachment's path as the note's markdown writes it, for example `files/attach.zip`.
+
+To get a file from a peer, pass that name with the note's path:
+
+```
+federated_note_html(kb_id="bob", path="skills/reel.md")
+federated_asset(kb_id="bob", note_path="skills/reel.md", name="files/attach.zip")
+```
+
+`federated_asset` does not return the file itself. It returns `name`, `size`, `sha256`, a `url` on your own hub and `expires_at`. The agent downloads from the url, for example with `curl -o attach.zip <url>`, and checks the sha256. The url needs no token. It works for five minutes, for that one file and for one download: a second request to it is refused with `410`. A download counts from its start, so if it fails halfway, call `federated_asset` again for a fresh link. Each hub process remembers its own used links, so with read replicas behind a load balancer a leaked link can be downloaded at most once per process.
+
+Your hub fetches the file from the peer with the federation key and streams it to the agent. The agent never holds the key and never needs network access to the peer. The peer checks the same grant as for reading the note: an attachment of a note outside the subgraphs it gave you is refused, the same way as a name the note does not have.
+
+`federated_asset` reaches peers connected to your hub directly. A nested `kb_id` such as `"philosophers/nietzsche"` is refused.
 
 Rotation is not on this list and never appears in `tools/list`. It is dispatched only for a caller that has already proved a pairing, so to anyone else the method does not exist. That keeps it out of reach of an agent reading the tool list and deciding to try it.
 
@@ -262,6 +282,7 @@ To reduce scope without full revocation, remove individual subgraphs from the `k
 - **Fan-out timeout:** 2 seconds per peer call. Slow or unreachable peers are skipped; you get results from the rest.
 - **Depth cap:** fan-out recursion stops at depth 3 (configurable via `MCP_FEDERATION_MAX_DEPTH` on self-hosted). This prevents loops when peers also have peers.
 - **Peer timeout:** one request to a peer is cut off after 2 seconds (configurable via `MCP_FEDERATION_TIMEOUT` on self-hosted, e.g. `5s`). Raise it if your peers run vector search on slow hardware.
+- **Attachment size and time:** `federated_asset` moves files up to 25 MB (`MCP_FEDERATION_ASSET_MAX_SIZE`, e.g. `100MB`), and one transfer may take a minute (`MCP_FEDERATION_ASSET_TIMEOUT`). Both instances apply their own limit: the peer to what it serves, your hub to what it relays.
 - **TLS:** not enforced for search traffic. Rotation is the exception and refuses a non-HTTPS peer address. Use HTTPS peer URLs in production.
 - **Rotation grace:** five minutes. During it the peer accepts both keys, which also means whoever holds the old key can rotate the pairing away from you. A successful call closes the window early.
 - **No replay cache:** JWT expiry is 30 seconds. Acceptable for personal-hub scale.

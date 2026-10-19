@@ -10,6 +10,7 @@ import (
 
 	"trip2g/cmd/fleet/internal/agentruntime"
 	"trip2g/cmd/fleet/internal/fleet/trip2ggql"
+	"trip2g/internal/frontmatteredit"
 )
 
 // JSON map keys used in the hybrid UpdateNotesScoped variables.
@@ -20,6 +21,8 @@ const (
 	jsonKeyReplace      = "replace"
 	jsonKeyExpectedHash = "expectedHash"
 	jsonKeyChanges      = "changes"
+	jsonKeySet          = "set"
+	jsonKeyUnset        = "unset"
 )
 
 // remoteKB is the fleet's agentruntime.KB over the trip2g API, scoped to a
@@ -122,6 +125,42 @@ func (k *remoteKB) PatchIfUnchanged(ctx context.Context, path, find, replace, ex
 	return nil
 }
 
+// SetMeta sends a meta change: trip2g edits the frontmatter keys against the live
+// content, so nothing is read here.
+func (k *remoteKB) SetMeta(ctx context.Context, path string, set map[string]any, unset []string) error {
+	return k.setMeta(ctx, path, set, unset, nil)
+}
+
+// SetMetaIfUnchanged is PatchIfUnchanged's twin: the edit lands only if the note
+// still hashes to expectedHash.
+func (k *remoteKB) SetMetaIfUnchanged(ctx context.Context, path string, set map[string]any, unset []string, expectedHash string) error {
+	return k.setMeta(ctx, path, set, unset, &expectedHash)
+}
+
+// setMeta keeps the overlay in step with the edit trip2g made. An overlay entry
+// the edit cannot be replayed on is dropped, so the next Read goes to trip2g.
+func (k *remoteKB) setMeta(ctx context.Context, path string, set map[string]any, unset []string, expectedHash *string) error {
+	meta := map[string]any{jsonKeyPath: path, jsonKeySet: set, jsonKeyUnset: unset}
+	if expectedHash != nil {
+		meta[jsonKeyExpectedHash] = *expectedHash
+	}
+	err := k.update(ctx, []map[string]any{{"meta": meta}})
+	if err != nil {
+		return err
+	}
+	cur, ok := k.overlay[path]
+	if !ok {
+		return nil
+	}
+	edited, err := frontmatteredit.Apply(cur, set, unset)
+	if err != nil {
+		delete(k.overlay, path)
+		return nil //nolint:nilerr // trip2g applied the edit; only the cached copy is stale.
+	}
+	k.overlay[path] = edited
+	return nil
+}
+
 // replaceOnce replaces the first occurrence of find in s with replace.
 func replaceOnce(s, find, replace string) string {
 	idx := strings.Index(s, find)
@@ -133,7 +172,7 @@ func replaceOnce(s, find, replace string) string {
 
 // update sends an UpdateNotesScoped mutation. The variables are built as
 // map[string]any so that each NoteChangeInput only includes the active variant
-// (upsert xor patch xor hide), matching the server's nil-based dispatch.
+// (upsert xor patch xor meta xor hide), matching the server's nil-based dispatch.
 // The response type is the genqlient-generated union so __typename dispatch
 // and field access are type-safe even though the input is free-form.
 func (k *remoteKB) update(ctx context.Context, changes []map[string]any) error {

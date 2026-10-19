@@ -95,6 +95,13 @@ func (n *Note) Path() string {
 	return n.nv.Path
 }
 
+// Dir returns the folder of the note's vault path with a trailing slash
+// (`en/circle/` for `en/circle/garden.md`), or "" for a note in the root.
+func (n *Note) Dir() string {
+	i := strings.LastIndex(n.nv.Path, "/")
+	return n.nv.Path[:i+1]
+}
+
 // IsSystem returns true if the note is a system note (any path component starts with "_").
 func (n *Note) IsSystem() bool {
 	return n.nv.IsSystem()

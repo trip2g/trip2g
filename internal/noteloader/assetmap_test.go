@@ -27,4 +27,5 @@ func TestBuildAssetMap_EmitsStableContentAddressedURLs(t *testing.T) {
 	require.Equal(t, hash, ar.Hash)
 	require.Equal(t, int64(7), ar.ID)
 	require.Equal(t, "vault/attachments/pic.png", ar.AbsolutePath)
+	require.Equal(t, int64(10), ar.Size)
 }

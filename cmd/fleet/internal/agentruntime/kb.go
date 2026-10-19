@@ -29,4 +29,7 @@ type KB interface {
 	// Patch applies a single find→replace edit to the document at path,
 	// preserving unmodeled content around the match.
 	Patch(ctx context.Context, path, find, replace string) error
+	// SetMeta adds or replaces each key of set and removes each key of unset in
+	// the document's top-level frontmatter, leaving every other byte as it was.
+	SetMeta(ctx context.Context, path string, set map[string]any, unset []string) error
 }

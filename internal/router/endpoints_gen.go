@@ -21,6 +21,8 @@ import (
 	signinbyhatsigninbyhat "trip2g/internal/case/signinbyhat"
 	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
 	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
+	federatedassetrelayfederatedassetrelay "trip2g/internal/case/system/federatedassetrelay"
+	federationassetfederationasset "trip2g/internal/case/system/federationasset"
 	federationdescribefederationdescribe "trip2g/internal/case/system/federationdescribe"
 	federationtopologyfederationtopology "trip2g/internal/case/system/federationtopology"
 )
@@ -46,6 +48,8 @@ var endpoints = []Endpoint{
 	&renderlayoutpreviewrenderlayoutpreview.Endpoint{},
 	&renderpreviewrenderpreview.Endpoint{},
 	&renderpreviewrenderpreview.GetEndpoint{},
+	&federatedassetrelayfederatedassetrelay.Endpoint{},
+	&federationassetfederationasset.Endpoint{},
 	&federationdescribefederationdescribe.Endpoint{},
 	&federationtopologyfederationtopology.Endpoint{},
 }
@@ -67,6 +71,8 @@ type RoutesEnv interface {
 	signinbyhatsigninbyhat.Env
 	renderlayoutpreviewrenderlayoutpreview.Env
 	renderpreviewrenderpreview.Env
+	federatedassetrelayfederatedassetrelay.Env
+	federationassetfederationasset.Env
 	federationdescribefederationdescribe.Env
 	federationtopologyfederationtopology.Env
 }

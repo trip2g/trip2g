@@ -19,7 +19,7 @@ type fedCorpusEnv struct {
 	live *model.NoteView
 }
 
-func (e *fedCorpusEnv) SearchLiveNotes(string) ([]model.SearchResult, error) {
+func (e *fedCorpusEnv) SearchLiveNotes(string, int, int) ([]model.SearchResult, error) {
 	return []model.SearchResult{{
 		NoteView: e.live, URL: e.live.Permalink,
 		HighlightedContent: []string{"published snippet"},

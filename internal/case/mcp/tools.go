@@ -22,6 +22,7 @@ var reservedMCPTools = map[string]bool{ //nolint:gochecknoglobals // immutable s
 	"federated_note_html":       true,
 	"federated_expand":          true,
 	"federated_instructions":    true,
+	"federated_asset":           true,
 	"graphql_introspection":     true,
 	"graphql_request":           true,
 	"federated_graphql_request": true,
@@ -316,6 +317,32 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 					},
 				},
 				Required: []string{"kb_id"},
+			},
+		},
+		{
+			Name: "federated_asset",
+			Description: "Get one attachment of a remote note — a file, not text. Canonical loop: " +
+				"federated_note_html(kb_id, path) -> for each name in its assets: federated_asset(kb_id, note_path=<that path>, name=<name>). " +
+				"Returns the asset's size and sha256 and a short-lived download URL on this server that streams the file from the remote base; " +
+				"fetch it with curl (the URL needs no other credential) and check the sha256. The file itself never comes back in the tool result. " +
+				"Only a directly connected base: kb_id without '/'.",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"kb_id": {
+						Type:        "string",
+						Description: "Directly connected knowledge base id, as in federated_note_html",
+					},
+					"note_path": {
+						Type:        "string",
+						Description: "The remote note's path, exactly as passed to federated_note_html",
+					},
+					"name": {
+						Type:        "string",
+						Description: "One name from that note's assets, copied verbatim, e.g. \"files/attach.zip\"",
+					},
+				},
+				Required: []string{"kb_id", "note_path", "name"},
 			},
 		},
 	}

@@ -266,7 +266,7 @@ func TestSmokeRenderForLayout_RunsEachNoteQueryOnce(t *testing.T) {
 	var failures int
 	for i := range sampled {
 		note := &model.NoteView{Path: "n" + strconv.Itoa(i) + ".md", Layout: "list"}
-		if executeSmoke(layouts.Map["/list"].View, note, nvsWrap, noteQuery) != nil {
+		if executeSmoke(layouts.Map["/list"].View, note, nvsWrap, smokeQueries{noteQuery: noteQuery}) != nil {
 			failures++
 		}
 	}

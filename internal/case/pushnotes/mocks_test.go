@@ -33,6 +33,9 @@ var _ pushnotes.Env = &EnvMock{}
 //			InsertUncommittedPathFunc: func(ctx context.Context, notePathID int64) error {
 //				panic("mock out the InsertUncommittedPath method")
 //			},
+//			LatestNoteContentHashFunc: func(ctx context.Context, path string) (string, error) {
+//				panic("mock out the LatestNoteContentHash method")
+//			},
 //			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
@@ -66,6 +69,9 @@ type EnvMock struct {
 
 	// InsertUncommittedPathFunc mocks the InsertUncommittedPath method.
 	InsertUncommittedPathFunc func(ctx context.Context, notePathID int64) error
+
+	// LatestNoteContentHashFunc mocks the LatestNoteContentHash method.
+	LatestNoteContentHashFunc func(ctx context.Context, path string) (string, error)
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *appmodel.NoteViews
@@ -112,6 +118,13 @@ type EnvMock struct {
 			// NotePathID is the notePathID argument value.
 			NotePathID int64
 		}
+		// LatestNoteContentHash holds details about calls to the LatestNoteContentHash method.
+		LatestNoteContentHash []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Path is the path argument value.
+			Path string
+		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
@@ -136,6 +149,7 @@ type EnvMock struct {
 	lockHandleLatestNotesAfterSave sync.RWMutex
 	lockInsertNote                 sync.RWMutex
 	lockInsertUncommittedPath      sync.RWMutex
+	lockLatestNoteContentHash      sync.RWMutex
 	lockLatestNoteViews            sync.RWMutex
 	lockLayouts                    sync.RWMutex
 	lockLogger                     sync.RWMutex
@@ -284,6 +298,42 @@ func (mock *EnvMock) InsertUncommittedPathCalls() []struct {
 	mock.lockInsertUncommittedPath.RLock()
 	calls = mock.calls.InsertUncommittedPath
 	mock.lockInsertUncommittedPath.RUnlock()
+	return calls
+}
+
+// LatestNoteContentHash calls LatestNoteContentHashFunc.
+func (mock *EnvMock) LatestNoteContentHash(ctx context.Context, path string) (string, error) {
+	if mock.LatestNoteContentHashFunc == nil {
+		panic("EnvMock.LatestNoteContentHashFunc: method is nil but Env.LatestNoteContentHash was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Path string
+	}{
+		Ctx:  ctx,
+		Path: path,
+	}
+	mock.lockLatestNoteContentHash.Lock()
+	mock.calls.LatestNoteContentHash = append(mock.calls.LatestNoteContentHash, callInfo)
+	mock.lockLatestNoteContentHash.Unlock()
+	return mock.LatestNoteContentHashFunc(ctx, path)
+}
+
+// LatestNoteContentHashCalls gets all the calls that were made to LatestNoteContentHash.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteContentHashCalls())
+func (mock *EnvMock) LatestNoteContentHashCalls() []struct {
+	Ctx  context.Context
+	Path string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Path string
+	}
+	mock.lockLatestNoteContentHash.RLock()
+	calls = mock.calls.LatestNoteContentHash
+	mock.lockLatestNoteContentHash.RUnlock()
 	return calls
 }
 

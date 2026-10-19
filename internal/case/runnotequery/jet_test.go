@@ -2,9 +2,7 @@ package runnotequery_test
 
 import (
 	"context"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -47,6 +45,8 @@ func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
 		{Path: "queries/counts.md", Content: []byte("---\ntype: note-query\nfree: true\n---\n```jsonnet\n" +
 			"{posts: std.length([n for n in notes if std.startsWith(n.path, 'blog/')])}\n```\n")},
 		{Path: "queries/me.md", Content: []byte("---\ntype: note-query\nfree: true\n---\n```jsonnet\ncurrentUser\n```\n")},
+		{Path: "queries/blog.md", Content: []byte("---\ntype: note-query\nfree: true\nall_notes: true\n---\n```jsonnet\n" +
+			"[{path: n.path} for n in notes if std.startsWith(n.path, 'blog/')]\n```\n")},
 		{Path: "blog/a.md", Content: []byte("---\ntitle: A\nfree: true\ntags: [go]\n---\na")},
 		{Path: "blog/b.md", Content: []byte("---\ntitle: B\nfree: true\ntags: [web]\n---\nb")},
 		{Path: "blog/paid.md", Content: []byte("---\ntitle: Paid\ntags: [go]\n---\np")},
@@ -64,6 +64,7 @@ func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
 	vars := make(jet.VarMap)
 	user := &usertoken.Data{ID: 7, Role: "editor"}
 	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}))
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}, ""))
 
 	var out strings.Builder
 	err = view.Execute(&out, vars, nil)
@@ -88,48 +89,67 @@ func TestNoteQueryInLayout(t *testing.T) {
 	require.ErrorContains(t, err, `noteQuery("[[nope]]"): query not found`)
 }
 
+func TestNoteQueryRowsInLayout(t *testing.T) {
+	got, err := renderWithNoteQuery(t, `{{ range _, row := noteQueryRows("[[blog]]") }}`+
+		`{{ row.Data().path }}={{ if p := row.Note(); p }}{{ p.Title() }}{{ else }}nil{{ end }};{{ end }}`)
+	require.NoError(t, err)
+	require.Equal(t, "blog/a.md=A;blog/b.md=B;blog/paid.md=nil;", got,
+		"all_notes gives the program the paid post, but its row has no note for this reader")
+
+	got, err = renderWithNoteQuery(t, `{{ rows := noteQueryRows("[[by_tag]]", map("tag", "go")) }}`+
+		`{{ len(rows) }} {{ rows[0].Data().title }}`)
+	require.NoError(t, err)
+	require.Equal(t, "1 A", got)
+
+	_, err = renderWithNoteQuery(t, `{{ noteQueryRows("queries/counts.md") }}`)
+	require.ErrorContains(t, err, `noteQueryRows("queries/counts.md"): the result is not a list`)
+
+	_, err = renderWithNoteQuery(t, `{{ noteQueryRows("[[nope]]") }}`)
+	require.ErrorContains(t, err, `noteQueryRows("[[nope]]"): query not found`)
+}
+
 // docJetSnippet is the template example on the user pages.
 const docJetSnippet = `{{ range _, p := noteQuery("[[by_tag]]", map("tag", "go")) }}
   <a href="{{ p.url }}">{{ p.title }}</a>
 {{ end }}`
 
+// docJetRowsSnippet is the rows example on the user pages.
+const docJetRowsSnippet = `{{ range _, row := noteQueryRows("[[newest]]") }}
+  {{ if post := row.Note(); post }}
+    <a href="{{ post.Permalink() }}">{{ post.Title() }}</a>
+  {{ end }}
+{{ end }}`
+
 func TestDocJetSnippet(t *testing.T) {
-	var srcs []mdloader.SourceFile
-	err := filepath.WalkDir(demoVault, func(p string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return err
-		}
-		content, readErr := os.ReadFile(p)
-		if readErr != nil {
-			return readErr
-		}
-		rel, _ := filepath.Rel(demoVault, p)
-		srcs = append(srcs, mdloader.SourceFile{Path: filepath.ToSlash(rel), Content: content})
-		return nil
-	})
-	require.NoError(t, err)
+	nvs := loadDemoVault(t)
 
-	log := logger.TestLogger{}
-	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log})
-	require.NoError(t, err)
+	render := func(tmpl string) string {
+		loader := jet.NewInMemLoader()
+		loader.Set("page.html", tmpl)
+		view, err := jet.NewSet(loader).GetTemplate("page.html")
+		require.NoError(t, err)
 
-	loader := jet.NewInMemLoader()
-	loader.Set("page.html", docJetSnippet)
-	view, err := jet.NewSet(loader).GetTemplate("page.html")
-	require.NoError(t, err)
+		vars := make(jet.VarMap)
+		vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs}))
+		vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs}, ""))
 
-	vars := make(jet.VarMap)
-	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs}))
+		var out strings.Builder
+		require.NoError(t, view.Execute(&out, vars, nil))
+		return strings.Join(strings.Fields(out.String()), " ")
+	}
 
-	var out strings.Builder
-	require.NoError(t, view.Execute(&out, vars, nil))
 	require.Equal(t,
 		`<a href="/blog/go_on_the_web">Go on the web</a> <a href="/blog/hello_go">Hello, Go</a>`,
-		strings.Join(strings.Fields(out.String()), " "))
+		render(docJetSnippet))
+	require.Equal(t,
+		`<a href="/blog/go_on_the_web">Go on the web</a> <a href="/blog/web_basics">Web basics</a> `+
+			`<a href="/blog/hello_go">Hello, Go</a>`,
+		render(docJetRowsSnippet))
 
 	for _, page := range []string{"en/user/note-queries", "ru/user/note-queries"} {
 		doc, readErr := os.ReadFile("../../../docs/" + page + ".md")
 		require.NoError(t, readErr)
 		require.Contains(t, string(doc), "```jet\n"+docJetSnippet+"\n```", "docs/%s.md lost the template example", page)
+		require.Contains(t, string(doc), "```jet\n"+docJetRowsSnippet+"\n```", "docs/%s.md lost the rows example", page)
 	}
 }

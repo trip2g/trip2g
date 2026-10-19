@@ -47,17 +47,27 @@ func (e *fedGQLEnv) CanReadNote(_ context.Context, _ *model.NoteView) (bool, err
 func (e *fedGQLEnv) FederationClient(_ context.Context, _ string) (model.Federation, error) {
 	panic("unexpected")
 }
-func (e *fedGQLEnv) SearchLatestNotes(_ string) ([]model.SearchResult, error) { panic("unexpected") }
-func (e *fedGQLEnv) SearchLiveNotes(_ string) ([]model.SearchResult, error)   { panic("unexpected") }
-func (e *fedGQLEnv) LiveNoteChunks() []model.NoteChunk                        { panic("unexpected") }
-func (e *fedGQLEnv) LiveNoteViews() *model.NoteViews                          { panic("unexpected") }
-func (e *fedGQLEnv) OpenAI() *openai.Client                                   { panic("unexpected") }
-func (e *fedGQLEnv) SiteConfig(_ context.Context) model.SiteConfig            { panic("unexpected") }
-func (e *fedGQLEnv) PublicURL() string                                        { panic("unexpected") }
-func (e *fedGQLEnv) NoteURL(_ *model.NoteView) string                         { panic("unexpected") }
-func (e *fedGQLEnv) Logger() logger.Logger                                    { return &logger.DummyLogger{} }
-func (e *fedGQLEnv) AuditLogger() logger.Logger                               { return &logger.DummyLogger{} }
-func (e *fedGQLEnv) EncryptData(_ []byte) ([]byte, error)                     { panic("unexpected") }
+func (e *fedGQLEnv) FederationAssetFetcher(_ context.Context, _ string) (model.FederationAssetFetcher, error) {
+	panic("unexpected")
+}
+func (e *fedGQLEnv) FederatedAssetDownload(_ string, _ model.FederatedAssetParams) (FederatedAssetDownload, error) {
+	panic("unexpected")
+}
+func (e *fedGQLEnv) SearchLatestNotes(_ string, _, _ int) ([]model.SearchResult, error) {
+	panic("unexpected")
+}
+func (e *fedGQLEnv) SearchLiveNotes(_ string, _, _ int) ([]model.SearchResult, error) {
+	panic("unexpected")
+}
+func (e *fedGQLEnv) LiveNoteChunks() []model.NoteChunk             { panic("unexpected") }
+func (e *fedGQLEnv) LiveNoteViews() *model.NoteViews               { panic("unexpected") }
+func (e *fedGQLEnv) OpenAI() *openai.Client                        { panic("unexpected") }
+func (e *fedGQLEnv) SiteConfig(_ context.Context) model.SiteConfig { panic("unexpected") }
+func (e *fedGQLEnv) PublicURL() string                             { panic("unexpected") }
+func (e *fedGQLEnv) NoteURL(_ *model.NoteView) string              { panic("unexpected") }
+func (e *fedGQLEnv) Logger() logger.Logger                         { return &logger.DummyLogger{} }
+func (e *fedGQLEnv) AuditLogger() logger.Logger                    { return &logger.DummyLogger{} }
+func (e *fedGQLEnv) EncryptData(_ []byte) ([]byte, error)          { panic("unexpected") }
 func (e *fedGQLEnv) ClearFederationSecretPrev(_ context.Context, _ db.ClearFederationSecretPrevParams) error {
 	panic("unexpected")
 }

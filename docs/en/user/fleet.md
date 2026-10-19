@@ -92,7 +92,7 @@ is not a promise that it never fires.
 
 ## Tools and scope
 
-An LLM role gets five tools:
+An LLM role gets six tools:
 
 | Tool | What it does |
 |------|-------------|
@@ -100,6 +100,7 @@ An LLM role gets five tools:
 | `read_note(path)` | read a note (read scope only) |
 | `write_note(path, content)` | create or replace a note (write scope only) |
 | `patch_note(path, find, replace)` | surgical find and replace; fails unless `find` matches exactly once |
+| `set_note_meta(path, set, unset)` | add, replace or remove top-level frontmatter keys of an existing note; other keys, comments and the body stay as they are |
 | `finish(answer)` | end the run with a summary |
 
 Every call is checked against `read_patterns` and `write_patterns` at the runtime level, not in the prompt. An out-of-scope request is denied and the denial is fed back to the model. Writes go through a per-delivery scoped token the hub mints for that one delivery, so the agent physically cannot reach paths outside its scope, and every write is a normal note version you can inspect and revert.
@@ -126,7 +127,7 @@ fleetkit.emit([fleetkit.note("transcripts/2026-07-02_standup.md", {"title": "Sta
 
 There is no `executor` key. The role names a fleet, the fleet decides what kind of run it is, and the same note can move between them by changing one line.
 
-The body's first fenced code block is the program (`python`, `bash`, or `node`). The delivery context arrives as JSON in the file named by `$FLEET_INPUT` — `fleetkit.bag()` reads it, and `fleetkit.frontmatter()` gives you the role note's own frontmatter, so a role's configuration lives in the note that declares it. The program prints a `{"changes": [...]}` object to stdout, and every change is applied through the same `write_patterns` enforcement as `write_note`. Code execution is not a scope bypass.
+The body's first fenced code block is the program (`python`, `bash`, or `node`). The delivery context arrives as JSON in the file named by `$FLEET_INPUT` — `fleetkit.bag()` reads it, and `fleetkit.frontmatter()` gives you the role note's own frontmatter, so a role's configuration lives in the note that declares it. The program prints a `{"changes": [...]}` object to stdout, and every change is applied through the same `write_patterns` enforcement as `write_note`. Code execution is not a scope bypass. Each change has a `path` and the keys of one kind: `content` replaces the note, `find` and `replace` patch it, `set` and `unset` change frontmatter keys as `set_note_meta` does. A change with none of these keys, or with keys of two kinds, fails the run and nothing is written.
 
 Isolation is strict by default, and it is codellm's, not the fleet's: the child runs in an OS-level sandbox (Linux namespaces plus Landlock filesystem confinement, no network unless the operator allows it) that fails closed on unsupported systems. Code execution as a whole is off until the codellm operator enables specific interpreters.
 

@@ -1,6 +1,7 @@
 scalar Int64
 scalar Time
 scalar Upload
+scalar Map
 
 """
 Any JSON value: an object, a list, a string, a number, a boolean or null.
@@ -1623,12 +1624,34 @@ input NoteQueryInput {
   params: JSON
 }
 
-type NoteQueryPayload {
+type NoteQueryPayload
+  @goExtraField(name: "Notes", type: "trip2g/internal/graph/model.NoteQueryRowNotes") {
   """
   Whatever the query program returned, as a JSON value. Its shape is set by
   the query note, not by the schema.
   """
   result: JSON!
+
+  """
+  The items of the result, one row each, when the result is a list; null
+  otherwise.
+  """
+  rows: [NoteQueryRow!] @goField(forceResolver: true)
+}
+
+type NoteQueryRow
+  @goExtraField(name: "Notes", type: "trip2g/internal/graph/model.NoteQueryRowNotes") {
+  """
+  The item as the query program returned it.
+  """
+  data: JSON!
+
+  """
+  The note the item names: by `version_id` (that version), else by `path_id`
+  (its latest version), else by `path` (a vault path). Null when the item names
+  no note, the note is unknown, or the caller can't read it.
+  """
+  note: PublicNote @goField(forceResolver: true)
 }
 
 union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload
@@ -1834,6 +1857,12 @@ union CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload
 input PushNoteInput {
   path: String!
   content: String!
+  """
+  Writes the note only if its current content hash still equals this value.
+  An empty string means the note must not exist (or be hidden). Omit it to
+  write unconditionally. A refused note is reported in hashMismatches.
+  """
+  expectedHash: String
 }
 
 input PushNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") @goExtraField(name: "Partial", type: "bool") {
@@ -1858,9 +1887,19 @@ type PushedNote {
   warnings: [NoteWarning!]!
 }
 
+"""
+A note an expectedHash refused: it was left as it is, and actualHash is its
+current content hash ("" when it does not exist or is hidden).
+"""
+type NoteHashMismatch {
+  path: String!
+  actualHash: String!
+}
+
 type PushNotesPayload {
   notes: [PushedNote!]!
   updated: [PushedNote!]!
+  hashMismatches: [NoteHashMismatch!]!
 }
 
 union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
@@ -1888,12 +1927,24 @@ union UploadNoteAssetOrErrorPayload = UploadNoteAssetPayload | ErrorPayload
 # hideNotes
 #
 
+input HideNoteInput {
+  path: String!
+  """
+  Hides the note only if its current content hash still equals this value.
+  An empty string means the note must not exist (or be hidden already). Omit
+  it to hide unconditionally. A refused path is reported in hashMismatches.
+  """
+  expectedHash: String
+}
+
 input HideNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
-  paths: [String!]!
+  paths: [String!]! = []
+  notes: [HideNoteInput!]! = []
 }
 
 type HideNotesPayload {
   success: Boolean!
+  hashMismatches: [NoteHashMismatch!]!
 }
 
 union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
@@ -1919,10 +1970,26 @@ input NoteChangeHideInput {
   path: String!
 }
 
+"""
+Changes top-level frontmatter keys without rewriting the note.
+set adds a key or replaces its value; unset removes keys, and removing an absent
+key is not an error. Keys are top-level only: "a.b" is a key literally named
+"a.b", not b inside a. The lines of other keys, their comments and the body are
+kept byte for byte; new keys go after the last key, sorted. A note without
+frontmatter gets a block. expectedHash works as for patch.
+"""
+input NoteChangeMetaInput {
+  path: String!
+  set: Map
+  unset: [String!]
+  expectedHash: String
+}
+
 input NoteChangeInput {
   upsert: NoteChangeUpsertInput
   patch: NoteChangePatchInput
   hide: NoteChangeHideInput
+  meta: NoteChangeMetaInput
 }
 
 input UpdateNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {

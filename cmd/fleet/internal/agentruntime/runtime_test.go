@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"trip2g/internal/frontmatteredit"
 	"trip2g/internal/webhookutil"
 
 	"github.com/stretchr/testify/require"
@@ -61,6 +62,19 @@ func (m *memKB) Patch(_ context.Context, path, find, replace string) error {
 		return &kbError{"patch find is ambiguous (multiple occurrences)"}
 	}
 	m.docs[path] = content[:idx] + replace + content[idx+len(find):]
+	return nil
+}
+
+func (m *memKB) SetMeta(_ context.Context, path string, set map[string]any, unset []string) error {
+	content, ok := m.docs[path]
+	if !ok {
+		return errNotFound
+	}
+	edited, err := frontmatteredit.Apply(content, set, unset)
+	if err != nil {
+		return err
+	}
+	m.docs[path] = edited
 	return nil
 }
 
@@ -315,7 +329,7 @@ func TestRun_ToolsAllowlistRestrictsLLMTools(t *testing.T) {
 			LLM:   llm, KB: kb,
 		})
 		require.NoError(t, err)
-		require.Len(t, llm.seenTools, 5, "empty Tools must expose all 5 default tools")
+		require.Len(t, llm.seenTools, 6, "empty Tools must expose all 6 default tools")
 	})
 }
 

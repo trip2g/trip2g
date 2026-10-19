@@ -40,13 +40,13 @@ func corpusEnv() *EnvMock {
 	return &EnvMock{
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
-		SearchLatestNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLatestNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: latest, URL: latest.Permalink, Score: 1,
 				HighlightedContent: []string{"draft snippet"},
 			}}, nil
 		},
-		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: live, URL: live.Permalink, Score: 1,
 				HighlightedContent: []string{"published snippet"},
@@ -147,7 +147,7 @@ func TestSearchAPIKeyUsesLatestCorpus(t *testing.T) {
 func TestSearchSkipsDimMismatchedChunks(t *testing.T) {
 	srv := embeddingServer(t, []float32{1, 0, 0}) // 3-dim query
 	env := corpusEnv()
-	env.SearchLiveNotesFunc = func(string) ([]appmodel.SearchResult, error) { return nil, nil }
+	env.SearchLiveNotesFunc = func(string, int, int) ([]appmodel.SearchResult, error) { return nil, nil }
 	env.FeaturesFunc = func() features.Features {
 		return features.Features{VectorSearch: features.VectorSearchConfig{Enabled: true}}
 	}
@@ -188,7 +188,7 @@ func TestSearchRankingMatchesSiteSearch(t *testing.T) {
 	// Text lane: b then a. Vector lane: c, d, a — so /a is hybrid, and /b vs /c
 	// tie on RRF score (rank 0 text vs rank 0 vector), exercising the
 	// deterministic tie-break in both transports.
-	textResults := func(string) ([]appmodel.SearchResult, error) {
+	textResults := func(string, int, int) ([]appmodel.SearchResult, error) {
 		return []appmodel.SearchResult{
 			{NoteView: pathMap["b.md"], URL: "/b", HighlightedContent: []string{"hit b"}},
 			{NoteView: pathMap["a.md"], URL: "/a", HighlightedContent: []string{"hit a"}},

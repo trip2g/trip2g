@@ -10,29 +10,67 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### A revoked key named by `kb_id` fails the call
+
+- **What.** When the key a KB-note's `kb_id` names is revoked, a federated call now fails with `its federation secret is revoked`. Before, it fell back to another live key to the same peer.
+- **Why.** That other key can be granted different subgraphs, so the KB-note read with access it was never given.
+- **How to fix a base that gets the error.** Point the KB-note's `mcp_federation_kb_id` at a live key, or revoke the other keys to the peer so one live key is left. See [[en/user/federation|Federation]].
+
+## v0.12.0 (2026-10-19)
+
 ### Note queries give a JavaScript page a list of notes
 
 - **What.** A note with `type: note-query` and a Jsonnet block is a named query. The GraphQL field `noteQuery` runs it with the notes the caller can read and the caller's `params`, and returns the JSON the program builds. A visitor can run it only if they can read the query note.
 - **Why.** A page built with JavaScript needs lists of notes by frontmatter (posts with a tag, tasks by status), but raw frontmatter, and notes a visitor can't read, must not leave the server.
-- **How to use.** Write a query note and call `noteQuery(input: {query: "[[by_tag]]", params: {tag: "go"}})`, or `noteQuery("[[by_tag]]", map("tag", "go"))` from a template. See [[en/user/note-queries|Note queries]].
+- **How to use.** Write a query note and call `noteQuery(input: {query: "[[by_tag]]", params: {tag: "go"}})`, or `noteQuery("[[by_tag]]", map("tag", "go"))` from a template. With `all_notes: true` in the query note, `notes` holds every note with a `readable` flag, and every query gets `currentUser`. One GraphQL request runs at most two note queries, and `trip2g_note_query_duration_seconds` shows how long each one takes. See [[en/user/note-queries|Note queries]].
+
+### A note query's rows bring back the notes themselves
+
+- **What.** When a note query returns a list, the GraphQL payload also has `rows`: each row's `data` is the item, and its `note` is the note the item names by `version_id`, `path_id` or `path`, or null when the visitor can't read it. Templates get the same with `noteQueryRows()` and `.Note()`. `notes` inside a query now carries `path_id` and `version_id`, and keeps notes marked `search: false` (their `meta.search` is `false`). Templates also get `note.Dir()`, the note's folder.
+- **Why.** A query that selects notes had to copy every field the page shows into its result, and the rendered HTML couldn't be copied at all. `search: false` hides a note from search; it shouldn't hide it from a page that lists it.
+- **How to use.** Return `[{version_id: n.version_id} for n in …]` and ask for `rows { note { title url html } }`, or range over `noteQueryRows("[[my_query]]")` in a template. See [[en/user/note-queries#Rows: the notes behind the result|Note queries]].
+
+### `updateNotes` changes one frontmatter key without rewriting the note
+
+- **What.** A new `meta` change in `updateNotes` takes `set` (keys to add or replace) and `unset` (keys to remove) for a note's top-level frontmatter. Every other key keeps its line, order, quoting and comments, and the body is not touched. A note without frontmatter gets a block. `expectedHash` works as for `patch`. Fleet roles get the same edit as a `set_note_meta` tool, and a webhook agent can return it as a change with `"kind": "meta"`.
+- **Why.** Changing one key meant rewriting the whole note with `upsert`, or a `patch` whose `find` had to repeat the current text exactly and failed when the formatting differed. LLM agents that rewrite frontmatter text also move and reformat keys they were not asked to touch.
+- **How to use.** Send `{"meta": {"path": "todo.md", "set": {"status": "done"}}}` in `changes`. See [[en/user/update_notes|updateNotes]].
 
 ### Note validators check notes against your rules on every sync
 
 - **What.** A note can list validator notes in a new `validate` frontmatter field. A validator is a note with a Jsonnet block that reads the frontmatter and the body's structure (headings, images, links, code blocks) and returns errors and warnings. An error marks the note `CRITICAL`: a sync that pushes notes exits with code 1, and the note shows under Note Warnings in the admin panel. `trip2g lint` reports the same messages without a server. The note is still saved and published.
 - **Why.** Templates, lists and the API read notes as data and break quietly when a field or a section is missing. Notes written by language models drift from run to run. A validator turns those slips into a message that says what to fix.
-- **How to use.** Add `validate: "[[my_rules]]"` to a note, or to a whole folder with a frontmatter patch. See [[en/user/validators|Note validators]].
+- **How to use.** Add `validate: "[[my_rules]]"` to a note, or to a whole folder with a frontmatter patch. An empty `validate` switches them off. See [[en/user/validators|Note validators]].
+
+### MCP `federated_asset` hands an agent a peer note's attachment
+
+- **What.** `note_html` and `federated_note_html` list the note's attachments as `assets`, each with `name`, `size` and `sha256`. A new tool, `federated_asset(kb_id, note_path, name)`, returns a single-use, five-minute download link on your own hub for one of them; the hub streams the file from the peer as it is downloaded. The peer serves an attachment only of a note the pairing may read.
+- **Why.** An agent could read a peer's note but not the files it links to. The asset URLs in the HTML point at the peer, which the agent may not reach and which wants a federation key the agent must not hold.
+- **How to use.** Call `federated_note_html`, then `federated_asset` with a name from its `assets`, download the link with curl and check the sha256. Files are capped at 25 MB by default (`MCP_FEDERATION_ASSET_MAX_SIZE`). Both instances need this version. See [[en/user/federation#Attachments|Federation]].
 
 ### Site search can leave out notes the reader cannot open
 
-- **What.** A new `SEARCH_HIDE_UNREADABLE` setting (`--search-hide-unreadable`), off by default. When on, site search returns only notes the reader can open. When off, as before, every note the reader cannot open is listed after the results as a "Закрытый материал." placeholder with its real title and link.
+- **What.** A new `SEARCH_HIDE_UNREADABLE` setting (`--search-hide-unreadable`), off by default. When on, site search returns only notes the reader can open. When off, as before, every note the reader cannot open is listed after the results as a "Закрытый материал." placeholder with its real title and link. Closed notes are dropped before the result list is cut, so a readable match ranked below many closed ones still shows.
 - **Why.** The placeholders show that locked material exists, which suits a paid site. A site whose closed notes should stay unseen had no way to keep their titles and links out of search.
 - **How to use.** Set `SEARCH_HIDE_UNREADABLE=true` and restart. Admins and readers with access are not affected, and neither is MCP search. See [[en/user/search#Notes a reader cannot open|How search works]].
 
-### MCP `expand` declares `toc_path` as a list of strings again
+### Federation traffic and keys in the metrics
 
-- **What.** The `expand` tool's input schema says `toc_path` is an array of strings, and `last` is a plain number. Since v0.11.0 the schema carried `toc_path` as an array with no item type and put that item type on `last`.
-- **Why.** An MCP client that checks tool schemas strictly could refuse `expand`, or the whole tool list, because of it.
-- **How to use.** Nothing to do. A client that cached the tool list picks up the fixed schema on its next `tools/list`.
+- **What.** The instance's Prometheus metrics now show federation. Traffic: `trip2g_mcp_federated_inbound_requests_total` counts requests made with an inbound key, by key and tool; `trip2g_mcp_federated_notes_served_total` and `trip2g_mcp_federated_results_served_total` count the notes and search results handed to a peer, by key and by the subgraph that allowed each one. Topology, one series per item, always 1: `trip2g_federation_self_info` (this base's kb_id and MCP URL), `trip2g_federation_key_info` (each live key, by direction and kid), `trip2g_federation_key_subgraph_info` (each subgraph a key is scoped to) and `trip2g_federation_peer_info` (each KB-note and the URL it points to).
+- **Why.** You could not see which peer reads what, through which key and subgraph, or which keys are live, without reading the database.
+- **How to use.** Automatic, no flags. Scrape the instance's metrics as before and build dashboards on these series. See [[en/user/federation|Federation]].
+
+### Magazine cards read like a catalog
+
+- **What.** In the default template's magazine, the whole card is one link to the note. The excerpt is the note's `description`, or else its first paragraph as plain text, cut to a few lines. The "Read more" link is gone. A new frontmatter key, `magazine_show_date`, hides the dates when set to `false`. Cards on a docs hub came out about half as tall as before.
+- **Why.** Cards rendered the first paragraph as HTML with lists and code, so the line limit never applied and cards grew to hundreds of pixels. A date on a docs page makes it look stale.
+- **How to use.** Automatic. Write a one-sentence `description` to control a card's text, and set `magazine_show_date: false` on a hub or catalog page. See [[en/user/default-template|Default template]].
+
+### Previous/next links use the sidebar's link text
+
+- **What.** The default template's Previous and Next links show the text written in the sidebar: the alias of `[[guide|Start here]]` or the text of `[Start here](guide.md)`. A wikilink without an alias still shows the note's title. Frontmatter `prev`/`next` keep using the title.
+- **Why.** A sidebar often shortens long titles. The pager showed the full title and did not match the sidebar next to it.
+- **How to use.** Automatic. See [[en/user/default-template|Default template]].
 
 ### A signed-in reader opens a `free: true` note
 
@@ -51,6 +89,108 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **What.** `sitemap.xml`, the main one and each custom domain's, lists a `free: true` note of a subgraph marked **Require sign-in**. Before, it left out every note of such a subgraph, free or not. The sitemap now asks the same question as the page, RSS feeds and the page cache, so it cannot disagree with them again. It still leaves out notes without `free: true`, `noindex: true` notes, hidden notes, `.html` files and anything under a `/_` path.
 - **Why.** Such a note opens for a guest (see above), so a search engine should find it like any other free note.
 - **How to use.** Nothing to do. To keep a free note out of search engines, add `noindex: true`.
+
+### MCP `expand` declares `toc_path` as a list of strings again
+
+- **What.** The `expand` tool's input schema says `toc_path` is an array of strings, and `last` is a plain number. Since v0.11.0 the schema carried `toc_path` as an array with no item type and put that item type on `last`.
+- **Why.** An MCP client that checks tool schemas strictly could refuse `expand`, or the whole tool list, because of it.
+- **How to use.** Nothing to do. A client that cached the tool list picks up the fixed schema on its next `tools/list`.
+
+### Federation signs a call with the key its `kb_id` names
+
+- **What.** When a base holds several outbound keys to the same peer, a call to a `kb_id` is signed with the key whose ID equals that `kb_id`. A single live key to a peer serves any `kb_id`, as before. Several live keys and a `kb_id` that names none of them is an error that lists the keys. Before, every call to the peer was signed with the newest key.
+- **Why.** Keys to one peer can be granted different subgraphs. With the newest key on every call, a read the older key allowed came back `Note not found` with no reason given.
+- **How to use.** Give each key its own KB-note with `mcp_federation_kb_id` equal to the key's ID. See [[en/user/federation|Federation]].
+
+### A large vault no longer crash-loops at startup
+
+- **What.** At startup the live and the latest notes each get their own 60 s to load, instead of sharing one budget. Validators and the database reads no longer compete for that time either: the database is read before notes are parsed. If a load still fails or runs out of time, the instance exits instead of becoming ready, and the old instance keeps serving.
+- **Why.** On a large vault on a slow server the live load could use most of the budget. The latest load then failed halfway, the server restarted, and did the same again. A vault in that state could not be fixed, because fixing it needs a running server.
+- **How to use.** Automatic, no flags. See [[en/user/zerodowntime|Zero-downtime deploys]].
+
+### Search forgets a note's old address when its route changes
+
+- **What.** When a note's address changes but its text does not, for example after a `routes` change in frontmatter, search drops the entry under the old address. Two notes that swap addresses, and a new note that takes a deleted note's address, keep the right entries.
+- **Why.** Search kept showing such a note at its old address, which no longer opened.
+- **How to use.** Automatic. The first start after the upgrade re-indexes every note once, so it takes longer than usual on a large vault.
+
+### Two-way sync pulls a server edit instead of overwriting it
+
+- **What.** Sync now remembers a file that was the same on disk and on the server. Before, such a file had no saved state. After someone edited it on the server (through the API, the web editor or another device), the next two-way sync took it for a conflict, and the default `--conflict-resolution local` pushed the old disk copy over the newer server version.
+- **Why.** A server edit was lost with no warning.
+- **How to use.** Use the sync CLI from this release; the copy in the onboarding vault is rebuilt with the fix. See [[en/user/two-way-sync|Two-way sync]].
+
+### A layout may yield a block it defines itself
+
+- **What.** A layout that defines a `block` and calls `yield` on it in the same file no longer gets the warning `yield "…" has no matching block in component files`. A yield of a block that exists nowhere still gets it.
+- **Why.** The warning was false: the block was there. It marked the layout with a warning and failed `trip2g lint docs`.
+- **How to use.** Nothing to do.
+
+### An admin sees a layout parse error on the error page
+
+- **What.** When a note's layout fails to parse, an admin gets the 500 error page with the layout's name and every parse message. Before, the admin got the note in an old page view with a red box above it and status 200. Other readers see no change.
+- **Why.** The old view was left over from a renderer nobody used any more, and status 200 hid that the page was broken.
+- **How to use.** Nothing to do.
+
+### Live reload and follow toggles are hidden from guests
+
+- **What.** The "Live reload" and "Live follow" items in the ☰ menu show only to a signed-in reader. The `?#!live_reload=1` and `?#!live_follow=1` links work once you are signed in.
+- **Why.** Both features need a signed-in reader. A guest saw toggles that did nothing.
+- **How to use.** Sign in, then use the ☰ menu. See [[en/user/live-editing|Live editing]].
+
+### The editor pane follows the site's light or dark theme
+
+- **What.** The editor pane on a page now switches between light and dark together with the site.
+- **Why.** On a dark site the editor stayed light, or the other way round.
+- **How to use.** Nothing to do. See [[en/user/editor|Editor]].
+
+### Mermaid pie charts get their full height
+
+- **What.** A Mermaid diagram that has only a `viewBox`, such as a pie chart, now takes the height its shape needs. Before, it rendered 150 px tall.
+- **Why.** Pie charts were too small to read.
+- **How to use.** Nothing to do. See [[en/user/mermaid|Mermaid]].
+
+### Default template: the header on narrow screens and search breadcrumbs
+
+- **What.** On screens narrower than about 408 px the header logo shrinks, so the right menu button stays on screen. The page's JSON-LD breadcrumbs follow the breadcrumbs the reader sees, instead of the URL's folders.
+- **Why.** On a phone the menu button was pushed past the edge. Search engines showed a breadcrumb trail like `ru › user` that did not match the page.
+- **How to use.** Nothing to do. See [[en/user/default-template|Default template]].
+
+### More of the admin panel in Russian
+
+- **What.** The admin panel's Russian translation now covers all but two library strings. About 70 strings were in English, some because their translation was saved under an old key.
+- **Why.** A Russian-speaking admin met English labels across the catalogs and forms.
+- **How to use.** Nothing to do.
+
+### Docs: a hand-written docs hub
+
+- **What.** The documentation start page lists the key pages grouped by topic, written by hand, instead of a magazine of every page.
+- **Why.** A new reader should see where to start, not a long wall of cards.
+- **How to use.** Open [[en/user/_index|Documentation]].
+
+### Docs: a live survey form
+
+- **What.** The docs site has a public survey form built from a note, and the forms and SPA guides link to it.
+- **Why.** You can try a form before you write one.
+- **How to use.** Open [[demo_form|A form in a note]]. See [[en/user/forms|Forms]].
+
+### Docs: the positioning wheel
+
+- **What.** A new page shows trip2g as nine doors around one folder of notes, each with its own example, and an essay explains how the page is built.
+- **Why.** It shows in one picture what one vault can serve: a site, a bot, a channel, agents, calls and more.
+- **How to use.** Open [[en/circle/_index|One tool, nine doors]] and read [[en/thoughts/positioning-wheel|how it is built]].
+
+### Docs: live editing as it works
+
+- **What.** The live editing guide now describes live reload and live follow as opt-in, switched on from the menu or a link once you are signed in.
+- **Why.** The guide described behaviour the code no longer had.
+- **How to use.** See [[en/user/live-editing|Live editing]].
+
+### Docs: essays on teams and federation
+
+- **What.** New essays: [[en/thoughts/one-writer-per-base|One writer per base]], [[en/thoughts/data-mesh-for-knowledge|Data mesh for knowledge]] and [[en/thoughts/team-day-status|The manager reads the team's day from their agents]].
+- **Why.** They explain the ideas behind federation and team bases in plain words.
+- **How to use.** Read them in the Thoughts section.
 
 ## v0.11.1 (2026-10-07)
 

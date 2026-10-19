@@ -5,13 +5,20 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"trip2g/internal/case/mcp"
+	"trip2g/internal/case/system/federatedassetrelay"
 	"trip2g/internal/db"
+	"trip2g/internal/federatedassetlink"
 	"trip2g/internal/federation"
 	"trip2g/internal/metrics"
 	"trip2g/internal/model"
+	"trip2g/internal/ssrfsafe"
+
+	"github.com/valyala/fasthttp"
 )
 
 func (a *app) FederationSecretByKBURL(ctx context.Context, kbURL string) (db.FederationSecret, bool, error) {
@@ -36,23 +43,102 @@ func (a *app) FederationSecretByKID(ctx context.Context, kid string) (db.Federat
 	return secret, true, nil
 }
 
-func (a *app) HasFederationSecretForKBURL(ctx context.Context, kbURL string) (bool, error) {
-	rows, err := a.Queries.ListFederationSecrets(ctx)
-	if err != nil {
-		return false, err
-	}
+// pickOutboundKID chooses the outbound secret for a KB-note. A base may hold
+// several keys to one peer, each scoped to different subgraphs, so the key
+// whose kid equals the note's kb_id wins; a lone live key serves any kb_id.
+func pickOutboundKID(rows []db.ListFederationSecretsRow, kbID, kbURL string) (string, bool, error) {
+	var live []string
+	configured := false
+	namedRevoked := false
 	for _, row := range rows {
-		if row.KbUrl != nil && *row.KbUrl == kbURL {
-			return true, nil
+		if row.KbUrl == nil || *row.KbUrl != kbURL {
+			continue
 		}
+		configured = true
+		if row.RevokedAt != nil {
+			namedRevoked = namedRevoked || row.Kid == kbID
+			continue
+		}
+		if row.Kid == kbID {
+			return row.Kid, true, nil
+		}
+		live = append(live, row.Kid)
 	}
-	return false, nil
+
+	switch {
+	case namedRevoked:
+		return "", false, fmt.Errorf("kb_id %q: its federation secret is revoked", kbID)
+	case len(live) == 1:
+		return live[0], true, nil
+	case len(live) > 1:
+		return "", false, fmt.Errorf("kb_id %q: %d live federation secrets for %s (%s); set mcp_federation_kb_id to the kid of the one to use",
+			kbID, len(live), kbURL, strings.Join(live, ", "))
+	case configured:
+		return "", false, fmt.Errorf("no active federation secret for kb_id %q; the configured secret may be revoked", kbID)
+	}
+	return "", false, nil
 }
 
 func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Federation, error) {
+	peer, err := a.federationPeer(reqCtx, kbID)
+	if err != nil {
+		return nil, err
+	}
+	return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode, a.config.MCPFederationTimeout), nil
+}
+
+func (a *app) FederationAssetFetcher(reqCtx context.Context, kbID string) (model.FederationAssetFetcher, error) {
+	peer, err := a.federationPeer(reqCtx, kbID)
+	if err != nil {
+		return nil, err
+	}
+	limits := federation.AssetLimits{
+		MaxSize: a.FederatedAssetMaxSize(),
+		Timeout: a.config.MCPFederationAssetTimeout,
+	}
+	return federation.NewAssetClient(peer, a.fedAssetHTTPClient, limits), nil
+}
+
+func (a *app) FederatedAssetMaxSize() int64 {
+	return int64(a.config.MCPFederationAssetMaxSize.Bytes())
+}
+
+func (a *app) FederatedAssetLinkSecret() string {
+	return a.config.UserToken.Secret
+}
+
+// FederatedAssetDownload issues the link federated_asset hands its caller.
+func (a *app) FederatedAssetDownload(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error) {
+	if a.PublicURL() == "" {
+		return mcp.FederatedAssetDownload{}, errors.New("federated_asset needs --public-url")
+	}
+
+	expiresAt := time.Now().Add(federatedAssetLinkTTL)
+	link := federatedassetlink.Link{KBID: kbID, NotePath: params.NotePath, Name: params.Name}
+
+	token, err := federatedassetlink.Sign(link, a.FederatedAssetLinkSecret(), expiresAt)
+	if err != nil {
+		return mcp.FederatedAssetDownload{}, err
+	}
+
+	query := url.Values{federatedassetrelay.LinkParam: {token}}
+	download := mcp.FederatedAssetDownload{
+		URL:       strings.TrimRight(a.PublicURL(), "/") + federatedassetrelay.Path + "?" + query.Encode(),
+		ExpiresAt: expiresAt,
+	}
+	return download, nil
+}
+
+// federatedAssetLinkTTL is long enough for an agent to run curl after the tool
+// call, and short enough that a link left in a transcript is soon worthless.
+const federatedAssetLinkTTL = 5 * time.Minute
+
+// federationPeer is the outbound side of the pairing kbID names: the KB-note's
+// URL and the keys this instance signs with.
+func (a *app) federationPeer(reqCtx context.Context, kbID string) (model.FederationPeer, error) {
 	nvs := a.LatestNoteViews()
 	if nvs == nil {
-		return nil, fmt.Errorf("federation kb %q not found", kbID)
+		return model.FederationPeer{}, fmt.Errorf("federation kb %q not found", kbID)
 	}
 
 	depth := mcp.FederationDepthFromContext(reqCtx)
@@ -63,7 +149,7 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 		}
 
 		if kb.MaxDepth > 0 && depth >= kb.MaxDepth {
-			return nil, fmt.Errorf("federation kb %q max depth %d exceeded", kbID, kb.MaxDepth)
+			return model.FederationPeer{}, fmt.Errorf("federation kb %q max depth %d exceeded", kbID, kb.MaxDepth)
 		}
 
 		peer := model.FederationPeer{
@@ -77,29 +163,32 @@ func (a *app) FederationClient(reqCtx context.Context, kbID string) (model.Feder
 		if dbCtx == nil {
 			dbCtx = context.Background()
 		}
-		secretRow, ok, err := a.FederationSecretByKBURL(dbCtx, kb.URL)
+		rows, err := a.Queries.ListFederationSecrets(dbCtx)
 		if err != nil {
-			return nil, fmt.Errorf("get federation secret by kb url: %w", err)
+			return model.FederationPeer{}, fmt.Errorf("list federation secrets: %w", err)
+		}
+		kid, ok, err := pickOutboundKID(rows, kb.ID, kb.URL)
+		if err != nil {
+			return model.FederationPeer{}, err
 		}
 		if ok {
+			secretRow, findErr := a.Queries.OutboundFederationSecretByKID(dbCtx, kid)
+			if errors.Is(findErr, sql.ErrNoRows) {
+				return model.FederationPeer{}, fmt.Errorf("federation secret %q disappeared while connecting to kb_id %q", kid, kbID)
+			}
+			if findErr != nil {
+				return model.FederationPeer{}, fmt.Errorf("get outbound federation secret by kid: %w", findErr)
+			}
 			keyErr := a.loadPeerKeys(&peer, secretRow)
 			if keyErr != nil {
-				return nil, keyErr
-			}
-		} else {
-			configured, confErr := a.HasFederationSecretForKBURL(dbCtx, kb.URL)
-			if confErr != nil {
-				return nil, fmt.Errorf("check federation secret history by kb url: %w", confErr)
-			}
-			if configured {
-				return nil, fmt.Errorf("no active federation secret for kb_id %q; the configured secret may be revoked", kbID)
+				return model.FederationPeer{}, keyErr
 			}
 		}
 
-		return federation.NewClient(peer, a.fedHTTPClient, a.config.DevMode, a.config.MCPFederationTimeout), nil
+		return peer, nil
 	}
 
-	return nil, fmt.Errorf("federation kb %q not found", kbID)
+	return model.FederationPeer{}, fmt.Errorf("federation kb %q not found", kbID)
 }
 
 func (a *app) FederationMaxDepth() int {
@@ -174,4 +263,19 @@ func (a *app) loadPeerKeys(peer *model.FederationPeer, row db.FederationSecret) 
 	peer.PrevSecret = previous
 
 	return nil
+}
+
+// newFederatedAssetHTTPClient builds the client attachments stream through.
+// fasthttp buffers a streamed response whole when it fits MaxResponseBodySize
+// and streams it only beyond that, so the cap here is a buffer size, not a
+// limit: the size limit is AssetLimits.MaxSize.
+func newFederatedAssetHTTPClient(allowPrivate bool) *fasthttp.Client {
+	c := &fasthttp.Client{
+		StreamResponseBody:  true,
+		MaxResponseBodySize: 64 << 10,
+	}
+	if !allowPrivate {
+		c.DialTimeout = ssrfsafe.DialTimeout
+	}
+	return c
 }

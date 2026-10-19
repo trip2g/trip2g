@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"trip2g/internal/frontmatteredit"
 	"trip2g/internal/webhookutil"
 )
 
@@ -168,12 +170,16 @@ type codeOutput struct {
 	Answer  string          `json:"answer"`
 }
 
-// rawCodeChange is one entry in the stdout changes array.
+// rawCodeChange is one entry in the stdout changes array. Content, Find and
+// Replace are pointers so a key that is present, even as "", is told apart from
+// one that is missing.
 type rawCodeChange struct {
-	Path    string `json:"path"`
-	Content string `json:"content,omitempty"`
-	Find    string `json:"find,omitempty"`
-	Replace string `json:"replace,omitempty"`
+	Path    string         `json:"path"`
+	Content *string        `json:"content"`
+	Find    *string        `json:"find"`
+	Replace *string        `json:"replace"`
+	Set     map[string]any `json:"set"`
+	Unset   []string       `json:"unset"`
 }
 
 // RunBlock executes spec.Code under spec.Program in a throwaway temp workdir.
@@ -376,11 +382,14 @@ func prepareCmd(cmd *exec.Cmd, workDir string, env []string, stdin []byte, outBu
 }
 
 // ParseCodeOutput parses the code child's stdout JSON into []AgentChange +
-// answer string. stdout must match {"changes":[...],"answer":"..."}.
-// A "content"-only entry → AgentChangeKindWrite; "find"/"replace" → AgentChangeKindPatch.
+// answer string. stdout must match {"changes":[...],"answer":"..."}. Each entry
+// is one kind, told by its keys: "content" (even "") → AgentChangeKindWrite,
+// "find"/"replace" → AgentChangeKindPatch, "set"/"unset" → AgentChangeKindMeta.
+// An entry with none of them, or with keys of two kinds, fails the parse, so a
+// malformed entry can never become an empty write.
 func ParseCodeOutput(stdout string) ([]webhookutil.AgentChange, string, error) {
-	var out codeOutput
-	if err := json.Unmarshal([]byte(stdout), &out); err != nil {
+	out, err := decodeCodeOutput(stdout)
+	if err != nil {
 		preview := stdout
 		if len(preview) > 200 {
 			preview = preview[:200] + "..."
@@ -389,25 +398,64 @@ func ParseCodeOutput(stdout string) ([]webhookutil.AgentChange, string, error) {
 	}
 	changes := make([]webhookutil.AgentChange, 0, len(out.Changes))
 	for i, c := range out.Changes {
-		if c.Path == "" {
-			return nil, "", execErrf(KindParseError, "coderun: change[%d]: missing path", i)
+		change, changeErr := c.agentChange()
+		if changeErr != nil {
+			return nil, "", execErrf(KindParseError, "coderun: change[%d]: %w", i, changeErr)
 		}
-		if c.Find != "" || c.Replace != "" {
-			changes = append(changes, webhookutil.AgentChange{
-				Path:    c.Path,
-				Find:    c.Find,
-				Replace: c.Replace,
-				Kind:    webhookutil.AgentChangeKindPatch,
-			})
-		} else {
-			changes = append(changes, webhookutil.AgentChange{
-				Path:    c.Path,
-				Content: c.Content,
-				Kind:    webhookutil.AgentChangeKindWrite,
-			})
-		}
+		changes = append(changes, change)
 	}
 	return changes, out.Answer, nil
+}
+
+// decodeCodeOutput keeps numbers in set as written, so a large integer is not
+// rounded through float64, and refuses anything after the one JSON value.
+func decodeCodeOutput(stdout string) (codeOutput, error) {
+	var out codeOutput
+	dec := json.NewDecoder(strings.NewReader(stdout))
+	dec.UseNumber()
+	err := dec.Decode(&out)
+	if err != nil {
+		return codeOutput{}, err
+	}
+	var extra json.RawMessage
+	err = dec.Decode(&extra)
+	if !errors.Is(err, io.EOF) {
+		return codeOutput{}, errors.New("invalid character after top-level value")
+	}
+	return out, nil
+}
+
+func (c rawCodeChange) agentChange() (webhookutil.AgentChange, error) {
+	if c.Path == "" {
+		return webhookutil.AgentChange{}, errors.New("missing path")
+	}
+	isWrite := c.Content != nil
+	isPatch := c.Find != nil || c.Replace != nil
+	isMeta := c.Set != nil || c.Unset != nil
+
+	switch {
+	case isWrite && !isPatch && !isMeta:
+		return webhookutil.AgentChange{Path: c.Path, Content: *c.Content, Kind: webhookutil.AgentChangeKindWrite}, nil
+	case isPatch && !isWrite && !isMeta:
+		if c.Find == nil || *c.Find == "" {
+			return webhookutil.AgentChange{}, fmt.Errorf("patch of %s has no find", c.Path)
+		}
+		change := webhookutil.AgentChange{Path: c.Path, Find: *c.Find, Kind: webhookutil.AgentChangeKindPatch}
+		if c.Replace != nil {
+			change.Replace = *c.Replace
+		}
+		return change, nil
+	case isMeta && !isWrite && !isPatch:
+		err := frontmatteredit.Validate(c.Set, c.Unset)
+		if err != nil {
+			return webhookutil.AgentChange{}, fmt.Errorf("meta of %s: %w", c.Path, err)
+		}
+		return webhookutil.AgentChange{Path: c.Path, Set: c.Set, Unset: c.Unset, Kind: webhookutil.AgentChangeKindMeta}, nil
+	case !isWrite && !isPatch && !isMeta:
+		return webhookutil.AgentChange{}, fmt.Errorf("change for %s has none of content, find/replace, set/unset", c.Path)
+	default:
+		return webhookutil.AgentChange{}, fmt.Errorf("change for %s mixes content, find/replace and set/unset", c.Path)
+	}
 }
 
 // programBinary resolves a program name to the binary to run via the interpreter

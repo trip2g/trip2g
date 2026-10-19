@@ -44,6 +44,12 @@ func (smokeQueryEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, 
 
 func (smokeQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 
+// smokeQueries are the note query functions a smoke render gives a layout.
+type smokeQueries struct {
+	noteQuery     jet.Func
+	noteQueryRows jet.Func
+}
+
 // smokeRenderLayouts executes each parsed layout against up to smokeRenderLimit
 // notes that select it via frontmatter `layout:`, notes a guest can open
 // first. Runtime errors and panics from Jet's Execute are turned into
@@ -91,23 +97,31 @@ func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger
 func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *model.NoteViews, log logger.Logger, layoutID string) []model.NoteWarning {
 	var warnings []model.NoteWarning
 	nvsWrap := templateviews.NewNVS(nvs, "")
-	guestQuery := memoNoteQuery(runnotequery.JetFunc(context.Background(), smokeQueryEnv{nvs: nvs}))
 	// A page a guest can't open is read signed in; an admin reads every query,
 	// so only a missing or broken one warns there.
-	signedIn := smokeQueryEnv{nvs: nvs, viewer: &usertoken.Data{Role: "admin"}}
-	signedInQuery := memoNoteQuery(runnotequery.JetFunc(context.Background(), signedIn))
+	guest := memoSmokeQueries(smokeQueryEnv{nvs: nvs})
+	signedIn := memoSmokeQueries(smokeQueryEnv{nvs: nvs, viewer: &usertoken.Data{Role: "admin"}})
 	for _, n := range notes {
-		noteQuery := signedInQuery
+		queries := signedIn
 		if n.IsAnonymouslyReadable() {
-			noteQuery = guestQuery
+			queries = guest
 		}
-		if w := executeSmoke(view, n, nvsWrap, noteQuery); w != nil {
+		if w := executeSmoke(view, n, nvsWrap, queries); w != nil {
 			log.Warn("layout smoke render failed",
 				"layout", layoutID, "note", n.Path, "msg", w.Message)
 			warnings = append(warnings, *w)
 		}
 	}
 	return warnings
+}
+
+// memoSmokeQueries builds one viewer's query functions; each runs once per
+// distinct (query, params) across the sampled notes.
+func memoSmokeQueries(env smokeQueryEnv) smokeQueries {
+	return smokeQueries{
+		noteQuery:     memoNoteQuery(runnotequery.JetFunc(context.Background(), env)),
+		noteQueryRows: memoNoteQuery(runnotequery.JetRowsFunc(context.Background(), env, "")),
+	}
 }
 
 type noteQueryOutcome struct {
@@ -167,7 +181,7 @@ func callNoteQuery(next jet.Func, a jet.Arguments) (outcome noteQueryOutcome) {
 }
 
 //nolint:nonamedreturns // named return required so deferred recover can set it
-func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templateviews.NVS, noteQuery jet.Func) (w *model.NoteWarning) {
+func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templateviews.NVS, queries smokeQueries) (w *model.NoteWarning) {
 	defer func() {
 		if r := recover(); r != nil {
 			w = &model.NoteWarning{
@@ -199,7 +213,8 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
 		"IsAdmin": func() bool { return false },
 	})
-	vars["noteQuery"] = reflect.ValueOf(noteQuery)
+	vars["noteQuery"] = reflect.ValueOf(queries.noteQuery)
+	vars["noteQueryRows"] = reflect.ValueOf(queries.noteQueryRows)
 
 	if err := view.Execute(io.Discard, vars, nil); err != nil {
 		return &model.NoteWarning{

@@ -2,6 +2,7 @@
 import { test, expect } from '@playwright/test';
 import crypto from 'crypto';
 import { graphqlSignIn, createPersonalToken, revokePersonalToken } from './helpers/auth.js';
+import { createApiKey, disableApiKey, hideNotes, upsertKBNote } from './helpers/federation.js';
 
 /**
  * Federated GraphQL Request E2E Tests
@@ -22,12 +23,20 @@ import { graphqlSignIn, createPersonalToken, revokePersonalToken } from './helpe
  *   anonymous  — no auth header
  *   scoped     — non-admin user with federation-test subgraph personal token
  *   admin      — admin personal token
+ *
+ * The seed KB-notes peer2 and peer3 belong to federation-acl.spec.js. This spec
+ * pairs through the peers' container names and gives the hub its own KB-notes,
+ * with the same access as the seed ones and kb_id equal to its kid.
  */
 
 const HUB_URL = process.env.APP_URL || 'http://localhost:20081';
 const PEER2_URL = 'http://localhost:20093';
 const PEER3_URL = 'http://localhost:20095';
 const HUB_MCP = `${HUB_URL}/_system/mcp`;
+const PEER2_KB_URL = 'http://trip2g-test-app-peer2:20093/_system/mcp';
+const PEER3_KB_URL = 'http://trip2g-test-app-peer3:20095/_system/mcp';
+const HUB_KB_NOTE_P2 = 'e2e_federation_graphql_peer2_kb.md';
+const HUB_KB_NOTE_P3 = 'e2e_federation_graphql_peer3_kb.md';
 
 // Deterministic secrets — different from federation-acl.spec.js to avoid kid collisions.
 const SECRET_HEX_P2 = 'd3e3f3030405060708090a0b0c0d0e0f101112131415161718191ad3e3f30304';
@@ -83,6 +92,8 @@ test.describe.serial('Federated GraphQL Request', () => {
 
   let outboundPeer2Id;
   let outboundPeer3Id;
+  let hubApiKey;
+  let hubApiKeyId;
 
   test.beforeAll(async ({ playwright }) => {
     // Sign into all three admins.
@@ -125,7 +136,7 @@ test.describe.serial('Federated GraphQL Request', () => {
           ... on ErrorPayload { message }
         } }
       }
-    `, { input: { kid: KID_P2, secretHex: SECRET_HEX_P2, kbURL: 'http://app-peer2:20093/_system/mcp' } });
+    `, { input: { kid: KID_P2, secretHex: SECRET_HEX_P2, kbURL: PEER2_KB_URL } });
     outboundPeer2Id = p2Out.admin.createOutboundFederationSecret.id;
     expect(outboundPeer2Id, 'outbound peer2 secret must be created').toBeTruthy();
 
@@ -136,9 +147,17 @@ test.describe.serial('Federated GraphQL Request', () => {
           ... on ErrorPayload { message }
         } }
       }
-    `, { input: { kid: KID_P3, secretHex: SECRET_HEX_P3, kbURL: 'http://app-peer3:20095/_system/mcp' } });
+    `, { input: { kid: KID_P3, secretHex: SECRET_HEX_P3, kbURL: PEER3_KB_URL } });
     outboundPeer3Id = p3Out.admin.createOutboundFederationSecret.id;
     expect(outboundPeer3Id, 'outbound peer3 secret must be created').toBeTruthy();
+
+    ({ value: hubApiKey, id: hubApiKeyId } = await createApiKey(hubRequest, HUB_URL, hubCookie, `e2e federation graphql ${KID_P2}`));
+    await upsertKBNote(hubRequest, HUB_URL, hubApiKey, {
+      path: HUB_KB_NOTE_P2, kbURL: PEER2_KB_URL, kbID: KID_P2, frontmatter: ['subgraphs: federation-test'],
+    });
+    await upsertKBNote(hubRequest, HUB_URL, hubApiKey, {
+      path: HUB_KB_NOTE_P3, kbURL: PEER3_KB_URL, kbID: KID_P3, frontmatter: ['subgraphs: admin-federation'],
+    });
 
     // Find federation-test subgraph ID (auto-created when hub loaded federation_kb_semi.md).
     const sgData = await gql(hubRequest, HUB_URL, hubCookie, `
@@ -192,6 +211,10 @@ test.describe.serial('Federated GraphQL Request', () => {
   });
 
   test.afterAll(async () => {
+    if (hubApiKey) {
+      await hideNotes(hubRequest, HUB_URL, hubApiKey, [HUB_KB_NOTE_P2, HUB_KB_NOTE_P3]).catch(() => {});
+      await disableApiKey(hubRequest, HUB_URL, hubCookie, hubApiKeyId).catch(() => {});
+    }
     if (adminTokenId) {
       await revokePersonalToken(hubRequest, HUB_URL, hubCookie, adminTokenId).catch(() => {});
     }
@@ -238,7 +261,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, adminToken);
@@ -260,7 +283,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: '{ search(input: { query: "federation knowledge base" }) { nodes { highlightedTitle url } } }',
       },
     });
@@ -276,7 +299,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer3',
+        kb_id: KID_P3,
         query: '{ search(input: { query: "federation knowledge base" }) { nodes { highlightedTitle url } } }',
       },
     });
@@ -296,7 +319,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, scopedToken);
@@ -313,7 +336,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer3',
+        kb_id: KID_P3,
         query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle url } } }',
       },
     }, scopedToken);
@@ -329,7 +352,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer3',
+        kb_id: KID_P3,
         query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, adminToken);
@@ -347,7 +370,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const adminResult = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer3',
+        kb_id: KID_P3,
         query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, adminToken);
@@ -360,7 +383,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const scopedResult = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer3',
+        kb_id: KID_P3,
         query: '{ search(input: { query: "federation ACL testing" }) { nodes { highlightedTitle highlightedContent url } } }',
       },
     }, scopedToken);
@@ -383,7 +406,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: 'mutation { admin { __typename } }',
       },
     }, adminToken);
@@ -397,7 +420,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: 'mutation CreateSomething { admin { __typename } }',
       },
     }, adminToken);
@@ -412,7 +435,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: '{ notePaths }',
       },
     }, adminToken);
@@ -425,7 +448,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: '{ admin { __typename } }',
       },
     }, adminToken);
@@ -438,7 +461,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: '{ resolveWikilinks(filter: { paths: ["x"] }) { path href } }',
       },
     }, adminToken);
@@ -453,7 +476,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: '{ __schema { queryType { name } } }',
       },
     }, adminToken);
@@ -466,7 +489,7 @@ test.describe.serial('Federated GraphQL Request', () => {
     const result = await mcpFresh(playwright, 'tools/call', {
       name: 'federated_graphql_request',
       arguments: {
-        kb_id: 'peer2',
+        kb_id: KID_P2,
         query: '{ __type(name: "Query") { name } }',
       },
     }, adminToken);

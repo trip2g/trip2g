@@ -145,6 +145,8 @@ type ResolverRoot interface {
 	LayoutBlockParam() LayoutBlockParamResolver
 	Mutation() MutationResolver
 	NotePath() NotePathResolver
+	NoteQueryPayload() NoteQueryPayloadResolver
+	NoteQueryRow() NoteQueryRowResolver
 	NoteUpsertEvent() NoteUpsertEventResolver
 	NoteView() NoteViewResolver
 	NoteWarning() NoteWarningResolver
@@ -802,6 +804,12 @@ type NotePathResolver interface {
 	Content(ctx context.Context, obj *db.NotePath) (string, error)
 	AssetReplaces(ctx context.Context, obj *db.NotePath) ([]model.NoteAssetReplaceT, error)
 }
+type NoteQueryPayloadResolver interface {
+	Rows(ctx context.Context, obj *model.NoteQueryPayload) ([]model.NoteQueryRow, error)
+}
+type NoteQueryRowResolver interface {
+	Note(ctx context.Context, obj *model.NoteQueryRow) (*model.PublicNote, error)
+}
 type NoteUpsertEventResolver interface {
 	ChangedHTMLSelectors(ctx context.Context, obj *model.NoteUpsertEvent) ([]string, error)
 }
@@ -1024,12 +1032,14 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEnableApiKeyInput,
 		ec.unmarshalInputFormFieldValueInput,
 		ec.unmarshalInputGenerateTgAttachCodeInput,
+		ec.unmarshalInputHideNoteInput,
 		ec.unmarshalInputHideNotesInput,
 		ec.unmarshalInputLastNoteReadAtInput,
 		ec.unmarshalInputMakeReleaseLiveInput,
 		ec.unmarshalInputMarkFormSubmitProcessedInput,
 		ec.unmarshalInputNoteChangeHideInput,
 		ec.unmarshalInputNoteChangeInput,
+		ec.unmarshalInputNoteChangeMetaInput,
 		ec.unmarshalInputNoteChangePatchInput,
 		ec.unmarshalInputNoteChangeUpsertInput,
 		ec.unmarshalInputNoteChangesFilter,
@@ -1218,6 +1228,7 @@ var sources = []*ast.Source{
 	{Name: "../schema.graphqls", Input: `scalar Int64
 scalar Time
 scalar Upload
+scalar Map
 
 """
 Any JSON value: an object, a list, a string, a number, a boolean or null.
@@ -2840,12 +2851,34 @@ input NoteQueryInput {
   params: JSON
 }
 
-type NoteQueryPayload {
+type NoteQueryPayload
+  @goExtraField(name: "Notes", type: "trip2g/internal/graph/model.NoteQueryRowNotes") {
   """
   Whatever the query program returned, as a JSON value. Its shape is set by
   the query note, not by the schema.
   """
   result: JSON!
+
+  """
+  The items of the result, one row each, when the result is a list; null
+  otherwise.
+  """
+  rows: [NoteQueryRow!] @goField(forceResolver: true)
+}
+
+type NoteQueryRow
+  @goExtraField(name: "Notes", type: "trip2g/internal/graph/model.NoteQueryRowNotes") {
+  """
+  The item as the query program returned it.
+  """
+  data: JSON!
+
+  """
+  The note the item names: by ` + "`" + `version_id` + "`" + ` (that version), else by ` + "`" + `path_id` + "`" + `
+  (its latest version), else by ` + "`" + `path` + "`" + ` (a vault path). Null when the item names
+  no note, the note is unknown, or the caller can't read it.
+  """
+  note: PublicNote @goField(forceResolver: true)
 }
 
 union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload
@@ -3051,6 +3084,12 @@ union CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload
 input PushNoteInput {
   path: String!
   content: String!
+  """
+  Writes the note only if its current content hash still equals this value.
+  An empty string means the note must not exist (or be hidden). Omit it to
+  write unconditionally. A refused note is reported in hashMismatches.
+  """
+  expectedHash: String
 }
 
 input PushNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") @goExtraField(name: "Partial", type: "bool") {
@@ -3075,9 +3114,19 @@ type PushedNote {
   warnings: [NoteWarning!]!
 }
 
+"""
+A note an expectedHash refused: it was left as it is, and actualHash is its
+current content hash ("" when it does not exist or is hidden).
+"""
+type NoteHashMismatch {
+  path: String!
+  actualHash: String!
+}
+
 type PushNotesPayload {
   notes: [PushedNote!]!
   updated: [PushedNote!]!
+  hashMismatches: [NoteHashMismatch!]!
 }
 
 union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
@@ -3105,12 +3154,24 @@ union UploadNoteAssetOrErrorPayload = UploadNoteAssetPayload | ErrorPayload
 # hideNotes
 #
 
+input HideNoteInput {
+  path: String!
+  """
+  Hides the note only if its current content hash still equals this value.
+  An empty string means the note must not exist (or be hidden already). Omit
+  it to hide unconditionally. A refused path is reported in hashMismatches.
+  """
+  expectedHash: String
+}
+
 input HideNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
-  paths: [String!]!
+  paths: [String!]! = []
+  notes: [HideNoteInput!]! = []
 }
 
 type HideNotesPayload {
   success: Boolean!
+  hashMismatches: [NoteHashMismatch!]!
 }
 
 union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
@@ -3136,10 +3197,26 @@ input NoteChangeHideInput {
   path: String!
 }
 
+"""
+Changes top-level frontmatter keys without rewriting the note.
+set adds a key or replaces its value; unset removes keys, and removing an absent
+key is not an error. Keys are top-level only: "a.b" is a key literally named
+"a.b", not b inside a. The lines of other keys, their comments and the body are
+kept byte for byte; new keys go after the last key, sorted. A note without
+frontmatter gets a block. expectedHash works as for patch.
+"""
+input NoteChangeMetaInput {
+  path: String!
+  set: Map
+  unset: [String!]
+  expectedHash: String
+}
+
 input NoteChangeInput {
   upsert: NoteChangeUpsertInput
   patch: NoteChangePatchInput
   hide: NoteChangeHideInput
+  meta: NoteChangeMetaInput
 }
 
 input UpdateNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
@@ -36432,6 +36509,41 @@ func (ec *executionContext) fieldContext_HideNotesPayload_success(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _HideNotesPayload_hashMismatches(ctx context.Context, field graphql.CollectedField, obj *model.HideNotesPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HideNotesPayload_hashMismatches,
+		func(ctx context.Context) (any, error) {
+			return obj.HashMismatches, nil
+		},
+		nil,
+		ec.marshalNNoteHashMismatch2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteHashMismatchᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HideNotesPayload_hashMismatches(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HideNotesPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "path":
+				return ec.fieldContext_NoteHashMismatch_path(ctx, field)
+			case "actualHash":
+				return ec.fieldContext_NoteHashMismatch_actualHash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteHashMismatch", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IntParamValue_defaultValue(ctx context.Context, field graphql.CollectedField, obj *model.IntParamValue) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -37789,6 +37901,64 @@ func (ec *executionContext) fieldContext_NoteChangesSubscriptionPayload_changes(
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteHashMismatch_path(ctx context.Context, field graphql.CollectedField, obj *model.NoteHashMismatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteHashMismatch_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteHashMismatch_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteHashMismatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteHashMismatch_actualHash(ctx context.Context, field graphql.CollectedField, obj *model.NoteHashMismatch) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteHashMismatch_actualHash,
+		func(ctx context.Context) (any, error) {
+			return obj.ActualHash, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteHashMismatch_actualHash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteHashMismatch",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NoteHideEvent_path(ctx context.Context, field graphql.CollectedField, obj *model.NoteHideEvent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -38097,6 +38267,117 @@ func (ec *executionContext) fieldContext_NoteQueryPayload_result(_ context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type JSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteQueryPayload_rows(ctx context.Context, field graphql.CollectedField, obj *model.NoteQueryPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteQueryPayload_rows,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NoteQueryPayload().Rows(ctx, obj)
+		},
+		nil,
+		ec.marshalONoteQueryRow2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteQueryRowᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteQueryPayload_rows(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteQueryPayload",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "data":
+				return ec.fieldContext_NoteQueryRow_data(ctx, field)
+			case "note":
+				return ec.fieldContext_NoteQueryRow_note(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteQueryRow", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteQueryRow_data(ctx context.Context, field graphql.CollectedField, obj *model.NoteQueryRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteQueryRow_data,
+		func(ctx context.Context) (any, error) {
+			return obj.Data, nil
+		},
+		nil,
+		ec.marshalNJSON2interface,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteQueryRow_data(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteQueryRow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type JSON does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteQueryRow_note(ctx context.Context, field graphql.CollectedField, obj *model.NoteQueryRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteQueryRow_note,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NoteQueryRow().Note(ctx, obj)
+		},
+		nil,
+		ec.marshalOPublicNote2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPublicNote,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteQueryRow_note(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteQueryRow",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "pathId":
+				return ec.fieldContext_PublicNote_pathId(ctx, field)
+			case "path":
+				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "url":
+				return ec.fieldContext_PublicNote_url(ctx, field)
+			case "title":
+				return ec.fieldContext_PublicNote_title(ctx, field)
+			case "html":
+				return ec.fieldContext_PublicNote_html(ctx, field)
+			case "versionId":
+				return ec.fieldContext_PublicNote_versionId(ctx, field)
+			case "toc":
+				return ec.fieldContext_PublicNote_toc(ctx, field)
+			case "taskList":
+				return ec.fieldContext_PublicNote_taskList(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
 		},
 	}
 	return fc, nil
@@ -40129,6 +40410,41 @@ func (ec *executionContext) fieldContext_PushNotesPayload_updated(_ context.Cont
 				return ec.fieldContext_PushedNote_warnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PushedNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushNotesPayload_hashMismatches(ctx context.Context, field graphql.CollectedField, obj *model.PushNotesPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PushNotesPayload_hashMismatches,
+		func(ctx context.Context) (any, error) {
+			return obj.HashMismatches, nil
+		},
+		nil,
+		ec.marshalNNoteHashMismatch2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteHashMismatchᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PushNotesPayload_hashMismatches(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushNotesPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "path":
+				return ec.fieldContext_NoteHashMismatch_path(ctx, field)
+			case "actualHash":
+				return ec.fieldContext_NoteHashMismatch_actualHash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteHashMismatch", field.Name)
 		},
 	}
 	return fc, nil
@@ -51737,6 +52053,40 @@ func (ec *executionContext) unmarshalInputGenerateTgAttachCodeInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputHideNoteInput(ctx context.Context, obj any) (model.HideNoteInput, error) {
+	var it model.HideNoteInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "expectedHash"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "expectedHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedHash"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedHash = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputHideNotesInput(ctx context.Context, obj any) (model.HideNotesInput, error) {
 	var it model.HideNotesInput
 	asMap := map[string]any{}
@@ -51744,7 +52094,14 @@ func (ec *executionContext) unmarshalInputHideNotesInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"paths"}
+	if _, present := asMap["paths"]; !present {
+		asMap["paths"] = []any{}
+	}
+	if _, present := asMap["notes"]; !present {
+		asMap["notes"] = []any{}
+	}
+
+	fieldsInOrder := [...]string{"paths", "notes"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -51758,6 +52115,13 @@ func (ec *executionContext) unmarshalInputHideNotesInput(ctx context.Context, ob
 				return it, err
 			}
 			it.Paths = data
+		case "notes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("notes"))
+			data, err := ec.unmarshalNHideNoteInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐHideNoteInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Notes = data
 		}
 	}
 
@@ -51886,7 +52250,7 @@ func (ec *executionContext) unmarshalInputNoteChangeInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"upsert", "patch", "hide"}
+	fieldsInOrder := [...]string{"upsert", "patch", "hide", "meta"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -51914,6 +52278,61 @@ func (ec *executionContext) unmarshalInputNoteChangeInput(ctx context.Context, o
 				return it, err
 			}
 			it.Hide = data
+		case "meta":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("meta"))
+			data, err := ec.unmarshalONoteChangeMetaInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeMetaInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Meta = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNoteChangeMetaInput(ctx context.Context, obj any) (model.NoteChangeMetaInput, error) {
+	var it model.NoteChangeMetaInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "set", "unset", "expectedHash"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "set":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("set"))
+			data, err := ec.unmarshalOMap2map(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Set = data
+		case "unset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unset"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Unset = data
+		case "expectedHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedHash"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedHash = data
 		}
 	}
 
@@ -52282,7 +52701,7 @@ func (ec *executionContext) unmarshalInputPushNoteInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"path", "content"}
+	fieldsInOrder := [...]string{"path", "content", "expectedHash"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -52303,6 +52722,13 @@ func (ec *executionContext) unmarshalInputPushNoteInput(ctx context.Context, obj
 				return it, err
 			}
 			it.Content = data
+		case "expectedHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedHash"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExpectedHash = data
 		}
 	}
 
@@ -78859,6 +79285,11 @@ func (ec *executionContext) _HideNotesPayload(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "hashMismatches":
+			out.Values[i] = ec._HideNotesPayload_hashMismatches(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -79376,6 +79807,50 @@ func (ec *executionContext) _NoteChangesSubscriptionPayload(ctx context.Context,
 	return out
 }
 
+var noteHashMismatchImplementors = []string{"NoteHashMismatch"}
+
+func (ec *executionContext) _NoteHashMismatch(ctx context.Context, sel ast.SelectionSet, obj *model.NoteHashMismatch) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteHashMismatchImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteHashMismatch")
+		case "path":
+			out.Values[i] = ec._NoteHashMismatch_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "actualHash":
+			out.Values[i] = ec._NoteHashMismatch_actualHash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var noteHideEventImplementors = []string{"NoteHideEvent", "NoteChangeItem"}
 
 func (ec *executionContext) _NoteHideEvent(ctx context.Context, sel ast.SelectionSet, obj *model.NoteHideEvent) graphql.Marshaler {
@@ -79585,8 +80060,113 @@ func (ec *executionContext) _NoteQueryPayload(ctx context.Context, sel ast.Selec
 		case "result":
 			out.Values[i] = ec._NoteQueryPayload_result(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "rows":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteQueryPayload_rows(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var noteQueryRowImplementors = []string{"NoteQueryRow"}
+
+func (ec *executionContext) _NoteQueryRow(ctx context.Context, sel ast.SelectionSet, obj *model.NoteQueryRow) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteQueryRowImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteQueryRow")
+		case "data":
+			out.Values[i] = ec._NoteQueryRow_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "note":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteQueryRow_note(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -80886,6 +81466,11 @@ func (ec *executionContext) _PushNotesPayload(ctx context.Context, sel ast.Selec
 			}
 		case "updated":
 			out.Values[i] = ec._PushNotesPayload_updated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hashMismatches":
+			out.Values[i] = ec._PushNotesPayload_hashMismatches(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -91409,6 +91994,26 @@ func (ec *executionContext) marshalNHealthCheckStatus2trip2gᚋinternalᚋgraph�
 	return v
 }
 
+func (ec *executionContext) unmarshalNHideNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNoteInput(ctx context.Context, v any) (model.HideNoteInput, error) {
+	res, err := ec.unmarshalInputHideNoteInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNHideNoteInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐHideNoteInputᚄ(ctx context.Context, v any) ([]model.HideNoteInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.HideNoteInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNHideNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNoteInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalNHideNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNotesInput(ctx context.Context, v any) (model.HideNotesInput, error) {
 	res, err := ec.unmarshalInputHideNotesInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -91811,6 +92416,54 @@ func (ec *executionContext) unmarshalNNoteFrontmatterPredicate2trip2gᚋinternal
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNNoteHashMismatch2trip2gᚋinternalᚋgraphᚋmodelᚐNoteHashMismatch(ctx context.Context, sel ast.SelectionSet, v model.NoteHashMismatch) graphql.Marshaler {
+	return ec._NoteHashMismatch(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNoteHashMismatch2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteHashMismatchᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NoteHashMismatch) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNoteHashMismatch2trip2gᚋinternalᚋgraphᚋmodelᚐNoteHashMismatch(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteInput(ctx context.Context, v any) (model.NoteInput, error) {
 	res, err := ec.unmarshalInputNoteInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -91877,6 +92530,10 @@ func (ec *executionContext) marshalNNoteQueryOrErrorPayload2trip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._NoteQueryOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNoteQueryRow2trip2gᚋinternalᚋgraphᚋmodelᚐNoteQueryRow(ctx context.Context, sel ast.SelectionSet, v model.NoteQueryRow) graphql.Marshaler {
+	return ec._NoteQueryRow(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNNoteTaskItem2trip2gᚋinternalᚋgraphᚋmodelᚐNoteTaskItem(ctx context.Context, sel ast.SelectionSet, v model.NoteTaskItem) graphql.Marshaler {
@@ -94846,11 +95503,37 @@ func (ec *executionContext) marshalOLayoutBlockParamValue2trip2gᚋinternalᚋgr
 	return ec._LayoutBlockParamValue(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v any) (map[string]any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]any) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalMap(v)
+	return res
+}
+
 func (ec *executionContext) unmarshalONoteChangeHideInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeHideInput(ctx context.Context, v any) (*model.NoteChangeHideInput, error) {
 	if v == nil {
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputNoteChangeHideInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalONoteChangeMetaInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteChangeMetaInput(ctx context.Context, v any) (*model.NoteChangeMetaInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNoteChangeMetaInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -94894,6 +95577,53 @@ func (ec *executionContext) unmarshalONotePathsFilter2ᚖtrip2gᚋinternalᚋgra
 	}
 	res, err := ec.unmarshalInputNotePathsFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalONoteQueryRow2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteQueryRowᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NoteQueryRow) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNoteQueryRow2trip2gᚋinternalᚋgraphᚋmodelᚐNoteQueryRow(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalONoteVersionDiff2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNoteVersionDiff(ctx context.Context, sel ast.SelectionSet, v *model.NoteVersionDiff) graphql.Marshaler {

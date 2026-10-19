@@ -21,10 +21,10 @@ func retrieveEnv(t *testing.T, embURL string) *EnvMock {
 	live := chunkNote("live.md", "/live", "Live")
 
 	return &EnvMock{
-		SearchLatestNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLatestNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{NoteView: latest, URL: latest.Permalink}}, nil
 		},
-		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{NoteView: live, URL: live.Permalink}}, nil
 		},
 		FeaturesFunc: func() features.Features {
@@ -57,7 +57,7 @@ func TestRetrieve_CorpusSelection(t *testing.T) {
 
 	t.Run("live", func(t *testing.T) {
 		env := retrieveEnv(t, srv.URL)
-		results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+		results, merged, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q"})
 		require.NoError(t, err)
 		require.True(t, merged)
 		require.Len(t, results, 1)
@@ -68,7 +68,7 @@ func TestRetrieve_CorpusSelection(t *testing.T) {
 
 	t.Run("latest", func(t *testing.T) {
 		env := retrieveEnv(t, srv.URL)
-		results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", true, nil)
+		results, merged, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q", UseLatest: true})
 		require.NoError(t, err)
 		require.True(t, merged)
 		require.Len(t, results, 1)
@@ -90,7 +90,7 @@ func TestRetrieve_VectorResultsCarryChunkIndex(t *testing.T) {
 	noteB := chunkNote("b.md", "/b", "B")
 
 	env := retrieveEnv(t, srv.URL)
-	env.SearchLiveNotesFunc = func(string) ([]appmodel.SearchResult, error) {
+	env.SearchLiveNotesFunc = func(string, int, int) ([]appmodel.SearchResult, error) {
 		// Text lane finds only A; B is vector-only.
 		return []appmodel.SearchResult{{NoteView: noteA, URL: noteA.Permalink, HighlightedContent: []string{"text hit"}}}, nil
 	}
@@ -106,7 +106,7 @@ func TestRetrieve_VectorResultsCarryChunkIndex(t *testing.T) {
 		return &appmodel.NoteViews{PathMap: map[string]*appmodel.NoteView{"a.md": noteA, "b.md": noteB}}
 	}
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+	results, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q"})
 	require.NoError(t, err)
 
 	byURL := map[string]appmodel.SearchResult{}
@@ -132,10 +132,10 @@ func TestRetrieve_DimensionMismatchSkipsStaleChunks(t *testing.T) {
 	defer srv.Close()
 
 	env := retrieveEnv(t, srv.URL)
-	env.SearchLiveNotesFunc = func(string) ([]appmodel.SearchResult, error) { return nil, nil }
+	env.SearchLiveNotesFunc = func(string, int, int) ([]appmodel.SearchResult, error) { return nil, nil }
 	// Stored chunks are 2-dim; the query is 3-dim.
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+	results, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q"})
 	require.NoError(t, err)
 	require.Empty(t, results, "dim-mismatched chunks must not produce candidates")
 }

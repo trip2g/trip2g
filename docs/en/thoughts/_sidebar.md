@@ -18,6 +18,8 @@ title: "Navigation"
 - [[en/thoughts/contentless-cms|Contentless CMS]]
 - [[en/thoughts/admin-panel|Admin panel as universal config]]
 - [[en/thoughts/three-zones|Three zones: private, public, paid]]
+- [[en/thoughts/one-writer-per-base|One writer per base]]
+- [[en/thoughts/data-mesh-for-knowledge|Data mesh for knowledge]]
 
 **Knowledge & Content**
 - [[en/thoughts/obsidian-and-wikilinks|Obsidian and note connections]]
@@ -51,3 +53,4 @@ title: "Navigation"
 - [[en/thoughts/ingest-as-a-note|The job ships as a note]]
 - [[en/thoughts/alerts-in-a-knowledge-base|Alerts belong in a knowledge base]]
 - [[en/thoughts/template-engine-hidden-work|How much work a template engine hides]]
+- [[en/thoughts/positioning-wheel|How the positioning wheel is built]]

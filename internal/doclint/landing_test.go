@@ -3,19 +3,44 @@ package doclint
 import (
 	"context"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/stretchr/testify/require"
 
+	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
 	"trip2g/internal/templateviews"
+	"trip2g/internal/usertoken"
 )
+
+// guestQueryEnv runs note queries as a guest over the docs vault.
+type guestQueryEnv struct{ nvs *model.NoteViews }
+
+func (e guestQueryEnv) LatestNoteViews() *model.NoteViews {
+	return e.nvs
+}
+
+func (guestQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
+	return nil, nil
+}
+
+func (guestQueryEnv) CurrentFederatedScope(context.Context) ([]string, bool) {
+	return nil, false
+}
+
+func (guestQueryEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, error) {
+	return nil, nil
+}
+
+func (guestQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 
 func renderDocsLanding(t *testing.T, permalink string) string {
 	t.Helper()
@@ -40,6 +65,7 @@ func renderDocsLanding(t *testing.T, permalink string) string {
 	vars["publicURL"] = reflect.ValueOf("https://trip2g.com")
 	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{})
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]db.HtmlInjection{})
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), guestQueryEnv{nvs: nvs}, ""))
 
 	var out strings.Builder
 	err = layout.View.Execute(&out, vars, nil)
@@ -111,6 +137,24 @@ func TestLanding_RendersHeroAndSections(t *testing.T) {
 				require.Greater(t, at, prev, "%s out of order", marker)
 				prev = at
 			}
+		})
+	}
+}
+
+// TestWheel_PointsComeFromTheQuery checks the wheel lists its folder's labelled
+// notes in `order`, through queries/circle_points.md, on the page and on a
+// point's own URL.
+func TestWheel_PointsComeFromTheQuery(t *testing.T) {
+	want := `data-slug="garden" data-slug="channel" data-slug="subscription" data-slug="memory" ` +
+		`data-slug="agents" data-slug="company" data-slug="bot" data-slug="calls" data-slug="files"`
+	slug := regexp.MustCompile(`data-slug="[a-z]+"`)
+
+	for _, permalink := range []string{"/en/circle", "/ru/circle", "/en/circle/garden"} {
+		t.Run(permalink, func(t *testing.T) {
+			out := renderDocsLanding(t, permalink)
+			require.Equal(t, want, strings.Join(slug.FindAllString(out, -1), " "))
+			require.Equal(t, 9, strings.Count(out, `role="tabpanel"`))
+			require.NotContains(t, out, `class="wrap"`, "the wheel is full width")
 		})
 	}
 }

@@ -276,6 +276,9 @@ func goldenEnv() *EnvMock {
 			{Text: "1", Level: 2, ID: "one"},
 			{Text: "2", Level: 2, ID: "two"},
 		},
+		AssetReplaces: map[string]*appmodel.NoteAssetReplace{
+			"files/meditations.pdf": {ID: 3, Hash: "c0ffee", FileName: "meditations.pdf", Size: 2048},
+		},
 	}
 	// A tool note without the leading-underscore naming convention: the
 	// path-based system-note rule misses it, so it used to surface in search.
@@ -363,10 +366,10 @@ func goldenEnv() *EnvMock {
 		LiveNoteViewsFunc:    func() *appmodel.NoteViews { return views },
 		LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
 		LiveNoteChunksFunc:   func() []appmodel.NoteChunk { return nil },
-		SearchLatestNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLatestNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return searchHits, nil
 		},
-		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return searchHits, nil
 		},
 		CanReadNoteFunc: func(_ context.Context, n *appmodel.NoteView) (bool, error) {

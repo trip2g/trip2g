@@ -47,6 +47,9 @@ var _ mcp.Env = &EnvMock{}
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
 //			},
+//			FederatedAssetDownloadFunc: func(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error) {
+//				panic("mock out the FederatedAssetDownload method")
+//			},
 //			FederatedFanoutConcurrencyFunc: func() int {
 //				panic("mock out the FederatedFanoutConcurrency method")
 //			},
@@ -58,6 +61,9 @@ var _ mcp.Env = &EnvMock{}
 //			},
 //			FederatedGraphQLEnabledFunc: func() bool {
 //				panic("mock out the FederatedGraphQLEnabled method")
+//			},
+//			FederationAssetFetcherFunc: func(ctx context.Context, kbID string) (model.FederationAssetFetcher, error) {
+//				panic("mock out the FederationAssetFetcher method")
 //			},
 //			FederationClientFunc: func(ctx context.Context, kbID string) (model.Federation, error) {
 //				panic("mock out the FederationClient method")
@@ -116,10 +122,10 @@ var _ mcp.Env = &EnvMock{}
 //			RotateFederationSecretFunc: func(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error) {
 //				panic("mock out the RotateFederationSecret method")
 //			},
-//			SearchLatestNotesFunc: func(query string) ([]model.SearchResult, error) {
+//			SearchLatestNotesFunc: func(query string, from int, size int) ([]model.SearchResult, error) {
 //				panic("mock out the SearchLatestNotes method")
 //			},
-//			SearchLiveNotesFunc: func(query string) ([]model.SearchResult, error) {
+//			SearchLiveNotesFunc: func(query string, from int, size int) ([]model.SearchResult, error) {
 //				panic("mock out the SearchLiveNotes method")
 //			},
 //			SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
@@ -156,6 +162,9 @@ type EnvMock struct {
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
 
+	// FederatedAssetDownloadFunc mocks the FederatedAssetDownload method.
+	FederatedAssetDownloadFunc func(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error)
+
 	// FederatedFanoutConcurrencyFunc mocks the FederatedFanoutConcurrency method.
 	FederatedFanoutConcurrencyFunc func() int
 
@@ -167,6 +176,9 @@ type EnvMock struct {
 
 	// FederatedGraphQLEnabledFunc mocks the FederatedGraphQLEnabled method.
 	FederatedGraphQLEnabledFunc func() bool
+
+	// FederationAssetFetcherFunc mocks the FederationAssetFetcher method.
+	FederationAssetFetcherFunc func(ctx context.Context, kbID string) (model.FederationAssetFetcher, error)
 
 	// FederationClientFunc mocks the FederationClient method.
 	FederationClientFunc func(ctx context.Context, kbID string) (model.Federation, error)
@@ -226,10 +238,10 @@ type EnvMock struct {
 	RotateFederationSecretFunc func(ctx context.Context, arg db.RotateFederationSecretParams) (int64, error)
 
 	// SearchLatestNotesFunc mocks the SearchLatestNotes method.
-	SearchLatestNotesFunc func(query string) ([]model.SearchResult, error)
+	SearchLatestNotesFunc func(query string, from int, size int) ([]model.SearchResult, error)
 
 	// SearchLiveNotesFunc mocks the SearchLiveNotes method.
-	SearchLiveNotesFunc func(query string) ([]model.SearchResult, error)
+	SearchLiveNotesFunc func(query string, from int, size int) ([]model.SearchResult, error)
 
 	// SiteConfigFunc mocks the SiteConfig method.
 	SiteConfigFunc func(ctx context.Context) model.SiteConfig
@@ -274,6 +286,13 @@ type EnvMock struct {
 		// Features holds details about calls to the Features method.
 		Features []struct {
 		}
+		// FederatedAssetDownload holds details about calls to the FederatedAssetDownload method.
+		FederatedAssetDownload []struct {
+			// KbID is the kbID argument value.
+			KbID string
+			// Params is the params argument value.
+			Params model.FederatedAssetParams
+		}
 		// FederatedFanoutConcurrency holds details about calls to the FederatedFanoutConcurrency method.
 		FederatedFanoutConcurrency []struct {
 		}
@@ -285,6 +304,13 @@ type EnvMock struct {
 		}
 		// FederatedGraphQLEnabled holds details about calls to the FederatedGraphQLEnabled method.
 		FederatedGraphQLEnabled []struct {
+		}
+		// FederationAssetFetcher holds details about calls to the FederationAssetFetcher method.
+		FederationAssetFetcher []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// KbID is the kbID argument value.
+			KbID string
 		}
 		// FederationClient holds details about calls to the FederationClient method.
 		FederationClient []struct {
@@ -393,11 +419,19 @@ type EnvMock struct {
 		SearchLatestNotes []struct {
 			// Query is the query argument value.
 			Query string
+			// From is the from argument value.
+			From int
+			// Size is the size argument value.
+			Size int
 		}
 		// SearchLiveNotes holds details about calls to the SearchLiveNotes method.
 		SearchLiveNotes []struct {
 			// Query is the query argument value.
 			Query string
+			// From is the from argument value.
+			From int
+			// Size is the size argument value.
+			Size int
 		}
 		// SiteConfig holds details about calls to the SiteConfig method.
 		SiteConfig []struct {
@@ -419,10 +453,12 @@ type EnvMock struct {
 	lockDecryptData                        sync.RWMutex
 	lockEncryptData                        sync.RWMutex
 	lockFeatures                           sync.RWMutex
+	lockFederatedAssetDownload             sync.RWMutex
 	lockFederatedFanoutConcurrency         sync.RWMutex
 	lockFederatedFanoutLimit               sync.RWMutex
 	lockFederatedFanoutTimeout             sync.RWMutex
 	lockFederatedGraphQLEnabled            sync.RWMutex
+	lockFederationAssetFetcher             sync.RWMutex
 	lockFederationClient                   sync.RWMutex
 	lockFederationMaxDepth                 sync.RWMutex
 	lockFederationSecretByID               sync.RWMutex
@@ -670,6 +706,42 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 	return calls
 }
 
+// FederatedAssetDownload calls FederatedAssetDownloadFunc.
+func (mock *EnvMock) FederatedAssetDownload(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error) {
+	if mock.FederatedAssetDownloadFunc == nil {
+		panic("EnvMock.FederatedAssetDownloadFunc: method is nil but Env.FederatedAssetDownload was just called")
+	}
+	callInfo := struct {
+		KbID   string
+		Params model.FederatedAssetParams
+	}{
+		KbID:   kbID,
+		Params: params,
+	}
+	mock.lockFederatedAssetDownload.Lock()
+	mock.calls.FederatedAssetDownload = append(mock.calls.FederatedAssetDownload, callInfo)
+	mock.lockFederatedAssetDownload.Unlock()
+	return mock.FederatedAssetDownloadFunc(kbID, params)
+}
+
+// FederatedAssetDownloadCalls gets all the calls that were made to FederatedAssetDownload.
+// Check the length with:
+//
+//	len(mockedEnv.FederatedAssetDownloadCalls())
+func (mock *EnvMock) FederatedAssetDownloadCalls() []struct {
+	KbID   string
+	Params model.FederatedAssetParams
+} {
+	var calls []struct {
+		KbID   string
+		Params model.FederatedAssetParams
+	}
+	mock.lockFederatedAssetDownload.RLock()
+	calls = mock.calls.FederatedAssetDownload
+	mock.lockFederatedAssetDownload.RUnlock()
+	return calls
+}
+
 // FederatedFanoutConcurrency calls FederatedFanoutConcurrencyFunc.
 func (mock *EnvMock) FederatedFanoutConcurrency() int {
 	if mock.FederatedFanoutConcurrencyFunc == nil {
@@ -775,6 +847,42 @@ func (mock *EnvMock) FederatedGraphQLEnabledCalls() []struct {
 	mock.lockFederatedGraphQLEnabled.RLock()
 	calls = mock.calls.FederatedGraphQLEnabled
 	mock.lockFederatedGraphQLEnabled.RUnlock()
+	return calls
+}
+
+// FederationAssetFetcher calls FederationAssetFetcherFunc.
+func (mock *EnvMock) FederationAssetFetcher(ctx context.Context, kbID string) (model.FederationAssetFetcher, error) {
+	if mock.FederationAssetFetcherFunc == nil {
+		panic("EnvMock.FederationAssetFetcherFunc: method is nil but Env.FederationAssetFetcher was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		KbID string
+	}{
+		Ctx:  ctx,
+		KbID: kbID,
+	}
+	mock.lockFederationAssetFetcher.Lock()
+	mock.calls.FederationAssetFetcher = append(mock.calls.FederationAssetFetcher, callInfo)
+	mock.lockFederationAssetFetcher.Unlock()
+	return mock.FederationAssetFetcherFunc(ctx, kbID)
+}
+
+// FederationAssetFetcherCalls gets all the calls that were made to FederationAssetFetcher.
+// Check the length with:
+//
+//	len(mockedEnv.FederationAssetFetcherCalls())
+func (mock *EnvMock) FederationAssetFetcherCalls() []struct {
+	Ctx  context.Context
+	KbID string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		KbID string
+	}
+	mock.lockFederationAssetFetcher.RLock()
+	calls = mock.calls.FederationAssetFetcher
+	mock.lockFederationAssetFetcher.RUnlock()
 	return calls
 }
 
@@ -1394,19 +1502,23 @@ func (mock *EnvMock) RotateFederationSecretCalls() []struct {
 }
 
 // SearchLatestNotes calls SearchLatestNotesFunc.
-func (mock *EnvMock) SearchLatestNotes(query string) ([]model.SearchResult, error) {
+func (mock *EnvMock) SearchLatestNotes(query string, from int, size int) ([]model.SearchResult, error) {
 	if mock.SearchLatestNotesFunc == nil {
 		panic("EnvMock.SearchLatestNotesFunc: method is nil but Env.SearchLatestNotes was just called")
 	}
 	callInfo := struct {
 		Query string
+		From  int
+		Size  int
 	}{
 		Query: query,
+		From:  from,
+		Size:  size,
 	}
 	mock.lockSearchLatestNotes.Lock()
 	mock.calls.SearchLatestNotes = append(mock.calls.SearchLatestNotes, callInfo)
 	mock.lockSearchLatestNotes.Unlock()
-	return mock.SearchLatestNotesFunc(query)
+	return mock.SearchLatestNotesFunc(query, from, size)
 }
 
 // SearchLatestNotesCalls gets all the calls that were made to SearchLatestNotes.
@@ -1415,9 +1527,13 @@ func (mock *EnvMock) SearchLatestNotes(query string) ([]model.SearchResult, erro
 //	len(mockedEnv.SearchLatestNotesCalls())
 func (mock *EnvMock) SearchLatestNotesCalls() []struct {
 	Query string
+	From  int
+	Size  int
 } {
 	var calls []struct {
 		Query string
+		From  int
+		Size  int
 	}
 	mock.lockSearchLatestNotes.RLock()
 	calls = mock.calls.SearchLatestNotes
@@ -1426,19 +1542,23 @@ func (mock *EnvMock) SearchLatestNotesCalls() []struct {
 }
 
 // SearchLiveNotes calls SearchLiveNotesFunc.
-func (mock *EnvMock) SearchLiveNotes(query string) ([]model.SearchResult, error) {
+func (mock *EnvMock) SearchLiveNotes(query string, from int, size int) ([]model.SearchResult, error) {
 	if mock.SearchLiveNotesFunc == nil {
 		panic("EnvMock.SearchLiveNotesFunc: method is nil but Env.SearchLiveNotes was just called")
 	}
 	callInfo := struct {
 		Query string
+		From  int
+		Size  int
 	}{
 		Query: query,
+		From:  from,
+		Size:  size,
 	}
 	mock.lockSearchLiveNotes.Lock()
 	mock.calls.SearchLiveNotes = append(mock.calls.SearchLiveNotes, callInfo)
 	mock.lockSearchLiveNotes.Unlock()
-	return mock.SearchLiveNotesFunc(query)
+	return mock.SearchLiveNotesFunc(query, from, size)
 }
 
 // SearchLiveNotesCalls gets all the calls that were made to SearchLiveNotes.
@@ -1447,9 +1567,13 @@ func (mock *EnvMock) SearchLiveNotes(query string) ([]model.SearchResult, error)
 //	len(mockedEnv.SearchLiveNotesCalls())
 func (mock *EnvMock) SearchLiveNotesCalls() []struct {
 	Query string
+	From  int
+	Size  int
 } {
 	var calls []struct {
 		Query string
+		From  int
+		Size  int
 	}
 	mock.lockSearchLiveNotes.RLock()
 	calls = mock.calls.SearchLiveNotes

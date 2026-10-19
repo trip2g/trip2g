@@ -59,7 +59,7 @@ The fleet registers and maintains these webhooks automatically through a reconci
 
 ### The scoped tool loop
 
-The agent has five tools:
+The agent has six tools:
 
 | Tool | What it does |
 |------|-------------|
@@ -67,13 +67,14 @@ The agent has five tools:
 | `read_note(path)` | Read a note's full content (read scope only) |
 | `write_note(path, content)` | Create or replace a note (write scope only) |
 | `patch_note(path, find, replace)` | Surgical find→replace in an existing note (write scope only); fails if `find` is absent or matches more than once |
+| `set_note_meta(path, set, unset)` | Add, replace or remove top-level frontmatter keys of an existing note (write scope only); other keys, comments and the body stay as they are |
 | `finish(answer)` | End the run with a summary answer |
 
 Every read and write is checked against `read_patterns` and `write_patterns` using doublestar glob matching. An out-of-scope request is rejected and the error is fed back to the model so it can adjust — denials are never silently swallowed. The model is told in its system prompt which patterns apply, and any attempt to go outside them is surfaced explicitly.
 
 A role can restrict which tools are available at all via the `tools` frontmatter field. `finish` is always available regardless.
 
-Writes happen **during the run**, not after: each `write_note` or `patch_note` call issues an immediate note update through the per-delivery scoped token. The fleet reports `changes: []` in the HTTP response because the writes are already applied by the time the response is sent.
+Writes happen **during the run**, not after: each `write_note`, `patch_note` or `set_note_meta` call issues an immediate note update through the per-delivery scoped token. The fleet reports `changes: []` in the HTTP response because the writes are already applied by the time the response is sent.
 
 ### Safety controls
 

@@ -228,3 +228,78 @@ func TestResolve_ScopedToken(t *testing.T) {
 		})
 	}
 }
+
+// expectedHash gates each hide on its own: a mismatch leaves that note
+// visible and reports it, and paths without expectedHash hide as before.
+func TestResolve_ExpectedHash(t *testing.T) {
+	current := map[string]string{
+		"match.md":    "hash-match",
+		"conflict.md": "hash-server",
+	}
+	ptr := func(s string) *string { return &s }
+
+	env := newTestEnv(func(_ context.Context, _ db.HideNotePathParams) error { return nil })
+	env.LatestNoteContentHashFunc = func(_ context.Context, path string) (string, error) {
+		return current[path], nil
+	}
+	var published notebus.Batch
+	env.PublishNoteChangesFunc = func(batch notebus.Batch) { published = batch }
+
+	result, err := Resolve(context.Background(), env, model.HideNotesInput{
+		Paths: []string{"free.md"},
+		Notes: []model.HideNoteInput{
+			{Path: "match.md", ExpectedHash: ptr("hash-match")},
+			{Path: "conflict.md", ExpectedHash: ptr("hash-base")},
+			{Path: "gone.md", ExpectedHash: ptr("")},
+			{Path: "unconditional.md"},
+		},
+		ApiKey: db.ApiKey{CreatedBy: 1},
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, &model.HideNotesPayload{
+		Success:        true,
+		HashMismatches: []model.NoteHashMismatch{{Path: "conflict.md", ActualHash: "hash-server"}},
+	}, result)
+
+	hidden := []string{}
+	for _, call := range env.HideNotePathCalls() {
+		hidden = append(hidden, call.Params.Value)
+	}
+	want := []string{"free.md", "match.md", "gone.md", "unconditional.md"}
+	require.Equal(t, want, hidden)
+
+	removed := []string{}
+	for _, change := range published.Changes {
+		removed = append(removed, change.Path)
+	}
+	require.Equal(t, want, removed, "a refused path is not announced as removed")
+
+	checked := []string{}
+	for _, call := range env.LatestNoteContentHashCalls() {
+		checked = append(checked, call.Path)
+	}
+	require.Equal(t, []string{"match.md", "conflict.md", "gone.md"}, checked)
+}
+
+// When every path is refused nothing changed, so the views are not reloaded.
+func TestResolve_ExpectedHashAllRefused(t *testing.T) {
+	env := newTestEnv(func(_ context.Context, _ db.HideNotePathParams) error { return nil })
+	env.LatestNoteContentHashFunc = func(_ context.Context, _ string) (string, error) {
+		return "hash-server", nil
+	}
+	expected := "hash-base"
+
+	result, err := Resolve(context.Background(), env, model.HideNotesInput{
+		Notes:  []model.HideNoteInput{{Path: "note.md", ExpectedHash: &expected}},
+		ApiKey: db.ApiKey{CreatedBy: 1},
+	})
+	require.NoError(t, err)
+
+	payload, ok := result.(*model.HideNotesPayload)
+	require.True(t, ok, "got %T", result)
+	require.Len(t, payload.HashMismatches, 1)
+	require.Empty(t, env.HideNotePathCalls())
+	require.Empty(t, env.PrepareLatestNotesCalls())
+	require.Empty(t, env.PublishNoteChangesCalls())
+}

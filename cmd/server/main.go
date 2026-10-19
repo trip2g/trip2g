@@ -45,6 +45,7 @@ import (
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
 	"trip2g/internal/defaulttemplate"
+	"trip2g/internal/federatedassetlink"
 	"trip2g/internal/fedinstr"
 	"trip2g/internal/frontmatterpatch"
 	"trip2g/internal/gitapi"
@@ -145,6 +146,10 @@ type appState struct {
 	*delivercronwebhook.DeliverCronWebhookJob
 	webhookHTTPClient *fasthttp.Client
 	fedHTTPClient     *fasthttp.Client
+	// fedAssetHTTPClient streams attachments from federation peers.
+	fedAssetHTTPClient *fasthttp.Client
+	// Spent holds the federated_asset links already downloaded in this process.
+	federatedassetlink.Spent
 
 	webhookTestCalls []webhookTestCall
 	webhookTestMu    sync.Mutex
@@ -452,6 +457,8 @@ func main() {
 		a.openaiClient.SetMetrics(a.embeddingMetrics)
 	}
 
+	a.createNoteLoaders()
+
 	// Start the internal health server early so /livez answers 200 throughout
 	// the read-only warmup (loadAllNotes). Traefik active-health-checks /livez
 	// and would pull the backend out of rotation during ~12s warmup if this
@@ -475,8 +482,6 @@ func main() {
 		}
 	}
 
-	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
-	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	// Empty keeps both indexes in memory, which is the default everywhere that
 	// has not opted in. The single-note loaders in notes.go stay in memory
 	// regardless: they are throwaway and index nothing worth persisting.

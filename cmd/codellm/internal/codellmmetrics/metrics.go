@@ -120,7 +120,7 @@ func New() *Metrics {
 		}),
 		changes: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "codellm_changes_total",
-			Help: "Note changes returned as tool_calls, by kind (write|patch)",
+			Help: "Note changes returned as tool_calls, by kind (write|patch|meta)",
 		}, []string{"kind"}),
 		configInfo: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "codellm_config_info",

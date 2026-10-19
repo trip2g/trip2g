@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"trip2g/internal/frontmatteredit"
 	"trip2g/internal/model"
 	"trip2g/internal/ptr"
 
@@ -27,6 +28,7 @@ func HashContent(content []byte) string {
 const (
 	AgentChangeKindWrite = "write" // full upsert of Content at Path.
 	AgentChangeKindPatch = "patch" // surgical single-occurrence Find/Replace.
+	AgentChangeKindMeta  = "meta"  // Set/Unset top-level frontmatter keys.
 )
 
 // AgentResponse is the expected format of a webhook agent's response body.
@@ -65,7 +67,11 @@ type AgentChange struct {
 	ExpectedHash *string `json:"expected_hash,omitempty"`
 	Find         string  `json:"find,omitempty"`
 	Replace      string  `json:"replace,omitempty"`
-	Kind         string  `json:"kind,omitempty"` // "" | "upsert" | "patch"
+	// Set and Unset are the frontmatter keys a meta change adds or replaces and
+	// removes, with updateNotes meta semantics.
+	Set   map[string]any `json:"set,omitempty"`
+	Unset []string       `json:"unset,omitempty"`
+	Kind  string         `json:"kind,omitempty"` // "" | "write" | "patch" | "meta"
 }
 
 // IsPatch reports whether the change is a surgical find/replace patch.
@@ -73,9 +79,26 @@ func (c AgentChange) IsPatch() bool {
 	return c.Kind == AgentChangeKindPatch
 }
 
+// IsMeta reports whether the change sets or unsets frontmatter keys.
+func (c AgentChange) IsMeta() bool {
+	return c.Kind == AgentChangeKindMeta
+}
+
 // Validate validates required fields of an AgentChange. Patch changes require
-// Find (not Content); upsert/legacy changes require Content.
+// Find (not Content), meta changes a key to set or unset, write changes (kind
+// "write" or none) require Content. Any other kind is refused, so a misspelled
+// kind never falls through to a whole-note write.
 func (c AgentChange) Validate() error {
+	if c.Kind != "" && c.Kind != AgentChangeKindWrite && !c.IsMeta() && !c.IsPatch() {
+		return fmt.Errorf("unknown kind %q", c.Kind)
+	}
+	if c.IsMeta() {
+		err := ozzo.Validate(c.Path, ozzo.Required)
+		if err != nil {
+			return fmt.Errorf("path: %w", err)
+		}
+		return frontmatteredit.Validate(c.Set, c.Unset)
+	}
 	if c.IsPatch() {
 		return ozzo.ValidateStruct(&c,
 			ozzo.Field(&c.Path, ozzo.Required),
@@ -119,30 +142,49 @@ func ResolveAgentChanges(changes []AgentChange, nvs *model.NoteViews, writePatte
 			}
 		}
 
-		var content string
-		if change.IsPatch() {
-			// Apply find/replace against the note's current content.
-			// Matches updateNotes Patch semantics: find must be present exactly once.
-			if nv == nil {
-				return nil, fmt.Errorf("note not found for patch: %s", change.Path)
-			}
-			current := string(nv.Content)
-			idx := strings.Index(current, change.Find)
-			if idx == -1 {
-				return nil, fmt.Errorf("patch find string not found in %s", change.Path)
-			}
-			if strings.Contains(current[idx+len(change.Find):], change.Find) {
-				return nil, fmt.Errorf("patch find string is ambiguous (multiple occurrences) in %s", change.Path)
-			}
-			content = current[:idx] + change.Replace + current[idx+len(change.Find):]
-		} else {
-			// Kind=="" or "upsert": upsert with provided content.
-			content = change.Content
+		content, err := resolveChangeContent(change, nv)
+		if err != nil {
+			return nil, err
 		}
 
 		notes = append(notes, model.RawNote{Path: change.Path, Content: content})
 	}
 	return notes, nil
+}
+
+// resolveChangeContent returns the note content one change leaves behind: the
+// sent content for a write, the stored content patched or with its frontmatter
+// keys edited otherwise.
+func resolveChangeContent(change AgentChange, nv *model.NoteView) (string, error) {
+	switch {
+	case change.IsMeta():
+		if nv == nil {
+			return "", fmt.Errorf("note not found for meta: %s", change.Path)
+		}
+		edited, err := frontmatteredit.Apply(string(nv.Content), change.Set, change.Unset)
+		if err != nil {
+			return "", fmt.Errorf("meta %s: %w", change.Path, err)
+		}
+		return edited, nil
+	case change.IsPatch():
+		// Apply find/replace against the note's current content.
+		// Matches updateNotes Patch semantics: find must be present exactly once.
+		if nv == nil {
+			return "", fmt.Errorf("note not found for patch: %s", change.Path)
+		}
+		current := string(nv.Content)
+		idx := strings.Index(current, change.Find)
+		if idx == -1 {
+			return "", fmt.Errorf("patch find string not found in %s", change.Path)
+		}
+		if strings.Contains(current[idx+len(change.Find):], change.Find) {
+			return "", fmt.Errorf("patch find string is ambiguous (multiple occurrences) in %s", change.Path)
+		}
+		return current[:idx] + change.Replace + current[idx+len(change.Find):], nil
+	default:
+		// Kind "" or "write": the sent content replaces the note.
+		return change.Content, nil
+	}
 }
 
 // ParseAgentResponse parses a webhook response body into AgentResponse.

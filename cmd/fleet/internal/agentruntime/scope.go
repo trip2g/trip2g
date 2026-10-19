@@ -9,6 +9,7 @@ import (
 	pathpkg "path"
 	"strings"
 
+	"trip2g/internal/frontmatteredit"
 	"trip2g/internal/webhookutil"
 )
 
@@ -198,6 +199,51 @@ func (s *ScopedKB) applyPatch(ctx context.Context, norm, find, replace string, v
 		return cp.PatchIfUnchanged(ctx, norm, find, replace, contentHash(*verified))
 	}
 	return s.kb.Patch(ctx, norm, find, replace)
+}
+
+// SetMeta edits top-level frontmatter keys of the document at path, or returns
+// ErrWriteDenied if out of write scope. With the role guard on, the edit is
+// previewed on the note's current bytes and applied only if they still match.
+func (s *ScopedKB) SetMeta(ctx context.Context, path string, set map[string]any, unset []string) error {
+	norm, err := s.checkWriteScope(path)
+	if err != nil {
+		return err
+	}
+	verified, err := s.checkMetaNotRoleAuthoring(ctx, norm, set, unset)
+	if err != nil {
+		return err
+	}
+	if cm, ok := s.kb.(conditionalMetaSetter); ok && verified != nil {
+		return cm.SetMetaIfUnchanged(ctx, norm, set, unset, contentHash(*verified))
+	}
+	return s.kb.SetMeta(ctx, norm, set, unset)
+}
+
+// conditionalMetaSetter is conditionalPatcher's twin for SetMeta.
+type conditionalMetaSetter interface {
+	SetMetaIfUnchanged(ctx context.Context, path string, set map[string]any, unset []string, expectedHash string) error
+}
+
+// checkMetaNotRoleAuthoring denies a meta change that would leave a role note
+// behind — setting fleet_id included — and one to a note already carrying the
+// marker. Like checkPatchNotRoleAuthoring it reads through the underlying KB
+// and returns the bytes it verified; nil means the guard is off.
+func (s *ScopedKB) checkMetaNotRoleAuthoring(ctx context.Context, path string, set map[string]any, unset []string) (*string, error) {
+	if s.allowRoleAuthoring {
+		return nil, nil
+	}
+	current, err := s.kb.Read(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrRoleGuardUnverifiable, err)
+	}
+	edited, err := frontmatteredit.Apply(current, set, unset)
+	if err != nil {
+		return nil, fmt.Errorf("meta %s: %w", path, err)
+	}
+	if declaresRole(current) || declaresRole(edited) {
+		return nil, ErrRoleAuthoringDenied
+	}
+	return &current, nil
 }
 
 // conditionalPatcher is the optional half of KB: a backend that can apply a

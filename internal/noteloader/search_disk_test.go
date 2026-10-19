@@ -94,7 +94,7 @@ func TestSearchIndex_OnDisk_ReusedAfterRestart(t *testing.T) {
 	}
 
 	first, firstLog := diskLoader(t, dir, notes)
-	found, err := first.Search("капибара")
+	found, err := first.Search("капибара", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, found, 1, "the note must be findable right after the first build")
 	require.NotEmpty(t, firstLog.find(t, "search index created on disk"))
@@ -110,7 +110,7 @@ func TestSearchIndex_OnDisk_ReusedAfterRestart(t *testing.T) {
 	require.NotEmpty(t, secondLog.find(t, "notes indexed", "indexed0", "skipped2"),
 		"unchanged notes must be skipped, not re-indexed")
 
-	found, err = second.Search("капибара")
+	found, err = second.Search("капибара", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, found, 1, "search must work against the reopened index")
 }
@@ -133,11 +133,11 @@ func TestSearchIndex_OnDisk_DropsNotesDeletedWhileDown(t *testing.T) {
 
 	require.NotEmpty(t, secondLog.find(t, "persisted search index adopted", "orphans_removed1"))
 
-	found, err := second.Search("выхухоль")
+	found, err := second.Search("выхухоль", 0, 20)
 	require.NoError(t, err)
 	require.Empty(t, found, "a note deleted while the process was down must not haunt the index")
 
-	found, err = second.Search("капибара")
+	found, err = second.Search("капибара", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, found, 1, "the surviving note must still be there")
 }
@@ -153,11 +153,11 @@ func TestSearchIndex_OnDisk_ReindexesChangedNote(t *testing.T) {
 
 	require.NotEmpty(t, secondLog.find(t, "notes indexed", "indexed1"), "a changed note must be re-indexed")
 
-	found, err := second.Search("выхухоль")
+	found, err := second.Search("выхухоль", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, found, 1, "the new text must be searchable")
 
-	found, err = second.Search("капибара")
+	found, err = second.Search("капибара", 0, 20)
 	require.NoError(t, err)
 	require.Empty(t, found, "the old text must be gone")
 }
@@ -186,7 +186,7 @@ func TestSearchIndex_InMemoryByDefault(t *testing.T) {
 	require.NoError(t, loader.Load(context.Background(), noteloader.LoadOptions{}))
 	t.Cleanup(func() { _ = loader.Close() })
 
-	found, err := loader.Search("капибара")
+	found, err := loader.Search("капибара", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, found, 1)
 
@@ -211,7 +211,7 @@ func TestSearchIndex_OnDisk_UnreadableFallsBackWithoutDeleting(t *testing.T) {
 	require.NotEmpty(t, log.find(t, "falling back to the in-memory index"),
 		"the loader must say out loud that it did not get the on-disk index")
 
-	found, err := loader.Search("капибара")
+	found, err := loader.Search("капибара", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, found, 1, "search must keep working on the in-memory fallback")
 

@@ -2,6 +2,7 @@
 import { test, expect } from '@playwright/test';
 import crypto from 'crypto';
 import { graphqlSignIn, createPersonalToken, revokePersonalToken } from './helpers/auth.js';
+import { revokeLiveOutboundSecrets } from './helpers/federation.js';
 
 /**
  * Federation ACL E2E Tests
@@ -15,12 +16,17 @@ import { graphqlSignIn, createPersonalToken, revokePersonalToken } from './helpe
  *   anonymous  — no auth header
  *   scoped     — non-admin user with federation-test subgraph personal token
  *   admin      — admin personal token
+ *
+ * The spec tests the hub's seed KB-notes peer2 and peer3, so it owns their URLs:
+ * no other spec pairs with them, and this one holds the only live key to each.
  */
 
 const HUB_URL = process.env.APP_URL || 'http://localhost:20081';
 const PEER2_URL = 'http://localhost:20093';
 const PEER3_URL = 'http://localhost:20095';
 const HUB_MCP = `${HUB_URL}/_system/mcp`;
+const PEER2_KB_URL = 'http://app-peer2:20093/_system/mcp';
+const PEER3_KB_URL = 'http://app-peer3:20095/_system/mcp';
 
 const SECRET_HEX_P2 = 'b1c1d1e1f1020304050607080900a1b1c1d1e1f1020304050607080900a1b100';
 const SECRET_HEX_P3 = 'c2d2e2f2030405060708090a0b0c0d0e0f1011121314151617181900c2d2e2f2';
@@ -110,6 +116,9 @@ test.describe.serial('Federation ACL', () => {
       }
     `, { input: { kid: KID_P3, secretHex: SECRET_HEX_P3 } });
 
+    await revokeLiveOutboundSecrets(hubRequest, HUB_URL, hubCookie, PEER2_KB_URL);
+    await revokeLiveOutboundSecrets(hubRequest, HUB_URL, hubCookie, PEER3_KB_URL);
+
     // Create outbound secrets on hub
     const p2Out = await gql(hubRequest, HUB_URL, hubCookie, `
       mutation($input: CreateOutboundFederationSecretInput!) {
@@ -118,7 +127,7 @@ test.describe.serial('Federation ACL', () => {
           ... on ErrorPayload { message }
         } }
       }
-    `, { input: { kid: KID_P2, secretHex: SECRET_HEX_P2, kbURL: 'http://app-peer2:20093/_system/mcp' } });
+    `, { input: { kid: KID_P2, secretHex: SECRET_HEX_P2, kbURL: PEER2_KB_URL } });
     outboundPeer2Id = p2Out.admin.createOutboundFederationSecret.id;
     expect(outboundPeer2Id, 'outbound peer2 secret must be created').toBeTruthy();
 
@@ -129,7 +138,7 @@ test.describe.serial('Federation ACL', () => {
           ... on ErrorPayload { message }
         } }
       }
-    `, { input: { kid: KID_P3, secretHex: SECRET_HEX_P3, kbURL: 'http://app-peer3:20095/_system/mcp' } });
+    `, { input: { kid: KID_P3, secretHex: SECRET_HEX_P3, kbURL: PEER3_KB_URL } });
     outboundPeer3Id = p3Out.admin.createOutboundFederationSecret.id;
     expect(outboundPeer3Id, 'outbound peer3 secret must be created').toBeTruthy();
 

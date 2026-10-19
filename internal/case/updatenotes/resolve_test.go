@@ -704,6 +704,10 @@ func TestResolve_ScopedToken_EmptyWritePatterns_DenyAll(t *testing.T) {
 			name:   "hide denied",
 			change: model.NoteChangeInput{Hide: &model.NoteChangeHideInput{Path: "any.md"}},
 		},
+		{
+			name:   "meta denied",
+			change: model.NoteChangeInput{Meta: &model.NoteChangeMetaInput{Path: "any.md", Unset: []string{"x"}}},
+		},
 	}
 
 	for _, tc := range tests {
@@ -887,6 +891,10 @@ func TestResolve_ScopedNoDeliveryKind_EmptyWritePatterns_DenyAll(t *testing.T) {
 		{
 			name:   "hide denied",
 			change: model.NoteChangeInput{Hide: &model.NoteChangeHideInput{Path: "secrets/private.md"}},
+		},
+		{
+			name:   "meta denied",
+			change: model.NoteChangeInput{Meta: &model.NoteChangeMetaInput{Path: "secrets/private.md", Unset: []string{"x"}}},
 		},
 	}
 

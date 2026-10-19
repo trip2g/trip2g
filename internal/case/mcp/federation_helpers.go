@@ -36,16 +36,26 @@ const contentTypeText = "text"
 // credential rather than a second reading of it.
 type FederationVerifyEnv = federationVerifyEnv
 
+// FederationCaller is the pairing a verified bearer authenticated as, as the
+// endpoints beside the tool surface need it.
+type FederationCaller struct {
+	KID              string
+	AllowedSubgraphs []string
+	// BodyBound says the signature covers the request body, so the arguments in
+	// it are the ones the peer sent.
+	BodyBound bool
+}
+
 // VerifyFederationBearer reports the pairing a peer's JWT authenticated as, or
 // why it did not. The body is passed so a signature that covers one is checked
 // against it; a request without a body passes nil, and a token that binds
 // nothing is accepted as before.
-func VerifyFederationBearer(ctx context.Context, env FederationVerifyEnv, token string, body []byte) (string, error) {
+func VerifyFederationBearer(ctx context.Context, env FederationVerifyEnv, token string, body []byte) (FederationCaller, error) {
 	auth, err := verifyInbound(ctx, env, token, body)
 	if err != nil {
-		return "", err
+		return FederationCaller{}, err
 	}
-	return auth.KID, nil
+	return FederationCaller{KID: auth.KID, AllowedSubgraphs: auth.AllowedSubgraphs, BodyBound: auth.BodyBound}, nil
 }
 
 type federationVerifyEnv interface {

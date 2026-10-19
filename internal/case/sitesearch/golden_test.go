@@ -58,7 +58,7 @@ func goldenEnv(t *testing.T, embURL string) *EnvMock {
 	}
 
 	return &EnvMock{
-		SearchLiveNotesFunc: func(string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: notes["b.md"], URL: "/b", HighlightedContent: []string{"hit b"}},
 				{NoteView: notes["a.md"], URL: "/a", HighlightedContent: []string{"hit a"}},
@@ -100,7 +100,7 @@ func TestGoldenRetrieve_TextOnly(t *testing.T) {
 	env := goldenEnv(t, srv.URL)
 	env.FeaturesFunc = func() features.Features { return features.Features{} } // vector disabled
 
-	results, merged, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+	results, merged, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q"})
 	require.NoError(t, err)
 	require.False(t, merged)
 	require.Equal(t, []string{"/b", "/a", "/e"}, urlsOf(results))
@@ -110,7 +110,7 @@ func TestGoldenRetrieve_HybridRRF(t *testing.T) {
 	srv := newEmbeddingServer(t, []float32{1, 0})
 	defer srv.Close()
 
-	results, merged, err := sitesearch.Retrieve(context.Background(), goldenEnv(t, srv.URL), "q", false, nil)
+	results, merged, err := sitesearch.Retrieve(context.Background(), goldenEnv(t, srv.URL), sitesearch.Request{Query: "q"})
 	require.NoError(t, err)
 	require.True(t, merged)
 	require.Equal(t, []string{"/a", "/b", "/c", "/d", "/e"}, urlsOf(results))
@@ -178,7 +178,7 @@ func TestGoldenRetrieve_RerankerBlends(t *testing.T) {
 		}}
 	}
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+	results, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"/d", "/a", "/b", "/e", "/c"}, urlsOf(results))
 }
@@ -212,7 +212,7 @@ func TestGoldenRetrieve_RerankOptOut(t *testing.T) {
 		}}
 	}
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, wantRerank(false))
+	results, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q", Rerank: wantRerank(false)})
 	require.NoError(t, err)
 	require.Equal(t, hybridOrder, urlsOf(results))
 }
@@ -245,11 +245,11 @@ func TestGoldenRetrieve_RerankOptIn(t *testing.T) {
 		}}
 	}
 
-	silent, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+	silent, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q"})
 	require.NoError(t, err)
 	require.Equal(t, hybridOrder, urlsOf(silent), "no preference on an opt-in instance must not rerank")
 
-	asked, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, wantRerank(true))
+	asked, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q", Rerank: wantRerank(true)})
 	require.NoError(t, err)
 	require.Equal(t, []string{"/d", "/a", "/b", "/e", "/c"}, urlsOf(asked), "an explicit ask must rerank")
 }
@@ -286,7 +286,7 @@ func TestGoldenResolve_ACLPlaceholders(t *testing.T) {
 }
 
 // SEARCH_HIDE_UNREADABLE: unreadable notes are dropped instead of becoming
-// placeholders, and totalCount does not count them.
+// placeholders. Resolve never sets totalCount, so it stays zero.
 func TestGoldenResolve_HideUnreadable(t *testing.T) {
 	srv := newEmbeddingServer(t, []float32{1, 0})
 	defer srv.Close()
@@ -306,7 +306,186 @@ func TestGoldenResolve_HideUnreadable(t *testing.T) {
 		require.NotNil(t, node.NoteView)
 		require.NotEqual(t, []string{"Закрытый материал."}, node.HighlightedContent)
 	}
-	require.LessOrEqual(t, conn.TotalCount, int64(len(conn.Nodes)))
+	require.Zero(t, conn.TotalCount)
+}
+
+// closedCorpus builds closed notes c001..cNNN followed by one free note,
+// ranked in that order, and a CanReadNote that opens only the free note.
+func closedCorpus(closed int) ([]*appmodel.NoteView, func(context.Context, *appmodel.NoteView) (bool, error)) {
+	var notes []*appmodel.NoteView
+	for i := 1; i <= closed; i++ {
+		notes = append(notes, &appmodel.NoteView{
+			Path:      fmt.Sprintf("c%03d.md", i),
+			Permalink: fmt.Sprintf("/c%03d", i),
+			Title:     fmt.Sprintf("C%03d", i),
+		})
+	}
+	notes = append(notes, &appmodel.NoteView{Path: "free.md", Permalink: "/free", Title: "Free"})
+
+	canRead := func(_ context.Context, nv *appmodel.NoteView) (bool, error) {
+		return nv.Path == "free.md", nil
+	}
+	return notes, canRead
+}
+
+func pathMapOf(notes []*appmodel.NoteView) map[string]*appmodel.NoteView {
+	m := make(map[string]*appmodel.NoteView, len(notes))
+	for _, n := range notes {
+		m[n.Path] = n
+	}
+	return m
+}
+
+func pagedTextLane(notes []*appmodel.NoteView) func(string, int, int) ([]appmodel.SearchResult, error) {
+	return func(_ string, from, size int) ([]appmodel.SearchResult, error) {
+		var page []appmodel.SearchResult
+		for i := from; i < from+size && i < len(notes); i++ {
+			page = append(page, appmodel.SearchResult{NoteView: notes[i], URL: notes[i].Permalink})
+		}
+		return page, nil
+	}
+}
+
+func textOnlyClosedEnv(t *testing.T, closed int, hide bool) *EnvMock {
+	t.Helper()
+
+	notes, canRead := closedCorpus(closed)
+	env := anonSiteEnv(goldenEnv(t, ""))
+	env.FeaturesFunc = func() features.Features { return features.Features{} }
+	env.SearchHideUnreadableFunc = func() bool { return hide }
+	env.CanReadNoteFunc = canRead
+	env.SearchLiveNotesFunc = pagedTextLane(notes)
+	env.LiveNoteViewsFunc = func() *appmodel.NoteViews { return &appmodel.NoteViews{PathMap: pathMapOf(notes)} }
+	return env
+}
+
+// Text lane: 25 closed notes outrank the only free one. With the flag on the
+// lane keeps reading pages until it has readable hits, so the free note at
+// rank 26 is found. With the flag off the lane reads one page of 20, as
+// before, and the reader gets 20 placeholders.
+func TestGoldenResolve_HideUnreadableTextLaneReachesPastClosed(t *testing.T) {
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+
+	env := textOnlyClosedEnv(t, 25, true)
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"/free"}, urlsOf(conn.Nodes))
+	require.Len(t, env.SearchLiveNotesCalls(), 3)
+
+	env = textOnlyClosedEnv(t, 25, false)
+	conn, err = sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Len(t, conn.Nodes, 20)
+	for _, node := range conn.Nodes {
+		require.Nil(t, node.NoteView)
+	}
+	calls := env.SearchLiveNotesCalls()
+	require.Len(t, calls, 1)
+	require.Equal(t, 0, calls[0].From)
+	require.Equal(t, 20, calls[0].Size)
+}
+
+// The text lane stops after 200 candidates, so a guest query cannot walk the
+// whole index: a free note behind 250 closed ones is not reached.
+func TestGoldenResolve_HideUnreadableTextLaneIsBounded(t *testing.T) {
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+
+	env := textOnlyClosedEnv(t, 250, true)
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Empty(t, conn.Nodes)
+	require.Len(t, env.SearchLiveNotesCalls(), 10)
+	require.Len(t, env.CanReadNoteCalls(), 200)
+}
+
+// The loader drops hits whose note is gone, so page 0 comes back with 19 rows
+// while the index holds more. The lane must not read that as the end: the free
+// note on page 1 is still found.
+func TestGoldenResolve_HideUnreadableTextLaneReadsPastDroppedHits(t *testing.T) {
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+
+	notes, _ := closedCorpus(25)
+	paged := pagedTextLane(notes)
+	env := textOnlyClosedEnv(t, 25, true)
+	env.SearchLiveNotesFunc = func(q string, from, size int) ([]appmodel.SearchResult, error) {
+		page, err := paged(q, from, size)
+		if from == 0 {
+			page = page[1:]
+		}
+		return page, err
+	}
+
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"/free"}, urlsOf(conn.Nodes))
+}
+
+// A note that moves from one page to the next while the lane reads them is
+// returned once.
+func TestGoldenResolve_HideUnreadableTextLaneSkipsRepeatedHits(t *testing.T) {
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+
+	notes, _ := closedCorpus(25)
+	free := appmodel.SearchResult{NoteView: notes[25], URL: notes[25].Permalink}
+	paged := pagedTextLane(notes[:25])
+	env := textOnlyClosedEnv(t, 25, true)
+	env.SearchLiveNotesFunc = func(q string, from, size int) ([]appmodel.SearchResult, error) {
+		page, err := paged(q, from, size)
+		switch from {
+		case 0:
+			page = append(page[:size-1], free)
+		case size:
+			page = append([]appmodel.SearchResult{free}, page...)
+		}
+		return page, err
+	}
+
+	conn, err := sitesearch.Resolve(ctx, env, model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"/free"}, urlsOf(conn.Nodes))
+}
+
+// Vector lane: 60 closed notes score above the only free one, past the 50
+// unique notes the lane keeps. With the flag on closed notes do not take
+// those slots, so the free note is found; with the flag off it is cut, as
+// before.
+func TestGoldenResolve_HideUnreadableVectorLaneReachesPastClosed(t *testing.T) {
+	srv := newEmbeddingServer(t, []float32{1, 0})
+	defer srv.Close()
+
+	notes, canRead := closedCorpus(60)
+	var chunks []appmodel.NoteChunk
+	for _, n := range notes {
+		embedding := []float32{1, 0}
+		if n.Path == "free.md" {
+			embedding = []float32{0.6, 0.8}
+		}
+		chunks = append(chunks, appmodel.NoteChunk{NotePath: n.Path, Content: n.Title + "\n\nbody", Embedding: embedding})
+	}
+
+	vectorEnv := func(hide bool) *EnvMock {
+		env := anonSiteEnv(goldenEnv(t, srv.URL))
+		env.SearchHideUnreadableFunc = func() bool { return hide }
+		env.CanReadNoteFunc = canRead
+		env.SearchLiveNotesFunc = func(string, int, int) ([]appmodel.SearchResult, error) { return nil, nil }
+		env.LiveNoteChunksFunc = func() []appmodel.NoteChunk { return chunks }
+		env.LiveNoteViewsFunc = func() *appmodel.NoteViews { return &appmodel.NoteViews{PathMap: pathMapOf(notes)} }
+		return env
+	}
+
+	ctx := appreq.NewContext(context.Background(), &appreq.Request{})
+
+	conn, err := sitesearch.Resolve(ctx, vectorEnv(true), model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"/free"}, urlsOf(conn.Nodes))
+
+	conn, err = sitesearch.Resolve(ctx, vectorEnv(false), model.SearchInput{Query: "q"})
+	require.NoError(t, err)
+	require.Len(t, conn.Nodes, 20)
+	require.NotContains(t, urlsOf(conn.Nodes), "/free")
+	for _, node := range conn.Nodes {
+		require.Nil(t, node.NoteView)
+	}
 }
 
 // Capping layer: the hybrid cap (20) applies AFTER permission filtering, so
@@ -329,7 +508,7 @@ func TestGoldenResolve_PostACLCap(t *testing.T) {
 	}
 
 	env := anonSiteEnv(goldenEnv(t, srv.URL))
-	env.SearchLiveNotesFunc = func(string) ([]appmodel.SearchResult, error) { return textResults, nil }
+	env.SearchLiveNotesFunc = func(string, int, int) ([]appmodel.SearchResult, error) { return textResults, nil }
 	env.LiveNoteViewsFunc = func() *appmodel.NoteViews { return &appmodel.NoteViews{PathMap: pathMap} }
 	env.LiveNoteChunksFunc = func() []appmodel.NoteChunk {
 		// One chunk for the top text hit: triggers the hybrid merge (and its cap)
@@ -375,7 +554,7 @@ func TestGoldenRetrieve_ExactNameHybrid(t *testing.T) {
 	srv := newEmbeddingServer(t, []float32{1, 0})
 	defer srv.Close()
 
-	results, merged, err := sitesearch.Retrieve(context.Background(), withNames(goldenEnv(t, srv.URL)), "  Звёздочки ", false, nil)
+	results, merged, err := sitesearch.Retrieve(context.Background(), withNames(goldenEnv(t, srv.URL)), sitesearch.Request{Query: "  Звёздочки "})
 	require.NoError(t, err)
 	require.True(t, merged)
 	require.Equal(t, []string{"/d", "/a", "/b", "/c", "/e"}, urlsOf(results))
@@ -389,7 +568,7 @@ func TestGoldenRetrieve_ExactNameTextOnly(t *testing.T) {
 	env := withNames(goldenEnv(t, srv.URL))
 	env.FeaturesFunc = func() features.Features { return features.Features{} }
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "звездочки", false, nil)
+	results, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "звездочки"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"/d", "/b", "/a", "/e"}, urlsOf(results))
 	require.NotEmpty(t, results[0].HighlightedContent, "a name-only hit still carries a snippet")
@@ -402,7 +581,7 @@ func TestGoldenRetrieve_NoNameMatchKeepsOrder(t *testing.T) {
 	env := withNames(goldenEnv(t, srv.URL))
 	env.FeaturesFunc = func() features.Features { return features.Features{} }
 
-	results, _, err := sitesearch.Retrieve(context.Background(), env, "q", false, nil)
+	results, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"/b", "/a", "/e"}, urlsOf(results))
 }

@@ -1328,3 +1328,23 @@ func TestNoteMetaGetStrings_InTemplate(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "channels,prices,faq,|missing:", buf.String())
 }
+
+func TestLoad_YieldOfBlockDefinedInPage_NoWarning(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/page",
+		VersionID: 1,
+		Path:      "_layouts/page.html",
+		Content:   `<style>{{ yield_blocks("_style_") }}</style>{{ block own_link(x="") }}<a>{{ x }}</a>{{ end }}{{ yield own_link(x="1") }}{{ yield missing_block() }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	var messages []string
+	for _, w := range layouts.Map["/page"].Warnings {
+		messages = append(messages, w.Message)
+	}
+	require.NotContains(t, messages, `yield "own_link" has no matching block in component files`)
+	require.Contains(t, messages, `yield "missing_block" has no matching block in component files`)
+}

@@ -15,6 +15,7 @@ import (
 
 type Env interface {
 	HideNotePath(ctx context.Context, params db.HideNotePathParams) error
+	LatestNoteContentHash(ctx context.Context, path string) (string, error)
 	LatestNoteViews() *internalmodel.NoteViews
 	PrepareLatestNotes(ctx context.Context, partial bool) (*internalmodel.NoteViews, error)
 	Logger() logger.Logger
@@ -36,46 +37,65 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return &model.ErrorPayload{Message: updatenotes.NoHideActorMessage}, nil
 	}
 
+	targets := make([]model.HideNoteInput, 0, len(input.Paths)+len(input.Notes))
+	for _, path := range input.Paths {
+		targets = append(targets, model.HideNoteInput{Path: path})
+	}
+	targets = append(targets, input.Notes...)
+
 	// Collect note info before hiding (notes may be removed from NoteViews after reload).
 	nvs := env.LatestNoteViews()
 	var webhookChanges []handlenotewebhooks.NoteChange
-	for _, path := range input.Paths {
-		nv := nvs.GetByPath(path)
-		change := handlenotewebhooks.NoteChange{
-			Path:  path,
-			Event: "remove",
-		}
-		if nv != nil {
-			change.PathID = nv.PathID
-		}
-		webhookChanges = append(webhookChanges, change)
-	}
+	var hashMismatches []model.NoteHashMismatch
 
-	// Perform the hide operation.
-	for _, path := range input.Paths {
+	for _, target := range targets {
+		// The request runs in one write transaction on the single write
+		// connection, so no other write lands between this read and the hide.
+		if target.ExpectedHash != nil {
+			actualHash, err := env.LatestNoteContentHash(ctx, target.Path)
+			if err != nil {
+				return nil, err
+			}
+
+			if actualHash != *target.ExpectedHash {
+				hashMismatches = append(hashMismatches, model.NoteHashMismatch{Path: target.Path, ActualHash: actualHash})
+				continue
+			}
+		}
+
 		params := db.HideNotePathParams{
 			HiddenBy: &input.ApiKey.CreatedBy,
-			Value:    path,
+			Value:    target.Path,
 		}
 
 		err := env.HideNotePath(ctx, params)
 		if err != nil {
-			return nil, fmt.Errorf("failed to hide note path %s: %w", path, err)
+			return nil, fmt.Errorf("failed to hide note path %s: %w", target.Path, err)
 		}
+
+		change := handlenotewebhooks.NoteChange{
+			Path:  target.Path,
+			Event: "remove",
+		}
+		if nv := nvs.GetByPath(target.Path); nv != nil {
+			change.PathID = nv.PathID
+		}
+		webhookChanges = append(webhookChanges, change)
 	}
 
 	// Reload NoteViews so hidden paths stop resolving on the public site.
 	// rendernotepage serves from the in-memory cache; without a reload the
 	// hidden note keeps returning 200 until the next full reload (asset-URL
 	// expiry or restart). The RawNotes source query filters hidden_by IS NULL.
-	if len(input.Paths) > 0 {
+	if len(webhookChanges) > 0 {
 		if _, err := env.PrepareLatestNotes(ctx, false); err != nil {
 			return nil, fmt.Errorf("failed to reload notes after hide: %w", err)
 		}
 	}
 
 	result := &model.HideNotesPayload{
-		Success: true,
+		Success:        true,
+		HashMismatches: hashMismatches,
 	}
 
 	// Trigger remove webhooks after successful hide.

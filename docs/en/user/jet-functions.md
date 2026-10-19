@@ -466,6 +466,8 @@ trip2g registers eight global functions, passes a set of variables to every cust
 | `defaultTemplate.Styles()` | `<link>` tags for the default template's stylesheet | Below |
 | `defaultTemplate.UserSpaceScripts()` | The settings `<script>` and script tags that client-side widgets need | Below |
 | `currentUser.IsAdmin()` | `true` when the visitor is the site admin | Below; used in [[en/user/themes\|Themes]] |
+| `noteQuery(query, params)` | The result of a [[en/user/note-queries\|note query]], as lists and maps | [[en/user/note-queries#In a template\|Note queries]] |
+| `noteQueryRows(query, params)` | The rows of a list result: `.Data()` is the item, `.Note()` the note it names (by `version_id`, `path_id` or `path`) or nil | [[en/user/note-queries#Rows: the notes behind the result\|Note queries]] |
 
 To put the default template's header, footer and styles around your own content:
 
@@ -509,6 +511,7 @@ Documented in [[en/user/templates#What's available in a custom template|Template
 | `TOC()` | list of `{Text, Level, ID}` | Headings for a table of contents; empty when the note's TOC setting hides it |
 | `PermalinkEncoded()` | `string` | `Permalink()` with each path segment percent-encoded: `/привет мир` → `/%D0%BF…%20%D0%BC…`. See below |
 | `Path()` | `string` | File path in the vault, e.g. `blog/post.md` |
+| `Dir()` | `string` | The folder of `Path()` with a trailing slash: `en/circle/` for `en/circle/garden.md`, `""` for a note in the vault root |
 | `PathID()`, `VersionID()` | `int64`, `string` | Stable ids for `data-` attributes |
 | `IsSystem()` | `bool` | Any path segment starts with `_` |
 | `IsHomePage()` | `bool` | The note is the home page of one of its subgraphs |
@@ -522,6 +525,15 @@ Documented in [[en/user/templates#What's available in a custom template|Template
 | `LastEditedBy()`, `LastEditedByLabel()` | object / `string` | Who pushed the current version. **Admin-only data:** wrap in `currentUser.IsAdmin()` |
 
 `PermalinkEncoded()` is URL encoding, not HTML escaping. Since output is escaped, `Permalink()` is safe in `href` too. Use `PermalinkEncoded()` when a path has non-ASCII characters or spaces and you want a strictly encoded URL, for example in a sitemap, a feed or a link another program reads.
+
+`Dir()` finds a note's neighbours without splitting the path by hand. A link to the folder's `_index` note, if there is one:
+
+```jet
+{{ note.Dir() }}            {* help/faq.md → help/ *}
+{{ if hub := nvs.ByPath(note.Dir() + "_index.md"); hub }}
+  <a href="{{ hub.Permalink() }}">{{ hub.Title() }}</a>
+{{ end }}
+```
 
 A language switcher:
 

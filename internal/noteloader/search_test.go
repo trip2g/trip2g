@@ -1,11 +1,14 @@
 package noteloader
 
 import (
+	"sort"
+	"strconv"
 	"testing"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
 
+	"github.com/blevesearch/bleve/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/text"
@@ -50,7 +53,7 @@ func TestIncrementalIndexing(t *testing.T) {
 	// Verify search works
 	loader.searchIndex = index
 	loader.nvs = notes1
-	results, err := loader.Search("Content")
+	results, err := loader.Search("Content", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, results, 2, "should find both notes")
 
@@ -130,12 +133,12 @@ func TestEnglishStemming(t *testing.T) {
 	loader.nvs = notes
 
 	// English stemming: "run race" should match "running races".
-	res, err := loader.Search("run race")
+	res, err := loader.Search("run race", 0, 20)
 	require.NoError(t, err)
 	require.True(t, hasURL(res, "/en-note"), "english query should match english note via en analyzer")
 
 	// Russian still works.
-	resRu, err := loader.Search("бег тренировка")
+	resRu, err := loader.Search("бег тренировка", 0, 20)
 	require.NoError(t, err)
 	require.True(t, hasURL(resRu, "/ru-note"), "russian query should still match russian note")
 }
@@ -156,7 +159,7 @@ func TestIncrementalIndexing_RemovesNoteWhenSearchDisabled(t *testing.T) {
 	loader.searchIndex = index
 	loader.nvs = before
 
-	results, err := loader.Search(canary)
+	results, err := loader.Search(canary, 0, 20)
 	require.NoError(t, err)
 	require.Len(t, results, 1, "precondition: note must initially be indexed")
 
@@ -171,9 +174,88 @@ func TestIncrementalIndexing_RemovesNoteWhenSearchDisabled(t *testing.T) {
 	loader.searchIndex = index
 	loader.nvs = after
 
-	results, err = loader.Search(canary)
+	results, err = loader.Search(canary, 0, 20)
 	require.NoError(t, err)
 	require.Empty(t, results, "search:false must remove an already-indexed document")
+}
+
+func notesOf(list ...*model.NoteView) *model.NoteViews {
+	nvs := model.NewNoteViews()
+	nvs.List = list
+	for _, n := range list {
+		nvs.Map[n.Permalink] = n
+	}
+	return nvs
+}
+
+func indexedIDs(t *testing.T, index bleve.Index) []string {
+	t.Helper()
+	req := bleve.NewSearchRequest(bleve.NewMatchAllQuery())
+	req.Size = 100
+	res, err := index.Search(req)
+	require.NoError(t, err)
+	ids := make([]string, 0, len(res.Hits))
+	for _, hit := range res.Hits {
+		ids = append(ids, hit.ID)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// A note re-routed by a frontmatter change keeps its text, so only its
+// permalink differs. The rebuild must drop the document under the old one.
+func TestIncrementalIndexing_RerouteRemovesOldDocument(t *testing.T) {
+	loader := &Loader{log: &logger.TestLogger{}}
+
+	index, err := loader.buildSearchIndex(notesOf(createNoteWithAST(1, "/old", "Note", []byte("reroutecanary"))))
+	require.NoError(t, err)
+	loader.searchIndex = index
+	require.Equal(t, []string{"/old"}, indexedIDs(t, index))
+
+	after := notesOf(createNoteWithAST(1, "/new", "Note", []byte("reroutecanary")))
+	_, err = loader.buildSearchIndex(after)
+	require.NoError(t, err)
+	loader.nvs = after
+
+	require.Equal(t, []string{"/new"}, indexedIDs(t, index))
+	results, err := loader.Search("reroutecanary", 0, 20)
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Equal(t, "/new", results[0].URL)
+}
+
+// Permalinks freed in a build may be taken by other notes in the same build:
+// two notes swapping routes, and a new note taking a deleted note's route.
+func TestIncrementalIndexing_FreedPermalinkKeepsNewDocument(t *testing.T) {
+	loader := &Loader{log: &logger.TestLogger{}}
+
+	index, err := loader.buildSearchIndex(notesOf(
+		createNoteWithAST(1, "/x", "A", []byte("alpha")),
+		createNoteWithAST(2, "/y", "B", []byte("beta")),
+		createNoteWithAST(3, "/z", "C", []byte("gamma")),
+	))
+	require.NoError(t, err)
+	loader.searchIndex = index
+
+	after := notesOf(
+		createNoteWithAST(1, "/y", "A", []byte("alpha")),
+		createNoteWithAST(2, "/x", "B", []byte("beta")),
+		createNoteWithAST(4, "/z", "D", []byte("delta")),
+	)
+	_, err = loader.buildSearchIndex(after)
+	require.NoError(t, err)
+	loader.nvs = after
+
+	require.Equal(t, []string{"/x", "/y", "/z"}, indexedIDs(t, index))
+	for query, url := range map[string]string{"alpha": "/y", "beta": "/x", "delta": "/z"} {
+		results, searchErr := loader.Search(query, 0, 20)
+		require.NoError(t, searchErr)
+		require.Len(t, results, 1, query)
+		require.Equal(t, url, results[0].URL, query)
+	}
+	results, err := loader.Search("gamma", 0, 20)
+	require.NoError(t, err)
+	require.Empty(t, results)
 }
 
 func hasURL(res []model.SearchResult, url string) bool {
@@ -195,4 +277,33 @@ func TestExtractTextDropsHeadingAttributes(t *testing.T) {
 
 	note := pages.PathMap["note.md"]
 	require.Equal(t, "Setup\nbody", extractText(note.Ast(), note.Content))
+}
+
+func TestSearchPages(t *testing.T) {
+	loader := &Loader{log: &logger.TestLogger{}}
+
+	notes := model.NewNoteViews()
+	for i := range 5 {
+		permalink := "/note" + strconv.Itoa(i)
+		note := createNoteWithAST(int64(i+1), permalink, "Note", []byte("pager"))
+		notes.List = append(notes.List, note)
+		notes.Map[permalink] = note
+	}
+
+	index, err := loader.buildSearchIndex(notes)
+	require.NoError(t, err)
+	loader.searchIndex = index
+	loader.nvs = notes
+
+	seen := map[string]bool{}
+	for from, want := range map[int]int{0: 2, 2: 2, 4: 1, 6: 0} {
+		page, pageErr := loader.Search("pager", from, 2)
+		require.NoError(t, pageErr)
+		require.Len(t, page, want, "page from %d", from)
+		for _, r := range page {
+			require.False(t, seen[r.URL], "%s returned twice", r.URL)
+			seen[r.URL] = true
+		}
+	}
+	require.Len(t, seen, 5)
 }

@@ -168,8 +168,9 @@ func federatedStatus(err error) string {
 	return "error"
 }
 
-// noSubgraphLabel marks a note a peer could read without any of its key's
-// subgraphs: a free note, a sign-in note, or one outside every subgraph.
+// noSubgraphLabel marks a note a peer read that is in no subgraph of its
+// key's scope: a free note, a sign-in note, a note outside every subgraph, or
+// one whose subgraphs the key is not scoped to.
 const noSubgraphLabel = "none"
 
 // grantingSubgraph names the subgraph through which a key reads note: the
@@ -184,7 +185,7 @@ func grantingSubgraph(note *model.NoteView, allowed []string) string {
 	return noSubgraphLabel
 }
 
-// recordFederatedNoteServed counts a note or section handed to a federated
+// recordFederatedNoteServed counts a note or section opened by a federated
 // peer. Requests not authenticated by an inbound key record nothing.
 func recordFederatedNoteServed(ctx context.Context, note *model.NoteView) {
 	auth, ok := federationAuthFromContext(ctx)
@@ -194,41 +195,38 @@ func recordFederatedNoteServed(ctx context.Context, note *model.NoteView) {
 	metricsFromContext(ctx).RecordFederatedNoteServed(auth.KID, grantingSubgraph(note, auth.AllowedSubgraphs))
 }
 
-// recordFederatedResultsServed counts each search result returned to a
-// federated peer under the subgraph that granted it.
-func recordFederatedResultsServed(ctx context.Context, notes []*model.NoteView) {
+// recordFederatedSearchServed counts the notes behind the first n search
+// results returned to a federated peer, each under the subgraph that granted
+// it. Requests not authenticated by an inbound key record nothing.
+func recordFederatedSearchServed(ctx context.Context, results []model.SearchResult, n int) {
 	auth, ok := federationAuthFromContext(ctx)
 	if !ok {
 		return
 	}
 	m := metricsFromContext(ctx)
-	for _, note := range notes {
-		m.RecordFederatedResultServed(auth.KID, grantingSubgraph(note, auth.AllowedSubgraphs))
-	}
-}
-
-// servedSearchNotes returns the notes behind the first n results, in the order
-// buildSearchPayload turns them into the answer.
-func servedSearchNotes(results []model.SearchResult, n int) []*model.NoteView {
-	notes := make([]*model.NoteView, 0, n)
+	served := 0
 	for _, r := range results {
-		if len(notes) >= n {
+		if served >= n {
 			break
 		}
 		if r.NoteView != nil {
-			notes = append(notes, r.NoteView)
+			m.RecordFederatedResultServed(auth.KID, grantingSubgraph(r.NoteView, auth.AllowedSubgraphs))
+			served++
 		}
 	}
-	return notes
 }
 
-// similarNotes returns the notes a similar answer lists.
-func similarNotes(results []graphmodel.SimilarNote) []*model.NoteView {
-	notes := make([]*model.NoteView, 0, len(results))
+// recordFederatedSimilarServed counts each similar note returned to a
+// federated peer under the subgraph that granted it.
+func recordFederatedSimilarServed(ctx context.Context, results []graphmodel.SimilarNote) {
+	auth, ok := federationAuthFromContext(ctx)
+	if !ok {
+		return
+	}
+	m := metricsFromContext(ctx)
 	for _, r := range results {
 		if r.Note != nil && r.Note.NoteView != nil {
-			notes = append(notes, r.Note.NoteView)
+			m.RecordFederatedResultServed(auth.KID, grantingSubgraph(r.Note.NoteView, auth.AllowedSubgraphs))
 		}
 	}
-	return notes
 }

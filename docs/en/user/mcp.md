@@ -169,7 +169,7 @@ Enable the MCP server in site settings. Access can be:
 
 ### Custom tools and discovery
 
-Any note with a `mcp_method` frontmatter value (other than the reserved names `initialize`, `search`, `similar`, `note_html`, `expand`, `federated_search`, `federated_similar`, `federated_note_html`, `federated_expand`) becomes a callable tool. The tool appears in `tools/list` automatically — no configuration needed.
+Any note with a `mcp_method` frontmatter value (other than the reserved names `initialize`, `search`, `similar`, `note_html`, `expand`, `federated_search`, `federated_similar`, `federated_note_html`, `federated_expand`, `federated_instructions`, `federated_asset`) becomes a callable tool. The tool appears in `tools/list` automatically — no configuration needed.
 
 ```yaml
 ---

@@ -180,7 +180,7 @@ soul_profile:
 		require.Nil(t, resp.Error)
 
 		result := resp.Result.(mcp.ListToolsResult)
-		require.Len(t, result.Tools, 9)
+		require.Len(t, result.Tools, 10)
 
 		var toolNames []string
 		for _, tool := range result.Tools {
@@ -197,6 +197,7 @@ soul_profile:
 			"federated_note_html",
 			"federated_expand",
 			"federated_instructions",
+			"federated_asset",
 		}, toolNames)
 	})
 
@@ -240,7 +241,7 @@ soul_profile:
 		for _, tool := range result.Tools {
 			toolNames = append(toolNames, tool.Name)
 		}
-		require.Len(t, toolNames, 10)
+		require.Len(t, toolNames, 11)
 		require.Contains(t, toolNames, "code-review")
 
 		// Dynamic tool carries description and empty schema
@@ -385,7 +386,7 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
-		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
 				URL:                note.Permalink,
@@ -526,7 +527,7 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
-		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView:           note,
 				URL:                note.Permalink,
@@ -600,7 +601,7 @@ func TestSearchHidesInaccessibleFederationKBNotes(t *testing.T) {
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
-		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: federationNote, URL: federationNote.Permalink, Score: 2},
 				{NoteView: localNote, URL: localNote.Permalink, Score: 1},
@@ -668,7 +669,7 @@ func TestSearchHidesInaccessibleNotes(t *testing.T) {
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
-		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: privateNote, URL: privateNote.Permalink, Score: 2},
 				{NoteView: publicNote, URL: publicNote.Permalink, Score: 1},
@@ -779,7 +780,7 @@ func TestSearchFiltersSystemAndExcludedNotes(t *testing.T) {
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
-		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
 				{NoteView: systemNote, URL: systemNote.Permalink, Score: 3},
 				{NoteView: excludedNote, URL: excludedNote.Permalink, Score: 2},
@@ -843,7 +844,7 @@ func TestSearch_CustomDomainURL(t *testing.T) {
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
-		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: note,
 				URL:      note.Permalink,
@@ -1922,7 +1923,7 @@ func makeSearchEnv(t *testing.T, results []appmodel.SearchResult) *EnvMock {
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
-		SearchLiveNotesFunc: func(query string) ([]appmodel.SearchResult, error) {
+		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return results, nil
 		},
 		LiveNoteChunksFunc: func() []appmodel.NoteChunk { return nil },

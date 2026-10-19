@@ -55,6 +55,46 @@ free: true
 
 That's it. Only `_blocks.html` needs an explicit import — it contains `index_layout` and shared blocks that are not auto-discovered. All component files (`bar.html`, `foot.html`, etc.) are imported automatically by the loader based on `{{ yield }}` calls.
 
+## Positioning wheel (`circle.html`)
+
+`/en/circle` and `/ru/circle`: one full-screen page, a polygon whose vertices are ways to use
+trip2g. Each vertex is its own note in the folder next to the page note:
+
+```
+en/circle/_index.md      ← the page: title, description, the short intro in the body
+en/circle/garden.md      ← one vertex
+ru/circle/…              ← the same set in Russian, each note pointing at its twin
+```
+
+A vertex note:
+
+```markdown
+---
+title: "A site and a digital garden from Obsidian"
+label: "digital garden"          # text at the vertex
+order: 1                         # position on the wheel, clockwise from the top
+motion_visualization: garden     # optional; omit for no animation
+link: "[[en/user/digital-garden]]"
+related:
+  - "[[en/thoughts/federation-of-gardens]]"
+layout: mesh/circle
+lang: en
+free: true
+noindex: true
+lang_redirect: "[[ru/circle/garden]]"
+---
+
+Two to four sentences shown in the center.
+```
+
+- The layout lists every note in the page's folder (`note.Dir()`) that has a `label`, sorted by `order`. The selection is the note query `queries/circle_points.md`; the layout calls it with `noteQueryRows` and takes each point's title, text and frontmatter from `.Note()`.
+- The page uses the shared shell, `index_layout(page=hub, wrap=false)`: title, canonical, hreflang and og tags come from the folder's `_index` note, and the content runs full width.
+- `link` and `related` are vault paths in wikilink brackets; each prints as a link with the target note's title. A path that resolves to nothing prints nothing.
+- Vertex notes use the same layout, so `/en/circle/garden` opens the wheel at that vertex. `noindex` keeps them out of the sitemap, and their canonical URL is the page.
+- Navigation: a click near a vertex or its label, the ← → buttons, ← → / Space / Shift+Space / PageDown / PageUp, a swipe, or a click on empty page outside the wheel (next point; ignored on links, buttons, the center text and when text is selected).
+- All texts are in the server HTML; the script only switches which one is visible. Without JavaScript the page is a plain list of sections.
+- `motion_visualization` names a file in `circle/`: `viz_<name>.js` registers `window.trip2gCircleViz.<name> = function (ctx, t, w, h, colors)`, a drawing of a 2D canvas at time `t` seconds. With `prefers-reduced-motion` the page draws one still frame, at `draw.still` seconds if the function sets it. A new visualization needs its `<script>` line in `circle.html`.
+
 ## Components
 
 All components live in this directory. Each file defines **one** `@lid` block plus a shared `_style_@lid` CSS block. Import the file and yield the block by its expanded name.
@@ -113,7 +153,7 @@ Parameterized blocks available everywhere after `{{ import "_blocks" }}`:
 
 | Block | Parameters | Description |
 |-------|-----------|-------------|
-| `index_layout` | — | Full HTML page wrapper (`<html>`, `<head>`, `<body>`, global CSS, JS). Title/description/og:image read from the page note frontmatter (`title`, `description`, `og_image`). |
+| `index_layout` | `page` (default: `note`), `wrap` (default: `true`) | Full HTML page wrapper (`<html>`, `<head>`, `<body>`, global CSS, JS). Title/description/og:image read from `page`'s frontmatter (`title`, `description`, `og_image`). Canonical and og:url are `page`'s URL; hreflang lists `page` and its language twins (`LangAlternative`), x-default is the English one. `wrap=false` drops the 1280px `.wrap` around the content. |
 | `section_header` | `lhs`, `rhs` | Section heading with left and right labels |
 | `mesh_section` | `path` | Transcludes a hidden section note's rendered body by vault path via `nvs.ByPath(path).HTMLString()`. The landing copy lives in `_index_*.md` notes; the layout supplies only structure and style. |
 | `how_step` | `num`, `title` | Numbered step with `{{ yield content }}` |

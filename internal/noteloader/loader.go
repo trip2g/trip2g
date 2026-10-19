@@ -123,6 +123,8 @@ type Loader struct {
 	// when neither the note's frontmatter nor the patch set changed.
 	patchCache *frontmatterpatch.ResultCache
 
+	// validate is set by EnableValidation. validateCache exists only then.
+	validate      bool
 	validateCache *mdloader.ValidateCache
 }
 
@@ -131,11 +133,24 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 		env: env,
 		log: logger.WithPrefix(env.Logger(), version+" noteloader:"),
 
-		version:       version,
-		config:        config,
-		patchCache:    frontmatterpatch.NewResultCache(),
-		validateCache: mdloader.NewValidateCache(),
+		version:    version,
+		config:     config,
+		patchCache: frontmatterpatch.NewResultCache(),
+
+		nvs:     model.NewNoteViews(),
+		layouts: &model.Layouts{},
 	}
+}
+
+// EnableValidation makes Load run the validators notes list in "validate".
+// Only a loader whose warnings are read needs it; elsewhere it is wasted time,
+// and a loader holding part of the vault reports validators it can't see as
+// missing.
+func (l *Loader) EnableValidation() {
+	l.Lock()
+	defer l.Unlock()
+	l.validate = true
+	l.validateCache = mdloader.NewValidateCache()
 }
 
 // Close releases the search index. It matters only for an on-disk index: the
@@ -231,6 +246,20 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	assetMap := buildAssetMap(assets)
 
+	// Every database read happens before mdloader.Load: parsing, validating
+	// and rendering a large vault can use up ctx's deadline.
+	dbSubgraphs, err := l.env.ListAllSubgraphs(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list subgraphs: %w", err)
+	}
+
+	chunks, err := l.loadChunks(ctx)
+	if err != nil {
+		// Non-fatal: chunks may not exist yet (before first chunk embedding run)
+		l.log.Warn("failed to load note chunks", "err", err)
+		chunks = nil
+	}
+
 	mdSources := []mdloader.SourceFile{}
 	templateSources := []model.LayoutSourceFile{}
 	embeddingMap := make(map[int64][]byte) // version_id -> raw embedding bytes
@@ -306,7 +335,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		// new/updated patches are applied (routes, etc. derived from patches would
 		// otherwise remain stale for content-unchanged notes).
 		NoteCache: func(source mdloader.SourceFile) *model.NoteView {
-			if patchesChanged || l.nvs == nil {
+			if patchesChanged {
 				return nil
 			}
 			old, ok := l.nvs.PathMap[source.Path]
@@ -326,6 +355,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		FrontmatterPatches: l.frontmatterPatches,
 		ChartData:          l.chartData,
 		PatchCache:         l.patchCache,
+		Validate:           l.validate,
 		ValidateCache:      l.validateCache,
 	}
 
@@ -335,10 +365,6 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	}
 
 	// Enrich NoteSubgraphs with DB flags (require_signin).
-	dbSubgraphs, err := l.env.ListAllSubgraphs(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to list subgraphs: %w", err)
-	}
 	dbSubgraphMap := make(map[string]db.Subgraph, len(dbSubgraphs))
 	for _, sg := range dbSubgraphs {
 		dbSubgraphMap[sg.Name] = sg
@@ -378,13 +404,6 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	}
 
 	l.assignEmbeddings(nvs, embeddingMap)
-
-	chunks, err := l.loadChunks(ctx)
-	if err != nil {
-		// Non-fatal: chunks may not exist yet (before first chunk embedding run)
-		l.log.Warn("failed to load note chunks", "err", err)
-		chunks = nil
-	}
 
 	err = l.generateSitemap(nvs)
 	if err != nil {
@@ -432,6 +451,7 @@ func buildAssetMap(assets []RawAsset) map[int64]map[string]*model.NoteAssetRepla
 			Hash:         asset.NoteAsset.Sha256Hash,
 			FileName:     asset.NoteAsset.FileName,
 			AbsolutePath: asset.AbsolutePath,
+			Size:         asset.NoteAsset.Size,
 		}
 	}
 
@@ -547,9 +567,7 @@ func (l *Loader) ReloadEmbeddings(ctx context.Context) error {
 
 	l.Lock()
 	defer l.Unlock()
-	if l.nvs != nil {
-		l.assignEmbeddings(l.nvs, embeddingMap)
-	}
+	l.assignEmbeddings(l.nvs, embeddingMap)
 	l.chunks = chunks
 
 	return nil

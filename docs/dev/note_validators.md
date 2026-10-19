@@ -20,7 +20,7 @@ Inside a jsonnet block the validator sees:
 | `meta` | frontmatter **after** frontmatter patches (same local as in patches) |
 | `path` | note path |
 | `nodes` | flat document-order list of AST nodes |
-| `std.native('regexMatch')(pattern, str)` | Go `regexp.MatchString`; jsonnet's stdlib has no regex |
+| `std.native('regexMatch')(pattern, str)` | Go `regexp` match; jsonnet's stdlib has no regex. Each pattern compiles once per load |
 
 A node looks like `{type, depth, line, ...}`:
 
@@ -39,6 +39,10 @@ A node looks like `{type, depth, line, ...}`:
 
 The block must evaluate to `[{level: 'error'|'warning', msg: string, line?: number}]`. Each message becomes a note warning: `validate <validator path>: line N: <msg>`.
 
+A missing `validate`, `null`, and a blank string all mean no validators, so a patch returning `{ validate: null }` switches validation off for a note. A blank item inside a list is still an error.
+
+`std.trace` output is discarded (`jsonneteval.NewVM`, shared with frontmatter patches and webhook transforms): the author can't read the server's stderr, and anyone who can edit a note could otherwise write to it on every load.
+
 These cases are all `Critical`: a `validate` value that isn't a note or a list of notes, a target that can't be found, a target that isn't a markdown note (`.canvas`, `.base`, `.excalidraw`), a validator without jsonnet blocks, a runtime error, a result that isn't such an array (`null` included), a message without `msg`, or an unknown level. A broken validator must not silently pass everything.
 
 Jsonnet error positions are relative to the block, not to the validator file.
@@ -49,13 +53,21 @@ Jsonnet can't pass a function into a native function: arguments are manifested a
 
 ## Where it runs
 
-`mdloader.Load` → `ldr.validateNotes()` right after `resolveLangRedirects`. At that point all notes are registered (validators can sit anywhere in the vault), frontmatter patches are applied and every `NoteView` still holds its AST. `NoteView`s are rebuilt on each load, so warnings don't pile up between syncs.
+`mdloader.Load` → `ldr.validateNotes()` right after `resolveLangRedirects`, only when `Options.Validate` is set. At that point all notes are registered (validators can sit anywhere in the vault), frontmatter patches are applied and every `NoteView` still holds its AST. `NoteView`s are rebuilt on each load, so warnings don't pile up between syncs.
+
+`noteloader.Loader.EnableValidation` sets it. Two loaders call it:
+- the latest loader (`createNoteLoaders` in `cmd/server/boot.go`). Every reader of note warnings reads the latest notes: the admin Note Warnings list (`LatestNoteViews`), `pushNotes` and `commitNotes` (`PrepareLatestNotes`), and Telegram publish (`handletgpublishviews`);
+- `trip2g lint` (`internal/doclint`).
+
+The live loader skips validation: nothing reads its warnings. So does the single-note loader behind `LoadNoteViewByVersionID`. It loads one version without the rest of the vault, so every validator would come out as `target not found`.
+
+`noteloader.Loader.Load` does all its database reads (site config, patches, notes, assets, subgraphs, chunks) before `mdloader.Load`. Parsing, validating and rendering a large vault can use up the caller's deadline, such as the 60 s startup budget in `loadAllNotes`, and none of that time is spent before a database read.
 
 Code: `internal/mdloader/validate.go`.
 
 ## Demo vault
 
-`internal/mdloader/testdata/validate/` (7 validators in `validators/`, valid and invalid notes in `notes/`). It sits outside `docs/` on purpose: CI runs `trip2g lint docs`, and the deliberately invalid notes would fail it. `TestValidateDemoVault` pins the expected messages for each note.
+`internal/mdloader/testdata/validate/` (8 validators in `validators/`, valid and invalid notes in `notes/`). It sits outside `docs/` on purpose: CI runs `trip2g lint docs`, and the deliberately invalid notes would fail it. `TestValidateDemoVault` pins the expected messages for each note.
 
 ## Cache
 
@@ -81,7 +93,7 @@ Messages about a `validate` value that is broken or a target that can't be resol
 | `session_has_image` (fold over nodes) | ~0.90 s | ~0.50 s | 951 MB |
 | all 7 | ~4.3 s | ~0.49–0.53 s | 4.5 GB |
 
-The full `Load` runs on every push batch: `pushNotes` calls `PrepareLatestNotes`, which reloads the whole vault. With the cache, only notes whose key changed run jsonnet. A full pass, the "no cache" column, still runs on server start (both the live and latest loaders, inside the shared startup timeout), when a patch is saved in the admin panel (inside that mutation), and on a sync that carries a patch note.
+The full `Load` runs on every push batch: `pushNotes` calls `PrepareLatestNotes`, which reloads the whole vault. With the cache, only notes whose key changed run jsonnet. A full pass, the "no cache" column, still runs on server start (the latest loader only, after its database reads), when a patch is saved in the admin panel (inside that mutation), and on a sync that carries a patch note.
 
 A CPU profile of an uncached `all 7` run shows where a full pass goes. Jsonnet evaluation takes about 90% of validation. Re-parsing the snippet on every call (`SnippetToAST`) is about 25%, rebuilding `nodes` per validator about 20%, and turning `nodes` into jsonnet values about 15%. Allocation pressure (GC) is the rest.
 
