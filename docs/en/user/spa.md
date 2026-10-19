@@ -184,6 +184,10 @@ const data = JSON.parse(
 // data.path, data.content, data.editable
 ```
 
+### Lists of other notes {#lists}
+
+An app that shows other notes, such as posts with a tag or tasks from a folder, asks for them with a [[en/user/note-queries|note query]]: a Jsonnet program in your vault that returns exactly the JSON the app needs, run with the visitor's access.
+
 ### Saving: the `updateNotes` mutation {#save}
 
 The app writes the note back with the `updateNotes` GraphQL mutation at `/_system/graphql`. A signed-in site admin is allowed to write; anyone else gets an error, so a visitor's browser can't change the note even if the app shows its controls by mistake.

@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
+	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/db"
 	"trip2g/internal/defaulttemplate"
@@ -457,6 +458,7 @@ func renderLayout(
 	currentUserNS := reflect.ValueOf(usHelper.currentUserJetMap())
 	vars["defaultTemplate"] = defaultTemplateNS
 	vars["currentUser"] = currentUserNS
+	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(ctx, env))
 
 	// Attach the admin-only "last edited by" resolver so layouts can render the
 	// version author (gated on currentUser.IsAdmin()).

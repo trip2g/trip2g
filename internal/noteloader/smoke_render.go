@@ -1,18 +1,44 @@
 package noteloader
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"reflect"
+	"time"
+	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
+	"trip2g/internal/usertoken"
 
 	"github.com/CloudyKit/jet/v6"
 )
 
 const smokeRenderLimit = 10
+
+// smokeQueryEnv runs noteQuery during the smoke render as a guest over the
+// notes being loaded.
+type smokeQueryEnv struct{ nvs *model.NoteViews }
+
+func (e smokeQueryEnv) LatestNoteViews() *model.NoteViews {
+	return e.nvs
+}
+
+func (smokeQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
+	return nil, nil
+}
+
+func (smokeQueryEnv) CurrentFederatedScope(context.Context) ([]string, bool) {
+	return nil, false
+}
+
+func (smokeQueryEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, error) {
+	return nil, nil
+}
+
+func (smokeQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 
 // smokeRenderLayouts executes each parsed layout against up to smokeRenderLimit
 // notes that select it via frontmatter `layout:`. Runtime errors and panics
@@ -58,8 +84,9 @@ func smokeRenderLayouts(layouts *model.Layouts, nvs *model.NoteViews, log logger
 func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *model.NoteViews, log logger.Logger, layoutID string) []model.NoteWarning {
 	var warnings []model.NoteWarning
 	nvsWrap := templateviews.NewNVS(nvs, "")
+	noteQuery := runnotequery.JetFunc(context.Background(), smokeQueryEnv{nvs: nvs})
 	for _, n := range notes {
-		if w := executeSmoke(view, n, nvsWrap); w != nil {
+		if w := executeSmoke(view, n, nvsWrap, noteQuery); w != nil {
 			log.Warn("layout smoke render failed",
 				"layout", layoutID, "note", n.Path, "msg", w.Message)
 			warnings = append(warnings, *w)
@@ -69,7 +96,7 @@ func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *mode
 }
 
 //nolint:nonamedreturns // named return required so deferred recover can set it
-func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templateviews.NVS) (w *model.NoteWarning) {
+func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templateviews.NVS, noteQuery jet.Func) (w *model.NoteWarning) {
 	defer func() {
 		if r := recover(); r != nil {
 			w = &model.NoteWarning{
@@ -101,6 +128,7 @@ func executeSmoke(view *jet.Template, note *model.NoteView, nvsWrap *templatevie
 	vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
 		"IsAdmin": func() bool { return false },
 	})
+	vars["noteQuery"] = reflect.ValueOf(noteQuery)
 
 	if err := view.Execute(io.Discard, vars, nil); err != nil {
 		return &model.NoteWarning{

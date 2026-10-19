@@ -243,6 +243,7 @@ type Env interface {
 
 	LatestNoteViews() *model.NoteViews
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
+	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
 	AllLiveNotes(ctx context.Context) ([]db.AllLiveNotesRow, error)
 	calculatechangeselectors.Env
 	RecentlyModifiedNoteVersionIDs(ctx context.Context) ([]int64, error)

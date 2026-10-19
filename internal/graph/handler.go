@@ -64,6 +64,23 @@ func sseTransport() transport.SSE {
 // keeps the documented operations under it.
 const maxQueryComplexity = 30
 
+// noteQueryComplexity prices noteQuery, which runs a program over the whole
+// vault, so one operation fits at most two of them.
+const noteQueryComplexity = 10
+
+// costedSchema adds field costs to the schema's default of 1 per field;
+// gqlgen.yml has omit_complexity, so the generated schema prices none.
+type costedSchema struct {
+	graphql.ExecutableSchema
+}
+
+func (s costedSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, args map[string]any) (int, bool) {
+	if typeName == "Query" && field == "noteQuery" {
+		return noteQueryComplexity + childComplexity, true
+	}
+	return s.ExecutableSchema.Complexity(ctx, typeName, field, childComplexity, args)
+}
+
 func NewHandler(env Env) *handler.Server {
 	log := env.Logger()
 
@@ -77,7 +94,7 @@ func NewHandler(env Env) *handler.Server {
 		return next(ctx)
 	}
 
-	schema := generated.NewExecutableSchema(config)
+	schema := costedSchema{generated.NewExecutableSchema(config)}
 
 	srv := handler.New(schema)
 

@@ -2,6 +2,11 @@ scalar Int64
 scalar Time
 scalar Upload
 
+"""
+Any JSON value: an object, a list, a string, a number, a boolean or null.
+"""
+scalar JSON
+
 directive @goField(
 	forceResolver: Boolean
 	name: String
@@ -1604,6 +1609,30 @@ input NoteFrontmatterPredicate {
   equals: String
 }
 
+input NoteQueryInput {
+  """
+  The query note: a vault path (queries/decisions.md) or a wikilink target.
+  The note needs `type: note-query` and one jsonnet block.
+  """
+  query: String!
+
+  """
+  Any JSON value passed to the query as `params`, at most 16 KB once encoded.
+  Defaults to {}.
+  """
+  params: JSON
+}
+
+type NoteQueryPayload {
+  """
+  Whatever the query program returned, as a JSON value. Its shape is set by
+  the query note, not by the schema.
+  """
+  result: JSON!
+}
+
+union NoteQueryOrErrorPayload = NoteQueryPayload | ErrorPayload
+
 input SimilarNotesInput {
   """
   Note path (permalink) to find similar notes for.
@@ -1693,6 +1722,13 @@ type Query {
   Returns empty list if vector search is disabled or note has no embedding.
   """
   similarNotes(input: SimilarNotesInput!): [SimilarNote!]!
+
+  """
+  Runs a named query: a note with `type: note-query` whose jsonnet block gets
+  the notes the caller can read and `params`. The caller must be able to read
+  the query note itself.
+  """
+  noteQuery(input: NoteQueryInput!): NoteQueryOrErrorPayload!
 
   """
   X-Api-Key header must be set.
