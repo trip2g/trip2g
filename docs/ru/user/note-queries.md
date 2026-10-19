@@ -192,6 +192,7 @@ local folder(n) =
 | `<path> is not a note-query` | у заметки нет `type: note-query` |
 | `<path>: a note-query needs exactly one jsonnet block` | блоков ноль или несколько |
 | `params must be JSON`, `params is larger than 16 KB` | неправильные `params` |
+| `<path>:3:5-9 Unknown variable: …` | код не компилируется: опечатка, неизвестное имя, незакрытая скобка; место — строка и колонки в блоке, колонки первой строки считаются от скрытого заголовка |
 | `<path>: RUNTIME ERROR: …` | программа упала; первая строка ошибки Jsonnet |
 
 ### В шаблоне

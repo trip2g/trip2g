@@ -145,7 +145,7 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 		return nil, err
 	}
 
-	out, err := jsonneteval.EvalJSON(queryPrelude+blocks[0], map[string]string{
+	out, err := jsonneteval.EvalNamedJSON(note.Path, queryPrelude+blocks[0], map[string]string{
 		"notes":       string(notesJSON),
 		"params":      params,
 		"currentUser": user,
@@ -153,7 +153,11 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 	if err != nil {
 		msg := strings.TrimPrefix(err.Error(), "evaluate jsonnet: ")
 		msg, _, _ = strings.Cut(msg, "\n")
-		return &model.ErrorPayload{Message: note.Path + ": " + msg}, nil
+		// A static error already starts with the location, `<path>:line:col`.
+		if !strings.HasPrefix(msg, note.Path+":") {
+			msg = note.Path + ": " + msg
+		}
+		return &model.ErrorPayload{Message: msg}, nil
 	}
 
 	var compact bytes.Buffer

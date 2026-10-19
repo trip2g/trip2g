@@ -193,6 +193,7 @@ A failed call returns `ErrorPayload` with a message:
 | `<path> is not a note-query` | the note has no `type: note-query` |
 | `<path>: a note-query needs exactly one jsonnet block` | zero or several blocks |
 | `params must be JSON`, `params is larger than 16 KB` | bad `params` |
+| `<path>:3:5-9 Unknown variable: …` | the code doesn't compile: a typo, an unknown name, a missing bracket; the location is a line and columns in the block, columns on the first line counted from a hidden header |
 | `<path>: RUNTIME ERROR: …` | the program failed; the first line of the Jsonnet error |
 
 ### In a template

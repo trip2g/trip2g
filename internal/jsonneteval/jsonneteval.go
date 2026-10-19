@@ -27,12 +27,18 @@ func NewVM() *jsonnet.VM {
 // returns the result as raw JSON. Each ext-var value is bound verbatim (the
 // caller decides whether a value is a JSON string to std.parseJson).
 func EvalJSON(src string, extVars map[string]string) (json.RawMessage, error) {
+	return EvalNamedJSON("transform", src, extVars)
+}
+
+// EvalNamedJSON is EvalJSON with the snippet name that error locations
+// start with, e.g. a note path.
+func EvalNamedJSON(name, src string, extVars map[string]string) (json.RawMessage, error) {
 	vm := NewVM()
 	for k, v := range extVars {
 		vm.ExtVar(k, v)
 	}
 
-	out, err := vm.EvaluateAnonymousSnippet("transform", src)
+	out, err := vm.EvaluateAnonymousSnippet(name, src)
 	if err != nil {
 		return nil, fmt.Errorf("evaluate jsonnet: %w", err)
 	}

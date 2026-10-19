@@ -54,7 +54,7 @@ The program decides which fields leave the server. Raw frontmatter is never retu
 
 ## Errors (`ErrorPayload`)
 
-`query not found`, `<path> is not a note-query`, `a note-query needs exactly one jsonnet block`, `params must be JSON`, `params is larger than 16 KB`, and jsonnet errors as `<path>: RUNTIME ERROR: …` (first line only).
+`query not found`, `<path> is not a note-query`, `a note-query needs exactly one jsonnet block`, `params must be JSON`, `params is larger than 16 KB`, and jsonnet errors, first line only: a static error as `<path>:line:col Unknown variable: …` (the snippet is named after the note; first-line columns include the prelude), a runtime one as `<path>: RUNTIME ERROR: …`.
 
 ## Cost
 

@@ -42,6 +42,7 @@ func TestResolve(t *testing.T) {
 		"queries/broken.md": query(`error 'boom'`),
 		"queries/secret.md": "---\ntype: note-query\n---\n```jsonnet\n[]\n```\n",
 		"queries/plain.md":  "---\nfree: true\n---\n```jsonnet\n[]\n```\n",
+		"queries/static.md": query(`nope`),
 		"blog/a.md":         "---\ntitle: A\nfree: true\ntags: [go]\n---\na",
 		"blog/b.md":         "---\ntitle: B\nfree: true\ntags: [web]\n---\nb",
 		"unlisted.md":       "---\nfree: true\nsearch: false\n---\nunlisted",
@@ -136,6 +137,12 @@ func TestResolve(t *testing.T) {
 			input:    model.NoteQueryInput{Query: "queries/no_user.md"},
 			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(`{"id":null,"isAdmin":false,"role":null,"signedIn":false}`)},
 			observed: "queries/no_user.md ok",
+		},
+		{
+			name:     "a static error starts with the query's location",
+			input:    model.NoteQueryInput{Query: "queries/static.md"},
+			expected: &model.ErrorPayload{Message: "queries/static.md:1:153-157 Unknown variable: nope"},
+			observed: "queries/static.md error",
 		},
 		{
 			name:     "runtime error",
