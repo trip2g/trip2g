@@ -179,7 +179,7 @@ The mutation processes `changes` in order. The first change that returns a non-s
 - The note must already exist; a missing path → `ErrorPayload { message: "note not found: {path}" }`
 - `set` and `unset` cannot both be empty, a key cannot be in both, and a key cannot be blank or contain a control character
 - Frontmatter that cannot be edited key by key (invalid YAML, a `{...}` flow mapping, indented keys, aliases, a duplicate key, no closing fence) → `ErrorPayload`
-- The result is parsed back with yaml.v3 and with yaml.v2 (what goldmark-meta reads); if any untouched key reads differently or a set key does not hold its value, nothing is saved → `ErrorPayload`
+- The result is parsed back with yaml.v3 and with yaml.v2 (what goldmark-meta reads). Each parser must see exactly the expected keys, each untouched key must read as that parser read it before the edit, and each set key must hold the value sent, compared with the value itself (numbers by worth, NaN equal to NaN) rather than with what the encoder wrote; otherwise nothing is saved → `ErrorPayload`
 - Setting the scalar a key already holds keeps the line, so `InsertNote` sees identical content and skips the version
 
 **hide** — soft-deletes the path (sets `hidden_at` / `hidden_by`). Does NOT trigger webhooks from `updateNotes` (see code comment in `internal/case/updatenotes/resolve.go`); use the standalone `hideNotes` mutation when webhook notification is required.
