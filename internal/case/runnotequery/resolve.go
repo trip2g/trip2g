@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/jsonneteval"
 	"trip2g/internal/mdloader"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/usertoken"
 	"trip2g/internal/yamlutil"
 )
 
@@ -24,6 +25,7 @@ import (
 type Env interface {
 	LatestNoteViews() *appmodel.NoteViews
 	CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error)
+	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	// ObserveNoteQuery records the call's duration for metrics and logs a
 	// slow one. query is the query note's path, or "unknown".
 	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
@@ -35,11 +37,17 @@ const maxParamsBytes = 16 << 10
 
 const queryPrelude = `local notes = std.parseJson(std.extVar("notes")), params = std.parseJson(std.extVar("params")); `
 
+// allNotesPrelude is the prelude of a query with `all_notes: true`: every note
+// with `readable`, plus who is asking.
+const allNotesPrelude = `local notes = std.parseJson(std.extVar("notes")), params = std.parseJson(std.extVar("params")), currentUser = std.parseJson(std.extVar("currentUser")); `
+
 type queryNote struct {
 	Path      string         `json:"path"`
 	Title     string         `json:"title"`
 	Permalink string         `json:"permalink"`
 	Meta      map[string]any `json:"meta"`
+	// Readable is set only for `all_notes: true` queries.
+	Readable *bool `json:"readable,omitempty"`
 }
 
 func Resolve(ctx context.Context, env Env, input model.NoteQueryInput) (model.NoteQueryOrErrorPayload, error) {
@@ -122,15 +130,34 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 		return &model.ErrorPayload{Message: note.Path + ": a note-query needs exactly one jsonnet block"}, nil
 	}
 
-	notesJSON, err := readableNotes(ctx, env, nvs)
+	// all_notes: true hands the program every note and who is asking; the
+	// author filters. Without it the program sees only readable notes.
+	allNotes := note.RawMeta["all_notes"] == true
+
+	notesJSON, err := queryNotes(ctx, env, nvs, allNotes)
 	if err != nil {
 		return nil, err
 	}
 
-	out, err := jsonneteval.EvalJSON(queryPrelude+blocks[0], map[string]string{
+	prelude := queryPrelude
+	extVars := map[string]string{
 		"notes":  string(notesJSON),
 		"params": params,
-	})
+	}
+	if allNotes {
+		token, tokenErr := env.CurrentUserToken(ctx)
+		if tokenErr != nil {
+			return nil, fmt.Errorf("failed to get current user: %w", tokenErr)
+		}
+		user, _ := json.Marshal(map[string]bool{
+			"isAdmin":  token.IsAdmin(),
+			"signedIn": token != nil,
+		})
+		extVars["currentUser"] = string(user)
+		prelude = allNotesPrelude
+	}
+
+	out, err := jsonneteval.EvalJSON(prelude+blocks[0], extVars)
 	if err != nil {
 		msg := strings.TrimPrefix(err.Error(), "evaluate jsonnet: ")
 		msg, _, _ = strings.Cut(msg, "\n")
@@ -160,10 +187,10 @@ func findQuery(nvs *appmodel.NoteViews, query string) *appmodel.NoteView {
 	return nvs.ResolveWikilinkTarget(nil, name)
 }
 
-// readableNotes is the query's `notes`: every markdown note the caller can
-// read, in path order, with its frontmatter after patches. System notes (`_…`)
-// are left out, as in other listings.
-func readableNotes(ctx context.Context, env Env, nvs *appmodel.NoteViews) ([]byte, error) {
+// queryNotes is the query's `notes` in path order, with frontmatter after
+// patches: the notes the caller can read, or with all set every note plus
+// `readable`. System notes (`_…`) are left out, as in other listings.
+func queryNotes(ctx context.Context, env Env, nvs *appmodel.NoteViews, all bool) ([]byte, error) {
 	paths := make([]string, 0, len(nvs.PathMap))
 	for path := range nvs.PathMap {
 		paths = append(paths, path)
@@ -181,7 +208,7 @@ func readableNotes(ctx context.Context, env Env, nvs *appmodel.NoteViews) ([]byt
 		if err != nil {
 			return nil, fmt.Errorf("failed to check note access: %w", err)
 		}
-		if !canRead {
+		if !canRead && !all {
 			continue
 		}
 
@@ -190,12 +217,16 @@ func readableNotes(ctx context.Context, env Env, nvs *appmodel.NoteViews) ([]byt
 			meta = map[string]any{}
 		}
 
-		notes = append(notes, queryNote{
+		qn := queryNote{
 			Path:      note.Path,
 			Title:     note.Title,
 			Permalink: note.Permalink,
 			Meta:      meta,
-		})
+		}
+		if all {
+			qn.Readable = &canRead
+		}
+		notes = append(notes, qn)
 	}
 
 	out, err := json.Marshal(notes)

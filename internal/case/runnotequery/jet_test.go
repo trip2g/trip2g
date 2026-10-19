@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
+	"trip2g/internal/usertoken"
 )
 
 type noteQueryEnv struct{ nvs *model.NoteViews }
@@ -26,6 +27,9 @@ func (e noteQueryEnv) CanReadNote(_ context.Context, n *model.NoteView) (bool, e
 	return n.Free, nil
 }
 func (e noteQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
+func (e noteQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
+	return nil, nil
+}
 
 func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
 	t.Helper()

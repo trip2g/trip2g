@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/layoutloader"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/usertoken"
 )
 
 type testEnv struct {
@@ -29,6 +30,9 @@ func (e *testEnv) CanReadNote(context.Context, *model.NoteView) (bool, error) {
 	return true, nil
 }
 func (e *testEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
+func (e *testEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
+	return &usertoken.Data{Role: "admin"}, nil
+}
 func (e *testEnv) LoadPreviewLayout(main model.LayoutSourceFile, extra map[string]string) (model.Layout, []string) {
 	return e.preview(main, extra)
 }

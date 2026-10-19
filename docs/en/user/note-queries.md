@@ -5,9 +5,9 @@ lang: en
 lang_redirect: "[[ru/user/note-queries]]"
 ---
 
-A page built with JavaScript often needs a list of notes: posts with a tag, the latest five articles, tasks grouped by status. trip2g keeps that data in the notes' frontmatter, but doesn't hand raw frontmatter to visitors. A note query is the bridge: you write a small [[en/user/jsonnet|Jsonnet]] program in a note, and the page calls it by name and gets back exactly the JSON the program builds.
+A site often needs a selection of notes: posts with a tag, the five latest articles, tasks counted by status. A note query is that selection logic, written once as a small [[en/user/jsonnet|Jsonnet]] program in a note. A template calls it with `noteQuery()` while the page renders, and a JavaScript page calls it through the API. Both get exactly the JSON the program builds.
 
-The code lives in your vault, so you decide what leaves the server. A visitor only passes parameters, such as a tag.
+The data comes from the notes' frontmatter, but raw frontmatter never leaves the server: the code lives in your vault, so you decide what is returned. A visitor only passes parameters, such as a tag.
 
 ### Quick start
 
@@ -62,8 +62,9 @@ const posts = data.noteQuery.rawResult
 |---|---|
 | `notes` | a list of notes, sorted by path: `{ path, title, permalink, meta }` |
 | `params` | the parsed `params`, `{}` when none were passed |
+| `currentUser` | only with `all_notes: true`: `{ isAdmin, signedIn }` |
 
-`meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. System notes (paths starting with `_`) and files that aren't markdown notes (canvas, base, excalidraw) are left out.
+`meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. With `all_notes: true` each note also has `readable`. System notes (paths starting with `_`) and files that aren't markdown notes (canvas, base, excalidraw) are left out.
 
 The program can return any JSON value: a list of notes, an object of counts, a single number. A query is not limited to listing notes; it can aggregate them.
 
@@ -77,6 +78,27 @@ Two rules keep a query from leaking anything:
 With the examples below, a guest asking `by_tag` for `go` gets two posts; an admin gets a third, members-only one.
 
 The query note is published like any other note, so readers who can run the query can also read its code.
+
+#### Seeing every note: `all_notes: true`
+
+Sometimes a page should show more than the visitor can open: "3 open posts, 1 for members". Add `all_notes: true` to the query note's frontmatter. Then:
+
+- `notes` holds every note, and each has `readable`: `true` when the visitor can open it, worked out by the server with the same rules as the site;
+- `currentUser` appears: `{ isAdmin, signedIn }`.
+
+The program now decides what each visitor gets, so filter on `readable` before returning anything a visitor shouldn't see. Without the flag `currentUser` doesn't exist, and `notes` only has readable notes.
+
+```jsonnet
+local blog = [n for n in notes if std.startsWith(n.path, 'blog/')];
+
+{
+  open: [n.title for n in blog if n.readable],
+  locked: std.length([n for n in blog if !n.readable]),
+  signedIn: currentUser.signedIn,
+}
+```
+
+A guest gets `{"open": ["Go on the web", "Hello, Go", "Web basics"], "locked": 1, "signedIn": false}`: the titles of open posts and only the number of the locked one.
 
 ### Examples
 
@@ -132,7 +154,7 @@ local status(n) = std.get(n.meta, 'status', 'none');
 
 #### Notes per folder
 
-How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 4, "tasks": 3}`; an admin, who also sees the members-only post, gets `{"blog": 4, "queries": 4, "tasks": 3}`:
+How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 5, "tasks": 3}`; an admin, who also sees the members-only post, gets `{"blog": 4, "queries": 5, "tasks": 3}`:
 
 ```jsonnet
 local folder(n) =

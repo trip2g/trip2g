@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/usertoken"
 )
 
 func load(t *testing.T, sources map[string]string) *appmodel.NoteViews {
@@ -50,6 +51,9 @@ func TestResolve(t *testing.T) {
 		"_footer.md":        "---\nfree: true\n---\nfooter",
 		"board.canvas":      `{"nodes":[],"edges":[]}`,
 		"odd.md":            "---\nx: .nan\n---\nodd",
+		"queries/all.md": "---\ntype: note-query\nall_notes: true\n---\n```jsonnet\n" +
+			"{user: currentUser, notes: [[n.path, n.readable] for n in notes if std.startsWith(n.path, 'blog/')]}\n```\n",
+		"queries/no_user.md": query(`currentUser`),
 	}
 	hidden := map[string]bool{"blog/paid.md": true, "queries/secret.md": true}
 
@@ -120,6 +124,20 @@ func TestResolve(t *testing.T) {
 			observed: "unknown error",
 		},
 		{
+			name:  "all_notes shows every note with readable, and currentUser",
+			input: model.NoteQueryInput{Query: "queries/all.md"},
+			expected: &model.NoteQueryPayload{RawResult: json.RawMessage(
+				`{"notes":[["blog/a.md",true],["blog/b.md",true],["blog/paid.md",false]],` +
+					`"user":{"isAdmin":false,"signedIn":false}}`)},
+			observed: "queries/all.md ok",
+		},
+		{
+			name:     "currentUser is only defined with all_notes",
+			input:    model.NoteQueryInput{Query: "queries/no_user.md"},
+			expected: &model.ErrorPayload{Message: "queries/no_user.md: transform:1:97-108 Unknown variable: currentUser"},
+			observed: "queries/no_user.md error",
+		},
+		{
 			name:     "runtime error",
 			input:    model.NoteQueryInput{Query: "queries/broken.md"},
 			expected: &model.ErrorPayload{Message: "queries/broken.md: RUNTIME ERROR: boom"},
@@ -135,7 +153,8 @@ func TestResolve(t *testing.T) {
 				ObserveNoteQueryFunc: func(query, result string, _ time.Duration, _ int) {
 					observed = append(observed, query+" "+result)
 				},
-				LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
+				LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
+				CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) { return nil, nil },
 				CanReadNoteFunc: func(_ context.Context, note *appmodel.NoteView) (bool, error) {
 					return !hidden[note.Path], nil
 				},

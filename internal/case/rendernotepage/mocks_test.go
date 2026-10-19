@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/model"
 	"trip2g/internal/pagecache"
 	"trip2g/internal/templateviews"
+	"trip2g/internal/usertoken"
 )
 
 // Ensure, that EnvMock does implement rendernotepage.Env.
@@ -40,6 +41,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			},
 //			ConfigEpochFunc: func() uint64 {
 //				panic("mock out the ConfigEpoch method")
+//			},
+//			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+//				panic("mock out the CurrentUserToken method")
 //			},
 //			EditorJSURLFunc: func() string {
 //				panic("mock out the EditorJSURL method")
@@ -149,6 +153,9 @@ type EnvMock struct {
 
 	// ConfigEpochFunc mocks the ConfigEpoch method.
 	ConfigEpochFunc func() uint64
+
+	// CurrentUserTokenFunc mocks the CurrentUserToken method.
+	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
 	// EditorJSURLFunc mocks the EditorJSURL method.
 	EditorJSURLFunc func() string
@@ -263,6 +270,11 @@ type EnvMock struct {
 		}
 		// ConfigEpoch holds details about calls to the ConfigEpoch method.
 		ConfigEpoch []struct {
+		}
+		// CurrentUserToken holds details about calls to the CurrentUserToken method.
+		CurrentUserToken []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 		// EditorJSURL holds details about calls to the EditorJSURL method.
 		EditorJSURL []struct {
@@ -417,6 +429,7 @@ type EnvMock struct {
 	lockCachedPage                          sync.RWMutex
 	lockCanReadNote                         sync.RWMutex
 	lockConfigEpoch                         sync.RWMutex
+	lockCurrentUserToken                    sync.RWMutex
 	lockEditorJSURL                         sync.RWMutex
 	lockEditorLocaleHashes                  sync.RWMutex
 	lockFeatures                            sync.RWMutex
@@ -604,6 +617,38 @@ func (mock *EnvMock) ConfigEpochCalls() []struct {
 	mock.lockConfigEpoch.RLock()
 	calls = mock.calls.ConfigEpoch
 	mock.lockConfigEpoch.RUnlock()
+	return calls
+}
+
+// CurrentUserToken calls CurrentUserTokenFunc.
+func (mock *EnvMock) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
+	if mock.CurrentUserTokenFunc == nil {
+		panic("EnvMock.CurrentUserTokenFunc: method is nil but Env.CurrentUserToken was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockCurrentUserToken.Lock()
+	mock.calls.CurrentUserToken = append(mock.calls.CurrentUserToken, callInfo)
+	mock.lockCurrentUserToken.Unlock()
+	return mock.CurrentUserTokenFunc(ctx)
+}
+
+// CurrentUserTokenCalls gets all the calls that were made to CurrentUserToken.
+// Check the length with:
+//
+//	len(mockedEnv.CurrentUserTokenCalls())
+func (mock *EnvMock) CurrentUserTokenCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockCurrentUserToken.RLock()
+	calls = mock.calls.CurrentUserToken
+	mock.lockCurrentUserToken.RUnlock()
 	return calls
 }
 

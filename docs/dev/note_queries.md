@@ -46,6 +46,8 @@ Two checks, both through `CanReadNote` (`internal/case/canreadnote`):
 1. **Who may run a query:** whoever can read the query note. The author sets it like any note's access: `free`, subgraphs, sign-in. A query the caller can't read answers `query not found`, the same as a missing one.
 2. **What the program sees:** only notes the caller can read. A public query run by a guest never sees paid notes, so a mistake in the program's output can't leak their frontmatter or titles.
 
+`all_notes: true` in the query note's frontmatter is an explicit opt-out of rule 2: `notes` holds every note (still without system and non-markdown files), each with `readable` (the `CanReadNote` result), and the program also gets `currentUser` — `{isAdmin, signedIn}`, from `CurrentUserToken`. The author filters on `readable`. The flag sits in the query note, so it shows up in review; without it `currentUser` is an unknown variable.
+
 The program decides which fields leave the server. Raw frontmatter is never returned unless a query returns it.
 
 ## Errors (`ErrorPayload`)

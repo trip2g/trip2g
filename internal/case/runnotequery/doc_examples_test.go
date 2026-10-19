@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/usertoken"
 )
 
 const demoVault = "testdata/vault"
@@ -50,6 +51,12 @@ func TestDocExamples(t *testing.T) {
 			CanReadNoteFunc: func(_ context.Context, note *appmodel.NoteView) (bool, error) {
 				return admin || note.Free, nil
 			},
+			CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
+				if admin {
+					return &usertoken.Data{ID: 1, Role: "admin"}, nil
+				}
+				return nil, nil
+			},
 		}
 		input := model.NoteQueryInput{Query: query}
 		if params != "" {
@@ -81,8 +88,10 @@ func TestDocExamples(t *testing.T) {
 		{false, "[[latest]]", `{"limit": 2}`, `["Go on the web","Web basics"]`},
 		{false, "[[latest]]", ``, `["Go on the web","Web basics","Hello, Go"]`},
 		{false, "[[task_counts]]", ``, `{"done":1,"todo":2}`},
-		{false, "[[folder_counts]]", ``, `{"blog":3,"queries":4,"tasks":3}`},
-		{true, "[[folder_counts]]", ``, `{"blog":4,"queries":4,"tasks":3}`},
+		{false, "[[folder_counts]]", ``, `{"blog":3,"queries":5,"tasks":3}`},
+		{true, "[[folder_counts]]", ``, `{"blog":4,"queries":5,"tasks":3}`},
+		{false, "[[teaser]]", ``, `{"locked":1,"open":["Go on the web","Hello, Go","Web basics"],"signedIn":false}`},
+		{true, "[[teaser]]", ``, `{"locked":0,"open":["Go on the web","Hello, Go","Members only","Web basics"],"signedIn":true}`},
 	}
 	for _, tt := range tests {
 		require.JSONEq(t, tt.expected, run(tt.admin, tt.query, tt.params), "%s %s admin=%v", tt.query, tt.params, tt.admin)
@@ -96,7 +105,7 @@ func TestDocSnippets(t *testing.T) {
 		doc, err := os.ReadFile("../../../docs/" + page + ".md")
 		require.NoError(t, err)
 
-		for _, name := range []string{"by_tag", "latest", "task_counts", "folder_counts"} {
+		for _, name := range []string{"by_tag", "latest", "task_counts", "folder_counts", "teaser"} {
 			src, readErr := os.ReadFile(demoVault + "/queries/" + name + ".md")
 			require.NoError(t, readErr)
 
