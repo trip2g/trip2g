@@ -140,14 +140,24 @@ func textLane(env RetrieveEnv, req Request) ([]appmodel.SearchResult, error) {
 		return results, nil
 	}
 
+	// A short page does not mean the index is exhausted: the loader drops hits
+	// whose note is gone, so only an empty page ends the scan.
 	var kept []appmodel.SearchResult
+	seen := map[string]bool{}
 	for from := 0; from < keepScanLimit; from += textLaneSize {
 		page, err := search(req.Query, from, textLaneSize)
 		if err != nil {
 			return nil, fmt.Errorf("failed to search notes: %w", err)
 		}
+		if len(page) == 0 {
+			break
+		}
 
 		for _, r := range page {
+			if seen[r.URL] {
+				continue
+			}
+			seen[r.URL] = true
 			ok, keepErr := req.Keep(r.NoteView)
 			if keepErr != nil {
 				return nil, keepErr
@@ -159,10 +169,6 @@ func textLane(env RetrieveEnv, req Request) ([]appmodel.SearchResult, error) {
 			if len(kept) == textLaneSize {
 				return kept, nil
 			}
-		}
-
-		if len(page) < textLaneSize {
-			break
 		}
 	}
 
