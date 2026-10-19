@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Federation signs a call with the key its KB-note names
+
+- **What.** When a base holds several live outbound keys to the same peer URL, a federated call now uses the key whose ID equals the KB-note's `kb_id` (`mcp_federation_kb_id`). A single live key to the peer still serves any `kb_id`. Several live keys and a `kb_id` that names none of them now fail with an error that lists the keys, e.g. `kb_id "peer": 2 live federation secrets for http://peer/_system/mcp (a, b); set mcp_federation_kb_id to the kid of the one to use`. Before, the call silently used the newest key.
+- **Why.** Keys to one peer can be granted different subgraphs. Picking the newest one meant a KB-note could read with another key's access, and adding a key changed what every older KB-note to that peer returned.
+- **How to fix a base that gets the error.** Revoke the keys you no longer need, so one live key to the peer is left. Or keep them all and give each its own KB-note with `mcp_federation_kb_id` equal to that key's ID. Revoked keys do not count. See [[en/user/federation|Federation]].
+
 ### `updateNotes` changes one frontmatter key without rewriting the note
 
 - **What.** A new `meta` change in `updateNotes` takes `set` (keys to add or replace) and `unset` (keys to remove) for a note's top-level frontmatter. Every other key keeps its line, order, quoting and comments, and the body is not touched. A note without frontmatter gets a block. `expectedHash` works as for `patch`. Fleet roles get the same edit as a `set_note_meta` tool, and a webhook agent can return it as a change with `"kind": "meta"`.
