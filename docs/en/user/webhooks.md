@@ -115,7 +115,7 @@ A change takes one of three shapes:
 - `"kind": "patch"` — `find` must appear in the note exactly once and is replaced with `replace`, as the [[update_notes|updateNotes]] patch operation does.
 - `"kind": "meta"` — `set` adds or replaces top-level frontmatter keys and `unset` removes them, leaving the rest of the note as it is, with the rules of the updateNotes meta operation.
 
-`expected_hash` works on all three. If any change in the response is invalid, none of them is applied.
+`expected_hash` works on all three. Any other `kind` makes the change invalid. If any change in the response is invalid, none of them is applied.
 
 #### API token for agents
 

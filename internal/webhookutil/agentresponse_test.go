@@ -113,6 +113,21 @@ func TestParseAgentResponse_PatchChangeNoContentOK(t *testing.T) {
 	require.Equal(t, "doing", resp.Changes[0].Replace)
 }
 
+func TestParseAgentResponse_UnknownKindRefused(t *testing.T) {
+	for _, kind := range []string{"upsert", "rename"} {
+		body := []byte(`{"changes":[{"path":"a.md","content":"x","kind":"` + kind + `"}]}`)
+		_, err := ParseAgentResponse(body)
+		require.ErrorContains(t, err, `unknown kind "`+kind+`"`)
+	}
+}
+
+func TestParseAgentResponse_WriteKindOK(t *testing.T) {
+	body := []byte(`{"changes":[{"path":"a.md","content":"x","kind":"write"}]}`)
+	resp, err := ParseAgentResponse(body)
+	require.NoError(t, err)
+	require.Len(t, resp.Changes, 1)
+}
+
 func TestParseAgentResponse_PatchChangeMissingFind(t *testing.T) {
 	body := []byte(`{"changes":[{"path":"boards/sprint.md","kind":"patch"}]}`)
 	_, err := ParseAgentResponse(body)
@@ -129,7 +144,6 @@ func TestAgentChangeIsPatch(t *testing.T) {
 		{AgentChangeKindPatch, true},
 		{AgentChangeKindWrite, false},
 		{"", false},       // backward-compat: empty string = write
-		{"upsert", false}, // legacy alias also not patch
 	}
 	for _, tc := range cases {
 		c := AgentChange{Path: "x.md", Kind: tc.kind}

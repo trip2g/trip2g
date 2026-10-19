@@ -71,7 +71,7 @@ type AgentChange struct {
 	// removes, with updateNotes meta semantics.
 	Set   map[string]any `json:"set,omitempty"`
 	Unset []string       `json:"unset,omitempty"`
-	Kind  string         `json:"kind,omitempty"` // "" | "upsert" | "patch" | "meta"
+	Kind  string         `json:"kind,omitempty"` // "" | "write" | "patch" | "meta"
 }
 
 // IsPatch reports whether the change is a surgical find/replace patch.
@@ -85,9 +85,13 @@ func (c AgentChange) IsMeta() bool {
 }
 
 // Validate validates required fields of an AgentChange. Patch changes require
-// Find (not Content), meta changes a key to set or unset; upsert/legacy changes
-// require Content.
+// Find (not Content), meta changes a key to set or unset, write changes (kind
+// "write" or none) require Content. Any other kind is refused, so a misspelled
+// kind never falls through to a whole-note write.
 func (c AgentChange) Validate() error {
+	if c.Kind != "" && c.Kind != AgentChangeKindWrite && !c.IsMeta() && !c.IsPatch() {
+		return fmt.Errorf("unknown kind %q", c.Kind)
+	}
 	if c.IsMeta() {
 		err := ozzo.Validate(c.Path, ozzo.Required)
 		if err != nil {
@@ -178,7 +182,7 @@ func resolveChangeContent(change AgentChange, nv *model.NoteView) (string, error
 		}
 		return current[:idx] + change.Replace + current[idx+len(change.Find):], nil
 	default:
-		// Kind=="" or "upsert": upsert with provided content.
+		// Kind "" or "write": the sent content replaces the note.
 		return change.Content, nil
 	}
 }
