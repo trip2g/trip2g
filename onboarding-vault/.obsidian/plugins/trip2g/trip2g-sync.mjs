@@ -3298,6 +3298,7 @@ async function executePlan(env, plan, options = { twoWaySync: false }) {
     warnings: []
   };
   const syncState = env.getSyncState();
+  recordUnchanged(plan.classifications, syncState);
   const pulledPaths = [];
   if (plan.pulls.length > 0 || plan.remoteOnly.length > 0) {
     const toPull = [...plan.pulls, ...plan.remoteOnly];
@@ -3390,6 +3391,14 @@ function dedupeWarnings(warnings) {
   return deduped;
 }
 __name(dedupeWarnings, "dedupeWarnings");
+function recordUnchanged(classifications, syncState) {
+  for (const c of classifications) {
+    if (c.action === "unchanged" && c.localHash !== null && syncState.files[c.path] !== c.localHash) {
+      syncState.files[c.path] = c.localHash;
+    }
+  }
+}
+__name(recordUnchanged, "recordUnchanged");
 async function localFileIsNonEmpty(env, path4) {
   if (!await env.fileExists(path4)) {
     return false;
@@ -3953,6 +3962,8 @@ async function applyLiveChanges(env, changes, syncState) {
       await writeAndRecord(env, syncState, change.path, content, remoteHash, pulledPaths);
     } else if (action === "conflict") {
       conflictCount++;
+    } else if (action === "unchanged" && localHash !== null) {
+      syncState.files[change.path] = localHash;
     }
   }
   return { pulledPaths, conflictCount, hiddenPaths };

@@ -16,6 +16,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** Keys to one peer can be granted different subgraphs. Picking the newest one meant a KB-note could read with another key's access, and adding a key changed what every older KB-note to that peer returned.
 - **How to fix a base that gets the error.** Revoke the keys you no longer need, so one live key to the peer is left. Or keep them all and give each its own KB-note with `mcp_federation_kb_id` equal to that key's ID. Revoked keys do not count. See [[en/user/federation|Federation]].
 
+### MCP `federated_asset` hands an agent a peer note's attachment
+
+- **What.** `note_html` and `federated_note_html` list the note's attachments as `assets`, each with `name`, `size` and `sha256`. A new tool, `federated_asset(kb_id, note_path, name)`, returns a single-use, five-minute download link on your own hub for one of them; the hub streams the file from the peer as it is downloaded. The peer serves an attachment only of a note the pairing may read.
+- **Why.** An agent could read a peer's note but not the files it links to. The asset URLs in the HTML point at the peer, which the agent may not reach and which wants a federation key the agent must not hold.
+- **How to use.** Call `federated_note_html`, then `federated_asset` with a name from its `assets`, download the link with curl and check the sha256. Files are capped at 25 MB by default (`MCP_FEDERATION_ASSET_MAX_SIZE`). Both instances need this version. See [[en/user/federation#Attachments|Federation]].
+
 ### `updateNotes` changes one frontmatter key without rewriting the note
 
 - **What.** A new `meta` change in `updateNotes` takes `set` (keys to add or replace) and `unset` (keys to remove) for a note's top-level frontmatter. Every other key keeps its line, order, quoting and comments, and the body is not touched. A note without frontmatter gets a block. `expectedHash` works as for `patch`. Fleet roles get the same edit as a `set_note_meta` tool, and a webhook agent can return it as a change with `"kind": "meta"`.

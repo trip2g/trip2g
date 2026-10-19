@@ -159,6 +159,7 @@ func (a *app) constructJobs() {
 	a.DeliverCronWebhookJob = delivercronwebhook.New(a)
 	a.webhookHTTPClient = webhookutil.NewClient(a.config.DevMode || a.config.WebhookAllowPrivate)
 	a.fedHTTPClient = webhookutil.NewClient(a.config.DevMode || a.config.MCPFederationAllowPrivate)
+	a.fedAssetHTTPClient = newFederatedAssetHTTPClient(a.config.DevMode || a.config.MCPFederationAllowPrivate)
 
 	a.initDebugJobs()
 }

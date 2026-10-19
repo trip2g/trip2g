@@ -47,6 +47,12 @@ func (e *fedGQLEnv) CanReadNote(_ context.Context, _ *model.NoteView) (bool, err
 func (e *fedGQLEnv) FederationClient(_ context.Context, _ string) (model.Federation, error) {
 	panic("unexpected")
 }
+func (e *fedGQLEnv) FederationAssetFetcher(_ context.Context, _ string) (model.FederationAssetFetcher, error) {
+	panic("unexpected")
+}
+func (e *fedGQLEnv) FederatedAssetDownload(_ string, _ model.FederatedAssetParams) (FederatedAssetDownload, error) {
+	panic("unexpected")
+}
 func (e *fedGQLEnv) SearchLatestNotes(_ string, _, _ int) ([]model.SearchResult, error) {
 	panic("unexpected")
 }

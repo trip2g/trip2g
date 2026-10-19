@@ -47,6 +47,9 @@ var _ mcp.Env = &EnvMock{}
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
 //			},
+//			FederatedAssetDownloadFunc: func(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error) {
+//				panic("mock out the FederatedAssetDownload method")
+//			},
 //			FederatedFanoutConcurrencyFunc: func() int {
 //				panic("mock out the FederatedFanoutConcurrency method")
 //			},
@@ -58,6 +61,9 @@ var _ mcp.Env = &EnvMock{}
 //			},
 //			FederatedGraphQLEnabledFunc: func() bool {
 //				panic("mock out the FederatedGraphQLEnabled method")
+//			},
+//			FederationAssetFetcherFunc: func(ctx context.Context, kbID string) (model.FederationAssetFetcher, error) {
+//				panic("mock out the FederationAssetFetcher method")
 //			},
 //			FederationClientFunc: func(ctx context.Context, kbID string) (model.Federation, error) {
 //				panic("mock out the FederationClient method")
@@ -156,6 +162,9 @@ type EnvMock struct {
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
 
+	// FederatedAssetDownloadFunc mocks the FederatedAssetDownload method.
+	FederatedAssetDownloadFunc func(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error)
+
 	// FederatedFanoutConcurrencyFunc mocks the FederatedFanoutConcurrency method.
 	FederatedFanoutConcurrencyFunc func() int
 
@@ -167,6 +176,9 @@ type EnvMock struct {
 
 	// FederatedGraphQLEnabledFunc mocks the FederatedGraphQLEnabled method.
 	FederatedGraphQLEnabledFunc func() bool
+
+	// FederationAssetFetcherFunc mocks the FederationAssetFetcher method.
+	FederationAssetFetcherFunc func(ctx context.Context, kbID string) (model.FederationAssetFetcher, error)
 
 	// FederationClientFunc mocks the FederationClient method.
 	FederationClientFunc func(ctx context.Context, kbID string) (model.Federation, error)
@@ -274,6 +286,13 @@ type EnvMock struct {
 		// Features holds details about calls to the Features method.
 		Features []struct {
 		}
+		// FederatedAssetDownload holds details about calls to the FederatedAssetDownload method.
+		FederatedAssetDownload []struct {
+			// KbID is the kbID argument value.
+			KbID string
+			// Params is the params argument value.
+			Params model.FederatedAssetParams
+		}
 		// FederatedFanoutConcurrency holds details about calls to the FederatedFanoutConcurrency method.
 		FederatedFanoutConcurrency []struct {
 		}
@@ -285,6 +304,13 @@ type EnvMock struct {
 		}
 		// FederatedGraphQLEnabled holds details about calls to the FederatedGraphQLEnabled method.
 		FederatedGraphQLEnabled []struct {
+		}
+		// FederationAssetFetcher holds details about calls to the FederationAssetFetcher method.
+		FederationAssetFetcher []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// KbID is the kbID argument value.
+			KbID string
 		}
 		// FederationClient holds details about calls to the FederationClient method.
 		FederationClient []struct {
@@ -427,10 +453,12 @@ type EnvMock struct {
 	lockDecryptData                        sync.RWMutex
 	lockEncryptData                        sync.RWMutex
 	lockFeatures                           sync.RWMutex
+	lockFederatedAssetDownload             sync.RWMutex
 	lockFederatedFanoutConcurrency         sync.RWMutex
 	lockFederatedFanoutLimit               sync.RWMutex
 	lockFederatedFanoutTimeout             sync.RWMutex
 	lockFederatedGraphQLEnabled            sync.RWMutex
+	lockFederationAssetFetcher             sync.RWMutex
 	lockFederationClient                   sync.RWMutex
 	lockFederationMaxDepth                 sync.RWMutex
 	lockFederationSecretByID               sync.RWMutex
@@ -678,6 +706,42 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 	return calls
 }
 
+// FederatedAssetDownload calls FederatedAssetDownloadFunc.
+func (mock *EnvMock) FederatedAssetDownload(kbID string, params model.FederatedAssetParams) (mcp.FederatedAssetDownload, error) {
+	if mock.FederatedAssetDownloadFunc == nil {
+		panic("EnvMock.FederatedAssetDownloadFunc: method is nil but Env.FederatedAssetDownload was just called")
+	}
+	callInfo := struct {
+		KbID   string
+		Params model.FederatedAssetParams
+	}{
+		KbID:   kbID,
+		Params: params,
+	}
+	mock.lockFederatedAssetDownload.Lock()
+	mock.calls.FederatedAssetDownload = append(mock.calls.FederatedAssetDownload, callInfo)
+	mock.lockFederatedAssetDownload.Unlock()
+	return mock.FederatedAssetDownloadFunc(kbID, params)
+}
+
+// FederatedAssetDownloadCalls gets all the calls that were made to FederatedAssetDownload.
+// Check the length with:
+//
+//	len(mockedEnv.FederatedAssetDownloadCalls())
+func (mock *EnvMock) FederatedAssetDownloadCalls() []struct {
+	KbID   string
+	Params model.FederatedAssetParams
+} {
+	var calls []struct {
+		KbID   string
+		Params model.FederatedAssetParams
+	}
+	mock.lockFederatedAssetDownload.RLock()
+	calls = mock.calls.FederatedAssetDownload
+	mock.lockFederatedAssetDownload.RUnlock()
+	return calls
+}
+
 // FederatedFanoutConcurrency calls FederatedFanoutConcurrencyFunc.
 func (mock *EnvMock) FederatedFanoutConcurrency() int {
 	if mock.FederatedFanoutConcurrencyFunc == nil {
@@ -783,6 +847,42 @@ func (mock *EnvMock) FederatedGraphQLEnabledCalls() []struct {
 	mock.lockFederatedGraphQLEnabled.RLock()
 	calls = mock.calls.FederatedGraphQLEnabled
 	mock.lockFederatedGraphQLEnabled.RUnlock()
+	return calls
+}
+
+// FederationAssetFetcher calls FederationAssetFetcherFunc.
+func (mock *EnvMock) FederationAssetFetcher(ctx context.Context, kbID string) (model.FederationAssetFetcher, error) {
+	if mock.FederationAssetFetcherFunc == nil {
+		panic("EnvMock.FederationAssetFetcherFunc: method is nil but Env.FederationAssetFetcher was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		KbID string
+	}{
+		Ctx:  ctx,
+		KbID: kbID,
+	}
+	mock.lockFederationAssetFetcher.Lock()
+	mock.calls.FederationAssetFetcher = append(mock.calls.FederationAssetFetcher, callInfo)
+	mock.lockFederationAssetFetcher.Unlock()
+	return mock.FederationAssetFetcherFunc(ctx, kbID)
+}
+
+// FederationAssetFetcherCalls gets all the calls that were made to FederationAssetFetcher.
+// Check the length with:
+//
+//	len(mockedEnv.FederationAssetFetcherCalls())
+func (mock *EnvMock) FederationAssetFetcherCalls() []struct {
+	Ctx  context.Context
+	KbID string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		KbID string
+	}
+	mock.lockFederationAssetFetcher.RLock()
+	calls = mock.calls.FederationAssetFetcher
+	mock.lockFederationAssetFetcher.RUnlock()
 	return calls
 }
 

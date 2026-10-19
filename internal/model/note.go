@@ -58,6 +58,8 @@ type NoteAssetReplace struct {
 	FileName string
 
 	AbsolutePath string
+
+	Size int64
 }
 
 type NoteViewSection struct {
