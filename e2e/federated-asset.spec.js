@@ -5,7 +5,7 @@ import { graphqlSignIn } from './helpers/auth.js';
 
 /**
  * federated_asset E2E: the hub hands out a download link for an attachment of a
- * peer note, and fetching the link streams the file from the peer.
+ * peer note, and fetching the link streams the file from the peer, once.
  *
  * The pairing has its own kbURL (the peer's container name instead of its
  * service name), so its key never shares a URL with the other federation specs
@@ -273,6 +273,10 @@ test.describe.serial('Federated asset', () => {
       expect(headers['content-disposition']).toMatch(/^attachment;/);
       expect(headers['content-disposition']).toContain('granted.zip');
       expect(headers['x-content-type-options']).toBe('nosniff');
+
+      const again = await anonymous.get(payload.url);
+      expect(again.status(), 'a link downloads once').toBe(410);
+      expect(await again.text()).toContain('call federated_asset again');
 
       const link = new URL(payload.url);
       const token = link.searchParams.get('link') ?? '';
