@@ -152,6 +152,10 @@ func (l *Loader) removeStaleIndexVersions(parent string) {
 
 func contentHash(note *model.NoteView) [32]byte {
 	h := sha256.New()
+	// The permalink is the document ID: a re-routed note must be re-indexed
+	// under its new ID even when its text is unchanged.
+	h.Write([]byte(note.Permalink))
+	h.Write([]byte{0})
 	h.Write([]byte(note.Title))
 	h.Write(note.Content)
 	// Visibility is part of the hash: toggling search:false alone must not be
@@ -205,37 +209,24 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 		l.adoptOnNextBuild = false
 	}
 
-	// Track current PathIDs to detect deleted notes
-	currentPathIDs := make(map[int64]struct{})
-	indexed := 0
-	skipped := 0
+	// Every delete runs before any index write, so a permalink freed by one
+	// note and taken by another in the same build keeps the new document.
+	deleted, err := l.removeVanishedNotes(index, notes)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, note := range notes.List {
-		currentPathIDs[note.PathID] = struct{}{}
+	changed, skipped, err := l.removeChangedNotes(index, notes)
+	if err != nil {
+		return nil, err
+	}
 
-		hash := contentHash(note)
-		oldHash, exists := l.contentHashes[note.PathID]
-
-		// Skip if content hasn't changed
-		if exists && oldHash == hash {
-			skipped++
-			continue
-		}
-
-		// Raw files (.canvas, .base, .excalidraw) have no AST — nothing to index.
-		// A note that became hidden or raw may still be in the index — delete it.
-		if note.ExcludeSearch || note.Ast() == nil {
-			if delErr := l.removeFromIndex(index, note.PathID); delErr != nil {
-				return nil, delErr
-			}
-			l.contentHashes[note.PathID] = hash
-			continue
-		}
-
+	for _, p := range changed {
+		note := p.note
 		content := noteContent{
 			Title: note.Title,
 			Body:  extractText(note.Ast(), note.Content),
-			Hash:  hex.EncodeToString(hash[:]),
+			Hash:  hex.EncodeToString(p.hash[:]),
 		}
 
 		indexErr := index.Index(note.Permalink, content)
@@ -243,22 +234,10 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 			return nil, fmt.Errorf("failed to index note %s: %w", note.Permalink, indexErr)
 		}
 
-		l.contentHashes[note.PathID] = hash
+		l.contentHashes[note.PathID] = p.hash
 		l.indexedPermalinks[note.PathID] = note.Permalink
-		indexed++
 	}
-
-	// Remove deleted notes from index and hashes
-	deleted := 0
-	for pathID := range l.contentHashes {
-		if _, exists := currentPathIDs[pathID]; !exists {
-			if delErr := l.removeFromIndex(index, pathID); delErr != nil {
-				return nil, delErr
-			}
-			delete(l.contentHashes, pathID)
-			deleted++
-		}
-	}
+	indexed := len(changed)
 
 	l.log.Info("notes indexed",
 		"indexed", indexed,
@@ -269,6 +248,64 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	)
 
 	return index, nil
+}
+
+// removeVanishedNotes deletes the documents of notes no longer in notes.
+func (l *Loader) removeVanishedNotes(index bleve.Index, notes *model.NoteViews) (int, error) {
+	current := make(map[int64]struct{}, len(notes.List))
+	for _, note := range notes.List {
+		current[note.PathID] = struct{}{}
+	}
+
+	deleted := 0
+	for pathID := range l.contentHashes {
+		if _, exists := current[pathID]; exists {
+			continue
+		}
+		if err := l.removeFromIndex(index, pathID); err != nil {
+			return 0, err
+		}
+		delete(l.contentHashes, pathID)
+		deleted++
+	}
+	return deleted, nil
+}
+
+type pendingNote struct {
+	note *model.NoteView
+	hash [32]byte
+}
+
+// removeChangedNotes returns the notes whose document must be (re)written and
+// deletes the documents that must go first: those of notes that became hidden
+// or raw, and those under a permalink the note no longer has.
+func (l *Loader) removeChangedNotes(index bleve.Index, notes *model.NoteViews) ([]pendingNote, int, error) {
+	var changed []pendingNote
+	skipped := 0
+	for _, note := range notes.List {
+		hash := contentHash(note)
+		oldHash, exists := l.contentHashes[note.PathID]
+
+		if exists && oldHash == hash {
+			skipped++
+			continue
+		}
+
+		// Raw files (.canvas, .base, .excalidraw) have no AST — nothing to index.
+		hidden := note.ExcludeSearch || note.Ast() == nil
+		if hidden || l.indexedPermalinks[note.PathID] != note.Permalink {
+			if err := l.removeFromIndex(index, note.PathID); err != nil {
+				return nil, 0, err
+			}
+		}
+		if hidden {
+			l.contentHashes[note.PathID] = hash
+			continue
+		}
+
+		changed = append(changed, pendingNote{note: note, hash: hash})
+	}
+	return changed, skipped, nil
 }
 
 // adoptPersistedIndex teaches a freshly reopened on-disk index to the loader:
