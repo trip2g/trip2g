@@ -6,7 +6,7 @@ The trip2g writer protocol is the complete API surface for writing notes. Three 
 |---|---|---|---|---|
 | `pushNotes` | Full content, upsert | Write-locked; optional per-note `expectedHash` | Optional (`skipCommit`) | Obsidian plugin, memcli sidecar |
 | `updateNotes` | Per-change: upsert / patch / meta / hide | Per-note `expectedHash` | Always (upsert/patch/meta) | Kanban board, AI agents (direct), in-browser editors |
-| `hideNotes` | Soft-delete batch | Optional per-path `expectedHash` | Immediate | Obsidian plugin (server-only paths) |
+| `hideNotes` | Soft-delete batch | Optional `expectedHash` per `notes` entry (`paths` carries none) | Immediate | Obsidian plugin (server-only paths) |
 | `commitNotes` | Flush staged `pushNotes` batch | None | Yes | Obsidian plugin (explicit commit flow) |
 
 ---
@@ -65,7 +65,7 @@ union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
 
 The resolver holds a process-wide write mutex for the duration of the call. Concurrent `pushNotes` calls are serialised.
 
-**Per-note `expectedHash`:** a mismatch refuses only that note. The rest of the batch is written, and the refused note is listed in `hashMismatches` with the hash the server holds now. It is not in `updated`, and none of its side effects (webhooks, SSE, uncommitted staging) happen. Validation still applies to the whole batch first: an unsupported extension or binary content returns `ErrorPayload` and writes nothing.
+**Per-note `expectedHash`:** a mismatch refuses only that note. The rest of the batch is written, and the refused note is listed in `hashMismatches` with the hash the server holds now. It is not in `updated`, and none of its side effects (webhooks, SSE, uncommitted staging) happen. Validation still applies to the whole batch first: an unsupported extension, binary content or a path listed twice returns `ErrorPayload` and writes nothing.
 
 **`commitNotes`** (no input) flushes all paths staged with `skipCommit: true`:
 
@@ -212,13 +212,13 @@ input HideNotesInput {
 
 type HideNotesPayload {
   success: Boolean!
-  hashMismatches: [NoteHashMismatch!]!  # paths expectedHash refused
+  hashMismatches: [NoteHashMismatch!]!  # notes entries expectedHash refused
 }
 
 union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
 ```
 
-`paths` and `notes` are both optional and are processed in that order; a path in `paths` behaves like a `notes` entry without `expectedHash`. A refused path stays visible, is listed in `hashMismatches`, and fires no webhook or SSE event. `success` is `true` whenever the request was processed, mismatches included. Hiding a delete that saw an old hash is the case this guards: if the note was edited after the client listed it, the hide is refused instead of hiding the edit.
+`paths` and `notes` are both optional and are processed in that order. The hash is per `notes` entry; `paths` carries none, so a path in `paths` behaves like a `notes` entry without `expectedHash`. A path may appear only once across `paths` and `notes` together: a repeat returns `ErrorPayload` naming it, and nothing is hidden. A refused path stays visible, is listed in `hashMismatches`, and fires no webhook or SSE event. `success` is `true` whenever the request was processed, mismatches included. A delete that saw an old hash is the case this guards: if the note was edited after the client listed it, the hide is refused instead of hiding the edit.
 
 ---
 
@@ -244,11 +244,11 @@ The values mean the same, with three differences from `updateNotes`:
 - **Checked against the database.** The current hash is `note_paths.latest_content_hash` read inside the request transaction (`LatestNoteContentHash` in `cmd/server/notes.go`), not the in-memory note views `updateNotes` reads.
 - **A hidden note counts as absent.** Its `actualHash` is `""`, so `expectedHash: ""` on `pushNotes` writes it and brings it back, and `expectedHash: ""` on `hideNotes` hides nothing new.
 
-For `hideNotes`, `""` means "hide only if absent", which is a no-op; the useful value is the hash the client last saw.
+For `hideNotes`, `""` matches only a note that is absent or already hidden, so it is a no-op: no `hidden_by`/`hidden_at` re-stamp, no webhook, no SSE event, no reload. The useful value is the hash the client last saw.
 
 **Why the check cannot race.** Every GraphQL mutation runs in one request transaction on the single write connection, opened with `BEGIN IMMEDIATE` (see `internal/graph/handler.go` and [sqlite.md](sqlite.md)). A second writer waits for that transaction to commit, so nothing lands between the hash read and the write, and of two pushes that quote the same hash, the second sees the first one's hash and is refused. `TestPushNotesExpectedHashConcurrentWrites` in `cmd/server/note_expected_hash_test.go` runs exactly this sequence.
 
-A client that listed hashes with `notePaths { value latestContentHash }` sends the hash it classified against: the last-synced hash for a plain push or delete, the remote hash it saw when it resolves a conflict in favour of the local copy.
+A client that listed hashes with `notePaths { value latestContentHash }` sends the hash it classified against: the last-synced hash for a plain push or delete, the remote hash it saw when it resolves a conflict in favour of the local copy. Classify against the unfiltered listing (`notePaths` with no filter): it holds only visible notes, so a hidden note is absent from it, matching the `""` the server reports for it. `notePaths(filter: { paths })` still returns a hidden note, with the last hash it had before it was hidden, so it is not the listing to classify against.
 
 ### Three upsert modes
 
@@ -478,6 +478,8 @@ Use `hideNotes` (not `updateNotes` hide) when you need webhooks to fire on remov
 | `pushNotes` with unsupported extension | `ErrorPayload` |
 | `pushNotes` update with a stale `expectedHash` | That note is skipped and listed in `hashMismatches`; the rest of the batch is written |
 | `hideNotes` entry with a stale `expectedHash` | That path stays visible and is listed in `hashMismatches`; the rest are hidden |
+| Same path twice in one `pushNotes` call | `ErrorPayload` naming the path; nothing is written |
+| Same path twice in one `hideNotes` call, within or across `paths` and `notes` | `ErrorPayload` naming the path; nothing is hidden |
 | File content detected as binary | `ErrorPayload` (MIME check on first 512 bytes) |
 | Shortapitoken with `wp: []` (empty write patterns) | HTTP 403 for any write |
 | `updateNotes` hide | Does NOT fire webhooks; use standalone `hideNotes` for that |
