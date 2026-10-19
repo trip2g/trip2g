@@ -54,6 +54,11 @@ type Role struct {
 	MaxDepth       int
 	Concurrency    string // "allow_overlap" | "skip" | "queue_one"
 	ForEach        string // "" (single run) | "changed_files" | "attached_notes"
+
+	// Retries is how many times trip2g re-delivers a run whose whole batch
+	// failed. defaultRetries when the frontmatter omits it; a role that is not
+	// idempotent sets 0.
+	Retries int
 }
 
 // ParseRole builds a Role from a note path, body, and flat frontmatter meta
@@ -99,6 +104,9 @@ func ParseRole(notePath, body string, m map[string]string) (Role, error) {
 	if r.TimeoutSeconds, err = parseIntOpt(m["timeout_seconds"]); err != nil {
 		return Role{}, fmt.Errorf("timeout_seconds: %w", err)
 	}
+	if r.Retries, err = parseIntDefault(m["retries"], defaultRetries); err != nil {
+		return Role{}, fmt.Errorf("retries: %w", err)
+	}
 	return r, nil
 }
 
@@ -138,6 +146,19 @@ func copyMeta(m map[string]string) map[string]string {
 // the delivery connection mid-run (which would cancel the agent and lose the
 // write-back).
 const defaultTimeoutSeconds = 300
+
+const (
+	defaultRetries = 3
+	// maxRetries keeps MaxAttempts within trip2g's maxRetries bound of 100.
+	maxRetries = 99
+)
+
+// MaxAttempts is the value registered as the webhook's maxRetries. trip2g
+// re-delivers while attempt < maxRetries, counting the first delivery as
+// attempt 1, so the field caps total attempts: retries plus the first try.
+func (r Role) MaxAttempts() int {
+	return r.Retries + 1
+}
 
 // EffectiveTimeoutSeconds returns the role's run timeout in seconds, applying
 // defaultTimeoutSeconds when timeout_seconds is unset (0).
@@ -243,6 +264,9 @@ func (r Role) Validate(offered []string) error {
 	if r.TimeoutSeconds < 0 {
 		return fmt.Errorf("role %s: timeout_seconds must be >= 0, got %d", r.NotePath, r.TimeoutSeconds)
 	}
+	if r.Retries < 0 || r.Retries > maxRetries {
+		return fmt.Errorf("role %s: retries must be between 0 and %d, got %d", r.NotePath, maxRetries, r.Retries)
+	}
 	return r.validateTools(offered)
 }
 
@@ -319,9 +343,13 @@ func parseList(raw string) []string {
 }
 
 func parseIntOpt(raw string) (int, error) {
+	return parseIntDefault(raw, 0)
+}
+
+func parseIntDefault(raw string, def int) (int, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return 0, nil
+		return def, nil
 	}
 	return strconv.Atoi(raw)
 }

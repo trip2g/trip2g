@@ -314,3 +314,37 @@ func TestRole_WarnIfWriteScopeMisconfigured(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRole_Retries(t *testing.T) {
+	r, err := ParseRole("roles/a.md", "body", meta("mode", "change"))
+	require.NoError(t, err)
+	require.Equal(t, defaultRetries, r.Retries)
+	require.Equal(t, defaultRetries+1, r.MaxAttempts())
+
+	r, err = ParseRole("roles/a.md", "body", meta("mode", "change", "retries", "0"))
+	require.NoError(t, err)
+	require.Equal(t, 0, r.Retries)
+	require.Equal(t, 1, r.MaxAttempts())
+
+	r, err = ParseRole("roles/a.md", "body", meta("mode", "change", "retries", " 5 "))
+	require.NoError(t, err)
+	require.Equal(t, 5, r.Retries)
+
+	_, err = ParseRole("roles/a.md", "body", meta("mode", "change", "retries", "many"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "retries")
+}
+
+func TestRoleValidate_RetriesBounds(t *testing.T) {
+	r := validChangeRole()
+	for _, ok := range []int{0, 3, maxRetries} {
+		r.Retries = ok
+		require.NoError(t, r.Validate(nil))
+	}
+	for _, bad := range []int{-1, maxRetries + 1} {
+		r.Retries = bad
+		err := r.Validate(nil)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "retries")
+	}
+}

@@ -206,6 +206,7 @@ func (r *Reconciler) create(ctx context.Context, role Role) error {
 		// closing the connection. An LLM agent run can exceed the 60s default, so
 		// register the role's (defaulted) timeout to avoid a mid-run cancel.
 		TimeoutSeconds: int64(role.EffectiveTimeoutSeconds()),
+		MaxRetries:     int64(role.MaxAttempts()),
 		OnCreate:       contains(role.TriggerOn, "create"),
 		OnUpdate:       contains(role.TriggerOn, "update"),
 		OnRemove:       contains(role.TriggerOn, "remove"),
@@ -274,6 +275,7 @@ func (r *Reconciler) createCron(ctx context.Context, role Role) error {
 		ConcurrencyMode: orDefault(role.Concurrency, "allow_overlap"),
 		MaxDepth:        int64(role.MaxDepth),
 		TimeoutSeconds:  int64(role.EffectiveTimeoutSeconds()),
+		MaxRetries:      int64(role.MaxAttempts()),
 		PassApiKey:      true,
 		Enabled:         true,
 		Description:     cronMarkerFor(r.cfg.FleetID, role),
@@ -317,6 +319,7 @@ func cronSpecVer(role Role) string {
 		role.Concurrency,
 		strconv.Itoa(role.MaxDepth),
 		strconv.Itoa(role.EffectiveTimeoutSeconds()),
+		strconv.Itoa(role.MaxAttempts()),
 	}, "|")))
 	return base64.RawURLEncoding.EncodeToString(h[:6])
 }
@@ -350,6 +353,9 @@ func specVer(role Role) string {
 		// Fold the effective timeout in so changing timeout_seconds rotates the
 		// marker and the webhook is recreated with the new timeoutSeconds.
 		strconv.Itoa(role.EffectiveTimeoutSeconds()),
+		// Retries rotate the marker rather than going through update(): its
+		// maxRetries is omitempty, so an update could never set retries: 0.
+		strconv.Itoa(role.MaxAttempts()),
 	}, "|")))
 	return base64.RawURLEncoding.EncodeToString(h[:6])
 }

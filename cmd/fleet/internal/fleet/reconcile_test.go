@@ -673,3 +673,94 @@ func TestReconcile_CronCreate_ErrorPayload_SurfacesAsError(t *testing.T) {
 	require.Error(t, err, "ErrorPayload from createCronWebhook must propagate as an error")
 	require.Contains(t, err.Error(), "invalid schedule")
 }
+
+func TestReconcile_SendsMaxRetries(t *testing.T) {
+	cases := []struct {
+		name    string
+		retries int
+		want    int64
+	}{
+		{"default", defaultRetries, defaultRetries + 1},
+		{"none", 0, 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var changeIn *trip2ggql.ChangeWebhookCreateInput
+			var cronIn *trip2ggql.CreateCronWebhookInput
+			gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+				switch op {
+				case "ListChangeWebhooks":
+					return nodesData(), nil
+				case "ListCronWebhooks":
+					return cronNodesData(), nil
+				case "CreateChangeWebhook":
+					in := createInputFrom(t, vars)
+					changeIn = &in
+					return createOKData, nil
+				case "CreateCronWebhook":
+					in := createCronInputFrom(t, vars)
+					cronIn = &in
+					return createCronOKData, nil
+				}
+				return "", fmt.Errorf("unexpected op %q", op)
+			})
+			role := newCronRole()
+			role.Mode = modeBoth
+			role.TriggerOn = []string{"update"}
+			role.TriggerInclude = []string{"kb/**"}
+			role.Retries = tc.retries
+			require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{role}))
+			require.NotNil(t, changeIn)
+			require.NotNil(t, cronIn)
+			require.Equal(t, tc.want, changeIn.MaxRetries)
+			require.Equal(t, tc.want, cronIn.MaxRetries)
+		})
+	}
+}
+
+func TestReconcile_RetriesChangeRecreatesWebhooks(t *testing.T) {
+	old := newCronRole()
+	old.Mode = modeBoth
+	old.TriggerOn = []string{"update"}
+	old.TriggerInclude = []string{"kb/**"}
+	old.Retries = defaultRetries
+	changed := old
+	changed.Retries = 0
+	require.NotEqual(t, specVer(old), specVer(changed))
+	require.NotEqual(t, cronSpecVer(old), cronSpecVer(changed))
+
+	var deleted, cronDeleted []int64
+	var changeIn *trip2ggql.ChangeWebhookCreateInput
+	var cronIn *trip2ggql.CreateCronWebhookInput
+	gql := fakeAdminGQL(func(op string, vars json.RawMessage) (string, error) {
+		switch op {
+		case "ListChangeWebhooks":
+			return nodesData([2]string{"7", markerFor("f1", old)}), nil
+		case "ListCronWebhooks":
+			return cronNodesData([2]string{"9", cronMarkerFor("f1", old)}), nil
+		case "DeleteChangeWebhook":
+			deleted = append(deleted, deleteIDFrom(t, vars))
+			return deleteOKData, nil
+		case "DeleteCronWebhook":
+			cronDeleted = append(cronDeleted, deleteIDFrom(t, vars))
+			return deleteCronOKData, nil
+		case "CreateChangeWebhook":
+			in := createInputFrom(t, vars)
+			changeIn = &in
+			return createOKData, nil
+		case "CreateCronWebhook":
+			in := createCronInputFrom(t, vars)
+			cronIn = &in
+			return createCronOKData, nil
+		}
+		return "", fmt.Errorf("unexpected op %q", op)
+	})
+	require.NoError(t, newReconciler(gql).Reconcile(context.Background(), []Role{changed}))
+	require.Equal(t, []int64{7}, deleted)
+	require.Equal(t, []int64{9}, cronDeleted)
+	require.NotNil(t, changeIn)
+	require.NotNil(t, cronIn)
+	require.Equal(t, int64(1), changeIn.MaxRetries)
+	require.Equal(t, int64(1), cronIn.MaxRetries)
+	require.Equal(t, markerFor("f1", changed), changeIn.Description)
+}
