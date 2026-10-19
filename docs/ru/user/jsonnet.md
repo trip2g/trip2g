@@ -18,7 +18,7 @@ trip2g запускает каждую программу в песочнице:
 |---|---|---|
 | [[ru/user/frontmatter_patches\|Frontmatter-патчи]] | `meta` (frontmatter заметки), `path` | объект, поля которого сливаются с frontmatter |
 | [[ru/user/validators\|Валидаторы заметок]] | `meta` (после патчей), `path`, `nodes`, `std.native('regexMatch')` | список сообщений `{level, msg, line?}` |
-| [[ru/user/note-queries\|Запросы к заметкам]] | `notes` (заметки, доступные вызывающему), `params` | любой JSON, который получит страница |
+| [[ru/user/note-queries\|Запросы к заметкам]] | `notes` (заметки, доступные вызывающему), `params`, `currentUser` (кто спрашивает) | любой JSON, который получит страница |
 | Преобразование тела [[ru/user/change_webhooks\|вебхука]] | `std.extVar('change')`, `std.extVar('attached_notes')` — JSON-строками | тело запроса, которое уйдёт вместо стандартного |
 
 В патчах, валидаторах и запросах к заметкам программа лежит в блоке ```` ```jsonnet ```` внутри обычной заметки. Преобразование вебхука — это поле `transformJsonnet` у change или cron webhook в GraphQL API. Оно заменяет всё тело запроса и не сочетается с **Pass API key**. `attached_notes` есть, только если вебхук прикладывает заметки; чтение отсутствующей переменной останавливает программу с ошибкой `Undefined external variable`.

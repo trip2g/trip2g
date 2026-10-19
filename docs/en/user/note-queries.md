@@ -62,7 +62,7 @@ const posts = data.noteQuery.result
 |---|---|
 | `notes` | a list of notes, sorted by path: `{ path, path_id, version_id, title, permalink, meta }` |
 | `params` | the parsed `params`, `{}` when none were passed |
-| `currentUser` | who is asking: `{ id, role, isAdmin, signedIn }`; a guest has `null` for `id` and `role` |
+| `currentUser` | who is asking: `{ id, role, isAdmin, signedIn }`; a guest has `null` for `id` and `role`; a [[en/user/federation|federation]] peer has role `federated` and `null` for `id` |
 
 `meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. `path_id` names the note and stays the same across edits; `version_id` names its current version. With `all_notes: true` each note also has `readable`. System notes (paths starting with `_`) and files that aren't markdown notes (canvas, base, excalidraw) are left out.
 
@@ -83,7 +83,7 @@ The query note is published like any other note, so readers who can run the quer
 
 #### Seeing every note: `all_notes: true`
 
-Sometimes a page should show more than the visitor can open: "3 open posts, 1 for members". Add `all_notes: true` to the query note's frontmatter. Then `notes` holds every note, and each has `readable`: `true` when the visitor can open it, worked out by the server with the same rules as the site. The program now decides what each visitor gets, so filter on `readable` before returning anything a visitor shouldn't see. Without the flag `notes` only has readable notes.
+Sometimes a page should show more than the visitor can open: "3 open posts, 1 for members". Add `all_notes: true` to the query note's frontmatter; it must be the YAML boolean `true`, not `"true"` or `yes`. Then `notes` holds every note, and each has `readable`: `true` when the visitor can open it, worked out by the server with the same rules as the site. The program now decides what each visitor gets, so filter on `readable` before returning anything a visitor shouldn't see. Without the flag `notes` only has readable notes.
 
 ```jsonnet
 local blog = [n for n in notes if std.startsWith(n.path, 'blog/')];
@@ -254,7 +254,7 @@ A [[en/user/templates|custom template]] calls the same query with `noteQuery(que
 {{ end }}
 ```
 
-`params` is optional; build it with `map(…)`. Range with two variables, as everywhere in Jet: with one, `range` gives the index. A failing query stops the render; an admin sees its message. The template preview in the admin panel runs queries too, and so does the check a layout gets on sync: it renders as a guest, so a layout that calls a members-only query for everyone gets a warning.
+`params` is optional; build it with `map(…)`. Range with two variables, as everywhere in Jet: with one, `range` gives the index. A failing query stops the render; an admin sees its message. The template preview in the admin panel runs queries too, and so does the check a layout gets on sync. It renders the layout with the pages that use it: a page a guest can open runs its queries as a guest, so calling a members-only query there gets a warning; a page only signed-in visitors open warns only for a query that is missing or broken.
 
 `noteQueryRows(query, params)` runs the same query and gives its rows. A row has `.Data()`, the item as the program returned it, and `.Note()`, the note it names or `nil`, by the same rules as `rows` above:
 
