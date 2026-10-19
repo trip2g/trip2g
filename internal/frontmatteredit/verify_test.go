@@ -79,7 +79,20 @@ func TestVerifyAcceptsTheIntendedEdit(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCompareGoldmarkKeysRefusesWhatYAMLv2ReadsElsewhere(t *testing.T) {
-	err := compareGoldmarkKeys("~: x\n", map[string]string{"~": "x\n"})
+func TestVerifyRefusesALossySpliceOfASetKey(t *testing.T) {
+	before := "---\na: 1\n---\nB\n"
+	after := "---\na: 1\nv: |-\n  x\n---\nB\n"
+
+	err := verify(before, after, map[string]any{"v": "\nx"}, nil)
+	require.ErrorIs(t, err, ErrUnsafeEdit)
+}
+
+func TestCompareGoldmarkRefusesWhatYAMLv2ReadsElsewhere(t *testing.T) {
+	err := compareGoldmark("", "~: x\n", []string{"~"}, map[string]any{"~": "x"})
+	require.ErrorIs(t, err, ErrUnsafeEdit)
+}
+
+func TestVerifyRefusesASetKeyGoldmarkMetaReadsAsAnotherType(t *testing.T) {
+	err := verify("---\na: 1\n---\n", "---\na: 1\nv: yes\n---\n", map[string]any{"v": "yes"}, nil)
 	require.ErrorIs(t, err, ErrUnsafeEdit)
 }
