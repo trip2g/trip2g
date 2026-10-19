@@ -30,10 +30,11 @@ type Env interface {
 	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
 }
 
-// queryPrelude gives the query `notes` and `params` as values. It shares the
-// block's first line, so jsonnet error line numbers match the block.
 const maxParamsBytes = 16 << 10
 
+// queryPrelude gives the query `notes`, `params` and `currentUser` as values.
+// It shares the block's first line, so jsonnet error line numbers match the
+// block.
 const queryPrelude = `local notes = std.parseJson(std.extVar("notes")), params = std.parseJson(std.extVar("params")), currentUser = std.parseJson(std.extVar("currentUser")); `
 
 type queryNote struct {
@@ -116,11 +117,11 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 	if !canRead {
 		return &model.ErrorPayload{Message: errQueryNotFound}, nil
 	}
-	*query = note.Path
 
 	if typ, _ := note.RawMeta["type"].(string); typ != "note-query" {
 		return &model.ErrorPayload{Message: note.Path + " is not a note-query"}, nil
 	}
+	*query = note.Path
 
 	blocks, err := mdloader.JsonnetBlocks(note)
 	if err != nil {

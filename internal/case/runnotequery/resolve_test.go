@@ -90,7 +90,7 @@ func TestResolve(t *testing.T) {
 			name:     "a note without type note-query is not a query",
 			input:    model.NoteQueryInput{Query: "queries/plain.md"},
 			expected: &model.ErrorPayload{Message: "queries/plain.md is not a note-query"},
-			observed: "queries/plain.md error",
+			observed: "unknown error",
 		},
 		{
 			name:     "params must be JSON",
