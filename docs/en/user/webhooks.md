@@ -98,6 +98,25 @@ sequenceDiagram
 
 `expected_hash` is the hash of the note as received. It protects against conflicts: if the note changed while your service was processing, the write is rejected. Leave it empty for new files.
 
+A change takes one of three shapes:
+
+```json
+{
+  "status": "ok",
+  "changes": [
+    { "path": "blog/my-post.md", "content": "# My Post\n\nCorrected content..." },
+    { "path": "todo.md", "kind": "patch", "find": "- [ ] Ship", "replace": "- [x] Ship" },
+    { "path": "todo.md", "kind": "meta", "set": { "status": "done" }, "unset": ["due"] }
+  ]
+}
+```
+
+- No `kind` (or `"kind": "write"`) — `content` replaces the whole note, or creates it.
+- `"kind": "patch"` — `find` must appear in the note exactly once and is replaced with `replace`, as the [[update_notes|updateNotes]] patch operation does.
+- `"kind": "meta"` — `set` adds or replaces top-level frontmatter keys and `unset` removes them, leaving the rest of the note as it is, with the rules of the updateNotes meta operation.
+
+`expected_hash` works on all three. If any change in the response is invalid, none of them is applied.
+
 #### API token for agents
 
 Enable **Pass API key** to give your service a temporary token scoped to the webhook's read/write patterns. By default the token can read everything and write nothing — set `write_patterns` explicitly if your service needs to create or update notes.

@@ -97,8 +97,10 @@ Rules:
 - Every other key keeps its line, its order, its quoting and its comments. The note body is not touched. New keys are added after the last key, in sorted order.
 - A note without frontmatter gets a `---` block at the top; the body below it stays byte for byte the same.
 - Setting a key to the string, number or boolean it already holds keeps the line as it is, and the note gets no new version.
-- The note must exist. A missing note, or frontmatter that cannot be edited key by key (invalid YAML, a `{...}` flow mapping, a key declared twice, a block with no closing `---`), returns an `ErrorPayload`.
-- `set` and `unset` cannot both be empty, and one key cannot be in both.
+- JSON does not tell `1.0` from `1`, so a whole number is written without a fraction: `1.0` lands as `1`; send `"1.0"` as a string to keep it.
+- The note must exist. A missing note, or frontmatter that cannot be edited key by key (invalid YAML, a `{...}` flow mapping, keys indented from the start of the line, a YAML alias such as `*name`, a key declared twice, a block with no closing `---`), returns an `ErrorPayload`.
+- The edited note is read back before it is saved. If any key other than the named ones would read differently, or a named key would not get its value, nothing is saved and the mutation returns an `ErrorPayload`.
+- `set` and `unset` cannot both be empty, one key cannot be in both, and a key cannot be blank or contain a line break or another control character.
 
 Optional `expectedHash` works the same as for patch.
 
@@ -265,7 +267,7 @@ With none of the three the request fails with `missing X-API-Key in request head
 
 Webhook agents receive a temporary `api_token` in the request payload (when **Pass API key** is enabled). That token can be used directly with `updateNotes` to write back to the vault.
 
-The agent response `changes[]` field also supports patch operations as an alternative to calling `updateNotes` directly — include `find` and `replace` instead of `content` in a change object. A change with `"kind": "meta"` and `set` / `unset` instead of `content` edits frontmatter keys with the same rules as the meta operation. See [[webhooks]] for the full agent response format.
+The agent response `changes[]` field also supports patch operations as an alternative to calling `updateNotes` directly — send `"kind": "patch"` with `find` and `replace` instead of `content` in a change object. A change with `"kind": "meta"` and `set` / `unset` instead of `content` edits frontmatter keys with the same rules as the meta operation. See [[webhooks]] for the full agent response format.
 
 Cron webhooks can trigger agents on a schedule. A cron agent might, for example, check all `todo/**` notes for overdue tasks and patch their status fields — running nightly without any external infrastructure.
 
