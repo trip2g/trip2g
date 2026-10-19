@@ -101,6 +101,8 @@ Patches written this way stack. Each patch sees the frontmatter left by the patc
 
 A patch that returns a plain list instead, such as `{ validate: ['[[seo]]'] }`, replaces the note's own `validate` and anything earlier patches added. Use that form only when the folder's rules must override the note's.
 
+An empty `validate` means no validators: `validate:` with no value, `validate: ""` and `null` all switch validation off. A patch can switch it off for one note that a folder patch covers, with `{ validate: null }`. Patches apply lower `priority` first, so give that patch a higher `priority` than the patches that add validators.
+
 Validators see the frontmatter after patches are applied, so a field added by a patch counts as present.
 
 ### Writing a validator

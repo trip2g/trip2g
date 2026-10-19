@@ -68,6 +68,7 @@ type loader struct {
 	patchCache   *frontmatterpatch.ResultCache
 	patchSetHash string
 
+	validate      bool
 	validateCache *ValidateCache
 }
 
@@ -104,6 +105,10 @@ type Options struct {
 	// across reloads for the cache to help (it persists alongside the note cache).
 	PatchCache *frontmatterpatch.ResultCache
 
+	// Validate runs the validators notes list in their "validate" frontmatter.
+	// Off by default: only a loader whose warnings someone reads should pay for it.
+	Validate bool
+
 	// ValidateCache keeps validator results across Load calls. Optional; reuse
 	// the same instance across reloads.
 	ValidateCache *ValidateCache
@@ -130,6 +135,7 @@ func Load(options Options) (*model.NoteViews, error) {
 
 	ldr.frontmatterPatches = options.FrontmatterPatches
 	ldr.patchCache = options.PatchCache
+	ldr.validate = options.Validate
 	ldr.validateCache = options.ValidateCache
 
 	renderOptions := []renderer.Option{
@@ -217,7 +223,9 @@ func Load(options Options) (*model.NoteViews, error) {
 
 	ldr.resolveLangRedirects()
 
-	ldr.validateNotes()
+	if ldr.validate {
+		ldr.validateNotes()
+	}
 
 	err = ldr.generatePageHTMLs()
 	if err != nil {

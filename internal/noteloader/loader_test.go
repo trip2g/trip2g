@@ -136,3 +136,61 @@ func TestLoader_RequireSignin_UpdatesAfterCacheHit(t *testing.T) {
 	require.True(t, nv2.List[0].Subgraphs["mysg"].RequireSignin,
 		"RequireSignin must be true after subgraph update even when note content is cached")
 }
+
+func TestLoader_ValidatesOnlyWhenEnabled(t *testing.T) {
+	notes := []noteloader.RawNote{
+		{Path: "note.md", PathID: 1, VersionID: 1, Content: "---\nvalidate: \"[[nope]]\"\n---\nbody\n"},
+	}
+	ctx := context.Background()
+
+	plain := noteloader.New("test", makeMinimalEnv(notes, func() bool { return false }), mdloader.Config{})
+	require.NoError(t, plain.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true}))
+	require.Empty(t, plain.NoteByPath("/note").Warnings)
+
+	validating := noteloader.New("test", makeMinimalEnv(notes, func() bool { return false }), mdloader.Config{})
+	validating.EnableValidation()
+	require.NoError(t, validating.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true}))
+	expected := []model.NoteWarning{
+		{Level: model.NoteWarningCritical, Message: "validate: target not found: [[nope]]"},
+	}
+	require.Equal(t, expected, validating.NoteByPath("/note").Warnings)
+}
+
+type cancelOnChartRows struct {
+	cancel context.CancelFunc
+}
+
+func (c cancelOnChartRows) ChartRows(_ int64, _ model.NoteViewChart) model.ChartRowsResult {
+	c.cancel()
+	return model.ChartRowsResult{}
+}
+
+// A deadline that runs out while notes are parsed, validated and rendered must
+// not fail the database reads: they all happen before mdloader.Load.
+func TestLoader_DeadlineDuringMarkdownDoesNotFailDBReads(t *testing.T) {
+	chart := "```datachart\n" +
+		`{"data":{"source":"url","url":"http://x"},"config":{"series":[]}}` +
+		"\n```\n"
+	notes := []noteloader.RawNote{
+		{Path: "note.md", PathID: 1, VersionID: 1, Content: chart},
+	}
+
+	env := makeMinimalEnv(notes, func() bool { return false })
+	env.ListAllSubgraphsFunc = func(ctx context.Context) ([]db.Subgraph, error) {
+		return nil, ctx.Err()
+	}
+	env.RawNoteChunksFunc = func(ctx context.Context) ([]noteloader.RawNoteChunk, error) {
+		chunk := noteloader.RawNoteChunk{VersionID: 1, Path: "note.md", Embedding: []byte{0, 0, 128, 63}}
+		return []noteloader.RawNoteChunk{chunk}, ctx.Err()
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	loader := noteloader.New("test", env, mdloader.Config{})
+	loader.SetChartDataProvider(cancelOnChartRows{cancel: cancel})
+
+	require.NoError(t, loader.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true}))
+	require.Error(t, ctx.Err(), "the chart must have been rendered inside Load")
+	require.Len(t, loader.NoteChunks(), 1, "chunks must be read before the deadline")
+}

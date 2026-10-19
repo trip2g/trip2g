@@ -2,6 +2,8 @@ package jsonneteval_test
 
 import (
 	"encoding/json"
+	"io"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,6 +15,26 @@ func TestNewVM_MaxStack(t *testing.T) {
 	vm := jsonneteval.NewVM()
 	require.NotNil(t, vm)
 	require.Equal(t, 500, vm.MaxStack)
+}
+
+func TestNewVM_TraceIsDiscarded(t *testing.T) {
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	// MakeVM captures os.Stderr as the trace writer; swapping it shows where
+	// std.trace would have gone.
+	stderr := os.Stderr
+	os.Stderr = w //nolint:reassign // see above
+	vm := jsonneteval.NewVM()
+	os.Stderr = stderr //nolint:reassign // see above
+
+	out, err := vm.EvaluateAnonymousSnippet("trace", `std.trace('from a vault note', 1)`)
+	require.NoError(t, err)
+	require.Equal(t, "1\n", out)
+
+	require.NoError(t, w.Close())
+	written, err := io.ReadAll(r)
+	require.NoError(t, err)
+	require.Empty(t, string(written))
 }
 
 func TestEvalJSON_Identity(t *testing.T) {
