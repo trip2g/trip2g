@@ -61,6 +61,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 				hashMismatches = append(hashMismatches, model.NoteHashMismatch{Path: target.Path, ActualHash: actualHash})
 				continue
 			}
+
+			// "" matched: the note is absent or already hidden, so there is
+			// nothing to hide and its original hidden_by stays.
+			if actualHash == "" {
+				continue
+			}
 		}
 
 		params := db.HideNotePathParams{

@@ -230,7 +230,8 @@ func TestResolve_ScopedToken(t *testing.T) {
 }
 
 // expectedHash gates each hide on its own: a mismatch leaves that note
-// visible and reports it, and paths without expectedHash hide as before.
+// visible and reports it, a matched "" has nothing to hide and touches
+// nothing, and paths without expectedHash hide as before.
 func TestResolve_ExpectedHash(t *testing.T) {
 	current := map[string]string{
 		"match.md":    "hash-match",
@@ -266,14 +267,14 @@ func TestResolve_ExpectedHash(t *testing.T) {
 	for _, call := range env.HideNotePathCalls() {
 		hidden = append(hidden, call.Params.Value)
 	}
-	want := []string{"free.md", "match.md", "gone.md", "unconditional.md"}
+	want := []string{"free.md", "match.md", "unconditional.md"}
 	require.Equal(t, want, hidden)
 
 	removed := []string{}
 	for _, change := range published.Changes {
 		removed = append(removed, change.Path)
 	}
-	require.Equal(t, want, removed, "a refused path is not announced as removed")
+	require.Equal(t, want, removed, "a refused or absent path is not announced as removed")
 
 	checked := []string{}
 	for _, call := range env.LatestNoteContentHashCalls() {
@@ -302,4 +303,25 @@ func TestResolve_ExpectedHashAllRefused(t *testing.T) {
 	require.Empty(t, env.HideNotePathCalls())
 	require.Empty(t, env.PrepareLatestNotesCalls())
 	require.Empty(t, env.PublishNoteChangesCalls())
+}
+
+// A request whose only entry is a matched "" changes nothing, so nothing is
+// reloaded, announced or sent to webhooks.
+func TestResolve_ExpectedHashEmptyIsNoOp(t *testing.T) {
+	env := newTestEnv(func(_ context.Context, _ db.HideNotePathParams) error { return nil })
+	env.LatestNoteContentHashFunc = func(_ context.Context, _ string) (string, error) {
+		return "", nil
+	}
+	empty := ""
+
+	result, err := Resolve(context.Background(), env, model.HideNotesInput{
+		Notes:  []model.HideNoteInput{{Path: "gone.md", ExpectedHash: &empty}},
+		ApiKey: db.ApiKey{CreatedBy: 1},
+	})
+	require.NoError(t, err)
+	require.Equal(t, &model.HideNotesPayload{Success: true}, result)
+	require.Empty(t, env.HideNotePathCalls())
+	require.Empty(t, env.PrepareLatestNotesCalls())
+	require.Empty(t, env.PublishNoteChangesCalls())
+	require.Empty(t, env.HandleNoteWebhooksCalls())
 }
