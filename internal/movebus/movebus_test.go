@@ -99,18 +99,18 @@ func TestUnsubscribedNotDelivered(t *testing.T) {
 
 func TestSessionKeyStableWithinHourAndAnonymous(t *testing.T) {
 	b := newBus()
-	now := time.Now()
+	now := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC)
 
-	k1 := b.SessionKey("42", now)
-	k2 := b.SessionKey("42", now.Add(time.Second))
-	k3 := b.SessionKey("43", now)
+	k1 := b.SessionKey("viewer-42", now)
+	k2 := b.SessionKey("viewer-42", now.Add(time.Second))
+	k3 := b.SessionKey("viewer-43", now)
 
 	require.Equal(t, k1, k2, "same viewer within the hour keeps the same token")
 	require.NotEqual(t, k1, k3, "different viewers get different tokens")
-	require.NotContains(t, k1, "42", "token must not contain the raw viewer id")
+	require.NotContains(t, k1, "viewer-42", "token must not contain the raw viewer id")
 	require.Len(t, k1, 16, "8-byte hex token")
 
 	// A different hour rotates the key, so the token changes.
-	k4 := b.SessionKey("42", now.Add(2*time.Hour))
+	k4 := b.SessionKey("viewer-42", now.Add(2*time.Hour))
 	require.NotEqual(t, k1, k4, "hourly rotation breaks cross-hour linkage")
 }
