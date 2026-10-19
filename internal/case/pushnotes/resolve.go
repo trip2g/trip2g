@@ -58,7 +58,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	if len(input.Updates) == 0 {
 		nvs := env.LatestNoteViews()
 		pushedNotes := buildPushedNotes(nvs, env.Layouts(), env.PublicURL())
-		return &model.PushNotesPayload{Notes: pushedNotes, Updated: []model.PushedNote{}}, nil
+		return &model.PushNotesPayload{Notes: pushedNotes, Updated: []model.PushedNote{}, HashMismatches: []model.NoteHashMismatch{}}, nil
 	}
 
 	skipCommit := input.SkipCommit != nil && *input.SkipCommit

@@ -887,3 +887,16 @@ func TestResolve_ExpectedHashReadFails(t *testing.T) {
 	require.Error(t, err)
 	require.Empty(t, env.InsertNoteCalls())
 }
+
+func TestResolve_NoUpdatesReportsEmptyMismatches(t *testing.T) {
+	env := newEnvMock(&logger.TestLogger{})
+	env.LayoutsFunc = func() *appmodel.Layouts { return &appmodel.Layouts{Map: map[string]appmodel.Layout{}} }
+
+	result, err := pushnotes.Resolve(context.Background(), env, model.PushNotesInput{})
+	require.NoError(t, err)
+
+	payload, ok := result.(*model.PushNotesPayload)
+	require.True(t, ok, "got %T", result)
+	require.NotNil(t, payload.HashMismatches)
+	require.Empty(t, payload.HashMismatches)
+}
