@@ -37,7 +37,7 @@ local tagged = [
 
 ## In Jet templates
 
-`runnotequery.JetFunc` is exposed as `noteQuery(query, params?)` in page renders (`rendernotepage/endpoint.go`) and the admin layout preview, running with the request's viewer. It returns the result as `[]any` / `map[string]any`; a failing query panics the render with its message (shown to admins). The load-time smoke render (`noteloader/smoke_render.go`) stubs it with an empty list. The anonymous page cache is keyed and served to guests only, so a guest's query result is never served to a signed-in viewer.
+`runnotequery.JetFunc` is exposed as `noteQuery(query, params?)` in page renders (`rendernotepage/endpoint.go`) and the admin layout preview, running with the request's viewer. It returns the result as `[]any` / `map[string]any`; a failing query panics the render with its message (shown to admins). The load-time smoke render (`noteloader/smoke_render.go`) runs the real query as a guest over the notes being loaded (no token, metrics not recorded), so a layout reading an object result renders and a members-only query called unguarded warns. That runs each query once per smoke-rendered note, up to 10 per layout, on every load. The anonymous page cache is keyed and served to guests only, so a guest's query result is never served to a signed-in viewer.
 
 ## Access
 

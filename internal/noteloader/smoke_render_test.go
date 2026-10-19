@@ -5,6 +5,7 @@ import (
 	"testing"
 	"trip2g/internal/layoutloader"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
@@ -158,4 +159,37 @@ func TestSmokeRenderLayouts_SkipsLayoutsWithParseError(t *testing.T) {
 
 	require.Len(t, layouts.Map["/broken"].Warnings, parseWarnings,
 		"smoke must not add warnings to layouts with parse errors")
+}
+
+// A layout that reads an object a note query returns, the user doc's
+// dashboard pattern, renders against the real query as a guest.
+func TestSmokeRenderLayouts_RunsNoteQueryAsGuest(t *testing.T) {
+	sources := []model.LayoutSourceFile{
+		{ID: "/dash", Path: "_layouts/dash.html",
+			Content: `{{ c := noteQuery("queries/counts.md") }}{{ c.posts }}`},
+		{ID: "/paid", Path: "_layouts/paid.html",
+			Content: `{{ noteQuery("queries/paid.md") }}`},
+	}
+	layouts := smokeLoadLayouts(t, sources)
+
+	srcs := []mdloader.SourceFile{
+		{Path: "queries/counts.md", Content: []byte("---\ntype: note-query\nfree: true\n---\n```jsonnet\n" +
+			"{posts: std.length(notes)}\n```\n")},
+		{Path: "queries/paid.md", Content: []byte("---\ntype: note-query\n---\n```jsonnet\n[]\n```\n")},
+		{Path: "dash.md", Content: []byte("---\nfree: true\nlayout: dash\n---\nd")},
+		{Path: "paid_page.md", Content: []byte("---\nfree: true\nlayout: paid\n---\np")},
+	}
+	for i := range srcs {
+		srcs[i].PathID = int64(i + 1)
+	}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
+
+	require.Empty(t, layouts.Map["/dash"].Warnings)
+
+	paid := layouts.Map["/paid"].Warnings
+	require.Len(t, paid, 1, "a guest can't run a members-only query")
+	require.Contains(t, paid[0].Message, `noteQuery("queries/paid.md"): query not found`)
 }

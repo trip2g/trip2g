@@ -206,7 +206,7 @@ A [[en/user/templates|custom template]] calls the same query with `noteQuery(que
 {{ end }}
 ```
 
-`params` is optional; build it with `map(…)`. Range with two variables, as everywhere in Jet: with one, `range` gives the index. A failing query stops the render; an admin sees its message. The template preview in the admin panel runs queries too, while the check a layout gets on sync sees an empty list.
+`params` is optional; build it with `map(…)`. Range with two variables, as everywhere in Jet: with one, `range` gives the index. A failing query stops the render; an admin sees its message. The template preview in the admin panel runs queries too, and so does the check a layout gets on sync: it renders as a guest, so a layout that calls a members-only query for everyone gets a warning.
 
 A guest and a subscriber viewing the same page can get different lists. Pages a guest sees are cached for guests only, so a subscriber never gets a guest's list.
 
