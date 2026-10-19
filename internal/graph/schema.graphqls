@@ -1857,6 +1857,12 @@ union CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload
 input PushNoteInput {
   path: String!
   content: String!
+  """
+  Writes the note only if its current content hash still equals this value.
+  An empty string means the note must not exist (or be hidden). Omit it to
+  write unconditionally. A refused note is reported in hashMismatches.
+  """
+  expectedHash: String
 }
 
 input PushNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") @goExtraField(name: "Partial", type: "bool") {
@@ -1881,9 +1887,19 @@ type PushedNote {
   warnings: [NoteWarning!]!
 }
 
+"""
+A note an expectedHash refused: it was left as it is, and actualHash is its
+current content hash ("" when it does not exist or is hidden).
+"""
+type NoteHashMismatch {
+  path: String!
+  actualHash: String!
+}
+
 type PushNotesPayload {
   notes: [PushedNote!]!
   updated: [PushedNote!]!
+  hashMismatches: [NoteHashMismatch!]!
 }
 
 union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
@@ -1911,12 +1927,24 @@ union UploadNoteAssetOrErrorPayload = UploadNoteAssetPayload | ErrorPayload
 # hideNotes
 #
 
+input HideNoteInput {
+  path: String!
+  """
+  Hides the note only if its current content hash still equals this value.
+  An empty string means the note must not exist (or be hidden already). Omit
+  it to hide unconditionally. A refused path is reported in hashMismatches.
+  """
+  expectedHash: String
+}
+
 input HideNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
-  paths: [String!]!
+  paths: [String!]! = []
+  notes: [HideNoteInput!]! = []
 }
 
 type HideNotesPayload {
   success: Boolean!
+  hashMismatches: [NoteHashMismatch!]!
 }
 
 union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload

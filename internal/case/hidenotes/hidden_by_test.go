@@ -67,6 +67,10 @@ func (e *hiddenByEnv) HideNotePath(ctx context.Context, params db.HideNotePathPa
 	return e.wq.HideNotePath(ctx, params)
 }
 
+func (e *hiddenByEnv) LatestNoteContentHash(_ context.Context, _ string) (string, error) {
+	return "", nil
+}
+
 func (e *hiddenByEnv) LatestNoteViews() *internalmodel.NoteViews {
 	return internalmodel.NewNoteViews()
 }

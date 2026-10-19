@@ -1963,13 +1963,23 @@ type HealchCheck struct {
 	Description string            `json:"description"`
 }
 
+type HideNoteInput struct {
+	Path string `json:"path"`
+	// Hides the note only if its current content hash still equals this value.
+	// An empty string means the note must not exist (or be hidden already). Omit
+	// it to hide unconditionally. A refused path is reported in hashMismatches.
+	ExpectedHash *string `json:"expectedHash,omitempty"`
+}
+
 type HideNotesInput struct {
-	Paths  []string  `json:"paths"`
-	ApiKey db.ApiKey `json:"-"`
+	Paths  []string        `json:"paths"`
+	Notes  []HideNoteInput `json:"notes"`
+	ApiKey db.ApiKey       `json:"-"`
 }
 
 type HideNotesPayload struct {
-	Success bool `json:"success"`
+	Success        bool               `json:"success"`
+	HashMismatches []NoteHashMismatch `json:"hashMismatches"`
 }
 
 func (HideNotesPayload) IsHideNotesOrErrorPayload() {}
@@ -2071,6 +2081,13 @@ type NoteFrontmatterPredicate struct {
 	Key    string  `json:"key"`
 	Exists *bool   `json:"exists,omitempty"`
 	Equals *string `json:"equals,omitempty"`
+}
+
+// A note an expectedHash refused: it was left as it is, and actualHash is its
+// current content hash ("" when it does not exist or is hidden).
+type NoteHashMismatch struct {
+	Path       string `json:"path"`
+	ActualHash string `json:"actualHash"`
 }
 
 type NoteHideEvent struct {
@@ -2219,6 +2236,10 @@ func (PublicNote) IsSearchResultDocument() {}
 type PushNoteInput struct {
 	Path    string `json:"path"`
 	Content string `json:"content"`
+	// Writes the note only if its current content hash still equals this value.
+	// An empty string means the note must not exist (or be hidden). Omit it to
+	// write unconditionally. A refused note is reported in hashMismatches.
+	ExpectedHash *string `json:"expectedHash,omitempty"`
 }
 
 type PushNotesInput struct {
@@ -2229,8 +2250,9 @@ type PushNotesInput struct {
 }
 
 type PushNotesPayload struct {
-	Notes   []PushedNote `json:"notes"`
-	Updated []PushedNote `json:"updated"`
+	Notes          []PushedNote       `json:"notes"`
+	Updated        []PushedNote       `json:"updated"`
+	HashMismatches []NoteHashMismatch `json:"hashMismatches"`
 }
 
 func (PushNotesPayload) IsPushNotesOrErrorPayload() {}

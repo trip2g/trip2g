@@ -110,6 +110,23 @@ func (a *app) InsertNote(ctx context.Context, note model.RawNote) (model.NoteSav
 	return insertnote.Resolve(ctx, a, note)
 }
 
+// LatestNoteContentHash returns the content hash of the visible note at path,
+// or "" when there is none (never written, or hidden). It reads from the
+// database, not the in-memory views, so inside the request transaction it sees
+// exactly what the next write will replace.
+func (a *app) LatestNoteContentHash(ctx context.Context, path string) (string, error) {
+	rows, err := a.Queries.ListNotePathsByValues(ctx, []string{path})
+	if err != nil {
+		return "", fmt.Errorf("failed to read note path %s: %w", path, err)
+	}
+
+	if len(rows) == 0 || rows[0].HiddenBy != nil || rows[0].VersionCount == 0 {
+		return "", nil
+	}
+
+	return rows[0].LatestContentHash, nil
+}
+
 // NoteVersionActor resolves who is pushing the current note version from the
 // request context: the acting user id (web/site session, or the API key owner
 // for admin-actor calls), the authenticating API key id (obsidian-sync pushes),

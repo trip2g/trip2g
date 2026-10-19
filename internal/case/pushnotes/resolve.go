@@ -17,6 +17,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	InsertNote(ctx context.Context, update appmodel.RawNote) (appmodel.NoteSaveResult, error)
+	LatestNoteContentHash(ctx context.Context, path string) (string, error)
 	InsertUncommittedPath(ctx context.Context, notePathID int64) error
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
@@ -62,6 +63,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 
 	skipCommit := input.SkipCommit != nil && *input.SkipCommit
 	pathIDs := []int64{}
+	var hashMismatches []model.NoteHashMismatch
 	// changedPathIDs is pathIDs minus the writes that changed nothing anyone can
 	// see. A resync re-pushing identical content to a visible path is not a
 	// change; a restore is, even though it stores no new version — the note
@@ -78,6 +80,16 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	}
 
 	for _, update := range input.Updates {
+		mismatch, err := checkExpectedHash(ctx, env, update)
+		if err != nil {
+			return nil, err
+		}
+		if mismatch != nil {
+			log.Info("expected hash mismatch", "path", update.Path)
+			hashMismatches = append(hashMismatches, *mismatch)
+			continue
+		}
+
 		note := appmodel.RawNote{
 			Path:    update.Path,
 			Content: update.Content,
@@ -131,7 +143,27 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	pushedNotes := buildPushedNotes(nvs, env.Layouts(), env.PublicURL())
 	updatedNotes := buildUpdatedNotes(nvs, pathIDs, env.PublicURL())
 
-	return &model.PushNotesPayload{Notes: pushedNotes, Updated: updatedNotes}, nil
+	return &model.PushNotesPayload{Notes: pushedNotes, Updated: updatedNotes, HashMismatches: hashMismatches}, nil
+}
+
+// checkExpectedHash returns the mismatch when the note no longer has the hash
+// the client expects. The request runs in one write transaction on the single
+// write connection, so no other write lands between this read and InsertNote.
+func checkExpectedHash(ctx context.Context, env Env, update model.PushNoteInput) (*model.NoteHashMismatch, error) {
+	if update.ExpectedHash == nil {
+		return nil, nil //nolint:nilnil // no expectation means nothing to refuse.
+	}
+
+	actualHash, err := env.LatestNoteContentHash(ctx, update.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	if actualHash == *update.ExpectedHash {
+		return nil, nil //nolint:nilnil // the note still has the expected hash.
+	}
+
+	return &model.NoteHashMismatch{Path: update.Path, ActualHash: actualHash}, nil
 }
 
 func validateUpdate(log logger.Logger, update model.PushNoteInput) *model.ErrorPayload {
