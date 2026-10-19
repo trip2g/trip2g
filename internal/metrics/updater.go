@@ -2,11 +2,15 @@ package metrics
 
 import (
 	"context"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"trip2g/internal/case/system/federationtopology"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 )
 
 //go:generate go tool github.com/matryer/moq -out test.go -pkg metrics . Env
@@ -19,8 +23,8 @@ type Env interface {
 	SumNoteAssetsSizes(ctx context.Context) (int64, error)
 	CountNoteAssets(ctx context.Context) (int64, error)
 	ListGoqiteAllQueueStats(ctx context.Context) ([]db.ListGoqiteAllQueueStatsRow, error)
-	ListFederationSecrets(ctx context.Context) ([]db.ListFederationSecretsRow, error)
-	ListAllFederationSecretScopes(ctx context.Context) ([]db.ListAllFederationSecretScopesRow, error)
+	Logger() logger.Logger
+	federationtopology.Env
 }
 
 // Updater periodically updates Prometheus metrics.
@@ -34,14 +38,26 @@ type Updater struct {
 	queueDepth       *prometheus.GaugeVec
 	fedSecrets       *prometheus.GaugeVec
 	fedSubgraphs     *prometheus.GaugeVec
+	fedSelf          *prometheus.GaugeVec
+	fedKeys          *prometheus.GaugeVec
+	fedKeySubgraphs  *prometheus.GaugeVec
+	fedPeers         *prometheus.GaugeVec
 	interval         time.Duration
 
-	lastQueueDepth   labelPairs
-	lastFedSubgraphs labelPairs
+	lastQueueDepth      labelPairs
+	lastFedSubgraphs    labelPairs
+	lastFedSelf         labelPairs
+	lastFedKeys         labelTriples
+	lastFedKeySubgraphs labelPairs
+	lastFedPeers        labelPairs
 }
 
-// labelPairs holds the values of a two-label gauge vector by label pair.
-type labelPairs map[[2]string]float64
+// labelPairs and labelTriples hold the values of a two- and a three-label
+// gauge vector by their label values.
+type (
+	labelPairs   map[[2]string]float64
+	labelTriples map[[3]string]float64
+)
 
 // NewUpdater creates a metrics updater with Prometheus gauges, registered on reg.
 func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Updater {
@@ -99,6 +115,30 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 	}, []string{"direction", "subgraph"})
 	reg.MustRegister(fedSubgraphs)
 
+	fedSelf := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_self_info",
+		Help: "This base as peers address it: its kb_id and MCP URL. Always 1",
+	}, []string{"kb_id", "mcp_url"})
+	reg.MustRegister(fedSelf)
+
+	fedKeys := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_key_info",
+		Help: "One series per live federation key, by direction, kid and the peer's kb_url (outbound only). Always 1",
+	}, []string{"direction", "kid", "kb_url"})
+	reg.MustRegister(fedKeys)
+
+	fedKeySubgraphs := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_key_subgraph_info",
+		Help: "One series per subgraph a live inbound federation key is scoped to (scope only applies to inbound keys). Always 1",
+	}, []string{"kid", "subgraph"})
+	reg.MustRegister(fedKeySubgraphs)
+
+	fedPeers := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "trip2g_federation_peer_info",
+		Help: "One series per KB-note: the peer outbound calls are labelled with, and the kb_url it points to. Always 1",
+	}, []string{"peer", "kb_url"})
+	reg.MustRegister(fedPeers)
+
 	return &Updater{
 		env:              env,
 		allNotePaths:     allNotePaths,
@@ -109,6 +149,10 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 		queueDepth:       queueDepth,
 		fedSecrets:       fedSecrets,
 		fedSubgraphs:     fedSubgraphs,
+		fedSelf:          fedSelf,
+		fedKeys:          fedKeys,
+		fedKeySubgraphs:  fedKeySubgraphs,
+		fedPeers:         fedPeers,
 		interval:         interval,
 	}
 }
@@ -174,7 +218,7 @@ func (u *Updater) updateMetrics(ctx context.Context) {
 			depth[[2]string{s.Queue, "pending"}] = float64(s.PendingCount)
 			depth[[2]string{s.Queue, "retrying"}] = float64(s.RetryCount)
 		}
-		u.lastQueueDepth = replaceGauges(u.queueDepth, u.lastQueueDepth, depth)
+		u.lastQueueDepth = replaceGauges(u.queueDepth, u.lastQueueDepth, depth, pair)
 	}
 
 	u.updateFederationMetrics(ctx)
@@ -188,58 +232,86 @@ const (
 )
 
 func (u *Updater) updateFederationMetrics(ctx context.Context) {
-	secrets, err := u.env.ListFederationSecrets(ctx)
+	topology, err := federationtopology.Resolve(ctx, u.env)
 	if err != nil {
+		u.env.Logger().Error("federation metrics: resolve topology, keeping last values", "error", err)
 		return
-	}
-	scopes, err := u.env.ListAllFederationSecretScopes(ctx)
-	if err != nil {
-		return
-	}
-
-	subgraphsByKID := map[string][]string{}
-	for _, scope := range scopes {
-		subgraphsByKID[scope.Kid] = append(subgraphsByKID[scope.Kid], scope.SubgraphName)
 	}
 
 	keys := map[string]int{directionInbound: 0, directionOutbound: 0}
 	perSubgraph := labelPairs{}
-	for _, secret := range secrets {
-		if secret.RevokedAt != nil {
-			continue
-		}
-		direction := directionInbound
-		if secret.KbUrl != nil {
-			direction = directionOutbound
-		}
-		keys[direction]++
-		// Scope rows are keyed by kid alone and only gate inbound keys, so an
-		// outbound key sharing a kid would pick up an inbound key's scope.
-		if direction != directionInbound {
-			continue
-		}
-		for _, subgraph := range subgraphsByKID[secret.Kid] {
-			perSubgraph[[2]string{direction, subgraph}]++
+	keyInfo := labelTriples{}
+	keySubgraphs := labelPairs{}
+	record := func(direction string, secrets []federationtopology.Secret) {
+		for _, secret := range secrets {
+			if secret.RevokedAt != nil {
+				continue
+			}
+			keys[direction]++
+			kbURL := ""
+			if secret.KBURL != nil {
+				kbURL = labelURL(*secret.KBURL)
+			}
+			keyInfo[[3]string{direction, secret.KID, kbURL}] = 1
+			// Scope rows are keyed by kid alone and only gate inbound keys, so an
+			// outbound key sharing a kid would pick up an inbound key's scope.
+			if direction != directionInbound {
+				continue
+			}
+			for _, subgraph := range secret.Subgraphs {
+				perSubgraph[[2]string{direction, subgraph.Name}]++
+				keySubgraphs[[2]string{secret.KID, subgraph.Name}] = 1
+			}
 		}
 	}
+	record(directionInbound, topology.Inbound)
+	record(directionOutbound, topology.Outbound)
+
+	peers := labelPairs{}
+	for _, note := range topology.KBNotes {
+		peers[[2]string{note.KBID, labelURL(note.KBURL)}] = 1
+	}
+	self := labelPairs{{topology.Self.KBID, topology.Self.MCPURL}: 1}
 
 	for direction, n := range keys {
 		u.fedSecrets.WithLabelValues(direction).Set(float64(n))
 	}
-	u.lastFedSubgraphs = replaceGauges(u.fedSubgraphs, u.lastFedSubgraphs, perSubgraph)
+	u.lastFedSubgraphs = replaceGauges(u.fedSubgraphs, u.lastFedSubgraphs, perSubgraph, pair)
+	u.lastFedSelf = replaceGauges(u.fedSelf, u.lastFedSelf, self, pair)
+	u.lastFedKeys = replaceGauges(u.fedKeys, u.lastFedKeys, keyInfo, triple)
+	u.lastFedKeySubgraphs = replaceGauges(u.fedKeySubgraphs, u.lastFedKeySubgraphs, keySubgraphs, pair)
+	u.lastFedPeers = replaceGauges(u.fedPeers, u.lastFedPeers, peers, pair)
 }
 
-// replaceGauges sets every pair in next, then deletes the pairs set last round
-// that are absent now. Unlike Reset-then-refill, a scrape never sees the vector
-// empty between the two steps.
-func replaceGauges(vec *prometheus.GaugeVec, last, next labelPairs) labelPairs {
+// replaceGauges sets every label set in next, then deletes the ones set last
+// round that are absent now. Unlike Reset-then-refill, a scrape never sees the
+// vector empty between the two steps.
+func replaceGauges[K comparable](vec *prometheus.GaugeVec, last, next map[K]float64, values func(K) []string) map[K]float64 {
 	for labels, v := range next {
-		vec.WithLabelValues(labels[0], labels[1]).Set(v)
+		vec.WithLabelValues(values(labels)...).Set(v)
 	}
 	for labels := range last {
 		if _, ok := next[labels]; !ok {
-			vec.DeleteLabelValues(labels[0], labels[1])
+			vec.DeleteLabelValues(values(labels)...)
 		}
 	}
 	return next
+}
+
+func pair(labels [2]string) []string {
+	return labels[:]
+}
+
+func triple(labels [3]string) []string {
+	return labels[:]
+}
+
+// labelURL keeps scheme, host and path. A URL typed into a key or a KB-note
+// may carry credentials in its userinfo or query, and /metrics has no auth.
+func labelURL(raw string) string {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return ""
+	}
+	return parsed.Scheme + "://" + parsed.Host + parsed.EscapedPath()
 }
