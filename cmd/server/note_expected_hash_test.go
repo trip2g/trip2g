@@ -82,6 +82,31 @@ func requestTxEnv(fctx *fasthttp.RequestCtx) noteTxEnv {
 	return noteTxEnv{app: req.Env.(*app)}
 }
 
+// noteHashInTx reads note.md's hash the only way LatestNoteContentHash
+// allows: inside a write transaction.
+func noteHashInTx(t *testing.T, a *app) string {
+	t.Helper()
+
+	var hash string
+	err := a.WithTransaction(context.Background(), func(txCtx context.Context, txEnv *app) (bool, error) {
+		var readErr error
+		hash, readErr = txEnv.LatestNoteContentHash(txCtx, "note.md")
+		return false, readErr
+	})
+	require.NoError(t, err)
+
+	return hash
+}
+
+// Outside the request transaction another write could land between the hash
+// check and the write it gates, so the read refuses to run at all.
+func TestLatestNoteContentHashRequiresTx(t *testing.T) {
+	a := newTxTestApp(t)
+
+	_, err := a.LatestNoteContentHash(context.Background(), "note.md")
+	require.Error(t, err)
+}
+
 // pushInTx runs one pushNotes request in its own transaction, as the GraphQL
 // handler does. It reports failures instead of failing t, so it can run in a
 // goroutine.
@@ -157,13 +182,12 @@ func TestPushNotesExpectedHashConcurrentWrites(t *testing.T) {
 	require.True(t, ok, "got %T", got.payload)
 	require.Equal(t, []model.NoteHashMismatch{{Path: "note.md", ActualHash: contentHash("first")}}, payload.HashMismatches)
 
-	actual, err := a.LatestNoteContentHash(ctx, "note.md")
-	require.NoError(t, err)
-	require.Equal(t, contentHash("first"), actual)
+	require.Equal(t, contentHash("first"), noteHashInTx(t, a))
 }
 
-// A delete that saw the old hash is refused once the note was edited, and a
-// hidden note counts as absent for the next expectedHash.
+// A delete that saw the old hash is refused once the note was edited, a hidden
+// note counts as absent for the next expectedHash, and hiding it again with ""
+// leaves who hid it and when untouched.
 func TestHideNotesExpectedHash(t *testing.T) {
 	a := newTxTestApp(t)
 	ctx := newNoteTestRequest(t, a)
@@ -178,13 +202,13 @@ func TestHideNotesExpectedHash(t *testing.T) {
 	_, err = a.InsertNote(ctx, appmodel.RawNote{Path: "note.md", Content: "edited"})
 	require.NoError(t, err)
 
-	hide := func(expectedHash string) *model.HideNotesPayload {
+	hide := func(actor int64, expectedHash string) *model.HideNotesPayload {
 		fctx := newNoteTestRequest(t, a)
 		require.NoError(t, a.AcquireTxEnvInRequest(fctx, "hideNotes"))
 
 		input := model.HideNotesInput{
 			Notes:  []model.HideNoteInput{{Path: "note.md", ExpectedHash: &expectedHash}},
-			ApiKey: db.ApiKey{CreatedBy: user.ID},
+			ApiKey: db.ApiKey{CreatedBy: actor},
 		}
 		result, hideErr := hidenotes.Resolve(fctx, requestTxEnv(fctx), input)
 		require.NoError(t, hideErr)
@@ -195,18 +219,32 @@ func TestHideNotesExpectedHash(t *testing.T) {
 		return payload
 	}
 
-	refused := hide(contentHash("base"))
+	refused := hide(user.ID, contentHash("base"))
 	require.Equal(t, []model.NoteHashMismatch{{Path: "note.md", ActualHash: contentHash("edited")}}, refused.HashMismatches)
 
-	actual, err := a.LatestNoteContentHash(ctx, "note.md")
-	require.NoError(t, err)
-	require.Equal(t, contentHash("edited"), actual, "a refused hide leaves the note visible")
+	require.Equal(t, contentHash("edited"), noteHashInTx(t, a), "a refused hide leaves the note visible")
 
-	require.Empty(t, hide(contentHash("edited")).HashMismatches)
+	require.Empty(t, hide(user.ID, contentHash("edited")).HashMismatches)
 
-	actual, err = a.LatestNoteContentHash(ctx, "note.md")
+	require.Empty(t, noteHashInTx(t, a), "a hidden note has no current hash")
+
+	hiddenBefore, err := a.Queries.ListNotePathsByValues(ctx, []string{"note.md"})
 	require.NoError(t, err)
-	require.Empty(t, actual, "a hidden note has no current hash")
+	require.Len(t, hiddenBefore, 1)
+	require.Equal(t, &user.ID, hiddenBefore[0].HiddenBy)
+
+	other, err := a.WriteQueries.InsertUserWithEmail(ctx, db.InsertUserWithEmailParams{Email: "other@example.com", CreatedVia: "test"})
+	require.NoError(t, err)
+	_, err = a.WriteQueries.InsertAdmin(ctx, db.InsertAdminParams{UserID: other.ID})
+	require.NoError(t, err)
+
+	require.Empty(t, hide(other.ID, "").HashMismatches)
+
+	hiddenAfter, err := a.Queries.ListNotePathsByValues(ctx, []string{"note.md"})
+	require.NoError(t, err)
+	require.Len(t, hiddenAfter, 1)
+	require.Equal(t, hiddenBefore[0].HiddenBy, hiddenAfter[0].HiddenBy, "hiding an already hidden note keeps who hid it")
+	require.Equal(t, hiddenBefore[0].HiddenAt, hiddenAfter[0].HiddenAt, "hiding an already hidden note keeps when it was hidden")
 
 	payload, err := pushInTx(newNoteTestRequest(t, a), a, "note.md", "restored", contentHash("edited"))
 	require.NoError(t, err)
@@ -216,7 +254,5 @@ func TestHideNotesExpectedHash(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, payload.(*model.PushNotesPayload).HashMismatches)
 
-	actual, err = a.LatestNoteContentHash(ctx, "note.md")
-	require.NoError(t, err)
-	require.Equal(t, contentHash("restored"), actual)
+	require.Equal(t, contentHash("restored"), noteHashInTx(t, a))
 }

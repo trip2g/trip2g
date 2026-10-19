@@ -112,9 +112,14 @@ func (a *app) InsertNote(ctx context.Context, note model.RawNote) (model.NoteSav
 
 // LatestNoteContentHash returns the content hash of the visible note at path,
 // or "" when there is none (never written, or hidden). It reads from the
-// database, not the in-memory views, so inside the request transaction it sees
-// exactly what the next write will replace.
+// database inside the request transaction, so it sees exactly what the next
+// write will replace; outside a transaction that guarantee is gone, so it
+// refuses to run.
 func (a *app) LatestNoteContentHash(ctx context.Context, path string) (string, error) {
+	if a.currentTx == nil {
+		return "", errors.New("LatestNoteContentHash must run inside the request transaction")
+	}
+
 	rows, err := a.Queries.ListNotePathsByValues(ctx, []string{path})
 	if err != nil {
 		return "", fmt.Errorf("failed to read note path %s: %w", path, err)
