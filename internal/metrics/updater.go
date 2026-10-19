@@ -35,7 +35,13 @@ type Updater struct {
 	fedSecrets       *prometheus.GaugeVec
 	fedSubgraphs     *prometheus.GaugeVec
 	interval         time.Duration
+
+	lastQueueDepth   labelPairs
+	lastFedSubgraphs labelPairs
 }
+
+// labelPairs holds the values of a two-label gauge vector by label pair.
+type labelPairs map[[2]string]float64
 
 // NewUpdater creates a metrics updater with Prometheus gauges, registered on reg.
 func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Updater {
@@ -89,7 +95,7 @@ func NewUpdater(env Env, interval time.Duration, reg prometheus.Registerer) *Upd
 
 	fedSubgraphs := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "trip2g_federation_secret_subgraphs",
-		Help: "Number of live federation keys scoped to each subgraph, by direction",
+		Help: "Number of live inbound federation keys scoped to each subgraph (scope only applies to inbound keys)",
 	}, []string{"direction", "subgraph"})
 	reg.MustRegister(fedSubgraphs)
 
@@ -159,15 +165,16 @@ func (u *Updater) updateMetrics(ctx context.Context) {
 		u.noteAssetsCount.Set(float64(assetsCount))
 	}
 
-	// Job queue depth, per queue. Reset first so a queue that drains to zero
-	// (and drops out of the grouped query) doesn't leave a stale nonzero value.
+	// Job queue depth, per queue. A queue that drains to zero drops out of the
+	// grouped query, so its series is deleted rather than left stale.
 	stats, err := u.env.ListGoqiteAllQueueStats(ctx)
 	if err == nil {
-		u.queueDepth.Reset()
+		depth := labelPairs{}
 		for _, s := range stats {
-			u.queueDepth.WithLabelValues(s.Queue, "pending").Set(float64(s.PendingCount))
-			u.queueDepth.WithLabelValues(s.Queue, "retrying").Set(float64(s.RetryCount))
+			depth[[2]string{s.Queue, "pending"}] = float64(s.PendingCount)
+			depth[[2]string{s.Queue, "retrying"}] = float64(s.RetryCount)
 		}
+		u.lastQueueDepth = replaceGauges(u.queueDepth, u.lastQueueDepth, depth)
 	}
 
 	u.updateFederationMetrics(ctx)
@@ -196,7 +203,7 @@ func (u *Updater) updateFederationMetrics(ctx context.Context) {
 	}
 
 	keys := map[string]int{directionInbound: 0, directionOutbound: 0}
-	perSubgraph := map[[2]string]int{}
+	perSubgraph := labelPairs{}
 	for _, secret := range secrets {
 		if secret.RevokedAt != nil {
 			continue
@@ -206,6 +213,11 @@ func (u *Updater) updateFederationMetrics(ctx context.Context) {
 			direction = directionOutbound
 		}
 		keys[direction]++
+		// Scope rows are keyed by kid alone and only gate inbound keys, so an
+		// outbound key sharing a kid would pick up an inbound key's scope.
+		if direction != directionInbound {
+			continue
+		}
 		for _, subgraph := range subgraphsByKID[secret.Kid] {
 			perSubgraph[[2]string{direction, subgraph}]++
 		}
@@ -214,9 +226,20 @@ func (u *Updater) updateFederationMetrics(ctx context.Context) {
 	for direction, n := range keys {
 		u.fedSecrets.WithLabelValues(direction).Set(float64(n))
 	}
-	// Reset so a subgraph whose last key was revoked or unscoped drops out.
-	u.fedSubgraphs.Reset()
-	for labels, n := range perSubgraph {
-		u.fedSubgraphs.WithLabelValues(labels[0], labels[1]).Set(float64(n))
+	u.lastFedSubgraphs = replaceGauges(u.fedSubgraphs, u.lastFedSubgraphs, perSubgraph)
+}
+
+// replaceGauges sets every pair in next, then deletes the pairs set last round
+// that are absent now. Unlike Reset-then-refill, a scrape never sees the vector
+// empty between the two steps.
+func replaceGauges(vec *prometheus.GaugeVec, last, next labelPairs) labelPairs {
+	for labels, v := range next {
+		vec.WithLabelValues(labels[0], labels[1]).Set(v)
 	}
+	for labels := range last {
+		if _, ok := next[labels]; !ok {
+			vec.DeleteLabelValues(labels[0], labels[1])
+		}
+	}
+	return next
 }
