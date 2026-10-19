@@ -468,12 +468,13 @@ func buildResponse(model string, changes []webhookutil.AgentChange, answer strin
 	}, nil
 }
 
-// changeToToolCall maps one AgentChange to a tool name and JSON arguments. A
-// kind it does not know is an error: guessing write_note would overwrite the
-// note with the change's (likely empty) content.
+// changeToToolCall maps one AgentChange to a tool name and JSON arguments. The
+// changes come from coderun.ParseCodeOutput, which sets one of the three kinds;
+// any other kind is an error rather than a guess, since guessing write_note
+// would overwrite the note with the change's (likely empty) content.
 func changeToToolCall(ch webhookutil.AgentChange) (string, string, error) {
 	switch ch.Kind {
-	case "", webhookutil.AgentChangeKindWrite:
+	case webhookutil.AgentChangeKindWrite:
 		return "write_note", mustJSON(map[string]string{
 			"path":    ch.Path,
 			"content": ch.Content,
