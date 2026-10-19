@@ -388,10 +388,10 @@ func TestSearchReturnsStructuredContent(t *testing.T) {
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
-				NoteView:           note,
-				URL:                note.Permalink,
-				Score:              1.0,
-				HighlightedContent: []string{"Лучший способ отомстить - не уподобляться обидчику."},
+				NoteView:        note,
+				URL:             note.Permalink,
+				Score:           1.0,
+				ContentSegments: appmodel.PlainSegments("Лучший способ отомстить - не уподобляться обидчику."),
 			}}, nil
 		},
 		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
@@ -529,10 +529,10 @@ func TestSearchMarksFederationKBNotes(t *testing.T) {
 		LiveNoteViewsFunc:          appmodel.NewNoteViews,
 		SearchLiveNotesFunc: func(query string, _, _ int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
-				NoteView:           note,
-				URL:                note.Permalink,
-				Score:              0.71,
-				HighlightedContent: []string{"Use when: Bob's work-status updates."},
+				NoteView:        note,
+				URL:             note.Permalink,
+				Score:           0.71,
+				ContentSegments: appmodel.PlainSegments("Use when: Bob's work-status updates."),
 			}}, nil
 		},
 		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
@@ -1961,10 +1961,10 @@ func makeNResults(n int) []appmodel.SearchResult {
 	for i := range n {
 		note := makeSearchNote(int64(i+1), fmt.Sprintf("note%d.md", i+1), fmt.Sprintf("Note %d", i+1))
 		results[i] = appmodel.SearchResult{
-			NoteView:           note,
-			URL:                note.Permalink,
-			Score:              float64(n - i),
-			HighlightedContent: []string{fmt.Sprintf("Snippet for note %d", i+1)},
+			NoteView:        note,
+			URL:             note.Permalink,
+			Score:           float64(n - i),
+			ContentSegments: appmodel.PlainSegments(fmt.Sprintf("Snippet for note %d", i+1)),
 		}
 	}
 	return results

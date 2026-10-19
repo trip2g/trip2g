@@ -148,9 +148,9 @@ func TestSnippetBreadcrumbDropsTheTitleH1(t *testing.T) {
 	note := noteWithLeadingH1()
 
 	require.Equal(t, []string{"Maxims"},
-		snippetTocPath(note, "maxims body", ""))
+		snippetTocPath(note, model.PlainSegments("maxims body"), ""))
 	require.Equal(t, []string{"Reflections"},
-		snippetTocPath(note, "reflections body", ""))
+		snippetTocPath(note, model.PlainSegments("reflections body"), ""))
 }
 
 // A one-line "- Title — preview" listing made the whole line look like the

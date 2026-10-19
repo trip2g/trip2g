@@ -92,7 +92,7 @@ func TestRetrieve_VectorResultsCarryChunkIndex(t *testing.T) {
 	env := retrieveEnv(t, srv.URL)
 	env.SearchLiveNotesFunc = func(string, int, int) ([]appmodel.SearchResult, error) {
 		// Text lane finds only A; B is vector-only.
-		return []appmodel.SearchResult{{NoteView: noteA, URL: noteA.Permalink, HighlightedContent: []string{"text hit"}}}, nil
+		return []appmodel.SearchResult{{NoteView: noteA, URL: noteA.Permalink, ContentSegments: appmodel.PlainSegments("text hit")}}, nil
 	}
 	env.LiveNoteChunksFunc = func() []appmodel.NoteChunk {
 		return []appmodel.NoteChunk{
@@ -118,7 +118,7 @@ func TestRetrieve_VectorResultsCarryChunkIndex(t *testing.T) {
 	require.NotNil(t, byURL["/a"].ChunkIndex, "hybrid hit must inherit the vector lane's chunk index")
 	require.Equal(t, 1, *byURL["/a"].ChunkIndex)
 	// Text-lane highlight must survive the merge.
-	require.Equal(t, []string{"text hit"}, byURL["/a"].HighlightedContent)
+	require.Equal(t, appmodel.PlainSegments("text hit"), byURL["/a"].ContentSegments)
 
 	require.Contains(t, byURL, "/b")
 	require.NotNil(t, byURL["/b"].ChunkIndex)

@@ -268,16 +268,15 @@ func vectorLane(
 				continue
 			}
 		}
-		title := note.Title
 		chunkIndex := c.chunk.ChunkIndex
 		results = append(results, appmodel.SearchResult{
-			NoteView:           note,
-			URL:                note.Permalink,
-			Score:              c.sim,
-			MatchOrigin:        appmodel.SearchMatchVector,
-			HighlightedTitle:   &title,
-			HighlightedContent: []string{SnippetFromChunk(c.chunk.Content, 200)},
-			ChunkIndex:         &chunkIndex,
+			NoteView:        note,
+			URL:             note.Permalink,
+			Score:           c.sim,
+			MatchOrigin:     appmodel.SearchMatchVector,
+			TitleSegments:   appmodel.PlainSegments(note.Title),
+			ContentSegments: appmodel.PlainSegments(SnippetFromChunk(c.chunk.Content, 200)),
+			ChunkIndex:      &chunkIndex,
 		})
 		passageByURL[note.Permalink] = chunkPassage(c.chunk.Content)
 		if len(results) >= vectorTopK {
@@ -352,15 +351,14 @@ func mergeResults(textResults, vectorResults []appmodel.SearchResult) []appmodel
 			if e.result.ChunkIndex == nil && r.ChunkIndex != nil {
 				e.result.ChunkIndex = r.ChunkIndex
 			}
-			if len(e.result.HighlightedContent) == 0 && len(r.HighlightedContent) > 0 {
-				e.result.HighlightedContent = r.HighlightedContent
+			if len(e.result.ContentSegments) == 0 && len(r.ContentSegments) > 0 {
+				e.result.ContentSegments = r.ContentSegments
 			}
 		} else {
 			// Vector-only result — use chunk snippet if pre-set, else fall back to note snippet
-			if len(r.HighlightedContent) == 0 {
-				title := r.NoteView.Title
-				r.HighlightedTitle = &title
-				r.HighlightedContent = []string{generateSnippet(r.NoteView, 150)}
+			if len(r.ContentSegments) == 0 {
+				r.TitleSegments = appmodel.PlainSegments(r.NoteView.Title)
+				r.ContentSegments = appmodel.PlainSegments(generateSnippet(r.NoteView, 150))
 			}
 			resultMap[r.URL] = &entry{result: r, rrfScore: score}
 		}
@@ -393,12 +391,11 @@ func exactNameResults(query string, noteViews *appmodel.NoteViews) []appmodel.Se
 		if note.ExcludeSearch || note.IsSystem() {
 			continue
 		}
-		title := note.Title
 		results = append(results, appmodel.SearchResult{
-			NoteView:         note,
-			URL:              note.Permalink,
-			MatchOrigin:      appmodel.SearchMatchText,
-			HighlightedTitle: &title,
+			NoteView:      note,
+			URL:           note.Permalink,
+			MatchOrigin:   appmodel.SearchMatchText,
+			TitleSegments: appmodel.PlainSegments(note.Title),
 		})
 	}
 	return results
@@ -426,7 +423,7 @@ func fuseLane(results, lane []appmodel.SearchResult, weight float64) []appmodel.
 			continue
 		}
 		r.Score = score
-		r.HighlightedContent = []string{generateSnippet(r.NoteView, 150)}
+		r.ContentSegments = appmodel.PlainSegments(generateSnippet(r.NoteView, 150))
 		index[r.URL] = len(results)
 		results = append(results, r)
 	}

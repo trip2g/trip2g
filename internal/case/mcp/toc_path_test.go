@@ -256,19 +256,19 @@ func TestStripMarkdownInline(t *testing.T) {
 	}
 }
 
-// TestMarkedContextRuneSafety verifies that markedContext, which windows ±120
-// bytes around the first <mark>...</mark> block, never splits a multi-byte
+// TestMatchContextRuneSafety verifies that matchContext, which windows ±120
+// bytes around the matches, never splits a multi-byte
 // UTF-8 rune — regardless of where the byte offsets land relative to
 // variable-width characters (e.g. 2-byte Cyrillic).
-func TestMarkedContextRuneSafety(t *testing.T) {
+func TestMatchContextRuneSafety(t *testing.T) {
 	t.Run("leading orphan continuation byte at window start", func(t *testing.T) {
 		// 60 Cyrillic chars (120 bytes) + 1 ASCII byte = 121-byte prefix.
 		// window=120 means lo = start-120 = 1, which is the second (continuation)
 		// byte of the first Cyrillic rune under naive byte slicing.
 		prefix := strings.Repeat("б", 60) + "A"
-		content := prefix + "<mark>совпадение</mark>"
+		content := []model.HighlightSegment{{Text: prefix}, {Text: "совпадение", Match: true}}
 
-		snippet := markedContext(content)
+		snippet := matchContext(content)
 
 		require.True(t, utf8.ValidString(snippet), "snippet must be valid UTF-8, got %q", snippet)
 		require.NotContains(t, snippet, "�", "no replacement char should be introduced")
@@ -280,9 +280,9 @@ func TestMarkedContextRuneSafety(t *testing.T) {
 		// the closing tag. window=120 means hi = end+120 lands on the
 		// continuation byte of the last Cyrillic rune under naive slicing.
 		suffix := "A" + strings.Repeat("б", 60)
-		content := "<mark>совпадение</mark>" + suffix
+		content := []model.HighlightSegment{{Text: "совпадение", Match: true}, {Text: suffix}}
 
-		snippet := markedContext(content)
+		snippet := matchContext(content)
 
 		require.True(t, utf8.ValidString(snippet), "snippet must be valid UTF-8, got %q", snippet)
 		require.NotContains(t, snippet, "�", "no replacement char should be introduced")
@@ -292,9 +292,9 @@ func TestMarkedContextRuneSafety(t *testing.T) {
 	t.Run("both edges misaligned", func(t *testing.T) {
 		prefix := strings.Repeat("б", 60) + "A"
 		suffix := "A" + strings.Repeat("б", 60)
-		content := prefix + "<mark>совпадение</mark>" + suffix
+		content := []model.HighlightSegment{{Text: prefix}, {Text: "совпадение", Match: true}, {Text: suffix}}
 
-		snippet := markedContext(content)
+		snippet := matchContext(content)
 
 		require.True(t, utf8.ValidString(snippet), "snippet must be valid UTF-8, got %q", snippet)
 		require.NotContains(t, snippet, "�", "no replacement char should be introduced")
@@ -306,7 +306,7 @@ func TestMarkedContextRuneSafety(t *testing.T) {
 		suffix := strings.Repeat(" word", 40)
 		content := prefix + "<mark>match</mark>" + suffix
 
-		snippet := markedContext(content)
+		snippet := matchContext([]model.HighlightSegment{{Text: prefix}, {Text: "match", Match: true}, {Text: suffix}})
 
 		start := strings.Index(content, "<mark>")
 		end := strings.LastIndex(content, "</mark>") + len("</mark>")
@@ -324,7 +324,7 @@ func TestMarkedContextRuneSafety(t *testing.T) {
 	})
 
 	t.Run("no mark tags returns snippet unchanged", func(t *testing.T) {
-		content := "no marks here at all"
-		require.Equal(t, content, markedContext(content))
+		content := "no marks here & there"
+		require.Equal(t, "no marks here &amp; there", matchContext(model.PlainSegments(content)))
 	})
 }

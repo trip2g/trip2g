@@ -77,15 +77,15 @@ func TestMergeResults_DocInBothListsGetsCombinedScore(t *testing.T) {
 }
 
 func TestMergeResults_TextHighlightsPreservedForSharedDoc(t *testing.T) {
-	highlightedTitle := "Найдено: <mark>Go</mark>"
-	highlighted := []string{"контент с <mark>Go</mark> выделением"}
+	highlightedTitle := []appmodel.HighlightSegment{{Text: "Найдено: "}, {Text: "Go", Match: true}}
+	highlighted := []appmodel.HighlightSegment{{Text: "контент с "}, {Text: "Go", Match: true}, {Text: " выделением"}}
 
 	text := []appmodel.SearchResult{{
-		URL:                "/shared",
-		Score:              1.0,
-		HighlightedTitle:   &highlightedTitle,
-		HighlightedContent: highlighted,
-		NoteView:           &appmodel.NoteView{Permalink: "/shared", Title: "Go"},
+		URL:             "/shared",
+		Score:           1.0,
+		TitleSegments:   highlightedTitle,
+		ContentSegments: highlighted,
+		NoteView:        &appmodel.NoteView{Permalink: "/shared", Title: "Go"},
 	}}
 	vector := []appmodel.SearchResult{makeResult("/shared", 0.9, "Go")}
 
@@ -94,9 +94,8 @@ func TestMergeResults_TextHighlightsPreservedForSharedDoc(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "/shared", result[0].URL)
 	// Text highlights preserved (not overwritten by vector result)
-	require.NotNil(t, result[0].HighlightedTitle)
-	require.Equal(t, highlightedTitle, *result[0].HighlightedTitle)
-	require.Equal(t, highlighted, result[0].HighlightedContent)
+	require.Equal(t, highlightedTitle, result[0].TitleSegments)
+	require.Equal(t, highlighted, result[0].ContentSegments)
 }
 
 func TestMergeResults_VectorOnlyResultGetsSnippet(t *testing.T) {
@@ -124,9 +123,8 @@ func TestMergeResults_VectorOnlyResultGetsSnippet(t *testing.T) {
 	}
 
 	require.NotNil(t, vecResult)
-	require.NotNil(t, vecResult.HighlightedTitle)
-	require.Equal(t, "Vector Note", *vecResult.HighlightedTitle)
-	require.NotEmpty(t, vecResult.HighlightedContent)
+	require.Equal(t, appmodel.PlainSegments("Vector Note"), vecResult.TitleSegments)
+	require.NotEmpty(t, vecResult.ContentSegments)
 }
 
 func TestMergeResults_LimitedTo20(t *testing.T) {

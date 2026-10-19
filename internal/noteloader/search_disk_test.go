@@ -12,6 +12,7 @@ import (
 
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
+	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
 )
 
@@ -113,6 +114,8 @@ func TestSearchIndex_OnDisk_ReusedAfterRestart(t *testing.T) {
 	found, err = second.Search("капибара", 0, 20)
 	require.NoError(t, err)
 	require.Len(t, found, 1, "search must work against the reopened index")
+	require.Contains(t, found[0].ContentSegments, model.HighlightSegment{Text: "капибара", Match: true},
+		"an adopted note, never indexed by this process, must still get a snippet")
 }
 
 // The failure mode a persisted index introduces: deletion is detected by
@@ -174,7 +177,7 @@ func TestSearchIndex_OnDisk_RemovesOtherSchemaVersions(t *testing.T) {
 
 	_, err := os.Stat(stale)
 	require.True(t, os.IsNotExist(err), "an index from another schema version must be deleted")
-	_, err = os.Stat(filepath.Join(dir, "test", "v1"))
+	_, err = os.Stat(filepath.Join(dir, "test", "v2"))
 	require.NoError(t, err, "the current schema version must exist")
 }
 
@@ -200,7 +203,7 @@ func TestSearchIndex_InMemoryByDefault(t *testing.T) {
 // more often than it means "corrupt".
 func TestSearchIndex_OnDisk_UnreadableFallsBackWithoutDeleting(t *testing.T) {
 	dir := t.TempDir()
-	indexDir := filepath.Join(dir, "test", "v1")
+	indexDir := filepath.Join(dir, "test", "v2")
 	require.NoError(t, os.MkdirAll(indexDir, 0o750))
 	// Not an index, just something bleve will refuse to open.
 	require.NoError(t, os.WriteFile(filepath.Join(indexDir, "index_meta.json"), []byte("{"), 0o600))

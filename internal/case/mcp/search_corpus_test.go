@@ -43,13 +43,13 @@ func corpusEnv() *EnvMock {
 		SearchLatestNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: latest, URL: latest.Permalink, Score: 1,
-				HighlightedContent: []string{"draft snippet"},
+				ContentSegments: appmodel.PlainSegments("draft snippet"),
 			}}, nil
 		},
 		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
 				NoteView: live, URL: live.Permalink, Score: 1,
-				HighlightedContent: []string{"published snippet"},
+				ContentSegments: appmodel.PlainSegments("published snippet"),
 			}}, nil
 		},
 		LatestNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
@@ -190,8 +190,8 @@ func TestSearchRankingMatchesSiteSearch(t *testing.T) {
 	// deterministic tie-break in both transports.
 	textResults := func(string, int, int) ([]appmodel.SearchResult, error) {
 		return []appmodel.SearchResult{
-			{NoteView: pathMap["b.md"], URL: "/b", HighlightedContent: []string{"hit b"}},
-			{NoteView: pathMap["a.md"], URL: "/a", HighlightedContent: []string{"hit a"}},
+			{NoteView: pathMap["b.md"], URL: "/b", ContentSegments: appmodel.PlainSegments("hit b")},
+			{NoteView: pathMap["a.md"], URL: "/a", ContentSegments: appmodel.PlainSegments("hit a")},
 		}, nil
 	}
 	chunks := []appmodel.NoteChunk{

@@ -1579,9 +1579,21 @@ input SearchInput {
   rerank: Boolean
 }
 
+type HighlightSegment {
+  text: String!
+  match: Boolean!
+}
+
 type SearchResult {
-  highlightedTitle: String
-  highlightedContent: [String!]!
+  highlightedTitle: String @deprecated(reason: "HTML with <mark> around matches. Use titleSegments.")
+  highlightedContent: [String!]! @deprecated(reason: "HTML with <mark> around matches. Use contentSegments.")
+  titleSegments: [HighlightSegment!]!
+  contentSegments: [HighlightSegment!]!
+  """
+  The matched words as they appear in the note, each once, for highlighting
+  them on the page.
+  """
+  matchedTerms: [String!]!
   url: String!
   score: Float!
   matchOrigin: SearchMatchOrigin!

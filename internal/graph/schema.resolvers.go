@@ -3346,6 +3346,23 @@ func (r *refreshPatreonDataPayloadResolver) Credentials(ctx context.Context, obj
 	return resolveOne[db.PatreonCredential](ctx, obj.CredentialsID, r.env(ctx).PatreonCredentials)
 }
 
+// HighlightedTitle is the resolver for the highlightedTitle field.
+func (r *searchResultResolver) HighlightedTitle(ctx context.Context, obj *appmodel.SearchResult) (*string, error) {
+	if len(obj.TitleSegments) == 0 {
+		return nil, nil
+	}
+	title := appmodel.HighlightHTML(obj.TitleSegments)
+	return &title, nil
+}
+
+// HighlightedContent is the resolver for the highlightedContent field.
+func (r *searchResultResolver) HighlightedContent(ctx context.Context, obj *appmodel.SearchResult) ([]string, error) {
+	if len(obj.ContentSegments) == 0 {
+		return []string{}, nil
+	}
+	return []string{appmodel.HighlightHTML(obj.ContentSegments)}, nil
+}
+
 // Document is the resolver for the document field.
 func (r *searchResultResolver) Document(ctx context.Context, obj *appmodel.SearchResult) (model.SearchResultDocument, error) {
 	if obj.NoteView != nil {
