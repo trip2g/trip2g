@@ -16,6 +16,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** That other key can be granted different subgraphs, so the KB-note read with access it was never given.
 - **How to fix a base that gets the error.** Point the KB-note's `mcp_federation_kb_id` at a live key, or revoke the other keys to the peer so one live key is left. See [[en/user/federation|Federation]].
 
+### Sync keeps a local edit when a push, a hide or a write fails
+
+- **What.** Sync records a push, a "keep local" or a hide only after the server confirms it, so a failed batch stays unsynced and is retried on the next run. "Keep both" keeps both versions and saves the server copy as `note (server).md`, or `note (server 2).md` when that name is taken, instead of overwriting an earlier copy. The CLI writes notes, assets and its state file atomically, refuses to sync when the state file cannot be read, honours `--state-file` with `--watch`, and exits with code 1 after printing the results when any operation failed.
+- **Why.** A failed push or hide was recorded as done, so the next sync took the local edit for synced and could lose it. A crash mid-write could leave a truncated note or state file, and an unreadable state file was treated as empty, which turns every difference into a conflict that the default `--conflict-resolution local` answers by pushing the local copy over the server's. A partial failure exited with 0.
+- **How to use.** Use the sync CLI from this release; the copy in the onboarding vault is rebuilt with the fixes. The Obsidian plugin gets them with its next release. If the CLI reports an unreadable state file, restore it from a backup rather than deleting it. See [[en/user/cli|CLI sync]].
+
 ## v0.12.0 (2026-10-19)
 
 ### Note queries give a JavaScript page a list of notes
