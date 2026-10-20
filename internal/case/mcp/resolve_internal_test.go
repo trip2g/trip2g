@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -142,4 +143,26 @@ func TestMCPAPIKeyContext(t *testing.T) {
 	ctx = contextWithMCPAPIKeyAuth(ctx, true)
 	require.True(t, mcpAPIKeyAuthed(ctx))
 	require.True(t, mcpAdminToolsEnabled(ctx))
+}
+
+func TestSearchResultItemCarriesTheNoteSizeAndSections(t *testing.T) {
+	long := &model.NoteView{
+		Path:    "guide.md",
+		Content: []byte("---\ntitle: Guide\n---\n" + strings.Repeat("word ", 400)),
+		Headings: model.NoteViewHeadings{
+			{Level: 2, Text: "Install"},
+			{Level: 2, Text: "Configure"},
+			{Level: 3, Text: "Keys"},
+		},
+	}
+	short := &model.NoteView{Path: "faq.md", Content: []byte("Short answer.")}
+	noteURL := func(*model.NoteView) string { return "" }
+
+	longItem := searchResultItemFromNote(long, 1, noteURL)
+	require.Equal(t, 501, longItem.SizeTokens)
+	require.Equal(t, 3, longItem.Sections)
+
+	shortItem := searchResultItemFromNote(short, 1, noteURL)
+	require.Equal(t, 4, shortItem.SizeTokens)
+	require.Equal(t, 0, shortItem.Sections)
 }

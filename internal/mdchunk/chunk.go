@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	// Sizing is in ESTIMATED TOKENS (see estimateTokens), not characters: at
+	// Sizing is in ESTIMATED TOKENS (see EstimateTokens), not characters: at
 	// ~2 chars/token for Cyrillic, the old 2000-char target overflowed the
 	// 512-token window of bge-m3/E5, so the tail of Russian chunks was silently
 	// truncated server-side and never embedded.
@@ -24,10 +24,10 @@ type Chunk struct {
 	Content string // "{title} > {h1} > {h2}...\n\n{body}"
 }
 
-// estimateTokens approximates the subword-token count of s without a tokenizer.
+// EstimateTokens approximates the subword-token count of s without a tokenizer.
 // Cyrillic tokenizes to roughly one token per ~2 characters; Latin/other to
 // roughly one per ~4. Good enough to keep chunks under an encoder window.
-func estimateTokens(s string) int {
+func EstimateTokens(s string) int {
 	cyr, other := 0, 0
 	for _, r := range s {
 		if r >= 0x0400 && r <= 0x04FF {
@@ -102,7 +102,7 @@ func Split(title string, rawContent []byte) []Chunk { //nolint:gocognit // inher
 		currentSize = 0
 		if overlap != "" {
 			current = append(current, overlap)
-			currentSize = estimateTokens(overlap)
+			currentSize = EstimateTokens(overlap)
 		}
 	}
 
@@ -128,7 +128,7 @@ func Split(title string, rawContent []byte) []Chunk { //nolint:gocognit // inher
 		}
 
 		current = append(current, block)
-		currentSize += estimateTokens(block)
+		currentSize += EstimateTokens(block)
 
 		// Flush when we reach the target size (if above min size),
 		// but not on the last block — the remaining flush handles that.

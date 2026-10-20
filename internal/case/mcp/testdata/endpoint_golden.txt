@@ -1406,6 +1406,8 @@ HTTP 200 application/json
           "url": "https://golden.test/doc",
           "kind": "note",
           "score": 0.9,
+          "size_tokens": 13,
+          "sections": 2,
           "matches": [
             {
               "snippet": "alpha body",
@@ -1425,6 +1427,8 @@ HTTP 200 application/json
           "url": "https://golden.test/aphorisms",
           "kind": "note",
           "score": 0.7,
+          "size_tokens": 16,
+          "sections": 2,
           "matches": [
             {
               "snippet": "Замечай, чего требует твоя \u003cmark\u003eприрода\u003c/mark\u003e.",
@@ -1464,6 +1468,8 @@ HTTP 200 application/json
           "url": "https://golden.test/doc",
           "kind": "note",
           "score": 0.9,
+          "size_tokens": 13,
+          "sections": 2,
           "matches": [
             {
               "snippet": "alpha body",
@@ -1482,7 +1488,9 @@ HTTP 200 application/json
           "href": "/aphorisms",
           "url": "https://golden.test/aphorisms",
           "kind": "note",
-          "score": 0.7
+          "score": 0.7,
+          "size_tokens": 16,
+          "sections": 2
         }
       ]
     }
@@ -1822,7 +1830,9 @@ HTTP 200 application/json
                   "href": "/peer",
                   "url": "https://peer.example/peer",
                   "kind": "note",
-                  "score": 1
+                  "score": 1,
+                  "size_tokens": 0,
+                  "sections": 0
                 }
               ]
             }
@@ -1857,7 +1867,9 @@ HTTP 200 application/json
           "href": "/peer",
           "url": "https://peer.example/peer",
           "kind": "note",
-          "score": 1
+          "score": 1,
+          "size_tokens": 0,
+          "sections": 0
         }
       ]
     }
@@ -1910,7 +1922,9 @@ HTTP 200 application/json
           "href": "/peer",
           "url": "https://peer.example/peer",
           "kind": "note",
-          "score": 1
+          "score": 1,
+          "size_tokens": 0,
+          "sections": 0
         }
       ]
     }

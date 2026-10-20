@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Search results say how long each note is
+
+- **What.** Every `search` and `federated_search` result carries `size_tokens`, an estimate of the note's length in tokens (the same estimate the chunker uses), and `sections`, the number of headings `expand` can navigate.
+- **Why.** An agent could not tell a 6,000-token note from a 200-token one before opening it, so it opened long notes whole.
+- **How to use.** Nothing to change; agents read the fields from the result.
+
 ### A connection that announces a body no longer reserves it
 
 - **What.** The public server and the leader's internal listener now read a request body as it arrives instead of reserving the announced `Content-Length` up front. Instances started with `--acme-domain` are the exception: their HTTPS listener still runs with fasthttp's defaults. The limits are unchanged: `--max-request-body-size` (10 MB) per request on both, and the same 60 s timeouts. An oversized body, declared or chunked, gets the same 413 `request body size exceeds the limit` on both servers; the internal listener used to answer 400.

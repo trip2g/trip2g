@@ -41,6 +41,8 @@ func TestSearchResultItemFederationJSON(t *testing.T) {
 		"url": "https://hub.local/local",
 		"kind": "note",
 		"score": 1,
+		"size_tokens": 0,
+		"sections": 0,
 		"federation": {
 			"kb_id": "bob",
 			"kb_url": "https://bob.team.io/_system/mcp",

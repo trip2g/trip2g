@@ -109,7 +109,7 @@ What `expand` returns depends on the section named by `toc_path`:
 note_html(pid=42, toc_path=["Chapter 1", "Introduction"])
 ```
 
-This is useful when a note is long: locate the section via `search` or `expand`, then fetch just that section with `note_html`. Pass `match_id` from a search match instead for a focused chunk window around that specific hit.
+This is useful when a note is long: locate the section via `search` or `expand`, then fetch just that section with `note_html`. Pass `match_id` from a search match instead for a focused chunk window around that specific hit. Each search result carries `size_tokens` (an estimate of the note's length) and `sections` (how many headings `expand` can navigate), so an agent can tell which notes are worth opening section by section.
 
 #### Saving tokens with TOC navigation
 

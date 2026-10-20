@@ -18,8 +18,8 @@ func TestTruncateToTokens(t *testing.T) {
 		// ~4000 Latin chars ≈ 1000 estimated tokens, well over a 100-token budget.
 		in := strings.Repeat("word ", 800)
 		got := TruncateToTokens(in, 100)
-		if estimateTokens(got) > 100 {
-			t.Fatalf("result over budget: %d estimated tokens", estimateTokens(got))
+		if EstimateTokens(got) > 100 {
+			t.Fatalf("result over budget: %d estimated tokens", EstimateTokens(got))
 		}
 		if !strings.HasPrefix(in, got) {
 			t.Fatalf("truncated result must be a prefix of the input")
@@ -29,8 +29,8 @@ func TestTruncateToTokens(t *testing.T) {
 	t.Run("truncates oversized Cyrillic text within budget", func(t *testing.T) {
 		in := strings.Repeat("привет мир ", 2000)
 		got := TruncateToTokens(in, 200)
-		if estimateTokens(got) > 200 {
-			t.Fatalf("result over budget: %d estimated tokens", estimateTokens(got))
+		if EstimateTokens(got) > 200 {
+			t.Fatalf("result over budget: %d estimated tokens", EstimateTokens(got))
 		}
 	})
 
