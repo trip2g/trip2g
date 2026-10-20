@@ -16,6 +16,11 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **Why.** The connected agent can rewrite a query at no cost to the server. On the Obsidian Help set with a strong agent filling the fields, nDCG@5 rose from 0.603 to 0.702 on the Russian base queries; with a weak agent the gain is small. See [[en/thoughts/query-expansion-by-the-agent|Let the agent expand the query]].
 - **How to use.** Nothing to set up: agents see the fields in `tools/list`. Give notes a `lang` frontmatter so the descriptions name the base's language. See [[en/user/mcp|MCP]].
 
+### `note_html` reaches the model in Claude Code
+
+- **What.** `note_html` and `federated_note_html` put the note's text into the structured result (`text`) as well as into the text block.
+- **Why.** Since attachments were added, the structured result held only the path and the assets. Claude Code passes a tool's structured result to the model instead of its text block, so a model reading a note there got `{"note_path": …, "assets": []}` and never the note.
+- **How to use.** Nothing to change. A hub relays a peer's structured result as is, so `federated_note_html` needs this release on the peer too.
 ### Attachment uploads no longer fail one time in eight
 
 - **What.** About one `uploadNoteAsset` call in eight failed with `first part must be operations`, whatever order the client sent the form fields in. Through a read replica every upload failed, because the leader received an empty body. Both now succeed. Through a replica the leader still accepts at most 4 MB.
