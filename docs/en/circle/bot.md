@@ -1,7 +1,7 @@
 ---
 title: "A knowledge bot in Telegram"
 label: "knowledge bot"
-order: 7
+order: 8
 motion_visualization: bot
 link: "[[en/thoughts/knowledge-bot]]"
 related:

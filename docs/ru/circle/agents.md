@@ -1,7 +1,7 @@
 ---
 title: "База знаний, которую спрашивают агенты"
 label: "база для агентов"
-order: 5
+order: 6
 motion_visualization: agents
 link: "[[ru/user/obsidian-mcp-server]]"
 related:

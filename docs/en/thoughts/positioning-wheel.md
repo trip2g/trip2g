@@ -1,5 +1,5 @@
 ---
-title: "One folder, nine doors: how the positioning wheel is built"
+title: "One folder, ten doors: how the positioning wheel is built"
 description: "The trip2g positioning wheel is a folder of ordinary markdown notes and one layout. How it works, what the engine made easy, and where it pushed back."
 free: true
 lang: en
@@ -17,7 +17,7 @@ Every vertex is a markdown note in `en/circle/`, with its Russian twin in `ru/ci
 ```yaml
 title: "A Telegram blog from Obsidian"
 label: "telegram blog"
-order: 2
+order: 3
 motion_visualization: channel
 link: "[[en/user/telegram-blog-from-obsidian]]"
 related:
@@ -28,7 +28,7 @@ lang_redirect: "[[ru/circle/channel]]"
 
 The body is the two to four sentences shown in the center. `link` is the main article, `related` the small links under it. `lang` and `lang_redirect` pair the twins, like every other bilingual note on this site.
 
-Adding a point is adding a note. Removing one is deleting a file. The polygon takes as many sides as there are notes. Going from eight points to nine needed no change to the wheel; only the new point's animation needed its own script line (more on that below).
+Adding a point is adding a note. Removing one is deleting a file. The polygon takes as many sides as there are notes. Going from eight points to nine, and then to ten, needed no change to the wheel; only each new point's animation needed its own script line (more on that below).
 
 ## A layout that lists its own folder
 
@@ -42,7 +42,7 @@ The query is a few lines of Jsonnet in a note: the notes directly in that folder
 
 ## Text for search engines, script for the wheel
 
-All nine descriptions are in the HTML the server sends. The script only toggles which one is visible and moves the vertices. With JavaScript off the page is a plain stack of sections, which is also what a search engine reads. The point notes themselves are `noindex` and point their canonical URL at the wheel. Opening one, say `/en/circle/channel`, shows the wheel turned to that point.
+All ten descriptions are in the HTML the server sends. The script only toggles which one is visible and moves the vertices. With JavaScript off the page is a plain stack of sections, which is also what a search engine reads. The point notes themselves are `noindex` and point their canonical URL at the wheel. Opening one, say `/en/circle/channel`, shows the wheel turned to that point.
 
 ## Visualizations are layout assets
 
@@ -65,4 +65,4 @@ Because the drawing depends only on `t`, "reduced motion" is free: draw one fram
 
 ## Why bother
 
-The page is a demonstration of the thing it describes. The positioning lives in notes I can edit in Obsidian, the server renders them, and the layout is a few hundred lines in the same vault. If I want a tenth door tomorrow, it's one more note.
+The page is a demonstration of the thing it describes. The positioning lives in notes I can edit in Obsidian, the server renders them, and the layout is a few hundred lines in the same vault. If I want an eleventh door tomorrow, it's one more note.

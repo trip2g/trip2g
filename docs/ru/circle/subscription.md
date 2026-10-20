@@ -1,7 +1,7 @@
 ---
 title: "Платная база знаний эксперта"
 label: "платная база эксперта"
-order: 3
+order: 4
 motion_visualization: subscription
 link: "[[ru/user/sell-obsidian-notes]]"
 related:

@@ -1,7 +1,7 @@
 ---
 title: "A paid knowledge base of an expert"
 label: "paid expert base"
-order: 3
+order: 4
 motion_visualization: subscription
 link: "[[en/user/sell-obsidian-notes]]"
 related:

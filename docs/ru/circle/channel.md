@@ -1,7 +1,7 @@
 ---
 title: "Блог в Telegram из Obsidian"
 label: "блог в telegram"
-order: 2
+order: 3
 motion_visualization: channel
 link: "[[ru/user/telegram-blog-from-obsidian]]"
 related:

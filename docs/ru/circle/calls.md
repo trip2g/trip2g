@@ -1,7 +1,7 @@
 ---
 title: "Звонки в базу знаний"
 label: "звонки → заметки"
-order: 8
+order: 9
 motion_visualization: calls
 link: "[[ru/user/calls-knowledge-base]]"
 related:

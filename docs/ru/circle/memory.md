@@ -1,7 +1,7 @@
 ---
 title: "Постоянная память для агента"
 label: "постоянная память"
-order: 4
+order: 5
 motion_visualization: memory
 link: "[[ru/user/claude-code-persistent-memory]]"
 related:

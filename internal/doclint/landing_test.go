@@ -150,7 +150,7 @@ func TestLanding_RendersHeroAndSections(t *testing.T) {
 // notes in `order`, through queries/circle_points.md, on the page and on a
 // point's own URL.
 func TestWheel_PointsComeFromTheQuery(t *testing.T) {
-	want := `data-slug="garden" data-slug="channel" data-slug="subscription" data-slug="memory" ` +
+	want := `data-slug="garden" data-slug="selfsite" data-slug="channel" data-slug="subscription" data-slug="memory" ` +
 		`data-slug="agents" data-slug="company" data-slug="bot" data-slug="calls" data-slug="files"`
 	slug := regexp.MustCompile(`data-slug="[a-z]+"`)
 
@@ -158,7 +158,7 @@ func TestWheel_PointsComeFromTheQuery(t *testing.T) {
 		t.Run(permalink, func(t *testing.T) {
 			out := renderDocsLanding(t, permalink)
 			require.Equal(t, want, strings.Join(slug.FindAllString(out, -1), " "))
-			require.Equal(t, 9, strings.Count(out, `role="tabpanel"`))
+			require.Equal(t, 10, strings.Count(out, `role="tabpanel"`))
 			require.NotContains(t, out, `class="wrap"`, "the wheel is full width")
 		})
 	}

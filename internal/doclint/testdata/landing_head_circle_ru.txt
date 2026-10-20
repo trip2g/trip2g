@@ -1,21 +1,21 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Один инструмент, девять дверей — trip2g</title>
-<meta name="description" content="Девять способов, которыми пользуются trip2g: сайт из Obsidian, блог в Telegram, платная база эксперта, постоянная память для ИИ-агентов, база знаний для агентов, распределённая база компании, бот знаний, звонки в заметки и flat-file CMS.">
+<title>Один инструмент, десять дверей — trip2g</title>
+<meta name="description" content="Десять способов, которыми пользуются trip2g: сайт из Obsidian, сам trip2g.com как документация и сад в одном, блог в Telegram, платная база эксперта, постоянная память для ИИ-агентов, база знаний для агентов, распределённая база компании, бот знаний, звонки в заметки и flat-file CMS.">
 <link rel="canonical" href="https://trip2g.com/ru/circle">
 <link rel="alternate" hreflang="en" href="https://trip2g.com/en/circle">
 <link rel="alternate" hreflang="ru" href="https://trip2g.com/ru/circle">
 <link rel="alternate" hreflang="x-default" href="https://trip2g.com/en/circle">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Один инструмент, девять дверей — trip2g">
-<meta property="og:description" content="Девять способов, которыми пользуются trip2g: сайт из Obsidian, блог в Telegram, платная база эксперта, постоянная память для ИИ-агентов, база знаний для агентов, распределённая база компании, бот знаний, звонки в заметки и flat-file CMS.">
+<meta property="og:title" content="Один инструмент, десять дверей — trip2g">
+<meta property="og:description" content="Десять способов, которыми пользуются trip2g: сайт из Obsidian, сам trip2g.com как документация и сад в одном, блог в Telegram, платная база эксперта, постоянная память для ИИ-агентов, база знаний для агентов, распределённая база компании, бот знаний, звонки в заметки и flat-file CMS.">
 <meta property="og:image" content="og.png">
 <meta property="og:image:width" content="1731">
 <meta property="og:image:height" content="909">
 <meta property="og:url" content="https://trip2g.com/ru/circle">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Один инструмент, девять дверей — trip2g">
-<meta name="twitter:description" content="Девять способов, которыми пользуются trip2g: сайт из Obsidian, блог в Telegram, платная база эксперта, постоянная память для ИИ-агентов, база знаний для агентов, распределённая база компании, бот знаний, звонки в заметки и flat-file CMS.">
+<meta name="twitter:title" content="Один инструмент, десять дверей — trip2g">
+<meta name="twitter:description" content="Десять способов, которыми пользуются trip2g: сайт из Obsidian, сам trip2g.com как документация и сад в одном, блог в Telegram, платная база эксперта, постоянная память для ИИ-агентов, база знаний для агентов, распределённая база компании, бот знаний, звонки в заметки и flat-file CMS.">
 <meta name="twitter:image" content="og.png">
 <link rel="icon" href="favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,7 +59,7 @@
 "name": "trip2g",
 "url": "https://trip2g.com/"
 ,
-"description": "Девять способов, которыми пользуются trip2g: сайт из Obsidian, блог в Telegram, платная база эксперта, постоянная память для ИИ-агентов, база знаний для агентов, распределённая база компании, бот знаний, звонки в заметки и flat-file CMS."
+"description": "Десять способов, которыми пользуются trip2g: сайт из Obsidian, сам trip2g.com как документация и сад в одном, блог в Telegram, платная база эксперта, постоянная память для ИИ-агентов, база знаний для агентов, распределённая база компании, бот знаний, звонки в заметки и flat-file CMS."
 ,
 "applicationCategory": "DeveloperApplication",
 "operatingSystem": "Linux, Docker",

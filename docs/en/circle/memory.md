@@ -1,7 +1,7 @@
 ---
 title: "Persistent memory for AI agents"
 label: "persistent memory"
-order: 4
+order: 5
 motion_visualization: memory
 link: "[[en/user/claude-code-persistent-memory]]"
 related:
