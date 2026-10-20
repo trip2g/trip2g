@@ -38,8 +38,17 @@ func buildServer(ctx context.Context, env Env, initResult initialization, scope 
 func newServer(initResult initialization) *mcpsdk.Server {
 	return mcpsdk.NewServer(
 		&mcpsdk.Implementation{Name: initResult.ServerName, Title: initResult.ServerName, Version: serverVersion},
-		&mcpsdk.ServerOptions{Instructions: initResult.Instructions},
+		&mcpsdk.ServerOptions{Instructions: initResult.Instructions, Capabilities: serverCapabilities()},
 	)
+}
+
+// serverCapabilities advertises tools and nothing else. No listChanged: every
+// request gets a fresh, stateless server, so a list_changed notification has no
+// session to go to; a client that sees none opens no subscriptions/listen and
+// reads the list again when it reconnects, which is all an mcp_method note edit
+// needs. No logging: the server sends no log messages.
+func serverCapabilities() *mcpsdk.ServerCapabilities {
+	return &mcpsdk.ServerCapabilities{Tools: &mcpsdk.ToolCapabilities{}}
 }
 
 // registerTools registers the one tool a tools/call dispatches, or for any

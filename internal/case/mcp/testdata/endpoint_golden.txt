@@ -5,10 +5,7 @@ HTTP 200 application/json
   "id": 1,
   "result": {
     "capabilities": {
-      "logging": {},
-      "tools": {
-        "listChanged": true
-      }
+      "tools": {}
     },
     "instructions": "Golden server instructions.",
     "protocolVersion": "2024-11-05",
@@ -27,10 +24,7 @@ HTTP 200 application/json
   "id": 1,
   "result": {
     "capabilities": {
-      "logging": {},
-      "tools": {
-        "listChanged": true
-      }
+      "tools": {}
     },
     "instructions": "Golden server instructions.",
     "protocolVersion": "2025-11-25",
@@ -49,10 +43,7 @@ HTTP 200 application/json
   "id": 1,
   "result": {
     "capabilities": {
-      "logging": {},
-      "tools": {
-        "listChanged": true
-      }
+      "tools": {}
     },
     "instructions": "Guide instructions.",
     "protocolVersion": "2025-11-25",
@@ -110,10 +101,7 @@ HTTP 200 application/json
       "2024-11-05"
     ],
     "capabilities": {
-      "logging": {},
-      "tools": {
-        "listChanged": true
-      }
+      "tools": {}
     },
     "instructions": "Golden server instructions."
   }
@@ -143,10 +131,7 @@ HTTP 200 application/json
       "2024-11-05"
     ],
     "capabilities": {
-      "logging": {},
-      "tools": {
-        "listChanged": true
-      }
+      "tools": {}
     },
     "instructions": "Guide instructions."
   }
