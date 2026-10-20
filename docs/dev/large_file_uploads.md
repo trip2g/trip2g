@@ -2,23 +2,36 @@
 
 **Goal: an attachment of up to 64 MB uploads and downloads reliably.** Larger files are out of scope for now.
 
-Today the default `--max-request-body-size` is 10 MB. Raising it to 64 MB alone is not enough: the problems below are what stand between the flag and the goal. They are recorded, not fixed.
+Status: problem 2 is fixed, and so are uploads through a read replica, which reached the leader with an empty body. Through a replica the leader's internal listener still caps a body at fasthttp's default 4 MB. The public and internal servers no longer pre-parse multipart forms (`DisablePreParseMultipartForm: true`, `cmd/server/server.go`), so `fasthttpadaptor` passes the raw body through and drops one in-memory copy. The limits stay at 10 MB and 60 s: raising them waits for the request-body problem below.
 
-## What limits a file today
+## The request-body problem behind the limits
+
+fasthttp reserves a buffer of the announced `Content-Length` as soon as it has read the headers (`appendBodyFixedSize`), then waits for the body until `ReadTimeout`. This happens before routing and before any credential is checked, and the server sets no `MaxConnsPerIP` or `Concurrency`. So on every route of every instance an anonymous connection that announces 10 MB and sends a byte at a time holds 10 MB for 60 s; a thousand of them hold 10 GB. Raising the limit to 64 MB for 10 minutes, as first tried, multiplies that by six and by ten.
+
+Who needs more than a small body: `pushNotes` sends batches of 100 notes (`assets/ui/sync/browser-sync.js`), `uploadNoteAsset` carries attachments, a git push lands whole in memory (`internal/gitapi/api.go`), and a replica forwards all of these to the leader. All of them come with an API key, a Bearer token or an admin session. Guests, users, webhooks and federation peers send small bodies; 1 MB would do for them.
+
+A per-caller limit needs the body read after the caller is known. Options, not decided:
+
+- **`StreamRequestBody`.** fasthttp then pre-reads 8 KB and hands the rest as a stream, so memory grows with the bytes that actually arrive. In this mode `MaxRequestBodySize` is no longer a limit: a larger body becomes a stream that `PostBody()` reads whole. One wrapper would resolve the caller with the existing checks, read the stream up to that caller's limit into the request, and leave the dozen body readers unchanged; uploads would get the stream itself. Unverified risks: a `TimeoutHandler` goroutine still reading the stream after a timeout, on a keep-alive connection; `Expect: 100-continue`, which the stream path handles differently and git clients send; chunked bodies (`errChunkedStream`); replica forwarding.
+- **Connection limits** (`MaxConnsPerIP`, `Concurrency`, a shorter `ReadTimeout`) soften the attack and do not remove it.
+- **A separate upload endpoint** that checks credentials from the headers and streams the file to storage; changes the API for `uploadNoteAsset` clients.
+- **Leaving fasthttp for `net/http`**, where a body is a stream from the start, `http.MaxBytesReader` limits it per handler, `ReadHeaderTimeout` is separate from the body, and gqlgen needs no adaptor. fasthttp is imported by 43 non-test files with 95 uses of `RequestCtx`, plus `appreq` and SSE on `SetBodyStreamWriter`.
+
+## What limits a file
 
 There is no per-file limit. A file is bounded by the request that carries it:
 
 - `--max-request-body-size` (MB, default 10) is set on both the fasthttp server and gqlgen's `MultipartForm` transport (`cmd/server/server.go`, `internal/graph/handler.go`).
 - `--storage-assets-limit` and `--storage-db-limit` (`CheckStorageLimits`, `cmd/server/assets.go`) cap the total stored, not one file.
 
-## Problems
+## Problems as first found
 
 ### 1. The whole upload sits in memory, about twice
 
 The path of `uploadNoteAsset`:
 
-1. fasthttp reads the full body into memory, up to `MaxRequestBodySize`.
-2. fasthttp pre-parses the multipart form (`DisablePreParseMultipartForm` is false); a file over 16 MB goes to a temp file.
+1. fasthttp parses the multipart form straight from the connection (`DisablePreParseMultipartForm` was false); a file over 16 MB goes to a temp file.
+2. The raw body is not kept, which is also why a read replica forwarded an empty body to the leader.
 3. `fasthttpadaptor` calls `PostBody()`, which re-encodes that parsed form into a new in-memory buffer.
 4. gqlgen parses the rebuilt body again (`MaxMemory` 10 MB, the rest to temp files).
 
@@ -26,7 +39,7 @@ So one upload holds roughly two copies of the file in RAM plus temp files, and e
 
 ### 2. Field order is lost (the "first part must be operations" error)
 
-Step 3 rebuilds the form from Go maps, so the parts come out in random order. gqlgen requires `operations` first and fails otherwise. About one upload in eight fails; reordering fields in the client does not help, because the server reorders them. A repro test is on branch `fix/graphql-multipart-order` (`internal/fastgql/multipart_order_test.go`).
+Step 3 rebuilds the form from Go maps, so the parts come out in random order. gqlgen requires `operations` first and fails otherwise. About one upload in eight fails; reordering fields in the client does not help, because the server reorders them. Fixed; `cmd/server/multipart_order_test.go` sends 400 uploads to the public and the internal server and fails on any of them.
 
 ### 3. 60 seconds for the whole request
 
@@ -36,10 +49,8 @@ Step 3 rebuilds the form from Go maps, so the parts come out in random order. gq
 
 Uploads and downloads both go through the server; presigned S3 URLs are not used. This is fine at 64 MB and becomes the limit for video-sized files.
 
-## Options, not decided
+## Options for problems 1, 3 and 4, not decided
 
-- `DisablePreParseMultipartForm: true` — removes step 2 and the reordering in step 3, which fixes problem 2 and one copy from problem 1. Everything else on the server that reads a multipart form must then parse it itself.
-- A narrow wrapper that restores the field order before gqlgen (`fix/graphql-multipart-order`) — fixes problem 2 only.
 - A separate upload endpoint that streams the file to storage outside the GraphQL adaptor — fixes problems 1–3 for uploads.
 - Presigned upload and download URLs to S3 — fixes problems 1, 3 and 4 when storage is S3; local storage still needs one of the above.
-- A longer timeout only for upload and asset routes — fixes problem 3 alone.
+- A longer timeout only for upload and asset routes — fixes problem 3 alone, and stretches the request-body problem above on those routes.
