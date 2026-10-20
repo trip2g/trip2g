@@ -74,6 +74,8 @@ func goldenCases() []goldenCase {
 		{name: "initialize_method_override_private", body: rpc(1, "initialize", ""), query: "method=private-tool"},
 		{name: "server_discover", body: rpc(1, "server/discover", discoverMeta), headers: discoverHeaders()},
 		{name: "server_discover_method_override", body: rpc(1, "server/discover", discoverMeta), headers: discoverHeaders(), query: "method=guide"},
+		{name: "modern_notification_without_method_header", body: cancelNotification, headers: map[string]string{"MCP-Protocol-Version": "2026-07-28"}},
+		{name: "modern_subscriptions_listen", body: rpc(3, "subscriptions/listen", listenParams), headers: modernHeaders("subscriptions/listen")},
 		{name: "notifications_initialized", body: `{"jsonrpc":"2.0","id":null,"method":"notifications/initialized"}`},
 
 		{name: "tools_list_anonymous", body: rpc(2, "tools/list", "{}")},
@@ -138,6 +140,14 @@ const discoverMeta = `{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-
 
 func discoverHeaders() map[string]string {
 	return map[string]string{"Mcp-Method": "server/discover", "MCP-Protocol-Version": "2026-07-28"}
+}
+
+const cancelNotification = `{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":"listen:0","_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{},"io.modelcontextprotocol/clientInfo":{"name":"golden","version":"1"}}}}`
+
+const listenParams = `{"notifications":{"toolsListChanged":true},"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{},"io.modelcontextprotocol/clientInfo":{"name":"golden","version":"1"}}}`
+
+func modernHeaders(method string) map[string]string {
+	return map[string]string{"Mcp-Method": method, "MCP-Protocol-Version": "2026-07-28"}
 }
 
 const gqlArgs = `{"query":"{admin{__typename}}"}`
