@@ -31,11 +31,36 @@ type bodyEcho struct {
 func (e *bodyEcho) handle(ctx *fasthttp.RequestCtx) {
 	e.calls.Add(1)
 
-	if string(ctx.Path()) == "/slow" {
+	switch string(ctx.Path()) {
+	case "/slow":
 		time.Sleep(time.Second)
+	case "/medium":
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	ctx.SetBodyString(bodyDigest(ctx.PostBody()))
+}
+
+type testServer struct {
+	name  string
+	build func(h fasthttp.RequestHandler, timeout time.Duration) *fasthttp.Server
+}
+
+func bothServers() []testServer {
+	return []testServer{
+		{
+			name: "public",
+			build: func(h fasthttp.RequestHandler, timeout time.Duration) *fasthttp.Server {
+				return newHTTPServer(h, timeout, testBodyLimit)
+			},
+		},
+		{
+			name: "internal",
+			build: func(h fasthttp.RequestHandler, timeout time.Duration) *fasthttp.Server {
+				return newInternalServer(h, timeout, testBodyLimit)
+			},
+		},
+	}
 }
 
 func bodyDigest(body []byte) string {
@@ -125,24 +150,6 @@ func TestServersLimitStreamedRequestBody(t *testing.T) {
 	atLimit := patternBody(testBodyLimit)
 	overLimit := patternBody(testBodyLimit + 1)
 
-	servers := []struct {
-		name string
-		new  func(fasthttp.RequestHandler) *fasthttp.Server
-	}{
-		{
-			name: "public",
-			new: func(h fasthttp.RequestHandler) *fasthttp.Server {
-				return newHTTPServer(h, time.Minute, testBodyLimit)
-			},
-		},
-		{
-			name: "internal",
-			new: func(h fasthttp.RequestHandler) *fasthttp.Server {
-				return newInternalServer(h, time.Minute, testBodyLimit)
-			},
-		},
-	}
-
 	cases := []struct {
 		name    string
 		raw     []byte
@@ -184,11 +191,11 @@ func TestServersLimitStreamedRequestBody(t *testing.T) {
 		},
 	}
 
-	for _, srv := range servers {
+	for _, srv := range bothServers() {
 		for _, tt := range cases {
 			t.Run(srv.name+"/"+tt.name, func(t *testing.T) {
 				echo := &bodyEcho{}
-				ln := serveInMemory(t, srv.new(echo.handle))
+				ln := serveInMemory(t, srv.build(echo.handle, time.Minute))
 				conn := dial(t, ln)
 
 				send(conn, tt.raw)
@@ -197,6 +204,7 @@ func TestServersLimitStreamedRequestBody(t *testing.T) {
 				require.Equal(t, tt.status, resp.StatusCode())
 				require.Equal(t, tt.body, string(resp.Body()))
 				require.Equal(t, tt.handled, echo.calls.Load() == 1)
+				require.Equal(t, !tt.handled, resp.ConnectionClose())
 			})
 		}
 	}
@@ -232,9 +240,12 @@ func TestPublicServerDoesNotReserveAnnouncedBody(t *testing.T) {
 	require.Zero(t, echo.calls.Load())
 }
 
+// The second body arrives over 500 ms and its handler takes 500 ms. Each fits
+// in the 800 ms timeout, together they do not, so the request passes only when
+// the body is read before the handler timer starts.
 func TestPublicServerKeepsConnectionAfterHandlerTimeout(t *testing.T) {
 	echo := &bodyEcho{}
-	ln := serveInMemory(t, newHTTPServer(echo.handle, 300*time.Millisecond, testBodyLimit))
+	ln := serveInMemory(t, newHTTPServer(echo.handle, 800*time.Millisecond, testBodyLimit))
 	conn := dial(t, ln)
 	br := bufio.NewReader(conn)
 
@@ -244,7 +255,13 @@ func TestPublicServerKeepsConnectionAfterHandlerTimeout(t *testing.T) {
 	require.Equal(t, fasthttp.StatusRequestTimeout, resp.StatusCode())
 
 	second := patternBody(30 * 1024)
-	send(conn, fixedRequest("/", "", second))
+	raw := fixedRequest("/medium", "", second)
+	half := len(raw) - len(second)/2
+	go func() {
+		_, _ = conn.Write(raw[:half])
+		time.Sleep(500 * time.Millisecond)
+		_, _ = conn.Write(raw[half:])
+	}()
 	resp = readResponse(t, br)
 	require.Equal(t, fasthttp.StatusOK, resp.StatusCode())
 	require.Equal(t, bodyDigest(second), string(resp.Body()))
@@ -288,23 +305,11 @@ func TestServersBoundBodyByReadTimeout(t *testing.T) {
 		{name: "pause longer than read timeout", split: headEnd + 16*1024, pause: time.Second, status: fasthttp.StatusBadRequest},
 	}
 
-	servers := []struct {
-		name string
-		make func(h fasthttp.RequestHandler) *fasthttp.Server
-	}{
-		{name: "public", make: func(h fasthttp.RequestHandler) *fasthttp.Server {
-			return newHTTPServer(h, 500*time.Millisecond, testBodyLimit)
-		}},
-		{name: "internal", make: func(h fasthttp.RequestHandler) *fasthttp.Server {
-			return newInternalServer(h, 500*time.Millisecond, testBodyLimit)
-		}},
-	}
-
-	for _, srv := range servers {
+	for _, srv := range bothServers() {
 		for _, tt := range cases {
 			t.Run(srv.name+"/"+tt.name, func(t *testing.T) {
 				echo := &bodyEcho{}
-				ln := serveInMemory(t, srv.make(echo.handle))
+				ln := serveInMemory(t, srv.build(echo.handle, 500*time.Millisecond))
 				conn := dial(t, ln)
 
 				go func() {
@@ -322,7 +327,79 @@ func TestServersBoundBodyByReadTimeout(t *testing.T) {
 				}
 
 				require.Zero(t, echo.calls.Load())
+				require.True(t, resp.ConnectionClose())
 			})
 		}
+	}
+}
+
+func TestServersDoNotParseAStalledBodyAsTheNextRequest(t *testing.T) {
+	smuggled := []byte("GET /smuggled HTTP/1.1\r\nHost: trip2g.test\r\n\r\n")
+	sent := patternBody(10 * 1024)
+	head := "POST / HTTP/1.1\r\nHost: trip2g.test\r\nContent-Length: " +
+		strconv.Itoa(len(sent)+len(smuggled)) + "\r\n\r\n"
+
+	for _, srv := range bothServers() {
+		t.Run(srv.name, func(t *testing.T) {
+			echo := &bodyEcho{}
+			ln := serveInMemory(t, srv.build(echo.handle, 300*time.Millisecond))
+			conn := dial(t, ln)
+
+			send(conn, append([]byte(head), sent...))
+
+			br := bufio.NewReader(conn)
+			resp := readResponse(t, br)
+			require.Equal(t, fasthttp.StatusBadRequest, resp.StatusCode())
+
+			send(conn, smuggled)
+			time.Sleep(100 * time.Millisecond)
+
+			second := &fasthttp.Response{}
+			secondErr := second.Read(br)
+			require.Zero(t, echo.calls.Load(), "smuggled request reached the handler")
+			require.Error(t, secondErr)
+			require.True(t, resp.ConnectionClose())
+		})
+	}
+}
+
+func TestServersRefuseATruncatedBody(t *testing.T) {
+	body := patternBody(40 * 1024)
+	raw := fixedRequest("/", "", body)
+	cut := len(raw) - len(body)/2
+
+	for _, srv := range bothServers() {
+		t.Run(srv.name, func(t *testing.T) {
+			echo := &bodyEcho{}
+			server := srv.build(echo.handle, time.Minute)
+
+			ln, err := net.Listen("tcp", "127.0.0.1:0")
+			require.NoError(t, err)
+
+			go func() {
+				_ = server.Serve(ln)
+			}()
+			t.Cleanup(func() {
+				_ = server.Shutdown()
+			})
+
+			conn, err := net.Dial("tcp", ln.Addr().String())
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				_ = conn.Close()
+			})
+
+			_, err = conn.Write(raw[:cut])
+			require.NoError(t, err)
+
+			tcpConn, ok := conn.(*net.TCPConn)
+			require.True(t, ok)
+			require.NoError(t, tcpConn.CloseWrite())
+
+			resp := readResponse(t, bufio.NewReader(conn))
+			require.Equal(t, fasthttp.StatusBadRequest, resp.StatusCode())
+			require.True(t, resp.ConnectionClose())
+			require.Zero(t, echo.calls.Load())
+		})
 	}
 }

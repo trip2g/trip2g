@@ -148,10 +148,10 @@ func (a *app) requestHandler() fasthttp.RequestHandler {
 }
 
 func writeBodyTooLarge(ctx *fasthttp.RequestCtx) {
-	ctx.SetConnectionClose()
 	ctx.SetStatusCode(http.StatusRequestEntityTooLarge)
 	ctx.SetContentType("application/json")
 	ctx.SetBodyString(`{"errors":[{"message":"request body size exceeds the limit"}]}`)
+	ctx.SetConnectionClose()
 }
 
 // limitRequestBody enforces the body limit that stream mode takes away from
@@ -171,10 +171,13 @@ func limitRequestBody(next fasthttp.RequestHandler, limit int) fasthttp.RequestH
 			return
 		}
 
+		// A fixed-length stream ends with plain io.EOF when the peer stops
+		// early, so a short body is caught by its length, not by err.
 		body, err := io.ReadAll(io.LimitReader(stream, int64(limit)+1))
-		if err != nil {
-			ctx.SetConnectionClose()
+		contentLength := ctx.Request.Header.ContentLength()
+		if err != nil || (contentLength >= 0 && len(body) != contentLength) {
 			ctx.Error("Error when parsing request", fasthttp.StatusBadRequest)
+			ctx.SetConnectionClose()
 			return
 		}
 
