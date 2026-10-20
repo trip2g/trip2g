@@ -292,3 +292,25 @@ func TestSmokeRenderLayouts_MissingLayoutWarnsNote(t *testing.T) {
 	require.Equal(t, []model.NoteWarning{{Level: model.NoteWarningWarning, Message: `layout "rss" not found`}}, feed.Warnings)
 	require.Empty(t, plain.Warnings)
 }
+
+// A layout that hands the whole frontmatter to json() renders a note whose
+// frontmatter nests a map.
+func TestSmokeRenderLayouts_JSONOfNestedFrontmatter(t *testing.T) {
+	layouts := smokeLoadLayouts(t, []model.LayoutSourceFile{
+		{ID: "/app", Path: "_layouts/app.html",
+			Content: `<script>{{ json(note.M().Raw()) }}</script>`},
+	})
+
+	srcs := []mdloader.SourceFile{{
+		Path:   "talk.md",
+		PathID: 1,
+		Content: []byte("---\nfree: true\nlayout: app\nspeakers:\n" +
+			"  host:\n    name: Ann\n---\nt"),
+	}}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+
+	smokeRenderLayouts(layouts, nvs, &logger.TestLogger{})
+
+	require.Empty(t, layouts.Map["/app"].Warnings)
+}
