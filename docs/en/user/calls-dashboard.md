@@ -41,7 +41,7 @@ flowchart TD
   V -- webhook on a new note --> F
   F -- writes review, topics, thread line --> V
   F -- through codex-bridge --> X
-  HM --> X
+  HM -- directly --> X
 ```
 
 ![[calls-telegram.png|The bot answers about a call and a thread; each answer ends with a dashboard link]]
