@@ -787,7 +787,7 @@ With `=` instead of `:=` the tag assigns a variable declared earlier, and the ne
 ```jet
 {{ debug(note.M()) }}
 {* → *templateviews.Meta: &{raw:map[title:My Page extra_content:[a b]]}
-      methods: [Debug Get GetBool GetInt GetString GetStrings Has Raw] *}
+      methods: [Debug Get GetBool GetFloat GetInt GetString GetStrings Has Raw] *}
 
 {{ debug(note.Title()) }}
 {* → string: My Page *}

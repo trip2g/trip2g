@@ -491,7 +491,7 @@ Jet — движок шаблонов для Go. Синтаксис близок
 ```jet
 {{ debug(note.M()) }}
 {* → *templateviews.Meta: &{raw:map[title:My Page extra_content:[a b]]}
-      methods: [Debug Get GetBool GetInt GetString GetStrings Has Raw] *}
+      methods: [Debug Get GetBool GetFloat GetInt GetString GetStrings Has Raw] *}
 
 {{ debug(note.Title()) }}
 {* → string: My Page *}

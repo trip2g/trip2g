@@ -107,7 +107,7 @@ func TestResolve_Meta(t *testing.T) {
 
 			require.Equal(t, model.UpdateNotesSuccessPayload{
 				Paths:   []string{"note.md"},
-				Updated: []model.NoteWriteResult{{Path: "note.md", VersionID: 50}},
+				Updated: []model.NoteWriteResult{{Path: "note.md", VersionID: 50, Warnings: []appmodel.NoteWarning{}}},
 			}, out)
 			require.NotNil(t, inserted)
 			require.Equal(t, appmodel.RawNote{Path: "note.md", Content: tt.wantContent}, *inserted)

@@ -494,7 +494,7 @@ trip2g регистрирует восемь глобальных функций
 
 #### Методы `note`, `note.M()`, `nvs` и выборок
 
-Полный список — в [[ru/user/templates-advanced|Шаблонах: API]]: методы заметки (`Title`, `HTMLString`, `Tags`, `Dir`, `Lang`, `LangAlternative`, `LangAlternativesList`, `HasCodeLanguage`…), доступ к frontmatter (`GetString`, `GetInt`, `GetBool`, `GetStrings`…), `nvs` (`ByPath`, `ByPermalink`, `ByWikilink`, `BackLinks`…), выборки (`ByGlob`, `SortBy`, `SortByMeta`, `Public`, `Limit`…) и `PartialRenderer`. Там же — что выборка возвращает без фильтров и как ведёт себя сортировка. `FormSpecJSON()` описан в [[ru/user/forms|Формах]], `debug()` и `note.M().Debug()` — в [[ru/user/jet-debugging|Отладке]].
+Полный список — в [[ru/user/templates-advanced|Шаблонах: API]]: методы заметки (`Title`, `HTMLString`, `Tags`, `Dir`, `Lang`, `LangAlternative`, `LangAlternativesList`, `HasCodeLanguage`…), доступ к frontmatter (`GetString`, `GetInt`, `GetFloat`, `GetBool`, `GetStrings`…), `nvs` (`ByPath`, `ByPermalink`, `ByWikilink`, `BackLinks`…), выборки (`ByGlob`, `SortBy`, `SortByMeta`, `Public`, `Limit`…) и `PartialRenderer`. Там же — что выборка возвращает без фильтров и как ведёт себя сортировка. `FormSpecJSON()` описан в [[ru/user/forms|Формах]], `debug()` и `note.M().Debug()` — в [[ru/user/jet-debugging|Отладке]].
 
 `PermalinkEncoded()` — это `Permalink()`, в котором каждый сегмент пути закодирован процентами: `/привет мир` → `/%D0%BF…%20%D0%BC…`. Это кодирование URL, а не HTML-экранирование. Раз вывод экранируется, `Permalink()` тоже безопасен в `href`. `PermalinkEncoded()` нужен, когда в пути есть не-ASCII символы или пробелы и нужен строго закодированный адрес: в sitemap, ленте или ссылке, которую читает другая программа.
 

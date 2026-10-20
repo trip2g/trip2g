@@ -3250,6 +3250,8 @@ input UpdateNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.A
 type NoteWriteResult {
   path: String!
   versionId: Int64!
+  # The note's warnings after the save, validator messages included.
+  warnings: [NoteWarning!]!
 }
 
 type UpdateNotesSuccessPayload {
@@ -39898,6 +39900,41 @@ func (ec *executionContext) fieldContext_NoteWriteResult_versionId(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteWriteResult_warnings(ctx context.Context, field graphql.CollectedField, obj *model.NoteWriteResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteWriteResult_warnings,
+		func(ctx context.Context) (any, error) {
+			return obj.Warnings, nil
+		},
+		nil,
+		ec.marshalNNoteWarning2ᚕtrip2gᚋinternalᚋmodelᚐNoteWarningᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteWriteResult_warnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteWriteResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "level":
+				return ec.fieldContext_NoteWarning_level(ctx, field)
+			case "message":
+				return ec.fieldContext_NoteWarning_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteWarning", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OAuthUrlPayload_authUrl(ctx context.Context, field graphql.CollectedField, obj *model.OAuthURLPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -46487,6 +46524,8 @@ func (ec *executionContext) fieldContext_UpdateNotesSuccessPayload_updated(_ con
 				return ec.fieldContext_NoteWriteResult_path(ctx, field)
 			case "versionId":
 				return ec.fieldContext_NoteWriteResult_versionId(ctx, field)
+			case "warnings":
+				return ec.fieldContext_NoteWriteResult_warnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteWriteResult", field.Name)
 		},
@@ -81291,6 +81330,11 @@ func (ec *executionContext) _NoteWriteResult(ctx context.Context, sel ast.Select
 			}
 		case "versionId":
 			out.Values[i] = ec._NoteWriteResult_versionId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "warnings":
+			out.Values[i] = ec._NoteWriteResult_warnings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

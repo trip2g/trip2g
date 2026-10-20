@@ -211,7 +211,9 @@ const makeRequest = (query) => (variables) =>
 const updateNotes = makeRequest(`mutation ($input: UpdateNotesInput!) {
   updateNotes(input: $input) {
     __typename
-    ... on UpdateNotesSuccessPayload { updated { path versionId } }
+    ... on UpdateNotesSuccessPayload {
+      updated { path versionId warnings { level message } }
+    }
     ... on UpdateNotesHashMismatchPayload { path actualHash }
     ... on UpdateNotesPatchNotFoundPayload { path find }
     ... on ErrorPayload { message }
@@ -226,7 +228,7 @@ const { updateNotes: result } = await updateNotes({ input: { changes: [change] }
 
 | `__typename` | Что значит |
 |---|---|
-| `UpdateNotesSuccessPayload` | Сохранено; в `updated` каждая заметка с `versionId`, который записало сохранение |
+| `UpdateNotesSuccessPayload` | Сохранено; в `updated` каждая заметка с `versionId`, который записало сохранение, и её `warnings` |
 | `UpdateNotesHashMismatchPayload` | Ничего не записано: заметка больше не соответствует `expectedHash`; `actualHash` — её текущий хеш |
 | `UpdateNotesPatchNotFoundPayload` | Изменение `patch` не нашло свой текст `find` или нашло его больше одного раза |
 | `ErrorPayload` | Отказ, причина в `message` |
@@ -261,6 +263,51 @@ const expectedHash = await contentHash(data.content)
 На `UpdateNotesHashMismatchPayload` перезагрузите страницу или получите новое содержимое и примените своё изменение к нему. Канбан перечитывает последнюю версию админскими запросами `noteVersionHistory` и `noteVersion` и повторяет перемещение.
 
 **Маленькие правки.** Вместо `upsert`, который заменяет заметку целиком, изменение может быть `patch`: `{ patch: { path, find, replace, expectedHash } }` заменяет один точный кусок текста. Так канбан переключает чекбокс, и текст, который он не понимает, никогда не переписывается. Чтобы поменять frontmatter, есть изменение `meta`: `{ meta: { path, set, unset, expectedHash } }` задаёт или удаляет ключи верхнего уровня и оставляет остальные строки заметки как были, так что приложению не нужен точный текст старого значения. Все три формы, пакеты изменений и ошибки — в [[ru/user/update_notes|updateNotes]].
+
+#### Валидаторы: держите данные приложения в порядке {#validate}
+
+Заметка — база данных приложения, и править её может кто угодно: вы в Obsidian, агент, само приложение. Ничто не мешает сломанному значению попасть в файл, и приложение на нём не падает. `columns: Todo, Doing, Done` без скобок — одна строка, поэтому `GetStrings` вернёт одну колонку с именем «Todo, Doing, Done». `wip_limit: three` — слово, а не число, поэтому `GetInt` вернёт значение по умолчанию. Доска откроется, будет выглядеть неправильно, и никто не поймёт почему. Подключите [[ru/user/validators|валидатор]] к каждой заметке, которую приложение читает как данные, и такая ошибка станет предупреждением на заметке.
+
+Валидатор для настроек из раздела [[ru/user/spa#config|Настройки приложения во frontmatter]], в заметке `validators/app_config.md`:
+
+```jsonnet
+local isInt(v) = std.isNumber(v) && std.floor(v) == v;
+local columns = std.get(meta, 'columns');
+
+(
+  if !std.isArray(columns) || std.length(columns) == 0
+  then [{level: 'error', msg: 'columns must be a non-empty list'}]
+  else []
+) + (
+  if std.objectHas(meta, 'wip_limit') && !isInt(meta.wip_limit)
+  then [{level: 'error', msg: 'wip_limit must be a whole number'}]
+  else []
+) + (
+  if std.objectHas(meta, 'show_archive')
+    && !std.isBoolean(meta.show_archive)
+  then [{level: 'warning', msg: 'show_archive must be true or false'}]
+  else []
+)
+```
+
+Заметка с данными называет его во frontmatter:
+
+```yaml
+validate: "[[app_config]]"
+```
+
+Валидатор не блокирует сохранение. Заметка записывается даже с `error`, а сообщения возвращаются в `updated[].warnings` ответа `updateNotes` вместе с остальными предупреждениями заметки. `level` — `CRITICAL` для `error` и `WARNING` для `warning`. Проверяйте их после каждого сохранения и показывайте пользователю, иначе сломанное значение, которое записало само приложение, останется незамеченным:
+
+```js
+if (result.__typename === 'UpdateNotesSuccessPayload') {
+  const messages = result.updated
+    .flatMap((note) => note.warnings)
+    .map((w) => `${w.level}: ${w.message}`)
+  if (messages.length > 0) alert(messages.join('\n'))
+}
+```
+
+`alert` — самый короткий способ; настоящее приложение показывает сообщения в своём интерфейсе. Те же сообщения видны в CLI синхронизации и в админке, см. [[ru/user/validators#Где виден результат|Где виден результат]].
 
 ### Живые обновления {#live}
 
@@ -431,6 +478,10 @@ mutation SaveNotes($input: UpdateNotesInput!) {
       updated {
         path
         versionId
+        warnings {
+          level
+          message
+        }
       }
     }
     ... on UpdateNotesHashMismatchPayload {
@@ -464,7 +515,7 @@ mutation SaveNotes($input: UpdateNotesInput!) {
 }
 ```
 
-`upsert` заменяет заметку или создаёт её. С `expectedHash` сохранение пройдёт, только если с момента чтения заметку никто не менял, иначе придёт `UpdateNotesHashMismatchPayload`. Пустой `expectedHash` значит «только создать»: если заметка уже есть, сохранения не будет. Без `expectedHash` сохранение всегда перезаписывает. `updated[].versionId` — версия, которую записало сохранение.
+`upsert` заменяет заметку или создаёт её. С `expectedHash` сохранение пройдёт, только если с момента чтения заметку никто не менял, иначе придёт `UpdateNotesHashMismatchPayload`. Пустой `expectedHash` значит «только создать»: если заметка уже есть, сохранения не будет. Без `expectedHash` сохранение всегда перезаписывает. `updated[].versionId` — версия, которую записало сохранение. `updated[].warnings` — предупреждения заметки после сохранения, включая сообщения [[ru/user/validators|валидаторов]]: `level` — `INFO`, `WARNING` или `CRITICAL`. Заметка с предупреждением `CRITICAL` всё равно сохраняется, поэтому покажите сообщения пользователю.
 
 #### Заменить один кусок текста
 
@@ -887,7 +938,7 @@ await send([{ name: 'email', stringValue: 'alice@example.com' }])
 Как части этой страницы могли бы сложиться в магазин. Это иллюстрация, а не функция магазина: своего каталога, корзины и оформления заказа у trip2g нет.
 
 - **Товары — заметки,** по одной на товар, с ценой и остатком во frontmatter: `price: 1200`, `stock: 5`.
-- **Витрина — шаблон,** который перечисляет их через `nvs.ByGlob("shop/*.md").Public()` и читает у каждого `M().GetInt("price", 0)`; см. [[ru/user/jet-functions|Справочник функций Jet]].
+- **Витрина — шаблон,** который перечисляет их через `nvs.ByGlob("shop/*.md").Public()` и читает у каждого `M().GetFloat("price", 0)`; см. [[ru/user/jet-functions|Справочник функций Jet]].
 - **Корзина живёт в браузере,** в `localStorage`, или в своём API по адресу `/_system/extra/cart`, которое спрашивает у `viewer` trip2g, кто покупатель, как в разделе [[ru/user/spa#own-api|Своё API]].
 - **Заказ — форма trip2g,** а не ваше API: заметка оформления объявляет `form:` с контактами покупателя и текстовым полем для корзины, и приложение отправляет её, как в разделе [[ru/user/spa#forms|Формы]]. Заказ приходит в админку и на почту админам.
 
@@ -921,6 +972,7 @@ await send([{ name: 'email', stringValue: 'alice@example.com' }])
 - [ ] В странице нет API-ключа или токена, у приложения нет своего экрана входа.
 - [ ] Кнопки редактирования видны, только когда так решил `currentUser.IsAdmin()` в шаблоне; посетитель видит заметку только для чтения и кнопку входа в шапке.
 - [ ] Каждое сохранение передаёт `expectedHash` и обрабатывает `UpdateNotesHashMismatchPayload` и запись в `errors`.
+- [ ] К каждой заметке, которую приложение читает как данные, подключён валидатор через `validate`, и приложение показывает `updated[].warnings` после сохранения.
 - [ ] Вызовы MCP идут в `/_system/mcp` по относительному адресу, методом `POST` с `Content-Type: application/json` и браузерным `Accept` по умолчанию, и обрабатывают и JSON-RPC `error`, и результат с `isError`.
 - [ ] Своё API живёт под `/_system/extra/` на хосте сайта, а не на поддомене, не под `/api/` и не по другому пути `/_system/`; отправляет заголовок `Cookie` только в trip2g по внутреннему адресу, не пишет его в лог и не сохраняет, и не принимает `GET` на эндпоинтах, которые что-то меняют.
 - [ ] Данные, которые собирает приложение, идут через форму trip2g: приложение обрабатывает `TurnstileRequiredPayload`, `FormSubmitDeniedPayload` и `ErrorPayload`, а форма для участников стоит на заметке, которую читают только они.

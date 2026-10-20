@@ -1120,3 +1120,43 @@ func TestResolve_HideWithUnchangedUpsertStillReports(t *testing.T) {
 	require.Len(t, payload.Updated, 1, "the unchanged path must not vanish from the response")
 	require.Zero(t, handles, "nothing was written, so no change events")
 }
+
+// TestResolve_ReportsWarnings: each saved note carries the warnings the post-write
+// reload gave it (validator messages among them), so a client sees them on save.
+func TestResolve_ReportsWarnings(t *testing.T) {
+	warnings := []appmodel.NoteWarning{
+		{Level: appmodel.NoteWarningCritical, Message: "validator: missing title"},
+	}
+	reloaded := appmodel.NewNoteViews()
+	reloaded.RegisterNote(&appmodel.NoteView{
+		PathID: 1, Path: "a.md", Permalink: "a.md", VersionID: 10, Warnings: warnings,
+	})
+	reloaded.RegisterNote(&appmodel.NoteView{
+		PathID: 2, Path: "b.md", Permalink: "b.md", VersionID: 20,
+	})
+
+	ids := map[string]int64{"a.md": 1, "b.md": 2}
+	env := &mockEnv{
+		latestNoteViews: appmodel.NewNoteViews,
+		insertNote: func(_ context.Context, note appmodel.RawNote) (appmodel.NoteSaveResult, error) {
+			id := ids[note.Path]
+			return appmodel.NoteSaveResult{PathID: id, VersionID: id * 10}, nil
+		},
+		prepareLatestNotes: func(_ context.Context, _ bool) (*appmodel.NoteViews, error) {
+			return reloaded, nil
+		},
+		handleLatestNotesAfterSave: noopHandle,
+	}
+
+	result, err := updatenotes.Resolve(context.Background(), env, model.UpdateNotesInput{
+		Changes: []model.NoteChangeInput{
+			{Upsert: &model.NoteChangeUpsertInput{Path: "a.md", Content: "a"}},
+			{Upsert: &model.NoteChangeUpsertInput{Path: "b.md", Content: "b"}},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, []model.NoteWriteResult{
+		{Path: "a.md", VersionID: 10, Warnings: warnings},
+		{Path: "b.md", VersionID: 20, Warnings: []appmodel.NoteWarning{}},
+	}, result.(model.UpdateNotesSuccessPayload).Updated)
+}

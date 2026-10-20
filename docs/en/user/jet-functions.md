@@ -553,7 +553,8 @@ Documented in [[en/user/templates#What's available in a custom template|Template
 |---|---|---|
 | `Get(key)` | raw value | `nil` if missing. You can't do arithmetic on it: `Get("order") + 1` fails; use `GetInt` |
 | `GetString(key, def)` | `string` | `def` when missing **or not a string**. `order: 3` gives `def` |
-| `GetInt(key, def)` | `int` | Accepts integers and floats (truncated: `2.7` → `2`); `def` otherwise, including for `"3"` |
+| `GetInt(key, def)` | `int` | Accepts integers, floats (truncated: `2.7` → `2`) and strings holding an integer (`"3"` → `3`); `def` otherwise, including for `"3.5"` |
+| `GetFloat(key, def)` | `float64` | Numbers and strings holding a number (`"9.99"` → `9.99`), for values with a fractional part such as prices; `def` otherwise |
 | `GetBool(key, def)` | `bool` | `true`/`false`; strings `"true"`, `"yes"`, `"1"` are true and any other string is false; numbers: non-zero is true |
 | `GetStrings(key)` | `[]string` | A list (non-string items dropped) or a single string as a one-item list; empty list, never nil |
 | `Raw()` | map | The whole frontmatter, e.g. for `json(note.M().Raw())` |

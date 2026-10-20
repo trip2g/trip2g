@@ -36,7 +36,7 @@ lang_redirect: "[[en/user/jet-debugging]]"
 
 ```
 *templateviews.Meta: &{raw:map[title:My Page extra_content:[a b]]}
-      methods: [Debug Get GetBool GetInt GetString GetStrings Has Raw]
+      methods: [Debug Get GetBool GetFloat GetInt GetString GetStrings Has Raw]
 ```
 
 Передавайте любое выражение — строку, число, результат вызова метода:

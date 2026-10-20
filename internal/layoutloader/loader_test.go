@@ -1348,3 +1348,27 @@ func TestLoad_YieldOfBlockDefinedInPage_NoWarning(t *testing.T) {
 	require.NotContains(t, messages, `yield "own_link" has no matching block in component files`)
 	require.Contains(t, messages, `yield "missing_block" has no matching block in component files`)
 }
+
+func TestTemplateViews_NoteMetaGetFloat(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/test/price",
+		VersionID: 1,
+		Path:      "_layouts/test/price.html",
+		Content: `{{ note.M().GetFloat("price", 0) }}|` +
+			`{{ note.M().GetFloat("missing", 0) }}|` +
+			`{{ note.M().GetFloat("price", 0) * 2 }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	nv := &model.NoteView{RawMeta: map[string]interface{}{"price": "9.99"}}
+	vars := make(jet.VarMap)
+	vars["note"] = reflect.ValueOf(templateviews.NewNote(nv))
+
+	var buf bytes.Buffer
+	err = layouts.Map["/test/price"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+	require.Equal(t, "9.99|0|19.98", buf.String())
+}
