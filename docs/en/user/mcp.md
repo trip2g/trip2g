@@ -25,7 +25,7 @@ sequenceDiagram
 
 | Method | Description |
 |--------|-------------|
-| `search(query)` | Vector search across the knowledge base. Returns slim snippets — a heading breadcrumb and a precise `toc_path` per match, not the full table of contents |
+| `search(query, short_query?, rephrased_query?, expected_answer?)` | Vector search across the knowledge base. Returns slim snippets — a heading breadcrumb and a precise `toc_path` per match, not the full table of contents |
 | `expand(pid, toc_path?, first?, last?)` | Walk a note's table of contents level by level. Returns the direct children of a TOC node so you can drill down without loading the note; a section without subsections is returned in full. `first` and `last` list only that many of the oldest and newest children, for a note whose sections run into the hundreds. See [[en/user/expand]] for a detailed explanation |
 | `note_html(path, toc_path?)` | Full note or a specific section |
 | `similar(path)` | Notes similar to the given note |
@@ -48,6 +48,20 @@ Each match returned by `search` carries:
 `toc_path` is a breadcrumb array that uniquely identifies a section. Heading titles can repeat under different parents; the array disambiguates them. For example, two sections both titled "Introduction" under "Chapter 1" and "Chapter 2" produce distinct paths: `["Chapter 1", "Introduction"]` and `["Chapter 2", "Introduction"]`.
 
 Search results no longer include a full flat `toc` array. To explore a note's structure beyond the matched section, use `expand` (below).
+
+#### `search` — optional query variants from the agent
+
+`query` is the user's question as they asked it. Next to it the agent may pass three optional strings; each one adds one more result list, fused with the others by rank:
+
+| Field | What the agent writes | Searched by |
+|---|---|---|
+| `short_query` | 2–3 words the answering note is sure to contain, e.g. `pin tab` | full-text search only |
+| `rephrased_query` | the question in other words, with the canonical name of the thing if the agent knows it | vector search only |
+| `expected_answer` | one or two sentences the answering note itself could contain, stated as fact | vector search only |
+
+An empty field adds nothing. Without vector search the last two do nothing. Exact title and alias matches and the reranker still use `query`, and the number of results does not change. Full-text search needs every word to match, so a long question can miss a note that `short_query` finds.
+
+The field descriptions in `tools/list` name the language most of your notes declare in their `lang` frontmatter (e.g. "2-3 words in Russian"), so the agent writes the variants in that language. When no note declares a language the descriptions don't name one. `federated_search` accepts the same fields and passes them to the peer; a peer on an older release ignores them. The measurements behind the fields are in [[en/thoughts/query-expansion-by-the-agent|Let the agent expand the query]].
 
 #### `expand` — walk the table of contents level by level
 

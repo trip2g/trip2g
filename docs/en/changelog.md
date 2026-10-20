@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### MCP search takes three optional query variants from the agent
+
+- **What.** `search` and `federated_search` accept `short_query`, `rephrased_query` and `expected_answer`. Each non-empty field adds one result list, fused with the others by rank: `short_query` goes to full-text search, the other two to vector search. The `query` description now asks for the user's question as asked, and the field descriptions name the language most notes declare in `lang`. `federated_search` passes the fields to peers.
+- **Why.** The connected agent can rewrite a query at no cost to the server. On the Obsidian Help set with a strong agent filling the fields, nDCG@5 rose from 0.603 to 0.702 on the Russian base queries; with a weak agent the gain is small. See [[en/thoughts/query-expansion-by-the-agent|Let the agent expand the query]].
+- **How to use.** Nothing to set up: agents see the fields in `tools/list`. Give notes a `lang` frontmatter so the descriptions name the base's language. See [[en/user/mcp|MCP]].
+
 ### Attachment uploads no longer fail one time in eight
 
 - **What.** About one `uploadNoteAsset` call in eight failed with `first part must be operations`, whatever order the client sent the form fields in. Through a read replica every upload failed, because the leader received an empty body. Both now succeed. Through a replica the leader still accepts at most 4 MB.

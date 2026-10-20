@@ -6,6 +6,8 @@ lang_redirect: "[[ru/thoughts/query-expansion-by-the-agent]]"
 
 *What we did: took apart how qmd expands a query, which I first got wrong. Proposed handing that work to the agent that is already connected over MCP: it passes three optional fields with the query. Chose the field names on three models and measured the gain on 236 queries: with a strong agent nDCG@5 rose on all four sets, and clearly so on the Russian base set, from 0.603 to 0.702. With a weak agent (gpt-5.4-mini) the gain almost disappears, and the description of a single field matters most. Read it if you run MCP search and are thinking about adding query rewriting.*
 
+*2026-10-20: the three fields shipped in trip2g's MCP `search` and `federated_search`, see [[en/user/mcp|MCP]].*
+
 For [[en/thoughts/rag-under-the-hood|How others search]] I was taking apart [qmd](https://github.com/tobi/qmd), a local search engine for markdown notes. Its main feature is query expansion: its own Qwen3-1.7B model, fine-tuned to rewrite a query into several variants. I read that and assumed the model runs at indexing time, working out in advance how each note might be searched for. That is how other systems in the same article work. Cerebras turns Slack threads into cards when it writes them. Hindsight breaks text into facts when it writes it.
 
 qmd does the opposite. At indexing time no model generates anything: notes are cut into chunks and the chunks are embedded. The model runs at search time, on every new query.

@@ -60,11 +60,21 @@ const exactNameWeight = 2.0
 // not configured. Keep, when set, drops candidates inside the text and vector
 // lanes, before their caps, so rejected notes do not take the slots of the
 // ones after them.
+//
+// ShortQuery, RephrasedQuery and ExpectedAnswer are the optional variants an
+// MCP agent writes next to the query; the site search never sets them. Each
+// non-empty one adds one list to the fusion: ShortQuery a full-text list, the
+// other two a vector list each. The exact-name lane and the reranker keep
+// using Query.
 type Request struct {
 	Query     string
 	UseLatest bool
 	Rerank    *bool
 	Keep      func(*appmodel.NoteView) (bool, error)
+
+	ShortQuery     string
+	RephrasedQuery string
+	ExpectedAnswer string
 }
 
 // Retrieve runs the shared first-stage retrieval pipeline used by both the
@@ -73,7 +83,7 @@ type Request struct {
 // whether the vector lane contributed, so callers can apply hybrid-only caps.
 // Permission filtering and output shaping stay with the callers.
 func Retrieve(ctx context.Context, env RetrieveEnv, req Request) ([]appmodel.SearchResult, bool, error) {
-	results, err := textLane(env, req)
+	results, err := textLane(env, req, req.Query)
 	if err != nil {
 		return nil, false, err
 	}
@@ -89,32 +99,111 @@ func Retrieve(ctx context.Context, env RetrieveEnv, req Request) ([]appmodel.Sea
 	var passageByURL map[string]string
 	merged := false
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
-		candidates, vectorErr := vectorCandidates(ctx, env, req)
+		vectorResults, passages, ok, vectorErr := vectorSearch(ctx, env, req, req.Query)
 		if vectorErr != nil {
-			// Log error but don't fail - text search still works
-			env.Logger().Warn("vector search failed", "error", vectorErr)
-		} else {
-			vectorResults, passages, laneErr := vectorLane(candidates, noteViewsOf(env, req.UseLatest), req.Keep)
-			if laneErr != nil {
-				return nil, false, laneErr
-			}
+			return nil, false, vectorErr
+		}
+		if ok {
 			passageByURL = passages
 			results = mergeResults(results, vectorResults)
 			merged = true
 		}
 	}
 
-	if names := exactNameResults(req.Query, noteViewsOf(env, req.UseLatest)); len(names) > 0 {
-		if !merged {
+	// ranked tells whether results already carry RRF scores; a text-only list
+	// still holds raw text scores until the first extra lane is fused in.
+	ranked := merged
+	fuse := func(lane []appmodel.SearchResult, weight float64) {
+		if !ranked {
 			results = rankScores(results)
+			ranked = true
 		}
-		results = fuseLane(results, names, exactNameWeight)
+		results = fuseLane(results, lane, weight)
+	}
+
+	lanes, err := agentLanes(ctx, env, req, merged, passageByURL)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, lane := range lanes {
+		fuse(lane, 1)
+	}
+
+	if names := exactNameResults(req.Query, noteViewsOf(env, req.UseLatest)); len(names) > 0 {
+		fuse(names, exactNameWeight)
 	}
 
 	// Optional second-stage cross-encoder rerank, BLENDED with the RRF order.
 	results = rerankResults(ctx, env, req.Query, results, passageByURL, req.Rerank)
 
 	return results, merged, nil
+}
+
+// agentLanes returns one list per non-empty agent field: a text list for
+// ShortQuery and, when the vector lane ran, a vector list for each of
+// RephrasedQuery and ExpectedAnswer. Their best passages fill passageByURL for
+// notes it has none for yet.
+func agentLanes(
+	ctx context.Context,
+	env RetrieveEnv,
+	req Request,
+	withVectors bool,
+	passageByURL map[string]string,
+) ([][]appmodel.SearchResult, error) {
+	var lanes [][]appmodel.SearchResult
+	if req.ShortQuery != "" {
+		short, err := textLane(env, req, req.ShortQuery)
+		if err != nil {
+			return nil, err
+		}
+		for i := range short {
+			short[i].MatchOrigin = appmodel.SearchMatchText
+		}
+		lanes = append(lanes, short)
+	}
+	if !withVectors {
+		return lanes, nil
+	}
+
+	for _, text := range []string{req.RephrasedQuery, req.ExpectedAnswer} {
+		if text == "" {
+			continue
+		}
+		lane, passages, ok, err := vectorSearch(ctx, env, req, text)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
+		}
+		for url, passage := range passages {
+			if _, seen := passageByURL[url]; !seen {
+				passageByURL[url] = passage
+			}
+		}
+		lanes = append(lanes, lane)
+	}
+	return lanes, nil
+}
+
+// vectorSearch runs the vector lane for text. A failed embedding is logged and
+// reported as !ok, since text search still works; only a Keep error fails.
+func vectorSearch(
+	ctx context.Context,
+	env RetrieveEnv,
+	req Request,
+	text string,
+) ([]appmodel.SearchResult, map[string]string, bool, error) {
+	candidates, err := vectorCandidates(ctx, env, req, text)
+	if err != nil {
+		env.Logger().Warn("vector search failed", "error", err)
+		return nil, nil, false, nil
+	}
+	results, passages, err := vectorLane(candidates, noteViewsOf(env, req.UseLatest), req.Keep)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	return results, passages, true, nil
 }
 
 func noteViewsOf(env RetrieveEnv, useLatest bool) *appmodel.NoteViews {
@@ -124,16 +213,16 @@ func noteViewsOf(env RetrieveEnv, useLatest bool) *appmodel.NoteViews {
 	return env.LiveNoteViews()
 }
 
-// textLane returns the first textLaneSize text hits that req.Keep accepts,
-// reading the index page by page up to keepScanLimit hits.
-func textLane(env RetrieveEnv, req Request) ([]appmodel.SearchResult, error) {
+// textLane returns the first textLaneSize text hits for query that req.Keep
+// accepts, reading the index page by page up to keepScanLimit hits.
+func textLane(env RetrieveEnv, req Request, query string) ([]appmodel.SearchResult, error) {
 	search := env.SearchLiveNotes
 	if req.UseLatest {
 		search = env.SearchLatestNotes
 	}
 
 	if req.Keep == nil {
-		results, err := search(req.Query, 0, textLaneSize)
+		results, err := search(query, 0, textLaneSize)
 		if err != nil {
 			return nil, fmt.Errorf("failed to search notes: %w", err)
 		}
@@ -145,7 +234,7 @@ func textLane(env RetrieveEnv, req Request) ([]appmodel.SearchResult, error) {
 	var kept []appmodel.SearchResult
 	seen := map[string]bool{}
 	for from := 0; from < keepScanLimit; from += textLaneSize {
-		page, err := search(req.Query, from, textLaneSize)
+		page, err := search(query, from, textLaneSize)
 		if err != nil {
 			return nil, fmt.Errorf("failed to search notes: %w", err)
 		}
@@ -181,10 +270,10 @@ type vectorCandidate struct {
 	sim   float64
 }
 
-// vectorCandidates scores every chunk against the query, best first.
-func vectorCandidates(ctx context.Context, env RetrieveEnv, req Request) ([]vectorCandidate, error) {
+// vectorCandidates scores every chunk against text, best first.
+func vectorCandidates(ctx context.Context, env RetrieveEnv, req Request, text string) ([]vectorCandidate, error) {
 	queryPrefix := env.Features().VectorSearch.ResolvedQueryPrefix()
-	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+req.Query, openai.KindQuery)
+	embedding, err := env.OpenAI().CreateEmbedding(ctx, queryPrefix+text, openai.KindQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create query embedding: %w", err)
 	}
@@ -420,10 +509,15 @@ func fuseLane(results, lane []appmodel.SearchResult, weight float64) []appmodel.
 		score := weight / float64(rrfK+rank+1)
 		if i, ok := index[r.URL]; ok {
 			results[i].Score += score
+			if results[i].ChunkIndex == nil {
+				results[i].ChunkIndex = r.ChunkIndex
+			}
 			continue
 		}
 		r.Score = score
-		r.ContentSegments = appmodel.PlainSegments(generateSnippet(r.NoteView, 150))
+		if len(r.ContentSegments) == 0 {
+			r.ContentSegments = appmodel.PlainSegments(generateSnippet(r.NoteView, 150))
+		}
 		index[r.URL] = len(results)
 		results = append(results, r)
 	}

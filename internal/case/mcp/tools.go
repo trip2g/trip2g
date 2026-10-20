@@ -3,8 +3,13 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"maps"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/language/display"
 
 	"trip2g/internal/features"
+	"trip2g/internal/model"
 )
 
 // This file holds the MCP tool catalog: what tools exist, how they are
@@ -36,9 +41,11 @@ func builtinTools(ctx context.Context, env Env) []Tool {
 	return append(staticTools(ctx, env), dynamicTools(ctx, env)...)
 }
 
-// staticTools returns the compiled-in tools, without walking the note corpus.
+// staticTools returns the compiled-in tools. It reads the note corpus only for
+// the language the search fields are described in.
 func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat declarative list of built-in tool schemas
 	maxDepth := env.FederationMaxDepth()
+	agentFields := agentFieldProperties(baseLanguage(env.LatestNoteViews().List))
 	nestedKBIDNote := fmt.Sprintf(
 		"Target knowledge base id; nested bases use '/' "+
 			`(e.g. "philosophers/nietzsche" routes through the 'philosophers' peer, recursively). `+
@@ -48,11 +55,11 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 	tools := []Tool{
 		{
 			Name:        "search",
-			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
+			Description: "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note. " + agentFieldsNote,
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"query": {Type: "string", Description: "Search query"},
+					"query": {Type: "string", Description: queryArgDescription},
 					"limit": {Type: "number", Description: "Max number of results to return (default 6)"},
 					"detail_limit": {
 						Type:        "number",
@@ -160,13 +167,13 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 		{
 			Name: "federated_search",
 			Description: fmt.Sprintf(
-				"Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to %d levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards.",
+				"Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to %d levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards. "+agentFieldsNote,
 				maxDepth,
 			),
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"query": {Type: "string", Description: "Search query"},
+					"query": {Type: "string", Description: queryArgDescription},
 					"kb_id": {
 						Type:        "string",
 						Description: nestedKBIDNote,
@@ -343,6 +350,12 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 		},
 	}
 
+	for i := range tools {
+		if tools[i].Name == "search" || tools[i].Name == "federated_search" {
+			maps.Copy(tools[i].InputSchema.Properties, agentFields)
+		}
+	}
+
 	// The rerank argument is advertised ONLY where a cross-encoder sidecar is
 	// actually configured. An argument the instance cannot honour is worse than
 	// no argument: the agent burns a turn discovering that it did nothing.
@@ -364,6 +377,71 @@ func staticTools(ctx context.Context, env Env) []Tool { //nolint:funlen // flat 
 	}
 
 	return tools
+}
+
+const queryArgDescription = "The user's question exactly as they asked it. Do not rewrite it."
+
+const agentFieldsNote = "The optional fields each run an extra search whose results are merged with the main one; fill them to find more."
+
+// agentFieldProperties describes the optional query variants of search and
+// federated_search. short_query feeds the full-text lane, the other two the
+// vector lane (see sitesearch.Request). lang, when known, is written into each
+// description so the agent writes the variants in the base's language.
+func agentFieldProperties(lang string) map[string]Property {
+	in := ""
+	if lang != "" {
+		in = " in " + lang
+	}
+	return map[string]Property{
+		"short_query": {
+			Type: "string",
+			Description: "Optional. 2-3 words" + in + " that the answering note is sure to contain: the main term and one " +
+				"qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; " +
+				"no punctuation. Keyword search needs every word to match, so fewer precise words beat many.",
+		},
+		"rephrased_query": {
+			Type: "string",
+			Description: "Optional. The question asked another way" + in + ": different words, and the canonical name " +
+				"of what it asks about if you know it. One sentence.",
+		},
+		"expected_answer": {
+			Type: "string",
+			Description: "Optional. One or two sentences" + in + " that the answering note itself could contain, written " +
+				"the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). " +
+				"Not a description of what the note covers, not a question. If unsure of details, stay " +
+				"general but keep it a statement of fact.",
+		},
+	}
+}
+
+// baseLanguage names, in English, the language most notes declare in their
+// lang field; a tie goes to the alphabetically first code. It is "" when no
+// note declares one, and the raw code when the code is not a known language.
+func baseLanguage(notes []*model.NoteView) string {
+	counts := map[string]int{}
+	for _, note := range notes {
+		if note.Lang != "" {
+			counts[note.Lang]++
+		}
+	}
+	best := ""
+	for lang, n := range counts {
+		if n > counts[best] || (n == counts[best] && lang < best) {
+			best = lang
+		}
+	}
+	if best == "" {
+		return ""
+	}
+	tag, err := language.Parse(best)
+	if err != nil {
+		return best
+	}
+	name := display.English.Languages().Name(tag)
+	if name == "" {
+		return best
+	}
+	return name
 }
 
 // rerankArgDescription spells out both the effective default and the price,
