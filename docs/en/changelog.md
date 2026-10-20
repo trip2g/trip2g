@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### The MCP endpoint no longer advertises a changing tool list
+
+- **What.** The `tools` capability no longer carries `listChanged: true`, and the endpoint no longer advertises `logging`, which it never used and protocol 2026-07-28 deprecates.
+- **Why.** The endpoint is stateless and cannot send a `tools/list_changed` notification, so a client that trusted the flag opened `subscriptions/listen`, got "method not found" and retried it a few times per session.
+- **How to use.** Nothing to change. A tool added with an `mcp_method` note appears when the client next reads the list, which it does on reconnect — as it did before.
+
 ### MCP search takes three optional query variants from the agent
 
 - **What.** `search` and `federated_search` accept `short_query`, `rephrased_query` and `expected_answer`. Each non-empty field adds one result list, fused with the others by rank: `short_query` goes to full-text search, the other two to vector search. The `query` description now asks for the user's question as asked, and the field descriptions name the language most notes declare in `lang`. `federated_search` passes the fields to peers.
