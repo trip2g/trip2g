@@ -64,7 +64,7 @@ lang_redirect: "[[en/thoughts/load-recheck-four-months-later]]"
 
 ## Статус на 20 октября
 
-Вошло в main: `tools/list` в MCP, sitemap, лента и цена поиска в GraphQL, обход лент при загрузке, своя подсветка поиска сегментами. В pull request: защита от падения на note query, кеш JSON заметок для note queries. В работе: ленивый рендер под кастомные домены.
+Вошло в main: `tools/list` в MCP, sitemap, лента и цена поиска в GraphQL, обход лент при загрузке, своя подсветка поиска сегментами, защита от падения на note query, кеш JSON заметок для note queries. В pull request: ленивый рендер под кастомные домены.
 
 Когда всё войдёт в релиз, перемерим ещё раз.
 

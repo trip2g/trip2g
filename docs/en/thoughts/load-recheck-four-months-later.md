@@ -64,7 +64,7 @@ A heavy guest GraphQL request — five searches with the full HTML of every resu
 
 ## Status on October 20
 
-Merged: MCP `tools/list`, the sitemap, the feed and the GraphQL search cost, the feed walk at load, our own search highlighting as segments. In a pull request: the guard against note query crashes, the notes JSON cache for note queries. In progress: lazy rendering for custom domains.
+Merged: MCP `tools/list`, the sitemap, the feed and the GraphQL search cost, the feed walk at load, our own search highlighting as segments, the guard against note query crashes, the notes JSON cache for note queries. In a pull request: lazy rendering for custom domains.
 
 Once it all ships we will measure again.
 
