@@ -146,18 +146,11 @@ func (a *app) requestHandler() fasthttp.RequestHandler {
 	return handler
 }
 
-func (a *app) startServer() {
-	handler := a.requestHandler()
-
-	handlerTimeout := 60 * time.Second
-	if a.config.DevMode {
-		handlerTimeout = 10 * time.Minute
-	}
-
+func newHTTPServer(handler fasthttp.RequestHandler, handlerTimeout time.Duration, maxRequestBodySize int) *fasthttp.Server {
 	timeoutHandler := fasthttp.TimeoutHandler(handler, handlerTimeout, "timeout")
 	compressedHandler := fasthttp.CompressHandler(timeoutHandler)
 
-	s := &fasthttp.Server{
+	return &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			// SSE connections are long-lived, skip timeout handler for them.
 			if strings.Contains(string(ctx.Request.Header.Peek("Accept")), "text/event-stream") {
@@ -176,11 +169,25 @@ func (a *app) startServer() {
 			// Default behavior for other errors.
 			ctx.Error("Error when parsing request", fasthttp.StatusBadRequest)
 		},
-		MaxRequestBodySize: a.config.MaxRequestBodySize * 1024 * 1024,
-		ReadTimeout:        handlerTimeout,
-		WriteTimeout:       handlerTimeout,
-		IdleTimeout:        handlerTimeout,
+		// Pre-parsing makes fasthttpadaptor rebuild the body from a map, which
+		// puts the multipart parts in random order and breaks GraphQL uploads.
+		DisablePreParseMultipartForm: true,
+		MaxRequestBodySize:           maxRequestBodySize,
+		ReadTimeout:                  handlerTimeout,
+		WriteTimeout:                 handlerTimeout,
+		IdleTimeout:                  handlerTimeout,
 	}
+}
+
+func (a *app) startServer() {
+	handler := a.requestHandler()
+
+	handlerTimeout := 60 * time.Second
+	if a.config.DevMode {
+		handlerTimeout = 10 * time.Minute
+	}
+
+	s := newHTTPServer(handler, handlerTimeout, a.config.MaxRequestBodySize*1024*1024)
 
 	// Publish the full request handler so the internal server's leader-side
 	// replica intake (handleReplicaIntake) can run forwarded writes through the
@@ -411,14 +418,21 @@ func (a *app) startInternalServer() {
 		ctx.SetStatusCode(http.StatusNotFound)
 	}
 
-	a.internalServer = &fasthttp.Server{
-		Handler: handler,
-		Name:    "trip2g-internal",
-	}
+	a.internalServer = newInternalServer(handler)
 
 	a.log.Info("starting internal server", "addr", a.config.InternalListenAddr)
 	if err := a.internalServer.ListenAndServe(a.config.InternalListenAddr); err != nil {
 		panic(err)
+	}
+}
+
+// A replica forwards uploads to the leader here, so the multipart body must
+// reach GraphQL unshuffled, as on the public server.
+func newInternalServer(handler fasthttp.RequestHandler) *fasthttp.Server {
+	return &fasthttp.Server{
+		Handler:                      handler,
+		Name:                         "trip2g-internal",
+		DisablePreParseMultipartForm: true,
 	}
 }
 
