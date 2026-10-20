@@ -13,6 +13,10 @@ const authTTL = 30 * time.Second
 // forwardTimeout bounds a single forwarded request to the leader.
 const forwardTimeout = 60 * time.Second
 
+// MaxIdleConnDuration stays below the leader's 60 s idle timeout, so the
+// replica drops an idle connection before the leader closes it under a write.
+const MaxIdleConnDuration = 30 * time.Second
+
 // Forwarder reverse-proxies a replica's mutating requests to the leader's
 // intake. It dials a fixed leader address (HostClient) while preserving the
 // original Host header, so the leader's multidomain routing still selects the
@@ -35,7 +39,7 @@ func NewForwarder(leaderAddr, secret string) *Forwarder {
 			MaxConns:            512,
 			ReadTimeout:         forwardTimeout,
 			WriteTimeout:        forwardTimeout,
-			MaxIdleConnDuration: 90 * time.Second,
+			MaxIdleConnDuration: MaxIdleConnDuration,
 		},
 		secret: secret,
 		now:    time.Now,

@@ -14,6 +14,9 @@ import (
 	"testing"
 	"time"
 
+	"trip2g/internal/appconfig"
+	"trip2g/internal/readreplica"
+
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttputil"
@@ -402,4 +405,14 @@ func TestServersRefuseATruncatedBody(t *testing.T) {
 			require.Zero(t, echo.calls.Load())
 		})
 	}
+}
+
+func TestReplicaDropsIdleConnectionsBeforeTheLeader(t *testing.T) {
+	a := &app{
+		appState: &appState{
+			config: &appconfig.Config{},
+		},
+	}
+
+	require.Less(t, readreplica.MaxIdleConnDuration, a.handlerTimeout())
 }
