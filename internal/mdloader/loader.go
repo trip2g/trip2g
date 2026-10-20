@@ -52,6 +52,8 @@ type loader struct {
 
 	linkResolver *myLinkResolver
 
+	domainRenderer *domainRenderer
+
 	config Config
 
 	noteCache func(source SourceFile) *model.NoteView
@@ -165,6 +167,14 @@ func Load(options Options) (*model.NoteViews, error) {
 		),
 	)
 
+	ldr.domainRenderer = &domainRenderer{
+		nvs:       ldr.nvs,
+		md:        ldr.md,
+		resolver:  ldr.linkResolver,
+		log:       options.Log,
+		publicURL: ldr.publicURL,
+	}
+
 	// Step 1a: register raw (non-markdown) files without any parsing or rendering.
 	// .canvas (JSON) and .base (YAML) are stored as-is; no wikilink scanning, no permalink generation.
 	mdSources := options.Sources[:0:0]
@@ -227,6 +237,10 @@ func Load(options Options) (*model.NoteViews, error) {
 		ldr.validateNotes()
 	}
 
+	// Subgraphs before rendering: link classes read note.Subgraphs, and
+	// request-time renders (partials, lazy domain HTML) see them filled.
+	ldr.nvs.ExtractSubgraphs()
+
 	err = ldr.generatePageHTMLs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate static pages: %w", err)
@@ -235,7 +249,6 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.generateDomainHTMLs()
 
 	ldr.nvs.ExtractNoteList()
-	ldr.nvs.ExtractSubgraphs()
 	ldr.nvs.ExtractMCPFederationNotes()
 
 	err = ldr.findAssets()

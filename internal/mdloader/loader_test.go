@@ -2444,3 +2444,21 @@ func TestRawFileCanvasWithEntry(t *testing.T) {
 	require.Equal(t, "page2", edges[0].ToNode)
 	require.Equal(t, "More", edges[0].Label)
 }
+
+// TestPaidLinkClassNamesSubgraph pins the paywall class of a link to a paid
+// note: the page HTML names the note's subgraphs, the same way request-time
+// renders (partials) do.
+func TestPaidLinkClassNamesSubgraph(t *testing.T) {
+	sources := []mdloader.SourceFile{
+		{Path: "a.md", Content: []byte("---\nfree: true\n---\nSee [[paid]] and [[core]].")},
+		{Path: "paid.md", Content: []byte("---\nsubgraph: x\n---\npaid")},
+		{Path: "core.md", Content: []byte("core")},
+	}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: sources, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+
+	a := nvs.PathMap["a.md"]
+	require.Contains(t, string(a.HTML), `<a class="paywall  paywall-x" data-pid="0" href="/paid">`)
+	require.Contains(t, string(a.HTML), `<a class="paywall paywall:core" data-pid="0" href="/core">`)
+	require.Equal(t, string(a.HTML), string(a.PartialRenderer.Introduce().ContentHTML))
+}

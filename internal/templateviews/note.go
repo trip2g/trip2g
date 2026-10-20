@@ -63,17 +63,10 @@ func (n *Note) HasH1() bool {
 	return n.nv.HasH1
 }
 
-// HTMLString returns the rendered HTML content.
-// When domain context is set, returns domain-specific HTML if available.
-// domainHost is "" for main domain — DomainHTML[""] holds main-domain re-rendered
-// HTML where links to custom-domain-only notes use full URLs (https://foo.com/path).
+// HTMLString returns the rendered HTML content as served on the domain
+// context's host ("" for the main domain), see model.NoteView.HTMLForHost.
 func (n *Note) HTMLString() model.SafeHTML {
-	if n.nv.DomainHTML != nil {
-		if domainHTML, ok := n.nv.DomainHTML[n.domainHost]; ok {
-			return model.SafeHTML(domainHTML)
-		}
-	}
-	return model.SafeHTML(n.nv.HTML)
+	return model.SafeHTML(n.nv.HTMLForHost(n.domainHost))
 }
 
 // ContentString returns the raw markdown content.
