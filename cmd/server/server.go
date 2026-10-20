@@ -418,7 +418,7 @@ func (a *app) startInternalServer() {
 		ctx.SetStatusCode(http.StatusNotFound)
 	}
 
-	a.internalServer = newInternalServer(handler)
+	a.internalServer = newInternalServer(handler, a.config.MaxRequestBodySize*1024*1024)
 
 	a.log.Info("starting internal server", "addr", a.config.InternalListenAddr)
 	if err := a.internalServer.ListenAndServe(a.config.InternalListenAddr); err != nil {
@@ -426,13 +426,14 @@ func (a *app) startInternalServer() {
 	}
 }
 
-// A replica forwards uploads to the leader here, so the multipart body must
-// reach GraphQL unshuffled, as on the public server.
-func newInternalServer(handler fasthttp.RequestHandler) *fasthttp.Server {
+// A replica forwards writes to the leader here, so a body gets the public
+// server's size limit and reaches GraphQL unshuffled.
+func newInternalServer(handler fasthttp.RequestHandler, maxRequestBodySize int) *fasthttp.Server {
 	return &fasthttp.Server{
 		Handler:                      handler,
 		Name:                         "trip2g-internal",
 		DisablePreParseMultipartForm: true,
+		MaxRequestBodySize:           maxRequestBodySize,
 	}
 }
 

@@ -66,7 +66,7 @@ func TestServersKeepMultipartFieldOrder(t *testing.T) {
 		server *fasthttp.Server
 	}{
 		{name: "public", server: newHTTPServer(newGraphQL(), time.Minute, 1024*1024)},
-		{name: "internal", server: newInternalServer(newGraphQL())},
+		{name: "internal", server: newInternalServer(newGraphQL(), 1024*1024)},
 	}
 
 	for _, tt := range servers {
@@ -103,4 +103,29 @@ func TestServersKeepMultipartFieldOrder(t *testing.T) {
 			require.Zero(t, failures, "first failure: %s", firstFailure)
 		})
 	}
+}
+
+func TestInternalServerTakesTheConfiguredBodyLimit(t *testing.T) {
+	ok := func(ctx *fasthttp.RequestCtx) {
+		ctx.SetBodyString("ok")
+	}
+
+	server := newInternalServer(ok, 10*1024*1024)
+	ln := fasthttputil.NewInmemoryListener()
+
+	go func() {
+		_ = server.Serve(ln)
+	}()
+	t.Cleanup(func() {
+		_ = server.Shutdown()
+	})
+
+	client := &fasthttp.Client{
+		Dial: func(string) (net.Conn, error) {
+			return ln.Dial()
+		},
+	}
+
+	status, _ := postUpload(t, client, "application/json", bytes.Repeat([]byte("x"), 6*1024*1024))
+	require.Equal(t, fasthttp.StatusOK, status)
 }
