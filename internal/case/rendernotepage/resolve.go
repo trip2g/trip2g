@@ -141,20 +141,12 @@ func (r *Response) NoteSubgraphsJSON() string {
 	return string(raw)
 }
 
-// NoteHTML returns the note's HTML, using domain-specific pre-rendered HTML if available.
-// For custom domain requests, domainHost is the normalized host (e.g. "foo.com").
-// For main domain requests, domainHost is "" — DomainHTML[""] holds main-domain re-rendered
-// HTML where links to custom-domain-only notes use full URLs (https://foo.com/path).
+// NoteHTML returns the note's HTML as served on the request's host.
 func (r *Response) NoteHTML() template.HTML {
 	if r.Note == nil {
 		return ""
 	}
-	if r.Note.DomainHTML != nil {
-		if domainHTML, ok := r.Note.DomainHTML[r.domainHost]; ok {
-			return domainHTML
-		}
-	}
-	return r.Note.HTML
+	return r.Note.HTMLForHost(r.domainHost)
 }
 
 // SidebarHTML returns domain-aware HTML for a sidebar note.
@@ -162,12 +154,7 @@ func (r *Response) SidebarHTML(sidebar *model.NoteView) template.HTML {
 	if sidebar == nil {
 		return ""
 	}
-	if sidebar.DomainHTML != nil {
-		if domainHTML, ok := sidebar.DomainHTML[r.domainHost]; ok {
-			return domainHTML
-		}
-	}
-	return sidebar.HTML
+	return sidebar.HTMLForHost(r.domainHost)
 }
 
 var ErrNotFound = errors.New("page not found")

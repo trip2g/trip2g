@@ -5,26 +5,41 @@ import (
 	"fmt"
 	"html/template"
 
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
+	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"go.abhg.dev/goldmark/wikilink"
 )
 
-// generateDomainHTMLs re-renders notes with domain-specific link resolution.
+// domainRenderer renders a note with domain-specific link resolution. It holds
+// only what a render needs, so a snapshot can keep it for request-time renders
+// without keeping the loader.
+type domainRenderer struct {
+	nvs       *model.NoteViews
+	md        goldmark.Markdown
+	resolver  *myLinkResolver
+	log       logger.Logger
+	publicURL string
+}
+
+// generateDomainHTMLs renders domain-specific HTML for what a host serves at
+// its own paths, and leaves the rest to request time.
 //
-// Two passes:
-//  1. Custom domain pass: for each note with custom domain routes, re-render
-//     for each of its custom domain hosts. Links to notes on the same domain
-//     use relative paths; links to notes on other custom domains use full URLs.
-//  2. Main domain pass (host=""): for ALL notes, check whether any outgoing
-//     link points to a note whose primary home is a custom domain (i.e. the
-//     note has custom domain routes but no main-domain alias). If so,
-//     generate DomainHTML[""] so those links use full URLs on the main domain.
+//  1. Custom domain hosts: a note with custom domain routes is pre-rendered for
+//     each of its hosts. Links to notes on the same domain use relative paths;
+//     links to notes on other custom domains use full URLs.
+//     A note without any -- a shared header, footer or sidebar -- is served as
+//     part of pages that do live on a host, and its links have to resolve the
+//     way the body's do. It is rendered for a host on first use (HTMLForHost),
+//     once per snapshot.
+//  2. Main domain (host=""): for ALL notes, check whether any outgoing link
+//     points to a note whose primary home is a custom domain (i.e. the note has
+//     custom domain routes but no main-domain alias). If so, pre-render
+//     DomainHTML[""] so those links use full URLs on the main domain.
 func (ldr *loader) generateDomainHTMLs() {
-	// Short-circuit: if no custom domains configured, nothing to do.
-	domainHosts := ldr.nvs.CustomDomains()
-	if len(domainHosts) == 0 {
+	if len(ldr.nvs.CustomDomains()) == 0 {
 		return
 	}
 
@@ -34,44 +49,51 @@ func (ldr *loader) generateDomainHTMLs() {
 		if p.Ast() == nil {
 			continue
 		}
-		// Pass 1: custom domain re-render.
-		//
-		// A note with its own routes is rendered for the hosts it lives on.
-		// A note without any -- a shared header, footer or sidebar -- is
-		// rendered for every configured host, because it is served as part of
-		// pages that do live there, and its links have to resolve the way the
-		// body's do. Without this the chrome keeps the main-domain rendering
-		// and points back at the reader's own host with an absolute URL.
+
 		hosts := ldr.uniqueHostsForNote(p)
 		if len(hosts) == 0 {
-			hosts = domainHosts
+			p.SetDomainHTMLRenderer(ldr.domainRenderer)
 		}
 		for _, host := range hosts {
-			domainLinks, domainNoteIndex := ldr.buildDomainResolvedLinks(p, host)
-			if domainLinks == nil {
-				// No differences from main domain -- skip re-render.
-				continue
-			}
-
-			if err := ldr.generateDomainHTML(p, host, domainLinks, domainNoteIndex); err != nil {
-				ldr.log.Warn("failed to generate domain HTML",
-					"path", p.Path, "host", host, "error", err)
-			}
+			ldr.storeDomainHTML(p, host)
 		}
 
-		// Pass 2: main domain re-render (host="").
-		// Generates DomainHTML[""] when any linked note is "domain-only" (has custom
-		// domain routes but is not accessible via a main-domain alias).
-		// This makes [[wikilinks]] on the main domain use https://custom.com/path
-		// for such notes, instead of the canonical permalink.
-		mainLinks, mainNoteIndex := ldr.buildDomainResolvedLinks(p, "")
-		if mainLinks != nil {
-			if err := ldr.generateDomainHTML(p, "", mainLinks, mainNoteIndex); err != nil {
-				ldr.log.Warn("failed to generate main-domain HTML",
-					"path", p.Path, "error", err)
-			}
-		}
+		ldr.storeDomainHTML(p, "")
 	}
+}
+
+func (ldr *loader) storeDomainHTML(p *model.NoteView, host string) {
+	html, ok := ldr.domainRenderer.RenderDomainHTML(p, host)
+	if !ok {
+		return
+	}
+
+	if p.DomainHTML == nil {
+		p.DomainHTML = make(map[string]template.HTML)
+	}
+	p.DomainHTML[host] = html
+}
+
+// RendersHost reports whether host is a custom domain of the snapshot.
+func (dr *domainRenderer) RendersHost(host string) bool {
+	return dr.nvs.IsCustomDomain(host)
+}
+
+// RenderDomainHTML renders p for host. ok is false when its links resolve
+// there the same as on the main domain, or the render failed.
+func (dr *domainRenderer) RenderDomainHTML(p *model.NoteView, host string) (template.HTML, bool) {
+	domainLinks, domainNoteIndex := dr.buildDomainResolvedLinks(p, host)
+	if domainLinks == nil {
+		return "", false
+	}
+
+	html, err := dr.render(p, domainLinks, domainNoteIndex)
+	if err != nil {
+		dr.log.Warn("failed to generate domain HTML", "path", p.Path, "host", host, "error", err)
+		return "", false
+	}
+
+	return html, true
 }
 
 // uniqueHostsForNote returns unique custom domain hosts from note's Routes.
@@ -94,13 +116,13 @@ func (ldr *loader) uniqueHostsForNote(p *model.NoteView) []string {
 // (optimization: skip re-render when nothing differs).
 // Also returns domainNoteIndex mapping domain-specific paths/URLs to NoteViews, so
 // link_renderer can find notes by domain path for data-pid and paywall classes.
-func (ldr *loader) buildDomainResolvedLinks(
+func (dr *domainRenderer) buildDomainResolvedLinks(
 	p *model.NoteView,
 	host string,
 ) (map[string]string, map[string]*model.NoteView) {
-	mainBaseURL := ldr.publicURL
+	mainBaseURL := dr.publicURL
 	// Find embed targets -- these must NOT be overridden so renderEmbed() works.
-	embedTargets := ldr.findEmbedTargets(p)
+	embedTargets := findEmbedTargets(p)
 
 	domainLinks := make(map[string]string, len(p.ResolvedLinks))
 	domainNoteIndex := make(map[string]*model.NoteView)
@@ -113,7 +135,7 @@ func (ldr *loader) buildDomainResolvedLinks(
 			continue
 		}
 
-		targetNote := ldr.nvs.GetByPath(mainPermalink)
+		targetNote := dr.nvs.GetByPath(mainPermalink)
 		if targetNote == nil {
 			domainLinks[target] = mainPermalink
 			continue
@@ -137,7 +159,7 @@ func (ldr *loader) buildDomainResolvedLinks(
 
 // findEmbedTargets walks the AST and returns wikilink targets that are embed
 // links (![[target]]). These keep their permalink so renderEmbed() works via GetByPath.
-func (ldr *loader) findEmbedTargets(p *model.NoteView) map[string]struct{} {
+func findEmbedTargets(p *model.NoteView) map[string]struct{} {
 	result := make(map[string]struct{})
 	_ = ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering || n.Kind() != wikilink.Kind {
@@ -193,38 +215,35 @@ func resolveForDomain(target *model.NoteView, host string, mainBaseURL string) s
 	return target.Permalink
 }
 
-// generateDomainHTML re-renders a single note with domain-specific ResolvedLinks.
-// Uses save/restore with defer to ensure state is always recovered.
-func (ldr *loader) generateDomainHTML(
+// render renders p with domainLinks in place of its ResolvedLinks. It renders
+// a copy of p, so the snapshot's note is never written: warnings the render
+// raises repeat the ones of p's main render and stay on the copy.
+func (dr *domainRenderer) render(
 	p *model.NoteView,
-	host string,
 	domainLinks map[string]string,
 	domainNoteIndex map[string]*model.NoteView,
-) error {
-	// Save original state.
-	origLinks := p.ResolvedLinks
-	origDomainNotes := ldr.linkResolver.domainRenderNotes
+) (template.HTML, error) {
+	page := *p
+	page.ResolvedLinks = domainLinks
+	page.Warnings = nil
 
-	// Override for domain render; defer restore for safety.
-	p.ResolvedLinks = domainLinks
-	ldr.linkResolver.currentPage = p
-	ldr.linkResolver.domainRenderNotes = domainNoteIndex
+	dr.resolver.renderMu.Lock()
+	defer dr.resolver.renderMu.Unlock()
+
+	prevPage := dr.resolver.currentPage
+	prevDomainNotes := dr.resolver.domainRenderNotes
+	dr.resolver.currentPage = &page
+	dr.resolver.domainRenderNotes = domainNoteIndex
 	defer func() {
-		p.ResolvedLinks = origLinks
-		ldr.linkResolver.domainRenderNotes = origDomainNotes
+		dr.resolver.currentPage = prevPage
+		dr.resolver.domainRenderNotes = prevDomainNotes
 	}()
 
 	var buf bytes.Buffer
-	err := ldr.md.Renderer().Render(&buf, p.Content, p.Ast())
+	err := dr.md.Renderer().Render(&buf, p.Content, p.Ast())
 	if err != nil {
-		return fmt.Errorf("render domain HTML for %s on %s: %w", p.Path, host, err)
+		return "", fmt.Errorf("render domain HTML for %s: %w", p.Path, err)
 	}
 
-	if p.DomainHTML == nil {
-		p.DomainHTML = make(map[string]template.HTML)
-	}
-	p.DomainHTML[host] = template.HTML(buf.String()) //nolint:gosec // content from trusted markdown source.
-	// TODO(v2): DomainFreeHTML -- also re-render FreeHTML for custom domain context.
-
-	return nil
+	return template.HTML(buf.String()), nil //nolint:gosec // content from trusted markdown source.
 }

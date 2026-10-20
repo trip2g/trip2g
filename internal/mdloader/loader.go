@@ -52,6 +52,8 @@ type loader struct {
 
 	linkResolver *myLinkResolver
 
+	domainRenderer *domainRenderer
+
 	config Config
 
 	noteCache func(source SourceFile) *model.NoteView
@@ -164,6 +166,14 @@ func Load(options Options) (*model.NoteViews, error) {
 			obsidiancomments.ObsidianComments,
 		),
 	)
+
+	ldr.domainRenderer = &domainRenderer{
+		nvs:       ldr.nvs,
+		md:        ldr.md,
+		resolver:  ldr.linkResolver,
+		log:       options.Log,
+		publicURL: ldr.publicURL,
+	}
 
 	// Step 1a: register raw (non-markdown) files without any parsing or rendering.
 	// .canvas (JSON) and .base (YAML) are stored as-is; no wikilink scanning, no permalink generation.
