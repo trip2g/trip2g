@@ -1,7 +1,7 @@
 ---
 title: "A knowledge base your agents query"
 label: "base for agents"
-order: 5
+order: 6
 motion_visualization: agents
 link: "[[en/user/obsidian-mcp-server]]"
 related:

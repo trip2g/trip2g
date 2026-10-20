@@ -1,7 +1,7 @@
 ---
 title: "A distributed knowledge base for a company"
 label: "company mesh"
-order: 6
+order: 7
 motion_visualization: federation
 link: "[[en/user/team-knowledge-base-mcp]]"
 related:

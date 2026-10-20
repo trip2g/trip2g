@@ -1,21 +1,21 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>One tool, nine doors — trip2g</title>
-<meta name="description" content="Nine ways people use trip2g: a site from Obsidian, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
+<title>One tool, ten doors — trip2g</title>
+<meta name="description" content="Ten ways people use trip2g: a site from Obsidian, trip2g.com itself as docs and a garden in one, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
 <link rel="canonical" href="https://trip2g.com/en/circle">
 <link rel="alternate" hreflang="en" href="https://trip2g.com/en/circle">
 <link rel="alternate" hreflang="ru" href="https://trip2g.com/ru/circle">
 <link rel="alternate" hreflang="x-default" href="https://trip2g.com/en/circle">
 <meta property="og:type" content="website">
-<meta property="og:title" content="One tool, nine doors — trip2g">
-<meta property="og:description" content="Nine ways people use trip2g: a site from Obsidian, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
+<meta property="og:title" content="One tool, ten doors — trip2g">
+<meta property="og:description" content="Ten ways people use trip2g: a site from Obsidian, trip2g.com itself as docs and a garden in one, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
 <meta property="og:image" content="og.png">
 <meta property="og:image:width" content="1731">
 <meta property="og:image:height" content="909">
 <meta property="og:url" content="https://trip2g.com/en/circle">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="One tool, nine doors — trip2g">
-<meta name="twitter:description" content="Nine ways people use trip2g: a site from Obsidian, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
+<meta name="twitter:title" content="One tool, ten doors — trip2g">
+<meta name="twitter:description" content="Ten ways people use trip2g: a site from Obsidian, trip2g.com itself as docs and a garden in one, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS.">
 <meta name="twitter:image" content="og.png">
 <link rel="icon" href="favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,7 +59,7 @@
 "name": "trip2g",
 "url": "https://trip2g.com/"
 ,
-"description": "Nine ways people use trip2g: a site from Obsidian, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS."
+"description": "Ten ways people use trip2g: a site from Obsidian, trip2g.com itself as docs and a garden in one, a Telegram blog, a paid expert base, persistent memory for AI agents, a knowledge base agents query, a company knowledge mesh, a knowledge bot, calls into notes and a flat-file CMS."
 ,
 "applicationCategory": "DeveloperApplication",
 "operatingSystem": "Linux, Docker",

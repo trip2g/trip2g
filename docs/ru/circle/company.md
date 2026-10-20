@@ -1,7 +1,7 @@
 ---
 title: "Распределённая база знаний компании"
 label: "сеть баз компании"
-order: 6
+order: 7
 motion_visualization: federation
 link: "[[ru/user/team-knowledge-base-mcp]]"
 related:

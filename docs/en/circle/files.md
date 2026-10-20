@@ -1,7 +1,7 @@
 ---
 title: "A flat-file, contentless CMS"
 label: "flat-file CMS"
-order: 9
+order: 10
 motion_visualization: files
 link: "[[en/thoughts/flat-file-cms]]"
 related:
