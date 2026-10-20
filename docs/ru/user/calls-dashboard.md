@@ -24,26 +24,24 @@ trip2g не записывает, не расшифровывает и не ра
 - **codex-bridge** переводит вызовы chat completions от fleet в Codex Responses API с логином ChatGPT, который хранит Hermes.
 
 ```mermaid
-flowchart LR
-  subgraph trip2g
-    T[transcripts/] --> C[calls/ разбор]
-    C --> P[topics/]
-    E[call_edits/] --> H[threads/]
-    UI["страницы /call и /threads"]
-  end
-  T -- вебхук --> F
-  C -- вебхук --> F
-  E -- вебхук --> F
-  F[fleet: review, topics, chronology] -- пишет заметки --> trip2g
-  F --> B[codex-bridge] --> X[(Codex)]
-  HM[Hermes] -- MCP, только чтение --> trip2g
-  HM --> X
-  HM <--> TG[(Telegram)]
-  N[уведомление по cron] -- GraphQL --> trip2g
-  N --> TG
-  You((владелец)) --> UI
-  UI -- updateNotes --> E
+flowchart TD
+  You((владелец))
+  TG[Telegram]
+  HM[Hermes]
+  N[уведомление по cron]
+  V[(trip2g: заметки, страницы /call и /threads)]
+  F[fleet: review, topics, chronology]
+  X[(Codex)]
   You <--> TG
+  You -- проверяет созвон --> V
+  TG <--> HM
+  HM -- MCP, только чтение --> V
+  N -- GraphQL --> V
+  N -- ссылка на созвон --> TG
+  V -- вебхук на новую заметку --> F
+  F -- пишет разбор, темы, строку нити --> V
+  F -- через codex-bridge --> X
+  HM -- напрямую --> X
 ```
 
 ![[calls-telegram.png|Бот отвечает о созвоне и о нити; каждый ответ кончается ссылкой на дашборд]]
