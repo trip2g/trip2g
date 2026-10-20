@@ -204,6 +204,7 @@ func TestNoteHTMLListsAssetsByTheirNoteName(t *testing.T) {
 	result := resp.Result.(mcp.CallToolResult)
 	var payload mcp.NoteHTMLPayload
 	require.NoError(t, json.Unmarshal(result.StructuredContent.(json.RawMessage), &payload))
+	require.Equal(t, "<p>body</p>", payload.Text, "the structured result carries the note itself: Claude Code hands the model only structured content")
 	require.Equal(t, "skills/reel.md", payload.NotePath)
 	require.Equal(t, []appmodel.NoteAssetInfo{
 		{Name: "cover.png", Size: 10, Sha256: "aaa"},

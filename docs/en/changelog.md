@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### `note_html` reaches the model in Claude Code
+
+- **What.** `note_html` and `federated_note_html` put the note's text into the structured result (`text`) as well as into the text block.
+- **Why.** Since attachments were added, the structured result held only the path and the assets. Claude Code passes a tool's structured result to the model instead of its text block, so a model reading a note there got `{"note_path": …, "assets": []}` and never the note.
+- **How to use.** Nothing to change. A hub relays a peer's structured result as is, so `federated_note_html` needs this release on the peer too.
+
 ### The MCP endpoint reports a name you choose
 
 - **What.** The name in the `initialize` handshake (`serverInfo.name` and `serverInfo.title`) is no longer fixed to `trip2g-mcp`. The `-mcp-server-name` flag (`MCP_SERVER_NAME`) sets it for the instance, and `mcp_name` in the instructions note (`mcp_method: initialize`, or the one `?method=` selects) overrides it.

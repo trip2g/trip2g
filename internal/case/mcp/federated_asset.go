@@ -33,10 +33,13 @@ type FederatedAssetPayload struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-// NoteHTMLPayload is the structured half of a note read: the note's path and
-// its assets, each named exactly as federated_asset accepts them — the path
-// too, whichever reference the note was opened by.
+// NoteHTMLPayload is the structured result of a note read: the text the caller
+// asked for, the note's path and its assets, each named exactly as
+// federated_asset accepts them — the path too, whichever reference the note was
+// opened by. It carries the text because a client that gets structured content
+// may hand the model only that (Claude Code does), never the text block.
 type NoteHTMLPayload struct {
+	Text     string                `json:"text"`
 	NotePath string                `json:"note_path"`
 	Assets   []model.NoteAssetInfo `json:"assets"`
 }
@@ -147,14 +150,15 @@ func shellQuote(s string) string {
 }
 
 // noteReadResult is every successful note read: the text the caller asked for
-// and the note's assets beside it, in the structured result for programs and in
-// the text for a model that only reads text.
+// and the note's assets beside it, in the structured result and again in the
+// text block for clients that read only that.
 func noteReadResult(note *model.NoteView, text string) CallToolResult {
 	assets := noteAssets(note)
+	payload := NoteHTMLPayload{Text: text, NotePath: note.Path, Assets: assets}
 	if len(assets) > 0 {
 		text += "\n\n" + assetsText(assets)
 	}
-	return structuredToolResult(text, NoteHTMLPayload{NotePath: note.Path, Assets: assets})
+	return structuredToolResult(text, payload)
 }
 
 func noteAssets(note *model.NoteView) []model.NoteAssetInfo {
