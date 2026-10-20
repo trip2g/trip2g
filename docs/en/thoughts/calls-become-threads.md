@@ -8,13 +8,13 @@ lang_redirect: "[[ru/thoughts/calls-become-threads]]"
 
 # Calls become threads
 
-**In short.** A summary of one call is read once and forgotten. What I actually need before the next call is the thread: the client I have spoken to four times since July, what we agreed each time and what is still open. So the unit here is a thread note, and its chronology has one line per call. A page draws the timeline straight from those lines, so there is nothing to keep in sync. An agent proposes who spoke, what the topics were and which thread a call belongs to. I check its guesses on a screen made for checking, not by answering questions in a messenger. My corrections go into a separate note that the page owns. Both pages are layouts anyone can install: [[en/user/calls-dashboard|Calls dashboard]], with demos on invented data.
+**In short.** A summary of one call is read once and forgotten. What I actually need before the next call is the thread: the client I have spoken to four times since July, what we agreed each time and what is still open. So the unit here is a thread note, and its chronology has one line per call. A page draws the timeline straight from those lines, so there is nothing to keep in sync. An agent proposes who spoke, what the topics were and which thread a call belongs to. I check its guesses on a screen made for checking, not by answering questions in a messenger. My corrections go into a separate note that the page owns. Both pages are [[en/user/templates|layouts]] anyone can install: [[en/user/calls-dashboard|Calls dashboard]], with demos on invented data.
 
 ![[calls-threads-en.png|The threads page: one row per thread, one dot per call, the side panel is the chain of one thread]]
 
 ## A call is a dot, not a document
 
-Most call tools give you a page per call: a transcript, a summary, maybe action items. That is the shape the recorder sees. It is not the shape of the work. The supplier I talk to in September is the same supplier from August, and the September call only makes sense next to the August one: in August he held two lots until October 1, in October I confirmed late and got one.
+Most call tools give you a page per call: a transcript, a summary, maybe action items. That is the shape the recorder sees. It is not the shape of the work. The supplier I talk to in October is the same supplier from September, and the October call only makes sense next to the September one: in September he held two lots until October 1, in October I confirmed late and got one.
 
 So I stopped treating the call as the thing to file. A call is an event on a thread, and the thread is the thing I keep. A thread has a group (sales, supply, operations), a status (live, paused, done, dead end), people, and a chronology:
 
@@ -41,7 +41,9 @@ A thread that had no call for three weeks turns grey and gets a dotted line up t
 
 ## The agent proposes, the person checks
 
-Someone has to turn a transcript into a review: who spoke, what about, which thread. An agent does the first pass. Two rules came out of getting it wrong.
+trip2g does not record, transcribe or review calls. Something else writes the transcript, the review and the topic map: a recorder that saves into the vault, a script, or an agent with an [[en/user/graphql#Admin access via API key|API key]]. The two layouts only read those notes. What they write is the edits note of a call, the `hidden` key of a thread, and a person note when I add someone new.
+
+In my case an agent does that first pass: who spoke, what about, which thread. Two rules came out of getting it wrong.
 
 **Speakers only when the conversation shows it.** Recorders name speakers from the calendar, and the calendar is often wrong. In my case the recording machine's clock was set to one timezone and the calendar lived in another, so the recorder attached the event an hour away and confidently put the wrong person's name on a speaker. The demo keeps one such call, where the supplier got the accountant's name: the label says "Marcus Hale", and the first line of the transcript is "Tom, sorry, I'm late with the confirmation". So the agent maps a label to a person only when someone introduces themselves, is addressed by name, or it is plainly the next call of a known thread. Otherwise it writes `?` and leaves it to me.
 
@@ -55,13 +57,15 @@ Each block has its own **verified** box, and **All verified** ticks the four at 
 
 ## Priority and hiding are mine
 
-Some fields only the owner sets. `priority` pins a thread to the top of its group; `hidden: true` takes a thread off the board without deleting it. The agent that maintains the threads is told to keep them and never to add them. The hide button writes that one key into the thread's frontmatter and leaves the rest of the note alone, so it cannot collide with the agent's last edit to the chronology.
+Some fields only the owner sets. `priority` pins a thread to the top of its group; `hidden: true` takes a thread off the board without deleting it. If an agent keeps the thread notes, its instructions should say: keep `priority` and `hidden` as they are, never add them. The hide button writes that one key into the thread's frontmatter and leaves the rest of the note alone, so it cannot collide with the agent's last edit to the chronology.
 
 ## Why the corrections live in their own note
 
 The page could write my corrections straight into the review note. It does not: it writes `call_edits/<id>.md`, one note per call, and nothing else.
 
-The review belongs to whoever wrote it, usually the agent. If the page edited it too, two writers would share one file, and every save would be a possible conflict with the agent's next pass. With a separate note each writer has its own file. The agent reads my edits as input the next time it touches the call: the speaker I picked, the topic I marked wrong, the thread I added. The page reads the review as input and never changes it.
+The review belongs to whoever wrote it, usually the agent. If the page edited it too, two writers would share one file, and every save would be a possible conflict with the agent's next pass. With a separate note each writer has its own file. The page reads the review as input and never changes it.
+
+The edits note is a contract in its frontmatter: `speakers` maps a label to a person note, `threads` lists the threads I picked, `topics_wrong` the topics I struck out, `extra_topics` the ones that were missed, then `scores`, `outcome` and `verified`. The full list is on [[en/user/calls-dashboard#The edits note|the settings page]], and the demo carries [[demo/calls/en/edits/c4f9a8|one such note]]. Whatever writes the reviews can read it on its next pass. That reader is yours to build.
 
 There is a second reason. The edits note is a record of what a person decided, separate from what a model guessed. When the agent's prompt changes, I can compare its new guesses with my old answers. If my answers were mixed into its output, I could not.
 
