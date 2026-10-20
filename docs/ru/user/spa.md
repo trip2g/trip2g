@@ -226,7 +226,7 @@ const { updateNotes: result } = await updateNotes({ input: { changes: [change] }
 
 | `__typename` | Что значит |
 |---|---|
-| `UpdateNotesSuccessPayload` | Сохранено; в `updated` каждая заметка с `versionId`, который записало сохранение |
+| `UpdateNotesSuccessPayload` | Сохранено; в `updated` каждая заметка с `versionId`, который записало сохранение, и её `warnings` |
 | `UpdateNotesHashMismatchPayload` | Ничего не записано: заметка больше не соответствует `expectedHash`; `actualHash` — её текущий хеш |
 | `UpdateNotesPatchNotFoundPayload` | Изменение `patch` не нашло свой текст `find` или нашло его больше одного раза |
 | `ErrorPayload` | Отказ, причина в `message` |
@@ -431,6 +431,10 @@ mutation SaveNotes($input: UpdateNotesInput!) {
       updated {
         path
         versionId
+        warnings {
+          level
+          message
+        }
       }
     }
     ... on UpdateNotesHashMismatchPayload {
@@ -464,7 +468,7 @@ mutation SaveNotes($input: UpdateNotesInput!) {
 }
 ```
 
-`upsert` заменяет заметку или создаёт её. С `expectedHash` сохранение пройдёт, только если с момента чтения заметку никто не менял, иначе придёт `UpdateNotesHashMismatchPayload`. Пустой `expectedHash` значит «только создать»: если заметка уже есть, сохранения не будет. Без `expectedHash` сохранение всегда перезаписывает. `updated[].versionId` — версия, которую записало сохранение.
+`upsert` заменяет заметку или создаёт её. С `expectedHash` сохранение пройдёт, только если с момента чтения заметку никто не менял, иначе придёт `UpdateNotesHashMismatchPayload`. Пустой `expectedHash` значит «только создать»: если заметка уже есть, сохранения не будет. Без `expectedHash` сохранение всегда перезаписывает. `updated[].versionId` — версия, которую записало сохранение. `updated[].warnings` — предупреждения заметки после сохранения, включая сообщения [[ru/user/validators|валидаторов]]: `level` — `INFO`, `WARNING` или `CRITICAL`. Заметка с предупреждением `CRITICAL` всё равно сохраняется, поэтому покажите сообщения пользователю.
 
 #### Заменить один кусок текста
 

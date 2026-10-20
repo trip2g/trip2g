@@ -225,7 +225,7 @@ Each change is processed independently. The batch stops at the first error and r
 
 | Payload | Meaning | Recommended action |
 |---------|---------|-------------------|
-| `UpdateNotesSuccessPayload` | All changes applied | Read `paths` for the list of affected note paths |
+| `UpdateNotesSuccessPayload` | All changes applied | Read `paths` for the list of affected note paths; `updated[].warnings` holds each note's warnings after the save |
 | `UpdateNotesHashMismatchPayload` | Note changed since last read | Re-fetch note, retry with `actualHash` |
 | `UpdateNotesPatchNotFoundPayload` | `find` string not found or appears more than once | Show error to user, or re-fetch and retry with updated `find` |
 | `ErrorPayload` | Validation or system error | Log `message`, fix input |

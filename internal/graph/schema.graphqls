@@ -2020,6 +2020,8 @@ input UpdateNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.A
 type NoteWriteResult {
   path: String!
   versionId: Int64!
+  # The note's warnings after the save, validator messages included.
+  warnings: [NoteWarning!]!
 }
 
 type UpdateNotesSuccessPayload {

@@ -3407,6 +3407,7 @@ export type NoteWriteResult = {
   __typename?: 'NoteWriteResult';
   path: Scalars['String']['output'];
   versionId: Scalars['Int64']['output'];
+  warnings: Array<NoteWarning>;
 };
 
 export type OAuthUrlInput = {

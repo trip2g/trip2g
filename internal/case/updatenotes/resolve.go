@@ -288,7 +288,7 @@ func applyPatch(
 // under concurrent same-board editing the reload's latest version can be a peer's,
 // which would briefly suppress a genuine peer event on the saving client. The
 // reload is still consulted for the note's Path and to skip notes no longer present
-// (e.g. hidden). When the write created no new version (versionID 0, content
+// (e.g. hidden) and for its warnings. When the write created no new version (versionID 0, content
 // unchanged) the reload's current version is used as a fallback.
 func collectUpdated(nvs *appmodel.NoteViews, pathIDs, versionIDs []int64) []model.NoteWriteResult {
 	updated := make([]model.NoteWriteResult, 0, len(pathIDs))
@@ -301,7 +301,11 @@ func collectUpdated(nvs *appmodel.NoteViews, pathIDs, versionIDs []int64) []mode
 		if versionID == 0 {
 			versionID = nv.VersionID
 		}
-		updated = append(updated, model.NoteWriteResult{Path: nv.Path, VersionID: versionID})
+		warnings := nv.Warnings
+		if warnings == nil {
+			warnings = []appmodel.NoteWarning{}
+		}
+		updated = append(updated, model.NoteWriteResult{Path: nv.Path, VersionID: versionID, Warnings: warnings})
 	}
 	return updated
 }

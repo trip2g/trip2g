@@ -226,7 +226,7 @@ const { updateNotes: result } = await updateNotes({ input: { changes: [change] }
 
 | `__typename` | Meaning |
 |---|---|
-| `UpdateNotesSuccessPayload` | Saved; `updated` lists each note with the `versionId` the save wrote |
+| `UpdateNotesSuccessPayload` | Saved; `updated` lists each note with the `versionId` the save wrote and its `warnings` |
 | `UpdateNotesHashMismatchPayload` | Nothing was written: the note no longer matches `expectedHash`; `actualHash` is its current hash |
 | `UpdateNotesPatchNotFoundPayload` | A `patch` change didn't find its `find` text, or found it more than once |
 | `ErrorPayload` | Refused, with a `message` |
@@ -431,6 +431,10 @@ mutation SaveNotes($input: UpdateNotesInput!) {
       updated {
         path
         versionId
+        warnings {
+          level
+          message
+        }
       }
     }
     ... on UpdateNotesHashMismatchPayload {
@@ -464,7 +468,7 @@ mutation SaveNotes($input: UpdateNotesInput!) {
 }
 ```
 
-`upsert` replaces the note or creates it. Pass `expectedHash` and the save happens only if nobody changed the note since you read it; otherwise you get `UpdateNotesHashMismatchPayload`. An empty `expectedHash` means "create only": the save fails if the note already exists. Without `expectedHash` the save always overwrites. `updated[].versionId` is the version the save wrote.
+`upsert` replaces the note or creates it. Pass `expectedHash` and the save happens only if nobody changed the note since you read it; otherwise you get `UpdateNotesHashMismatchPayload`. An empty `expectedHash` means "create only": the save fails if the note already exists. Without `expectedHash` the save always overwrites. `updated[].versionId` is the version the save wrote. `updated[].warnings` are the note's warnings after the save, [[en/user/validators|validator]] messages included: `level` is `INFO`, `WARNING` or `CRITICAL`. A note with a `CRITICAL` warning is still saved, so show the messages to the user.
 
 #### Change one piece of text
 

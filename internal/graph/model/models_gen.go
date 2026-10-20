@@ -2197,8 +2197,9 @@ type NoteViewMeta struct {
 }
 
 type NoteWriteResult struct {
-	Path      string `json:"path"`
-	VersionID int64  `json:"versionId"`
+	Path      string              `json:"path"`
+	VersionID int64               `json:"versionId"`
+	Warnings  []model.NoteWarning `json:"warnings"`
 }
 
 type OAuthURLInput struct {

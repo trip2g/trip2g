@@ -59,6 +59,7 @@ The note is still saved and published. The warning marks it until you fix it.
 
 - **Sync CLI.** Messages are listed under each note. When there is at least one `error`, the CLI exits with code 1, so a script or an AI agent knows it has to fix something. Messages come with a sync that pushes notes: when nothing changed, the CLI pushes nothing and shows nothing. See [[en/user/cli|CLI sync]].
 - **Admin panel.** Dashboard → Note Warnings always lists every note with its messages.
+- **An app that saves notes.** `updateNotes` returns each saved note's messages in `updated[].warnings`. The note is saved even with an `error`. See [[en/user/spa|An app on top of trip2g]].
 - **Locally, without a server.** `trip2g lint <folder>` prints the same messages. It is stricter than sync: it exits with code 1 on an `error` and on a `warning` alike. Put it in CI to stop invalid notes before they reach the site. See [[en/user/lint|Linting your vault]].
 
 ### Attaching validators
