@@ -42,6 +42,7 @@ title: "Navigation"
 - [[en/thoughts/sync-benchmark|Benchmarking Obsidian sync]]
 - [[en/thoughts/search-benchmark|Benchmarking search]]
 - [[en/thoughts/benchmarks-that-skipped-the-client|Three months of benchmarks, and the model never read a note]]
+- [[en/thoughts/what-agents-do-with-search-fields|What agents actually do with search fields]]
 - [[en/thoughts/page-cache-and-the-surprise-bottleneck|The page cache and the surprise bottleneck]]
 - [[en/thoughts/the-database-was-re-reading-its-own-queries|The database was re-reading its own queries]]
 - [[en/thoughts/blaming-sqlite-for-my-own-bug|I spent half a year blaming SQLite for my own bug]]
