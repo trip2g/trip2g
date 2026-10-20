@@ -266,7 +266,7 @@ On `UpdateNotesHashMismatchPayload` reload the page, or fetch the new content an
 
 #### Validators: keep the app's data in shape {#validate}
 
-The note is the app's database, and anyone can edit it: you in Obsidian, an agent, the app itself. Nothing stops a broken value from landing in the file, and the app doesn't fail on it. `columns: Todo, Doing, Done` without brackets is one string, so `GetStrings` returns a single column named "Todo, Doing, Done". `wip_limit: "3"` in quotes is a string, so `GetInt` returns its default. The board opens, looks wrong, and nobody sees why. Attach a [[en/user/validators|validator]] to every note the app reads as data, and such a mistake becomes a warning on the note.
+The note is the app's database, and anyone can edit it: you in Obsidian, an agent, the app itself. Nothing stops a broken value from landing in the file, and the app doesn't fail on it. `columns: Todo, Doing, Done` without brackets is one string, so `GetStrings` returns a single column named "Todo, Doing, Done". `wip_limit: three` is a word, not a number, so `GetInt` returns its default. The board opens, looks wrong, and nobody sees why. Attach a [[en/user/validators|validator]] to every note the app reads as data, and such a mistake becomes a warning on the note.
 
 A validator for the settings from [[en/user/spa#config|Configure the app from the frontmatter]], in a note `validators/app_config.md`:
 

@@ -3,6 +3,8 @@ package templateviews
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 // Meta provides access to frontmatter values with type-safe getters.
@@ -49,6 +51,7 @@ func (m *Meta) GetString(key string, def string) string {
 }
 
 // GetInt returns an int value or default if not found/wrong type.
+// A string holding an integer, such as a quoted "3", is parsed.
 func (m *Meta) GetInt(key string, def int) int {
 	if m.raw == nil {
 		return def
@@ -66,6 +69,12 @@ func (m *Meta) GetInt(key string, def int) int {
 		return int(v)
 	case float64:
 		return int(v)
+	case string:
+		n, err := strconv.Atoi(strings.TrimSpace(v))
+		if err != nil {
+			return def
+		}
+		return n
 	default:
 		return def
 	}

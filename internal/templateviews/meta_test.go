@@ -91,3 +91,26 @@ func TestMeta_GetStrings(t *testing.T) {
 		})
 	}
 }
+
+func TestMeta_GetInt(t *testing.T) {
+	tests := []struct {
+		name string
+		val  interface{}
+		want int
+	}{
+		{name: "int", val: 3, want: 3},
+		{name: "float is truncated", val: 2.7, want: 2},
+		{name: "numeric string", val: "3", want: 3},
+		{name: "numeric string with spaces", val: " -4 ", want: -4},
+		{name: "non-numeric string", val: "three", want: 7},
+		{name: "float string", val: "3.5", want: 7},
+		{name: "bool", val: true, want: 7},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m := &Meta{raw: map[string]interface{}{"n": tc.val}}
+			require.Equal(t, tc.want, m.GetInt("n", 7))
+		})
+	}
+}
