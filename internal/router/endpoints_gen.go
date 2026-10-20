@@ -25,6 +25,7 @@ import (
 	federationassetfederationasset "trip2g/internal/case/system/federationasset"
 	federationdescribefederationdescribe "trip2g/internal/case/system/federationdescribe"
 	federationtopologyfederationtopology "trip2g/internal/case/system/federationtopology"
+	syncclisynccli "trip2g/internal/case/system/synccli"
 )
 
 var endpoints = []Endpoint{
@@ -52,6 +53,7 @@ var endpoints = []Endpoint{
 	&federationassetfederationasset.Endpoint{},
 	&federationdescribefederationdescribe.Endpoint{},
 	&federationtopologyfederationtopology.Endpoint{},
+	&syncclisynccli.Endpoint{},
 }
 
 type RoutesEnv interface {
@@ -75,4 +77,5 @@ type RoutesEnv interface {
 	federationassetfederationasset.Env
 	federationdescribefederationdescribe.Env
 	federationtopologyfederationtopology.Env
+	syncclisynccli.Env
 }

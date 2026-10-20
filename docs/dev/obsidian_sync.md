@@ -444,6 +444,8 @@ gh release create 0.1.7 main.js manifest.json styles.css dist/trip2g-sync.mjs \
 
 CLI позволяет синхронизировать файлы без Obsidian — из командной строки, CI/CD, или скриптов.
 
+Сервер отдаёт CLI своей версии без авторизации: `GET /_system/sync-cli.mjs` (`internal/case/system/synccli`) берёт `trip2g-sync.mjs` из `.obsidian/plugins/*/` встроенного `onboarding-vault/vault.zip`, с ETag и `Cache-Control: no-cache`; без архива — 404.
+
 ### Установка и запуск
 
 ```bash
