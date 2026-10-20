@@ -1,7 +1,6 @@
 ---
 title: "Персональная навигация по знаниям"
 order: 13
-layout: trip2g/content-first
 free: true
 ---
 

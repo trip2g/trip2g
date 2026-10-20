@@ -1,7 +1,6 @@
 ---
 title: "Personal Navigation"
 order: 13
-layout: trip2g/content-first
 free: true
 lang_redirect: "[[ru/thoughts/personal-navigation]]"
 ---

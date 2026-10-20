@@ -1,7 +1,6 @@
 ---
 title: "Markdown: синтаксис и рендеринг"
 free: true
-layout: trip2g/page
 lang_redirect: "[[en/user/markdown]]"
 ---
 

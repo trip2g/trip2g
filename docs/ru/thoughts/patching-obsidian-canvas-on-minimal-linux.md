@@ -1,7 +1,6 @@
 ---
 title: "Чиним Obsidian Canvas на минимальном Linux"
 order: 15
-layout: trip2g/content-first
 free: true
 lang_redirect: "[[en/thoughts/patching-obsidian-canvas-on-minimal-linux]]"
 ---

@@ -1,7 +1,6 @@
 ---
 title: "Knowledge Bot"
 order: 14
-layout: trip2g/content-first
 free: true
 lang_redirect: "[[ru/thoughts/knowledge-bot]]"
 ---

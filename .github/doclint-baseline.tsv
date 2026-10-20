@@ -1,0 +1,17 @@
+demo/broken_layout_test.md	warning	layout "broken-layout" not found
+demo/json_layout_missing_include.md	warning	layout "json-include-missing" not found
+demo/json_layout_no_sidebar.md	warning	layout "json-test" not found
+demo/json_layout_test.md	warning	layout "json-test" not found
+demo/layout-include.md	warning	layout "showcase/include" not found
+demo/layout-magazine.md	warning	layout "showcase/magazine" not found
+demo/layout-sections.md	warning	layout "showcase/sections" not found
+demo/patch_tests/has_layout.md	warning	layout "custom" not found
+demo/patch_tests/path_based.md	warning	layout "meta_inspector" not found
+demo/patch_tests/vault_target.md	warning	layout "meta_inspector" not found
+demo/patch_tests/vault_target2.md	warning	layout "meta_inspector" not found
+demo/template_backlinks_target.md	warning	layout "with-backlinks" not found
+demo/template_meta_defaults.md	warning	layout "meta-test" not found
+demo/template_meta_test.md	warning	layout "meta-test" not found
+demo/template_sidebar_test.md	warning	layout "with-sidebar" not found
+demo/with_layout.md	warning	layout "custom/page" not found
+demo/yield_blocks_demo.md	warning	layout "yield-blocks-demo" not found

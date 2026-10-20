@@ -1,7 +1,6 @@
 ---
 title: Content Infrastructure for Human-AI Workflows
 order: 11
-layout: trip2g/content-first
 free: true
 lang_redirect: "[[ru/thoughts/content-infrastructure]]"
 ---

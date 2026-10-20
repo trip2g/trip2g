@@ -1,7 +1,6 @@
 ---
 title: "Track Bot"
 order: 12
-layout: trip2g/content-first
 free: true
 lang_redirect: "[[ru/thoughts/track-bot]]"
 ---
