@@ -10,6 +10,11 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Search results say how long each note is
+
+- **What.** Every `search` and `federated_search` result carries `size_tokens`, an estimate of the note's length in tokens (the same estimate the chunker uses), and `sections`, the number of headings `expand` can navigate.
+- **Why.** An agent could not tell a 6,000-token note from a 200-token one before opening it, so it opened long notes whole.
+- **How to use.** Nothing to change; agents read the fields from the result.
 ### A note path with the wrong separators or case still opens the note
 
 - **What.** `note_html`, `expand` and `similar` that find no note at the exact `path` retry with the path folded: case, `_` or a space for `-`, a leading `/` and a missing `.md` no longer matter. When two notes fold to the same path, neither is picked and the call fails as before.

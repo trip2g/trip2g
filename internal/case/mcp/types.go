@@ -133,6 +133,8 @@ type SearchResultItem struct {
 	URL        string         `json:"url"`
 	Kind       string         `json:"kind"`
 	Score      float64        `json:"score"`
+	SizeTokens int            `json:"size_tokens"`
+	Sections   int            `json:"sections"`
 	Matches    []SearchMatch  `json:"matches,omitempty"`
 	Federation *FederationRef `json:"federation,omitempty"`
 }

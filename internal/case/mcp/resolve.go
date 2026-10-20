@@ -20,6 +20,7 @@ import (
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdchunk"
 	"trip2g/internal/metrics"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
@@ -591,6 +592,10 @@ func searchResultItemFromNote(note *model.NoteView, score float64, noteURL func(
 		URL:      noteURL(note),
 		Kind:     noteKind(note),
 		Score:    score,
+		// The size of the note a whole-note read returns, so an agent can tell
+		// a note worth opening section by section from one worth reading whole.
+		SizeTokens: mdchunk.EstimateTokens(stripFrontmatter(string(note.Content))),
+		Sections:   len(navigableHeadings(note)),
 	}
 	if kb := model.NewMCPFederationNote(note); kb != nil {
 		item.Kind = kindFederationKB

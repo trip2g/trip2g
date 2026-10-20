@@ -97,7 +97,7 @@ func resolve(ctx context.Context, env Env, params Params) error {
 	passagePrefix := vsConfig.ResolvedPassagePrefix()
 	// Cap whole-note input to the model's hard token limit; notes can be larger
 	// than the embedding window, which otherwise fails with HTTP 400 and retries
-	// forever. estimateTokens is approximate, so leave a 10% safety margin.
+	// forever. EstimateTokens is approximate, so leave a 10% safety margin.
 	budget := vsConfig.ResolvedMaxInputTokens() * 9 / 10
 	text := passagePrefix + mdchunk.TruncateToTokens(noteView.Title+"\n\n"+mdchunk.StripFrontmatter(string(noteView.Content)), budget)
 
