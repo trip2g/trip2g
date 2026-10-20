@@ -72,6 +72,8 @@ func goldenCases() []goldenCase {
 		{name: "initialize_method_override", body: rpc(1, "initialize", ""), query: "method=guide"},
 		{name: "initialize_method_override_unknown", body: rpc(1, "initialize", ""), query: "method=nope"},
 		{name: "initialize_method_override_private", body: rpc(1, "initialize", ""), query: "method=private-tool"},
+		{name: "server_discover", body: rpc(1, "server/discover", discoverMeta), headers: discoverHeaders()},
+		{name: "server_discover_method_override", body: rpc(1, "server/discover", discoverMeta), headers: discoverHeaders(), query: "method=guide"},
 		{name: "notifications_initialized", body: `{"jsonrpc":"2.0","id":null,"method":"notifications/initialized"}`},
 
 		{name: "tools_list_anonymous", body: rpc(2, "tools/list", "{}")},
@@ -130,6 +132,12 @@ func goldenCases() []goldenCase {
 		// that omits Accept is rejected by the transport before dispatch.
 		{name: "missing_accept_header", body: rpc(12, "tools/list", "{}"), noAccept: true},
 	}
+}
+
+const discoverMeta = `{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{},"io.modelcontextprotocol/clientInfo":{"name":"golden","version":"1"}}}`
+
+func discoverHeaders() map[string]string {
+	return map[string]string{"Mcp-Method": "server/discover", "MCP-Protocol-Version": "2026-07-28"}
 }
 
 const gqlArgs = `{"query":"{admin{__typename}}"}`

@@ -36,6 +36,7 @@ const (
 
 	// MCP method names.
 	MCPMethodInitialize = "initialize"
+	mcpMethodDiscover   = "server/discover"
 	mcpMethodToolsList  = "tools/list"
 	mcpMethodToolsCall  = "tools/call"
 )

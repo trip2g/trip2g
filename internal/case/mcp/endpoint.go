@@ -133,10 +133,11 @@ type rpcAnswer struct {
 // httpReq carries the message to the transport. Endpoint.Handle passes the
 // client's real request; Resolve synthesises a spec-compliant one.
 func serveJSONRPC(ctx context.Context, env Env, rpcReq Request, httpReq *http.Request) rpcAnswer {
-	// Only initialize surfaces the instructions, and resolving them scans the
-	// whole corpus — so every other method skips that work, as it always has.
+	// Only initialize and its 2026-07-28 replacement, server/discover, surface
+	// the name and instructions, and resolving them scans the whole corpus — so
+	// every other method skips that work.
 	initResult := initialization{}
-	if rpcReq.Method == MCPMethodInitialize {
+	if rpcReq.Method == MCPMethodInitialize || rpcReq.Method == mcpMethodDiscover {
 		resolved, initErr := resolveInitialization(ctx, env, rpcReq.MethodOverride)
 		if initErr != nil {
 			return jsonAnswer(Response{JSONRPC: "2.0", ID: rpcReq.ID, Error: initErr})
