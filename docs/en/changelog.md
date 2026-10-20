@@ -12,9 +12,9 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ### The MCP endpoint reports a name you choose
 
-- **What.** The name in the `initialize` handshake (`serverInfo.name` and `serverInfo.title`) is no longer fixed to `trip2g-mcp`. The `-mcp-server-name` flag (`MCP_SERVER_NAME`) sets it for the instance, and a `title` in the frontmatter of the instructions note (`mcp_method: initialize`, or the one `?method=` selects) overrides it.
+- **What.** The name in the `initialize` handshake (`serverInfo.name` and `serverInfo.title`) is no longer fixed to `trip2g-mcp`. The `-mcp-server-name` flag (`MCP_SERVER_NAME`) sets it for the instance, and `mcp_name` in the instructions note (`mcp_method: initialize`, or the one `?method=` selects) overrides it.
 - **Why.** Clients show and key a connector by the name the server reports, so every trip2g base appeared under the same name.
-- **How to use.** Set `MCP_SERVER_NAME`, or add `title:` to the instructions note. See [[en/user/mcp|MCP]].
+- **How to use.** Set `MCP_SERVER_NAME`, or add `mcp_name:` to the instructions note. See [[en/user/mcp|MCP]].
 
 ### A revoked key named by `kb_id` fails the call
 

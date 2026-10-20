@@ -163,17 +163,17 @@ The client receives these instructions during the MCP handshake, before any tool
 
 #### Server name
 
-The handshake also carries the name the server reports (`serverInfo.name` and `serverInfo.title`). It is `trip2g-mcp` unless you set another: the `-mcp-server-name` flag (`MCP_SERVER_NAME`) sets it for the instance, and a `title` in the instructions note's frontmatter overrides it:
+The handshake also carries the name the server reports (`serverInfo.name` and `serverInfo.title`). It is `trip2g-mcp` unless you set another: the `-mcp-server-name` flag (`MCP_SERVER_NAME`) sets it for the instance, and `mcp_name` in the instructions note overrides it:
 
 ```yaml
 ---
 mcp_method: initialize
-title: Acme Docs
+mcp_name: Acme Docs
 free: true
 ---
 ```
 
-The title comes from frontmatter only. A note without one keeps the configured name. With `?method=`, the selected note's title names the server, so each entry point can carry its own name.
+A note without `mcp_name` keeps the configured name; the note's `title` is not used. With `?method=`, the selected note's `mcp_name` names the server, so each entry point can carry its own name.
 
 #### Step 3. Configure access
 

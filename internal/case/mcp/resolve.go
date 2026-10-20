@@ -156,8 +156,8 @@ type initialization struct {
 }
 
 // resolveInitialization reads the note whose mcp_method matches the target:
-// its content, frontmatter stripped, is the instructions, and its frontmatter
-// title, when set, is the server name in place of the configured one.
+// its content, frontmatter stripped, is the instructions, and its mcp_name,
+// when set, is the server name in place of the configured one.
 // methodOverride comes from ?method= and selects a note other than the default
 // `initialize` one.
 //
@@ -187,8 +187,8 @@ func resolveInitialization(ctx context.Context, env Env, methodOverride string) 
 			break
 		}
 		result.Instructions = stripFrontmatter(string(note.Content))
-		if title, isString := note.RawMeta["title"].(string); isString && title != "" {
-			result.ServerName = title
+		if note.MCPName != "" {
+			result.ServerName = note.MCPName
 		}
 		break
 	}

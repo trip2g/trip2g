@@ -294,6 +294,7 @@ type NoteView struct {
 	// MCP (Model Context Protocol) fields
 	MCPMethod      string // method name for MCP tools/list
 	MCPDescription string // description for MCP tools/list
+	MCPName        string // server name an instructions note gives the initialize result
 
 	MCPFederationKBURL      string
 	MCPFederationKBID       string
@@ -710,6 +711,9 @@ func (n *NoteView) extractMCPFields() {
 	}
 	if desc, ok := n.RawMeta["mcp_description"].(string); ok {
 		n.MCPDescription = desc
+	}
+	if name, ok := n.RawMeta["mcp_name"].(string); ok {
+		n.MCPName = name
 	}
 }
 

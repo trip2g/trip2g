@@ -123,11 +123,12 @@ func TestResolve(t *testing.T) {
 		require.Equal(t, "Acme Docs", info["title"])
 	})
 
-	t.Run("the instructions note's title overrides the configured name", func(t *testing.T) {
+	t.Run("the instructions note's mcp_name overrides the configured name", func(t *testing.T) {
 		note := &appmodel.NoteView{
 			MCPMethod: "initialize",
-			RawMeta:   map[string]interface{}{"mcp_method": "initialize", "title": "Acme Docs"},
-			Content:   []byte("---\nmcp_method: initialize\ntitle: Acme Docs\n---\n\nInstructions."),
+			MCPName:   "Acme Docs",
+			Title:     "Acme documentation home",
+			Content:   []byte("---\nmcp_method: initialize\nmcp_name: Acme Docs\n---\n\nInstructions."),
 		}
 
 		info := serverInfoFor(t, "trip2g-mcp", note)
@@ -136,10 +137,10 @@ func TestResolve(t *testing.T) {
 		require.Equal(t, "Acme Docs", info["title"])
 	})
 
-	t.Run("an instructions note without a title keeps the configured name", func(t *testing.T) {
+	t.Run("an instructions note without mcp_name keeps the configured name", func(t *testing.T) {
 		note := &appmodel.NoteView{
 			MCPMethod: "initialize",
-			RawMeta:   map[string]interface{}{"mcp_method": "initialize"},
+			Title:     "Instructions",
 			Content:   []byte("---\nmcp_method: initialize\n---\n\nInstructions."),
 		}
 

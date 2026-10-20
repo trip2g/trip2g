@@ -5,6 +5,8 @@
 package router
 
 import (
+	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
+	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
 	downloadonboardingvaultdownloadonboardingvault "trip2g/internal/case/downloadonboardingvault"
 	handlegithubcallbackhandlegithubcallback "trip2g/internal/case/handlegithubcallback"
 	handlegithubstarthandlegithubstart "trip2g/internal/case/handlegithubstart"
@@ -19,8 +21,6 @@ import (
 	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	signinbyhatsigninbyhat "trip2g/internal/case/signinbyhat"
-	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
-	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
 	federatedassetrelayfederatedassetrelay "trip2g/internal/case/system/federatedassetrelay"
 	federationassetfederationasset "trip2g/internal/case/system/federationasset"
 	federationdescribefederationdescribe "trip2g/internal/case/system/federationdescribe"
@@ -76,4 +76,3 @@ type RoutesEnv interface {
 	federationdescribefederationdescribe.Env
 	federationtopologyfederationtopology.Env
 }
-
