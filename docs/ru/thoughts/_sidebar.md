@@ -41,6 +41,7 @@ title: "Навигация"
 - [[ru/thoughts/patching-obsidian-canvas-on-minimal-linux|Чиним Obsidian Canvas на минимальном Linux]]
 - [[ru/thoughts/sync-benchmark|Бенчмарк синхронизации Obsidian]]
 - [[ru/thoughts/search-benchmark|Бенчмарк поиска]]
+- [[ru/thoughts/benchmarks-that-skipped-the-client|Три месяца бенчмарков, а модель так и не прочитала ни одной заметки]]
 - [[ru/thoughts/page-cache-and-the-surprise-bottleneck|Кеш страниц и неожиданное узкое место]]
 - [[ru/thoughts/the-database-was-re-reading-its-own-queries|База данных разбирала свои запросы заново]]
 - [[ru/thoughts/blaming-sqlite-for-my-own-bug|Полгода я винил SQLite в собственном баге]]
