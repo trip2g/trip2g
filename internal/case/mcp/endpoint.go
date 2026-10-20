@@ -24,6 +24,14 @@ const (
 	streamableAcceptHeader = "application/json, text/event-stream"
 )
 
+// subscriptions/listen is a stream that stays open until the client cancels;
+// this endpoint answers each POST with one buffered body, so it cannot serve one.
+const mcpMethodSubscriptionsListen = "subscriptions/listen"
+
+// mcpMethodHeader is required by protocol 2026-07-28; some clients omit it on
+// notifications, so it is filled from the body when absent.
+const mcpMethodHeader = "Mcp-Method"
+
 type Endpoint struct{}
 
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
@@ -100,6 +108,10 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	// The client's own request is forwarded, so the transport applies its real
 	// content negotiation rather than anything reconstructed here.
+	if len(req.Req.Request.Header.Peek(mcpMethodHeader)) == 0 && rpcReq.Method != "" {
+		req.Req.Request.Header.Set(mcpMethodHeader, rpcReq.Method)
+	}
+
 	httpReq := &http.Request{}
 	err = fasthttpadaptor.ConvertRequest(req.Req, httpReq, true)
 	if err != nil {
@@ -143,6 +155,10 @@ func serveJSONRPC(ctx context.Context, env Env, rpcReq Request, httpReq *http.Re
 			return jsonAnswer(Response{JSONRPC: "2.0", ID: rpcReq.ID, Error: initErr})
 		}
 		initResult = resolved
+	}
+
+	if rpcReq.Method == mcpMethodSubscriptionsListen {
+		return jsonAnswer(errorResponse(rpcReq.ID, ErrCodeMethodNotFound, "Method not found: "+rpcReq.Method))
 	}
 
 	if errResp := checkToolCallParams(rpcReq); errResp != nil {
