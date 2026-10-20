@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### A connection that announces a body no longer reserves it
+
+- **What.** The public server and the leader's internal listener now read a request body as it arrives instead of reserving the announced `Content-Length` up front. The limits are unchanged: `--max-request-body-size` (10 MB) per request on both, and the same 60 s timeouts. An oversized body, declared or chunked, gets the same 413 `request body size exceeds the limit` on both servers; the internal listener used to answer 400.
+- **Why.** fasthttp set aside a buffer the size of the announced body as soon as it had read the headers, before routing and before any credential check. An anonymous connection that announced 10 MB and then sent nothing held 10 MB for 60 s, so a thousand of them held 10 GB while sending almost nothing.
+- **How to use.** Nothing to do. Per-caller limits and connection limits are not part of this change; see `docs/dev/large_file_uploads.md`.
+
 ### MCP search takes three optional query variants from the agent
 
 - **What.** `search` and `federated_search` accept `short_query`, `rephrased_query` and `expected_answer`. Each non-empty field adds one result list, fused with the others by rank: `short_query` goes to full-text search, the other two to vector search. The `query` description now asks for the user's question as asked, and the field descriptions name the language most notes declare in `lang`. `federated_search` passes the fields to peers.
