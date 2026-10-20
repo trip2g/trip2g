@@ -24,6 +24,47 @@ flowchart LR
 
 *Federation topology: one MCP endpoint for the agent; the hub fans a query out to all configured peers and merges results.*
 
+### Why one hub instead of ten connectors
+
+Connected directly, every base adds itself to the agent's context on every turn: its tool definitions, and its `initialize` instructions, which a client like Claude Code puts into the system prompt of the whole session (up to 4,096 characters each). Ten bases are ten sets of tools and ten sets of rules, written by ten owners, in force on every answer — including answers that have nothing to do with any of them. Their rules also compete: each base says "search here first", each defines its own words.
+
+```mermaid
+flowchart LR
+    A1["AI agent"]
+    subgraph prompt1["system prompt, every turn"]
+        I1["10 × instructions\n10 × tool sets"]
+    end
+    A1 --- prompt1
+    A1 --> K1["Base 1"]
+    A1 --> K2["Base 2"]
+    A1 --> K3["Base 3"]
+    A1 --> Kd["…"]
+    A1 --> K10["Base 10"]
+```
+
+*Not OK: ten connectors, ten owners' rules in the agent's system prompt on every turn.*
+
+Through your hub the agent connects once. It sees one set of tools and your instructions only. A peer's instructions arrive when the agent asks for them (`federated_instructions`), as a tool result, and the description of each peer is your KB-note, not the peer's own text.
+
+```mermaid
+flowchart LR
+    A2["AI agent"]
+    subgraph prompt2["system prompt, every turn"]
+        I2["1 × your instructions\n1 × tool set"]
+    end
+    A2 --- prompt2
+    A2 --> H["Your trip2g hub\nKB-notes describe each base"]
+    H --> P1["Base 1"]
+    H --> P2["Base 2"]
+    H --> P3["Base 3"]
+    H --> Pd["…"]
+    H --> P10["Base 10"]
+```
+
+*OK: one connector to your hub; the hub reaches the ten bases on demand.*
+
+The other side of it: rules that arrive as a tool result carry less weight than the system prompt, and some models may ignore them. A base whose answering rules must hold on every turn keeps that only when connected directly. Through federation the agent reaches a peer's notes (`federated_search`, `federated_note_html`, `federated_expand`, `federated_similar`, `federated_asset`), not the peer's own `mcp_method` tools.
+
 ### How it works
 
 ```
