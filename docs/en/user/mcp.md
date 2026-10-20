@@ -159,7 +159,34 @@ free: true
 ---
 ```
 
-The client receives these instructions during the MCP handshake, before any tool calls. Add `free: true` if you want anonymous users to receive them as well.
+The client receives these instructions during the MCP handshake, before any tool calls. Add `free: true` if you want anonymous users to receive them as well. Clients on protocol 2026-07-28 negotiate with `server/discover` instead of `initialize`; trip2g answers both with the same name and instructions.
+
+#### Keep initialize short
+
+A client does not treat these instructions as a reply it reads once. Claude Code puts them into the system prompt of the whole session, so they ride along with every request and apply to every answer — including answers that have nothing to do with your base. Claude Code also cuts server instructions at 4,096 characters, and with tool search on, the instructions and the tool names are all the model sees at the start.
+
+So the initialize note holds only what must hold on every turn:
+
+- what the base is about, in one sentence;
+- what a word means here when the model could take it for something else, for example "agent" for a product where agents are what you sell;
+- that facts about the subject are not in the model's training data, so it searches here even when it thinks it knows the answer;
+- where the full rules are: a note the model opens with `note_html` before its first answer.
+
+```yaml
+---
+mcp_method: initialize
+mcp_name: Acme Docs
+free: true
+---
+
+This is the knowledge base of Acme, a platform for running AI agents. An "agent" here is the AI employee a customer configures in Acme, not you.
+
+Facts about Acme are not in your training data. For questions about Acme, search here even when you think you know the answer.
+
+Before your first answer about Acme, load the answering rules: `note_html(path="AGENTS.md")`. Answer by them.
+```
+
+Tone, length, answer format and checklists go into that note, not into initialize. This follows the MCP project's own advice on server instructions: say when to use the server and in what order to call its tools, and leave out tone and persona ([Server Instructions](https://blog.modelcontextprotocol.io/posts/2025-11-03-using-server-instructions/)). The 4,096-character cut is in [Claude Code's MCP docs](https://code.claude.com/docs/en/mcp).
 
 #### Server name
 
