@@ -342,22 +342,22 @@ func goldenEnv() *EnvMock {
 
 	searchHits := []appmodel.SearchResult{
 		{
-			NoteView:           doc,
-			URL:                doc.Permalink,
-			Score:              0.9,
-			HighlightedContent: []string{"alpha body"},
+			NoteView:        doc,
+			URL:             doc.Permalink,
+			Score:           0.9,
+			ContentSegments: appmodel.PlainSegments("alpha body"),
 		},
 		{
-			NoteView:           toolNote,
-			URL:                toolNote.Permalink,
-			Score:              0.4,
-			HighlightedContent: []string{"Base instructions."},
+			NoteView:        toolNote,
+			URL:             toolNote.Permalink,
+			Score:           0.4,
+			ContentSegments: appmodel.PlainSegments("Base instructions."),
 		},
 		{
-			NoteView:           aphorisms,
-			URL:                aphorisms.Permalink,
-			Score:              0.7,
-			HighlightedContent: []string{"Замечай, чего требует твоя <mark>природа</mark>."},
+			NoteView:        aphorisms,
+			URL:             aphorisms.Permalink,
+			Score:           0.7,
+			ContentSegments: []appmodel.HighlightSegment{{Text: "Замечай, чего требует твоя "}, {Text: "природа", Match: true}, {Text: "."}},
 		},
 	}
 

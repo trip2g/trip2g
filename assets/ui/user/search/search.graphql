@@ -1,8 +1,15 @@
 query ($input: SearchInput!) {
 	search(input: $input) {
 		nodes {
-			highlightedTitle
-			highlightedContent
+			titleSegments {
+				text
+				match
+			}
+			contentSegments {
+				text
+				match
+			}
+			matchedTerms
 			id: url
 			score
 			matchOrigin

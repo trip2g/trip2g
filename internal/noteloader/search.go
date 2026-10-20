@@ -12,8 +12,6 @@ import (
 	"time"
 	"trip2g/internal/model"
 
-	htmlFilter "github.com/blevesearch/bleve/v2/analysis/char/html"
-
 	_ "github.com/blevesearch/bleve/v2/analysis/lang/en"
 	_ "github.com/blevesearch/bleve/v2/analysis/lang/ru"
 
@@ -42,10 +40,11 @@ type noteContent struct {
 // The index lives in a directory named after it, and createSearchIndex deletes
 // directories from other versions, so a bump rebuilds instead of silently
 // serving results from a stale schema.
-const searchIndexSchemaVersion = "v1"
+const searchIndexSchemaVersion = "v2"
 
-// langTextField builds a stored, indexed text field mapping named `name`,
-// analyzed with `analyzer`. We index Title/Body under both a Russian-analyzed
+// langTextField builds an indexed, unstored text field mapping named `name`,
+// analyzed with `analyzer`. Snippets are cut from Loader.searchTexts, so the
+// index keeps only the term vectors they need. We index Title/Body under both a Russian-analyzed
 // and an English-analyzed field so each language's BM25 lane stems correctly;
 // the query in Search() is a per-field disjunction that matches via whichever
 // language fits. This is independent of note.Lang, so it works even when the
@@ -54,7 +53,7 @@ func langTextField(name, analyzer string) *mapping.FieldMapping {
 	fm := bleve.NewTextFieldMapping()
 	fm.Name = name
 	fm.Analyzer = analyzer
-	fm.Store = true
+	fm.Store = false
 	fm.Index = true
 	return fm
 }
@@ -221,6 +220,7 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 		return nil, err
 	}
 
+	fresh := make(map[string]searchText, len(changed))
 	for _, p := range changed {
 		note := p.note
 		content := noteContent{
@@ -236,8 +236,14 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 
 		l.contentHashes[note.PathID] = p.hash
 		l.indexedPermalinks[note.PathID] = note.Permalink
+		fresh[note.Permalink] = searchText{Title: []byte(content.Title), Body: []byte(content.Body)}
 	}
 	indexed := len(changed)
+
+	texts := l.collectSearchTexts(notes, fresh)
+	l.Lock()
+	l.searchTexts = texts
+	l.Unlock()
 
 	l.log.Info("notes indexed",
 		"indexed", indexed,
@@ -248,6 +254,36 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	)
 
 	return index, nil
+}
+
+// collectSearchTexts returns the text of every indexed note: fresh for the
+// notes just indexed, the previous build's for unchanged ones, and extracted
+// again for notes adopted from a persisted index, which this process never
+// indexed. A new map, so Search can keep reading the old one meanwhile.
+func (l *Loader) collectSearchTexts(notes *model.NoteViews, fresh map[string]searchText) map[string]searchText {
+	l.Lock()
+	previous := l.searchTexts
+	l.Unlock()
+
+	texts := make(map[string]searchText, len(notes.List))
+	for _, note := range notes.List {
+		if l.indexedPermalinks[note.PathID] != note.Permalink {
+			continue
+		}
+		if t, ok := fresh[note.Permalink]; ok {
+			texts[note.Permalink] = t
+			continue
+		}
+		if t, ok := previous[note.Permalink]; ok {
+			texts[note.Permalink] = t
+			continue
+		}
+		texts[note.Permalink] = searchText{
+			Title: []byte(note.Title),
+			Body:  []byte(extractText(note.Ast(), note.Content)),
+		}
+	}
+	return texts
 }
 
 // removeVanishedNotes deletes the documents of notes no longer in notes.
@@ -378,7 +414,11 @@ func (l *Loader) adoptPersistedIndex(index bleve.Index, notes *model.NoteViews) 
 
 // Search returns up to size hits of queryString, skipping the first from.
 func (l *Loader) Search(queryString string, from, size int) ([]model.SearchResult, error) {
-	if l.searchIndex == nil {
+	l.Lock()
+	index, nvs, texts := l.searchIndex, l.nvs, l.searchTexts
+	l.Unlock()
+
+	if index == nil {
 		return nil, ErrSearchNotAvailable
 	}
 
@@ -396,20 +436,12 @@ func (l *Loader) Search(queryString string, from, size int) ([]model.SearchResul
 		matchField("Body"), matchField("Body_en"),
 	)
 
-	highlight := bleve.NewHighlightWithStyle(htmlFilter.Name)
-	highlight.AddField("Title")
-	highlight.AddField("Title_en")
-	highlight.AddField("Body")
-	highlight.AddField("Body_en")
-
 	searchRequest := bleve.NewSearchRequest(query)
 	searchRequest.IncludeLocations = true
-	searchRequest.Highlight = highlight
-	searchRequest.Fields = []string{"*"}
 	searchRequest.From = from
 	searchRequest.Size = size
 
-	searchResult, err := l.searchIndex.Search(searchRequest)
+	searchResult, err := index.Search(searchRequest)
 	if err != nil {
 		return nil, fmt.Errorf("search failed: %w", err)
 	}
@@ -417,49 +449,27 @@ func (l *Loader) Search(queryString string, from, size int) ([]model.SearchResul
 	results := []model.SearchResult{}
 
 	for _, hit := range searchResult.Hits {
-		note, ok := l.nvs.Map[hit.ID]
+		note, ok := nvs.Map[hit.ID]
 		if !ok {
 			continue
 		}
 
-		result := model.SearchResult{
-			NoteView: note,
-			URL:      note.Permalink,
-			Score:    hit.Score,
-		}
+		text := texts[hit.ID]
+		titleSegments, titleSpans := highlightText(text.Title, hit.Locations, "Title", "Title_en")
+		contentSegments, bodySpans := highlightText(text.Body, hit.Locations, "Body", "Body_en")
 
-		// hit.Fragments is a map → Go randomizes iteration order, and the two
-		// analyzer views of a field (e.g. Body vs Body_en) can yield different
-		// highlighted fragments. Select fields in a FIXED priority order so
-		// identical queries produce identical highlighting (deterministic snippets).
-		// Title and Title_en are two analyzer views of the same source field;
-		// likewise Body and Body_en.
-		for _, field := range []string{"Title", "Title_en"} {
-			if frags := hit.Fragments[field]; len(frags) > 0 {
-				result.HighlightedTitle = &frags[0]
-				break
-			}
-		}
-		for _, field := range []string{"Body", "Body_en"} {
-			if frags := hit.Fragments[field]; len(frags) > 0 {
-				result.HighlightedContent = frags
-				break
-			}
-		}
-
-		results = append(results, result)
+		results = append(results, model.SearchResult{
+			NoteView:        note,
+			URL:             note.Permalink,
+			Score:           hit.Score,
+			TitleSegments:   titleSegments,
+			ContentSegments: contentSegments,
+			MatchedTerms:    matchedTerms(text.Title, titleSpans, text.Body, bodySpans),
+		})
 	}
 
 	return results, nil
 }
-
-// I don't know how to change the highlight tags in bleve here
-// search/highlight/format/html/html.go
-// func replaceMarkToEmphasis(s string) string {
-// 	s = strings.ReplaceAll(s, "<mark>", "<em>")
-// 	s = strings.ReplaceAll(s, "</mark>", "</em>")
-// 	return s
-// }
 
 // extractText extracts plain text from a Markdown AST.
 // This version is optimized for getting the minimal text content

@@ -22,7 +22,7 @@ type fedCorpusEnv struct {
 func (e *fedCorpusEnv) SearchLiveNotes(string, int, int) ([]model.SearchResult, error) {
 	return []model.SearchResult{{
 		NoteView: e.live, URL: e.live.Permalink,
-		HighlightedContent: []string{"published snippet"},
+		ContentSegments: model.PlainSegments("published snippet"),
 	}}, nil
 }
 func (e *fedCorpusEnv) LiveNoteChunks() []model.NoteChunk { return nil }

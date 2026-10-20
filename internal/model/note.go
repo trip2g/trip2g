@@ -172,12 +172,13 @@ const (
 )
 
 type SearchResult struct {
-	HighlightedTitle   *string
-	HighlightedContent []string
-	URL                string
-	Score              float64           // Combined score for ranking (higher is better)
-	MatchOrigin        SearchMatchOrigin // How this result was found
-	ChunkIndex         *int              // Optional chunk index for focused retrieval
+	TitleSegments   []HighlightSegment
+	ContentSegments []HighlightSegment
+	MatchedTerms    []string // surface forms of the matched words, for highlighting a page
+	URL             string
+	Score           float64           // Combined score for ranking (higher is better)
+	MatchOrigin     SearchMatchOrigin // How this result was found
+	ChunkIndex      *int              // Optional chunk index for focused retrieval
 
 	NoteView *NoteView
 }

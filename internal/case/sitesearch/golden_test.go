@@ -60,9 +60,9 @@ func goldenEnv(t *testing.T, embURL string) *EnvMock {
 	return &EnvMock{
 		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
-				{NoteView: notes["b.md"], URL: "/b", HighlightedContent: []string{"hit b"}},
-				{NoteView: notes["a.md"], URL: "/a", HighlightedContent: []string{"hit a"}},
-				{NoteView: notes["e.md"], URL: "/e", HighlightedContent: []string{"hit e"}},
+				{NoteView: notes["b.md"], URL: "/b", ContentSegments: appmodel.PlainSegments("hit b")},
+				{NoteView: notes["a.md"], URL: "/a", ContentSegments: appmodel.PlainSegments("hit a")},
+				{NoteView: notes["e.md"], URL: "/e", ContentSegments: appmodel.PlainSegments("hit e")},
 			}, nil
 		},
 		LiveNoteChunksFunc: func() []appmodel.NoteChunk {
@@ -281,7 +281,7 @@ func TestGoldenResolve_ACLPlaceholders(t *testing.T) {
 	require.Equal(t, []string{"/b", "/d", "/e", "/a", "/c"}, urlsOf(conn.Nodes))
 	for _, hidden := range conn.Nodes[3:] {
 		require.Nil(t, hidden.NoteView)
-		require.Equal(t, []string{"Закрытый материал."}, hidden.HighlightedContent)
+		require.Equal(t, appmodel.PlainSegments("Закрытый материал."), hidden.ContentSegments)
 	}
 }
 
@@ -304,7 +304,7 @@ func TestGoldenResolve_HideUnreadable(t *testing.T) {
 	require.Equal(t, []string{"/b", "/d", "/e"}, urlsOf(conn.Nodes))
 	for _, node := range conn.Nodes {
 		require.NotNil(t, node.NoteView)
-		require.NotEqual(t, []string{"Закрытый материал."}, node.HighlightedContent)
+		require.NotEqual(t, appmodel.PlainSegments("Закрытый материал."), node.ContentSegments)
 	}
 	require.Zero(t, conn.TotalCount)
 }
@@ -571,7 +571,7 @@ func TestGoldenRetrieve_ExactNameTextOnly(t *testing.T) {
 	results, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "звездочки"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"/d", "/b", "/a", "/e"}, urlsOf(results))
-	require.NotEmpty(t, results[0].HighlightedContent, "a name-only hit still carries a snippet")
+	require.NotEmpty(t, results[0].ContentSegments, "a name-only hit still carries a snippet")
 }
 
 func TestGoldenRetrieve_NoNameMatchKeepsOrder(t *testing.T) {

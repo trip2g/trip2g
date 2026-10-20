@@ -19,12 +19,12 @@ func TestBuildSearchPayloadUsesChunkBasedMatchIDs(t *testing.T) {
 	}
 
 	payload := buildSearchPayload("обида", []model.SearchResult{{
-		NoteView:           note,
-		URL:                note.Permalink,
-		Score:              1,
-		MatchOrigin:        model.SearchMatchVector,
-		ChunkIndex:         &chunkIndex,
-		HighlightedContent: []string{"Лучший способ отомстить - не уподобляться обидчику."},
+		NoteView:        note,
+		URL:             note.Permalink,
+		Score:           1,
+		MatchOrigin:     model.SearchMatchVector,
+		ChunkIndex:      &chunkIndex,
+		ContentSegments: model.PlainSegments("Лучший способ отомстить - не уподобляться обидчику."),
 	}}, func(n *model.NoteView) string { return "https://markavrelii.2pub.me" + n.Permalink }, nil, MaxSearchLimit, MaxSearchLimit)
 
 	require.Len(t, payload.Results, 1)
@@ -42,11 +42,11 @@ func TestBuildSearchPayloadMapsTextSnippetToNearestChunkWhenClear(t *testing.T) 
 	}
 
 	payload := buildSearchPayload("обида", []model.SearchResult{{
-		NoteView:           note,
-		URL:                note.Permalink,
-		Score:              1,
-		MatchOrigin:        model.SearchMatchText,
-		HighlightedContent: []string{"Лучший способ <mark>отомстить</mark> - не уподобляться обидчику."},
+		NoteView:        note,
+		URL:             note.Permalink,
+		Score:           1,
+		MatchOrigin:     model.SearchMatchText,
+		ContentSegments: []model.HighlightSegment{{Text: "Лучший способ "}, {Text: "отомстить", Match: true}, {Text: " - не уподобляться обидчику."}},
 	}}, func(n *model.NoteView) string { return "https://markavrelii.2pub.me" + n.Permalink }, []model.NoteChunk{
 		{
 			NotePath:   note.Path,
@@ -75,11 +75,11 @@ func TestBuildSearchPayloadLeavesTextMatchAsGenericWhenNoClearChunk(t *testing.T
 	}
 
 	payload := buildSearchPayload("обида", []model.SearchResult{{
-		NoteView:           note,
-		URL:                note.Permalink,
-		Score:              1,
-		MatchOrigin:        model.SearchMatchText,
-		HighlightedContent: []string{"Фрагмент, которого нет в чанках."},
+		NoteView:        note,
+		URL:             note.Permalink,
+		Score:           1,
+		MatchOrigin:     model.SearchMatchText,
+		ContentSegments: model.PlainSegments("Фрагмент, которого нет в чанках."),
 	}}, func(n *model.NoteView) string { return "https://markavrelii.2pub.me" + n.Permalink }, []model.NoteChunk{
 		{
 			NotePath:   note.Path,
@@ -107,12 +107,12 @@ func TestBuildSearchPayloadFirstChunkGetsBreadcrumbFallback(t *testing.T) {
 	}
 
 	payload := buildSearchPayload("обида", []model.SearchResult{{
-		NoteView:           note,
-		URL:                note.Permalink,
-		Score:              1,
-		MatchOrigin:        model.SearchMatchVector,
-		ChunkIndex:         &chunkIndex,
-		HighlightedContent: []string{"Текст, которого нет в HTML заметки."},
+		NoteView:        note,
+		URL:             note.Permalink,
+		Score:           1,
+		MatchOrigin:     model.SearchMatchVector,
+		ChunkIndex:      &chunkIndex,
+		ContentSegments: model.PlainSegments("Текст, которого нет в HTML заметки."),
 	}}, func(n *model.NoteView) string { return "https://markavrelii.2pub.me" + n.Permalink }, []model.NoteChunk{
 		{
 			NotePath:   note.Path,

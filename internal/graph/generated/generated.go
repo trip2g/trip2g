@@ -869,6 +869,9 @@ type RefreshPatreonDataPayloadResolver interface {
 	Credentials(ctx context.Context, obj *model.RefreshPatreonDataPayload) (*db.PatreonCredential, error)
 }
 type SearchResultResolver interface {
+	HighlightedTitle(ctx context.Context, obj *model1.SearchResult) (*string, error)
+	HighlightedContent(ctx context.Context, obj *model1.SearchResult) ([]string, error)
+
 	Document(ctx context.Context, obj *model1.SearchResult) (model.SearchResultDocument, error)
 }
 type SetTgChatPublishInstantTagsPayloadResolver interface {
@@ -2806,9 +2809,21 @@ input SearchInput {
   rerank: Boolean
 }
 
+type HighlightSegment {
+  text: String!
+  match: Boolean!
+}
+
 type SearchResult {
-  highlightedTitle: String
-  highlightedContent: [String!]!
+  highlightedTitle: String @deprecated(reason: "HTML with <mark> around matches. Use titleSegments.")
+  highlightedContent: [String!]! @deprecated(reason: "HTML with <mark> around matches. Use contentSegments.")
+  titleSegments: [HighlightSegment!]!
+  contentSegments: [HighlightSegment!]!
+  """
+  The matched words as they appear in the note, each once, for highlighting
+  them on the page.
+  """
+  matchedTerms: [String!]!
   url: String!
   score: Float!
   matchOrigin: SearchMatchOrigin!
@@ -36553,6 +36568,64 @@ func (ec *executionContext) fieldContext_HideNotesPayload_hashMismatches(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _HighlightSegment_text(ctx context.Context, field graphql.CollectedField, obj *model1.HighlightSegment) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HighlightSegment_text,
+		func(ctx context.Context) (any, error) {
+			return obj.Text, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HighlightSegment_text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HighlightSegment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HighlightSegment_match(ctx context.Context, field graphql.CollectedField, obj *model1.HighlightSegment) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HighlightSegment_match,
+		func(ctx context.Context) (any, error) {
+			return obj.Match, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HighlightSegment_match(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HighlightSegment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IntParamValue_defaultValue(ctx context.Context, field graphql.CollectedField, obj *model.IntParamValue) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -43103,6 +43176,12 @@ func (ec *executionContext) fieldContext_SearchConnection_nodes(_ context.Contex
 				return ec.fieldContext_SearchResult_highlightedTitle(ctx, field)
 			case "highlightedContent":
 				return ec.fieldContext_SearchResult_highlightedContent(ctx, field)
+			case "titleSegments":
+				return ec.fieldContext_SearchResult_titleSegments(ctx, field)
+			case "contentSegments":
+				return ec.fieldContext_SearchResult_contentSegments(ctx, field)
+			case "matchedTerms":
+				return ec.fieldContext_SearchResult_matchedTerms(ctx, field)
 			case "url":
 				return ec.fieldContext_SearchResult_url(ctx, field)
 			case "score":
@@ -43125,7 +43204,7 @@ func (ec *executionContext) _SearchResult_highlightedTitle(ctx context.Context, 
 		field,
 		ec.fieldContext_SearchResult_highlightedTitle,
 		func(ctx context.Context) (any, error) {
-			return obj.HighlightedTitle, nil
+			return ec.resolvers.SearchResult().HighlightedTitle(ctx, obj)
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -43138,8 +43217,8 @@ func (ec *executionContext) fieldContext_SearchResult_highlightedTitle(_ context
 	fc = &graphql.FieldContext{
 		Object:     "SearchResult",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -43154,7 +43233,7 @@ func (ec *executionContext) _SearchResult_highlightedContent(ctx context.Context
 		field,
 		ec.fieldContext_SearchResult_highlightedContent,
 		func(ctx context.Context) (any, error) {
-			return obj.HighlightedContent, nil
+			return ec.resolvers.SearchResult().HighlightedContent(ctx, obj)
 		},
 		nil,
 		ec.marshalNString2ᚕstringᚄ,
@@ -43164,6 +43243,105 @@ func (ec *executionContext) _SearchResult_highlightedContent(ctx context.Context
 }
 
 func (ec *executionContext) fieldContext_SearchResult_highlightedContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_titleSegments(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SearchResult_titleSegments,
+		func(ctx context.Context) (any, error) {
+			return obj.TitleSegments, nil
+		},
+		nil,
+		ec.marshalNHighlightSegment2ᚕtrip2gᚋinternalᚋmodelᚐHighlightSegmentᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_titleSegments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "text":
+				return ec.fieldContext_HighlightSegment_text(ctx, field)
+			case "match":
+				return ec.fieldContext_HighlightSegment_match(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HighlightSegment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_contentSegments(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SearchResult_contentSegments,
+		func(ctx context.Context) (any, error) {
+			return obj.ContentSegments, nil
+		},
+		nil,
+		ec.marshalNHighlightSegment2ᚕtrip2gᚋinternalᚋmodelᚐHighlightSegmentᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_contentSegments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "text":
+				return ec.fieldContext_HighlightSegment_text(ctx, field)
+			case "match":
+				return ec.fieldContext_HighlightSegment_match(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HighlightSegment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_matchedTerms(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SearchResult_matchedTerms,
+		func(ctx context.Context) (any, error) {
+			return obj.MatchedTerms, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_matchedTerms(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SearchResult",
 		Field:      field,
@@ -79361,6 +79539,50 @@ func (ec *executionContext) _HideNotesPayload(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var highlightSegmentImplementors = []string{"HighlightSegment"}
+
+func (ec *executionContext) _HighlightSegment(ctx context.Context, sel ast.SelectionSet, obj *model1.HighlightSegment) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, highlightSegmentImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HighlightSegment")
+		case "text":
+			out.Values[i] = ec._HighlightSegment_text(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "match":
+			out.Values[i] = ec._HighlightSegment_match(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var intParamValueImplementors = []string{"IntParamValue", "LayoutBlockParamValue"}
 
 func (ec *executionContext) _IntParamValue(ctx context.Context, sel ast.SelectionSet, obj *model.IntParamValue) graphql.Marshaler {
@@ -83036,9 +83258,86 @@ func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.Selection
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SearchResult")
 		case "highlightedTitle":
-			out.Values[i] = ec._SearchResult_highlightedTitle(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SearchResult_highlightedTitle(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "highlightedContent":
-			out.Values[i] = ec._SearchResult_highlightedContent(ctx, field, obj)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SearchResult_highlightedContent(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "titleSegments":
+			out.Values[i] = ec._SearchResult_titleSegments(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "contentSegments":
+			out.Values[i] = ec._SearchResult_contentSegments(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "matchedTerms":
+			out.Values[i] = ec._SearchResult_matchedTerms(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -92080,6 +92379,54 @@ func (ec *executionContext) marshalNHideNotesOrErrorPayload2trip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._HideNotesOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHighlightSegment2trip2gᚋinternalᚋmodelᚐHighlightSegment(ctx context.Context, sel ast.SelectionSet, v model1.HighlightSegment) graphql.Marshaler {
+	return ec._HighlightSegment(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNHighlightSegment2ᚕtrip2gᚋinternalᚋmodelᚐHighlightSegmentᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.HighlightSegment) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNHighlightSegment2trip2gᚋinternalᚋmodelᚐHighlightSegment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {

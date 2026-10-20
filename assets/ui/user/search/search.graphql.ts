@@ -6,15 +6,22 @@ export type trip2g_user_search_searchQueryVariables = Exact<{
 }>;
 
 
-export type trip2g_user_search_searchQuery = { __typename?: 'Query', search: { __typename?: 'SearchConnection', nodes: Array<{ __typename?: 'SearchResult', highlightedTitle?: string | null, highlightedContent: Array<string>, score: number, matchOrigin: SearchMatchOrigin, id: string }> } };
+export type trip2g_user_search_searchQuery = { __typename?: 'Query', search: { __typename?: 'SearchConnection', nodes: Array<{ __typename?: 'SearchResult', matchedTerms: Array<string>, score: number, matchOrigin: SearchMatchOrigin, id: string, titleSegments: Array<{ __typename?: 'HighlightSegment', text: string, match: boolean }>, contentSegments: Array<{ __typename?: 'HighlightSegment', text: string, match: boolean }> }> } };
 
 
 export function $trip2g_user_search_search(variables: trip2g_user_search_searchQueryVariables, opts?: { revalidate?: boolean }): trip2g_user_search_searchQuery {
 	return $trip2g_gql_request(`query trip2g_user_search_search(\u0024input: SearchInput!) {
   search(input: \u0024input) {
     nodes {
-      highlightedTitle
-      highlightedContent
+      titleSegments {
+        text
+        match
+      }
+      contentSegments {
+        text
+        match
+      }
+      matchedTerms
       id: url
       score
       matchOrigin

@@ -77,8 +77,8 @@ func searchRerankEnv(t *testing.T, feats features.Features, embURL string) *EnvM
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
 		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{
-				{NoteView: noteA, URL: noteA.Permalink, Score: 2.0, HighlightedContent: []string{"alpha"}},
-				{NoteView: noteB, URL: noteB.Permalink, Score: 1.0, HighlightedContent: []string{"beta"}},
+				{NoteView: noteA, URL: noteA.Permalink, Score: 2.0, ContentSegments: appmodel.PlainSegments("alpha")},
+				{NoteView: noteB, URL: noteB.Permalink, Score: 1.0, ContentSegments: appmodel.PlainSegments("beta")},
 			}, nil
 		},
 		LiveNoteChunksFunc: func() []appmodel.NoteChunk {

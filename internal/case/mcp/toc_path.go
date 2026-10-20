@@ -78,11 +78,9 @@ func buildNoteTOC(headings model.NoteViewHeadings) []TOCItem {
 }
 
 // tocPathForSnippet returns a best-effort heading breadcrumb (outermost → innermost)
-// for the data-header section that contains the given snippet. Snippet may contain
-// <mark> tags; they are stripped before matching.
-//
-// To avoid false negatives when the snippet spans multiple sections, only the
-// context immediately around the first <mark> block is used as the search target.
+// for the data-header section that contains the given snippet. Snippet is HTML
+// text; tags are stripped before matching. snippetTocPath passes only the
+// context around the matches (matchContext).
 //
 // chunkContent is the optional chunk body (format: "{breadcrumb}\n\n{body}") used
 // as a fallback when fuzzy HTML matching fails. Pass "" to skip the chunk fallback.
@@ -95,7 +93,7 @@ func tocPathForSnippet(noteHTML, snippet, chunkContent string) []string {
 		return nil
 	}
 
-	raw := normalizeForMatch(markedContext(snippet))
+	raw := normalizeForMatch(snippet)
 	if len([]rune(raw)) < 4 {
 		// snippet too short for reliable matching — try chunk fallback first
 		if path := tocPathFromChunkContent(noteHTML, chunkContent); path != nil {
@@ -242,47 +240,38 @@ func htmlNodeAttr(n *html.Node, name string) string {
 	return ""
 }
 
-// markedContext returns the text immediately surrounding the first <mark> block
-// in the snippet (up to 120 chars before and 120 chars after the marked region).
-// This avoids false negatives when a snippet spans multiple sections.
-// Returns the original snippet when no <mark> tags are found.
-func markedContext(snippet string) string {
-	start := strings.Index(snippet, "<mark>")
-	end := strings.LastIndex(snippet, "</mark>")
-	if start == -1 || end == -1 {
-		return snippet
+// matchContext returns the snippet's matches with up to 120 bytes of
+// escaped text on either side, so a snippet that spans several sections is
+// matched only where the words were found. Without matches it is the whole
+// snippet.
+func matchContext(segments []model.HighlightSegment) string {
+	first, last := -1, -1
+	for i, s := range segments {
+		if s.Match {
+			if first < 0 {
+				first = i
+			}
+			last = i
+		}
 	}
-	end += len("</mark>")
+	if first < 0 {
+		return model.HighlightHTML(segments)
+	}
 
 	const window = 120
-	lo := start - window
-	if lo < 0 {
-		lo = 0
-	}
-	hi := end + window
-	if hi > len(snippet) {
-		hi = len(snippet)
-	}
+	before := model.HighlightHTML(segments[:first])
+	after := model.HighlightHTML(segments[last+1:])
 
-	// Snap to rune boundaries: the byte window above is computed from
-	// strings.Index offsets and can land inside a multi-byte UTF-8 sequence
-	// (e.g. Cyrillic). Advance lo past any leading continuation byte, and
-	// pull hi back before any trailing partial rune, so the slice below is
-	// always valid UTF-8.
-	for lo < len(snippet) && !utf8.RuneStart(snippet[lo]) {
+	lo := max(len(before)-window, 0)
+	for lo < len(before) && !utf8.RuneStart(before[lo]) {
 		lo++
 	}
-	for hi > 0 && hi < len(snippet) && !utf8.RuneStart(snippet[hi]) {
+	hi := min(window, len(after))
+	for hi > 0 && hi < len(after) && !utf8.RuneStart(after[hi]) {
 		hi--
 	}
-	if lo > hi {
-		// Degenerate window (shouldn't happen with window=120 and short
-		// runes) — fall back to the exact match, which is always a valid
-		// boundary since <mark>/</mark> are ASCII.
-		return snippet[start:end]
-	}
 
-	return snippet[lo:hi]
+	return before[lo:] + model.HighlightHTML(segments[first:last+1]) + after[:hi]
 }
 
 // htmlPlainText strips all HTML tags from s and returns plain text.
@@ -644,11 +633,11 @@ func tocHasDirectChild(all []TOCItem, path []string) bool {
 // walked out of the rendered HTML, where the title H1 still wraps the whole
 // document, but expand drops that H1 — so a toc_path from search and one from
 // expand have to be trimmed the same way or they describe different shapes.
-func snippetTocPath(note *model.NoteView, snippet, chunkContent string) []string {
+func snippetTocPath(note *model.NoteView, segments []model.HighlightSegment, chunkContent string) []string {
 	if note == nil {
 		return nil
 	}
-	path := tocPathForSnippet(string(note.HTML), snippet, chunkContent)
+	path := tocPathForSnippet(string(note.HTML), matchContext(segments), chunkContent)
 	if note.HasH1 && len(note.Headings) > 0 && len(path) > 0 && path[0] == note.Headings[0].Text {
 		path = path[1:]
 	}

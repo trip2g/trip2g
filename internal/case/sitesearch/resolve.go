@@ -77,9 +77,9 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 		}
 
 		croppedResult := appmodel.SearchResult{
-			HighlightedTitle:   res.HighlightedTitle,
-			URL:                res.URL,
-			HighlightedContent: []string{"Закрытый материал."},
+			TitleSegments:   res.TitleSegments,
+			URL:             res.URL,
+			ContentSegments: appmodel.PlainSegments("Закрытый материал."),
 		}
 
 		hiddenResults = append(hiddenResults, croppedResult)

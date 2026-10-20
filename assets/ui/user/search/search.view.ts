@@ -102,15 +102,15 @@ namespace $.$$ {
 		}
 
 		override result_title( id: any ) {
-			return this.data().get(id).highlightedTitle || ''
+			return this.data().get(id).titleSegments
 		}
 
 		override result_content( id: any ) {
-			return this.data().get(id).highlightedContent.map(html => {
-				const view = new this.$.$trip2g_user_search_dimmer()
-				view.html = () => html
-				return view
-			})
+			return this.data().get(id).contentSegments
+		}
+
+		override result_needle( id: any ) {
+			return this.data().get(id).matchedTerms.join(' ')
 		}
 
 		override result_link( id: any ): string {
@@ -131,18 +131,18 @@ namespace $.$$ {
 	export class $trip2g_user_search_dimmer extends $.$trip2g_user_search_dimmer {
 		@$mol_mem
 		override haystack(): string {
-			if (!this.html()) return ''
-
-			return this.html().replace(/<[^>]+>/g, '')
+			return this.segments().map( s => s.text ).join( '' )
 		}
 
+		// $mol_dimmer renders even indexes dimmed and odd ones highlighted
 		@$mol_mem
-		override needle(): string {
-			if (!this.html()) return ''
-			
-			// extract all <mark>...</mark> contents as search needles and join by space
-			const needles = Array.from(this.html().matchAll(/<mark>(.*?)<\/mark>/g)).map(m => m[1])
-			return needles.join(' ')
+		strings(): string[] {
+			const strings: string[] = []
+			for( const s of this.segments() ) {
+				if( ( strings.length % 2 === 1 ) !== s.match ) strings.push( '' )
+				strings.push( s.text )
+			}
+			return strings
 		}
 	}
 }

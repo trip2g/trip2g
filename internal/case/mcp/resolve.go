@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -440,30 +441,29 @@ func buildSearchPayload(
 		}
 
 		item := searchResultItemFromNote(r.NoteView, r.Score, noteURL)
-		if count < detailLimit {
-			// Full detail: include snippet Matches.
-			for _, snippet := range r.HighlightedContent {
-				chunkIndex := -1 // -1 = no chunk resolved (chunk indices are 0-based)
-				if r.ChunkIndex != nil {
-					chunkIndex = *r.ChunkIndex
-				} else if nearest, ok := nearestChunkIndexForSnippet(r.NoteView, snippet, chunks); ok {
-					chunkIndex = nearest
-				}
-				match := SearchMatch{
-					Snippet:      snippet,
-					ContextWords: 10,
-				}
-				if chunkIndex >= 0 {
-					// Only chunk-based ids: note_html can't resolve anything else,
-					// so an unresolved snippet gets no match_id at all.
-					match.MatchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
-					match.ChunkIndex = chunkIndex
-				}
-				chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
-				match.TOCPath = snippetTocPath(r.NoteView, snippet, chunkContent)
-				match.SectionURL = sectionAnchorURL(r.NoteView, match.TOCPath, noteURL)
-				item.Matches = append(item.Matches, match)
+		if count < detailLimit && len(r.ContentSegments) > 0 {
+			// Full detail: include the snippet Match.
+			segments := r.ContentSegments
+			match := SearchMatch{
+				Snippet:      model.HighlightHTML(segments),
+				ContextWords: 10,
 			}
+			chunkIndex := -1 // -1 = no chunk resolved (chunk indices are 0-based)
+			if r.ChunkIndex != nil {
+				chunkIndex = *r.ChunkIndex
+			} else if nearest, ok := nearestChunkIndexForSnippet(r.NoteView, html.EscapeString(model.SegmentsText(segments)), chunks); ok {
+				chunkIndex = nearest
+			}
+			if chunkIndex >= 0 {
+				// Only chunk-based ids: note_html can't resolve anything else,
+				// so an unresolved snippet gets no match_id at all.
+				match.MatchID = fmt.Sprintf("p%d:c%d", r.NoteView.PathID, chunkIndex)
+				match.ChunkIndex = chunkIndex
+			}
+			chunkContent := chunkContentByIndex(r.NoteView, chunkIndex, chunks)
+			match.TOCPath = snippetTocPath(r.NoteView, segments, chunkContent)
+			match.SectionURL = sectionAnchorURL(r.NoteView, match.TOCPath, noteURL)
+			item.Matches = append(item.Matches, match)
 		}
 		// Beyond detailLimit: item.Matches stays nil (lightweight preview).
 		payload.Results = append(payload.Results, item)

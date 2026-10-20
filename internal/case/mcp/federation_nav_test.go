@@ -48,10 +48,10 @@ func TestSearchTextNamesFederationPointer(t *testing.T) {
 		SiteConfigFunc:             func(context.Context) appmodel.SiteConfig { return appmodel.SiteConfig{} },
 		SearchLiveNotesFunc: func(string, int, int) ([]appmodel.SearchResult, error) {
 			return []appmodel.SearchResult{{
-				NoteView:           note,
-				URL:                note.Permalink,
-				Score:              0.7,
-				HighlightedContent: []string{"Our own knowledge base."},
+				NoteView:        note,
+				URL:             note.Permalink,
+				Score:           0.7,
+				ContentSegments: appmodel.PlainSegments("Our own knowledge base."),
 			}}, nil
 		},
 		LiveNoteChunksFunc: func() []appmodel.NoteChunk { return nil },
