@@ -114,3 +114,26 @@ func TestMeta_GetInt(t *testing.T) {
 		})
 	}
 }
+
+func TestMeta_GetFloat(t *testing.T) {
+	tests := []struct {
+		name string
+		val  interface{}
+		want float64
+	}{
+		{name: "float", val: 9.99, want: 9.99},
+		{name: "int", val: 3, want: 3},
+		{name: "int64", val: int64(4), want: 4},
+		{name: "numeric string", val: " 9.99 ", want: 9.99},
+		{name: "non-numeric string", val: "cheap", want: 7},
+		{name: "NaN string", val: "NaN", want: 7},
+		{name: "bool", val: true, want: 7},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m := &Meta{raw: map[string]interface{}{"n": tc.val}}
+			require.InDelta(t, tc.want, m.GetFloat("n", 7), 1e-9)
+		})
+	}
+}

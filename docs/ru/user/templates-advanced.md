@@ -250,7 +250,8 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 | `Has(key)` | Проверка наличия ключа |
 | `Get(key)` | Сырое значение (`interface{}`), nil если ключа нет. Арифметика с ним не работает: `Get("order") + 1` падает, используйте `GetInt` |
 | `GetString(key, default)` | Строка; default, если ключа нет **или значение не строка** (`order: 3` даст default) |
-| `GetInt(key, default)` | Число или default |
+| `GetInt(key, default)` | Целое число или default |
+| `GetFloat(key, default)` | Дробное число или default, например для цен |
 | `GetBool(key, default)` | Булево или default |
 | `GetStrings(key)` | Список строк (не-строки отбрасываются); одна строка — список из одного элемента; если ключа нет — пустой список, не nil |
 | `Raw()` | Весь frontmatter как карта, например для `json(note.M().Raw())` |
@@ -264,7 +265,12 @@ nvs.ByGlob("blog/*.md").SortByMeta("category").SortBy("Title")
 - `1`, `0` (число → bool: не ноль — true)
 
 `GetInt` понимает:
-- `int`, `int64`, `float64` (дробная часть отбрасывается: `2.7` → `2`). Строка `"3"` даёт default
+- `int`, `int64`, `float64` (дробная часть отбрасывается: `2.7` → `2`)
+- строку с целым числом: `"3"` → `3`; `"3.5"` даёт default
+
+`GetFloat` понимает:
+- `int`, `int64`, `float64`
+- строку с числом: `"9.99"` → `9.99`; другая строка даёт default
 
 ### Примеры
 

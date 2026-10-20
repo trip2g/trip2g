@@ -38,7 +38,7 @@ Share the printed URL with the user — they can open it in browser.
 ```jet
 {{ debug(note.M()) }}
 {* → *templateviews.Meta: &{raw:map[extra_content:[channels prices]]}
-      methods: [Debug Get GetBool GetInt GetString GetStrings Has Raw] *}
+      methods: [Debug Get GetBool GetFloat GetInt GetString GetStrings Has Raw] *}
 
 {{ note.M().Debug() }}
 {* → {"extra_content":["channels","prices"],"title":"Sales"} *}

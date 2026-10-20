@@ -938,7 +938,7 @@ await send([{ name: 'email', stringValue: 'alice@example.com' }])
 How the pieces on this page could fit together for a shop. This is an illustration, not a shop feature: trip2g has no catalogue, cart or checkout of its own.
 
 - **Products are notes,** one per product, with the price and stock in the frontmatter: `price: 1200`, `stock: 5`.
-- **The storefront is a layout** that lists them with `nvs.ByGlob("shop/*.md").Public()` and reads each one's `M().GetInt("price", 0)`; see [[en/user/jet-functions|Jet functions]].
+- **The storefront is a layout** that lists them with `nvs.ByGlob("shop/*.md").Public()` and reads each one's `M().GetFloat("price", 0)`; see [[en/user/jet-functions|Jet functions]].
 - **The cart lives in the browser,** in `localStorage`, or in an API of your own at `/_system/extra/cart` that asks trip2g's `viewer` who the shopper is, as in [[en/user/spa#own-api|Your own API]].
 - **The order is a trip2g form,** not your API: a checkout note declares a `form:` with the buyer's contacts and a text field for the cart, and the app submits it as in [[en/user/spa#forms|Forms]]. It arrives in the admin panel and the admins' mail.
 

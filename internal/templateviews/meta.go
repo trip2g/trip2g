@@ -3,6 +3,7 @@ package templateviews
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -75,6 +76,36 @@ func (m *Meta) GetInt(key string, def int) int {
 			return def
 		}
 		return n
+	default:
+		return def
+	}
+}
+
+// GetFloat returns a float value or default if not found/wrong type.
+// A string holding a number, such as a quoted "9.99", is parsed.
+func (m *Meta) GetFloat(key string, def float64) float64 {
+	if m.raw == nil {
+		return def
+	}
+
+	val, ok := m.raw[key]
+	if !ok {
+		return def
+	}
+
+	switch v := val.(type) {
+	case float64:
+		return v
+	case int:
+		return float64(v)
+	case int64:
+		return float64(v)
+	case string:
+		f, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
+		if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+			return def
+		}
+		return f
 	default:
 		return def
 	}
