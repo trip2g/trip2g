@@ -60,6 +60,7 @@ title: "Navigation"
 - [[en/user/bem|BEM naming in templates]]
 - [[en/user/One HTML Page|One HTML page]]
 - [[en/user/spa|An app on top of trip2g]]
+- [[en/user/calls-dashboard|Calls dashboard]]
 
 ### Automation
 

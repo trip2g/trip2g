@@ -57,6 +57,7 @@ Leave `free: true` off and only subscribers can read the note; everyone else get
 - [[en/user/templates|Custom templates]] — your own page design: one HTML file in `_layouts/`.
 - [[en/user/components|Template components]] — templates built from small reusable blocks.
 - [[en/user/spa|An app on top of trip2g]] — a note as an app, such as a kanban board.
+- [[en/user/calls-dashboard|Calls dashboard]] — a timeline of call threads and a screen to check one call.
 
 ## AI agents and automation
 
