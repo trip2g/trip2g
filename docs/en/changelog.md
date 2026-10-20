@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### A note path with the wrong separators or case still opens the note
+
+- **What.** `note_html`, `expand` and `similar` that find no note at the exact `path` retry with the path folded: case, `_` or a space for `-`, a leading `/` and a missing `.md` no longer matter. When two notes fold to the same path, neither is picked and the call fails as before.
+- **Why.** Agents often guess a path instead of copying it from a search result: `agent/what_it_wont_do.md` for `agent/what-it-wont-do.md`. In a benchmark that was 6 of the 7 failed `note_html` calls, each a wasted turn or a model that gave up.
+- **How to use.** Nothing to change.
+
 ### A connection that announces a body no longer reserves it
 
 - **What.** The public server and the leader's internal listener now read a request body as it arrives instead of reserving the announced `Content-Length` up front. Instances started with `--acme-domain` are the exception: their HTTPS listener still runs with fasthttp's defaults. The limits are unchanged: `--max-request-body-size` (10 MB) per request on both, and the same 60 s timeouts. An oversized body, declared or chunked, gets the same 413 `request body size exceeds the limit` on both servers; the internal listener used to answer 400.
