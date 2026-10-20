@@ -227,6 +227,10 @@ func Load(options Options) (*model.NoteViews, error) {
 		ldr.validateNotes()
 	}
 
+	// Subgraphs before rendering: link classes read note.Subgraphs, and
+	// request-time renders (partials, lazy domain HTML) see them filled.
+	ldr.nvs.ExtractSubgraphs()
+
 	err = ldr.generatePageHTMLs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate static pages: %w", err)
@@ -235,7 +239,6 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.generateDomainHTMLs()
 
 	ldr.nvs.ExtractNoteList()
-	ldr.nvs.ExtractSubgraphs()
 	ldr.nvs.ExtractMCPFederationNotes()
 
 	err = ldr.findAssets()
