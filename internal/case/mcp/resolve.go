@@ -737,7 +737,10 @@ func resolveSimilarReference(noteViews *model.NoteViews, args model.MCPSimilarPa
 		if note := noteViews.PathMap[args.Path]; note != nil {
 			return note
 		}
-		return noteViews.GetByPath(args.Path)
+		if note := noteViews.GetByPath(args.Path); note != nil {
+			return note
+		}
+		return noteByLoosePath(noteViews, args.Path)
 	}
 	if args.Href != "" {
 		return noteViews.GetByPath(args.Href)
@@ -1068,6 +1071,9 @@ func resolveNoteReference(noteViews *model.NoteViews, args model.MCPNoteHTMLPara
 		if note := noteViews.PathMap[args.Path]; note != nil {
 			return note
 		}
+		if note := noteByLoosePath(noteViews, args.Path); note != nil {
+			return note
+		}
 	}
 	if args.Href != "" {
 		if note := noteViews.GetByPath(normalizeHref(args.Href)); note != nil {
@@ -1080,6 +1086,30 @@ func resolveNoteReference(noteViews *model.NoteViews, args model.MCPNoteHTMLPara
 		return noteViews.GetByPathID(pathID)
 	}
 	return nil
+}
+
+// noteByLoosePath finds the one note whose path matches when both are folded the
+// way models misspell paths they guessed rather than copied: case, "_" or a
+// space for "-", a leading "/", a missing ".md". Two notes folding to the same
+// path match neither, so a guess never picks between them.
+func noteByLoosePath(noteViews *model.NoteViews, path string) *model.NoteView {
+	want := loosePath(path)
+	var found *model.NoteView
+	for candidate, note := range noteViews.PathMap {
+		if loosePath(candidate) != want {
+			continue
+		}
+		if found != nil && found != note {
+			return nil
+		}
+		found = note
+	}
+	return found
+}
+
+func loosePath(path string) string {
+	folded := strings.TrimSuffix(strings.TrimPrefix(model.NormalizeName(path), "/"), ".md")
+	return strings.NewReplacer("_", "-", " ", "-").Replace(folded)
 }
 
 // normalizeHref reduces an absolute URL (the url field of search results) to
