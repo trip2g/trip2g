@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script>try{var v=localStorage.getItem('$mol_lights'),
+ dark=v===null?!matchMedia('(prefers-color-scheme: light)').matches:v!=='true',
+ r=document.documentElement;
+ r.classList.toggle('dark',dark);r.classList.toggle('light',!dark);
+ r.setAttribute('data-theme',dark?'dark':'light')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+{{ defaultTemplate.Styles() }}
+{{ defaultTemplate.UserSpaceScripts() }}
+<style>
+.thr-page {
+  --thr-bg: #f5f3ef;
+  --thr-card: #ffffff;
+  --thr-fg: #1f1d1a;
+  --thr-muted: #8b857c;
+  --thr-line: #ebe7e0;
+  --thr-band: #f8f6f2;
+  --thr-accent: #c4552f;
+  --thr-live: #3a4785;
+  --thr-stale: #b9b6c9;
+  --thr-today: #d9534f;
+  --thr-sel: #fbf3ee;
+}
+:root[data-theme=dark] .thr-page {
+  --thr-bg: #171614;
+  --thr-card: #201f1c;
+  --thr-fg: #ece8e1;
+  --thr-muted: #8f897f;
+  --thr-line: #2f2d29;
+  --thr-band: #1c1b18;
+  --thr-accent: #e0754f;
+  --thr-live: #8f9be0;
+  --thr-stale: #55536a;
+  --thr-today: #e5645f;
+  --thr-sel: #2a221e;
+}
+.thr-page, .thr-page * { box-sizing: border-box; }
+.thr-page { margin: 0; padding: 20px 24px 40px; background: var(--thr-bg); color: var(--thr-fg); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.thr-page a { color: var(--thr-live); text-decoration: none; }
+.thr-page a:hover { text-decoration: underline; }
+.thr-page h1 { font-size: 18px; margin: 0; }
+.thr-page .thr-sub { color: var(--thr-muted); font-size: 12px; margin-top: 2px; }
+.thr-page .thr-sub p { margin: 0; }
+.thr-page .thr-stats { margin: 18px 0 8px; font-size: 12px; color: var(--thr-muted); }
+.thr-page .thr-stats b { color: var(--thr-fg); font-weight: 600; }
+.thr-page .thr-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+.thr-page .thr-toolbar input[type=search] { width: 220px; padding: 7px 10px; border: 1px solid var(--thr-line); border-radius: 8px; background: var(--thr-card); color: var(--thr-fg); font: inherit; }
+.thr-page .thr-btn { width: auto; padding: 6px 10px; border: 1px solid var(--thr-line); border-radius: 8px; background: var(--thr-card); color: var(--thr-fg); font: inherit; line-height: 1.45; cursor: pointer; }
+.thr-page .thr-btn[aria-pressed=true] { background: var(--thr-accent); border-color: var(--thr-accent); color: #fff; }
+.thr-page .thr-range { min-width: 150px; text-align: center; }
+.thr-page .thr-nav { display: inline-flex; gap: 8px; }
+.thr-page .thr-switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; font-weight: 500; }
+.thr-page .thr-switch input { accent-color: var(--thr-accent); width: 16px; height: 16px; }
+.thr-page .thr-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.thr-page .thr-board { background: var(--thr-card); border: 1px solid var(--thr-line); border-radius: 12px; overflow: hidden; }
+.thr-page .thr-scroll { overflow-x: auto; }
+.thr-page .thr-grid { min-width: 860px; }
+.thr-page .thr-row { display: grid; grid-template-columns: 300px 1fr; border-bottom: 1px solid var(--thr-line); }
+.thr-page .thr-row:last-child { border-bottom: 0; }
+.thr-page .thr-name { padding: 7px 14px; border-right: 1px solid var(--thr-line); min-width: 0; position: sticky; left: 0; z-index: 1; background: var(--thr-card); }
+.thr-page .thr-name .thr-t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thr-page .thr-name .thr-m { color: var(--thr-muted); font-size: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.thr-page .thr-tag { display: inline-block; padding: 0 6px; border: 1px solid var(--thr-line); border-radius: 6px; font-size: 11px; color: var(--thr-muted); }
+.thr-page .thr-tag.thr-prio { color: var(--thr-accent); border-color: var(--thr-accent); }
+.thr-page .thr-thread { cursor: pointer; }
+.thr-page .thr-thread:hover, .thr-page .thr-thread:hover .thr-name { background: var(--thr-band); }
+.thr-page .thr-thread.thr-selected, .thr-page .thr-thread.thr-selected .thr-name { background: var(--thr-sel); }
+.thr-page .thr-group, .thr-page .thr-group .thr-name { background: var(--thr-band); }
+.thr-page .thr-group .thr-name { display: flex; align-items: center; gap: 8px; }
+.thr-page .thr-pill { padding: 2px 10px; border: 1px solid var(--thr-line); border-radius: 999px; background: var(--thr-card); font-weight: 600; font-size: 12px; }
+.thr-page .thr-count { color: var(--thr-muted); font-size: 12px; }
+.thr-page .thr-ctx { margin-left: auto; font-size: 12px; color: var(--thr-muted); cursor: pointer; padding: 9px 14px; display: flex; align-items: center; justify-content: flex-end; }
+.thr-page .thr-ctx:hover { color: var(--thr-accent); }
+.thr-page .thr-head .thr-name { color: var(--thr-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: end; }
+.thr-page .thr-lane { position: relative; height: 100%; min-height: 40px; }
+.thr-page .thr-lane svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.thr-page .thr-months { position: relative; height: 36px; }
+.thr-page .thr-months span { position: absolute; top: 4px; font-size: 11px; color: var(--thr-muted); text-transform: uppercase; letter-spacing: .05em; padding-left: 6px; border-left: 1px solid var(--thr-line); height: 32px; }
+.thr-page .thr-months small { position: absolute; top: 20px; font-size: 10px; color: var(--thr-muted); padding-left: 4px; white-space: nowrap; }
+.thr-page .thr-panel { position: sticky; top: 16px; background: var(--thr-card); border: 1px solid var(--thr-line); border-radius: 12px; padding: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+.thr-page .thr-panel .thr-empty { color: var(--thr-muted); text-align: center; padding: 30px 10px; }
+.thr-page .thr-panel h2 { font-size: 16px; margin: 0 0 4px; }
+.thr-page .thr-panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--thr-muted); margin: 18px 0 8px; }
+.thr-page .thr-panel .thr-meta { color: var(--thr-muted); font-size: 12px; margin-bottom: 4px; }
+.thr-page .thr-chain { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--thr-line); }
+.thr-page .thr-chain li { position: relative; margin: 0 0 12px; }
+.thr-page .thr-chain li::before { content: ""; position: absolute; left: -20px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--thr-live); }
+.thr-page .thr-chain li.thr-note::before { background: var(--thr-card); border: 2px solid var(--thr-muted); width: 6px; height: 6px; }
+.thr-page .thr-chain .thr-d { font-size: 12px; font-weight: 600; }
+.thr-page .thr-chain .thr-out { display: block; margin-top: 4px; }
+.thr-page .thr-panel ul.thr-open { padding-left: 18px; margin: 0; }
+.thr-page .thr-panel ul.thr-open li { margin-bottom: 6px; }
+.thr-page .thr-panel .thr-src { display: block; margin-top: 16px; font-size: 12px; }
+.thr-page .thr-panel .thr-grp { border-top: 1px solid var(--thr-line); padding-top: 10px; margin-top: 10px; }
+.thr-page .thr-hide { margin: 8px 0 0; width: auto; padding: 5px 10px; border: 1px solid var(--thr-line); border-radius: 8px; background: var(--thr-card); color: var(--thr-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.thr-page .thr-hide:hover { color: var(--thr-accent); border-color: var(--thr-accent); }
+.thr-page .thr-err { color: var(--thr-today); font-size: 12px; margin-top: 6px; }
+.thr-page button, .thr-page input, .thr-page label { margin-bottom: 0; }
+.thr-page .paywall:before { content: none; }
+.thr-page .thr-panel a, .thr-page .thr-panel .paywall { display: inline; }
+@media (max-width: 900px) {
+  .thr-page { padding: 16px; }
+  .thr-page .thr-layout { grid-template-columns: 1fr; }
+  .thr-page .thr-panel { position: static; max-height: none; }
+  .thr-page .thr-row { grid-template-columns: 170px 1fr; }
+  .thr-page .thr-toolbar input[type=search] { width: 100%; }
+  .thr-page .thr-ctx { font-size: 0; }
+  .thr-page .thr-ctx::after { content: attr(data-short); font-size: 12px; }
+}
+</style>
+</head>
+<body>
+{{ defaultTemplate.Header() }}
+<script src="{{ asset("frontmatter.js") }}"></script>
+<script type="application/json" id="thr-config">{{ json(note.ContentString()) }}</script>
+<script type="application/json" id="thr-editable">{{ json(currentUser.IsAdmin()) }}</script>
+{{ range i, n := nvs.ByGlob(note.M().GetString("threads", "threads/*")).All() }}
+<script type="application/json" class="thr-thread-data">{{ json(map("path", n.Path(), "permalink", n.Permalink(), "md", n.ContentString(), "html", n.HTMLString())) }}</script>
+{{ end }}
+{{ range i, n := nvs.ByGlob(note.M().GetString("reviews", "calls/*")).All() }}
+<script type="application/json" class="thr-call-ref">{{ json(n.Permalink()) }}</script>
+{{ end }}
+{{ range i, n := nvs.ByGlob(note.M().GetString("transcripts", "transcripts/*")).All() }}
+<script type="application/json" class="thr-call-ref">{{ json(n.Permalink()) }}</script>
+{{ end }}
+<div class="thr-page">
+  <h1>{{ note.Title() }}</h1>
+  <div class="thr-sub">{{ note.HTMLString() }}</div>
+  <div class="thr-stats" id="stats"></div>
+  <div class="thr-toolbar">
+    <input type="search" id="q">
+    <span class="thr-nav">
+      <button class="thr-btn" id="prev">‹</button>
+      <span class="thr-btn thr-range" id="rangeLabel"></span>
+      <button class="thr-btn" id="next">›</button>
+    </span>
+    <span class="thr-nav">
+      <button class="thr-btn thr-span" data-months="3"></button>
+      <button class="thr-btn thr-span" data-months="6"></button>
+      <button class="thr-btn thr-span" data-months="12"></button>
+    </span>
+    <label class="thr-switch"><input type="checkbox" id="showStale" checked> <span id="showStaleLabel"></span></label>
+    <label class="thr-switch"><input type="checkbox" id="showHidden"> <span id="showHiddenLabel"></span></label>
+  </div>
+  <div class="thr-layout">
+    <div class="thr-board"><div class="thr-scroll"><div class="thr-grid" id="grid"></div></div></div>
+    <aside class="thr-panel" id="panel"></aside>
+  </div>
+</div>
+<script>
+(function () {
+  const UI_DEFAULTS = {
+    search: "Find a thread",
+    earlier: "Earlier",
+    later: "Later",
+    span_3: "3 mo",
+    span_6: "6 mo",
+    span_12: "year",
+    show_quiet: "Show quiet threads",
+    show_hidden: "Hidden",
+    panel_empty: "Click a thread to see its chain: what was said on each call, what was decided, and what stayed open.",
+    stats: "THREADS · live <b>{live}</b> · quiet <b>{quiet}</b>",
+    stats_hidden: " · hidden {n}",
+    stats_shown: " · shown <b>{n}</b>",
+    column: "Thread",
+    context: "Context before a call",
+    context_short: "Context",
+    calls: { one: "{n} call", other: "{n} calls" },
+    no_calls: "no calls",
+    quiet_for: "quiet for {n} d",
+    priority: "priority {n}",
+    hidden: "hidden",
+    nothing: "Nothing found",
+    no_group: "No group",
+    hide: "Hide thread",
+    unhide: "Bring the thread back",
+    chain: "Chain",
+    chain_empty: "The chronology has no lines yet",
+    still_open: "Still open",
+    open_note: "Open the thread note →",
+    context_title: "Context: {group}",
+    context_sub: "Where each thread of the group stopped",
+    last_call: "Last call {date}",
+    open_short: "Open",
+    failed: "Not saved: {error}",
+    local_only: "Changed in this tab only: sign in as the site owner to save it to the note.",
+  };
+  const DAY = 86400000;
+  const HALF_LIFE_DAYS = 21;
+  const ACTIVE_WINDOW_DAYS = 90;
+  const DATE_RE = /(\d{4})-(\d{2})-(\d{2})/;
+
+  const cfg = window.callsFrontmatter(JSON.parse(document.getElementById("thr-config").textContent)).meta;
+  const editable = JSON.parse(document.getElementById("thr-editable").textContent) === true;
+  const ui = Object.assign({}, UI_DEFAULTS, cfg.ui || {});
+  const locale = setting("locale", "en");
+  const threadType = setting("thread_type", "thread");
+  const chronologyHeading = setting("chronology_heading", "Chronology").toLowerCase();
+  const openHeading = setting("open_heading", "Open items").toLowerCase();
+  const outcomeLabels = list("outcome_labels", ["Decided", "Open"]);
+  const groupOrder = list("groups", []);
+  const staleDays = Number(setting("stale_days", 21));
+  const defaultSpan = Number(setting("span_months", 3));
+  const pluralRules = new Intl.PluralRules(locale);
+  const dayMonth = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  const monthName = new Intl.DateTimeFormat(locale, { month: "long" });
+  const today = startOfDay(parseDate(String(setting("today", ""))) || new Date());
+  const callRefs = new Set(Array.from(document.querySelectorAll("script.thr-call-ref")).map(s => normHref(JSON.parse(s.textContent))));
+
+  function setting(key, fallback) {
+    const v = cfg[key];
+    return v === undefined || v === null || v === "" ? fallback : v;
+  }
+
+  function list(key, fallback) {
+    return Array.isArray(cfg[key]) && cfg[key].length ? cfg[key].map(String) : fallback;
+  }
+
+  function t(key, vars) {
+    let s = ui[key];
+    if (s && typeof s === "object") {
+      s = s[pluralRules.select(Number(vars.n))] || s.other || "";
+    }
+    return String(s == null ? key : s).replace(/\{(\w+)\}/g, (m, k) => (vars && k in vars ? vars[k] : m));
+  }
+
+  function normHref(h) {
+    let s = String(h || "").split("#")[0].split("?")[0];
+    try {
+      s = decodeURIComponent(s);
+    } catch (e) {
+    }
+    return s.replace(/\/+$/, "").toLowerCase();
+  }
+
+  function startOfDay(d) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  function parseDate(s) {
+    const m = DATE_RE.exec(s || "");
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+
+  function fmt(d) {
+    return dayMonth.format(d);
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+  }
+
+  function sectionAfter(doc, title) {
+    const h = Array.from(doc.querySelectorAll("h2")).find(x => x.textContent.trim().toLowerCase().startsWith(title));
+    if (!h) {
+      return null;
+    }
+    let el = h.nextElementSibling;
+    while (el && el.tagName !== "UL" && el.tagName !== "H2") {
+      el = el.nextElementSibling;
+    }
+    return el && el.tagName === "UL" ? el : null;
+  }
+
+  function isCallLink(a) {
+    return callRefs.has(normHref(a.getAttribute("href")));
+  }
+
+  function load() {
+    return Array.from(document.querySelectorAll("script.thr-thread-data")).map(s => JSON.parse(s.textContent)).map(raw => Object.assign(raw, { meta: window.callsFrontmatter(raw.md).meta })).filter(raw => raw.meta.type === threadType).map(raw => {
+      const doc = new DOMParser().parseFromString(raw.html, "text/html");
+      const chronUl = sectionAfter(doc, chronologyHeading);
+      const entries = chronUl ? Array.from(chronUl.children).map(li => {
+        const link = Array.from(li.querySelectorAll("a")).find(isCallLink);
+        const date = (link && parseDate(link.textContent)) || parseDate(li.textContent.slice(0, 12));
+        let html = li.innerHTML;
+        if (link && li.firstElementChild === link) {
+          link.remove();
+          html = li.innerHTML.replace(/^\s*:\s*/, "");
+        } else if (!link) {
+          html = html.replace(/^\s*\d{4}-\d{2}-\d{2}\s*:\s*/, "");
+        }
+        return { date, call: Boolean(link), href: link ? link.getAttribute("href") : "", html };
+      }).filter(e => e.date) : [];
+      entries.sort((a, b) => a.date - b.date);
+      const calls = entries.filter(e => e.call);
+      const openUl = sectionAfter(doc, openHeading);
+      const m = raw.meta || {};
+      const last = calls.length ? calls[calls.length - 1].date : parseDate(String(m.last || ""));
+      const quietDays = last ? Math.round((today - last) / DAY) : Infinity;
+      return {
+        path: raw.path,
+        permalink: raw.permalink,
+        title: m.title || raw.permalink,
+        group: m.group || t("no_group"),
+        kind: m.kind || "",
+        status: m.status || "",
+        people: Array.isArray(m.people) ? m.people.map(String) : [],
+        priority: Number(m.priority) || 0,
+        hidden: m.hidden === true || m.hidden === "true",
+        aliases: Array.isArray(m.aliases) ? m.aliases.map(String) : [],
+        entries,
+        calls,
+        last,
+        quietDays,
+        stale: calls.length > 0 && quietDays > staleDays,
+        activity: activityOf(calls, quietDays),
+        openHTML: openUl ? openUl.innerHTML : "",
+      };
+    });
+  }
+
+  function activityOf(calls, quietDays) {
+    if (!calls.length) {
+      return 0;
+    }
+    const recent = calls.filter(c => today - c.date <= ACTIVE_WINDOW_DAYS * DAY).length;
+    const freshness = Math.pow(0.5, quietDays / HALF_LIFE_DAYS);
+    return freshness * (2 + recent) + calls.length / 20;
+  }
+
+  const threads = load();
+  const state = { q: "", months: defaultSpan, end: addDays(today, 14), showStale: true, showHidden: false, selected: null };
+
+  function addDays(d, n) {
+    return new Date(d.getTime() + n * DAY);
+  }
+
+  function windowStart() {
+    const s = new Date(state.end);
+    s.setMonth(s.getMonth() - state.months);
+    return s;
+  }
+
+  function matches(th) {
+    if (!state.q) {
+      return true;
+    }
+    const hay = [th.title, th.group, th.kind, ...th.people, ...th.aliases].join(" ").toLowerCase();
+    return hay.includes(state.q);
+  }
+
+  function visible(th) {
+    if (th.hidden && !state.showHidden) {
+      return false;
+    }
+    if (th.stale && !state.showStale) {
+      return false;
+    }
+    return matches(th);
+  }
+
+  function byPriorityThenActivity(a, b) {
+    return (b.priority - a.priority) || (b.activity - a.activity) || ((b.last || 0) - (a.last || 0));
+  }
+
+  function byGroupOrder(a, b) {
+    const ia = groupOrder.indexOf(a[0]);
+    const ib = groupOrder.indexOf(b[0]);
+    if (ia !== ib) {
+      return (ia < 0 ? Infinity : ia) - (ib < 0 ? Infinity : ib) || byPriorityThenActivity(a[1][0], b[1][0]);
+    }
+    return byPriorityThenActivity(a[1][0], b[1][0]);
+  }
+
+  function renderStats() {
+    const shown = threads.filter(th => !th.hidden);
+    const live = shown.filter(th => !th.stale).length;
+    const quiet = shown.length - live;
+    const hidden = threads.length - shown.length;
+    document.getElementById("stats").innerHTML = t("stats", { live, quiet }) +
+      (hidden ? t("stats_hidden", { n: hidden }) : "") +
+      (state.q || !state.showStale ? t("stats_shown", { n: threads.filter(visible).length }) : "");
+    document.getElementById("rangeLabel").textContent = fmt(windowStart()) + " — " + fmt(state.end);
+    document.querySelectorAll(".thr-span").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.months) === state.months)));
+  }
+
+  function xOf(d, s, e) {
+    return (d - s) / (e - s) * 100;
+  }
+
+  function monthHeader(s, e) {
+    let html = "";
+    const d = new Date(s.getFullYear(), s.getMonth(), 1);
+    while (d <= e) {
+      const x = xOf(d, s, e);
+      if (x >= 0 && x < 98) {
+        html += '<span style="left:' + x + '%">' + esc(monthName.format(d)) + "</span>";
+      }
+      d.setMonth(d.getMonth() + 1);
+    }
+    const w = new Date(s);
+    w.setDate(w.getDate() + ((8 - w.getDay()) % 7));
+    const todayX = xOf(today, s, e);
+    while (w <= e) {
+      const x = xOf(w, s, e);
+      if (x > 1 && x < 94 && (x < todayX - 5 || x > todayX + 1)) {
+        html += '<small style="left:' + x + '%">' + esc(fmt(w)) + "</small>";
+      }
+      w.setDate(w.getDate() + 7);
+    }
+    return html;
+  }
+
+  function laneSVG(th, s, e) {
+    const color = th.stale ? "var(--thr-stale)" : "var(--thr-live)";
+    const pts = th.calls.filter(c => c.date >= s && c.date <= e).map(c => xOf(c.date, s, e));
+    const clusters = [];
+    pts.forEach(x => {
+      const lastC = clusters[clusters.length - 1];
+      if (lastC && x - lastC.x < 1.6) {
+        lastC.n += 1;
+      } else {
+        clusters.push({ x, n: 1 });
+      }
+    });
+    let svg = "";
+    const todayX = xOf(today, s, e);
+    const before = th.calls.some(c => c.date < s);
+    if (clusters.length) {
+      const x0 = before ? 0 : clusters[0].x;
+      const x1 = clusters[clusters.length - 1].x;
+      svg += '<line x1="' + x0 + '%" y1="50%" x2="' + x1 + '%" y2="50%" stroke="' + color + '" stroke-width="3" stroke-linecap="round"/>';
+      if (th.stale && x1 < todayX) {
+        svg += '<line x1="' + x1 + '%" y1="50%" x2="' + Math.min(todayX, 100) + '%" y2="50%" stroke="' + color + '" stroke-width="1.5" stroke-dasharray="2 4"/>';
+      }
+    } else if (before && th.last && th.last < s) {
+      svg += '<line x1="0%" y1="50%" x2="' + Math.min(todayX, 100) + '%" y2="50%" stroke="' + color + '" stroke-width="1.5" stroke-dasharray="2 4"/>';
+    }
+    clusters.forEach(c => {
+      if (c.n > 1) {
+        svg += '<circle cx="' + c.x + '%" cy="50%" r="8" fill="' + color + '"/>' +
+          '<text x="' + c.x + '%" y="50%" dy="4" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">' + c.n + "</text>";
+      } else {
+        svg += '<circle cx="' + c.x + '%" cy="50%" r="4.5" fill="' + color + '"/>';
+      }
+    });
+    if (todayX >= 0 && todayX <= 100) {
+      svg += '<line x1="' + todayX + '%" y1="0" x2="' + todayX + '%" y2="100%" stroke="var(--thr-today)" stroke-width="1.5"/>';
+    }
+    return "<svg>" + svg + "</svg>";
+  }
+
+  function renderGrid() {
+    const s = windowStart();
+    const e = state.end;
+    const todayX = xOf(today, s, e);
+    const groups = new Map();
+    threads.filter(visible).sort(byPriorityThenActivity).forEach(th => {
+      if (!groups.has(th.group)) {
+        groups.set(th.group, []);
+      }
+      groups.get(th.group).push(th);
+    });
+    const ordered = Array.from(groups.entries()).sort(byGroupOrder);
+    let html = '<div class="thr-row thr-head"><div class="thr-name">' + esc(t("column")) + '</div><div class="thr-lane thr-months">' + monthHeader(s, e) +
+      (todayX >= 0 && todayX <= 100 ? '<svg><line x1="' + todayX + '%" y1="70%" x2="' + todayX + '%" y2="100%" stroke="var(--thr-today)" stroke-width="1.5"/><circle cx="' + todayX + '%" cy="70%" r="3.5" fill="var(--thr-today)"/></svg>' : "") +
+      "</div></div>";
+    ordered.forEach(([g, items]) => {
+      html += '<div class="thr-row thr-group"><div class="thr-name"><span class="thr-pill">' + esc(g) + '</span><span class="thr-count">' + items.length + "</span></div>" +
+        '<div class="thr-ctx" data-group="' + esc(g) + '" data-short="' + esc(t("context_short")) + '">' + esc(t("context")) + "</div></div>";
+      items.forEach(th => {
+        const n = th.calls.length;
+        let meta = n ? esc(t("calls", { n })) : '<span class="thr-tag">' + esc(t("no_calls")) + "</span>";
+        if (th.stale) {
+          meta += ' <span class="thr-tag">' + esc(t("quiet_for", { n: th.quietDays })) + "</span>";
+        }
+        if (th.priority) {
+          meta += ' <span class="thr-tag thr-prio">' + esc(t("priority", { n: th.priority })) + "</span>";
+        }
+        if (th.hidden) {
+          meta += ' <span class="thr-tag">' + esc(t("hidden")) + "</span>";
+        }
+        const sel = state.selected === th.permalink ? " thr-selected" : "";
+        html += '<div class="thr-row thr-thread' + sel + '" data-p="' + esc(th.permalink) + '"><div class="thr-name"><div class="thr-t" title="' + esc(th.title) + '">' + esc(th.title) + '</div><div class="thr-m">' + meta + "</div></div>" +
+          '<div class="thr-lane">' + laneSVG(th, s, e) + "</div></div>";
+      });
+    });
+    if (!ordered.length) {
+      html += '<div class="thr-row"><div class="thr-name">' + esc(t("nothing")) + "</div><div></div></div>";
+    }
+    document.getElementById("grid").innerHTML = html;
+  }
+
+  function dateLabel(en) {
+    const label = fmt(en.date) + " " + en.date.getFullYear();
+    return en.href ? '<a href="' + esc(en.href) + '">' + esc(label) + "</a>" : esc(label);
+  }
+
+  const outcomeRe = new RegExp("\\s(" + outcomeLabels.map(l => l.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + "):", "g");
+
+  function splitOutcome(html) {
+    return html.replace(outcomeRe, '<span class="thr-out"><b>$1:</b>').replace(/(<span class="thr-out">[^]*?)(?=<span class="thr-out">|$)/g, "$1</span>");
+  }
+
+  function renderThreadPanel(th) {
+    const chain = th.entries.slice().reverse().map(en =>
+      '<li class="' + (en.call ? "" : "thr-note") + '"><div class="thr-d">' + dateLabel(en) + "</div>" + splitOutcome(en.html) + "</li>").join("");
+    const meta = [th.group, th.kind, th.status].filter(Boolean).map(esc).join(" · ");
+    const people = th.people.length ? '<div class="thr-meta">' + th.people.map(esc).join(", ") + "</div>" : "";
+    return "<h2>" + esc(th.title) + '</h2><div class="thr-meta">' + meta + "</div>" + people +
+      '<button class="thr-hide" data-p="' + esc(th.permalink) + '">' + esc(th.hidden ? t("unhide") : t("hide")) + "</button>" +
+      "<h3>" + esc(t("chain")) + "</h3>" + (chain ? '<ul class="thr-chain">' + chain + "</ul>" : '<div class="thr-meta">' + esc(t("chain_empty")) + "</div>") +
+      (th.openHTML ? "<h3>" + esc(t("still_open")) + '</h3><ul class="thr-open">' + th.openHTML + "</ul>" : "") +
+      '<a class="thr-src" href="' + esc(th.permalink) + '">' + esc(t("open_note")) + "</a>";
+  }
+
+  function renderGroupPanel(g) {
+    const items = threads.filter(th => th.group === g && visible(th)).sort(byPriorityThenActivity);
+    const body = items.map(th => {
+      const lastEntry = th.calls[th.calls.length - 1];
+      return '<div class="thr-grp"><b>' + esc(th.title) + "</b>" +
+        (lastEntry ? '<div class="thr-meta">' + t("last_call", { date: dateLabel(lastEntry) }) + "</div><div>" + splitOutcome(lastEntry.html) + "</div>" : "") +
+        (th.openHTML ? "<h3>" + esc(t("open_short")) + '</h3><ul class="thr-open">' + th.openHTML + "</ul>" : "") + "</div>";
+    }).join("");
+    return "<h2>" + esc(t("context_title", { group: g })) + '</h2><div class="thr-meta">' + esc(t("context_sub")) + "</div>" + body;
+  }
+
+  function render() {
+    renderStats();
+    renderGrid();
+  }
+
+  const UPDATE_NOTES = "mutation($i: UpdateNotesInput!){ updateNotes(input: $i){ __typename ... on ErrorPayload { message } } }";
+
+  async function setHidden(th, hidden) {
+    const meta = hidden ? { path: th.path, set: { hidden: true } } : { path: th.path, unset: ["hidden"] };
+    const res = await fetch("/_system/graphql", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: UPDATE_NOTES, variables: { i: { changes: [{ meta }] } } }),
+    });
+    const body = await res.json();
+    const payload = body.data && body.data.updateNotes;
+    if (!payload || payload.__typename !== "UpdateNotesSuccessPayload") {
+      throw new Error((payload && (payload.message || payload.__typename)) || (body.errors && body.errors[0].message) || "HTTP " + res.status);
+    }
+  }
+
+  document.getElementById("q").placeholder = t("search");
+  document.getElementById("prev").setAttribute("aria-label", t("earlier"));
+  document.getElementById("next").setAttribute("aria-label", t("later"));
+  document.querySelectorAll(".thr-span").forEach(b => {
+    b.textContent = t("span_" + b.dataset.months);
+  });
+  document.getElementById("showStaleLabel").textContent = t("show_quiet");
+  document.getElementById("showHiddenLabel").textContent = t("show_hidden");
+  document.getElementById("panel").innerHTML = '<div class="thr-empty">' + esc(t("panel_empty")) + "</div>";
+
+  document.getElementById("grid").addEventListener("click", ev => {
+    const ctx = ev.target.closest(".thr-ctx");
+    const panel = document.getElementById("panel");
+    if (ctx) {
+      state.selected = null;
+      panel.innerHTML = renderGroupPanel(ctx.dataset.group);
+      render();
+      return;
+    }
+    const row = ev.target.closest(".thr-thread");
+    if (!row) {
+      return;
+    }
+    const th = threads.find(x => x.permalink === row.dataset.p);
+    state.selected = th.permalink;
+    panel.innerHTML = renderThreadPanel(th);
+    panel.scrollTop = 0;
+    render();
+  });
+  document.getElementById("panel").addEventListener("click", async ev => {
+    const btn = ev.target.closest(".thr-hide");
+    if (!btn) {
+      return;
+    }
+    const th = threads.find(x => x.permalink === btn.dataset.p);
+    const panel = document.getElementById("panel");
+    if (!editable) {
+      th.hidden = !th.hidden;
+      panel.innerHTML = renderThreadPanel(th);
+      panel.querySelector(".thr-hide").insertAdjacentHTML("afterend", '<div class="thr-meta">' + esc(t("local_only")) + "</div>");
+      render();
+      return;
+    }
+    btn.disabled = true;
+    try {
+      await setHidden(th, !th.hidden);
+      th.hidden = !th.hidden;
+      panel.innerHTML = renderThreadPanel(th);
+      render();
+    } catch (err) {
+      btn.disabled = false;
+      btn.insertAdjacentHTML("afterend", '<div class="thr-err">' + esc(t("failed", { error: err.message })) + "</div>");
+    }
+  });
+  document.getElementById("q").addEventListener("input", ev => {
+    state.q = ev.target.value.trim().toLowerCase();
+    render();
+  });
+  document.getElementById("showStale").addEventListener("change", ev => {
+    state.showStale = ev.target.checked;
+    render();
+  });
+  document.getElementById("showHidden").addEventListener("change", ev => {
+    state.showHidden = ev.target.checked;
+    render();
+  });
+  document.getElementById("prev").addEventListener("click", () => {
+    state.end.setMonth(state.end.getMonth() - 1);
+    render();
+  });
+  document.getElementById("next").addEventListener("click", () => {
+    state.end.setMonth(state.end.getMonth() + 1);
+    render();
+  });
+  document.querySelectorAll(".thr-span").forEach(b => b.addEventListener("click", () => {
+    state.months = Number(b.dataset.months);
+    state.end = addDays(today, 14);
+    render();
+  }));
+  render();
+  const scroller = document.querySelector(".thr-scroll");
+  const nameWidth = document.querySelector(".thr-row .thr-name").offsetWidth;
+  const laneWidth = scroller.scrollWidth - nameWidth;
+  const todayLeft = nameWidth + laneWidth * xOf(today, windowStart(), state.end) / 100;
+  scroller.scrollLeft = Math.max(0, todayLeft - scroller.clientWidth * 0.8);
+})();
+</script>
+{{ defaultTemplate.Footer() }}
+</body>
+</html>
