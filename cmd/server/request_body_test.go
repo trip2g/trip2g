@@ -138,7 +138,7 @@ func TestServersLimitStreamedRequestBody(t *testing.T) {
 		{
 			name: "internal",
 			new: func(h fasthttp.RequestHandler) *fasthttp.Server {
-				return newInternalServer(h, testBodyLimit)
+				return newInternalServer(h, time.Minute, testBodyLimit)
 			},
 		},
 	}
@@ -273,7 +273,7 @@ func TestPublicServerAcceptsExpectContinue(t *testing.T) {
 	require.Equal(t, bodyDigest(body), string(resp.Body()))
 }
 
-func TestPublicServerBoundsBodyByReadTimeout(t *testing.T) {
+func TestServersBoundBodyByReadTimeout(t *testing.T) {
 	body := patternBody(40 * 1024)
 	raw := fixedRequest("/", "", body)
 	headEnd := len(raw) - len(body)
@@ -288,27 +288,41 @@ func TestPublicServerBoundsBodyByReadTimeout(t *testing.T) {
 		{name: "pause longer than read timeout", split: headEnd + 16*1024, pause: time.Second, status: fasthttp.StatusBadRequest},
 	}
 
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			echo := &bodyEcho{}
-			ln := serveInMemory(t, newHTTPServer(echo.handle, 500*time.Millisecond, testBodyLimit))
-			conn := dial(t, ln)
+	servers := []struct {
+		name string
+		make func(h fasthttp.RequestHandler) *fasthttp.Server
+	}{
+		{name: "public", make: func(h fasthttp.RequestHandler) *fasthttp.Server {
+			return newHTTPServer(h, 500*time.Millisecond, testBodyLimit)
+		}},
+		{name: "internal", make: func(h fasthttp.RequestHandler) *fasthttp.Server {
+			return newInternalServer(h, 500*time.Millisecond, testBodyLimit)
+		}},
+	}
 
-			go func() {
-				_, _ = conn.Write(raw[:tt.split])
-				time.Sleep(tt.pause)
-				_, _ = conn.Write(raw[tt.split:])
-			}()
+	for _, srv := range servers {
+		for _, tt := range cases {
+			t.Run(srv.name+"/"+tt.name, func(t *testing.T) {
+				echo := &bodyEcho{}
+				ln := serveInMemory(t, srv.make(echo.handle))
+				conn := dial(t, ln)
 
-			resp := readResponse(t, bufio.NewReader(conn))
-			require.Equal(t, tt.status, resp.StatusCode())
+				go func() {
+					_, _ = conn.Write(raw[:tt.split])
+					time.Sleep(tt.pause)
+					_, _ = conn.Write(raw[tt.split:])
+				}()
 
-			if tt.status == fasthttp.StatusOK {
-				require.Equal(t, bodyDigest(body), string(resp.Body()))
-				return
-			}
+				resp := readResponse(t, bufio.NewReader(conn))
+				require.Equal(t, tt.status, resp.StatusCode())
 
-			require.Zero(t, echo.calls.Load())
-		})
+				if tt.status == fasthttp.StatusOK {
+					require.Equal(t, bodyDigest(body), string(resp.Body()))
+					return
+				}
+
+				require.Zero(t, echo.calls.Load())
+			})
+		}
 	}
 }

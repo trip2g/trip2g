@@ -217,15 +217,18 @@ func newHTTPServer(handler fasthttp.RequestHandler, handlerTimeout time.Duration
 	}
 }
 
+func (a *app) handlerTimeout() time.Duration {
+	if a.config.DevMode {
+		return 10 * time.Minute
+	}
+
+	return 60 * time.Second
+}
+
 func (a *app) startServer() {
 	handler := a.requestHandler()
 
-	handlerTimeout := 60 * time.Second
-	if a.config.DevMode {
-		handlerTimeout = 10 * time.Minute
-	}
-
-	s := newHTTPServer(handler, handlerTimeout, a.config.MaxRequestBodySize*1024*1024)
+	s := newHTTPServer(handler, a.handlerTimeout(), a.config.MaxRequestBodySize*1024*1024)
 
 	// Publish the full request handler so the internal server's leader-side
 	// replica intake (handleReplicaIntake) can run forwarded writes through the
@@ -456,7 +459,7 @@ func (a *app) startInternalServer() {
 		ctx.SetStatusCode(http.StatusNotFound)
 	}
 
-	a.internalServer = newInternalServer(handler, a.config.MaxRequestBodySize*1024*1024)
+	a.internalServer = newInternalServer(handler, a.handlerTimeout(), a.config.MaxRequestBodySize*1024*1024)
 
 	a.log.Info("starting internal server", "addr", a.config.InternalListenAddr)
 	if err := a.internalServer.ListenAndServe(a.config.InternalListenAddr); err != nil {
@@ -466,13 +469,14 @@ func (a *app) startInternalServer() {
 
 // A replica forwards writes to the leader here, so a body gets the public
 // server's size limit and reaches GraphQL unshuffled.
-func newInternalServer(handler fasthttp.RequestHandler, maxRequestBodySize int) *fasthttp.Server {
+func newInternalServer(handler fasthttp.RequestHandler, readTimeout time.Duration, maxRequestBodySize int) *fasthttp.Server {
 	return &fasthttp.Server{
 		Handler:                      limitRequestBody(handler, maxRequestBodySize),
 		Name:                         "trip2g-internal",
 		DisablePreParseMultipartForm: true,
 		StreamRequestBody:            true,
 		MaxRequestBodySize:           maxRequestBodySize,
+		ReadTimeout:                  readTimeout,
 	}
 }
 

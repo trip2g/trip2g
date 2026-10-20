@@ -66,7 +66,7 @@ func TestServersKeepMultipartFieldOrder(t *testing.T) {
 		server *fasthttp.Server
 	}{
 		{name: "public", server: newHTTPServer(newGraphQL(), time.Minute, 1024*1024)},
-		{name: "internal", server: newInternalServer(newGraphQL(), 1024*1024)},
+		{name: "internal", server: newInternalServer(newGraphQL(), time.Minute, 1024*1024)},
 	}
 
 	for _, tt := range servers {
@@ -110,7 +110,7 @@ func TestInternalServerTakesTheConfiguredBodyLimit(t *testing.T) {
 		ctx.SetBodyString("ok")
 	}
 
-	server := newInternalServer(ok, 10*1024*1024)
+	server := newInternalServer(ok, time.Minute, 10*1024*1024)
 	ln := fasthttputil.NewInmemoryListener()
 
 	go func() {
