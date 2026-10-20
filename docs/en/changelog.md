@@ -15,6 +15,13 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **What.** Every `search` and `federated_search` result carries `size_tokens`, an estimate of the note's length in tokens (the same estimate the chunker uses), and `sections`, the number of headings `expand` can navigate.
 - **Why.** An agent could not tell a 6,000-token note from a 200-token one before opening it, so it opened long notes whole.
 - **How to use.** Nothing to change; agents read the fields from the result.
+
+### `json()` encodes a frontmatter with nested keys
+
+- **What.** `json()` and `writeJson()` in a layout encode frontmatter that nests a map, such as `speakers:` with keys under it or a list of maps. Keys that aren't strings, such as numbers, become strings. A value JSON can't hold at all, such as a function, still fails the render, and the message now names its type.
+- **Why.** [[en/user/spa|An app on top of trip2g]] recommends `json(note.M().Raw())` to hand an app the whole frontmatter. On any note with a nested key that failed the render, the layout's check marked it broken and the page answered 404.
+- **How to use.** Nothing to change.
+
 ### A note path with the wrong separators or case still opens the note
 
 - **What.** `note_html`, `expand` and `similar` that find no note at the exact `path` retry with the path folded: case, `_` or a space for `-`, a leading `/` and a missing `.md` no longer matter. When two notes fold to the same path, neither is picked and the call fails as before.

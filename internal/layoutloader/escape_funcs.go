@@ -7,12 +7,15 @@ import (
 	"net/url"
 	"strings"
 	"trip2g/internal/model"
+	"trip2g/internal/yamlutil"
 
 	"github.com/CloudyKit/jet/v6"
 )
 
 // addEscapeFuncs replaces Jet's html, url and json builtins with versions that
 // return model.SafeHTML, so their already-escaped output is not escaped twice.
+// json and writeJson first turn yaml.v2 maps into string-keyed ones, so a
+// frontmatter with nested maps encodes.
 func addEscapeFuncs(views *jet.Set) {
 	views.AddGlobal("html", func(s string) model.SafeHTML {
 		return model.SafeHTML(html.EscapeString(s))
@@ -23,11 +26,20 @@ func addEscapeFuncs(views *jet.Set) {
 	})
 
 	views.AddGlobal("json", func(v any) model.SafeHTML {
-		raw, err := json.Marshal(v)
+		raw, err := json.Marshal(yamlutil.Normalize(v))
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("json: cannot encode %T: %w", v, err))
 		}
 		return model.SafeHTML(raw)
+	})
+
+	views.AddGlobal("writeJson", func(v any) jet.RendererFunc {
+		return func(r *jet.Runtime) {
+			err := json.NewEncoder(r.Writer).Encode(yamlutil.Normalize(v))
+			if err != nil {
+				panic(fmt.Errorf("writeJson: cannot encode %T: %w", v, err))
+			}
+		}
 	})
 }
 
