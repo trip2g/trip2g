@@ -539,6 +539,8 @@ Important: trip2g validates the embedding model name. The currently supported va
 
 So "any OpenAI-compatible service" only works if it exposes a compatible `/v1` embeddings API and you configure one of those supported model names.
 
+A search waits at most `SEARCH_VECTOR_TIMEOUT` (default `15s`) for the embeddings API to embed the query. Past that it answers from full-text search alone, so a slow or busy embedder degrades search instead of stalling it. `0` removes the limit.
+
 ### Start the stack
 
 Inside the directory with `docker-compose.yml`:

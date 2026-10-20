@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### A busy embedder no longer stalls search
+
+- **What.** Search waits at most `SEARCH_VECTOR_TIMEOUT` (`-search-vector-timeout`, default `15s`) for the vector stage — embedding the query and the agent's `rephrased_query` / `expected_answer`. Past it, it answers from full-text search alone and logs a warning.
+- **Why.** The query embedding waited with no limit. Right after a deploy an instance re-embeds every note, the query waits in the same queue, and every search hung for minutes until the backlog drained.
+- **How to use.** Nothing to change; set the variable to tune it, `0` to remove the limit.
+
 ### The server serves its own sync CLI
 
 - **What.** `GET /_system/sync-cli.mjs` returns the sync CLI (`trip2g-sync.mjs`) built into this server, with no sign-in. It sends an `ETag` and `Cache-Control: no-cache`, and answers 404 when the build has no onboarding vault.

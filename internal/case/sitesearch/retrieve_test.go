@@ -2,7 +2,10 @@ package sitesearch_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -138,4 +141,30 @@ func TestRetrieve_DimensionMismatchSkipsStaleChunks(t *testing.T) {
 	results, _, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q"})
 	require.NoError(t, err)
 	require.Empty(t, results, "dim-mismatched chunks must not produce candidates")
+}
+
+func TestRetrieve_SlowEmbedderFallsBackToText(t *testing.T) {
+	release := make(chan struct{})
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	defer slow.Close()
+	defer close(release)
+
+	env := retrieveEnv(t, slow.URL)
+	env.FeaturesFunc = func() features.Features {
+		return features.Features{VectorSearch: features.VectorSearchConfig{Enabled: true, QueryTimeout: 50 * time.Millisecond}}
+	}
+
+	start := time.Now()
+	results, merged, err := sitesearch.Retrieve(context.Background(), env, sitesearch.Request{Query: "q", ShortQuery: "q", ExpectedAnswer: "q"})
+
+	require.NoError(t, err)
+	require.False(t, merged, "the vector lane must not count as merged when it timed out")
+	require.Len(t, results, 1)
+	require.Equal(t, "/live", results[0].URL)
+	require.Less(t, time.Since(start), 2*time.Second, "a stalled embedder must not stall the search")
 }

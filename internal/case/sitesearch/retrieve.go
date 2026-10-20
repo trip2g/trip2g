@@ -98,8 +98,10 @@ func Retrieve(ctx context.Context, env RetrieveEnv, req Request) ([]appmodel.Sea
 	// used by the optional reranker to avoid feeding truncated whole notes.
 	var passageByURL map[string]string
 	merged := false
+	vectorCtx, cancel := vectorStageContext(ctx, env.Features().VectorSearch.QueryTimeout)
+	defer cancel()
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
-		vectorResults, passages, ok, vectorErr := vectorSearch(ctx, env, req, req.Query)
+		vectorResults, passages, ok, vectorErr := vectorSearch(vectorCtx, env, req, req.Query)
 		if vectorErr != nil {
 			return nil, false, vectorErr
 		}
@@ -121,7 +123,7 @@ func Retrieve(ctx context.Context, env RetrieveEnv, req Request) ([]appmodel.Sea
 		results = fuseLane(results, lane, weight)
 	}
 
-	lanes, err := agentLanes(ctx, env, req, merged, passageByURL)
+	lanes, err := agentLanes(vectorCtx, env, req, merged, passageByURL)
 	if err != nil {
 		return nil, false, err
 	}
@@ -204,6 +206,13 @@ func vectorSearch(
 		return nil, nil, false, err
 	}
 	return results, passages, true, nil
+}
+
+func vectorStageContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout <= 0 {
+		return context.WithCancel(ctx)
+	}
+	return context.WithTimeout(ctx, timeout)
 }
 
 func noteViewsOf(env RetrieveEnv, useLatest bool) *appmodel.NoteViews {
