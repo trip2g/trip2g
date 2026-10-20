@@ -13,6 +13,43 @@ trip2g does not record, transcribe or review calls. Something else writes the tr
 
 The demos run on invented data. A visitor can click everything, but changes stay in the tab; the site owner's changes are saved to the notes. The demo notes carry `search: false` on purpose, so the invented calls stay out of the site's search.
 
+## A ready stand: an agent reviews calls and answers in Telegram
+
+The [trip2g/call_dashboard](https://github.com/trip2g/call_dashboard) repository brings the whole thing up with one `docker compose`: trip2g with these layouts, fleet with three roles, and a [Hermes](https://github.com/NousResearch/hermes-agent) agent with a Telegram bot. The models are Codex on a ChatGPT plan. Who does what:
+
+- **trip2g** stores the notes, draws the `/call` and `/threads` pages, calls a webhook when a note changes, and serves the vault over [[en/user/mcp|MCP]] and GraphQL. It does not review calls itself.
+- **fleet** ([[en/user/fleet|roles]] are notes in `roles/`) does the reviewing: the `review` role writes the review of a new transcript, `topics` the topic map, `chronology` a line in a thread once you have checked the call and picked the thread.
+- **Hermes** answers questions about calls and threads in Telegram. It reads the vault through trip2g's MCP as its knowledge base and cannot write to it. Every answer about a call ends with the call's page, every answer about a thread with the threads page.
+- **A notify script** runs on cron every minute, looks for new reviews over GraphQL and sends the call's link to Telegram. It does not call a model.
+- **codex-bridge** turns fleet's chat-completions calls into Codex Responses API calls with the ChatGPT login Hermes keeps.
+
+```mermaid
+flowchart LR
+  subgraph trip2g
+    T[transcripts/] --> C[calls/ review]
+    C --> P[topics/]
+    E[call_edits/] --> H[threads/]
+    UI["/call and /threads pages"]
+  end
+  T -- webhook --> F
+  C -- webhook --> F
+  E -- webhook --> F
+  F[fleet: review, topics, chronology] -- writes notes --> trip2g
+  F --> B[codex-bridge] --> X[(Codex)]
+  HM[Hermes] -- MCP, read only --> trip2g
+  HM --> X
+  HM <--> TG[(Telegram)]
+  N[cron notify] -- GraphQL --> trip2g
+  N --> TG
+  You((owner)) --> UI
+  UI -- updateNotes --> E
+  You <--> TG
+```
+
+![[calls-telegram.png|The bot answers about a call and a thread; each answer ends with a dashboard link]]
+
+The stand's history is prepared: eleven past calls, their reviews and eight threads ship in the repository as ready notes. What is reviewed live is a call you add yourself; the repository has a sample transcript where the recorder labelled the client with someone else's name.
+
 ## Install
 
 Copy three files from [`docs/_layouts/calls/`](https://github.com/trip2g/trip2g/tree/main/docs/_layouts/calls) into your vault's `_layouts/calls/`: `threads.html`, `call.html` and `frontmatter.js`. Then make a note for each page:
