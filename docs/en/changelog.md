@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### The server serves its own sync CLI
+
+- **What.** `GET /_system/sync-cli.mjs` returns the sync CLI (`trip2g-sync.mjs`) built into this server, with no sign-in. It sends an `ETag` and `Cache-Control: no-cache`, and answers 404 when the build has no onboarding vault.
+- **Why.** A copy of the CLI saved in a vault never updates. A script that fetches it from the server always runs the CLI that matches the server.
+- **How to use.** `curl -o trip2g-sync.mjs https://yoursite.com/_system/sync-cli.mjs`, then run it with `node`. See [[en/user/cli|CLI sync]].
+
 ### Search results say how long each note is
 
 - **What.** Every `search` and `federated_search` result carries `size_tokens`, an estimate of the note's length in tokens (the same estimate the chunker uses), and `sections`, the number of headings `expand` can navigate.
