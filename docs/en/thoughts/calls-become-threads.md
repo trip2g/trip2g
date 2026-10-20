@@ -43,7 +43,7 @@ A thread that had no call for three weeks turns grey and gets a dotted line up t
 
 trip2g does not record, transcribe or review calls. Something else writes the transcript, the review and the topic map: a recorder that saves into the vault, a script, or an agent with an [[en/user/graphql#Admin access via API key|API key]]. The two layouts only read those notes. What they write is the edits note of a call, the `hidden` key of a thread, and a person note when I add someone new.
 
-In my case an agent does that first pass: who spoke, what about, which thread. Two rules came out of getting it wrong.
+In my case an agent does that first pass: who spoke, what about, which thread. How to put it all together, with roles that review the call and a Telegram bot that answers from the vault, is the ready stand on the [[en/user/calls-dashboard|Calls dashboard]] page. Two rules came out of getting it wrong.
 
 **Speakers only when the conversation shows it.** Recorders name speakers from the calendar, and the calendar is often wrong. In my case the recording machine's clock was set to one timezone and the calendar lived in another, so the recorder attached the event an hour away and confidently put the wrong person's name on a speaker. The demo keeps one such call, where the supplier got the accountant's name: the label says "Marcus Hale", and the first line of the transcript is "Tom, sorry, I'm late with the confirmation". So the agent maps a label to a person only when someone introduces themselves, is addressed by name, or it is plainly the next call of a known thread. Otherwise it writes `?` and leaves it to me.
 
