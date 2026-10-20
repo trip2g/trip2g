@@ -15,6 +15,11 @@ Older tags (`v0.2.0` and below) live in git history only.
 - **What.** `note_html` and `federated_note_html` put the note's text into the structured result (`text`) as well as into the text block.
 - **Why.** Since attachments were added, the structured result held only the path and the assets. Claude Code passes a tool's structured result to the model instead of its text block, so a model reading a note there got `{"note_path": …, "assets": []}` and never the note.
 - **How to use.** Nothing to change. A hub relays a peer's structured result as is, so `federated_note_html` needs this release on the peer too.
+### Attachment uploads no longer fail one time in eight
+
+- **What.** About one `uploadNoteAsset` call in eight failed with `first part must be operations`, whatever order the client sent the form fields in. Through a read replica every upload failed, because the leader received an empty body. Both now succeed. Through a replica the leader still accepts at most 4 MB.
+- **Why.** The server parsed the multipart form ahead of GraphQL and then re-encoded it in random order, and GraphQL requires the `operations` part first. A replica forwarded only the raw body, which the parsed form had left empty.
+- **How to use.** Nothing to do. The upload size limit is unchanged (`--max-request-body-size`, 10 MB).
 
 ### The MCP endpoint reports a name you choose
 

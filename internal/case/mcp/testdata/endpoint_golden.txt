@@ -152,6 +152,21 @@ HTTP 200 application/json
   }
 }
 
+### modern_notification_without_method_header
+HTTP 202 text/plain; charset=utf-8
+<empty>
+
+### modern_subscriptions_listen
+HTTP 200 application/json
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32601,
+    "message": "Method not found: subscriptions/listen"
+  },
+  "id": 3
+}
+
 ### notifications_initialized
 HTTP 202 text/plain; charset=utf-8
 <empty>
