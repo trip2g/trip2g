@@ -8,8 +8,7 @@ import (
 	"strconv"
 	"sync"
 
-	jsonnet "github.com/google/go-jsonnet"
-
+	"trip2g/internal/jsonneteval"
 	"trip2g/internal/yamlutil"
 )
 
@@ -63,7 +62,7 @@ func NewResultCache() *ResultCache {
 // the uncached behavior exactly. On a hit, a private deep copy is returned, so the
 // caller may freely mutate the result without corrupting the cache.
 func (c *ResultCache) CachedApply(
-	vm *jsonnet.VM,
+	vm *jsonneteval.VM,
 	patches []CompiledPatch,
 	patchSetHash, path string,
 	rawMeta map[string]interface{},

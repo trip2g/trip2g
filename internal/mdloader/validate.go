@@ -120,7 +120,7 @@ func (ldr *loader) resolveValidators(note *model.NoteView, targets []string) []*
 // validateRun holds what one Load shares across notes: the VM and the jsonnet
 // blocks extracted from each validator.
 type validateRun struct {
-	vm        *jsonnet.VM
+	vm        *jsonneteval.VM
 	blocks    map[*model.NoteView][]string
 	blockErrs map[*model.NoteView]error
 }
@@ -158,7 +158,7 @@ func (r *validateRun) validate(note *model.NoteView, validators []*model.NoteVie
 
 // runValidator evaluates one jsonnet block; the caller has bound meta, path
 // and nodes for the note.
-func runValidator(vm *jsonnet.VM, note *model.NoteView, validatorPath, src string) {
+func runValidator(vm *jsonneteval.VM, note *model.NoteView, validatorPath, src string) {
 	fail := func(err error) {
 		note.AddWarning(model.NoteWarningCritical, "validate %s: %s", validatorPath, err)
 	}
