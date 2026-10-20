@@ -2,6 +2,7 @@ package features
 
 import (
 	"fmt"
+	"time"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
@@ -191,6 +192,13 @@ type VectorSearchConfig struct {
 	EmbedBatchSize int `json:"embed_batch_size"`
 
 	Reranker RerankerConfig `json:"reranker"` // optional second-stage cross-encoder reranker (blend mode)
+
+	// QueryTimeout bounds the whole vector stage of one search: embedding the
+	// query and the agent's extra fields. Past it the search answers from text
+	// alone, because an embedder busy with a backlog must not stall every
+	// search behind it. Set from -search-vector-timeout, not FEATURES; 0 means
+	// no bound.
+	QueryTimeout time.Duration `json:"-"`
 }
 
 // RerankerConfig configures an optional cross-encoder rerank stage applied to

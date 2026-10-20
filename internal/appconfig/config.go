@@ -112,6 +112,7 @@ type Config struct {
 	FederatedFanoutConcurrency int
 	FederatedFanoutLimit       int
 	FederatedFanoutTimeout     time.Duration
+	SearchVectorTimeout        time.Duration
 	// MCPFederationAsset bounds one attachment moved by federated_asset, in
 	// both roles: what this instance serves to a peer and what it relays from one.
 	MCPFederationAssetMaxSize datasize.Size
@@ -611,6 +612,8 @@ func (c *Config) defineServerFlags() {
 		"Max peers queried in parallel by a federated_search fan-out (0 = unlimited)")
 	flag.IntVar(&c.FederatedFanoutLimit, "federated-fanout-limit", 7,
 		"Max peers a blind (no kb_id) federated_search fan-out touches; the rest are reported as skipped (0 = unlimited)")
+	flag.DurationVar(&c.SearchVectorTimeout, "search-vector-timeout", 15*time.Second,
+		"Longest a search waits for the vector stage (embedding the query) before answering from text alone (0 = no limit)")
 	flag.DurationVar(&c.FederatedFanoutTimeout, "federated-fanout-timeout", 5*time.Second,
 		"Per-peer timeout for federated fan-out requests (0 = no extra timeout)")
 	datasize.FlagVar(
@@ -729,6 +732,7 @@ func (c *Config) Prepare() {
 
 	// Parse and validate features (panics on error)
 	c.Features = features.Parse(c.FeaturesJSON)
+	c.Features.VectorSearch.QueryTimeout = c.SearchVectorTimeout
 }
 
 // applyStorageEnvFallback accepts the canonical S3 secret-key env var name
