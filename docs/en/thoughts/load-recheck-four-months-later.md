@@ -1,6 +1,6 @@
 ---
 title: "Re-measured four months later: what holds and what drifted"
-description: "In June trip2g served 4 000 pages a second. In October we measured it again on 10 000 notes with a profiler on every path. The cache holds the same numbers; sync, search and MCP had grown new bottlenecks."
+description: "In June trip2g served 4 000 pages a second. In October we measured it again on 10 000 notes with a profiler on every path. The cache holds the same numbers, search, MCP and the template had grown new bottlenecks, and the published sync number turned out to be measured on synthetic notes."
 free: true
 lang: en
 lang_redirect: "[[ru/thoughts/load-recheck-four-months-later]]"
@@ -28,13 +28,19 @@ A sandbox is one machine, and the load generator sits next to the server. That i
 
 **MCP tools** answer fast and correctly, and per-role auth works. On a small vault a sync does not block reads: throughput drops 25–30 %, no errors.
 
-## What drifted
+## What turned out to be something else
 
-**Sync on a large vault.** One changed note syncs into a 10 000-note vault in about 3.3 seconds. In June it was tens of milliseconds. The initial import takes about 104 seconds against 14. Memory after load is 5–6 GB against 1 GB. Importing 10 000 notes in one call runs into the 60-second handler timeout.
+**Sync on a large vault.** One changed note synced into a vault of 10 000 realistic notes in about 3–5 seconds, and memory after load was 5–7 GB. The June write-up says tens of milliseconds and 1 GB. The first version of this text called that a regression. It is not one.
 
-**Reads during a sync.** At 200 requests per second, while 100 notes sync, median read latency grows to 2–6 seconds. In June the same scenario stayed at 2 ms. Every note reload clears the page cache, and all readers go to a full render at once, competing for CPU with the reload itself.
+We measured the June commit and October's main the same way. On the June write-up's method — synthetic notes of 500 bytes — October's code reproduces the published numbers. On realistic notes (~9 KB on average, with links, embeds, tables) the June code is exactly as slow: 4.7 seconds per note against 4.8 in October, 7.4 GB against 7.6. The published number was honest for synthetic notes and said nothing about a real vault.
 
-**A full render costs twice as much.** The main cause was visible in the profile at first glance: on every request the template walks all notes to find RSS feeds for `<link rel="alternate">`. That is 42 % of all allocations on the render path. The feed list only changes when notes load, so computing it there once is enough. The fix moves that walk to load time.
+The slowness comes from the reload model: every sync renders every note again. The note cache saves parsing, not rendering, so the cost of one note grows with the size of the whole vault. This is not a defect a one-line fix removes but an architectural property, and the performance page now says so plainly.
+
+**One real regression turned up.** Since August a vault with at least one note carrying a `route:` to a custom domain re-rendered every note once more per such host on each reload. trip2g's own documentation has such a note — the multi-domain demo. Rendering for hosts took 57 % of reload CPU, and its HTML 2.7 times the memory of the main HTML. The fix: only notes with their own route on a host are pre-rendered for it; the rest render on the first request to that host, once per snapshot.
+
+**Reads during a sync.** In one run at 200 requests per second, while 100 notes synced, median read latency grew to 2–6 seconds against 2 ms on the June code. Part of the gap is the per-host rendering: the June run used documentation without the multi-domain demo. The rest is common to both versions: every reload clears the page cache, and readers all go to a full render at once, competing for CPU with the reload itself.
+
+**A full render cost twice as much.** The main cause was visible in the profile at first glance: on every request the template walked all notes to find RSS feeds for `<link rel="alternate">`. That was 42 % of all allocations on the render path. The feed list only changes when notes load, and it is now computed there: 0.9 ms per render → 2 nanoseconds.
 
 ## Where time went to waste
 
@@ -46,7 +52,7 @@ The most useful output of these runs is not the numbers but the profiles. Almost
 
 **The log.** The feed note pointed at an `rss` layout the documentation vault did not have. Every request to the feed wrote a warning with the list of all layouts — 1.1 million lines and 560 MB in one run. The feed itself answered an empty 200. The fix: one warning at load, on the note itself, and no empty 200.
 
-**Search.** 100–700 rps on four cores, with about 70 % of CPU in match highlighting. For each of 20 results bleve reloads the whole document from the index, and the note body is stored in the index twice. In the end more than half of the CPU goes to the garbage collector. bleve already returns match positions, so highlighting can be built from them — and returned not as HTML with `<mark>` but as structure: text segments flagged "match". Then the frontend no longer has to dig `<mark>` out with a regular expression.
+**Search.** 100–700 rps on four cores, with about 70 % of CPU in match highlighting. For each of 20 results bleve reloads the whole document from the index, and the note body is stored in the index twice. In the end more than half of the CPU goes to the garbage collector. bleve already returns match positions, so we now build highlighting from them and return it not as HTML with `<mark>` but as structure: text segments flagged "match". The frontend no longer digs `<mark>` out with a regular expression, note bodies left the index, and search got about twice as fast.
 
 **Note queries.** Every call serialised all notes the reader may see to JSON again — 20 % of the request's CPU, with another 66 % in Jsonnet itself. The fix keeps the serialised notes until the next load, separately per access class.
 
@@ -56,17 +62,15 @@ One note query could take down the whole process. A Jsonnet program with tail re
 
 A heavy guest GraphQL request — five searches with the full HTML of every result — returned 1.5 MB and held 43 rps. The complexity limit did not see it: a search cost as much as any other field. The fix: a search costs 10, and a document inside a search result another 5.
 
-## Status on October 19
+## Status on October 20
 
-- MCP `tools/list` — in a pull request.
-- Sitemap, the feed and the GraphQL search cost — in a pull request.
-- The note query crash, the feed walk, the notes JSON for note queries, our own search highlighting, the sync regression — in progress.
+Merged: MCP `tools/list`, the sitemap, the feed and the GraphQL search cost, the feed walk at load, our own search highlighting as segments. In a pull request: the guard against note query crashes, the notes JSON cache for note queries. In progress: lazy rendering for custom domains.
 
-Once the fixes ship we will measure again and update the [[en/user/perfomance|performance page]].
+Once it all ships we will measure again.
 
 ## What follows from this
 
-**Numbers age faster than code.** The June write-up did not lie; it described a path that has barely been touched since. The bottlenecks grew next to it: in sync, in the template, in new endpoints. Re-measuring belongs on a schedule, not after something breaks.
+**A benchmark on synthetic data measures the benchmark.** The June sync number was true for 500-byte notes and said nothing about a vault of ten-kilobyte notes. We caught it only because we ran the same scenario on realistic data and on the old code — and saw the "regression" had always been there. Compare version with version under the same conditions, not a new number with an old publication.
 
 **"Once, at load" is this engine's main trick.** trip2g is fast because it renders on write, not on read. Nearly every finding of this run is a place where that was forgotten: feeds, sitemap, the MCP catalog, the notes JSON for queries. Each one looked harmless on its own.
 

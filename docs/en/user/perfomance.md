@@ -8,9 +8,9 @@ chart_ramp: "[[pagecache_ramp.datachart.csv]]"
 
 ## In short
 
-- **Sync** (the everyday write): one changed note pushes in tens of milliseconds even on a 10 000-note vault; the *first* full import of 10 000 notes takes ~14 s on one core.
+- **Sync** (the everyday write), on synthetic ~500-byte notes: one changed note pushes in tens of milliseconds even on a 10 000-note vault; the *first* full import of 10 000 notes takes ~14 s on one core. On realistic notes (~9 KB on average) the same vault takes seconds per sync — see [[#Realistic notes]].
 - **Serving** (the read hot path): a single small server (Hetzner cpx32, 4 vCPU) serves **~4 000 real documentation pages per second** at 100 % success with a p99 of ~30 ms.
-- **Memory**: ~80 MB per 100 notes, ~1 GB per 10 000.
+- **Memory**: ~80 MB per 100 synthetic notes, ~1 GB per 10 000; ~7.5 GB per 10 000 realistic ones.
 - **Anonymous page cache**: a €6.49/month shared box (Hetzner cx23, 2 vCPU) sustains **~8 500 req/s** of gzipped pages for 10 continuous minutes: 0 errors, 0 % CPU steal, ≈ €0.0003 per million requests.
 
 Getting an *honest* serving number turned out to be surprisingly hard — three measurement traps, each costing roughly 2×:
@@ -148,6 +148,21 @@ At small vault sizes the vector index is invisible (40 KB at 10 notes). It becom
 | 10 000 | 13.8 / 6.8 s | 382 / 224 ms | 2.3 / 0.7 s | 1186 / 902 MB |
 
 Measured 2026-06-11 on a 12-core ARM64 dev machine restricted with `taskset`, SQLite in WAL mode, single server process. Your absolute numbers will differ; the shape of the curves will not.
+
+## Realistic notes
+
+The numbers above use the benchmark's synthetic ~500-byte notes. Real notes are bigger: in October 2026 we re-ran the comparison with a generator of realistic notes — 0.5 to 42 KB, ~9 KB on average, with wikilinks, embeds, code blocks, tables, Cyrillic and 10 % paywalled notes — pushed in batches of up to 1 000 notes. Same machine, 4 cores, the June commit against October's main:
+
+| Vault | Version | Initial import | 1 note (median) | 100 notes | RSS |
+|------:|:-------|---------------:|----------------:|----------:|----:|
+| 1 000 | June | 5.0 s | 214 ms | 755 ms | 924 MB |
+| 1 000 | October | 5.1 s | 389 ms | 866 ms | 850 MB |
+| 10 000 | June | 109 s | 4.7 s | 5.6 s | 7.4 GB |
+| 10 000 | October | 125 s | 4.8 s | 7.3 s | 7.6 GB |
+
+The synthetic numbers still reproduce on October's code; the realistic ones were already this slow in June. The reason is the reload model: every sync renders every note again. The note cache saves parsing, not rendering, so the cost of one changed note grows with the total size of the vault. A 10 000-note realistic vault does not fit into one `pushNotes` call either — the import outlasts the 60-second request timeout and the request body limit — so the sync client sends it in batches.
+
+One regression on top of this did appear after June: a vault with at least one custom-domain `route:` re-rendered every note once per custom host on each reload. See [[en/thoughts/load-recheck-four-months-later]].
 
 ## Why page rendering is this fast
 
