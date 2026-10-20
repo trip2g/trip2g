@@ -4,9 +4,6 @@ type: thread
 group: "Хозяйство"
 kind: "найм"
 status: "завершена"
-first: 2026-09-18
-last: 2026-09-30
-calls: 1
 people: ["Глеб Савин"]
 aliases: ["тренер"]
 free: true

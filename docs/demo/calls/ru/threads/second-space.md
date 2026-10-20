@@ -4,9 +4,6 @@ type: thread
 group: "Хозяйство"
 kind: "помещение"
 status: "тупик"
-first: 2026-08-07
-last: 2026-08-20
-calls: 1
 people: ["Роза Ахметова"]
 aliases: ["бывшая пекарня"]
 hidden: true

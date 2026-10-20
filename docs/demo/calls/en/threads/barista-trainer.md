@@ -4,9 +4,6 @@ type: thread
 group: "Operations"
 kind: "hiring"
 status: "done"
-first: 2026-09-18
-last: 2026-09-30
-calls: 1
 people: ["Ben Carter"]
 aliases: ["trainer"]
 free: true

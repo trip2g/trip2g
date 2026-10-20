@@ -4,9 +4,7 @@ type: thread
 group: "Продажи"
 kind: "канал"
 status: "пауза"
-first: 2026-09-02
 last: 2026-09-02
-calls: 0
 people: ["Инна Дорохова"]
 aliases: ["маркетплейс"]
 free: true

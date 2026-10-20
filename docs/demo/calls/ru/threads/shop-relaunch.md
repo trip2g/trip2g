@@ -4,9 +4,6 @@ type: thread
 group: "Магазин и бренд"
 kind: "проект"
 status: "жива"
-first: 2026-08-26
-last: 2026-10-14
-calls: 3
 people: ["Егор Пахомов"]
 aliases: ["магазин", "подписка"]
 priority: 1

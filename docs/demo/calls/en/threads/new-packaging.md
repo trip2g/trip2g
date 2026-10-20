@@ -4,9 +4,6 @@ type: thread
 group: "Shop & brand"
 kind: "contractor"
 status: "paused"
-first: 2026-07-29
-last: 2026-08-26
-calls: 2
 people: ["Lena Ortiz"]
 aliases: ["bags", "labels"]
 free: true

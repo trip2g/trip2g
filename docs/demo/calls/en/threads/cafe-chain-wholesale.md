@@ -4,9 +4,6 @@ type: thread
 group: "Sales"
 kind: "client"
 status: "live"
-first: 2026-07-22
-last: 2026-10-09
-calls: 4
 people: ["Priya Nair"]
 aliases: ["café chain", "seasonal espresso"]
 priority: 2

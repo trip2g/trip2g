@@ -4,9 +4,7 @@ type: thread
 group: "Sales"
 kind: "channel"
 status: "paused"
-first: 2026-09-02
 last: 2026-09-02
-calls: 0
 people: ["Ines Duarte"]
 aliases: ["marketplace"]
 free: true

@@ -4,9 +4,6 @@ type: thread
 group: "Supply"
 kind: "supplier"
 status: "live"
-first: 2026-09-09
-last: 2026-10-07
-calls: 2
 people: ["Tom Becker"]
 aliases: ["winter lots"]
 free: true

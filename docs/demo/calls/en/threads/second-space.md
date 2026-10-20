@@ -4,9 +4,6 @@ type: thread
 group: "Operations"
 kind: "premises"
 status: "dead end"
-first: 2026-08-07
-last: 2026-08-20
-calls: 1
 people: ["Ruth Okafor"]
 aliases: ["old bakery"]
 hidden: true

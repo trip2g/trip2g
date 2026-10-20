@@ -4,9 +4,6 @@ type: thread
 group: "Хозяйство"
 kind: "финансы"
 status: "жива"
-first: 2026-07-31
-last: 2026-10-01
-calls: 1
 people: ["Борис Зотов"]
 aliases: ["движение денег"]
 free: true

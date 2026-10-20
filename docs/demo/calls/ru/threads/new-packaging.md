@@ -4,9 +4,6 @@ type: thread
 group: "Магазин и бренд"
 kind: "подрядчик"
 status: "пауза"
-first: 2026-07-29
-last: 2026-08-26
-calls: 2
 people: ["Вера Лисицына"]
 aliases: ["пачки", "этикетки"]
 free: true

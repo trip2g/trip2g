@@ -4,9 +4,6 @@ type: thread
 group: "Operations"
 kind: "finance"
 status: "live"
-first: 2026-07-31
-last: 2026-10-01
-calls: 1
 people: ["Marcus Hale"]
 aliases: ["cash flow"]
 free: true

@@ -4,9 +4,6 @@ type: thread
 group: "Продажи"
 kind: "клиент"
 status: "жива"
-first: 2026-07-22
-last: 2026-10-09
-calls: 4
 people: ["Ирина Ковалёва"]
 aliases: ["сеть кофеен", "сезонный эспрессо"]
 priority: 2

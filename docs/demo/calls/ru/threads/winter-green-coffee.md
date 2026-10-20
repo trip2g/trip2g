@@ -4,9 +4,6 @@ type: thread
 group: "Закупки"
 kind: "поставщик"
 status: "жива"
-first: 2026-09-09
-last: 2026-10-07
-calls: 2
 people: ["Тимур Галиев"]
 aliases: ["зимние лоты"]
 free: true

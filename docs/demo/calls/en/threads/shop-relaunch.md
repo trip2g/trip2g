@@ -4,9 +4,6 @@ type: thread
 group: "Shop & brand"
 kind: "project"
 status: "live"
-first: 2026-08-26
-last: 2026-10-14
-calls: 3
 people: ["Jonas Weber"]
 aliases: ["shop", "subscriptions"]
 priority: 1
