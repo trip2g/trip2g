@@ -1467,6 +1467,7 @@ HTTP 200 application/json
       }
     ],
     "structuredContent": {
+      "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e",
       "note_path": "doc.md",
       "assets": []
     }
@@ -1486,6 +1487,7 @@ HTTP 200 application/json
       }
     ],
     "structuredContent": {
+      "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e",
       "note_path": "doc.md",
       "assets": []
     }
@@ -1505,6 +1507,7 @@ HTTP 200 application/json
       }
     ],
     "structuredContent": {
+      "text": "\u003cdiv data-header=\"Alpha\" data-level=\"2\"\u003e\u003ch2 id=\"alpha\"\u003eAlpha\u003c/h2\u003e\n\u003cp\u003ealpha body\u003c/p\u003e\n\u003c/div\u003e\u003cdiv data-header=\"Beta\" data-level=\"2\"\u003e\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n\u003c/div\u003e",
       "note_path": "doc.md",
       "assets": []
     }
@@ -1535,6 +1538,7 @@ HTTP 200 application/json
       }
     ],
     "structuredContent": {
+      "text": "\u003ch2 id=\"beta\"\u003eBeta\u003c/h2\u003e\n\u003cp\u003ebeta body\u003c/p\u003e\n",
       "note_path": "doc.md",
       "assets": []
     }
@@ -1714,6 +1718,7 @@ HTTP 200 application/json
       }
     ],
     "structuredContent": {
+      "text": "\u003ch2 id=\"one\"\u003e1\u003c/h2\u003e\u003cp\u003eДуша моя, ужели ты никогда не будешь доброй и простой?\u003c/p\u003e",
       "note_path": "aphorisms.md",
       "assets": [
         {
