@@ -54,3 +54,4 @@ title: "Navigation"
 - [[en/thoughts/alerts-in-a-knowledge-base|Alerts belong in a knowledge base]]
 - [[en/thoughts/template-engine-hidden-work|How much work a template engine hides]]
 - [[en/thoughts/positioning-wheel|How the positioning wheel is built]]
+- [[en/thoughts/typed-knowledge-base|A typed knowledge base, the ontoship way]]

@@ -554,3 +554,79 @@ func TestValidateDocsSnippets(t *testing.T) {
 		}
 	}
 }
+
+// TestValidateOntologyVault runs the typed knowledge base essay's demo: a
+// folder patch types the notes, the ontology validator checks them, and the
+// essay pages keep both code blocks identical to the demo.
+func TestValidateOntologyVault(t *testing.T) {
+	root := "testdata/ontology"
+
+	var srcs []mdloader.SourceFile
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		content, readErr := os.ReadFile(p)
+		if readErr != nil {
+			return readErr
+		}
+		rel, _ := filepath.Rel(root, p)
+		srcs = append(srcs, mdloader.SourceFile{Path: filepath.ToSlash(rel), Content: content})
+		return nil
+	})
+	require.NoError(t, err)
+
+	log := logger.TestLogger{}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &log, Validate: true})
+	require.NoError(t, err)
+
+	expected := map[string]struct {
+		nodeType any
+		warnings []string
+	}{
+		"docs/README.md":                     {"index", nil},
+		"docs/decisions/drop-firecracker.md": {"decision", nil},
+		"docs/decisions/old-sandbox.md":      {"decision", nil},
+		"docs/plans/billing-v2.md":           {"plan", nil},
+		"docs/notes.md": {nil, []string{
+			"CRITICAL validate validators/ontology.md: missing node_type",
+		}},
+		"docs/ops/restart-db.md": {"runbook", []string{
+			"CRITICAL validate validators/ontology.md: a runbook needs description",
+			`WARNING validate validators/ontology.md: status "live" is not one of: active, draft, deprecated, archived`,
+			`WARNING validate validators/ontology.md: unknown link type "see_also"`,
+			`CRITICAL validate validators/ontology.md: verified.by "claude" must be human:<id>, process:<id> or tool/version`,
+		}},
+	}
+	for path, want := range expected {
+		note := nvs.PathMap[path]
+		require.NotNil(t, note, path)
+		require.Equal(t, want.nodeType, note.RawMeta["node_type"], path)
+		var got []string
+		for _, w := range note.Warnings {
+			level := "WARNING"
+			if w.Level == model.NoteWarningCritical {
+				level = "CRITICAL"
+			}
+			got = append(got, level+" "+w.Message)
+		}
+		require.Equal(t, want.warnings, got, path)
+	}
+
+	blocks := map[string]string{}
+	for _, name := range []string{"validators/ontology", "patches/types_by_folder"} {
+		src, readErr := os.ReadFile(root + "/" + name + ".md")
+		require.NoError(t, readErr)
+		_, block, ok := strings.Cut(string(src), "```jsonnet\n")
+		require.True(t, ok, name)
+		block, _, _ = strings.Cut(block, "\n```")
+		blocks[name] = block
+	}
+	for _, page := range []string{"en/thoughts/typed-knowledge-base", "ru/thoughts/typed-knowledge-base"} {
+		doc, readErr := os.ReadFile("../../docs/" + page + ".md")
+		require.NoError(t, readErr)
+		for name, block := range blocks {
+			require.Contains(t, string(doc), "```jsonnet\n"+block+"\n```", "docs/%s.md lost %s", page, name)
+		}
+	}
+}

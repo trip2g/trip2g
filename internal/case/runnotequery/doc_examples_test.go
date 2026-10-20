@@ -22,11 +22,19 @@ import (
 
 const demoVault = "testdata/vault"
 
+// ontologyVault is the demo vault of the typed knowledge base essay.
+const ontologyVault = "../../mdloader/testdata/ontology"
+
 // loadDemoVault loads the demo vault with ids, as a synced vault has them.
 func loadDemoVault(t *testing.T) *appmodel.NoteViews {
 	t.Helper()
+	return loadVault(t, demoVault)
+}
+
+func loadVault(t *testing.T, root string) *appmodel.NoteViews {
+	t.Helper()
 	var srcs []mdloader.SourceFile
-	err := filepath.WalkDir(demoVault, func(p string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return err
 		}
@@ -34,7 +42,7 @@ func loadDemoVault(t *testing.T) *appmodel.NoteViews {
 		if readErr != nil {
 			return readErr
 		}
-		rel, _ := filepath.Rel(demoVault, p)
+		rel, _ := filepath.Rel(root, p)
 		id := int64(len(srcs) + 1)
 		srcs = append(srcs, mdloader.SourceFile{Path: filepath.ToSlash(rel), PathID: id, VersionID: 100 + id, Content: content})
 		return nil
@@ -156,5 +164,47 @@ func TestDocSnippets(t *testing.T) {
 
 			require.Contains(t, string(doc), "```jsonnet\n"+block+"\n```", "docs/%s.md lost the %s example", page, name)
 		}
+	}
+}
+
+// TestOntologyHealthQuery runs the health report from the typed knowledge base
+// essay over its demo vault, and keeps the essay's copy of it identical.
+func TestOntologyHealthQuery(t *testing.T) {
+	nvs := loadVault(t, ontologyVault)
+	env := &runnotequery.EnvMock{
+		LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
+		CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
+		ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
+		CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
+		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
+			return &usertoken.Data{ID: 1, Role: "admin"}, nil
+		},
+	}
+	res, err := runnotequery.Resolve(context.Background(), env, model.NoteQueryInput{Query: "[[kb_health]]"})
+	require.NoError(t, err)
+	payload, ok := res.(*model.NoteQueryPayload)
+	require.True(t, ok, "%#v", res)
+	raw, ok := payload.Result.(json.RawMessage)
+	require.True(t, ok, "%T", payload.Result)
+
+	require.JSONEq(t, `{
+		"docs": 6,
+		"typed": 5,
+		"no_description": ["docs/ops/restart-db.md"],
+		"no_readme": ["docs/decisions", "docs/ops", "docs/plans"],
+		"superseded_but_active": [
+			{"note": "docs/decisions/old-sandbox.md", "replaced_by": "docs/decisions/drop-firecracker.md"}
+		]
+	}`, string(raw))
+
+	src, err := os.ReadFile(ontologyVault + "/queries/kb_health.md")
+	require.NoError(t, err)
+	_, block, ok := strings.Cut(string(src), "```jsonnet\n")
+	require.True(t, ok)
+	block, _, _ = strings.Cut(block, "\n```")
+	for _, page := range []string{"en/thoughts/typed-knowledge-base", "ru/thoughts/typed-knowledge-base"} {
+		doc, readErr := os.ReadFile("../../../docs/" + page + ".md")
+		require.NoError(t, readErr)
+		require.Contains(t, string(doc), "```jsonnet\n"+block+"\n```", "docs/%s.md lost the kb_health query", page)
 	}
 }
