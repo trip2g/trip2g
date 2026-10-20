@@ -25,6 +25,7 @@ type fedGQLEnv struct {
 }
 
 func (e *fedGQLEnv) FederatedGraphQLEnabled() bool { return e.federatedEnabled }
+func (e *fedGQLEnv) MCPServerName() string         { panic("unexpected") }
 func (e *fedGQLEnv) GraphQLRequestScoped(ctx context.Context, query string, variables map[string]any, allowedSubgraphs []string) ([]byte, error) {
 	if e.scopedFunc == nil {
 		panic("unexpected GraphQLRequestScoped call")

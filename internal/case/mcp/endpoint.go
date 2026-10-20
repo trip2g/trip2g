@@ -133,15 +133,16 @@ type rpcAnswer struct {
 // httpReq carries the message to the transport. Endpoint.Handle passes the
 // client's real request; Resolve synthesises a spec-compliant one.
 func serveJSONRPC(ctx context.Context, env Env, rpcReq Request, httpReq *http.Request) rpcAnswer {
-	// Only initialize surfaces the instructions, and resolving them scans the
-	// whole corpus — so every other method skips that work, as it always has.
-	instructions := ""
-	if rpcReq.Method == MCPMethodInitialize {
-		resolved, instrErr := initializeInstructions(ctx, env, rpcReq.MethodOverride)
-		if instrErr != nil {
-			return jsonAnswer(Response{JSONRPC: "2.0", ID: rpcReq.ID, Error: instrErr})
+	// Only initialize and its 2026-07-28 replacement, server/discover, surface
+	// the name and instructions, and resolving them scans the whole corpus — so
+	// every other method skips that work.
+	initResult := initialization{}
+	if rpcReq.Method == MCPMethodInitialize || rpcReq.Method == mcpMethodDiscover {
+		resolved, initErr := resolveInitialization(ctx, env, rpcReq.MethodOverride)
+		if initErr != nil {
+			return jsonAnswer(Response{JSONRPC: "2.0", ID: rpcReq.ID, Error: initErr})
 		}
-		instructions = resolved
+		initResult = resolved
 	}
 
 	if errResp := checkToolCallParams(rpcReq); errResp != nil {
@@ -149,7 +150,7 @@ func serveJSONRPC(ctx context.Context, env Env, rpcReq Request, httpReq *http.Re
 	}
 	setNormalizedBody(httpReq, rpcReq)
 
-	rec := serveMessage(ctx, env, instructions, toolScope(rpcReq), httpReq)
+	rec := serveMessage(ctx, env, initResult, toolScope(rpcReq), httpReq)
 
 	if restored, ok := restoreUnhandledMethod(rec.body, rpcReq); ok {
 		return jsonAnswer(restored)
@@ -175,9 +176,9 @@ func jsonAnswer(resp Response) rpcAnswer {
 
 // serveMessage runs one HTTP request through the official Streamable HTTP
 // transport against a server built for this caller.
-func serveMessage(ctx context.Context, env Env, instructions, scope string, httpReq *http.Request) *responseRecorder {
+func serveMessage(ctx context.Context, env Env, initResult initialization, scope string, httpReq *http.Request) *responseRecorder {
 	handler := mcpsdk.NewStreamableHTTPHandler(
-		func(*http.Request) *mcpsdk.Server { return buildServer(ctx, env, instructions, scope) },
+		func(*http.Request) *mcpsdk.Server { return buildServer(ctx, env, initResult, scope) },
 		&mcpsdk.StreamableHTTPOptions{Stateless: true, JSONResponse: true},
 	)
 

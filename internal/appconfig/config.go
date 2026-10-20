@@ -108,6 +108,7 @@ type Config struct {
 	MCPFederationAllowPrivate  bool
 	WebhookAllowPrivate        bool
 	MCPFederatedGraphQLEnabled bool
+	MCPServerName              string
 	FederatedFanoutConcurrency int
 	FederatedFanoutLimit       int
 	FederatedFanoutTimeout     time.Duration
@@ -604,6 +605,8 @@ func (c *Config) defineServerFlags() {
 	)
 	flag.BoolVar(&c.MCPFederatedGraphQLEnabled, "mcp-federated-graphql", false,
 		"Enable the federated_graphql_request MCP tool (query-only, subgraph-scoped). Off by default.")
+	flag.StringVar(&c.MCPServerName, "mcp-server-name", "trip2g-mcp",
+		"Name the MCP endpoint reports in initialize; mcp_name in the instructions note overrides it")
 	flag.IntVar(&c.FederatedFanoutConcurrency, "federated-fanout-concurrency", 5,
 		"Max peers queried in parallel by a federated_search fan-out (0 = unlimited)")
 	flag.IntVar(&c.FederatedFanoutLimit, "federated-fanout-limit", 7,

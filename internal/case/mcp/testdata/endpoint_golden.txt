@@ -14,6 +14,7 @@ HTTP 200 application/json
     "protocolVersion": "2024-11-05",
     "serverInfo": {
       "name": "trip2g-mcp",
+      "title": "trip2g-mcp",
       "version": "1.0.0"
     }
   }
@@ -35,6 +36,7 @@ HTTP 200 application/json
     "protocolVersion": "2025-11-25",
     "serverInfo": {
       "name": "trip2g-mcp",
+      "title": "trip2g-mcp",
       "version": "1.0.0"
     }
   }
@@ -56,6 +58,7 @@ HTTP 200 application/json
     "protocolVersion": "2025-11-25",
     "serverInfo": {
       "name": "trip2g-mcp",
+      "title": "trip2g-mcp",
       "version": "1.0.0"
     }
   }
@@ -81,6 +84,72 @@ HTTP 200 application/json
     "message": "Method not found: private-tool"
   },
   "id": 1
+}
+
+### server_discover
+HTTP 200 application/json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "resultType": "complete",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trip2g-mcp",
+        "title": "trip2g-mcp",
+        "version": "1.0.0"
+      }
+    },
+    "ttlMs": 0,
+    "cacheScope": "public",
+    "supportedVersions": [
+      "2026-07-28",
+      "2025-11-25",
+      "2025-06-18",
+      "2025-03-26",
+      "2024-11-05"
+    ],
+    "capabilities": {
+      "logging": {},
+      "tools": {
+        "listChanged": true
+      }
+    },
+    "instructions": "Golden server instructions."
+  }
+}
+
+### server_discover_method_override
+HTTP 200 application/json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "resultType": "complete",
+    "_meta": {
+      "io.modelcontextprotocol/serverInfo": {
+        "name": "trip2g-mcp",
+        "title": "trip2g-mcp",
+        "version": "1.0.0"
+      }
+    },
+    "ttlMs": 0,
+    "cacheScope": "public",
+    "supportedVersions": [
+      "2026-07-28",
+      "2025-11-25",
+      "2025-06-18",
+      "2025-03-26",
+      "2024-11-05"
+    ],
+    "capabilities": {
+      "logging": {},
+      "tools": {
+        "listChanged": true
+      }
+    },
+    "instructions": "Guide instructions."
+  }
 }
 
 ### notifications_initialized

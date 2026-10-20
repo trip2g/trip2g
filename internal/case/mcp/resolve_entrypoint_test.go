@@ -32,7 +32,8 @@ func TestResolveEntryPoint(t *testing.T) {
 		views.PathMap[note.Path] = note
 
 		return &EnvMock{
-			FeaturesFunc: func() features.Features { return features.Features{} },
+			MCPServerNameFunc: func() string { return "trip2g-mcp" },
+			FeaturesFunc:      func() features.Features { return features.Features{} },
 
 			FederatedFanoutTimeoutFunc:  func() time.Duration { return 2 * time.Second },
 			MCPMetricsFunc:              func() *metrics.MCPMetrics { return nil },

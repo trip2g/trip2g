@@ -107,6 +107,9 @@ var _ mcp.Env = &EnvMock{}
 //			MCPMetricsFunc: func() *metrics.MCPMetrics {
 //				panic("mock out the MCPMetrics method")
 //			},
+//			MCPServerNameFunc: func() string {
+//				panic("mock out the MCPServerName method")
+//			},
 //			NoteURLFunc: func(note *model.NoteView) string {
 //				panic("mock out the NoteURL method")
 //			},
@@ -221,6 +224,9 @@ type EnvMock struct {
 
 	// MCPMetricsFunc mocks the MCPMetrics method.
 	MCPMetricsFunc func() *metrics.MCPMetrics
+
+	// MCPServerNameFunc mocks the MCPServerName method.
+	MCPServerNameFunc func() string
 
 	// NoteURLFunc mocks the NoteURL method.
 	NoteURLFunc func(note *model.NoteView) string
@@ -388,6 +394,9 @@ type EnvMock struct {
 		// MCPMetrics holds details about calls to the MCPMetrics method.
 		MCPMetrics []struct {
 		}
+		// MCPServerName holds details about calls to the MCPServerName method.
+		MCPServerName []struct {
+		}
 		// NoteURL holds details about calls to the NoteURL method.
 		NoteURL []struct {
 			// Note is the note argument value.
@@ -473,6 +482,7 @@ type EnvMock struct {
 	lockLiveNoteViews                      sync.RWMutex
 	lockLogger                             sync.RWMutex
 	lockMCPMetrics                         sync.RWMutex
+	lockMCPServerName                      sync.RWMutex
 	lockNoteURL                            sync.RWMutex
 	lockOpenAI                             sync.RWMutex
 	lockPublicURL                          sync.RWMutex
@@ -1336,6 +1346,33 @@ func (mock *EnvMock) MCPMetricsCalls() []struct {
 	mock.lockMCPMetrics.RLock()
 	calls = mock.calls.MCPMetrics
 	mock.lockMCPMetrics.RUnlock()
+	return calls
+}
+
+// MCPServerName calls MCPServerNameFunc.
+func (mock *EnvMock) MCPServerName() string {
+	if mock.MCPServerNameFunc == nil {
+		panic("EnvMock.MCPServerNameFunc: method is nil but Env.MCPServerName was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockMCPServerName.Lock()
+	mock.calls.MCPServerName = append(mock.calls.MCPServerName, callInfo)
+	mock.lockMCPServerName.Unlock()
+	return mock.MCPServerNameFunc()
+}
+
+// MCPServerNameCalls gets all the calls that were made to MCPServerName.
+// Check the length with:
+//
+//	len(mockedEnv.MCPServerNameCalls())
+func (mock *EnvMock) MCPServerNameCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockMCPServerName.RLock()
+	calls = mock.calls.MCPServerName
+	mock.lockMCPServerName.RUnlock()
 	return calls
 }
 

@@ -60,6 +60,7 @@ var mcpInitBody = func() []byte { //nolint:gochecknoglobals // test package glob
 func buildDispatchEnv(t *testing.T, verifyInboundWillFail bool) *EnvMock {
 	t.Helper()
 	env := &EnvMock{
+		MCPServerNameFunc: func() string { return "trip2g-mcp" },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return &appmodel.NoteViews{List: []*appmodel.NoteView{}, PathMap: map[string]*appmodel.NoteView{}}
 		},
