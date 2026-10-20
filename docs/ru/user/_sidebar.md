@@ -58,6 +58,7 @@ title: "Навигация"
 - [[ru/user/templates-advanced|API и запросы]]
 - [[ru/user/One HTML Page|Страница на чистом HTML]]
 - [[ru/user/spa|Приложение поверх trip2g]]
+- [[ru/user/calls-dashboard|Дашборд созвонов]]
 
 ### Автоматизация
 

@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script>try{var v=localStorage.getItem('$mol_lights'),
+ dark=v===null?!matchMedia('(prefers-color-scheme: light)').matches:v!=='true',
+ r=document.documentElement;
+ r.classList.toggle('dark',dark);r.classList.toggle('light',!dark);
+ r.setAttribute('data-theme',dark?'dark':'light')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+{{ defaultTemplate.Styles() }}
+{{ defaultTemplate.UserSpaceScripts() }}
+<style>
+.cb-page {
+  --cb-bg: #f5f3ef;
+  --cb-card: #ffffff;
+  --cb-fg: #1f1d1a;
+  --cb-muted: #8b857c;
+  --cb-line: #ebe7e0;
+  --cb-band: #f8f6f2;
+  --cb-accent: #c4552f;
+  --cb-live: #3a4785;
+  --cb-ok: #2f7d4f;
+  --cb-bad: #c0392b;
+  --cb-sel: #fbf3ee;
+}
+:root[data-theme=dark] .cb-page {
+  --cb-bg: #171614;
+  --cb-card: #201f1c;
+  --cb-fg: #ece8e1;
+  --cb-muted: #8f897f;
+  --cb-line: #2f2d29;
+  --cb-band: #1c1b18;
+  --cb-accent: #e0754f;
+  --cb-live: #8f9be0;
+  --cb-ok: #5fbf85;
+  --cb-bad: #e5645f;
+  --cb-sel: #2a221e;
+}
+.cb-page, .cb-page * { box-sizing: border-box; }
+.cb-page { background: var(--cb-bg); color: var(--cb-fg); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 20px 24px 40px; }
+.cb-page a { color: var(--cb-live); text-decoration: none; }
+.cb-page a:hover { text-decoration: underline; }
+.cb-page .paywall:before { content: none; }
+.cb-page h1 { font-size: 18px; margin: 0; }
+.cb-page h2 { font-size: 17px; margin: 0 0 4px; }
+.cb-page h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--cb-muted); margin: 0 0 10px; }
+.cb-page .cb-sub { color: var(--cb-muted); font-size: 12px; margin-top: 2px; }
+.cb-page .cb-sub p { margin: 0; }
+.cb-page button, .cb-page input, .cb-page select, .cb-page textarea, .cb-page label { margin-bottom: 0; }
+.cb-page .cb-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; margin-top: 16px; align-items: start; }
+.cb-page .cb-list { background: var(--cb-card); border: 1px solid var(--cb-line); border-radius: 12px; overflow: hidden; position: sticky; top: 16px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+.cb-page .cb-list input[type=search] { margin: 10px; width: calc(100% - 20px); padding: 7px 10px; border: 1px solid var(--cb-line); border-radius: 8px; background: var(--cb-card); color: var(--cb-fg); font: inherit; }
+.cb-page .cb-items { overflow: auto; }
+.cb-page .cb-list .cb-person { margin: 0 10px 10px; }
+.cb-page .cb-combo { position: relative; }
+.cb-page .cb-combo input { width: 100%; padding: 6px 8px; border: 1px solid var(--cb-line); border-radius: 8px; background: var(--cb-card); color: var(--cb-fg); font: inherit; height: auto; margin: 0; }
+.cb-page .cb-combo-list { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 2px); max-height: 260px; overflow: auto; background: var(--cb-card); border: 1px solid var(--cb-line); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+.cb-page .cb-combo-opt { padding: 6px 10px; cursor: pointer; }
+.cb-page .cb-combo-opt:hover, .cb-page .cb-combo-opt.cb-hi { background: var(--cb-sel); }
+.cb-page .cb-combo-opt mark { background: none; color: var(--cb-accent); font-weight: 600; }
+.cb-page .cb-combo-empty { padding: 6px 10px; color: var(--cb-muted); }
+.cb-page .cb-counters { display: flex; gap: 8px; padding: 10px 10px 0; flex-wrap: wrap; }
+.cb-page .cb-counter { flex: 1; min-width: 110px; width: auto; padding: 8px 10px; border: 1px solid var(--cb-line); border-radius: 10px; background: var(--cb-band); text-align: left; cursor: pointer; font: inherit; color: var(--cb-fg); }
+.cb-page .cb-counter.cb-on { border-color: var(--cb-accent); background: var(--cb-sel); }
+.cb-page .cb-counter b { display: block; font-size: 20px; line-height: 1.1; }
+.cb-page .cb-counter span { font-size: 11px; color: var(--cb-muted); }
+.cb-page .cb-counter.cb-hot b { color: var(--cb-accent); }
+.cb-page .cb-item { padding: 9px 14px; border-top: 1px solid var(--cb-line); cursor: pointer; }
+.cb-page .cb-item:hover { background: var(--cb-band); }
+.cb-page .cb-item.cb-active { background: var(--cb-sel); }
+.cb-page .cb-item:focus-visible, .cb-page .cb-tc:focus-visible { outline: 2px solid var(--cb-accent); outline-offset: -2px; }
+.cb-page .cb-item .cb-t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cb-page .cb-item .cb-m { color: var(--cb-muted); font-size: 12px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.cb-page .cb-tag { display: inline-block; padding: 0 6px; border: 1px solid var(--cb-line); border-radius: 6px; font-size: 11px; color: var(--cb-muted); }
+.cb-page .cb-tag.cb-done { color: var(--cb-ok); border-color: var(--cb-ok); }
+.cb-page .cb-tag.cb-wait { color: var(--cb-accent); border-color: var(--cb-accent); }
+.cb-page .cb-main { display: grid; gap: 16px; min-width: 0; }
+.cb-page .cb-card { background: var(--cb-card); border: 1px solid var(--cb-line); border-radius: 12px; padding: 16px; min-width: 0; }
+.cb-page .cb-head { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.cb-page .cb-headside { min-width: 240px; }
+.cb-page .cb-meta { color: var(--cb-muted); font-size: 12px; }
+.cb-page .cb-summary { margin: 10px 0 0; }
+.cb-page .cb-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cb-page .cb-field { display: grid; gap: 4px; margin-bottom: 10px; }
+.cb-page .cb-field.cb-gap { margin-top: 12px; }
+.cb-page .cb-field > span { font-size: 12px; color: var(--cb-muted); }
+.cb-page select, .cb-page textarea, .cb-page input[type=text] { width: 100%; padding: 6px 8px; border: 1px solid var(--cb-line); border-radius: 8px; background: var(--cb-card); color: var(--cb-fg); font: inherit; height: auto; }
+.cb-page textarea { min-height: 70px; resize: vertical; }
+.cb-page .cb-speaker { display: grid; grid-template-columns: 160px 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--cb-line); align-items: start; }
+.cb-page .cb-speaker:first-of-type { border-top: 0; }
+.cb-page .cb-speaker.cb-unknown { background: var(--cb-sel); border-radius: 8px; padding: 8px; }
+.cb-page .cb-label { font-weight: 600; }
+.cb-page .cb-quote { color: var(--cb-muted); font-size: 12px; margin-top: 4px; }
+.cb-page .cb-topic { display: grid; grid-template-columns: 56px 1fr 220px; gap: 10px; padding: 8px 0; border-top: 1px solid var(--cb-line); align-items: start; }
+.cb-page .cb-topic:first-of-type { border-top: 0; }
+.cb-page .cb-topic.cb-wrong .cb-ttext { text-decoration: line-through; color: var(--cb-muted); }
+.cb-page .cb-tc { font-variant-numeric: tabular-nums; color: var(--cb-live); cursor: pointer; font-size: 12px; padding-top: 2px; }
+.cb-page .cb-tctl { display: grid; gap: 4px; }
+.cb-page .cb-check { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--cb-muted); cursor: pointer; }
+.cb-page .cb-check input { width: 14px; height: 14px; accent-color: var(--cb-accent); }
+.cb-page .cb-score { display: grid; grid-template-columns: 170px 1fr 28px; gap: 10px; align-items: center; margin-bottom: 8px; }
+.cb-page .cb-score input { width: 100%; accent-color: var(--cb-accent); }
+.cb-page .cb-score b { text-align: right; font-variant-numeric: tabular-nums; }
+.cb-page .cb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.cb-page .cb-chip { padding: 2px 8px; border: 1px solid var(--cb-line); border-radius: 999px; font-size: 12px; background: var(--cb-band); display: inline-flex; gap: 6px; align-items: center; }
+.cb-page .cb-chip button { border: 0; background: none; color: var(--cb-muted); cursor: pointer; padding: 0; width: auto; font: inherit; line-height: 1; }
+.cb-page .cb-h3gap { margin-top: 18px; }
+.cb-page .cb-transcript { max-height: 420px; overflow: auto; font-size: 13px; }
+.cb-page .cb-utt { display: grid; grid-template-columns: 56px 130px 1fr; gap: 8px; padding: 3px 0; }
+.cb-page .cb-utt.cb-hl { background: var(--cb-sel); }
+.cb-page .cb-utt .cb-who { color: var(--cb-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cb-page .cb-bar { position: sticky; bottom: 0; display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 12px 16px; background: var(--cb-card); border: 1px solid var(--cb-line); border-radius: 12px; }
+.cb-page .cb-save { padding: 8px 16px; border: 0; border-radius: 8px; background: var(--cb-accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; width: auto; }
+.cb-page .cb-save:disabled { opacity: .6; cursor: progress; }
+.cb-page .cb-save.cb-save-alt { background: var(--cb-card); color: var(--cb-fg); border: 1px solid var(--cb-line); }
+.cb-page .cb-status { font-size: 12px; color: var(--cb-muted); }
+.cb-page .cb-status.cb-err { color: var(--cb-bad); }
+.cb-page .cb-empty { color: var(--cb-muted); padding: 30px; text-align: center; }
+.cb-page .cb-h3row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.cb-page .cb-verify { font-size: 12px; }
+@media (max-width: 900px) {
+  .cb-page { padding: 16px; }
+  .cb-page .cb-layout { grid-template-columns: 1fr; }
+  .cb-page .cb-list { position: static; max-height: 300px; }
+  .cb-page .cb-grid2 { grid-template-columns: 1fr; }
+  .cb-page .cb-headside { min-width: 0; width: 100%; }
+  .cb-page .cb-topic { grid-template-columns: 48px 1fr; }
+  .cb-page .cb-topic .cb-tctl { grid-column: 2; }
+  .cb-page .cb-speaker { grid-template-columns: 1fr; }
+  .cb-page .cb-score { grid-template-columns: 1fr 90px 28px; }
+  .cb-page .cb-utt { grid-template-columns: 48px 1fr; }
+  .cb-page .cb-utt .cb-who { display: none; }
+}
+</style>
+</head>
+<body>
+{{ defaultTemplate.Header() }}
+<script src="{{ asset("frontmatter.js") }}"></script>
+<script type="application/json" id="cb-config">{{ json(note.ContentString()) }}</script>
+<script type="application/json" id="cb-editable">{{ json(currentUser.IsAdmin()) }}</script>
+{{ range i, n := nvs.ByGlob(note.M().GetString("reviews", "calls/*")).All() }}
+<script type="application/json" class="cb-data" data-kind="review">{{ json(map("path", n.Path(), "permalink", n.Permalink(), "md", n.ContentString())) }}</script>
+{{ end }}
+{{ range i, n := nvs.ByGlob(note.M().GetString("topics", "topics/*")).All() }}
+<script type="application/json" class="cb-data" data-kind="topics">{{ json(map("path", n.Path(), "title", n.M().GetString("title", ""), "md", n.ContentString())) }}</script>
+{{ end }}
+{{ range i, n := nvs.ByGlob(note.M().GetString("people", "people/**")).All() }}
+<script type="application/json" class="cb-data" data-kind="people">{{ json(map("path", n.Path(), "title", n.Title(), "confirmed", n.M().GetBool("confirmed", true))) }}</script>
+{{ end }}
+{{ range i, n := nvs.ByGlob(note.M().GetString("threads", "threads/*")).All() }}
+<script type="application/json" class="cb-data" data-kind="threads">{{ json(map("path", n.Path(), "type", n.M().GetString("type", ""), "title", n.Title(), "permalink", n.Permalink(), "md", n.ContentString())) }}</script>
+{{ end }}
+{{ range i, n := nvs.ByGlob(note.M().GetString("categories", "categories/*")).All() }}
+<script type="application/json" class="cb-data" data-kind="categories">{{ json(map("path", n.Path(), "type", n.M().GetString("type", ""), "title", n.Title(), "kind", n.M().GetString("kind", ""), "order", n.M().GetInt("order", 99))) }}</script>
+{{ end }}
+{{ range i, n := nvs.ByGlob(note.M().GetString("transcripts", "transcripts/*")).All() }}
+<script type="application/json" class="cb-data" data-kind="transcripts">{{ json(map("path", n.Path(), "title", n.M().GetString("title", ""), "duration", n.M().GetInt("duration_min", 0), "md", note.M().GetBool("transcripts_inline", false) ? n.ContentString() : "")) }}</script>
+{{ end }}
+{{ range i, n := nvs.ByGlob(note.M().GetString("edits", "call_edits") + "/*").All() }}
+<script type="application/json" class="cb-data" data-kind="edits">{{ json(map("path", n.Path(), "md", n.ContentString())) }}</script>
+{{ end }}
+<div class="cb-page">
+  <h1>{{ note.Title() }}</h1>
+  <div class="cb-sub">{{ note.HTMLString() }}</div>
+  <div class="cb-layout">
+    <aside class="cb-list">
+      <div class="cb-counters" id="cbCounters"></div>
+      <input type="search" id="cbq">
+      <div id="cbPersonBox" class="cb-person"></div>
+      <div class="cb-items" id="cbItems"></div>
+    </aside>
+    <main class="cb-main" id="cbMain"></main>
+  </div>
+</div>
+{{ defaultTemplate.Footer() }}
+<script>
+(function () {
+  const UI_DEFAULTS = {
+    search: "Find a call",
+    pick_call: "Pick a call on the left.",
+    to_check: "waiting for your check",
+    not_reviewed: "not reviewed yet",
+    all_people: "All people",
+    person_filter: "Filter by person",
+    nothing: "Nothing found",
+    tag_pending: "waiting for review",
+    tag_check: "check",
+    tag_edited: "edited",
+    unconfirmed: "unconfirmed",
+    new_person: "+ new person…",
+    no_thread: "— no thread —",
+    verified: "verified",
+    this_is_you: "this is you",
+    type_name: "Start typing a name…",
+    speaker_unknown: "not identified",
+    speaker_now: "now: {name}",
+    quote: "“{text}”",
+    no_speakers: "Speakers are not marked",
+    wrong: "wrong",
+    to_thread: "to a thread…",
+    no_topics: "There is no topic map for this call yet.",
+    remove: "remove",
+    review_note: "review note",
+    checked_by_you: "checked by you",
+    proposed: "proposed — check it",
+    category: "Category",
+    no_category: "— no category —",
+    agenda: "Agenda:",
+    who_spoke: "Who spoke",
+    threads: "Threads",
+    no_threads: "Not linked to any thread",
+    add_thread: "+ add to a thread: start typing…",
+    scores: "Scores",
+    topics_found: "Topics",
+    topics_missed: "Topics that were missed, one per line",
+    outcome: "What was decided and what stayed open",
+    transcript: "Transcript",
+    loading: "Loading…",
+    has_edits: "Edits saved earlier",
+    no_edits: "No edits yet",
+    save: "Save",
+    all_verified: "All verified ✓",
+    transcript_missing: "The transcript is not available",
+    minutes: "{n} min",
+    pending_text: "There is no review note for this call yet. Once one is written, its topics, likely speakers and the fields to check appear here.",
+    edits_title: "Edits for call {id}",
+    edits_intro: "The owner's edits to call {link}.",
+    edits_category: "Category: {link}",
+    edits_missed: "Topics that were missed",
+    edits_outcome: "Decided and open",
+    first_seen: "First seen on call {link} ({date}).",
+    ask_name: "What is the name of {label}? A person note will be created.",
+    person_failed: "The person was not created: {error}",
+    saving: "Saving…",
+    saved: "Saved {time}",
+    save_failed: "Not saved: {error}",
+    save_conflict: "the edits note was changed elsewhere; reload the page",
+    save_failed_alert: "The edits for call {id} were not saved: {error}",
+    all_done: "All calls are verified",
+    local_only: "Kept in this tab only: sign in as the site owner to save.",
+  };
+  const DEFAULT_SCORES = [
+    { key: "usefulness", label: "Usefulness" },
+    { key: "clarity", label: "Clarity of agreements" },
+    { key: "sales", label: "Sales (client calls)", only_kind: "client" },
+  ];
+  const VERIFY_KEYS = ["speakers", "category", "threads", "topics"];
+  const READ_NOTE = "query ReadNote($paths: [String!]) { notePaths(filter: { paths: $paths }) { value content latestContentHash } }";
+  const SAVE_NOTES = "mutation SaveNotes($input: UpdateNotesInput!) { updateNotes(input: $input) { __typename ... on UpdateNotesSuccessPayload { updated { path versionId } } ... on UpdateNotesHashMismatchPayload { path actualHash } ... on ErrorPayload { message } } }";
+
+  const cfg = window.callsFrontmatter(JSON.parse(document.getElementById("cb-config").textContent)).meta;
+  const editable = JSON.parse(document.getElementById("cb-editable").textContent) === true;
+  const ui = Object.assign({}, UI_DEFAULTS, cfg.ui || {});
+  const locale = setting("locale", "en");
+  const owner = String(setting("owner", ""));
+  const reviewType = setting("review_type", "review");
+  const threadType = setting("thread_type", "thread");
+  const categoryType = setting("category_type", "call-category");
+  const topicsHeading = String(setting("topics_heading", "Topics")).toLowerCase();
+  const topicLine = lineRegex(setting("topic_line", "{tc} | {text}"));
+  const transcriptLine = lineRegex(setting("transcript_line", "{who} | {tc}"));
+  const editsFolder = String(setting("edits", "call_edits")).replace(/\/+$/, "");
+  const peopleFolder = String(setting("people_folder", "people")).replace(/\/+$/, "");
+  const subgraph = String(setting("subgraph", ""));
+  const pendingSince = String(setting("pending_since", ""));
+  const scoreDefs = Array.isArray(cfg.scores) && cfg.scores.length ? cfg.scores : DEFAULT_SCORES;
+  const dateFormat = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
+  const pluralRules = new Intl.PluralRules(locale);
+
+  function setting(key, fallback) {
+    const v = cfg[key];
+    return v === undefined || v === null || v === "" ? fallback : v;
+  }
+
+  function t(key, vars) {
+    let s = ui[key];
+    if (s && typeof s === "object") {
+      s = s[pluralRules.select(Number(vars && vars.n))] || s.other || "";
+    }
+    return String(s == null ? key : s).replace(/\{(\w+)\}/g, (m, k) => (vars && k in vars ? vars[k] : m));
+  }
+
+  function lineRegex(pattern) {
+    const tc = "(\\d{1,2}:\\d{2}(?::\\d{2})?)";
+    const parts = String(pattern).split(/(\{tc\}|\{text\}|\{who\})/);
+    const order = [];
+    const src = parts.map(p => {
+      if (p === "{tc}") {
+        order.push("tc");
+        return tc;
+      }
+      if (p === "{text}" || p === "{who}") {
+        order.push(p.slice(1, -1));
+        return "(.+?)";
+      }
+      return p.replace(/\s+/g, "\u0000").replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\u0000/g, "\\s*");
+    }).join("");
+    const re = new RegExp("^\\s*" + src + "\\s*$");
+    return line => {
+      const m = re.exec(line);
+      if (!m) {
+        return null;
+      }
+      const out = {};
+      order.forEach((k, i) => {
+        out[k] = m[i + 1].trim();
+      });
+      return out;
+    };
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+  }
+
+  function body(md) {
+    return window.callsFrontmatter(md).body;
+  }
+
+  function meta(md) {
+    return window.callsFrontmatter(md).meta;
+  }
+
+  function noExt(p) {
+    return String(p || "").replace(/\.md$/, "");
+  }
+
+  function baseName(p) {
+    return noExt(p).split("/").pop();
+  }
+
+  function linkTarget(v) {
+    return noExt(String(v || "").replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].split("#")[0].trim());
+  }
+
+  function dateIn(s) {
+    const m = /(\d{4}-\d{2}-\d{2})/.exec(String(s || ""));
+    return m ? m[1] : "";
+  }
+
+  function wikiTargets(md) {
+    const out = new Set();
+    const re = /\[\[([^\]|#]+)/g;
+    let m;
+    while ((m = re.exec(md || ""))) {
+      const target = noExt(m[1].trim()).toLowerCase();
+      out.add(target);
+      out.add(target.split("/").pop());
+    }
+    return out;
+  }
+
+  function load() {
+    const data = { review: [], topics: [], people: [], threads: [], categories: [], edits: [], transcripts: [] };
+    document.querySelectorAll("script.cb-data").forEach(s => data[s.dataset.kind].push(JSON.parse(s.textContent)));
+    return data;
+  }
+
+  const data = load();
+  const collator = new Intl.Collator(locale);
+  const topicsById = new Map(data.topics.map(s => [baseName(s.path), s]));
+  const editsById = new Map(data.edits.map(e => meta(e.md)).filter(m => m.call).map(m => [String(m.call), m]));
+  const people = data.people.filter(p => !baseName(p.path).startsWith("_")).sort((a, b) => collator.compare(a.title, b.title));
+  const threads = data.threads.filter(th => th.type === threadType).map(th => Object.assign(th, { targets: wikiTargets(th.md) })).sort((a, b) => collator.compare(a.title, b.title));
+  const categories = data.categories.filter(c => c.type === categoryType).sort((a, b) => a.order - b.order);
+  const transcriptsByPath = new Map(data.transcripts.map(tr => [noExt(tr.path), tr]));
+
+  function personByName(name) {
+    const n = String(name || "").toLowerCase();
+    return people.find(x => x.title.toLowerCase() === n || baseName(x.path).toLowerCase() === n);
+  }
+
+  function peopleOf(md, speakers, edit) {
+    const out = new Set();
+    wikiTargets(md).forEach(target => {
+      const p = people.find(x => noExt(x.path).toLowerCase() === target);
+      if (p) {
+        out.add(p.path);
+      }
+    });
+    Object.values(speakers).forEach(name => {
+      const p = personByName(name);
+      if (p) {
+        out.add(p.path);
+      }
+    });
+    if (edit && edit.speakers) {
+      Object.values(edit.speakers).forEach(p => {
+        if (p) {
+          out.add(p);
+        }
+      });
+    }
+    return Array.from(out);
+  }
+
+  function topicsOf(md) {
+    const topics = [];
+    let inside = false;
+    body(md).split("\n").forEach(line => {
+      const h = /^##\s+(.*)$/.exec(line);
+      if (h) {
+        inside = h[1].trim().toLowerCase().startsWith(topicsHeading);
+        return;
+      }
+      const tm = inside && topicLine(line);
+      if (tm && tm.tc && tm.text) {
+        topics.push({ tc: tm.tc, text: tm.text });
+      }
+    });
+    return topics;
+  }
+
+  const calls = data.review.map(r => Object.assign(r, { meta: meta(r.md) })).filter(r => r.meta.type === reviewType).map(r => {
+    const m = r.meta;
+    const id = baseName(r.path);
+    const seg = topicsById.get(id);
+    const segBody = seg ? body(seg.md) : "";
+    const transcript = linkTarget(m.transcript);
+    const reviewBody = body(r.md);
+    const agenda = (reviewBody.split("\n").find(l => l.trim() && !l.startsWith("#") && !l.includes("[[")) || "").trim();
+    const targets = [noExt(r.path), id, transcript, baseName(transcript)].filter(Boolean).map(x => x.toLowerCase());
+    const speakers = m.speakers && typeof m.speakers === "object" ? m.speakers : {};
+    return {
+      id,
+      path: r.path,
+      permalink: r.permalink,
+      date: dateIn(m.date) || dateIn(transcript) || dateIn(r.path),
+      transcript,
+      speakers,
+      title: seg && seg.title ? seg.title : agenda.slice(0, 90),
+      agenda,
+      summary: segBody.split(/\n##\s/)[0].trim(),
+      topics: seg ? topicsOf(seg.md) : [],
+      linkedThreads: threads.filter(th => targets.some(x => th.targets.has(x))).map(th => th.path),
+      people: peopleOf(r.md, speakers, editsById.get(id)),
+      assumed: m.assumed === true || m.assumed === "true",
+      confidence: m.speakers_confidence && typeof m.speakers_confidence === "object" ? m.speakers_confidence : {},
+      edit: editsById.get(id) || null,
+    };
+  }).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
+
+  const reviewed = new Set(calls.map(c => c.transcript));
+  const pending = pendingSince ? data.transcripts.map(tr => {
+    const path = noExt(tr.path);
+    return { id: baseName(path).replace(/^\d{4}-\d{2}-\d{2}[-_ ]?/, "") || baseName(path), date: dateIn(path), transcript: path, duration: tr.duration, pending: true, speakers: {}, topics: [], linkedThreads: [], people: [], title: tr.title || baseName(path), agenda: "", summary: "", path: tr.path, edit: null };
+  }).filter(c => c.date && c.date >= pendingSince && !reviewed.has(c.transcript)).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)) : [];
+
+  const state = { q: "", filter: "", person: "", current: null, form: null, utterances: null };
+
+  function renderPersonFilter() {
+    const counts = new Map();
+    calls.forEach(c => c.people.forEach(p => counts.set(p, (counts.get(p) || 0) + 1)));
+    const items = Array.from(counts.entries()).map(([path, n]) => {
+      const person = people.find(x => x.path === path);
+      return { path, n, title: person ? person.title : baseName(path) };
+    }).sort((a, b) => b.n - a.n || collator.compare(a.title, b.title));
+    state.personOptions = [{ value: "", label: t("all_people") }].concat(items.map(x => ({ value: x.path, label: x.title + " · " + x.n })));
+    document.getElementById("cbPersonBox").innerHTML = combo("person", "", state.person, t("person_filter"));
+  }
+
+  function renderCounters() {
+    const check = calls.filter(needsCheck).length;
+    let html = '<button class="cb-counter' + (check ? " cb-hot" : "") + (state.filter === "check" ? " cb-on" : "") + '" data-filter="check"><b>' + check + "</b><span>" + esc(t("to_check")) + "</span></button>";
+    if (pendingSince) {
+      html += '<button class="cb-counter' + (state.filter === "pending" ? " cb-on" : "") + '" data-filter="pending"><b>' + pending.length + "</b><span>" + esc(t("not_reviewed")) + "</span></button>";
+    }
+    document.getElementById("cbCounters").innerHTML = html;
+  }
+
+  function fmtDate(d) {
+    if (!d) {
+      return "";
+    }
+    const [y, m, day] = d.split("-").map(Number);
+    return dateFormat.format(new Date(y, m - 1, day));
+  }
+
+  function categoryTitle(path) {
+    const c = categories.find(x => x.path === path);
+    return c ? c.title : "";
+  }
+
+  function allVerified(f) {
+    return VERIFY_KEYS.every(k => f.verified.has(k));
+  }
+
+  function needsCheck(c) {
+    if (!c.assumed) {
+      return false;
+    }
+    const v = c.edit && Array.isArray(c.edit.verified) ? c.edit.verified : [];
+    return !VERIFY_KEYS.every(k => v.includes(k));
+  }
+
+  function renderList() {
+    const q = state.q;
+    const source = state.filter === "pending" ? pending : (state.filter === "check" ? calls.filter(needsCheck) : pending.concat(calls));
+    const items = source.filter(c => !state.person || c.people.includes(state.person)).filter(c => !q || (c.title + " " + c.agenda + " " + c.id + " " + Object.values(c.speakers).join(" ")).toLowerCase().includes(q));
+    document.getElementById("cbItems").innerHTML = items.map(c => {
+      const cat = c.edit && c.edit.category ? '<span class="cb-tag">' + esc(categoryTitle(c.edit.category)) + "</span>" : "";
+      let tag = "";
+      if (c.pending) {
+        tag = '<span class="cb-tag cb-wait">' + esc(t("tag_pending")) + "</span>";
+      } else if (needsCheck(c)) {
+        tag = '<span class="cb-tag cb-wait">' + esc(t("tag_check")) + "</span>";
+      } else if (c.edit) {
+        tag = '<span class="cb-tag cb-done">' + esc(t("tag_edited")) + "</span>";
+      }
+      return '<div class="cb-item' + (state.current && state.current.id === c.id ? " cb-active" : "") + '" tabindex="0" role="button" data-id="' + esc(c.id) + '"><div class="cb-t">' + esc(c.title || c.id) + '</div><div class="cb-m">' + esc(fmtDate(c.date)) + " · " + esc(c.id) + " " + cat + tag + "</div></div>";
+    }).join("") || '<div class="cb-empty">' + esc(t("nothing")) + "</div>";
+  }
+
+  function initialForm(c) {
+    const e = c.edit || {};
+    const speakers = {};
+    Object.entries(c.speakers).forEach(([label, name]) => {
+      if (name !== owner) {
+        const p = personByName(name);
+        speakers[label] = (e.speakers && e.speakers[label]) || (p ? p.path : "");
+      }
+    });
+    return {
+      category: e.category || "",
+      speakers,
+      threads: Array.isArray(e.threads) ? e.threads.slice() : c.linkedThreads.slice(),
+      wrong: new Set(Array.isArray(e.topics_wrong) ? e.topics_wrong : []),
+      topicThreads: Object.assign({}, e.topic_threads || {}),
+      extraTopics: Array.isArray(e.extra_topics) ? e.extra_topics.join("\n") : "",
+      scores: Object.assign({}, e.scores || {}),
+      outcome: e.outcome || "",
+      verified: new Set(Array.isArray(e.verified) ? e.verified : []),
+    };
+  }
+
+  function options(items, selected, emptyLabel) {
+    return '<option value="">' + esc(emptyLabel) + "</option>" + items.map(x => '<option value="' + esc(x.value) + '"' + (x.value === selected ? " selected" : "") + ">" + esc(x.label) + "</option>").join("");
+  }
+
+  const peopleOptions = people.map(p => ({ value: p.path, label: p.title + (p.confirmed === false ? " (" + t("unconfirmed") + ")" : "") }));
+  const threadOptions = threads.map(th => ({ value: th.path, label: th.title }));
+  const categoryOptions = categories.map(c => ({ value: c.path, label: c.title }));
+
+  function isKind(form, kind) {
+    const c = categories.find(x => x.path === form.category);
+    return Boolean(c && c.kind === kind);
+  }
+
+  function quotesFor(label) {
+    if (!state.utterances) {
+      return "";
+    }
+    const own = state.utterances.filter(u => u.who === label && u.text.length > 20);
+    const pick = own.length > 2 ? [own[0], own[Math.floor(own.length / 2)]] : own.slice(0, 2);
+    return pick.map(u => esc(t("quote", { text: u.text.slice(0, 120) }))).join(" … ");
+  }
+
+  function comboOptions(kind) {
+    if (kind === "speaker") {
+      return peopleOptions.concat([{ value: "__new__", label: t("new_person"), always: true }]);
+    }
+    if (kind === "topicThread") {
+      return [{ value: "", label: t("no_thread"), always: true }].concat(threadOptions);
+    }
+    if (kind === "addThread") {
+      return threadOptions.filter(o => !state.form.threads.includes(o.value));
+    }
+    return state.personOptions || [];
+  }
+
+  function comboLabel(kind, value) {
+    if (!value) {
+      return "";
+    }
+    const o = comboOptions(kind).find(x => x.value === value);
+    return o ? o.label : value;
+  }
+
+  let comboSeq = 0;
+
+  function combo(kind, key, value, placeholder) {
+    comboSeq += 1;
+    const listId = "cbCombo" + comboSeq;
+    return '<div class="cb-combo" data-kind="' + kind + '" data-key="' + esc(key) + '" data-value="' + esc(value) + '"><input type="text" class="cb-combo-in" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="' + listId + '" aria-label="' + esc(placeholder) + '" placeholder="' + esc(placeholder) + '" value="' + esc(comboLabel(kind, value)) + '"><div class="cb-combo-list" id="' + listId + '" role="listbox" hidden></div></div>';
+  }
+
+  function highlight(label, q) {
+    if (!q) {
+      return esc(label);
+    }
+    const i = label.toLowerCase().indexOf(q);
+    if (i < 0) {
+      return esc(label);
+    }
+    return esc(label.slice(0, i)) + "<mark>" + esc(label.slice(i, i + q.length)) + "</mark>" + esc(label.slice(i + q.length));
+  }
+
+  function openCombo(box) {
+    const input = box.querySelector(".cb-combo-in");
+    const listEl = box.querySelector(".cb-combo-list");
+    const q = input.value.trim().toLowerCase();
+    const current = comboLabel(box.dataset.kind, box.dataset.value).toLowerCase();
+    const query = q === current ? "" : q;
+    const found = comboOptions(box.dataset.kind).filter(o => o.always || !query || o.label.toLowerCase().includes(query)).slice(0, 60);
+    listEl.innerHTML = found.map((o, i) => '<div class="cb-combo-opt" role="option" aria-selected="false" id="' + listEl.id + "-" + i + '" data-value="' + esc(o.value) + '">' + highlight(o.label, query) + "</div>").join("") || '<div class="cb-combo-empty">' + esc(t("nothing")) + "</div>";
+    listEl.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+    highlightOption(box, query && found.length ? 0 : -1);
+  }
+
+  function highlightOption(box, index) {
+    const input = box.querySelector(".cb-combo-in");
+    const opts = Array.from(box.querySelectorAll(".cb-combo-opt"));
+    opts.forEach((el, i) => {
+      el.classList.toggle("cb-hi", i === index);
+      el.setAttribute("aria-selected", String(i === index));
+    });
+    if (index >= 0 && opts[index]) {
+      input.setAttribute("aria-activedescendant", opts[index].id);
+      opts[index].scrollIntoView({ block: "nearest" });
+    } else {
+      input.removeAttribute("aria-activedescendant");
+    }
+  }
+
+  function moveHighlight(box, step) {
+    const listEl = box.querySelector(".cb-combo-list");
+    if (listEl.hidden) {
+      openCombo(box);
+    }
+    const opts = Array.from(box.querySelectorAll(".cb-combo-opt"));
+    if (!opts.length) {
+      return;
+    }
+    const current = opts.findIndex(el => el.classList.contains("cb-hi"));
+    const next = current < 0 ? (step > 0 ? 0 : opts.length - 1) : (current + step + opts.length) % opts.length;
+    highlightOption(box, next);
+  }
+
+  function closeCombo(box) {
+    const input = box.querySelector(".cb-combo-in");
+    box.querySelector(".cb-combo-list").hidden = true;
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    input.value = comboLabel(box.dataset.kind, box.dataset.value);
+  }
+
+  function chooseCombo(box, value) {
+    const kind = box.dataset.kind;
+    const key = box.dataset.key;
+    box.dataset.value = value;
+    closeCombo(box);
+    if (kind === "person") {
+      state.person = value;
+      renderList();
+      const first = document.querySelector("#cbItems .cb-item");
+      if (first && (!state.current || !document.querySelector('#cbItems .cb-item[data-id="' + CSS.escape(state.current.id) + '"]'))) {
+        select(first.dataset.id);
+      }
+      return;
+    }
+    const f = state.form;
+    if (kind === "speaker") {
+      if (value === "__new__") {
+        createPerson(key);
+        return;
+      }
+      f.speakers[key] = value;
+      document.querySelectorAll(".cb-speaker.cb-unknown").forEach(el => {
+        if (el.contains(box)) {
+          el.classList.remove("cb-unknown");
+        }
+      });
+      renderTranscript();
+    } else if (kind === "topicThread") {
+      f.topicThreads[key] = value;
+      if (value && !f.threads.includes(value)) {
+        f.threads.push(value);
+        renderMain();
+        renderTranscript();
+      }
+    } else if (kind === "addThread" && value) {
+      f.threads.push(value);
+      renderMain();
+      renderTranscript();
+    }
+    markDirty();
+  }
+
+  document.addEventListener("focusin", ev => {
+    const box = ev.target.closest && ev.target.closest(".cb-combo");
+    if (box && ev.target.classList.contains("cb-combo-in")) {
+      ev.target.select();
+      openCombo(box);
+    }
+  });
+  document.addEventListener("input", ev => {
+    const box = ev.target.closest && ev.target.closest(".cb-combo");
+    if (box) {
+      openCombo(box);
+    }
+  });
+  document.addEventListener("focusout", ev => {
+    const box = ev.target.closest && ev.target.closest(".cb-combo");
+    if (box) {
+      setTimeout(() => {
+        if (!box.contains(document.activeElement)) {
+          closeCombo(box);
+        }
+      }, 120);
+    }
+  });
+  document.addEventListener("mousedown", ev => {
+    const opt = ev.target.closest && ev.target.closest(".cb-combo-opt");
+    if (opt) {
+      ev.preventDefault();
+      chooseCombo(opt.closest(".cb-combo"), opt.dataset.value);
+    }
+  });
+  document.addEventListener("keydown", ev => {
+    const box = ev.target.closest && ev.target.closest(".cb-combo");
+    if (!box) {
+      return;
+    }
+    if (ev.key === "Escape") {
+      closeCombo(box);
+      ev.target.blur();
+    } else if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      ev.preventDefault();
+      moveHighlight(box, ev.key === "ArrowDown" ? 1 : -1);
+    } else if (ev.key === "Enter") {
+      ev.preventDefault();
+      if (box.querySelector(".cb-combo-list").hidden) {
+        return;
+      }
+      const first = box.querySelector(".cb-combo-opt.cb-hi") || box.querySelector(".cb-combo-opt");
+      if (first) {
+        chooseCombo(box, first.dataset.value);
+      }
+    }
+  });
+
+  function verifiedBox(key) {
+    const on = state.form.verified.has(key);
+    return '<label class="cb-check cb-verify"><input type="checkbox" data-verify="' + key + '"' + (on ? " checked" : "") + "> " + esc(t("verified")) + "</label>";
+  }
+
+  function renderMain() {
+    const c = state.current;
+    const f = state.form;
+    const speakerRows = Object.keys(c.speakers).map(label => {
+      const unknown = c.speakers[label] === "?" || c.confidence[label] === "unknown";
+      const control = owner && c.speakers[label] === owner ? '<div class="cb-label">' + esc(t("this_is_you")) + "</div>" : combo("speaker", label, f.speakers[label] || "", t("type_name"));
+      const now = unknown ? '<span class="cb-tag cb-wait">' + esc(t("speaker_unknown")) + "</span>" : esc(t("speaker_now", { name: c.speakers[label] }));
+      return '<div class="cb-speaker' + (unknown && !f.speakers[label] ? " cb-unknown" : "") + '"><div><div class="cb-label">' + esc(label) + '</div><div class="cb-meta">' + now + "</div></div><div>" + control + '<div class="cb-quote" data-quote="' + esc(label) + '">' + quotesFor(label) + "</div></div></div>";
+    }).join("") || '<div class="cb-meta">' + esc(t("no_speakers")) + "</div>";
+    const topicRows = c.topics.map(tp =>
+      '<div class="cb-topic' + (f.wrong.has(tp.tc) ? " cb-wrong" : "") + '"><div class="cb-tc" tabindex="0" role="button" data-tc="' + esc(tp.tc) + '">' + esc(tp.tc) + '</div><div class="cb-ttext">' + esc(tp.text) + '</div><div class="cb-tctl"><label class="cb-check"><input type="checkbox" data-wrong="' + esc(tp.tc) + '"' + (f.wrong.has(tp.tc) ? " checked" : "") + "> " + esc(t("wrong")) + "</label>" +
+      combo("topicThread", tp.tc, f.topicThreads[tp.tc] || "", t("to_thread")) + "</div></div>").join("") || '<div class="cb-meta">' + esc(t("no_topics")) + "</div>";
+    const chips = f.threads.map(p => {
+      const th = threads.find(x => x.path === p);
+      return '<span class="cb-chip">' + (th ? '<a href="' + esc(th.permalink) + '">' + esc(th.title) + "</a>" : esc(p)) + '<button data-unthread="' + esc(p) + '" aria-label="' + esc(t("remove")) + '">×</button></span>';
+    }).join("");
+    const scoreRows = scoreDefs.filter(s => !s.only_kind || isKind(f, s.only_kind)).map(s => {
+      const v = f.scores[s.key] || 0;
+      const id = "cbScore-" + s.key;
+      return '<div class="cb-score"><label for="' + esc(id) + '">' + esc(s.label) + '</label><input type="range" id="' + esc(id) + '" min="0" max="10" step="1" value="' + v + '" data-score="' + esc(s.key) + '"><b data-score-out="' + esc(s.key) + '">' + (v || "—") + "</b></div>";
+    }).join("");
+    const flag = c.assumed ? ' · <span class="cb-tag cb-wait">' + esc(allVerified(f) ? t("checked_by_you") : t("proposed")) + "</span>" : "";
+    document.getElementById("cbMain").innerHTML =
+      '<div class="cb-card"><div class="cb-head"><div><h2>' + esc(c.title || c.id) + '</h2><div class="cb-meta">' + esc(fmtDate(c.date)) + " · " + esc(c.id) + ' · <a href="' + esc(c.permalink) + '">' + esc(t("review_note")) + "</a>" + flag + "</div></div>" +
+      '<div class="cb-headside"><label class="cb-field"><span>' + esc(t("category")) + '</span><select id="cbCategory">' + options(categoryOptions, f.category, t("no_category")) + "</select></label>" + verifiedBox("category") + "</div></div>" +
+      (c.agenda ? '<div class="cb-summary"><b>' + esc(t("agenda")) + "</b> " + esc(c.agenda) + "</div>" : "") +
+      (c.summary ? '<div class="cb-summary cb-meta">' + esc(c.summary) + "</div>" : "") + "</div>" +
+      '<div class="cb-grid2"><div class="cb-card"><div class="cb-h3row"><h3>' + esc(t("who_spoke")) + "</h3>" + verifiedBox("speakers") + "</div>" + speakerRows + "</div>" +
+      '<div class="cb-card"><div class="cb-h3row"><h3>' + esc(t("threads")) + "</h3>" + verifiedBox("threads") + '</div><div class="cb-chips">' + (chips || '<span class="cb-meta">' + esc(t("no_threads")) + "</span>") + "</div>" + combo("addThread", "", "", t("add_thread")) +
+      '<h3 class="cb-h3gap">' + esc(t("scores")) + "</h3>" + scoreRows + "</div></div>" +
+      '<div class="cb-card"><div class="cb-h3row"><h3>' + esc(t("topics_found")) + "</h3>" + verifiedBox("topics") + "</div>" + topicRows +
+      '<label class="cb-field cb-gap"><span>' + esc(t("topics_missed")) + '</span><textarea id="cbExtra">' + esc(f.extraTopics) + "</textarea></label>" +
+      '<label class="cb-field"><span>' + esc(t("outcome")) + '</span><textarea id="cbOutcome">' + esc(f.outcome) + "</textarea></label></div>" +
+      '<div class="cb-card"><h3>' + esc(t("transcript")) + '</h3><div class="cb-transcript" id="cbTranscript"><div class="cb-meta">' + esc(t("loading")) + "</div></div></div>" +
+      '<div class="cb-bar"><span class="cb-status" id="cbStatus">' + esc(c.edit ? t("has_edits") : t("no_edits")) + '</span><button class="cb-save cb-save-alt" id="cbSave">' + esc(t("save")) + '</button><button class="cb-save" id="cbDone">' + esc(t("all_verified")) + "</button></div>";
+  }
+
+  async function gql(query, variables) {
+    const res = await fetch("/_system/graphql", { method: "POST", credentials: "same-origin", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query, variables }) });
+    const json = await res.json();
+    if (json.errors && json.errors.length) {
+      throw new Error(json.errors[0].message);
+    }
+    return json.data;
+  }
+
+  function parseTranscript(md) {
+    const lines = body(md).split("\n");
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      const head = transcriptLine(lines[i]);
+      if (head && head.tc && head.who) {
+        const text = [];
+        while (i + 1 < lines.length && !transcriptLine(lines[i + 1])) {
+          i++;
+          if (lines[i].trim()) {
+            text.push(lines[i].trim());
+          }
+        }
+        out.push({ who: head.who, tc: head.tc, text: text.join(" ") });
+      }
+    }
+    return out;
+  }
+
+  function seconds(tc) {
+    return tc.split(":").map(Number).reduce((a, b) => a * 60 + b, 0);
+  }
+
+  function renderTranscript(focusTc) {
+    const box = document.getElementById("cbTranscript");
+    if (!box) {
+      return;
+    }
+    if (!state.utterances) {
+      box.innerHTML = '<div class="cb-meta">' + esc(t("transcript_missing")) + "</div>";
+      return;
+    }
+    const focus = focusTc ? seconds(focusTc) : -1;
+    let first = null;
+    box.innerHTML = state.utterances.map((u, i) => {
+      const hl = focus >= 0 && seconds(u.tc) >= focus && first === null;
+      if (hl) {
+        first = i;
+      }
+      return '<div class="cb-utt' + (hl ? " cb-hl" : "") + '" data-i="' + i + '"><span class="cb-tc">' + esc(u.tc) + '</span><span class="cb-who">' + esc(speakerName(u.who)) + "</span><span>" + esc(u.text) + "</span></div>";
+    }).join("");
+    if (first !== null) {
+      const el = box.querySelector('[data-i="' + first + '"]');
+      box.scrollTop = el.offsetTop - box.offsetTop - 8;
+    }
+  }
+
+  function speakerName(label) {
+    if (owner && state.current && state.current.speakers[label] === owner) {
+      return owner;
+    }
+    const p = state.form && state.form.speakers && state.form.speakers[label];
+    const person = p && people.find(x => x.path === p);
+    return person ? person.title : label;
+  }
+
+  async function transcriptText(path) {
+    const inline = transcriptsByPath.get(path);
+    if (inline && inline.md) {
+      return inline.md;
+    }
+    const d = await gql(READ_NOTE, { paths: [path + ".md"] });
+    const row = d.notePaths && d.notePaths[0];
+    return row ? row.content : null;
+  }
+
+  async function loadTranscript(c) {
+    state.utterances = null;
+    if (!c.transcript) {
+      renderTranscript();
+      return;
+    }
+    try {
+      const md = await transcriptText(c.transcript);
+      state.utterances = md ? parseTranscript(md) : null;
+    } catch (err) {
+      state.utterances = null;
+    }
+    if (state.current === c) {
+      document.querySelectorAll("[data-quote]").forEach(el => {
+        el.innerHTML = quotesFor(el.dataset.quote);
+      });
+      renderTranscript();
+    }
+  }
+
+  function renderPending(c) {
+    document.getElementById("cbMain").innerHTML =
+      '<div class="cb-card"><h2>' + esc(c.title) + '</h2><div class="cb-meta">' + esc(fmtDate(c.date)) + (c.duration ? " · " + esc(t("minutes", { n: c.duration })) : "") + " · " + esc(c.id) + ' · <span class="cb-tag cb-wait">' + esc(t("tag_pending")) + "</span></div>" +
+      '<div class="cb-summary">' + esc(t("pending_text")) + "</div></div>" +
+      '<div class="cb-card"><h3>' + esc(t("transcript")) + '</h3><div class="cb-transcript" id="cbTranscript"><div class="cb-meta">' + esc(t("loading")) + "</div></div></div>";
+  }
+
+  function remember(id) {
+    try {
+      history.replaceState(null, "", "#" + encodeURIComponent(id));
+    } catch (e) {
+    }
+  }
+
+  function select(id) {
+    if (dirtyCall) {
+      flushSave();
+    }
+    const p = pending.find(x => x.id === id);
+    if (p) {
+      state.current = p;
+      state.form = { speakers: {} };
+      remember(id);
+      renderList();
+      renderPending(p);
+      loadTranscript(p);
+      return;
+    }
+    const c = calls.find(x => x.id === id);
+    if (!c) {
+      return;
+    }
+    state.current = c;
+    state.form = initialForm(c);
+    remember(id);
+    renderList();
+    renderMain();
+    loadTranscript(c);
+  }
+
+  function link(p) {
+    return "[[" + noExt(p) + "]]";
+  }
+
+  function editOf(c, f) {
+    const scores = {};
+    Object.entries(f.scores).forEach(([k, v]) => {
+      if (v) {
+        scores[k] = Number(v);
+      }
+    });
+    const topicThreads = {};
+    Object.entries(f.topicThreads).forEach(([k, v]) => {
+      if (v) {
+        topicThreads[k] = v;
+      }
+    });
+    return {
+      call: c.id,
+      review: c.path,
+      category: f.category,
+      speakers: f.speakers,
+      threads: f.threads,
+      topics_wrong: Array.from(f.wrong),
+      topic_threads: topicThreads,
+      extra_topics: f.extraTopics.split("\n").map(s => s.trim()).filter(Boolean),
+      scores,
+      outcome: f.outcome.trim(),
+      verified: Array.from(f.verified),
+    };
+  }
+
+  function buildNote(c, e) {
+    const fm = ["---", "title: " + JSON.stringify(t("edits_title", { id: c.id })), "type: call-edit"];
+    if (subgraph) {
+      fm.push("subgraph: " + JSON.stringify(subgraph));
+    }
+    Object.entries(e).forEach(([k, v]) => fm.push(k + ": " + JSON.stringify(v)));
+    fm.push("updated: " + JSON.stringify(new Date().toISOString()), "---");
+    const lines = [t("edits_intro", { link: link(c.path) })];
+    if (e.category) {
+      lines.push("", t("edits_category", { link: link(e.category) }));
+    }
+    const sp = Object.entries(e.speakers).filter(([, p]) => p);
+    if (sp.length) {
+      lines.push("", "## " + t("who_spoke"));
+      sp.forEach(([label, p]) => lines.push("- " + label + " — " + link(p)));
+    }
+    if (e.threads.length) {
+      lines.push("", "## " + t("threads"));
+      e.threads.forEach(p => lines.push("- " + link(p)));
+    }
+    if (e.extra_topics.length) {
+      lines.push("", "## " + t("edits_missed"));
+      e.extra_topics.forEach(x => lines.push("- " + x));
+    }
+    if (e.outcome) {
+      lines.push("", "## " + t("edits_outcome"), e.outcome);
+    }
+    return fm.join("\n") + "\n" + lines.join("\n") + "\n";
+  }
+
+  function setStatus(text, isError) {
+    const status = document.getElementById("cbStatus");
+    if (status) {
+      status.className = "cb-status" + (isError ? " cb-err" : "");
+      status.textContent = text;
+    }
+  }
+
+  async function createPerson(label) {
+    const name = (window.prompt(t("ask_name", { label })) || "").trim().replace(/[\\/:*?"<>|#^\[\]]/g, "");
+    if (!name) {
+      renderMain();
+      renderTranscript();
+      return;
+    }
+    const path = peopleFolder + "/" + name + ".md";
+    const existing = people.find(p => p.path === path || p.title.toLowerCase() === name.toLowerCase());
+    if (!existing) {
+      const c = state.current;
+      const fm = ["---", "title: " + JSON.stringify(name), "type: person"].concat(subgraph ? ["subgraph: " + JSON.stringify(subgraph)] : []).concat(["---"]);
+      const content = fm.join("\n") + "\n" + t("first_seen", { link: link(c.path), date: c.date }) + "\n";
+      if (editable) {
+        try {
+          const d = await gql(SAVE_NOTES, { input: { changes: [{ upsert: { path, content, expectedHash: "" } }] } });
+          if (d.updateNotes.__typename !== "UpdateNotesSuccessPayload") {
+            throw new Error(d.updateNotes.message || d.updateNotes.__typename);
+          }
+        } catch (err) {
+          setStatus(t("person_failed", { error: err.message }), true);
+          return;
+        }
+      }
+      people.push({ path, title: name, confirmed: true });
+      peopleOptions.push({ value: path, label: name });
+    }
+    state.form.speakers[label] = existing ? existing.path : path;
+    renderMain();
+    renderTranscript();
+    markDirty();
+  }
+
+  async function save(c, f) {
+    const onScreen = state.current === c;
+    const btn = onScreen ? document.getElementById("cbSave") : null;
+    const e = editOf(c, f);
+    if (!editable) {
+      c.edit = e;
+      if (onScreen) {
+        setStatus(t("local_only"));
+      }
+      renderCounters();
+      renderList();
+      return;
+    }
+    if (btn) {
+      btn.disabled = true;
+    }
+    if (onScreen) {
+      setStatus(t("saving"));
+    }
+    const path = editsFolder + "/" + c.id + ".md";
+    try {
+      const read = await gql(READ_NOTE, { paths: [path] });
+      const row = read.notePaths && read.notePaths[0];
+      const expectedHash = row ? row.latestContentHash : "";
+      const d = await gql(SAVE_NOTES, { input: { changes: [{ upsert: { path, content: buildNote(c, e), expectedHash } }] } });
+      const r = d.updateNotes;
+      if (r.__typename !== "UpdateNotesSuccessPayload") {
+        throw new Error(r.message || (r.__typename === "UpdateNotesHashMismatchPayload" ? t("save_conflict") : r.__typename));
+      }
+      c.edit = e;
+      if (state.current === c) {
+        setStatus(t("saved", { time: new Date().toLocaleTimeString(locale) }));
+      }
+      renderCounters();
+      renderList();
+    } catch (err) {
+      if (state.current === c) {
+        setStatus(t("save_failed", { error: err.message }), true);
+      } else {
+        window.alert(t("save_failed_alert", { id: c.id, error: err.message }));
+      }
+    }
+    if (btn) {
+      btn.disabled = false;
+    }
+  }
+
+  let saveTimer = null;
+  let dirtyCall = null;
+
+  function markDirty() {
+    setStatus(editable ? t("saving") : t("local_only"));
+    dirtyCall = { call: state.current, form: state.form };
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSave, 1000);
+  }
+
+  async function flushSave() {
+    clearTimeout(saveTimer);
+    if (!dirtyCall) {
+      return;
+    }
+    const pendingSave = dirtyCall;
+    dirtyCall = null;
+    await save(pendingSave.call, pendingSave.form);
+  }
+
+  window.addEventListener("beforeunload", ev => {
+    if (dirtyCall && editable) {
+      flushSave();
+      ev.preventDefault();
+      ev.returnValue = "";
+    }
+  });
+
+  document.getElementById("cbCounters").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-filter]");
+    if (!b) {
+      return;
+    }
+    state.filter = state.filter === b.dataset.filter ? "" : b.dataset.filter;
+    renderCounters();
+    renderList();
+  });
+  document.getElementById("cbItems").addEventListener("click", ev => {
+    const item = ev.target.closest(".cb-item");
+    if (item) {
+      select(item.dataset.id);
+    }
+  });
+  document.getElementById("cbItems").addEventListener("keydown", ev => {
+    const item = ev.target.closest(".cb-item");
+    if (!item || item !== ev.target || (ev.key !== "Enter" && ev.key !== " ")) {
+      return;
+    }
+    ev.preventDefault();
+    const id = item.dataset.id;
+    select(id);
+    const again = document.querySelector('#cbItems .cb-item[data-id="' + CSS.escape(id) + '"]');
+    if (again) {
+      again.focus();
+    }
+  });
+  document.getElementById("cbq").addEventListener("input", ev => {
+    state.q = ev.target.value.trim().toLowerCase();
+    renderList();
+  });
+  const main = document.getElementById("cbMain");
+  main.addEventListener("change", ev => {
+    const el = ev.target;
+    const f = state.form;
+    if (!f || !f.verified) {
+      return;
+    }
+    if (el.id === "cbCategory") {
+      f.category = el.value;
+      renderMain();
+      renderTranscript();
+    } else if (el.dataset.verify !== undefined) {
+      if (el.checked) {
+        f.verified.add(el.dataset.verify);
+      } else {
+        f.verified.delete(el.dataset.verify);
+      }
+    } else if (el.dataset.wrong !== undefined) {
+      if (el.checked) {
+        f.wrong.add(el.dataset.wrong);
+      } else {
+        f.wrong.delete(el.dataset.wrong);
+      }
+      el.closest(".cb-topic").classList.toggle("cb-wrong", el.checked);
+    } else {
+      return;
+    }
+    markDirty();
+  });
+  main.addEventListener("input", ev => {
+    const el = ev.target;
+    const f = state.form;
+    if (!f || !f.verified) {
+      return;
+    }
+    if (el.dataset.score) {
+      f.scores[el.dataset.score] = Number(el.value);
+      main.querySelector('[data-score-out="' + CSS.escape(el.dataset.score) + '"]').textContent = el.value === "0" ? "—" : el.value;
+    } else if (el.id === "cbExtra") {
+      f.extraTopics = el.value;
+    } else if (el.id === "cbOutcome") {
+      f.outcome = el.value;
+    } else {
+      return;
+    }
+    markDirty();
+  });
+  main.addEventListener("keydown", ev => {
+    const tc = ev.target.closest(".cb-topic .cb-tc");
+    if (tc && tc === ev.target && (ev.key === "Enter" || ev.key === " ")) {
+      ev.preventDefault();
+      tc.click();
+    }
+  });
+  main.addEventListener("click", ev => {
+    const un = ev.target.closest("[data-unthread]");
+    if (un) {
+      state.form.threads = state.form.threads.filter(p => p !== un.dataset.unthread);
+      renderMain();
+      renderTranscript();
+      markDirty();
+      return;
+    }
+    const tc = ev.target.closest(".cb-topic .cb-tc");
+    if (tc) {
+      renderTranscript(tc.dataset.tc);
+      document.getElementById("cbTranscript").scrollIntoView({ block: "nearest" });
+      return;
+    }
+    if (ev.target.id === "cbDone") {
+      const done = state.current;
+      VERIFY_KEYS.forEach(k => state.form.verified.add(k));
+      dirtyCall = { call: done, form: state.form };
+      flushSave().then(() => {
+        const next = calls.find(c => c !== done && needsCheck(c));
+        if (next) {
+          select(next.id);
+        } else {
+          renderMain();
+          renderTranscript();
+          setStatus(t("all_done"));
+        }
+      });
+      return;
+    }
+    if (ev.target.id === "cbSave") {
+      if (!dirtyCall) {
+        dirtyCall = { call: state.current, form: state.form };
+      }
+      flushSave();
+    }
+  });
+
+  document.getElementById("cbq").placeholder = t("search");
+  document.getElementById("cbq").setAttribute("aria-label", t("search"));
+  document.getElementById("cbMain").innerHTML = '<div class="cb-card cb-empty">' + esc(t("pick_call")) + "</div>";
+  renderCounters();
+  renderPersonFilter();
+  renderList();
+  let fromHash = "";
+  try {
+    fromHash = decodeURIComponent((location.hash || "").slice(1));
+  } catch (e) {
+  }
+  const all = calls.concat(pending);
+  const start = all.some(c => c.id === fromHash) ? fromHash : (calls.find(needsCheck) || calls[0] || pending[0] || {}).id;
+  if (start) {
+    select(start);
+  }
+})();
+</script>
+</body>
+</html>
