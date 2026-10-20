@@ -2,7 +2,7 @@
 
 **Goal: an attachment of up to 64 MB uploads and downloads reliably.** Larger files are out of scope for now.
 
-Status: problem 2 is fixed, and so are uploads through a read replica, which reached the leader with an empty body. Through a replica the leader's internal listener still caps a body at fasthttp's default 4 MB. The public and internal servers no longer pre-parse multipart forms (`DisablePreParseMultipartForm: true`, `cmd/server/server.go`), so `fasthttpadaptor` passes the raw body through and drops one in-memory copy. The limits stay at 10 MB and 60 s: raising them waits for the request-body problem below.
+Status: problem 2 is fixed, and so are uploads through a read replica, which reached the leader with an empty body. The leader's internal listener takes the same `--max-request-body-size` as the public one; it used to fall back to fasthttp's default 4 MB. The public and internal servers no longer pre-parse multipart forms (`DisablePreParseMultipartForm: true`, `cmd/server/server.go`), so `fasthttpadaptor` passes the raw body through and drops one in-memory copy. The limits stay at 10 MB and 60 s: raising them waits for the request-body problem below.
 
 ## The request-body problem behind the limits
 
