@@ -24,26 +24,24 @@ The [trip2g/call_dashboard](https://github.com/trip2g/call_dashboard) repository
 - **codex-bridge** turns fleet's chat-completions calls into Codex Responses API calls with the ChatGPT login Hermes keeps.
 
 ```mermaid
-flowchart LR
-  subgraph trip2g
-    T[transcripts/] --> C[calls/ review]
-    C --> P[topics/]
-    E[call_edits/] --> H[threads/]
-    UI["/call and /threads pages"]
-  end
-  T -- webhook --> F
-  C -- webhook --> F
-  E -- webhook --> F
-  F[fleet: review, topics, chronology] -- writes notes --> trip2g
-  F --> B[codex-bridge] --> X[(Codex)]
-  HM[Hermes] -- MCP, read only --> trip2g
-  HM --> X
-  HM <--> TG[(Telegram)]
-  N[cron notify] -- GraphQL --> trip2g
-  N --> TG
-  You((owner)) --> UI
-  UI -- updateNotes --> E
+flowchart TD
+  You((owner))
+  TG[Telegram]
+  HM[Hermes]
+  N[cron notify]
+  V[(trip2g: notes, /call and /threads pages)]
+  F[fleet: review, topics, chronology]
+  X[(Codex)]
   You <--> TG
+  You -- checks the call --> V
+  TG <--> HM
+  HM -- MCP, read only --> V
+  N -- GraphQL --> V
+  N -- link to the call --> TG
+  V -- webhook on a new note --> F
+  F -- writes review, topics, thread line --> V
+  F -- through codex-bridge --> X
+  HM --> X
 ```
 
 ![[calls-telegram.png|The bot answers about a call and a thread; each answer ends with a dashboard link]]
