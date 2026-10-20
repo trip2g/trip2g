@@ -360,13 +360,17 @@ HTTP 200 application/json
         "name": "federated_note_html"
       },
       {
-        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards.",
+        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "detail_limit": {
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
+            },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
             },
             "kb_id": {
               "type": "string",
@@ -385,7 +389,15 @@ HTTP 200 application/json
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -484,7 +496,7 @@ HTTP 200 application/json
         "name": "note_html"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -492,13 +504,25 @@ HTTP 200 application/json
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
             },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
+            },
             "limit": {
               "type": "number",
               "description": "Max number of results to return (default 6)"
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -729,13 +753,17 @@ HTTP 200 application/json
         "name": "federated_note_html"
       },
       {
-        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards.",
+        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "detail_limit": {
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
+            },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
             },
             "kb_id": {
               "type": "string",
@@ -754,7 +782,15 @@ HTTP 200 application/json
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -895,7 +931,7 @@ HTTP 200 application/json
         "name": "private-tool"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -903,13 +939,25 @@ HTTP 200 application/json
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
             },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
+            },
             "limit": {
               "type": "number",
               "description": "Max number of results to return (default 6)"
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -1140,13 +1188,17 @@ HTTP 200 application/json
         "name": "federated_note_html"
       },
       {
-        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards.",
+        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "detail_limit": {
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
+            },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
             },
             "kb_id": {
               "type": "string",
@@ -1165,7 +1217,15 @@ HTTP 200 application/json
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -1270,7 +1330,7 @@ HTTP 200 application/json
         "name": "private-tool"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -1278,13 +1338,25 @@ HTTP 200 application/json
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
             },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
+            },
             "limit": {
               "type": "number",
               "description": "Max number of results to return (default 6)"
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -2186,13 +2258,17 @@ HTTP 200 application/json
         "name": "federated_note_html"
       },
       {
-        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards.",
+        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "detail_limit": {
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
+            },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
             },
             "kb_id": {
               "type": "string",
@@ -2211,7 +2287,15 @@ HTTP 200 application/json
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -2310,7 +2394,7 @@ HTTP 200 application/json
         "name": "note_html"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -2318,13 +2402,25 @@ HTTP 200 application/json
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
             },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
+            },
             "limit": {
               "type": "number",
               "description": "Max number of results to return (default 6)"
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -2555,13 +2651,17 @@ HTTP 200 application/json
         "name": "federated_note_html"
       },
       {
-        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards.",
+        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "detail_limit": {
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
+            },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
             },
             "kb_id": {
               "type": "string",
@@ -2580,7 +2680,15 @@ HTTP 200 application/json
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -2679,7 +2787,7 @@ HTTP 200 application/json
         "name": "note_html"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -2687,13 +2795,25 @@ HTTP 200 application/json
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
             },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
+            },
             "limit": {
               "type": "number",
               "description": "Max number of results to return (default 6)"
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -2935,13 +3055,17 @@ HTTP 200 application/json
         "name": "federated_note_html"
       },
       {
-        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards.",
+        "description": "Search connected knowledge bases. Returns snippets with heading breadcrumbs (title > section > subsection) and a precise toc_path per match, same as search; results also carry an absolute kb_id (string) to use verbatim on follow-up calls. Pass kb_id for one base, kb_ids for selected bases, or omit both to fan out. Nested bases are addressed with '/': kb_id \"philosophers/nietzsche\" routes through the 'philosophers' peer to the base it federates (recursive), up to 3 levels deep. Canonical call: federated_search(kb_id=\"philosophers/<author>\", query) -> federated_note_html(kb_id=\"philosophers/<author>\", path=<result.note_path>) — the standard way to descend into a leaf corpus and read real content, not hub cards. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "detail_limit": {
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
+            },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
             },
             "kb_id": {
               "type": "string",
@@ -2960,7 +3084,15 @@ HTTP 200 application/json
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [
@@ -3059,7 +3191,7 @@ HTTP 200 application/json
         "name": "note_html"
       },
       {
-        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note.",
+        "description": "Search notes by query. Returns snippets with a heading breadcrumb (title > section > subsection) that locates the approximate section, plus a precise toc_path per match. Each result carries note_path (string) and note_id (integer); each match carries match_id (string, form \"p<pid>:c<chunk>\"). Drill-down workflow: 1) search to find the approximate section via the breadcrumb; 2) call note_html(path=<result.note_path>, toc_path=[...]) to read the matched section, or expand(path=<result.note_path>, toc_path=[...]) to navigate the note's structure level by level; 3) note_html(path=<result.note_path>, match_id=<match.match_id>) for a focused chunk window. Each match also carries section_url — a link straight to that heading, for citing the section rather than the whole note. The optional fields each run an extra search whose results are merged with the main one; fill them to find more.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -3067,13 +3199,25 @@ HTTP 200 application/json
               "type": "number",
               "description": "How many results include full snippet matches; results beyond this are returned as lightweight previews (title, path, score) to save context (default 3)"
             },
+            "expected_answer": {
+              "type": "string",
+              "description": "Optional. One or two sentences that the answering note itself could contain, written the way the notes state facts (e.g. 'To reset a password, open Settings and select Security.'). Not a description of what the note covers, not a question. If unsure of details, stay general but keep it a statement of fact."
+            },
             "limit": {
               "type": "number",
               "description": "Max number of results to return (default 6)"
             },
             "query": {
               "type": "string",
-              "description": "Search query"
+              "description": "The user's question exactly as they asked it. Do not rewrite it."
+            },
+            "rephrased_query": {
+              "type": "string",
+              "description": "Optional. The question asked another way: different words, and the canonical name of what it asks about if you know it. One sentence."
+            },
+            "short_query": {
+              "type": "string",
+              "description": "Optional. 2-3 words that the answering note is sure to contain: the main term and one qualifier, in dictionary form (nominative singular, infinitive). A short phrase, not a list; no punctuation. Keyword search needs every word to match, so fewer precise words beat many."
             }
           },
           "required": [

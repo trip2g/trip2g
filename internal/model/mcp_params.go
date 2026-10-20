@@ -24,6 +24,13 @@ type MCPSearchParams struct {
 	// peer applies it against ITS OWN reranker config — reranking happens
 	// where the corpus is, which is the only place the passages exist.
 	Rerank *bool `json:"rerank,omitempty"`
+
+	// The agent's optional query variants (see sitesearch.Request). They ride
+	// through forwarded() like Rerank; a peer that predates them ignores the
+	// unknown keys.
+	ShortQuery     string `json:"short_query,omitempty"`
+	RephrasedQuery string `json:"rephrased_query,omitempty"`
+	ExpectedAnswer string `json:"expected_answer,omitempty"`
 }
 
 type MCPSimilarParams struct {

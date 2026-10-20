@@ -281,9 +281,12 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	siteConfig := env.SiteConfig(ctx)
 	useLatest := siteConfig.ShowDraftVersions || mcpAPIKeyAuthed(ctx)
 	retrieveReq := sitesearch.Request{
-		Query:     args.Query,
-		UseLatest: useLatest,
-		Rerank:    args.Rerank,
+		Query:          args.Query,
+		UseLatest:      useLatest,
+		Rerank:         args.Rerank,
+		ShortQuery:     args.ShortQuery,
+		RephrasedQuery: args.RephrasedQuery,
+		ExpectedAnswer: args.ExpectedAnswer,
 	}
 	results, _, err := sitesearch.Retrieve(ctx, env, retrieveReq)
 	if err != nil {
