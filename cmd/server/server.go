@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -146,48 +147,91 @@ func (a *app) requestHandler() fasthttp.RequestHandler {
 	return handler
 }
 
+func writeBodyTooLarge(ctx *fasthttp.RequestCtx) {
+	ctx.SetStatusCode(http.StatusRequestEntityTooLarge)
+	ctx.SetContentType("application/json")
+	ctx.SetBodyString(`{"errors":[{"message":"request body size exceeds the limit"}]}`)
+	ctx.SetConnectionClose()
+}
+
+// limitRequestBody enforces the body limit that stream mode takes away from
+// fasthttp, and reads the body before next so handlers see it in memory. It must
+// run outside TimeoutHandler: there the read is on the connection goroutine,
+// under its read deadline, and no timed-out handler keeps reading the conn.
+func limitRequestBody(next fasthttp.RequestHandler, limit int) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		if ctx.Request.Header.ContentLength() > limit {
+			writeBodyTooLarge(ctx)
+			return
+		}
+
+		stream := ctx.Request.BodyStream()
+		if stream == nil {
+			next(ctx)
+			return
+		}
+
+		// A fixed-length stream ends with plain io.EOF when the peer stops
+		// early, so a short body is caught by its length, not by err.
+		body, err := io.ReadAll(io.LimitReader(stream, int64(limit)+1))
+		contentLength := ctx.Request.Header.ContentLength()
+		if err != nil || (contentLength >= 0 && len(body) != contentLength) {
+			ctx.Error("Error when parsing request", fasthttp.StatusBadRequest)
+			ctx.SetConnectionClose()
+			return
+		}
+
+		if len(body) > limit {
+			writeBodyTooLarge(ctx)
+			return
+		}
+
+		ctx.Request.SetBodyRaw(body)
+		next(ctx)
+	}
+}
+
 func newHTTPServer(handler fasthttp.RequestHandler, handlerTimeout time.Duration, maxRequestBodySize int) *fasthttp.Server {
 	timeoutHandler := fasthttp.TimeoutHandler(handler, handlerTimeout, "timeout")
 	compressedHandler := fasthttp.CompressHandler(timeoutHandler)
 
 	return &fasthttp.Server{
-		Handler: func(ctx *fasthttp.RequestCtx) {
+		Handler: limitRequestBody(func(ctx *fasthttp.RequestCtx) {
 			// SSE connections are long-lived, skip timeout handler for them.
 			if strings.Contains(string(ctx.Request.Header.Peek("Accept")), "text/event-stream") {
 				handler(ctx)
 				return
 			}
 			compressedHandler(ctx)
-		},
-		ErrorHandler: func(ctx *fasthttp.RequestCtx, err error) {
-			if errors.Is(err, fasthttp.ErrBodyTooLarge) {
-				ctx.SetStatusCode(http.StatusRequestEntityTooLarge)
-				ctx.SetContentType("application/json")
-				ctx.SetBodyString(`{"errors":[{"message":"request body size exceeds the limit"}]}`)
-				return
-			}
-			// Default behavior for other errors.
+		}, maxRequestBodySize),
+		ErrorHandler: func(ctx *fasthttp.RequestCtx, _ error) {
 			ctx.Error("Error when parsing request", fasthttp.StatusBadRequest)
 		},
 		// Pre-parsing makes fasthttpadaptor rebuild the body from a map, which
 		// puts the multipart parts in random order and breaks GraphQL uploads.
 		DisablePreParseMultipartForm: true,
-		MaxRequestBodySize:           maxRequestBodySize,
-		ReadTimeout:                  handlerTimeout,
-		WriteTimeout:                 handlerTimeout,
-		IdleTimeout:                  handlerTimeout,
+		// Without streaming fasthttp reserves the announced Content-Length
+		// before a byte of it arrives.
+		StreamRequestBody:  true,
+		MaxRequestBodySize: maxRequestBodySize,
+		ReadTimeout:        handlerTimeout,
+		WriteTimeout:       handlerTimeout,
+		IdleTimeout:        handlerTimeout,
 	}
+}
+
+func (a *app) handlerTimeout() time.Duration {
+	if a.config.DevMode {
+		return 10 * time.Minute
+	}
+
+	return 60 * time.Second
 }
 
 func (a *app) startServer() {
 	handler := a.requestHandler()
 
-	handlerTimeout := 60 * time.Second
-	if a.config.DevMode {
-		handlerTimeout = 10 * time.Minute
-	}
-
-	s := newHTTPServer(handler, handlerTimeout, a.config.MaxRequestBodySize*1024*1024)
+	s := newHTTPServer(handler, a.handlerTimeout(), a.config.MaxRequestBodySize*1024*1024)
 
 	// Publish the full request handler so the internal server's leader-side
 	// replica intake (handleReplicaIntake) can run forwarded writes through the
@@ -418,7 +462,7 @@ func (a *app) startInternalServer() {
 		ctx.SetStatusCode(http.StatusNotFound)
 	}
 
-	a.internalServer = newInternalServer(handler, a.config.MaxRequestBodySize*1024*1024)
+	a.internalServer = newInternalServer(handler, a.handlerTimeout(), a.config.MaxRequestBodySize*1024*1024)
 
 	a.log.Info("starting internal server", "addr", a.config.InternalListenAddr)
 	if err := a.internalServer.ListenAndServe(a.config.InternalListenAddr); err != nil {
@@ -428,12 +472,14 @@ func (a *app) startInternalServer() {
 
 // A replica forwards writes to the leader here, so a body gets the public
 // server's size limit and reaches GraphQL unshuffled.
-func newInternalServer(handler fasthttp.RequestHandler, maxRequestBodySize int) *fasthttp.Server {
+func newInternalServer(handler fasthttp.RequestHandler, readTimeout time.Duration, maxRequestBodySize int) *fasthttp.Server {
 	return &fasthttp.Server{
-		Handler:                      handler,
+		Handler:                      limitRequestBody(handler, maxRequestBodySize),
 		Name:                         "trip2g-internal",
 		DisablePreParseMultipartForm: true,
+		StreamRequestBody:            true,
 		MaxRequestBodySize:           maxRequestBodySize,
+		ReadTimeout:                  readTimeout,
 	}
 }
 
