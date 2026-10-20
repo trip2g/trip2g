@@ -465,6 +465,12 @@ func TestValidateDemoVault(t *testing.T) {
 			`CRITICAL validate validators/only_h3.md: line 10: heading "Billing" is h2, only h3 is allowed`,
 		},
 		"notes/workshop_ok.md": nil,
+		"notes/board_ok.md":    nil,
+		"notes/board_bad.md": {
+			"CRITICAL validate validators/app_config.md: columns must be a non-empty list",
+			"CRITICAL validate validators/app_config.md: wip_limit must be a whole number",
+			"WARNING validate validators/app_config.md: show_archive must be true or false",
+		},
 		"notes/workshop_bad.md": {
 			`CRITICAL validate validators/session_has_image.md: line 8: "Session 2: publish" has no image`,
 		},
@@ -520,6 +526,8 @@ func TestValidateDocsSnippets(t *testing.T) {
 		"ru/user/validators":                 examples,
 		"en/thoughts/file-naming-convention": {"file_name"},
 		"ru/thoughts/file-naming-convention": {"file_name"},
+		"en/user/spa":                        {"app_config"},
+		"ru/user/spa":                        {"app_config"},
 	}
 
 	// The folder patch on both user pages appends to the note's own validate.

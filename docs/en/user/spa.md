@@ -211,7 +211,9 @@ const makeRequest = (query) => (variables) =>
 const updateNotes = makeRequest(`mutation ($input: UpdateNotesInput!) {
   updateNotes(input: $input) {
     __typename
-    ... on UpdateNotesSuccessPayload { updated { path versionId } }
+    ... on UpdateNotesSuccessPayload {
+      updated { path versionId warnings { level message } }
+    }
     ... on UpdateNotesHashMismatchPayload { path actualHash }
     ... on UpdateNotesPatchNotFoundPayload { path find }
     ... on ErrorPayload { message }
@@ -261,6 +263,51 @@ A successful save doesn't return the new hash. The note now holds exactly the ma
 On `UpdateNotesHashMismatchPayload` reload the page, or fetch the new content and apply your change to it. Kanban re-reads the latest version through the admin `noteVersionHistory` and `noteVersion` queries and replays the move.
 
 **Small edits.** Instead of `upsert`, which replaces the whole note, a change can be a `patch`: `{ patch: { path, find, replace, expectedHash } }` replaces one exact piece of text. Kanban toggles a checkbox this way, so text it doesn't model is never rewritten. To change frontmatter, use a `meta` change: `{ meta: { path, set, unset, expectedHash } }` sets or removes top-level keys and leaves every other line of the note as it was, so the app doesn't need the old value's exact text. All three forms, batches and error cases are in [[en/user/update_notes|updateNotes]].
+
+#### Validators: keep the app's data in shape {#validate}
+
+The note is the app's database, and anyone can edit it: you in Obsidian, an agent, the app itself. Nothing stops a broken value from landing in the file, and the app doesn't fail on it. `columns: Todo, Doing, Done` without brackets is one string, so `GetStrings` returns a single column named "Todo, Doing, Done". `wip_limit: "3"` in quotes is a string, so `GetInt` returns its default. The board opens, looks wrong, and nobody sees why. Attach a [[en/user/validators|validator]] to every note the app reads as data, and such a mistake becomes a warning on the note.
+
+A validator for the settings from [[en/user/spa#config|Configure the app from the frontmatter]], in a note `validators/app_config.md`:
+
+```jsonnet
+local isInt(v) = std.isNumber(v) && std.floor(v) == v;
+local columns = std.get(meta, 'columns');
+
+(
+  if !std.isArray(columns) || std.length(columns) == 0
+  then [{level: 'error', msg: 'columns must be a non-empty list'}]
+  else []
+) + (
+  if std.objectHas(meta, 'wip_limit') && !isInt(meta.wip_limit)
+  then [{level: 'error', msg: 'wip_limit must be a whole number'}]
+  else []
+) + (
+  if std.objectHas(meta, 'show_archive')
+    && !std.isBoolean(meta.show_archive)
+  then [{level: 'warning', msg: 'show_archive must be true or false'}]
+  else []
+)
+```
+
+The data note names it in its frontmatter:
+
+```yaml
+validate: "[[app_config]]"
+```
+
+A validator doesn't block a save. The note is written even with an `error`, and the messages come back in `updated[].warnings` of the `updateNotes` response, together with the note's other warnings. `level` is `CRITICAL` for an `error` and `WARNING` for a `warning`. Check them after every save and show them to the user, or a broken value the app itself wrote goes unnoticed:
+
+```js
+if (result.__typename === 'UpdateNotesSuccessPayload') {
+  const messages = result.updated
+    .flatMap((note) => note.warnings)
+    .map((w) => `${w.level}: ${w.message}`)
+  if (messages.length > 0) alert(messages.join('\n'))
+}
+```
+
+`alert` is the shortest way; a real app shows the messages in its own UI. The same messages appear in the sync CLI and in the admin panel, see [[en/user/validators#Where you see the result|Where you see the result]].
 
 ### Live updates {#live}
 
@@ -925,6 +972,7 @@ The operations above are tested against the schema. For anything else:
 - [ ] No API key or token in the page, no login screen of the app's own.
 - [ ] Edit controls show only when the layout's `currentUser.IsAdmin()` says so; a visitor sees the note read-only and the header's sign-in button.
 - [ ] Every save passes `expectedHash` and handles `UpdateNotesHashMismatchPayload` and an `errors` entry.
+- [ ] Every note the app reads as data has a `validate` validator, and the app shows `updated[].warnings` after a save.
 - [ ] MCP calls go to `/_system/mcp` by a relative URL, as `POST` with `Content-Type: application/json` and the browser's default `Accept`, and handle both a JSON-RPC `error` and a result with `isError`.
 - [ ] An API of your own sits under `/_system/extra/` on the site's host, not on a subdomain, `/api/` or another `/_system/` path; it sends the `Cookie` header only to trip2g at its internal address, never logs or stores it, and refuses `GET` on endpoints that change anything.
 - [ ] Data the app collects goes through a trip2g form: the app handles `TurnstileRequiredPayload`, `FormSubmitDeniedPayload` and `ErrorPayload`, and a form meant for members sits on a note only they can read.
