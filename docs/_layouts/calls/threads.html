@@ -70,11 +70,12 @@
 .thr-page .thr-thread:hover, .thr-page .thr-thread:hover .thr-name { background: var(--thr-band); }
 .thr-page .thr-thread.thr-selected, .thr-page .thr-thread.thr-selected .thr-name { background: var(--thr-sel); }
 .thr-page .thr-group, .thr-page .thr-group .thr-name { background: var(--thr-band); }
-.thr-page .thr-group .thr-name { display: flex; align-items: center; gap: 8px; }
-.thr-page .thr-pill { padding: 2px 10px; border: 1px solid var(--thr-line); border-radius: 999px; background: var(--thr-card); font-weight: 600; font-size: 12px; }
+.thr-page .thr-group .thr-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.thr-page .thr-pill { padding: 2px 10px; border: 1px solid var(--thr-line); border-radius: 999px; background: var(--thr-card); font-weight: 600; font-size: 12px; white-space: nowrap; }
 .thr-page .thr-count { color: var(--thr-muted); font-size: 12px; }
-.thr-page .thr-ctx { margin-left: auto; font-size: 12px; color: var(--thr-muted); cursor: pointer; padding: 9px 14px; display: flex; align-items: center; justify-content: flex-end; }
-.thr-page .thr-ctx:hover { color: var(--thr-accent); }
+.thr-page .thr-ctx { margin-left: auto; font-size: 12px; color: var(--thr-muted); cursor: pointer; white-space: nowrap; }
+.thr-page .thr-ctx:hover, .thr-page .thr-ctx:focus-visible { color: var(--thr-accent); }
+.thr-page .thr-thread:focus-visible { outline: 2px solid var(--thr-accent); outline-offset: -2px; }
 .thr-page .thr-head .thr-name { color: var(--thr-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: end; }
 .thr-page .thr-lane { position: relative; height: 100%; min-height: 40px; }
 .thr-page .thr-lane svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -461,8 +462,8 @@
       (todayX >= 0 && todayX <= 100 ? '<svg><line x1="' + todayX + '%" y1="70%" x2="' + todayX + '%" y2="100%" stroke="var(--thr-today)" stroke-width="1.5"/><circle cx="' + todayX + '%" cy="70%" r="3.5" fill="var(--thr-today)"/></svg>' : "") +
       "</div></div>";
     ordered.forEach(([g, items]) => {
-      html += '<div class="thr-row thr-group"><div class="thr-name"><span class="thr-pill">' + esc(g) + '</span><span class="thr-count">' + items.length + "</span></div>" +
-        '<div class="thr-ctx" data-group="' + esc(g) + '" data-short="' + esc(t("context_short")) + '">' + esc(t("context")) + "</div></div>";
+      html += '<div class="thr-row thr-group"><div class="thr-name"><span class="thr-pill">' + esc(g) + '</span><span class="thr-count">' + items.length + "</span>" +
+        '<span class="thr-ctx" tabindex="0" role="button" data-group="' + esc(g) + '" data-short="' + esc(t("context_short")) + '">' + esc(t("context")) + "</span></div><div></div></div>";
       items.forEach(th => {
         const n = th.calls.length;
         let meta = n ? esc(t("calls", { n })) : '<span class="thr-tag">' + esc(t("no_calls")) + "</span>";
@@ -476,7 +477,7 @@
           meta += ' <span class="thr-tag">' + esc(t("hidden")) + "</span>";
         }
         const sel = state.selected === th.permalink ? " thr-selected" : "";
-        html += '<div class="thr-row thr-thread' + sel + '" data-p="' + esc(th.permalink) + '"><div class="thr-name"><div class="thr-t" title="' + esc(th.title) + '">' + esc(th.title) + '</div><div class="thr-m">' + meta + "</div></div>" +
+        html += '<div class="thr-row thr-thread' + sel + '" tabindex="0" role="button" data-p="' + esc(th.permalink) + '"><div class="thr-name"><div class="thr-t" title="' + esc(th.title) + '">' + esc(th.title) + '</div><div class="thr-m">' + meta + "</div></div>" +
           '<div class="thr-lane">' + laneSVG(th, s, e) + "</div></div>";
       });
     });
@@ -538,11 +539,12 @@
     const body = await res.json();
     const payload = body.data && body.data.updateNotes;
     if (!payload || payload.__typename !== "UpdateNotesSuccessPayload") {
-      throw new Error((payload && (payload.message || payload.__typename)) || (body.errors && body.errors[0].message) || "HTTP " + res.status);
+      throw new Error((payload && (payload.message || payload.__typename)) || (body.errors && body.errors.length && body.errors[0].message) || "HTTP " + res.status);
     }
   }
 
   document.getElementById("q").placeholder = t("search");
+  document.getElementById("q").setAttribute("aria-label", t("search"));
   document.getElementById("prev").setAttribute("aria-label", t("earlier"));
   document.getElementById("next").setAttribute("aria-label", t("later"));
   document.querySelectorAll(".thr-span").forEach(b => {
@@ -570,6 +572,22 @@
     panel.innerHTML = renderThreadPanel(th);
     panel.scrollTop = 0;
     render();
+  });
+  document.getElementById("grid").addEventListener("keydown", ev => {
+    if (ev.key !== "Enter" && ev.key !== " ") {
+      return;
+    }
+    const el = ev.target.closest(".thr-thread, .thr-ctx");
+    if (!el || el !== ev.target) {
+      return;
+    }
+    ev.preventDefault();
+    const again = el.classList.contains("thr-ctx") ? '.thr-ctx[data-group="' + CSS.escape(el.dataset.group) + '"]' : '.thr-thread[data-p="' + CSS.escape(el.dataset.p) + '"]';
+    el.click();
+    const focused = document.querySelector("#grid " + again);
+    if (focused) {
+      focused.focus();
+    }
   });
   document.getElementById("panel").addEventListener("click", async ev => {
     const btn = ev.target.closest(".thr-hide");
