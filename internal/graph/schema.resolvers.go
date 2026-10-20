@@ -3609,7 +3609,7 @@ func (r *userResolver) FavoriteNotes(ctx context.Context, obj *db.User) ([]model
 		return nil, fmt.Errorf("failed to list user favorite notes: %w", err)
 	}
 
-	canRead, err := canreadnote.NewReader(ctx, env)
+	canRead, _, err := canreadnote.NewReader(ctx, env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create note reader: %w", err)
 	}

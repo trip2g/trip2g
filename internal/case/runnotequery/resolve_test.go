@@ -171,6 +171,7 @@ func TestResolve(t *testing.T) {
 					observed = append(observed, query+" "+result)
 				},
 				LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
+				CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
 				CurrentUserTokenFunc:      func(context.Context) (*usertoken.Data, error) { return nil, nil },
 				CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 			}
@@ -196,6 +197,7 @@ func TestResolveSignedInLooksUpSubgraphsOnce(t *testing.T) {
 	})
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
+		CachedQueryNotesFunc: runnotequery.NewNotesCache().CachedQueryNotes,
 		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
 		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
 			return &usertoken.Data{ID: 5, Role: "user"}, nil
@@ -219,6 +221,7 @@ func TestResolveFederatedUserHasNoID(t *testing.T) {
 	})
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
+		CachedQueryNotesFunc: runnotequery.NewNotesCache().CachedQueryNotes,
 		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
 		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
 			return &usertoken.Data{Role: usertoken.RoleFederated}, nil

@@ -40,6 +40,7 @@ func rowsVault(t *testing.T) *appmodel.NoteViews {
 func rowsEnv(nvs *appmodel.NoteViews, user *usertoken.Data) *runnotequery.EnvMock {
 	return &runnotequery.EnvMock{
 		LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
+		CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
 		ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
 		CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 		CurrentUserTokenFunc:      func(context.Context) (*usertoken.Data, error) { return user, nil },

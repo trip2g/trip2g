@@ -11,6 +11,7 @@ import (
 	"github.com/CloudyKit/jet/v6"
 	"github.com/stretchr/testify/require"
 
+	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -41,6 +42,10 @@ func (guestQueryEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, 
 }
 
 func (guestQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
+
+func (guestQueryEnv) CachedQueryNotes(_ uint64, _ canreadnote.Class, _ bool, build func() ([]byte, error)) ([]byte, error) {
+	return build()
+}
 
 func renderDocsLanding(t *testing.T, permalink string) string {
 	t.Helper()

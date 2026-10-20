@@ -39,6 +39,7 @@ import (
 	"trip2g/internal/case/materializenotefrontmatters"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/case/requestemailsignin"
+	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/chartdata"
 	"trip2g/internal/configregistry"
 	"trip2g/internal/cronjobs"
@@ -234,6 +235,7 @@ type appState struct {
 	// AssetIndex maps asset sha256 -> owning notes / publicness for the
 	// /_system/assets/ route; invalidated on note reloads.
 	*assetindex.AssetIndex
+	*runnotequery.NotesCache
 
 	*configregistry.SiteConfigBuilder
 
@@ -412,6 +414,7 @@ func main() {
 	a.ctx = ctx
 	a.SiteConfigBuilder = configregistry.NewSiteConfigBuilder(a)
 	a.pageCache = pagecache.New()
+	a.NotesCache = runnotequery.NewNotesCache()
 	a.Cache = fedinstr.New()
 	a.sigChan = make(chan os.Signal, 1)
 	signal.Notify(a.sigChan, syscall.SIGINT, syscall.SIGTERM)

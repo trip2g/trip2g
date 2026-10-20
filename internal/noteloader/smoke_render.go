@@ -22,6 +22,7 @@ const smokeRenderLimit = 10
 // smokeQueryEnv runs noteQuery during the smoke render over the notes being
 // loaded, as viewer: nil for a guest.
 type smokeQueryEnv struct {
+	*runnotequery.NotesCache
 	nvs    *model.NoteViews
 	viewer *usertoken.Data
 }
@@ -121,8 +122,9 @@ func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *mode
 	nvsWrap := templateviews.NewNVS(nvs, "")
 	// A page a guest can't open is read signed in; an admin reads every query,
 	// so only a missing or broken one warns there.
-	guest := memoSmokeQueries(smokeQueryEnv{nvs: nvs})
-	signedIn := memoSmokeQueries(smokeQueryEnv{nvs: nvs, viewer: &usertoken.Data{Role: "admin"}})
+	notesCache := runnotequery.NewNotesCache()
+	guest := memoSmokeQueries(smokeQueryEnv{NotesCache: notesCache, nvs: nvs})
+	signedIn := memoSmokeQueries(smokeQueryEnv{NotesCache: notesCache, nvs: nvs, viewer: &usertoken.Data{Role: "admin"}})
 	for _, n := range notes {
 		queries := signedIn
 		if n.IsAnonymouslyReadable() {

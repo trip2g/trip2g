@@ -9,6 +9,7 @@ import (
 	"github.com/CloudyKit/jet/v6"
 	"github.com/stretchr/testify/require"
 
+	"trip2g/internal/case/canreadnote"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/layoutloader"
 	"trip2g/internal/logger"
@@ -33,6 +34,10 @@ func (e *testEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, err
 	return nil, nil
 }
 func (e *testEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
+
+func (e *testEnv) CachedQueryNotes(_ uint64, _ canreadnote.Class, _ bool, build func() ([]byte, error)) ([]byte, error) {
+	return build()
+}
 func (e *testEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
 	return &usertoken.Data{Role: "admin"}, nil
 }

@@ -376,6 +376,10 @@ type NoteViews struct {
 	// it to promote a note whose name the query spells out exactly.
 	NameMap map[string][]*NoteView `json:"-"`
 
+	// Generation is the noteloader Load that published these views; 0 for
+	// views it has not published.
+	Generation uint64 `json:"-"`
+
 	// WikilinkResolution selects the bare-wikilink resolution strategy.
 	// Zero value ("") means the default scoped ladder.
 	WikilinkResolution WikilinkResolution `json:"-"`

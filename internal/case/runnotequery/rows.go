@@ -40,7 +40,7 @@ type rowRef struct {
 }
 
 func (r *rowNotes) init() {
-	read, err := canreadnote.NewReader(r.ctx, r.env)
+	read, _, err := canreadnote.NewReader(r.ctx, r.env)
 	if err != nil {
 		r.err = fmt.Errorf("failed to resolve the viewer: %w", err)
 		return

@@ -11,6 +11,7 @@ import (
 	"github.com/CloudyKit/jet/v6"
 	"github.com/stretchr/testify/require"
 
+	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -31,6 +32,10 @@ func (e noteQueryEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string,
 	return nil, nil
 }
 func (e noteQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
+
+func (e noteQueryEnv) CachedQueryNotes(_ uint64, _ canreadnote.Class, _ bool, build func() ([]byte, error)) ([]byte, error) {
+	return build()
+}
 func (e noteQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error) {
 	return e.user, nil
 }

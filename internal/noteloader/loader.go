@@ -418,8 +418,9 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	l.log.Debug("done")
 
 	l.Lock()
-	l.nvs = nvs
 	l.generation++
+	nvs.Generation = l.generation
+	l.nvs = nvs
 	// Only replace prevHTML when this Load cycle actually re-rendered notes.
 	// Spurious reloads (e.g. triggered by subgraph/webhook handling after a save)
 	// have count=0 and must not clear the prevHTML that the changedHtmlSelectors

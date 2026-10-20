@@ -51,6 +51,7 @@ func BenchmarkResolveDocs(b *testing.B) {
 	}
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
+		CachedQueryNotesFunc: runnotequery.NewNotesCache().CachedQueryNotes,
 		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
 		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
 			return &usertoken.Data{ID: 1, Role: "admin"}, nil
