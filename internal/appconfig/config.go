@@ -16,6 +16,7 @@ import (
 	cleanupapikeylogs "trip2g/internal/case/cronjob/cleanupapikeylogs"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliveries"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliverylogs"
+	"trip2g/internal/clientip"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/datasize"
 	"trip2g/internal/features"
@@ -33,6 +34,7 @@ import (
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // ArrayFlags implements flag.Value interface for string slice flags.
@@ -142,6 +144,15 @@ type Config struct {
 	// with. Set it and boot seeds the matching user_tokens row for the owner;
 	// empty turns the feature off and revokes what it seeded.
 	OwnerPersonalTokenValue string
+
+	// OwnerPasswordHash is a bcrypt hash of the owner's password. Set it and
+	// the owner can sign in with OWNER_EMAIL and that password; empty turns
+	// password sign-in off.
+	OwnerPasswordHash string
+
+	// TrustedProxies are the peers whose X-Real-IP and X-Forwarded-For are
+	// believed. Empty trusts no one: the client is the connection's address.
+	TrustedProxies clientip.Proxies
 
 	NowpaymentsAPIKey string
 	NowpaymentsIPNKey string
@@ -385,6 +396,10 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.OwnerEmail, "owner-email", c.OwnerEmail, "Owner email for the application")
 	flag.StringVar(&c.OwnerPersonalTokenValue, "owner-personal-token-value", c.OwnerPersonalTokenValue,
 		"Personal token (t2g_*) seeded for the owner at boot and handed to a fleet host; empty disables and revokes it")
+	flag.StringVar(&c.OwnerPasswordHash, "owner-password-hash", c.OwnerPasswordHash,
+		"bcrypt hash of the owner's password (see the hash-password subcommand); empty disables password sign-in")
+	flag.Var(&c.TrustedProxies, "trusted-proxies",
+		"Comma-separated IPs and CIDRs of reverse proxies whose X-Real-IP / X-Forwarded-For are trusted; empty trusts none")
 
 	flag.StringVar(&c.NowpaymentsAPIKey, "nowpayments-api-key", c.NowpaymentsAPIKey, "Nowpayments API key")
 	flag.StringVar(&c.NowpaymentsIPNKey, "nowpayments-ipn-key", c.NowpaymentsIPNKey, "Nowpayments IPN key")
@@ -785,6 +800,17 @@ func (c *Config) CronScheduleOverride(jobName string) string {
 	return os.Getenv(key)
 }
 
+// validateOwnerPasswordHash refuses anything bcrypt cannot read, a plaintext
+// password included.
+func validateOwnerPasswordHash(value interface{}) error {
+	v, _ := value.(string)
+	_, err := bcrypt.Cost([]byte(v))
+	if err != nil {
+		return errors.New("must be a bcrypt hash, as printed by the hash-password subcommand")
+	}
+	return nil
+}
+
 // validateOwnerPersonalToken keeps boot from starting on a value the resolver
 // would never route: DisplayPrefix also reads the first 8 characters of it.
 func validateOwnerPersonalToken(value interface{}) error {
@@ -817,6 +843,11 @@ func (c *Config) validate() error {
 		// resolver, so the fleet would get a 401 with nothing explaining why.
 		ozzo.Field(&c.OwnerPersonalTokenValue, ozzo.When(c.OwnerPersonalTokenValue != "",
 			ozzo.By(validateOwnerPersonalToken))),
+
+		ozzo.Field(&c.OwnerPasswordHash, ozzo.When(c.OwnerPasswordHash != "",
+			ozzo.By(validateOwnerPasswordHash))),
+		ozzo.Field(&c.OwnerEmail, ozzo.When(c.OwnerPasswordHash != "",
+			ozzo.Required.Error("is required when OWNER_PASSWORD_HASH is set"))),
 
 		// URLs should be valid if provided
 		ozzo.Field(&c.PublicURL, ozzo.When(c.PublicURL != "", is.URL)),

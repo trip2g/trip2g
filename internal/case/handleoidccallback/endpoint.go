@@ -24,6 +24,7 @@ type Env interface {
 	UserByEmail(ctx context.Context, email string) (db.User, error)
 	InsertUserWithEmail(ctx context.Context, arg db.InsertUserWithEmailParams) (db.User, error)
 	SetupUserToken(ctx context.Context, userID int64) (string, error)
+	RequestIP(ctx context.Context) string
 }
 
 type Endpoint struct{}
@@ -34,10 +35,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	ctx := req.Req
 
 	// Get client IP for logging
-	clientIP := string(ctx.Request.Header.Peek("X-Forwarded-For"))
-	if clientIP == "" {
-		clientIP = ctx.RemoteIP().String()
-	}
+	clientIP := env.RequestIP(ctx)
 
 	// Load credentials from DB
 	creds, err := env.GetActiveOIDCCredentials(ctx)

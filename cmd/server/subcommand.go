@@ -5,8 +5,9 @@ import "strings"
 // knownSubcommands are bare-word os.Args[1] values dispatched to a subcommand
 // handler instead of booting the server.
 var knownSubcommands = map[string]bool{ //nolint:gochecknoglobals // small static dispatch table
-	"lint":       true,
-	"login-link": true,
+	"lint":          true,
+	"login-link":    true,
+	"hash-password": true,
 }
 
 // unrecognizedSubcommand reports the bare subcommand name from an os.Args-shaped

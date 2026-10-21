@@ -4,10 +4,15 @@ $trip2g_auth $mol_view
 	me_user_email? \???
 	reload_me null
 	code_sent? false
+	password_mode? false
 	back? null
 	EmailForm $trip2g_auth_email_form
 		code_sent? <=> code_sent?
 		entered_email? <=> entered_email?
+		password_mode? <=> password_mode?
+	PasswordForm $trip2g_auth_password_form
+		reload_me <= reload_me
+		password_mode? <=> password_mode?
 	CodeForm $trip2g_auth_code_form
 		reload_me <= reload_me
 		email <= entered_email?
@@ -19,6 +24,7 @@ $trip2g_auth $mol_view
 $trip2g_auth_email_form $trip2g_form
 	code_sent? false
 	entered_email? \
+	password_mode? false
 	oauth_error \
 	body /
 		<= OAuth_error $mol_view
@@ -42,6 +48,9 @@ $trip2g_auth_email_form $trip2g_form
 			click? <=> submit? null
 		<= RequestResult $mol_status
 			message <= result? \
+		<= Password_mode $mol_button_minor
+			title @ \Sign in with password
+			click? <=> use_password? null
 		<= OAuth_buttons $trip2g_auth_oauth_buttons
 
 $trip2g_auth_code_form $trip2g_form
@@ -71,3 +80,27 @@ $trip2g_auth_code_form $trip2g_form
 		<= Result $mol_status
 			message <= result? \
 
+$trip2g_auth_password_form $trip2g_form
+	reload_me null
+	password_mode? false
+	body /
+		<= Email_field $mol_form_field
+			name \Email
+			Content <= email_control $mol_string
+				hint \name@example.com
+				value? <=> email? \
+				focused true
+		<= Password_field $mol_form_field
+			name @ \Password
+			bid <= password_bid \
+			Content <= password_control $mol_password
+				value? <=> password? \
+				submit? <=> submit? null
+	buttons /
+		<= Back $mol_button_minor
+			title @ \Back
+			click? <=> back? null
+		<= Submit $mol_button_major
+			dom_name \button
+			title \Enter
+			click? <=> submit? null

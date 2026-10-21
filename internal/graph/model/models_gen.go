@@ -2694,6 +2694,11 @@ type SignInByEmailInput struct {
 	Code  string `json:"code"`
 }
 
+type SignInByPasswordInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type SignInPayload struct {
 	Token  string        `json:"token"`
 	Viewer *model.Viewer `json:"viewer"`

@@ -1,6 +1,8 @@
 package render404
 
 import (
+	"context"
+
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/renderlayout"
 	"trip2g/internal/defaulttemplate"
@@ -17,6 +19,7 @@ type Env interface {
 	renderlayout.Env
 
 	TrackNotFound(path string, ip string)
+	RequestIP(ctx context.Context) string
 }
 
 func Handle(req *appreq.Request) (interface{}, error) {
@@ -27,7 +30,7 @@ func Handle(req *appreq.Request) (interface{}, error) {
 		return nil, appreq.ErrInvalidEnv
 	}
 
-	env.TrackNotFound(string(req.Req.Path()), req.Req.RemoteIP().String())
+	env.TrackNotFound(string(req.Req.Path()), env.RequestIP(ctx))
 
 	token, err := req.UserToken()
 	if err != nil {

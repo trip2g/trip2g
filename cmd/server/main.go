@@ -40,6 +40,7 @@ import (
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/runnotequery"
+	"trip2g/internal/case/signinbypassword"
 	"trip2g/internal/chartdata"
 	"trip2g/internal/configregistry"
 	"trip2g/internal/cronjobs"
@@ -270,6 +271,8 @@ type appState struct {
 	*turnstile.Client
 	signinCounter *requestemailsignin.SignInCounter
 
+	passwordSignInLimiter *signinbypassword.AttemptLimiter
+
 	gqlServer   *handler.Server
 	gqlExecutor graphql.GraphExecutor
 
@@ -282,14 +285,18 @@ type appState struct {
 func main() {
 	// Subcommand dispatch — must happen before appconfig/DB init so these paths
 	// never open SQLite or require environment configuration.
-	if len(os.Args) > 1 && os.Args[1] == "lint" {
-		runLint(os.Args[2:])
-		return // runLint calls os.Exit, but return satisfies the compiler
-	}
-
-	if len(os.Args) > 1 && os.Args[1] == "login-link" {
-		runLoginLink() // exits non-zero on error; falls through to a clean 0 exit on success
-		return
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "lint":
+			runLint(os.Args[2:])
+			return // runLint calls os.Exit, but return satisfies the compiler
+		case "login-link":
+			runLoginLink() // exits non-zero on error; falls through to a clean 0 exit on success
+			return
+		case "hash-password":
+			runHashPassword()
+			return
+		}
 	}
 
 	if name, ok := unrecognizedSubcommand(os.Args); ok {
@@ -400,6 +407,8 @@ func main() {
 
 			Client:        turnstile.New(config.Turnstile),
 			signinCounter: &requestemailsignin.SignInCounter{},
+
+			passwordSignInLimiter: signinbypassword.NewAttemptLimiter(passwordSignInAttempts, passwordSignInWindow),
 		},
 
 		Queries:      queries,

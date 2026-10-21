@@ -130,6 +130,7 @@ import (
 	"trip2g/internal/case/resolvewikilinks"
 	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/signinbyemail"
+	"trip2g/internal/case/signinbypassword"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
@@ -278,6 +279,7 @@ type Env interface {
 
 	requestemailsignin.Env
 	signinbyemail.Env
+	signinbypassword.Env
 	signout.Env
 	createpaymentlink.Env
 	createemailwaitlistrequest.Env
@@ -406,6 +408,7 @@ type Env interface {
 	BuildOIDCAuthURL(ctx context.Context, redirectURL string, dry bool) (model.OIDCSignIn, error)
 	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 	EmailSignInEnabled(ctx context.Context) bool
+	PasswordSignInEnabled() bool
 
 	// Federation secrets
 	ListFederationSecretSubgraphIDsByKID(ctx context.Context, kid string) ([]int64, error)

@@ -63,6 +63,10 @@ func (e *hiddenByEnv) ShortAPITokenSecret() string {
 	return hiddenByTestSecret
 }
 
+func (e *hiddenByEnv) RequestIP(context.Context) string {
+	return "203.0.113.7"
+}
+
 func (e *hiddenByEnv) HideNotePath(ctx context.Context, params db.HideNotePathParams) error {
 	return e.wq.HideNotePath(ctx, params)
 }

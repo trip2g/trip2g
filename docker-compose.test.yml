@@ -88,6 +88,8 @@ services:
       - LOG_SIGN_IN_CODES=true
       - LOG_LEVEL=debug
       - OWNER_EMAIL=hello@example.com
+      # bcrypt of "e2e owner password" (e2e/owner-password.spec.js); $$ is a literal $
+      - OWNER_PASSWORD_HASH=$$2a$$10$$A2Y52cY76ZTo0mlnkXRNO.LcOht8NYS1ut1feKRLVIkLbuPnCZgPi
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
       - 'FEATURES={"vector_search": {"enabled": true, "model": "bge-m3", "base_url": "http://embedding:8000/v1"}}'

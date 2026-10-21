@@ -49,7 +49,7 @@ func NewForwarder(leaderAddr, secret string) *Forwarder {
 // Forward proxies the current request to the leader and copies the leader's
 // response back verbatim (status, headers incl. Set-Cookie, body). On a
 // transport error it returns 502 so the caller surfaces a clear failure.
-func (f *Forwarder) Forward(ctx *fasthttp.RequestCtx) {
+func (f *Forwarder) Forward(ctx *fasthttp.RequestCtx, clientIP string) {
 	upReq := fasthttp.AcquireRequest()
 	upResp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseRequest(upReq)
@@ -61,8 +61,11 @@ func (f *Forwarder) Forward(ctx *fasthttp.RequestCtx) {
 	ctx.Request.CopyTo(upReq)
 
 	upReq.Header.Set(AuthHeader, SignAuth(f.secret, f.now(), authTTL))
-	// Relay the real client IP for the leader's logging/rate-limiting.
-	upReq.Header.Set("X-Forwarded-For", ctx.RemoteIP().String())
+	// Relay the client IP this replica resolved, replacing whatever the client
+	// sent, for the leader's logging/rate-limiting. The leader believes it only
+	// when this replica is in its TRUSTED_PROXIES.
+	upReq.Header.Set("X-Real-IP", clientIP)
+	upReq.Header.Set("X-Forwarded-For", clientIP)
 
 	if err := f.client.DoTimeout(upReq, upResp, forwardTimeout); err != nil {
 		ctx.SetStatusCode(fasthttp.StatusBadGateway)

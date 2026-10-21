@@ -40,6 +40,10 @@ namespace $.$$ {
 				return [ this.AppView() ]
 			}
 
+			if( this.password_mode() ) {
+				return [ this.PasswordForm() ]
+			}
+
 			if( this.entered_email() ) {
 				return [ this.CodeForm() ]
 			}
@@ -53,6 +57,7 @@ namespace $.$$ {
 		back() {
 			this.entered_email( '' )
 			this.code_sent( false )
+			this.password_mode( false )
 		}
 	}
 
@@ -75,6 +80,15 @@ namespace $.$$ {
 		@$mol_mem
 		email_enabled(): boolean {
 			return $trip2g_auth_methods_here()?.emailSignInEnabled ?? true
+		}
+
+		@$mol_mem
+		password_enabled(): boolean {
+			return $trip2g_auth_methods_here()?.passwordSignInEnabled ?? false
+		}
+
+		use_password() {
+			this.password_mode( true )
 		}
 
 		@$mol_mem
@@ -195,7 +209,7 @@ namespace $.$$ {
 		}
 
 		override buttons() {
-			const items = super.buttons()
+			const items = super.buttons().filter( item => item !== this.Password_mode() || this.password_enabled() )
 			if( this.email_enabled() ) return items
 			return items.filter( item => item !== this.RequestCode() && item !== this.RequestResult() )
 		}
@@ -246,6 +260,43 @@ namespace $.$$ {
 
 			if( res.data.__typename === 'SignInPayload' ) {
 				this.$.$mol_state_arg.value( 'email', null )
+				this.reload_me()
+				return
+			}
+
+			this.request_error( 'Unknown error' )
+		}
+	}
+
+	export class $trip2g_auth_password_form extends $.$trip2g_auth_password_form {
+		@$mol_mem
+		request_error( next?: string ): string {
+			return next ?? ''
+		}
+
+		password_bid() {
+			return this.request_error() || ''
+		}
+
+		back() {
+			this.password_mode( false )
+		}
+
+		submit() {
+			const res = $trip2g_auth_signin_password({
+				input: {
+					email: this.email(),
+					password: this.password(),
+				},
+			})
+
+			if( res.data.__typename === 'ErrorPayload' ) {
+				this.request_error( res.data.message )
+				return
+			}
+
+			if( res.data.__typename === 'SignInPayload' ) {
+				this.password_mode( false )
 				this.reload_me()
 				return
 			}

@@ -101,6 +101,8 @@ The admin config carries an `email_signin_enabled` switch for the same thing at 
 
 Before you set it, make sure at least one provider actually works. With email sign-in off and every provider failing, nobody can sign in, and that includes you.
 
+The owner has one more way in that needs neither mail nor a provider: a password set in `OWNER_PASSWORD_HASH`. It stays on the sign-in screen as **Sign in with password** while email sign-in is off. See [[en/user/selfhosted#Owner password sign-in|Owner password sign-in]].
+
 The Google and GitHub buttons always read "Sign in with Google" and "Sign in with GitHub" — the provider's own name is what a reader needs. An OIDC provider is the one that needs naming, since "SSO" names a protocol rather than a destination; see [[en/user/oidc]] for `OIDC_DISPLAY_NAME`.
 
 ## Security

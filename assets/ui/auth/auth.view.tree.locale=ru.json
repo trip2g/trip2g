@@ -1,5 +1,8 @@
 {
 	"$trip2g_auth_code_form_Code_hint_title": "Мы отправили код на вашу почту. Введите его ниже.",
 	"$trip2g_auth_code_form_Code_field_name": "Код",
-	"$trip2g_auth_code_form_Back_title": "Назад"
+	"$trip2g_auth_code_form_Back_title": "Назад",
+	"$trip2g_auth_email_form_Password_mode_title": "Войти по паролю",
+	"$trip2g_auth_password_form_Password_field_name": "Пароль",
+	"$trip2g_auth_password_form_Back_title": "Назад"
 }

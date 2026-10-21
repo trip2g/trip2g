@@ -146,6 +146,7 @@ import (
 	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/case/signinbyemail"
+	"trip2g/internal/case/signinbypassword"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
@@ -2758,16 +2759,17 @@ func (r *layoutBlockParamResolver) Value(ctx context.Context, obj *appmodel.Layo
 
 // RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
 func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input model.RequestEmailSignInCodeInput) (model.RequestEmailSignInCodeOrErrorPayload, error) {
-	var remoteIP string
-	if req, err := appreq.FromCtx(ctx); err == nil && req.Req != nil {
-		remoteIP = req.Req.RemoteIP().String()
-	}
-	return requestemailsignin.Resolve(ctx, r.env(ctx), input, remoteIP)
+	return requestemailsignin.Resolve(ctx, r.env(ctx), input, r.env(ctx).RequestIP(ctx))
 }
 
 // SignInByEmail is the resolver for the signInByEmail field.
 func (r *mutationResolver) SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error) {
 	return signinbyemail.Resolve(ctx, r.env(ctx), input)
+}
+
+// SignInByPassword is the resolver for the signInByPassword field.
+func (r *mutationResolver) SignInByPassword(ctx context.Context, input model.SignInByPasswordInput) (model.SignInOrErrorPayload, error) {
+	return signinbypassword.Resolve(ctx, r.env(ctx), input, r.env(ctx).RequestIP(ctx))
 }
 
 // SignOut is the resolver for the signOut field.
@@ -3260,6 +3262,11 @@ func (r *queryResolver) GithubAuthURL(ctx context.Context, input model.OAuthURLI
 // EmailSignInEnabled is the resolver for the emailSignInEnabled field.
 func (r *queryResolver) EmailSignInEnabled(ctx context.Context) (bool, error) {
 	return r.env(ctx).EmailSignInEnabled(ctx), nil
+}
+
+// PasswordSignInEnabled is the resolver for the passwordSignInEnabled field.
+func (r *queryResolver) PasswordSignInEnabled(ctx context.Context) (bool, error) {
+	return r.env(ctx).PasswordSignInEnabled(), nil
 }
 
 // Admin is the resolver for the admin field.

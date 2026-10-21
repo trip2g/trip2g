@@ -20,6 +20,7 @@ type Env interface {
 	UpsertAPIKeyLogAction(ctx context.Context, name string) error
 	UpsertAPIKeyLogIP(ctx context.Context, ip string) error
 	ShortAPITokenSecret() string
+	RequestIP(ctx context.Context) string
 }
 
 var ErrMissingKey = errors.New("missing X-API-Key in request header")
@@ -92,7 +93,7 @@ func resolveAPIKey(ctx context.Context, env Env, plainKey string, action string,
 		return nil, fmt.Errorf("failed to upsert API key log action: %w", err)
 	}
 
-	ip := req.Req.RemoteIP().String()
+	ip := env.RequestIP(ctx)
 
 	err = env.UpsertAPIKeyLogIP(ctx, ip)
 	if err != nil {

@@ -17,6 +17,7 @@ func TestUnrecognizedSubcommand(t *testing.T) {
 		{"flag invocation", []string{"trip2g-server", "-listen-addr=:8080"}, "", false},
 		{"known: lint", []string{"trip2g-server", "lint", "docs"}, "", false},
 		{"known: login-link", []string{"trip2g-server", "login-link"}, "", false},
+		{"known: hash-password", []string{"trip2g-server", "hash-password"}, "", false},
 		{"unknown bare word", []string{"trip2g-server", "bogus"}, "bogus", true},
 		{"typo of login-link", []string{"trip2g-server", "login-lnk"}, "login-lnk", true},
 	}
