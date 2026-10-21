@@ -29,18 +29,18 @@ flowchart TD
   TG[Telegram]
   HM[Hermes]
   N[уведомление по cron]
-  V[(trip2g: заметки, страницы /call и /threads)]
+  V[(trip2g: заметки и страницы)]
   F[fleet: review, topics, chronology]
   X[(Codex)]
   You <--> TG
-  You -- проверяет созвон --> V
+  N -- ссылка --> TG
   TG <--> HM
-  HM -- MCP, только чтение --> V
+  You -- проверяет --> V
+  HM -- MCP, чтение --> V
   N -- GraphQL --> V
-  N -- ссылка на созвон --> TG
-  V -- вебхук на новую заметку --> F
-  F -- пишет разбор, темы, строку нити --> V
-  F -- через codex-bridge --> X
+  V -- вебхук --> F
+  F -- пишет --> V
+  F --> B[codex-bridge] --> X
   HM -- напрямую --> X
 ```
 

@@ -29,18 +29,18 @@ flowchart TD
   TG[Telegram]
   HM[Hermes]
   N[cron notify]
-  V[(trip2g: notes, /call and /threads pages)]
+  V[(trip2g: notes and pages)]
   F[fleet: review, topics, chronology]
   X[(Codex)]
   You <--> TG
-  You -- checks the call --> V
+  N -- link --> TG
   TG <--> HM
-  HM -- MCP, read only --> V
+  You -- checks --> V
+  HM -- MCP, read --> V
   N -- GraphQL --> V
-  N -- link to the call --> TG
-  V -- webhook on a new note --> F
-  F -- writes review, topics, thread line --> V
-  F -- through codex-bridge --> X
+  V -- webhook --> F
+  F -- writes --> V
+  F --> B[codex-bridge] --> X
   HM -- directly --> X
 ```
 
