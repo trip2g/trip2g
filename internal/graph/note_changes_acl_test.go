@@ -61,6 +61,7 @@ func authEnvMock(token *usertoken.Data, keyByValue func(value string) (db.ApiKey
 		},
 		InsertAPIKeyLogFunc:       func(ctx context.Context, arg db.InsertAPIKeyLogParams) error { return nil },
 		UpsertAPIKeyLogActionFunc: func(ctx context.Context, name string) error { return nil },
+		RequestIPFunc:             func(context.Context) string { return "203.0.113.7" },
 		UpsertAPIKeyLogIPFunc:     func(ctx context.Context, ip string) error { return nil },
 		ShortAPITokenSecretFunc:   func() string { return testShortAPISecret },
 	}

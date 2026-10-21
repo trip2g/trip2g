@@ -30,6 +30,9 @@ var _ checkapikey.Env = &EnvMock{}
 //			InsertAPIKeyLogFunc: func(ctx context.Context, arg db.InsertAPIKeyLogParams) error {
 //				panic("mock out the InsertAPIKeyLog method")
 //			},
+//			RequestIPFunc: func(ctx context.Context) string {
+//				panic("mock out the RequestIP method")
+//			},
 //			ShortAPITokenSecretFunc: func() string {
 //				panic("mock out the ShortAPITokenSecret method")
 //			},
@@ -54,6 +57,9 @@ type EnvMock struct {
 
 	// InsertAPIKeyLogFunc mocks the InsertAPIKeyLog method.
 	InsertAPIKeyLogFunc func(ctx context.Context, arg db.InsertAPIKeyLogParams) error
+
+	// RequestIPFunc mocks the RequestIP method.
+	RequestIPFunc func(ctx context.Context) string
 
 	// ShortAPITokenSecretFunc mocks the ShortAPITokenSecret method.
 	ShortAPITokenSecretFunc func() string
@@ -85,6 +91,11 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertAPIKeyLogParams
 		}
+		// RequestIP holds details about calls to the RequestIP method.
+		RequestIP []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// ShortAPITokenSecret holds details about calls to the ShortAPITokenSecret method.
 		ShortAPITokenSecret []struct {
 		}
@@ -106,6 +117,7 @@ type EnvMock struct {
 	lockApiKeyByValue         sync.RWMutex
 	lockCurrentUserToken      sync.RWMutex
 	lockInsertAPIKeyLog       sync.RWMutex
+	lockRequestIP             sync.RWMutex
 	lockShortAPITokenSecret   sync.RWMutex
 	lockUpsertAPIKeyLogAction sync.RWMutex
 	lockUpsertAPIKeyLogIP     sync.RWMutex
@@ -212,6 +224,38 @@ func (mock *EnvMock) InsertAPIKeyLogCalls() []struct {
 	mock.lockInsertAPIKeyLog.RLock()
 	calls = mock.calls.InsertAPIKeyLog
 	mock.lockInsertAPIKeyLog.RUnlock()
+	return calls
+}
+
+// RequestIP calls RequestIPFunc.
+func (mock *EnvMock) RequestIP(ctx context.Context) string {
+	if mock.RequestIPFunc == nil {
+		panic("EnvMock.RequestIPFunc: method is nil but Env.RequestIP was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockRequestIP.Lock()
+	mock.calls.RequestIP = append(mock.calls.RequestIP, callInfo)
+	mock.lockRequestIP.Unlock()
+	return mock.RequestIPFunc(ctx)
+}
+
+// RequestIPCalls gets all the calls that were made to RequestIP.
+// Check the length with:
+//
+//	len(mockedEnv.RequestIPCalls())
+func (mock *EnvMock) RequestIPCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockRequestIP.RLock()
+	calls = mock.calls.RequestIP
+	mock.lockRequestIP.RUnlock()
 	return calls
 }
 

@@ -349,8 +349,7 @@ func (a *app) ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiK
 		return nil, errors.New("invalid API key")
 	}
 
-	req, _ := appreq.FromCtx(ctx)
-	ip := req.Req.RemoteIP().String()
+	ip := a.RequestIP(ctx)
 
 	if logErr := a.WriteQueries.UpsertAPIKeyLogAction(ctx, action); logErr != nil {
 		return nil, fmt.Errorf("log action: %w", logErr)

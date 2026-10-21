@@ -167,6 +167,7 @@ func TestResolvePrefersAPIKeyOverBearer(t *testing.T) {
 		UpsertAPIKeyLogActionFunc: func(ctx context.Context, name string) error {
 			return nil
 		},
+		RequestIPFunc: func(context.Context) string { return "203.0.113.7" },
 		UpsertAPIKeyLogIPFunc: func(ctx context.Context, ip string) error {
 			return nil
 		},

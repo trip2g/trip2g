@@ -95,18 +95,7 @@ func (a *app) RequestIP(ctx context.Context) string {
 	if err != nil {
 		return ""
 	}
-	// Check X-Real-IP / X-Forwarded-For first (behind proxy)
-	if ip := string(req.Req.Request.Header.Peek("X-Real-IP")); ip != "" {
-		return ip
-	}
-	if ip := string(req.Req.Request.Header.Peek("X-Forwarded-For")); ip != "" {
-		return ip
-	}
-	ip := req.Req.RemoteIP()
-	if ip == nil {
-		return ""
-	}
-	return ip.String()
+	return a.config.TrustedProxies.Of(req.Req)
 }
 
 // pluginOrigins are the origins the Obsidian plugin runs under. Desktop uses
@@ -202,7 +191,7 @@ func (a *app) prepareMiddlewares() []Middleware {
 			if !readreplica.IsWrite(string(req.Req.Method())) {
 				return false
 			}
-			a.replicaForwarder.Forward(req.Req)
+			a.replicaForwarder.Forward(req.Req, a.config.TrustedProxies.Of(req.Req))
 			return true
 		},
 		a.handleSitemap,

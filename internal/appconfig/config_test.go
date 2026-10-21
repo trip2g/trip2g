@@ -63,6 +63,13 @@ func TestApplyStorageEnvFallbackSecretKey(t *testing.T) {
 		}
 	})
 
+	t.Run("trusted-proxies parses a list and refuses a bad entry", func(t *testing.T) {
+		require.NoError(t, flag.CommandLine.Set("trusted-proxies", "127.0.0.1,172.16.0.0/12"))
+		require.Equal(t, "127.0.0.1/32,172.16.0.0/12", c.TrustedProxies.String())
+
+		require.Error(t, flag.CommandLine.Set("trusted-proxies", "172.16.0.0/40"))
+	})
+
 	t.Run("webhook-allow-private flag can be set", func(t *testing.T) {
 		if err := flag.CommandLine.Set("webhook-allow-private", "true"); err != nil {
 			t.Fatalf("failed to set webhook-allow-private flag: %v", err)

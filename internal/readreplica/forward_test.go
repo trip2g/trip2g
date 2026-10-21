@@ -42,9 +42,11 @@ func fakeLeader(t *testing.T, secret string, appHandler fasthttp.RequestHandler)
 func TestForwardRelaysAuthenticatedWrite(t *testing.T) {
 	const secret = "shared-secret"
 
-	var gotMethod, gotPath, gotBody string
+	var gotMethod, gotPath, gotBody, gotRealIP, gotForwardedFor string
 	fwd := fakeLeader(t, secret, func(ctx *fasthttp.RequestCtx) {
 		gotMethod = string(ctx.Method())
+		gotRealIP = string(ctx.Request.Header.Peek("X-Real-IP"))
+		gotForwardedFor = string(ctx.Request.Header.Peek("X-Forwarded-For"))
 		gotPath = string(ctx.Path())
 		gotBody = string(ctx.PostBody())
 		ctx.SetStatusCode(fasthttp.StatusCreated)
@@ -57,8 +59,10 @@ func TestForwardRelaysAuthenticatedWrite(t *testing.T) {
 	ctx.Request.SetRequestURI("/_system/graphql")
 	ctx.Request.Header.SetHost("example.test")
 	ctx.Request.SetBodyString(`{"query":"mutation{...}"}`)
+	ctx.Request.Header.Set("X-Real-IP", "6.6.6.6")
+	ctx.Request.Header.Set("X-Forwarded-For", "6.6.6.6")
 
-	fwd.Forward(ctx)
+	fwd.Forward(ctx, "198.51.100.1")
 
 	if ctx.Response.StatusCode() != fasthttp.StatusCreated {
 		t.Fatalf("status = %d, want 201", ctx.Response.StatusCode())
@@ -74,6 +78,9 @@ func TestForwardRelaysAuthenticatedWrite(t *testing.T) {
 	}
 	if got := string(ctx.Response.Header.Peek("Set-Cookie")); got != "session=abc" {
 		t.Errorf("Set-Cookie not relayed: %q", got)
+	}
+	if gotRealIP != "198.51.100.1" || gotForwardedFor != "198.51.100.1" {
+		t.Errorf("leader saw X-Real-IP %q, X-Forwarded-For %q; want the replica's client IP, not the client's headers", gotRealIP, gotForwardedFor)
 	}
 }
 
@@ -94,7 +101,7 @@ func TestIntakeRejectsUnsignedForward(t *testing.T) {
 	ctx.Request.SetRequestURI("/admin")
 	ctx.Request.Header.SetHost("example.test")
 
-	fwd.Forward(ctx)
+	fwd.Forward(ctx, "198.51.100.1")
 
 	if ctx.Response.StatusCode() != fasthttp.StatusUnauthorized {
 		t.Fatalf("status = %d, want 401", ctx.Response.StatusCode())

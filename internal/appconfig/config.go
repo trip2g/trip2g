@@ -16,6 +16,7 @@ import (
 	cleanupapikeylogs "trip2g/internal/case/cronjob/cleanupapikeylogs"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliveries"
 	"trip2g/internal/case/cronjob/cleanupwebhookdeliverylogs"
+	"trip2g/internal/clientip"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/datasize"
 	"trip2g/internal/features"
@@ -148,6 +149,10 @@ type Config struct {
 	// the owner can sign in with OWNER_EMAIL and that password; empty turns
 	// password sign-in off.
 	OwnerPasswordHash string
+
+	// TrustedProxies are the peers whose X-Real-IP and X-Forwarded-For are
+	// believed. Empty trusts no one: the client is the connection's address.
+	TrustedProxies clientip.Proxies
 
 	NowpaymentsAPIKey string
 	NowpaymentsIPNKey string
@@ -393,6 +398,8 @@ func (c *Config) defineFlags() {
 		"Personal token (t2g_*) seeded for the owner at boot and handed to a fleet host; empty disables and revokes it")
 	flag.StringVar(&c.OwnerPasswordHash, "owner-password-hash", c.OwnerPasswordHash,
 		"bcrypt hash of the owner's password (see the hash-password subcommand); empty disables password sign-in")
+	flag.Var(&c.TrustedProxies, "trusted-proxies",
+		"Comma-separated IPs and CIDRs of reverse proxies whose X-Real-IP / X-Forwarded-For are trusted; empty trusts none")
 
 	flag.StringVar(&c.NowpaymentsAPIKey, "nowpayments-api-key", c.NowpaymentsAPIKey, "Nowpayments API key")
 	flag.StringVar(&c.NowpaymentsIPNKey, "nowpayments-ipn-key", c.NowpaymentsIPNKey, "Nowpayments IPN key")
