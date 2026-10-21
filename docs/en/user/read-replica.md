@@ -174,6 +174,7 @@ TRIP2G_MINIO_BUCKET=trip2g-backups
 Notes:
 - The DB env var is `TRIP2G_DB_FILE` (flag `--db-file`), not `TRIP2G_DATABASE_FILE`.
 - `TRIP2G_INTERNAL_LISTEN_ADDR` must be on the private NIC. This is the write intake the replica forwards to.
+- The replica passes on the client's address in `X-Real-IP`. The leader believes it only from an address in its `TRIP2G_TRUSTED_PROXIES`, so add the replica's private address there (for example `TRIP2G_TRUSTED_PROXIES=10.20.0.3`). Without it, rate limits and logs on the leader see every forwarded write as coming from the replica. If the replica itself sits behind a proxy, set `TRIP2G_TRUSTED_PROXIES` on the replica too.
 - `TRIP2G_DATA_ENCRYPTION_KEY` must be exactly 32 bytes.
 
 ### Replica: `/etc/trip2g.env`

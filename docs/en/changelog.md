@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Behind a proxy, set `TRUSTED_PROXIES` or every visitor shares one address
+
+- **What.** trip2g used to believe `X-Real-IP` and `X-Forwarded-For` from anyone. It now reads them only from addresses in `TRUSTED_PROXIES`, a comma-separated list of IPs and CIDRs. Unset, it trusts no proxy and uses the connection's address. This one rule now gives the address for the password sign-in limit, captcha checks, form submissions and the wait list, the 404 tracker, API key logs and OAuth logs.
+- **Why.** Any client could put any address in those headers and dodge a per-address limit or forge a log line.
+- **How to use.** **If trip2g runs behind a reverse proxy, add the proxy's address before upgrading**, or every visitor will look like the proxy. For a proxy in Docker: `TRUSTED_PROXIES=127.0.0.1,172.16.0.0/12`. For a proxy on the same host: `TRUSTED_PROXIES=127.0.0.1`. A read replica's leader needs the replica's private address in its own `TRUSTED_PROXIES`. trip2g refuses to start on an entry it cannot parse. See [[en/user/selfhosted#Behind a reverse proxy|Behind a reverse proxy]].
+
 ### The owner can sign in with a password
 
 - **What.** Set `OWNER_PASSWORD_HASH` to a bcrypt hash and the sign-in screen shows **Sign in with password**. The owner signs in with `OWNER_EMAIL` and that password; every other address is refused with the same error as a wrong password. `trip2g hash-password` reads a password from stdin and prints the hash. Attempts are limited to ten per 15 minutes per client address and per email. Unset, nothing changes.

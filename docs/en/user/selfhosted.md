@@ -583,6 +583,41 @@ From there, continue with [[en/user/getting-started|Getting started]].
 
 For the smoothest rollout, start without vector search, verify email sign-in first, and only then enable embeddings in `FEATURES`.
 
+## Behind a reverse proxy
+
+trip2g needs the visitor's address for the password sign-in limit, captcha
+checks, the address saved with a form submission, and logs. Behind a reverse proxy every connection comes from the proxy, and
+the visitor's address arrives in a header the proxy sets: `X-Real-IP` or
+`X-Forwarded-For`. Anyone can send those headers, so trip2g believes them only
+from the addresses listed in `TRUSTED_PROXIES`:
+
+```dotenv
+TRUSTED_PROXIES=127.0.0.1,172.16.0.0/12
+```
+
+- The value is a comma-separated list of IPs and CIDRs, IPv4 or IPv6. trip2g
+  refuses to start on an entry it cannot parse.
+- Unset, no proxy is trusted: the visitor's address is the connection's
+  address, and the headers are ignored.
+- From a trusted proxy, trip2g takes `X-Real-IP`. Without it, it takes the
+  right-most `X-Forwarded-For` entry that is not itself a trusted proxy.
+
+Which value to set:
+
+- **Single binary with `ACME_DOMAIN`.** Nothing to set: visitors connect to
+  trip2g directly.
+- **Docker Compose with Caddy.** Caddy reaches trip2g over the compose
+  network, which Docker takes from `172.16.0.0/12` by default, so
+  `TRUSTED_PROXIES=172.16.0.0/12` works. `docker network inspect` shows the
+  real subnet if yours differs.
+- **A proxy on the same host** (nginx, Caddy or Traefik on the host, trip2g on
+  localhost): `TRUSTED_PROXIES=127.0.0.1`.
+
+Without it, behind a proxy every visitor shares one address. The limit of ten
+password sign-in attempts per address then counts everyone's attempts
+together, and a stranger mistyping a password uses up the owner's attempts as
+well.
+
 ## Owner password sign-in
 
 A box with no mail server has nowhere to send a sign-in code. Give the owner a
@@ -640,7 +675,8 @@ password pasted by mistake, say) or when `OWNER_EMAIL` is empty.
 
 - **Attempts are limited.** Ten per 15 minutes from one client address, and
   ten per 15 minutes for one email. Behind a reverse proxy every request comes
-  from the proxy's address, so the first limit is shared by everyone. The
+  from the proxy's address, so the first limit is shared by everyone unless
+  `TRUSTED_PROXIES` names the proxy (see above). The
   second means someone guessing the owner's password also locks the owner out
   for up to 15 minutes; `trip2g login-link` still signs you in then.
 - **Changing the password** is a new hash and a restart. Sessions already
