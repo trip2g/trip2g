@@ -3064,6 +3064,12 @@ export type Mutation = {
   requestEmailSignInCode: RequestEmailSignInCodeOrErrorPayload;
   revokeUserToken: RevokeUserTokenOrErrorPayload;
   signInByEmail: SignInOrErrorPayload;
+  /**
+   * Signs the owner in with OWNER_EMAIL and the password whose hash is in
+   * OWNER_PASSWORD_HASH. Any other email is refused with the same error as a
+   * wrong password.
+   */
+  signInByPassword: SignInOrErrorPayload;
   signOut: SignOutOrErrorPayload;
   submitForm: SubmitFormOrErrorPayload;
   toggleFavoriteNote: ToggleFavoriteNoteOrErrorPayload;
@@ -3115,6 +3121,11 @@ export type MutationrevokeUserTokenArgs = {
 
 export type MutationsignInByEmailArgs = {
   input: SignInByEmailInput;
+};
+
+
+export type MutationsignInByPasswordArgs = {
+  input: SignInByPasswordInput;
 };
 
 
@@ -3544,6 +3555,11 @@ export type Query = {
   noteQuery: NoteQueryOrErrorPayload;
   /** Returns OIDC URLs for authentication. */
   oidcAuthUrl: OAuthUrlPayload;
+  /**
+   * Whether the owner can sign in with a password: true when the instance has
+   * OWNER_PASSWORD_HASH set.
+   */
+  passwordSignInEnabled: Scalars['Boolean']['output'];
   /** Public URL of the application. Used for OAuth provider Homepage URL and other integrations. */
   publicUrl: Scalars['String']['output'];
   /**
@@ -4095,6 +4111,11 @@ export type SetTgChatSubgraphsPayload = {
 export type SignInByEmailInput = {
   code: Scalars['String']['input'];
   email: Scalars['String']['input'];
+};
+
+export type SignInByPasswordInput = {
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
 };
 
 export type SignInOrErrorPayload = ErrorPayload | SignInPayload;

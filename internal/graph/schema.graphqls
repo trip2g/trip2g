@@ -1757,6 +1757,12 @@ type Query {
   """
   emailSignInEnabled: Boolean!
 
+  """
+  Whether the owner can sign in with a password: true when the instance has
+  OWNER_PASSWORD_HASH set.
+  """
+  passwordSignInEnabled: Boolean!
+
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
   search(input: SearchInput!): SearchConnection!
@@ -1838,6 +1844,15 @@ type SignInPayload {
 }
 
 union SignInOrErrorPayload = SignInPayload | ErrorPayload
+
+#
+# signInByPassword
+#
+
+input SignInByPasswordInput {
+  email: String!
+  password: String!
+}
 
 #
 # signOut
@@ -2379,6 +2394,12 @@ type Subscription {
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
+  """
+  Signs the owner in with OWNER_EMAIL and the password whose hash is in
+  OWNER_PASSWORD_HASH. Any other email is refused with the same error as a
+  wrong password.
+  """
+  signInByPassword(input: SignInByPasswordInput!): SignInOrErrorPayload!
   signOut: SignOutOrErrorPayload!
   createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
 

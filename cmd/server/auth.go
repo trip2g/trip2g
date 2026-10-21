@@ -203,6 +203,13 @@ var ErrFailedGeneration = errors.New("failed to generate code")
 // it without duplicating the literal.
 const DevSignInCode = "111111"
 
+// Password sign-in attempts allowed per client IP and, separately, per email
+// within one window.
+const (
+	passwordSignInAttempts = 10
+	passwordSignInWindow   = 15 * time.Minute
+)
+
 func generateSixDigitCode() (int64, error) {
 	for range 100 {
 		var b [4]byte
@@ -253,6 +260,22 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 // parallel-sign-in delete-all race can't occur in tests. Zero prod effect.
 func (a *app) DevSignInBypass(code string) bool {
 	return a.config.DevMode && code == DevSignInCode
+}
+
+func (a *app) OwnerEmail() string {
+	return a.config.OwnerEmail
+}
+
+func (a *app) OwnerPasswordHash() string {
+	return a.config.OwnerPasswordHash
+}
+
+func (a *app) PasswordSignInEnabled() bool {
+	return a.config.OwnerPasswordHash != ""
+}
+
+func (a *app) AllowPasswordSignInAttempt(key string) bool {
+	return a.passwordSignInLimiter.Allow(key, time.Now())
 }
 
 func (a *app) TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error) {

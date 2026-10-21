@@ -6,12 +6,13 @@ export type trip2g_auth_methodsQueryVariables = Exact<{
 }>;
 
 
-export type trip2g_auth_methodsQuery = { __typename?: 'Query', emailSignInEnabled: boolean, googleAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null }, githubAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null }, oidcAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null, label?: string | null } };
+export type trip2g_auth_methodsQuery = { __typename?: 'Query', emailSignInEnabled: boolean, passwordSignInEnabled: boolean, googleAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null }, githubAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null }, oidcAuthUrl: { __typename?: 'OAuthUrlPayload', authUrl?: string | null, label?: string | null } };
 
 
 export function $trip2g_auth_methods(variables: trip2g_auth_methodsQueryVariables, opts?: { revalidate?: boolean }): trip2g_auth_methodsQuery {
 	return $trip2g_gql_request(`query trip2g_auth_methods(\u0024input: OAuthUrlInput!) {
   emailSignInEnabled
+  passwordSignInEnabled
   googleAuthUrl(input: \u0024input) {
     authUrl
   }

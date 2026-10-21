@@ -4,6 +4,9 @@ import (
 	"flag"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // The internal listener serves unauthenticated /metrics, pprof and debug
@@ -69,4 +72,43 @@ func TestApplyStorageEnvFallbackSecretKey(t *testing.T) {
 			t.Fatal("webhook-allow-private flag did not set Config.WebhookAllowPrivate")
 		}
 	})
+}
+
+// OWNER_PASSWORD_HASH takes a bcrypt hash only: a plaintext password set there
+// by mistake must stop boot instead of becoming a password nobody can match.
+func TestValidateOwnerPasswordHash(t *testing.T) {
+	t.Parallel()
+
+	hash, err := bcrypt.GenerateFromPassword([]byte("correct horse"), bcrypt.MinCost)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		hash    string
+		email   string
+		wantErr string
+	}{
+		{name: "unset", hash: "", email: ""},
+		{name: "bcrypt hash with owner email", hash: string(hash), email: "owner@example.com"},
+		{name: "plaintext password", hash: "correct horse", email: "owner@example.com", wantErr: "OwnerPasswordHash: must be a bcrypt hash"},
+		{name: "hash without owner email", hash: string(hash), email: "", wantErr: "OwnerEmail: is required"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			c := DefaultConfig()
+			c.DevMode = true
+			c.OwnerEmail = tt.email
+			c.OwnerPasswordHash = tt.hash
+
+			validateErr := c.validate()
+			if tt.wantErr == "" {
+				require.NoError(t, validateErr)
+				return
+			}
+			require.ErrorContains(t, validateErr, tt.wantErr)
+		})
+	}
 }

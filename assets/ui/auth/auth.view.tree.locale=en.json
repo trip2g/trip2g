@@ -1,5 +1,8 @@
 {
 	"$trip2g_auth_code_form_Code_hint_title": "We sent a code to your email. Please enter it below.",
 	"$trip2g_auth_code_form_Code_field_name": "Code",
-	"$trip2g_auth_code_form_Back_title": "Back"
+	"$trip2g_auth_code_form_Back_title": "Back",
+	"$trip2g_auth_email_form_Password_mode_title": "Sign in with password",
+	"$trip2g_auth_password_form_Password_field_name": "Password",
+	"$trip2g_auth_password_form_Back_title": "Back"
 }

@@ -1,5 +1,6 @@
 query ($input: OAuthUrlInput!) {
 	emailSignInEnabled
+	passwordSignInEnabled
 	googleAuthUrl(input: $input) {
 		authUrl
 	}

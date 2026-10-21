@@ -146,6 +146,7 @@ import (
 	"trip2g/internal/case/revokeusertoken"
 	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/case/signinbyemail"
+	"trip2g/internal/case/signinbypassword"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
@@ -2770,6 +2771,15 @@ func (r *mutationResolver) SignInByEmail(ctx context.Context, input model.SignIn
 	return signinbyemail.Resolve(ctx, r.env(ctx), input)
 }
 
+// SignInByPassword is the resolver for the signInByPassword field.
+func (r *mutationResolver) SignInByPassword(ctx context.Context, input model.SignInByPasswordInput) (model.SignInOrErrorPayload, error) {
+	var remoteIP string
+	if req, err := appreq.FromCtx(ctx); err == nil && req.Req != nil {
+		remoteIP = req.Req.RemoteIP().String()
+	}
+	return signinbypassword.Resolve(ctx, r.env(ctx), input, remoteIP)
+}
+
 // SignOut is the resolver for the signOut field.
 func (r *mutationResolver) SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error) {
 	return signout.Resolve(ctx, r.env(ctx))
@@ -3260,6 +3270,11 @@ func (r *queryResolver) GithubAuthURL(ctx context.Context, input model.OAuthURLI
 // EmailSignInEnabled is the resolver for the emailSignInEnabled field.
 func (r *queryResolver) EmailSignInEnabled(ctx context.Context) (bool, error) {
 	return r.env(ctx).EmailSignInEnabled(ctx), nil
+}
+
+// PasswordSignInEnabled is the resolver for the passwordSignInEnabled field.
+func (r *queryResolver) PasswordSignInEnabled(ctx context.Context) (bool, error) {
+	return r.env(ctx).PasswordSignInEnabled(), nil
 }
 
 // Admin is the resolver for the admin field.

@@ -784,6 +784,7 @@ type LayoutBlockParamResolver interface {
 type MutationResolver interface {
 	RequestEmailSignInCode(ctx context.Context, input model.RequestEmailSignInCodeInput) (model.RequestEmailSignInCodeOrErrorPayload, error)
 	SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error)
+	SignInByPassword(ctx context.Context, input model.SignInByPasswordInput) (model.SignInOrErrorPayload, error)
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
 	CreatePaymentLink(ctx context.Context, input model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error)
 	CreateEmailWaitListRequest(ctx context.Context, input model.CreateEmailWaitListRequestInput) (model.CreateEmailWaitListRequestOrErrorPayload, error)
@@ -853,6 +854,7 @@ type QueryResolver interface {
 	OidcAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
 	GithubAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
 	EmailSignInEnabled(ctx context.Context) (bool, error)
+	PasswordSignInEnabled(ctx context.Context) (bool, error)
 	Admin(ctx context.Context) (*model1.AdminQuery, error)
 	Note(ctx context.Context, input model.NoteInput) (*model.PublicNote, error)
 	Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
@@ -1089,6 +1091,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSetTgChatSubgraphInvitesInput,
 		ec.unmarshalInputSetTgChatSubgraphsInput,
 		ec.unmarshalInputSignInByEmailInput,
+		ec.unmarshalInputSignInByPasswordInput,
 		ec.unmarshalInputSimilarNotesInput,
 		ec.unmarshalInputStartBackgroundQueueInput,
 		ec.unmarshalInputStopBackgroundQueueInput,
@@ -2987,6 +2990,12 @@ type Query {
   """
   emailSignInEnabled: Boolean!
 
+  """
+  Whether the owner can sign in with a password: true when the instance has
+  OWNER_PASSWORD_HASH set.
+  """
+  passwordSignInEnabled: Boolean!
+
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
   search(input: SearchInput!): SearchConnection!
@@ -3068,6 +3077,15 @@ type SignInPayload {
 }
 
 union SignInOrErrorPayload = SignInPayload | ErrorPayload
+
+#
+# signInByPassword
+#
+
+input SignInByPasswordInput {
+  email: String!
+  password: String!
+}
 
 #
 # signOut
@@ -3609,6 +3627,12 @@ type Subscription {
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
+  """
+  Signs the owner in with OWNER_EMAIL and the password whose hash is in
+  OWNER_PASSWORD_HASH. Any other email is refused with the same error as a
+  wrong password.
+  """
+  signInByPassword(input: SignInByPasswordInput!): SignInOrErrorPayload!
   signOut: SignOutOrErrorPayload!
   createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
 
@@ -7197,6 +7221,17 @@ func (ec *executionContext) field_Mutation_signInByEmail_args(ctx context.Contex
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSignInByEmailInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByEmailInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_signInByPassword_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSignInByPasswordInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByPasswordInput)
 	if err != nil {
 		return nil, err
 	}
@@ -37077,6 +37112,47 @@ func (ec *executionContext) fieldContext_Mutation_signInByEmail(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_signInByPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_signInByPassword,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SignInByPassword(ctx, fc.Args["input"].(model.SignInByPasswordInput))
+		},
+		nil,
+		ec.marshalNSignInOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignInOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_signInByPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SignInOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_signInByPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_signOut(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -41177,6 +41253,35 @@ func (ec *executionContext) _Query_emailSignInEnabled(ctx context.Context, field
 }
 
 func (ec *executionContext) fieldContext_Query_emailSignInEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_passwordSignInEnabled(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_passwordSignInEnabled,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().PasswordSignInEnabled(ctx)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_passwordSignInEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -54120,6 +54225,40 @@ func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context
 				return it, err
 			}
 			it.Code = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSignInByPasswordInput(ctx context.Context, obj any) (model.SignInByPasswordInput, error) {
+	var it model.SignInByPasswordInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"email", "password"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
 		}
 	}
 
@@ -79902,6 +80041,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "signInByPassword":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_signInByPassword(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "signOut":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_signOut(ctx, field)
@@ -82072,6 +82218,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_emailSignInEnabled(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "passwordSignInEnabled":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_passwordSignInEnabled(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -94288,6 +94456,11 @@ func (ec *executionContext) marshalNSetTgChatSubgraphsOrErrorPayload2trip2gᚋin
 
 func (ec *executionContext) unmarshalNSignInByEmailInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByEmailInput(ctx context.Context, v any) (model.SignInByEmailInput, error) {
 	res, err := ec.unmarshalInputSignInByEmailInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSignInByPasswordInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByPasswordInput(ctx context.Context, v any) (model.SignInByPasswordInput, error) {
+	res, err := ec.unmarshalInputSignInByPasswordInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
