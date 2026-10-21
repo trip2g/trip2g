@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### The owner can sign in with a password
+
+- **What.** Set `OWNER_PASSWORD_HASH` to a bcrypt hash and the sign-in screen shows **Sign in with password**. The owner signs in with `OWNER_EMAIL` and that password; every other address is refused with the same error as a wrong password. `trip2g hash-password` reads a password from stdin and prints the hash. Attempts are limited to ten per 15 minutes per client address and per email. Unset, nothing changes.
+- **Why.** A self-hosted box without a mail server could not deliver a sign-in code, and the other ways in (a 5-minute login link, codes in the log) need a terminal every time.
+- **How to use.** `printf '%s' 'a long password' | trip2g hash-password`, put the output in `OWNER_PASSWORD_HASH` in single quotes, restart. See [[en/user/selfhosted#Owner password sign-in|Owner password sign-in]].
+
 ### A busy embedder no longer stalls search
 
 - **What.** Search waits at most `SEARCH_VECTOR_TIMEOUT` (`-search-vector-timeout`, default `15s`) for the vector stage — embedding the query and the agent's `rephrased_query` / `expected_answer`. Past it, it answers from full-text search alone and logs a warning.

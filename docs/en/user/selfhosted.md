@@ -174,7 +174,7 @@ Expect `HTTP/2 200` with a valid Let's Encrypt certificate.
 
 After that, open `https://docs.example.com`, sign in with `OWNER_EMAIL`, and continue with [[en/user/getting-started|Getting started]].
 
-**If email is not configured yet**: no sign-in email can be sent, so you can't get the code — set `LOG_SIGN_IN_CODES=true` in `/etc/trip2g.env`, restart (`systemctl restart trip2g`), trigger a sign-in, then read the code from `journalctl -u trip2g`. This prints codes in plain text, so unset the flag (or configure SMTP) once you're in.
+**If email is not configured yet**: no sign-in email can be sent, so you can't get the code — set `LOG_SIGN_IN_CODES=true` in `/etc/trip2g.env`, restart (`systemctl restart trip2g`), trigger a sign-in, then read the code from `journalctl -u trip2g`. This prints codes in plain text, so unset the flag (or configure SMTP) once you're in. To sign in without email at all, give the owner a password — see [[en/user/selfhosted#Owner password sign-in|Owner password sign-in]].
 
 ---
 
@@ -582,6 +582,70 @@ From there, continue with [[en/user/getting-started|Getting started]].
 - checking logs after the first login and the first outbound email
 
 For the smoothest rollout, start without vector search, verify email sign-in first, and only then enable embeddings in `FEATURES`.
+
+## Owner password sign-in
+
+A box with no mail server has nowhere to send a sign-in code. Give the owner a
+password instead: the sign-in screen then shows **Sign in with password**, and
+the owner signs in with `OWNER_EMAIL` and that password. A provisioning script
+can set it up, since it needs no mail and no clicks.
+
+Only the owner can sign in this way. Any other address gets the same "Email or
+password is invalid" as a wrong password, so the form does not tell which
+accounts exist. Readers sign in by email code or a provider, as before.
+
+### Hash the password
+
+The environment holds a bcrypt hash, never the password itself. The binary
+makes the hash from a password on stdin:
+
+```bash
+printf '%s' 'a long password' | trip2g hash-password
+```
+
+With the Docker image:
+
+```bash
+printf '%s' 'a long password' \
+  | docker run --rm -i ghcr.io/trip2g/trip2g /trip2g hash-password
+```
+
+It prints one line that starts with `$2a$10$`. An empty password, or one
+longer than 72 bytes (bcrypt's limit), is refused.
+
+### Set `OWNER_PASSWORD_HASH`
+
+Add the hash next to `OWNER_EMAIL` in `/etc/trip2g.env` or the Compose `.env`,
+in single quotes:
+
+```dotenv
+OWNER_EMAIL=owner@example.com
+OWNER_PASSWORD_HASH='$2a$10$...'
+```
+
+The hash is full of `$`. Single quotes keep systemd, Docker Compose and
+trip2g's own `.env` reader from taking them for variables. If you put it under
+`environment:` in `docker-compose.yml` instead, write each `$` as `$$`:
+
+```yaml
+  trip2g:
+    environment:
+      OWNER_PASSWORD_HASH: "$$2a$$10$$..."
+```
+
+Restart trip2g. It refuses to start when the value is not a bcrypt hash (a
+password pasted by mistake, say) or when `OWNER_EMAIL` is empty.
+
+### What to know
+
+- **Attempts are limited.** Ten per 15 minutes from one client address, and
+  ten per 15 minutes for one email. Behind a reverse proxy every request comes
+  from the proxy's address, so the first limit is shared by everyone. The
+  second means someone guessing the owner's password also locks the owner out
+  for up to 15 minutes; `trip2g login-link` still signs you in then.
+- **Changing the password** is a new hash and a restart. Sessions already
+  signed in stay valid; rotating `JWT_SECRET` ends them.
+- **Turning it off** is removing the variable and restarting.
 
 ---
 

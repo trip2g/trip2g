@@ -156,4 +156,7 @@ not in active use and this design does not change it.
    which live in the DB and are revoked separately today?
 4. Generated owner password: log only, or also accept one from env, so an
    operator such as coxswain can put it in its secret store?
+   Built since for the owner alone: `OWNER_PASSWORD_HASH` takes a bcrypt
+   hash from env, `hash-password` makes it, and `signInByPassword` checks it
+   (`internal/case/signinbypassword`). Nothing is stored in the database.
 5. Password rules: length only, or nothing beyond a minimum?
