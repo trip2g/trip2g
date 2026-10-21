@@ -48,6 +48,50 @@ flowchart TD
 
 The stand's history is prepared: eleven past calls, their reviews and eight threads ship in the repository as ready notes. What is reviewed live is a call you add yourself; the repository has a sample transcript where the recorder labelled the client with someone else's name.
 
+## Recording calls: Amanu
+
+Calls can be recorded with [Amanu](https://github.com/gsamat/amanu), a free, open-source (MIT) app for macOS and Windows. It starts recording when a call app takes the microphone and stops when the call ends. The microphone and the other side go to separate channels, so the transcript keeps the two sides apart as `me` and `them`. Transcription runs locally; the audio goes nowhere.
+
+How Amanu feeds trip2g:
+
+1. Download the onboarding archive from your instance and unpack it. It is a ready Obsidian vault: the sync plugin is set up and the API key is inside.
+2. In Amanu's settings, point `recordings_dir` inside that vault and turn on `keep_audio`, so the audio stays for the player.
+3. Set `on_stop` to the [amanu-to-trip2g.mjs](https://github.com/trip2g/call_dashboard/tree/main/amanu) hook, with an absolute path to `node`. After every meeting it writes `transcripts/<date>-<id>.md` in the format the roles and the call page read, embeds the recording and runs the sync. Names Amanu guessed go in only as a hint: who spoke is decided by you on the call page.
+4. The [`calls/transcript`](https://github.com/trip2g/call_dashboard/tree/main/vault/_layouts/calls) layout shows the transcript with a player: clicking a timecode plays that line.
+
+A recording weighs about 0.5 MB a minute, so raise `MAX_REQUEST_BODY_SIZE` to at least 50 MB, or calls longer than 20 minutes will not upload.
+
+### Which engine
+
+One real Russian call, 40 minutes, two speakers, a MacBook with Apple M3 Max (48 GB). Accuracy was measured on five 30-second fragments (370 words) against a Deepgram nova-3 reference, and over the whole call against Krisp's transcript.
+
+| | Parakeet v3 | GigaAM v3 | Whisper large-v3-turbo | Krisp |
+|---|---|---|---|---|
+| Errors on the fragments | 13.0% | **11.9%** | 25.4% | 22.4% |
+| WER against Krisp, whole call | **19.8%** | 25.7% | 22.4% | — |
+| Transcribing 40 minutes | **20 s** | **20 s** | 59–136 s | cloud |
+| Model load, once | 54 s | 17 s | 34 s | — |
+| Memory (RSS) | 0.3–0.5 GB | 0.4–0.6 GB | 1.0–1.4 GB | — |
+
+Parakeet is Amanu's default and worth keeping: nearly as accurate as GigaAM, with tighter timecodes (96% of Krisp's lines start within 3 seconds), and it runs on the Neural Engine without slowing the Mac. GigaAM is the fallback for Russian. Whisper is slower and makes twice the errors. Parakeet writes English words in Cyrillic; Whisper keeps them in Latin.
+
+The local engines do not tell apart several people on one side: three people on the other end all become `them`.
+
+## On your own server
+
+The same repository has an [Ansible playbook](https://github.com/trip2g/call_dashboard/tree/main/ansible) that installs the whole stand on a bare Ubuntu 24.04 server: trip2g, the fleet roles, Hermes with a Telegram bot, and Caddy with HTTPS on your domain. The cheapest server is enough: 2 cores and 4 GB.
+
+The playbook is written to be run by an AI agent, not a person: [`ansible/AGENTS.md`](https://github.com/trip2g/call_dashboard/blob/main/ansible/AGENTS.md) lists what to ask the person, which commands to run, how to check each step and what to hand back at the end. An agent given only the repository link and an empty server installed everything in 17 minutes. The person does one thing: the Codex sign-in in a browser.
+
+There is no password sign-in. You sign in:
+
+- with a one-time link: `docker compose exec -T trip2g /trip2g login-link` on the server; the link lives 5 minutes;
+- with a button in Telegram: ask the bot for a sign-in link. It arrives as a button, not text — a model that retypes a long link breaks it;
+- with an email code, once mail is connected ([[en/user/smtp|SMTP or Resend]]);
+- with Google or GitHub ([[en/user/oauth|OAuth]]).
+
+The agent on the server also keeps its own vault: it saves notes and syncs them with trip2g both ways, so edits made on the site come back to it.
+
 ## Install
 
 Copy three files from [`docs/_layouts/calls/`](https://github.com/trip2g/trip2g/tree/main/docs/_layouts/calls) into your vault's `_layouts/calls/`: `threads.html`, `call.html` and `frontmatter.js`. Then make a note for each page:
