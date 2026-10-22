@@ -446,9 +446,12 @@ func execTool(ctx context.Context, scoped *ScopedKB, res *Result, call ToolCall,
 
 // logToolCall appends one run-log entry for a finished tool call. The opaque
 // Data bag carries this runtime's own vocabulary — tool, outcome, sizes — which
-// nothing downstream parses; trip2g stores it and hands it back. Content never
-// goes in: only how many bytes moved, so the log stays small and the written
-// bytes are read back through the note version the write produced.
+// nothing downstream parses; trip2g stores it and hands it back. Note content
+// never goes in: only how many bytes moved, so the log stays small and the
+// written bytes are read back through the note version the write produced. The
+// one exception is finish's answer: it is the run's own account of why it
+// stopped, trip2g keeps it nowhere else, and a run that finished without
+// writing is unexplained without it. It is cut to finishAnswerLogLimit.
 func logToolCall(res *Result, item, step int, call ToolCall, outcome, output string, elapsed time.Duration) {
 	data := map[string]any{
 		"tool":    call.Name,
@@ -467,6 +470,7 @@ func logToolCall(res *Result, item, step int, call ToolCall, outcome, output str
 		Path    string `json:"path"`
 		Query   string `json:"query"`
 		Content string `json:"content"`
+		Answer  string `json:"answer"`
 	}
 	_ = json.Unmarshal([]byte(call.Arguments), &args)
 	if args.Path != "" {
@@ -482,6 +486,11 @@ func logToolCall(res *Result, item, step int, call ToolCall, outcome, output str
 	msg := call.Name
 	if args.Path != "" {
 		msg += " " + args.Path
+	}
+	if call.Name == toolFinish && args.Answer != "" {
+		answer := truncateRunes(args.Answer, finishAnswerLogLimit)
+		data["answer"] = answer
+		msg += ": " + answer
 	}
 	if outcome == outcomeOK {
 		data["result_bytes"] = len(output)
@@ -662,6 +671,16 @@ func execSetNoteMeta(ctx context.Context, scoped *ScopedKB, res *Result, call To
 		Kind:  webhookutil.AgentChangeKindMeta,
 	})
 	return "ok: set meta of " + args.Path, outcomeOK
+}
+
+const finishAnswerLogLimit = 500
+
+func truncateRunes(s string, limit int) string {
+	runes := []rune(s)
+	if len(runes) <= limit {
+		return s
+	}
+	return string(runes[:limit]) + "…"
 }
 
 func finishAnswer(arguments string) string {

@@ -701,13 +701,41 @@ func TestRun_LogsEveryToolCall(t *testing.T) {
 	require.Equal(t, outcomeOK, wrote["outcome"])
 	require.EqualValues(t, 9, wrote["content_bytes"])
 
-	require.Equal(t, toolFinish, decodeLogData(t, res.Logs[4])["tool"])
+	finished := decodeLogData(t, res.Logs[4])
+	require.Equal(t, toolFinish, finished["tool"])
+	require.Equal(t, "done", finished["answer"], "a run that wrote nothing is unexplained without the reason it gave")
+	require.Equal(t, "finish: done", res.Logs[4].Msg)
 
 	// Content never rides along: only its size.
 	raw, err := json.Marshal(res.Logs)
 	require.NoError(t, err)
 	require.NotContains(t, string(raw), "123456789")
 	require.NotContains(t, string(raw), "hello world")
+}
+
+func TestRun_LogsLongFinishAnswerCut(t *testing.T) {
+	long := strings.Repeat("я", finishAnswerLogLimit+50)
+	llm := &stubLLM{
+		script: []ChatResult{
+			{ToolCalls: []ToolCall{toolCall("1", toolFinish, map[string]any{"answer": long})}},
+		},
+	}
+
+	res, err := Run(context.Background(), Input{
+		Instruction: "Summarize.",
+		Model:       "test-model",
+		MaxTokens:   10000,
+		MaxSteps:    10,
+		LLM:         llm,
+		KB:          newMemKB(nil),
+	})
+	require.NoError(t, err)
+	require.Len(t, res.Logs, 1)
+
+	got, ok := decodeLogData(t, res.Logs[0])["answer"].(string)
+	require.True(t, ok)
+	require.Len(t, []rune(got), finishAnswerLogLimit+1, "cut on runes, with one ellipsis")
+	require.Equal(t, long, res.Answer, "only the log entry is cut, never the answer itself")
 }
 
 // TestRun_LogsUnpermittedTool pins the hallucinated-tool entry: the name is

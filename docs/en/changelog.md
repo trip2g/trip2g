@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### A fleet run's log says why it finished
+
+- **What.** The `finish` entry in a fleet role's run log carries the answer the model gave (`answer` in the entry's data, also in its message), cut to 500 characters.
+- **Why.** The answer was sent back to trip2g and stored nowhere, so a run that finished without writing anything showed only `finish` and no reason.
+- **How to use.** Open the delivery's log in the admin panel, or read it with the `deliveryLogs` query.
+
 ### A busy embedder no longer stalls search
 
 - **What.** Search waits at most `SEARCH_VECTOR_TIMEOUT` (`-search-vector-timeout`, default `15s`) for the vector stage — embedding the query and the agent's `rephrased_query` / `expected_answer`. Past it, it answers from full-text search alone and logs a warning.
