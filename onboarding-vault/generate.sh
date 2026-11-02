@@ -63,7 +63,7 @@ with zipfile.ZipFile(out_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         else:
             zi = zipfile.ZipInfo(str(rel), date_time=FIXED_DATE)
             zi.compress_type = zipfile.ZIP_DEFLATED
-            zi.external_attr |= hidden
+            zi.external_attr = (0o100644 << 16) | hidden
             zf.writestr(zi, path.read_bytes())
 
 print(f"Wrote {out_zip} ({out_zip.stat().st_size} bytes)")

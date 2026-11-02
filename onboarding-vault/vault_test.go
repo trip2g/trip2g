@@ -3,6 +3,7 @@ package onboardingvault
 import (
 	"archive/zip"
 	"bytes"
+	"io/fs"
 	"strings"
 	"testing"
 
@@ -47,5 +48,9 @@ func TestZipContents(t *testing.T) {
 
 	for name := range names {
 		require.False(t, strings.HasSuffix(name, ".go"), "build machinery %s must not be bundled", name)
+	}
+
+	for _, file := range reader.File {
+		require.Equal(t, fs.FileMode(0o444), file.Mode().Perm()&0o444, "%s must unpack readable, got %v", file.Name, file.Mode())
 	}
 }
