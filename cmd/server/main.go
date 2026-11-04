@@ -441,7 +441,7 @@ func main() {
 	ctx = metrics.ContextWithEmbeddingMetrics(ctx, a.embeddingMetrics)
 
 	a.globalQueue = a.createQueue(ctx, "global_jobs", QueueOpts{
-		Limit:        10,
+		Limit:        a.config.GlobalQueueLimit,
 		PollInterval: a.config.GlobalQueuePollInterval,
 	})
 

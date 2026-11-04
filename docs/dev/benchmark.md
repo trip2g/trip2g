@@ -73,4 +73,4 @@ The API key is in `docs/.obsidian/plugins/trip2g/data.json`.
 
 - The mock embedding server returns random unit vectors of the correct dimension (1024 for bge-m3). This is sufficient for memory measurement — the in-memory index size depends on count × dimensions, not on vector values.
 - Benchmark results vary by machine. The shape of the curves is stable; absolute numbers are not. Always note the hardware and date when publishing results.
-- The `GLOBAL_QUEUE_POLL_INTERVAL=100ms` setting is benchmark-only. Production default is 3 s and should not be changed without understanding the queue load implications.
+- The `GLOBAL_QUEUE_POLL_INTERVAL=100ms` setting is benchmark-only. Production default is 3 s and should not be changed without understanding the queue load implications. With every worker busy the goqite runner sleeps the whole poll interval, so the queue's ceiling is `GLOBAL_QUEUE_LIMIT` (default 10) jobs per interval plus one job's duration: about 3 jobs/s at the defaults.
