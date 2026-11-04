@@ -91,6 +91,7 @@ type Config struct {
 	ShutdownTimeout         time.Duration
 	WriterAcquireTimeout    time.Duration
 	GlobalQueuePollInterval time.Duration
+	GlobalQueueLimit        int
 	EmbeddingReloadInterval time.Duration
 	InternalListenAddr      string
 	// DebugEmbedding exposes the unauthenticated /debug/embedding endpoint on
@@ -259,6 +260,7 @@ const (
 	DefaultLogLevel             = "info"
 	DefaultDevMode              = false
 	DefaultMaxActiveSignInCodes = 3
+	DefaultGlobalQueueLimit     = 10
 
 	// Storage backend selection.
 	StorageBackendMinIO    = "minio"
@@ -301,6 +303,7 @@ func DefaultConfig() *Config {
 		AdminJSURL:           DefaultAdminJSURL,
 		LogLevel:             DefaultLogLevel,
 		MaxActiveSignInCodes: DefaultMaxActiveSignInCodes,
+		GlobalQueueLimit:     DefaultGlobalQueueLimit,
 		AcmeDomains:          ArrayFlags{},
 		StorageBackend:       DefaultStorageBackend,
 		StorageLocalDir:      DefaultStorageLocalDir,
@@ -566,6 +569,7 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.WriterAcquireTimeout, "writer-acquire-timeout", 20*time.Second,
 		"Max time to wait for the SQLite writer slot before starting writer subsystems")
 	flag.DurationVar(&c.GlobalQueuePollInterval, "global-queue-poll-interval", 3*time.Second, "Poll interval for the global background job queue")
+	flag.IntVar(&c.GlobalQueueLimit, "global-queue-limit", c.GlobalQueueLimit, "Max concurrent jobs in the global background job queue")
 	flag.DurationVar(&c.EmbeddingReloadInterval, "embedding-reload-interval", 5*time.Second,
 		"Minimum time between re-reads of note embeddings into search while embedding jobs keep finishing")
 	flag.StringVar(
@@ -812,6 +816,7 @@ func (c *Config) validate() error {
 		ozzo.Field(&c.DatabaseFile, ozzo.Required),
 		ozzo.Field(&c.LogLevel, ozzo.Required, ozzo.In("debug", "info", "warn", "error")),
 		ozzo.Field(&c.AdminJSURL, ozzo.Required),
+		ozzo.Field(&c.GlobalQueueLimit, ozzo.Required, ozzo.Min(1)),
 
 		// A value without the t2g_ prefix never reaches the personal-token
 		// resolver, so the fleet would get a 401 with nothing explaining why.

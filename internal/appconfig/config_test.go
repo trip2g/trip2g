@@ -70,3 +70,21 @@ func TestApplyStorageEnvFallbackSecretKey(t *testing.T) {
 		}
 	})
 }
+
+// A global queue limit below one never runs a job: the goqite runner sees
+// jobCount == limit from the start and sleeps forever.
+func TestGlobalQueueLimit(t *testing.T) {
+	t.Parallel()
+
+	if got := DefaultConfig().GlobalQueueLimit; got != DefaultGlobalQueueLimit {
+		t.Fatalf("default global queue limit = %d, want %d", got, DefaultGlobalQueueLimit)
+	}
+
+	cfg := DefaultConfig()
+	cfg.DevMode = true
+	cfg.GlobalQueueLimit = 0
+	err := cfg.validate()
+	if err == nil || !strings.Contains(err.Error(), "GlobalQueueLimit") {
+		t.Fatalf("validate must reject a global queue limit below 1, got %v", err)
+	}
+}
