@@ -6,7 +6,7 @@ free: true
 
 When you type a query, the system runs two independent algorithms simultaneously.
 
-**Text search** finds notes that contain at least half of the words from your query. Russian morphology is handled correctly: "tired" and "tiring" are treated as the same word. Technically this is a BM25 index with a morphological analyzer.
+**Text search** finds notes that contain at least half of the words from your query. Russian morphology is handled correctly: "tired" and "tiring" are treated as the same word. Technically this is a full-text index with a morphological analyzer.
 
 **Semantic search** works differently. Each note is pre-encoded by an OpenAI neural network into a numerical vector — a coordinate in a space of meanings. Your query is encoded the same way, and the system finds notes whose vectors are closest in meaning. This lets you find content where the exact words may not appear, but the topic matches.
 
@@ -14,7 +14,7 @@ The final ranking is built with RRF (Reciprocal Rank Fusion): results from both 
 
 ```mermaid
 flowchart LR
-    Q[Your query] --> T[Text search<br/>BM25 + morphology]
+    Q[Your query] --> T[Text search<br/>full-text + morphology]
     Q --> S[Semantic search<br/>OpenAI vector, nearest in meaning]
     T --> R[RRF<br/>Reciprocal Rank Fusion<br/>merge by position]
     S --> R
