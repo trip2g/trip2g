@@ -307,3 +307,87 @@ func TestSearchPages(t *testing.T) {
 	}
 	require.Len(t, seen, 5)
 }
+
+func searchIn(t *testing.T, query string, notes ...*model.NoteView) []model.SearchResult {
+	t.Helper()
+	loader := &Loader{log: &logger.TestLogger{}}
+	nvs := notesOf(notes...)
+	index, err := loader.buildSearchIndex(nvs)
+	require.NoError(t, err)
+	loader.searchIndex = index
+	loader.nvs = nvs
+
+	results, err := loader.Search(query, 0, 10)
+	require.NoError(t, err)
+	return results
+}
+
+func TestSearch_HalfTheWordsOfALongQueryMatch(t *testing.T) {
+	note := createNoteWithAST(1, "/gw", "Gateway", []byte("The gateway retry budget."))
+
+	results := searchIn(t, "gateway retry billing service", note)
+
+	require.Len(t, results, 1)
+}
+
+func TestSearch_LessThanHalfTheWordsDoNotMatch(t *testing.T) {
+	note := createNoteWithAST(1, "/gw", "Gateway", []byte("The gateway retry budget."))
+
+	results := searchIn(t, "gateway billing service invoice", note)
+
+	require.Empty(t, results)
+}
+
+func TestSearch_QueryOfOnlyStopWordsFindsNothing(t *testing.T) {
+	note := createNoteWithAST(1, "/n", "Note", []byte("Какие документы собрать."))
+
+	require.Empty(t, searchIn(t, "the of", note))
+}
+
+func TestSearch_MoreMatchedWordsRankHigher(t *testing.T) {
+	two := createNoteWithAST(1, "/two", "Two", []byte("The latency of the retry page."))
+	three := createNoteWithAST(2, "/three", "Three", []byte("Gateway latency and the retry budget."))
+
+	results := searchIn(t, "gateway latency retry", two, three)
+
+	require.Len(t, results, 2)
+	require.Equal(t, "/three", results[0].URL)
+}
+
+// A one-word title used to score as a perfect match on that word and outrank
+// the note that answers the question.
+func TestSearch_ShortTitleDoesNotOutrankTheAnswer(t *testing.T) {
+	channel := createNoteWithAST(1, "/channel", "incidents", []byte("Someone restarted the printer again today."))
+	answer := createNoteWithAST(2, "/answer", "Report", []byte("Incidents in the gateway raised latency during the rollout."))
+
+	results := searchIn(t, "incidents gateway latency rollout", channel, answer)
+
+	require.Equal(t, "/answer", results[0].URL)
+}
+
+func TestSearch_WordOnlyInTheTitleFindsTheNote(t *testing.T) {
+	note := createNoteWithAST(1, "/tax", "Налоговый вычет", []byte("Какие документы собрать."))
+
+	results := searchIn(t, "вычет", note)
+
+	require.Len(t, results, 1)
+	require.Equal(t, []string{"вычет"}, matches(results[0].TitleSegments))
+	require.Equal(t, []model.HighlightSegment{{Text: "Какие документы собрать."}}, results[0].ContentSegments)
+}
+
+func TestSearch_HighlightsLandOnTheRightTextAfterTheTitle(t *testing.T) {
+	note := createNoteWithAST(1, "/n", "Капибара дома", []byte("Здесь живёт капибара."))
+
+	results := searchIn(t, "капибара", note)
+
+	require.Len(t, results, 1)
+	require.Equal(t, []model.HighlightSegment{
+		{Text: "Капибара", Match: true},
+		{Text: " дома"},
+	}, results[0].TitleSegments)
+	require.Equal(t, []model.HighlightSegment{
+		{Text: "Здесь живёт "},
+		{Text: "капибара", Match: true},
+		{Text: "."},
+	}, results[0].ContentSegments)
+}

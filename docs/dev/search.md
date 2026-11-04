@@ -8,8 +8,8 @@ Trip2g uses hybrid search: full-text search (FTS) via Bleve combined with vector
 
 - In-memory index rebuilt on every vault reload
 - Russian morphology analyzer (`ru`) for stemming
-- **AND operator** — all query terms must appear in the document
-- Indexes: note title + extracted plain text (frontmatter stripped, code blocks included)
+- **Half the terms** — a document must hold at least half of the query's distinct terms
+- Indexes: note title + extracted plain text, as one field (frontmatter stripped, code blocks included)
 - Result: highlighted title and body snippets
 
 Entry point: `internal/noteloader/search.go` — `buildSearchIndex`, `Search`.

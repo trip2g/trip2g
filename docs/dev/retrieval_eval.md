@@ -78,3 +78,21 @@ Corpus: 48 notes (24 topics × 2 languages = 6 themes, each a core note + 3 intr
 | 00-baseline-bgem3 | 0.9833 | 0.9157 | 0.9417 | bge-m3, current pipeline. Weakest direction: en→ru (nDCG 0.845, MRR 0.833). |
 
 Per-direction at baseline: ru→ru nDCG 0.935 / MRR 0.972 · en→en 0.932 / 0.972 · ru→en 0.934 / 0.958 · en→ru 0.845 / 0.833.
+
+## Min match and title in the body (2026-11-04)
+
+Measured on commit `9f805d36` with one change to the text lane per column. Every column has the same vectors (bge-m3 through OpenRouter). "50k" is EnterpriseRAG-Bench: 722 gold documents plus 50 000 random ones of its 511 962, all 500 questions. It reads high against its leaderboard, because the near-duplicates that make the benchmark hard mostly fell out of the sample.
+
+| Set, metric | All terms, separate title | Any term, title in body | Half the terms, title in body |
+|---|---|---|---|
+| 50k, Recall@10 | 0.687 | 0.830 | **0.842** |
+| 50k, Recall@10, semantic questions | 0.384 | 0.600 | **0.640** |
+| Obsidian Help en, nDCG@5 | 0.763 | 0.794 | **0.777** |
+| Obsidian Help ru, nDCG@5 | 0.689 | 0.748 | **0.745** |
+| This page's corpus, nDCG@10 | 0.926 | 0.626 | **0.857** |
+| This page's corpus, translation in top 10 | 0.983 | 0.483 | **0.983** |
+
+- **What it costs.** Tricky Obsidian Help queries (typos, morphology) lose: en 0.785 → 0.756, ru 0.815 → 0.769. This page's corpus keeps Recall@10 at 0.99 and loses order only. On 50k the search p50 goes from 1031 ms to 1386 ms, most of it the query's remote embedding.
+- **The share was fitted on these three sets,** so these numbers lean optimistic. A third of the terms is a little better on Obsidian Help en (0.796) and worse across languages (0.806); two thirds drops 50k to 0.791.
+- **Not measured.** A Russian question whose answer exists only in an English note: this page's corpus holds translation pairs. The full 512k corpus: the in-memory index would not fit.
+- **What the text lane cannot fix.** Questions needing aggregation stay low (completeness 0.53). Chunks grow past `chunkTargetTokens` when a block has no blank lines (`linear` median 3186 characters, `fireflies` up to 24 254), and TEI cuts them at 512 tokens.

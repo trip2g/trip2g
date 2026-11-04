@@ -126,7 +126,7 @@ func TestSearchHighlight_MatchesBleveHighlighter(t *testing.T) {
 		require.NotEmpty(t, results, q)
 
 		mq := bleve.NewMatchQuery(q)
-		mq.SetOperator(bleveQuery.MatchQueryOperatorAnd)
+		mq.SetOperator(bleveQuery.MatchQueryOperatorOr)
 		req := bleve.NewSearchRequest(mq)
 		req.Highlight = bleve.NewHighlightWithStyle(htmlFilter.Name)
 		req.Highlight.AddField("Title")
@@ -166,7 +166,7 @@ func bleveStoredIndex(t *testing.T, notes []*model.NoteView) bleve.Index {
 	require.NoError(t, err)
 
 	for _, n := range notes {
-		content := noteContent{Title: n.Title, Body: extractText(n.Ast(), n.Content)}
+		content := struct{ Title, Body string }{Title: n.Title, Body: extractText(n.Ast(), n.Content)}
 		require.NoError(t, index.Index(n.Permalink, content))
 	}
 	return index

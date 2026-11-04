@@ -177,7 +177,7 @@ func TestSearchIndex_OnDisk_RemovesOtherSchemaVersions(t *testing.T) {
 
 	_, err := os.Stat(stale)
 	require.True(t, os.IsNotExist(err), "an index from another schema version must be deleted")
-	_, err = os.Stat(filepath.Join(dir, "test", "v2"))
+	_, err = os.Stat(filepath.Join(dir, "test", "v3"))
 	require.NoError(t, err, "the current schema version must exist")
 }
 
@@ -203,7 +203,7 @@ func TestSearchIndex_InMemoryByDefault(t *testing.T) {
 // more often than it means "corrupt".
 func TestSearchIndex_OnDisk_UnreadableFallsBackWithoutDeleting(t *testing.T) {
 	dir := t.TempDir()
-	indexDir := filepath.Join(dir, "test", "v2")
+	indexDir := filepath.Join(dir, "test", "v3")
 	require.NoError(t, os.MkdirAll(indexDir, 0o750))
 	// Not an index, just something bleve will refuse to open.
 	require.NoError(t, os.WriteFile(filepath.Join(indexDir, "index_meta.json"), []byte("{"), 0o600))

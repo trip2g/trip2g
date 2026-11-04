@@ -66,6 +66,32 @@ func highlightText(text []byte, locations search.FieldTermLocationMap, fields ..
 	return fragmentSegments(text, best.Start, best.End, spans), spans
 }
 
+// splitTitleLocations divides the locations in the title-and-text field into
+// those in the title and those in the text, the latter moved to the text's own
+// offsets.
+func splitTitleLocations(locations search.FieldTermLocationMap, titleLen int) (search.FieldTermLocationMap, search.FieldTermLocationMap) {
+	bodyStart := uint64(titleLen + len(titleBodySeparator))
+	title := search.FieldTermLocationMap{}
+	body := search.FieldTermLocationMap{}
+	for field, terms := range locations {
+		title[field] = search.TermLocationMap{}
+		body[field] = search.TermLocationMap{}
+		for term, locs := range terms {
+			for _, loc := range locs {
+				if loc.Start < bodyStart {
+					title[field][term] = append(title[field][term], loc)
+					continue
+				}
+				moved := *loc
+				moved.Start -= bodyStart
+				moved.End -= bodyStart
+				body[field][term] = append(body[field][term], &moved)
+			}
+		}
+	}
+	return title, body
+}
+
 // fieldSpans flattens one field's locations, sorted by start. Locations that
 // do not fit text (the index moved ahead of the text snapshot) are dropped.
 func fieldSpans(text []byte, tlm search.TermLocationMap) []termSpan {
