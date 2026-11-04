@@ -17,6 +17,7 @@ import (
 	_ "github.com/blevesearch/bleve/v2/analysis/lang/ru"
 
 	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/analysis"
 	"github.com/blevesearch/bleve/v2/mapping"
 	bleveQuery "github.com/blevesearch/bleve/v2/search/query"
 	"github.com/yuin/goldmark/ast"
@@ -420,24 +421,50 @@ func (l *Loader) adoptPersistedIndex(index bleve.Index, notes *model.NoteViews) 
 // out of the results. See docs/dev/retrieval_eval.md for the measurements.
 const minMatchShare = 0.5
 
-// minMatchQuery matches documents holding at least minMatchShare of the distinct
-// terms the analyzer produces from queryString.
-func minMatchQuery(index bleve.Index, queryString, field, analyzer string) bleveQuery.Query {
-	seen := map[string]struct{}{}
+// minMatchQuery matches documents holding at least minMatchShare of the query's
+// distinct terms in field. terms comes from queryTerms.
+func minMatchQuery(terms []string, field string) bleveQuery.Query {
 	query := bleve.NewDisjunctionQuery()
-	for _, token := range index.Mapping().AnalyzerNamed(analyzer).Analyze([]byte(queryString)) {
+	for _, term := range terms {
+		termQuery := bleve.NewTermQuery(term)
+		termQuery.SetField(field)
+		query.AddQuery(termQuery)
+	}
+	query.SetMin(math.Ceil(minMatchShare * float64(len(terms))))
+	return query
+}
+
+// queryTerms analyzes queryString for both languages and keeps the words both
+// analyzers keep. Each analyzer knows only its own language's stop words, so
+// without this "is" counts as a term in the Russian field and "как" in the
+// English one: it matches almost every note and gets highlighted in all of them.
+// It returns the Russian field's terms, then the English field's.
+func queryTerms(index bleve.Index, queryString string) ([]string, []string) {
+	ruTokens := index.Mapping().AnalyzerNamed("ru").Analyze([]byte(queryString))
+	enTokens := index.Mapping().AnalyzerNamed("en").Analyze([]byte(queryString))
+	return termsAtStartsOf(ruTokens, enTokens), termsAtStartsOf(enTokens, ruTokens)
+}
+
+// termsAtStartsOf returns the distinct terms of tokens whose word other kept too.
+func termsAtStartsOf(tokens, other analysis.TokenStream) []string {
+	kept := make(map[int]struct{}, len(other))
+	for _, token := range other {
+		kept[token.Start] = struct{}{}
+	}
+	seen := map[string]struct{}{}
+	terms := []string{}
+	for _, token := range tokens {
+		if _, ok := kept[token.Start]; !ok {
+			continue
+		}
 		term := string(token.Term)
 		if _, ok := seen[term]; ok {
 			continue
 		}
 		seen[term] = struct{}{}
-
-		termQuery := bleve.NewTermQuery(term)
-		termQuery.SetField(field)
-		query.AddQuery(termQuery)
+		terms = append(terms, term)
 	}
-	query.SetMin(math.Ceil(minMatchShare * float64(len(seen))))
-	return query
+	return terms
 }
 
 // Search returns up to size hits of queryString, skipping the first from.
@@ -452,9 +479,10 @@ func (l *Loader) Search(queryString string, from, size int) ([]model.SearchResul
 
 	// Each field is matched with its own analyzer (ru for Body, en for Body_en), so a
 	// doc matches via whichever language fits.
+	ruTerms, enTerms := queryTerms(index, queryString)
 	query := bleve.NewDisjunctionQuery(
-		minMatchQuery(index, queryString, "Body", "ru"),
-		minMatchQuery(index, queryString, "Body_en", "en"),
+		minMatchQuery(ruTerms, "Body"),
+		minMatchQuery(enTerms, "Body_en"),
 	)
 
 	searchRequest := bleve.NewSearchRequest(query)

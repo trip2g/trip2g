@@ -344,6 +344,17 @@ func TestSearch_QueryOfOnlyStopWordsFindsNothing(t *testing.T) {
 	require.Empty(t, searchIn(t, "the of", note))
 }
 
+func TestSearch_StopWordsOfEitherLanguageAreNotHighlighted(t *testing.T) {
+	english := createNoteWithAST(1, "/en", "Guide", []byte("This is how the gateway works."))
+	russian := createNoteWithAST(2, "/ru", "Гайд", []byte("Вот как работает шлюз."))
+
+	en := searchOne(t, "how is the gateway", english)
+	ru := searchOne(t, "как работает шлюз", russian)
+
+	require.Equal(t, []string{"gateway"}, matches(en.ContentSegments))
+	require.Equal(t, []string{"работает", "шлюз"}, matches(ru.ContentSegments))
+}
+
 func TestSearch_MoreMatchedWordsRankHigher(t *testing.T) {
 	two := createNoteWithAST(1, "/two", "Two", []byte("The latency of the retry page."))
 	three := createNoteWithAST(2, "/three", "Three", []byte("Gateway latency and the retry budget."))

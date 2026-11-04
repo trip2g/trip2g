@@ -25,7 +25,7 @@ An optional cross-encoder reranker exists as a fourth stage but ships **disabled
 | `Body` | Russian |
 | `Body_en` | English |
 
-The query is a disjunction over the two fields. Within a field, a document must hold at least half of the query's distinct terms (`minMatchShare`). The scoring is bleve's default TF-IDF, not BM25, even where these docs call this "the BM25 lane".
+The query is a disjunction over the two fields. Within a field, a document must hold at least half of the query's distinct terms (`minMatchShare`). Words either language's analyzer treats as a stop word are dropped from the query first. The scoring is bleve's default TF-IDF, not BM25, even where these docs call this "the BM25 lane".
 
 Both choices were measured; see [retrieval_eval.md](./retrieval_eval.md#min-match-and-title-in-the-body-2026-11-04). Requiring all terms left a natural-language question with no text hits at all, which turned the hybrid into vectors alone. Requiring any one term floods the lane with same-language notes that push the vector lane's cross-language hits out of the top 10. A separate title field scored a one-word title as a perfect match on that word.
 
@@ -200,6 +200,6 @@ All numbers from the bilingual benchmark (48-note corpus, 60 queries, bge-m3). F
 | F4: breadcrumb + token sizing | 0.9917 | 0.9263 | 0.9500 |
 | F5: dot product (shipped) | 0.9917 | 0.9263 | 0.9500 |
 | F5✗: AND→OR BM25 (reverted) | 0.6750 | 0.6744 | 0.9556 |
-| Half the terms, title in the body (current) | 0.9917 | 0.8568 | 0.9458 |
+| Half the terms, title in the body (current) | 0.9917 | 0.8790 | 0.9500 |
 
 Long-doc track (16 queries, multi-chunk notes): F4 raised nDCG@10 from 0.9308 → 0.9539, en→en from 0.8155 → 0.9077.

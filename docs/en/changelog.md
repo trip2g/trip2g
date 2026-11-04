@@ -13,7 +13,7 @@ Older tags (`v0.2.0` and below) live in git history only.
 ### Search finds answers to questions, not only exact word sets
 
 - **What.** A note now matches when it holds at least half of the query's words instead of all of them, and its title counts as part of its text. The full-text index rebuilds once on upgrade.
-- **Why.** Requiring every word left a question in plain language with no text matches, so search ran on vectors alone. On a 50 000-document benchmark the right document in the top 10 went from 69% to 84%, and from 38% to 64% for questions in the reader's own words. Details in `docs/dev/retrieval_eval.md`.
+- **Why.** Requiring every word left a question in plain language with no text matches, so search ran on vectors alone. On a 50 000-document benchmark the right document in the top 10 went from 69% to 84%, and from 38% to 62% for questions in the reader's own words. Details in `docs/dev/retrieval_eval.md`.
 - **How to use.** Nothing to change. Expect a bit more time per search on large vaults; queries with typos can rank slightly lower.
 
 ### A fleet run's log says why it finished
