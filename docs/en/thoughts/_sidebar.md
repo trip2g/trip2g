@@ -50,6 +50,7 @@ title: "Navigation"
 - [[en/thoughts/note-that-looked-like-a-font|The note the server took for a font]]
 - [[en/thoughts/rag-under-the-hood|How others search]]
 - [[en/thoughts/search-benchmark-obsidian-help|trip2g search against qmd and obsidian-hybrid-search]]
+- [[en/thoughts/search-benchmark-enterprise-rag|The hybrid search that wasn't hybrid]]
 - [[en/thoughts/query-expansion-by-the-agent|Let the agent expand the query]]
 - [[en/thoughts/do-agents-need-instructions|Do agents need instructions for a knowledge base]]
 - [[en/thoughts/krisp-segmentation-nano-vs-mini|Ask for the turn, not the interval]]
