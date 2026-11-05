@@ -97,3 +97,7 @@ Measured on commit `9f805d36` with one change to the text lane per column. Every
 - **The share was fitted on these three sets,** so these numbers lean optimistic. A third of the terms is a little better on Obsidian Help en (0.796) and worse across languages (0.806); two thirds drops 50k to 0.791.
 - **Not measured.** A Russian question whose answer exists only in an English note: this page's corpus holds translation pairs. The full 512k corpus: the in-memory index would not fit.
 - **What the text lane cannot fix.** Questions needing aggregation stay low (completeness 0.56). Chunks grow past `chunkTargetTokens` when a block has no blank lines (`linear` median 3186 characters, `fireflies` up to 24 254), and TEI cuts them at 512 tokens.
+
+Answer quality, same questions before and after: 129 questions sampled per category, `anthropic/claude-haiku-5.5` answering from the top 5 documents (first 4000 characters each), blind grading by Claude Sonnet with the benchmark's criteria. Answer correct 45.7% → 58.1%, facts 39.2% → 52.0%, semantic 28.1% → 40.6%. 24 questions changed outcome, 20 in favor of the new search (sign test p ≈ 0.002). The judge and the sample differ from the leaderboard's, so these are not comparable with it.
+
+Load on 50k notes, on-disk index: note page 0.5 rps at one client and 2.6 rps at 50 (p50 18 s), 96% of CPU in `similarnotes.calculateScores`; search 15 rps at 20 clients (p50 1.2 s); `/livez` 138 000 rps. Not fixed here.

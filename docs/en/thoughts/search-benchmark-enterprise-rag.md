@@ -60,6 +60,18 @@ We also checked real notes, on the [[en/thoughts/search-benchmark-obsidian-help|
 
 The fix isn't free. Queries with typos and tricky morphology got slightly worse. On the old bilingual set of 48 notes the order of results got worse, the score fell from 0.926 to 0.879, though it still finds the right documents. Plain "any word will do" crashed that score to 0.626, which is why the bar sits at half. We tuned that bar on these same sets, so the numbers lean a bit optimistic. We didn't separately measure a Russian question whose answer exists only in an English note.
 
+## Did the answers get better
+
+Search exists for the sake of the answer, so we checked that too. Cheap Claude Haiku answered 129 random questions from the first five documents found, once with the old search and once with the new one. Stronger Claude Sonnet graded the answers by the benchmark's rules and didn't know which answer came from which search.
+
+| 129 questions | Old search | New search |
+|---|---|---|
+| Answer correct | 46% | **58%** |
+| Required facts in the answer | 39% | **52%** |
+| Questions in the asker's own words, answer correct | 28% | **41%** |
+
+Of the 24 questions where the outcome differed, the new search won 20. Nobody changed the model, it just got better documents. This can't be compared with the leaderboard either: the base, the judge and the sample are ours, and the model saw only the first 4000 characters of each document.
+
 ## What about performance
 
 In short: we found some of the problems and know how to work around them, but almost nothing changed by default.
@@ -72,14 +84,18 @@ In short: we found some of the problems and know how to work around them, but al
 | Database size limit | Upload stopped at 14 thousand notes | The limit can be lifted in settings | No |
 | Search time, half of queries are faster | 1.03 seconds | 1.18 seconds | Slightly slower |
 
+Under load, the limit turned up in an unexpected place. Search holds 15 requests a second with 20 clients at once, half of them answered within 1.2 seconds. But an ordinary note page holds only 2.6 requests a second and takes 1.9 seconds even for one person. With 50 clients you wait 18 seconds.
+
+The "similar notes" block is to blame: it takes 96% of the processor's work. Every time a page opens, the server compares the note against every chunk of every note again. The server itself is fast: it handles an empty service request 138 thousand times a second. This isn't fixed yet.
+
 Memory was the main finding. The in-memory index took 85% of the memory the program held. Taken straight, the full archive would need about 240 GB, but that's an estimate, not a measurement. With the index on disk the same notes fit in a third of the memory.
 
-Three things are still untested: the full archive of 512 thousand files, behavior under real load, and the quality of the model's answers. We measured only whether search finds the right document.
+The full archive of 512 thousand files is still untested.
 
 ## Is it ready for a company's knowledge base
 
-Not yet. It went from 69% to 84%, and that's on the easier version of the exam. So about one document in six still misses the top ten, and more than one in three for questions in the asker's own words.
+Not yet. It went from 69% to 84%, and that's on the easier version of the exam. So about one document in six still misses the top ten, and more than one in three for questions in the asker's own words. The model answers correctly a little over half the time, and pages on a base this size open too slowly.
 
 Search can't fix part of that. "Which team got the most follow-up tasks across all incident reviews" has no single document with the answer: that takes counting, not finding. Another part can be fixed: long stretches of text get cut badly, and in sources like meeting transcripts the pieces run many times over the intended size. That's the next task.
 
-The whole run cost about a dollar and a half in embeddings. For that money we learned more about the bug than in a year of chasing single cases.
+The whole run cost about a dollar and a half in embeddings, plus about 40 cents for answers and a first round of grading. For that money we learned more about the bug than in a year of chasing single cases.
