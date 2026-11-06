@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	_ "github.com/blevesearch/bleve/v2/analysis/lang/ru"
 
 	"github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/analysis"
 	"github.com/blevesearch/bleve/v2/mapping"
 	bleveQuery "github.com/blevesearch/bleve/v2/search/query"
 	"github.com/yuin/goldmark/ast"
@@ -24,8 +26,9 @@ import (
 var ErrSearchNotAvailable = errors.New("search index is not available")
 
 type noteContent struct {
-	Title string
-	Body  string
+	// Body is the title and the text as one field: a separate title field scores
+	// a one-word title as a perfect match on that word. See titleBodySeparator.
+	Body string
 
 	// Hash is the note's contentHash in hex. It is stored, never indexed, and
 	// exists so a persisted index can say what it already holds: after a
@@ -40,7 +43,11 @@ type noteContent struct {
 // The index lives in a directory named after it, and createSearchIndex deletes
 // directories from other versions, so a bump rebuilds instead of silently
 // serving results from a stale schema.
-const searchIndexSchemaVersion = "v2"
+const searchIndexSchemaVersion = "v3"
+
+// titleBodySeparator joins the title and the text in the indexed field, so a
+// location before it belongs to the title and one after it to the text.
+const titleBodySeparator = "\n"
 
 // langTextField builds an indexed, unstored text field mapping named `name`,
 // analyzed with `analyzer`. Snippets are cut from Loader.searchTexts, so the
@@ -62,10 +69,6 @@ func (l *Loader) createSearchIndex() (bleve.Index, error) {
 	documentMapping := bleve.NewDocumentMapping()
 
 	documentMapping.Dynamic = false
-	documentMapping.AddFieldMappingsAt("Title",
-		langTextField("Title", "ru"),
-		langTextField("Title_en", "en"),
-	)
 	documentMapping.AddFieldMappingsAt("Body",
 		langTextField("Body", "ru"),
 		langTextField("Body_en", "en"),
@@ -223,10 +226,10 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	fresh := make(map[string]searchText, len(changed))
 	for _, p := range changed {
 		note := p.note
+		body := extractText(note.Ast(), note.Content)
 		content := noteContent{
-			Title: note.Title,
-			Body:  extractText(note.Ast(), note.Content),
-			Hash:  hex.EncodeToString(p.hash[:]),
+			Body: note.Title + titleBodySeparator + body,
+			Hash: hex.EncodeToString(p.hash[:]),
 		}
 
 		indexErr := index.Index(note.Permalink, content)
@@ -236,7 +239,7 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 
 		l.contentHashes[note.PathID] = p.hash
 		l.indexedPermalinks[note.PathID] = note.Permalink
-		fresh[note.Permalink] = searchText{Title: []byte(content.Title), Body: []byte(content.Body)}
+		fresh[note.Permalink] = searchText{Title: []byte(note.Title), Body: []byte(body)}
 	}
 	indexed := len(changed)
 
@@ -412,6 +415,58 @@ func (l *Loader) adoptPersistedIndex(index bleve.Index, notes *model.NoteViews) 
 	return nil
 }
 
+// minMatchShare is the share of a query's distinct terms a document must contain.
+// Requiring all of them leaves a natural-language question with no text hits, and
+// requiring any one lets a stray word push the vector lane's cross-language hits
+// out of the results. See docs/dev/retrieval_eval.md for the measurements.
+const minMatchShare = 0.5
+
+// minMatchQuery matches documents holding at least minMatchShare of the query's
+// distinct terms in field. terms comes from queryTerms.
+func minMatchQuery(terms []string, field string) bleveQuery.Query {
+	query := bleve.NewDisjunctionQuery()
+	for _, term := range terms {
+		termQuery := bleve.NewTermQuery(term)
+		termQuery.SetField(field)
+		query.AddQuery(termQuery)
+	}
+	query.SetMin(math.Ceil(minMatchShare * float64(len(terms))))
+	return query
+}
+
+// queryTerms analyzes queryString for both languages and keeps the words both
+// analyzers keep. Each analyzer knows only its own language's stop words, so
+// without this "is" counts as a term in the Russian field and "как" in the
+// English one: it matches almost every note and gets highlighted in all of them.
+// It returns the Russian field's terms, then the English field's.
+func queryTerms(index bleve.Index, queryString string) ([]string, []string) {
+	ruTokens := index.Mapping().AnalyzerNamed("ru").Analyze([]byte(queryString))
+	enTokens := index.Mapping().AnalyzerNamed("en").Analyze([]byte(queryString))
+	return termsAtStartsOf(ruTokens, enTokens), termsAtStartsOf(enTokens, ruTokens)
+}
+
+// termsAtStartsOf returns the distinct terms of tokens whose word other kept too.
+func termsAtStartsOf(tokens, other analysis.TokenStream) []string {
+	kept := make(map[int]struct{}, len(other))
+	for _, token := range other {
+		kept[token.Start] = struct{}{}
+	}
+	seen := map[string]struct{}{}
+	terms := []string{}
+	for _, token := range tokens {
+		if _, ok := kept[token.Start]; !ok {
+			continue
+		}
+		term := string(token.Term)
+		if _, ok := seen[term]; ok {
+			continue
+		}
+		seen[term] = struct{}{}
+		terms = append(terms, term)
+	}
+	return terms
+}
+
 // Search returns up to size hits of queryString, skipping the first from.
 func (l *Loader) Search(queryString string, from, size int) ([]model.SearchResult, error) {
 	l.Lock()
@@ -422,18 +477,12 @@ func (l *Loader) Search(queryString string, from, size int) ([]model.SearchResul
 		return nil, ErrSearchNotAvailable
 	}
 
-	// Per-field disjunction: the query is analyzed with each field's own analyzer
-	// (ru for Title/Body, en for Title_en/Body_en) and a doc matches via whichever
-	// language fits. Within a field, terms are AND-ed (same precision as before).
-	matchField := func(field string) *bleveQuery.MatchQuery {
-		mq := bleve.NewMatchQuery(queryString)
-		mq.SetField(field)
-		mq.SetOperator(bleveQuery.MatchQueryOperatorAnd)
-		return mq
-	}
+	// Each field is matched with its own analyzer (ru for Body, en for Body_en), so a
+	// doc matches via whichever language fits.
+	ruTerms, enTerms := queryTerms(index, queryString)
 	query := bleve.NewDisjunctionQuery(
-		matchField("Title"), matchField("Title_en"),
-		matchField("Body"), matchField("Body_en"),
+		minMatchQuery(ruTerms, "Body"),
+		minMatchQuery(enTerms, "Body_en"),
 	)
 
 	searchRequest := bleve.NewSearchRequest(query)
@@ -455,8 +504,9 @@ func (l *Loader) Search(queryString string, from, size int) ([]model.SearchResul
 		}
 
 		text := texts[hit.ID]
-		titleSegments, titleSpans := highlightText(text.Title, hit.Locations, "Title", "Title_en")
-		contentSegments, bodySpans := highlightText(text.Body, hit.Locations, "Body", "Body_en")
+		titleLocations, bodyLocations := splitTitleLocations(hit.Locations, len(text.Title))
+		titleSegments, titleSpans := highlightText(text.Title, titleLocations, "Body", "Body_en")
+		contentSegments, bodySpans := highlightText(text.Body, bodyLocations, "Body", "Body_en")
 
 		results = append(results, model.SearchResult{
 			NoteView:        note,

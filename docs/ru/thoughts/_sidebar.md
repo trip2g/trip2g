@@ -51,6 +51,7 @@ title: "Навигация"
 - [[ru/thoughts/note-that-looked-like-a-font|Заметка, которую сервер принял за шрифт]]
 - [[ru/thoughts/rag-under-the-hood|Как ищут другие]]
 - [[ru/thoughts/search-benchmark-obsidian-help|Поиск trip2g против qmd и obsidian-hybrid-search]]
+- [[ru/thoughts/search-benchmark-enterprise-rag|Гибридный поиск, который не был гибридным]]
 - [[ru/thoughts/query-expansion-by-the-agent|Расширение запроса можно отдать агенту]]
 - [[ru/thoughts/do-agents-need-instructions|Нужны ли агенту инструкции к базе знаний]]
 - [[ru/thoughts/krisp-segmentation-nano-vs-mini|Проси точку поворота, а не интервал]]

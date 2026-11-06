@@ -18,18 +18,16 @@ An optional cross-encoder reranker exists as a fourth stage but ships **disabled
 
 ### BM25 lane
 
-`internal/noteloader/search.go` indexes every note in a bleve in-memory index. Each document has four analyzed fields so both Russian and English queries stem correctly:
+`internal/noteloader/search.go` indexes every note in bleve, in memory unless `SEARCH_INDEX_PATH` is set. The title and the text go into one document field, analyzed twice so both Russian and English queries stem correctly:
 
 | Field | Analyzer |
 |-------|----------|
-| `Title` | Russian |
-| `Title_en` | English |
 | `Body` | Russian |
 | `Body_en` | English |
 
-The query is a disjunction of per-field match queries, each using `MatchQueryOperatorAnd` (all terms must appear within that field's language). A document matches via whichever field suits its language. The index uses the Russian-analyzed fields as the **default mapping** (so bleve applies them even for untyped structs); the English fields are additional named mappings over the same source field.
+The query is a disjunction over the two fields. Within a field, a document must hold at least half of the query's distinct terms (`minMatchShare`). Words either language's analyzer treats as a stop word are dropped from the query first. The scoring is bleve's default TF-IDF, not BM25, even where these docs call this "the BM25 lane".
 
-The AND operator is intentional and load-bearing: in a hybrid system the BM25 lane's job is **precision**, not recall. The vector lane covers recall. Switching to OR floods the BM25 lane with low-precision matches that RRF then promotes above genuinely relevant results — a regression measured at nDCG@10 0.9263 → 0.6744 (see [search_refactoring.md F5](./search_refactoring.md)).
+Both choices were measured; see [retrieval_eval.md](./retrieval_eval.md#min-match-and-title-in-the-body-2026-11-04). Requiring all terms left a natural-language question with no text hits at all, which turned the hybrid into vectors alone. Requiring any one term floods the lane with same-language notes that push the vector lane's cross-language hits out of the top 10. A separate title field scored a one-word title as a perfect match on that word.
 
 ### Vector lane
 
@@ -202,5 +200,6 @@ All numbers from the bilingual benchmark (48-note corpus, 60 queries, bge-m3). F
 | F4: breadcrumb + token sizing | 0.9917 | 0.9263 | 0.9500 |
 | F5: dot product (shipped) | 0.9917 | 0.9263 | 0.9500 |
 | F5✗: AND→OR BM25 (reverted) | 0.6750 | 0.6744 | 0.9556 |
+| Half the terms, title in the body (current) | 0.9917 | 0.8790 | 0.9500 |
 
 Long-doc track (16 queries, multi-chunk notes): F4 raised nDCG@10 from 0.9308 → 0.9539, en→en from 0.8155 → 0.9077.
