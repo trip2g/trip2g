@@ -97,5 +97,3 @@ The full archive of 512 thousand files is still untested.
 Not yet. It went from 69% to 84%, and that's on the easier version of the exam. So about one document in six still misses the top ten, and more than one in three for questions in the asker's own words. The model answers correctly a little over half the time, and pages on a base this size open too slowly.
 
 Search can't fix part of that. "Which team got the most follow-up tasks across all incident reviews" has no single document with the answer: that takes counting, not finding. Another part can be fixed: long stretches of text get cut badly, and in sources like meeting transcripts the pieces run many times over the intended size. That's the next task.
-
-The whole run cost about a dollar and a half in embeddings, plus about 40 cents for answers and a first round of grading. For that money we learned more about the bug than in a year of chasing single cases.
