@@ -91,6 +91,9 @@ func (e *gqlRequestEnv) StoreFederatedInstructions(_ string, _ model.FederationR
 func (e *gqlRequestEnv) ResolveAPIKey(_ context.Context, _, _ string) (*db.ApiKey, error) {
 	panic("unexpected")
 }
+func (e *gqlRequestEnv) AdminByUserID(_ context.Context, _ int64) (db.Admin, error) {
+	panic("unexpected")
+}
 func (e *gqlRequestEnv) GraphQLRequestScoped(_ context.Context, _ string, _ map[string]any, _ []string) ([]byte, error) {
 	panic("unexpected")
 }

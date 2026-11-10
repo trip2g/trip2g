@@ -75,6 +75,7 @@ type Env interface {
 	StoreFederatedInstructions(kbID string, result model.FederationResult)
 	// API key auth
 	ResolveAPIKey(ctx context.Context, value, action string) (*db.ApiKey, error)
+	AdminByUserID(ctx context.Context, userID int64) (db.Admin, error)
 	// Admin GraphQL tools
 	GraphQLRequest(ctx context.Context, query string, variables map[string]any) ([]byte, error)
 	// Federated GraphQL tools

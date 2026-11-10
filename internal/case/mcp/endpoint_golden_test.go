@@ -424,6 +424,9 @@ func goldenEnv() *EnvMock {
 				return nil, errors.New("api key not found")
 			}
 		},
+		AdminByUserIDFunc: func(_ context.Context, userID int64) (db.Admin, error) {
+			return db.Admin{UserID: userID}, nil
+		},
 		GraphQLRequestFunc: func(context.Context, string, map[string]any) ([]byte, error) {
 			return []byte(`{"data":{"admin":{"__typename":"AdminQuery"}}}`), nil
 		},

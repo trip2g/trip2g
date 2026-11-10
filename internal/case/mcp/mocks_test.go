@@ -26,6 +26,9 @@ var _ mcp.Env = &EnvMock{}
 //
 //		// make and configure a mocked mcp.Env
 //		mockedEnv := &EnvMock{
+//			AdminByUserIDFunc: func(ctx context.Context, userID int64) (db.Admin, error) {
+//				panic("mock out the AdminByUserID method")
+//			},
 //			AuditLoggerFunc: func() logger.Logger {
 //				panic("mock out the AuditLogger method")
 //			},
@@ -144,6 +147,9 @@ var _ mcp.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// AdminByUserIDFunc mocks the AdminByUserID method.
+	AdminByUserIDFunc func(ctx context.Context, userID int64) (db.Admin, error)
+
 	// AuditLoggerFunc mocks the AuditLogger method.
 	AuditLoggerFunc func() logger.Logger
 
@@ -257,6 +263,13 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// AdminByUserID holds details about calls to the AdminByUserID method.
+		AdminByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID int64
+		}
 		// AuditLogger holds details about calls to the AuditLogger method.
 		AuditLogger []struct {
 		}
@@ -455,6 +468,7 @@ type EnvMock struct {
 			Result model.FederationResult
 		}
 	}
+	lockAdminByUserID                      sync.RWMutex
 	lockAuditLogger                        sync.RWMutex
 	lockCachedFederatedInstructions        sync.RWMutex
 	lockCanReadNote                        sync.RWMutex
@@ -492,6 +506,42 @@ type EnvMock struct {
 	lockSearchLiveNotes                    sync.RWMutex
 	lockSiteConfig                         sync.RWMutex
 	lockStoreFederatedInstructions         sync.RWMutex
+}
+
+// AdminByUserID calls AdminByUserIDFunc.
+func (mock *EnvMock) AdminByUserID(ctx context.Context, userID int64) (db.Admin, error) {
+	if mock.AdminByUserIDFunc == nil {
+		panic("EnvMock.AdminByUserIDFunc: method is nil but Env.AdminByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID int64
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockAdminByUserID.Lock()
+	mock.calls.AdminByUserID = append(mock.calls.AdminByUserID, callInfo)
+	mock.lockAdminByUserID.Unlock()
+	return mock.AdminByUserIDFunc(ctx, userID)
+}
+
+// AdminByUserIDCalls gets all the calls that were made to AdminByUserID.
+// Check the length with:
+//
+//	len(mockedEnv.AdminByUserIDCalls())
+func (mock *EnvMock) AdminByUserIDCalls() []struct {
+	Ctx    context.Context
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID int64
+	}
+	mock.lockAdminByUserID.RLock()
+	calls = mock.calls.AdminByUserID
+	mock.lockAdminByUserID.RUnlock()
+	return calls
 }
 
 // AuditLogger calls AuditLoggerFunc.
