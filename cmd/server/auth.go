@@ -34,6 +34,19 @@ func (a *app) setTokenValidator() {
 			return gqlerror.Errorf("%s", ban.Reason)
 		}
 
+		// The role claim lives for the whole JWT lifetime; an admin removed since
+		// sign-in keeps the session but only as a regular user.
+		if data.IsAdmin() {
+			_, adminErr := a.AdminByUserID(ctx, int64(data.ID))
+			if db.IsNoFound(adminErr) {
+				data.Role = "user"
+				return nil
+			}
+			if adminErr != nil {
+				return fmt.Errorf("failed to get admin: %w", adminErr)
+			}
+		}
+
 		return nil
 	})
 }
