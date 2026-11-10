@@ -38,6 +38,7 @@ title: "Navigation"
 - [[en/user/telegram-emoji|Custom emoji]]
 - [[en/user/telegram-access|Telegram group access]]
 - [[en/user/monetization|Monetization]]
+- [[en/user/access|Who can read a note]]
 - [[en/user/mcp|AI assistant (MCP)]]
 - [[en/user/instructions_guide|Instructions for a knowledge base]]
 - [[en/user/federation|MCP Federation]]

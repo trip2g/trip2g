@@ -48,6 +48,7 @@ Leave `free: true` off and only subscribers can read the note; everyone else get
 
 - [[en/user/monetization|Monetization]] — access through a Patreon or Boosty subscription, or for crypto.
 - [[en/user/subgraphs|Subgraphs]] — a public blog, a paid course and an internal wiki in one vault.
+- [[en/user/access|Who can read a note]] — what each reader sees on the page, in search, in feeds and over MCP.
 - [[en/user/telegram-access|Telegram group access]] — group members read gated notes.
 
 ## Templates
