@@ -270,16 +270,17 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 			sandboxed = false
 		} else {
 			cmd = sbCmd
+			cmd.WaitDelay = childWaitDelay
 		}
 	}
 	if !sandboxed {
-		cmd = exec.CommandContext(runCtx, fullArgv[0], fullArgv[1:]...)
+		cmd = plainCommand(runCtx, fullArgv)
 	}
 	var outBuf, errBuf limitedBuffer
 	prepareCmd(cmd, workDir, env, spec.Stdin, &outBuf, &errBuf, limit)
 
 	startedAt := time.Now()
-	runErr := cmd.Run()
+	runErr := finishChild(cmd, cmd.Run())
 	elapsed := time.Since(startedAt)
 	// A sandboxed command that failed to START never ran the child: namespace
 	// creation was denied (e.g. unprivileged userns disabled) or a confinement
@@ -293,10 +294,10 @@ func RunBlock(ctx context.Context, spec CodeSpec) (string, string, bool, error) 
 		}
 		fallback = "sandboxed child failed to start"
 		warnSandboxFallback(fallback, runErr)
-		cmd = exec.CommandContext(runCtx, fullArgv[0], fullArgv[1:]...)
+		cmd = plainCommand(runCtx, fullArgv)
 		prepareCmd(cmd, workDir, env, spec.Stdin, &outBuf, &errBuf, limit)
 		startedAt = time.Now()
-		runErr = cmd.Run()
+		runErr = finishChild(cmd, cmd.Run())
 		elapsed = time.Since(startedAt)
 	}
 	outStr := outBuf.String()
