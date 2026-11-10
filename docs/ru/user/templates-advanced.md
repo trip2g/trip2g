@@ -50,7 +50,7 @@ model.NoteView, model.NoteViews
 | `Description()` | `string` | SEO-описание |
 | `OGImageURL()` | `string` | URL картинки из `og_image` (иначе `cover`), `""` если не найдена |
 | `FirstImageURL()` | `string` | URL первой картинки в заметке, `""` если нет |
-| `FirstListHTML()` | `string` | HTML первого `<ul>` в заметке, `""` если нет |
+| `FirstListHTML()` | `string` | HTML первого списка в заметке, `<ul>` или `<ol>`, `""` если нет |
 | `Lang()` | `string` | Нормализованный код языка (`ru`, `en`) |
 | `LangName()` | `string` | Название языка на нём самом (`Русский`) |
 | `HasLangAlternatives()` | `bool` | Есть версии на других языках |

@@ -507,7 +507,7 @@ Documented in [[en/user/templates#What's available in a custom template|Template
 | `Tags()` | `[]string` | From `tags`, else `keywords`; a list or a comma-separated string. `nil` if unset |
 | `OGImageURL()` | `string` | URL of the `og_image` (else `cover`) frontmatter image, `""` if unresolved |
 | `FirstImageURL()` | `string` | URL of the first image in the note, `""` if none |
-| `FirstListHTML()` | `string` | HTML of the first `<ul>` in the note, `""` if none |
+| `FirstListHTML()` | `string` | HTML of the first list in the note, `<ul>` or `<ol>`, `""` if none |
 | `TOC()` | list of `{Text, Level, ID}` | Headings for a table of contents; empty when the note's TOC setting hides it |
 | `PermalinkEncoded()` | `string` | `Permalink()` with each path segment percent-encoded: `/привет мир` → `/%D0%BF…%20%D0%BC…`. See below |
 | `Path()` | `string` | File path in the vault, e.g. `blog/post.md` |
