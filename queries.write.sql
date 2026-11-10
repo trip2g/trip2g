@@ -82,6 +82,15 @@ returning *;
 insert into sign_in_codes (user_id, code)
 values (?, ?);
 
+-- Charges one attempt to every active code of the user before the code is
+-- compared, so parallel guesses cannot all see the same count.
+-- name: SpendSignInCodeAttempt :many
+update sign_in_codes
+   set failed_attempts = failed_attempts + 1
+ where user_id = (select id from users where email = ?)
+   and created_at > datetime('now', '-5 minutes')
+returning user_id, code, failed_attempts;
+
 -- name: DeleteSignInCodesByUserID :exec
 delete from sign_in_codes
  where user_id = ?;

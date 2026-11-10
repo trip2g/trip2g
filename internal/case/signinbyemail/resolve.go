@@ -2,6 +2,7 @@ package signinbyemail
 
 import (
 	"context"
+	"crypto/subtle"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -15,11 +16,12 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-// keeping database/sql import for sql.ErrNoRows check
+// Wrong guesses allowed per code before all of the user's codes are dropped.
+const maxCodeAttempts = 5
 
 type Env interface {
 	EmailSignInEnabled(ctx context.Context) bool
-	VerifySignInCode(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error)
+	SpendSignInCodeAttempt(ctx context.Context, email *string) ([]db.SpendSignInCodeAttemptRow, error)
 	DeleteSignInCodesByUserID(ctx context.Context, userID int64) error
 	SetupUserToken(ctx context.Context, userID int64) (string, error)
 	DevSignInBypass(code string) bool
@@ -67,18 +69,33 @@ func Resolve(ctx context.Context, env Env, req gmodel.SignInByEmailInput) (gmode
 		}, nil
 	}
 
-	codeParams := db.VerifySignInCodeParams{
-		Email: &req.Email,
-		Code:  req.Code,
+	rows, err := env.SpendSignInCodeAttempt(ctx, &req.Email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list active sign-in codes: %w", err)
 	}
 
-	userID, err := env.VerifySignInCode(ctx, codeParams)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return gmodel.NewFieldError("code", "Code is invalid or expired"), nil
+	var userID int64
+	matched, exhausted := false, false
+	for _, r := range rows {
+		userID = r.UserID
+		// failed_attempts already includes this attempt.
+		if r.FailedAttempts >= maxCodeAttempts {
+			exhausted = true
+		}
+		if r.FailedAttempts <= maxCodeAttempts && subtle.ConstantTimeCompare([]byte(r.Code), []byte(req.Code)) == 1 {
+			matched = true
+		}
+	}
+
+	if !matched {
+		if exhausted {
+			err = env.DeleteSignInCodesByUserID(ctx, userID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to delete exhausted sign-in codes: %w", err)
+			}
 		}
 
-		return nil, fmt.Errorf("failed to list active sign-in codes: %w", err)
+		return gmodel.NewFieldError("code", "Code is invalid or expired"), nil
 	}
 
 	token, err := env.SetupUserToken(ctx, userID)

@@ -8616,28 +8616,6 @@ func (q *Queries) UserTokenByID(ctx context.Context, id string) (UserToken, erro
 	return i, err
 }
 
-const verifySignInCode = `-- name: VerifySignInCode :one
-select user_id
-  from sign_in_codes c
-  join users u on c.user_id = u.id
-  where u.email = ?
-    and c.code = ?
-    and c.created_at > datetime('now', '-5 minutes')
-  limit 1
-`
-
-type VerifySignInCodeParams struct {
-	Email *string `json:"email"`
-	Code  string  `json:"code"`
-}
-
-func (q *Queries) VerifySignInCode(ctx context.Context, arg VerifySignInCodeParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, verifySignInCode, arg.Email, arg.Code)
-	var user_id int64
-	err := row.Scan(&user_id)
-	return user_id, err
-}
-
 const webhookByID = `-- name: WebhookByID :one
 select id, url, include_patterns, exclude_patterns, instruction, secret, max_depth, pass_api_key, include_content, timeout_seconds, max_retries, on_create, on_update, on_remove, read_patterns, write_patterns, enabled, description, created_at, created_by, updated_at, disabled_at, disabled_by, transform_jsonnet, attach_notes, concurrency_mode from change_webhooks where id = ? and disabled_at is null
 `

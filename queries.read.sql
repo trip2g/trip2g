@@ -118,15 +118,6 @@ select count(*) from sign_in_codes
  where user_id = ?
    and created_at > datetime('now', '-5 minutes');
 
--- name: VerifySignInCode :one
-select user_id
-  from sign_in_codes c
-  join users u on c.user_id = u.id
-  where u.email = ?
-    and c.code = ?
-    and c.created_at > datetime('now', '-5 minutes')
-  limit 1;
-
 -- name: ListAllUsers :many
 select * from users order by created_at desc;
 

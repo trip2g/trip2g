@@ -31,11 +31,11 @@ var _ Env = &EnvMock{}
 //			SetupUserTokenFunc: func(ctx context.Context, userID int64) (string, error) {
 //				panic("mock out the SetupUserToken method")
 //			},
+//			SpendSignInCodeAttemptFunc: func(ctx context.Context, email *string) ([]db.SpendSignInCodeAttemptRow, error) {
+//				panic("mock out the SpendSignInCodeAttempt method")
+//			},
 //			UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 //				panic("mock out the UserByEmail method")
-//			},
-//			VerifySignInCodeFunc: func(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error) {
-//				panic("mock out the VerifySignInCode method")
 //			},
 //		}
 //
@@ -56,11 +56,11 @@ type EnvMock struct {
 	// SetupUserTokenFunc mocks the SetupUserToken method.
 	SetupUserTokenFunc func(ctx context.Context, userID int64) (string, error)
 
+	// SpendSignInCodeAttemptFunc mocks the SpendSignInCodeAttempt method.
+	SpendSignInCodeAttemptFunc func(ctx context.Context, email *string) ([]db.SpendSignInCodeAttemptRow, error)
+
 	// UserByEmailFunc mocks the UserByEmail method.
 	UserByEmailFunc func(ctx context.Context, email string) (db.User, error)
-
-	// VerifySignInCodeFunc mocks the VerifySignInCode method.
-	VerifySignInCodeFunc func(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -88,6 +88,13 @@ type EnvMock struct {
 			// UserID is the userID argument value.
 			UserID int64
 		}
+		// SpendSignInCodeAttempt holds details about calls to the SpendSignInCodeAttempt method.
+		SpendSignInCodeAttempt []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Email is the email argument value.
+			Email *string
+		}
 		// UserByEmail holds details about calls to the UserByEmail method.
 		UserByEmail []struct {
 			// Ctx is the ctx argument value.
@@ -95,20 +102,13 @@ type EnvMock struct {
 			// Email is the email argument value.
 			Email string
 		}
-		// VerifySignInCode holds details about calls to the VerifySignInCode method.
-		VerifySignInCode []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Arg is the arg argument value.
-			Arg db.VerifySignInCodeParams
-		}
 	}
 	lockDeleteSignInCodesByUserID sync.RWMutex
 	lockDevSignInBypass           sync.RWMutex
 	lockEmailSignInEnabled        sync.RWMutex
 	lockSetupUserToken            sync.RWMutex
+	lockSpendSignInCodeAttempt    sync.RWMutex
 	lockUserByEmail               sync.RWMutex
-	lockVerifySignInCode          sync.RWMutex
 }
 
 // DeleteSignInCodesByUserID calls DeleteSignInCodesByUserIDFunc.
@@ -247,6 +247,42 @@ func (mock *EnvMock) SetupUserTokenCalls() []struct {
 	return calls
 }
 
+// SpendSignInCodeAttempt calls SpendSignInCodeAttemptFunc.
+func (mock *EnvMock) SpendSignInCodeAttempt(ctx context.Context, email *string) ([]db.SpendSignInCodeAttemptRow, error) {
+	if mock.SpendSignInCodeAttemptFunc == nil {
+		panic("EnvMock.SpendSignInCodeAttemptFunc: method is nil but Env.SpendSignInCodeAttempt was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Email *string
+	}{
+		Ctx:   ctx,
+		Email: email,
+	}
+	mock.lockSpendSignInCodeAttempt.Lock()
+	mock.calls.SpendSignInCodeAttempt = append(mock.calls.SpendSignInCodeAttempt, callInfo)
+	mock.lockSpendSignInCodeAttempt.Unlock()
+	return mock.SpendSignInCodeAttemptFunc(ctx, email)
+}
+
+// SpendSignInCodeAttemptCalls gets all the calls that were made to SpendSignInCodeAttempt.
+// Check the length with:
+//
+//	len(mockedEnv.SpendSignInCodeAttemptCalls())
+func (mock *EnvMock) SpendSignInCodeAttemptCalls() []struct {
+	Ctx   context.Context
+	Email *string
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Email *string
+	}
+	mock.lockSpendSignInCodeAttempt.RLock()
+	calls = mock.calls.SpendSignInCodeAttempt
+	mock.lockSpendSignInCodeAttempt.RUnlock()
+	return calls
+}
+
 // UserByEmail calls UserByEmailFunc.
 func (mock *EnvMock) UserByEmail(ctx context.Context, email string) (db.User, error) {
 	if mock.UserByEmailFunc == nil {
@@ -280,41 +316,5 @@ func (mock *EnvMock) UserByEmailCalls() []struct {
 	mock.lockUserByEmail.RLock()
 	calls = mock.calls.UserByEmail
 	mock.lockUserByEmail.RUnlock()
-	return calls
-}
-
-// VerifySignInCode calls VerifySignInCodeFunc.
-func (mock *EnvMock) VerifySignInCode(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error) {
-	if mock.VerifySignInCodeFunc == nil {
-		panic("EnvMock.VerifySignInCodeFunc: method is nil but Env.VerifySignInCode was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-		Arg db.VerifySignInCodeParams
-	}{
-		Ctx: ctx,
-		Arg: arg,
-	}
-	mock.lockVerifySignInCode.Lock()
-	mock.calls.VerifySignInCode = append(mock.calls.VerifySignInCode, callInfo)
-	mock.lockVerifySignInCode.Unlock()
-	return mock.VerifySignInCodeFunc(ctx, arg)
-}
-
-// VerifySignInCodeCalls gets all the calls that were made to VerifySignInCode.
-// Check the length with:
-//
-//	len(mockedEnv.VerifySignInCodeCalls())
-func (mock *EnvMock) VerifySignInCodeCalls() []struct {
-	Ctx context.Context
-	Arg db.VerifySignInCodeParams
-} {
-	var calls []struct {
-		Ctx context.Context
-		Arg db.VerifySignInCodeParams
-	}
-	mock.lockVerifySignInCode.RLock()
-	calls = mock.calls.VerifySignInCode
-	mock.lockVerifySignInCode.RUnlock()
 	return calls
 }
