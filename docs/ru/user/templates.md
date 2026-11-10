@@ -2,6 +2,7 @@
 free: true
 title: Шаблоны
 home_position: 70
+lang_redirect: "[[en/user/templates]]"
 ---
 
 Шаблон — HTML-файл, который определяет внешний вид страницы. Один файл в папке `_layouts/` — и готово.

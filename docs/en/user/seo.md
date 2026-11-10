@@ -1,6 +1,7 @@
 ---
 free: true
 title: SEO
+lang_redirect: "[[ru/user/seo]]"
 ---
 
 A common question: "How is your SEO?" Short answer: the same as anywhere else. HTML is rendered on the server, pages load instantly, and search engines see finished content.

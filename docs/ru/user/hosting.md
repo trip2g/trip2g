@@ -1,6 +1,7 @@
 ---
 title: "Хостинг"
 free: true
+lang_redirect: "[[en/user/hosting]]"
 ---
 
 Три способа получить работающий инстанс trip2g.

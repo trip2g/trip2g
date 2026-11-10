@@ -2,6 +2,7 @@
 title: Примеры использования
 free: true
 home_position: 65
+lang_redirect: "[[en/user/use-cases]]"
 ---
 
 Пять способов использовать trip2g для публикации из Obsidian.

@@ -1,3 +1,7 @@
+---
+lang_redirect: "[[ru/user/renderlayout]]"
+---
+
 # Layout Preview Endpoint
 
 `/_system/renderlayout` renders any Jet layout template without uploading files to the server. Nothing is saved — rendered HTML lives only in a small in-memory ring buffer. Use it for debugging template changes and sharing quick previews before any content reaches the production vault.
