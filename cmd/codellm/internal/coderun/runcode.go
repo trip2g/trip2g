@@ -2,6 +2,7 @@ package coderun
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -290,6 +291,8 @@ type builtBlock struct {
 	// distinguishes a real deadline from the teardown cancel that cleanupPipeline
 	// issues on the way out. Empty means the block was never waited on.
 	outcome string
+	// aborted means the pipeline killed this block because another one failed.
+	aborted bool
 }
 
 // elapsed is the block's wall time: from Start to the Wait that reaped it, or
@@ -338,6 +341,11 @@ func observePipeline(observe func(BlockStats), built []builtBlock, programs []st
 // cleanupPipeline cancels blockCtx, or every block looks timed out.
 func classifyPipelineBlock(bb *builtBlock) string {
 	switch {
+	case bb.aborted:
+		if bb.cmd.ProcessState == nil {
+			return BlockStartFailed
+		}
+		return BlockNonZeroExit
 	case bb.blockCtx.Err() != nil:
 		return BlockTimeout
 	case bb.cmd.ProcessState == nil:
@@ -360,7 +368,8 @@ func classifyPipelineBlock(bb *builtBlock) string {
 // debugTaps[i] receives block i's stdout through io.TeeReader as it streams to
 // block i+1's stdin; the last block always goes to a capped buffer regardless.
 //
-// Returns the last block's captured stdout, or the earliest-index block error.
+// Returns the last block's captured stdout, or the earliest-index block error
+// (see waitPipeline for which block errors count).
 func runPipeline(
 	ctx context.Context,
 	blocks []FencedBlock,
@@ -371,20 +380,26 @@ func runPipeline(
 ) (string, []string, []builtBlock, error) {
 	n := len(blocks)
 
-	built, err := buildPipelineBlocks(ctx, blocks, programs, in, limit)
+	pipeCtx, abort := context.WithCancelCause(ctx)
+	defer abort(nil)
+
+	built, err := buildPipelineBlocks(pipeCtx, blocks, programs, in, limit)
 	if err != nil {
 		return "", nil, nil, err
 	}
 	defer cleanupPipeline(built)
 
-	pipes := wirePipeline(built, limit, debugTaps)
+	pipes, err := wirePipeline(built, limit, debugTaps)
+	if err != nil {
+		return "", nil, nil, err
+	}
 	defer closeAllPipes(pipes)
 
 	if startErr := startAll(built, pipes, n); startErr != nil {
 		return "", nil, built, startErr
 	}
 
-	out, stderrs, waitErr := waitPipeline(built, pipes, in.Sandbox, n)
+	out, stderrs, waitErr := waitPipeline(built, pipes, in.Sandbox, abort)
 	return out, stderrs, built, waitErr
 }
 
@@ -405,24 +420,55 @@ func buildPipelineBlocks(ctx context.Context, blocks []FencedBlock, programs []s
 	return built, nil
 }
 
+// pipeLink carries block i's stdout to block i+1's stdin: block i writes w,
+// a copier goroutine moves r into stdinW, and block i+1 reads stdinR as a plain
+// file. The file keeps os/exec from running its own stdin copier, which would
+// keep block i+1's Wait open on a silent upstream after block i+1 has exited.
+type pipeLink struct {
+	r      *io.PipeReader
+	w      *io.PipeWriter
+	stdinR *os.File
+	stdinW *os.File
+	copied chan struct{}
+}
+
+// errDownstreamExited fails the writes of a block whose downstream block has
+// exited, so its stdout copy stops instead of blocking forever.
+var errDownstreamExited = errors.New("coderun: downstream block exited")
+
+// errPipelineAborted is the cancel cause of the blocks still running when
+// another block fails.
+var errPipelineAborted = errors.New("coderun: another pipeline block failed")
+
 // wirePipeline connects consecutive blocks via io.Pipe and wires stdout/stderr;
-// returns the slice of pipe writers (one per inter-block connection).
+// returns one pipeLink per inter-block connection.
 // debugTaps[i] — when non-nil — captures block i's stdout via TeeReader.
-func wirePipeline(built []builtBlock, limit int, debugTaps pipelineDebugTaps) []*io.PipeWriter {
+func wirePipeline(built []builtBlock, limit int, debugTaps pipelineDebugTaps) ([]pipeLink, error) {
 	n := len(built)
-	pipes := make([]*io.PipeWriter, n-1)
+	pipes := make([]pipeLink, 0, n-1)
 	var lastBuf limitedBuffer
 	lastBuf.limit = limit
 
 	for i := range n - 1 {
+		stdinR, stdinW, err := os.Pipe()
+		if err != nil {
+			closeAllPipes(pipes)
+			return nil, execErrf(KindSetupFailed, "coderun: %sstdin pipe: %w", blockPrefix(i+1, n), err)
+		}
 		pr, pw := io.Pipe()
-		pipes[i] = pw
+		link := pipeLink{r: pr, w: pw, stdinR: stdinR, stdinW: stdinW, copied: make(chan struct{})}
+		pipes = append(pipes, link)
 		var reader io.Reader = pr
 		if debugTaps != nil && debugTaps[i] != nil {
 			reader = io.TeeReader(pr, debugTaps[i])
 		}
+		go func() {
+			defer close(link.copied)
+			_, _ = io.Copy(link.stdinW, reader)
+			_ = link.stdinW.Close()
+		}()
 		built[i].cmd.Stdout = pw
-		built[i+1].cmd.Stdin = reader
+		built[i+1].cmd.Stdin = stdinR
 	}
 	built[n-1].cmd.Stdout = &lastBuf
 	for i := range built {
@@ -431,19 +477,24 @@ func wirePipeline(built []builtBlock, limit int, debugTaps pipelineDebugTaps) []
 	// lastBuf is captured via the cmd.Stdout pointer; Go escapes its address
 	// automatically when taken (cmd.Stdout = &lastBuf), so waitPipeline can read
 	// it back after Wait completes.
-	return pipes
+	return pipes, nil
 }
 
 // startAll starts all built blocks. On failure, closes already-opened upstream
 // pipes with the start error so blocked readers drain.
-func startAll(built []builtBlock, pipes []*io.PipeWriter, n int) error {
+func startAll(built []builtBlock, pipes []pipeLink, n int) error {
 	for i := range built {
 		built[i].startedAt = time.Now()
 		if sErr := built[i].cmd.Start(); sErr != nil {
 			for j := range i {
-				_ = pipes[j].CloseWithError(sErr)
+				_ = pipes[j].w.CloseWithError(sErr)
 			}
 			return execErrf(KindStartFailed, "coderun: %sstart failed: %w", blockPrefix(i, n), sErr)
+		}
+		if i > 0 {
+			// The child holds its own copy; ours would keep the pipe readable after
+			// the child exits, so writes into it would block instead of failing.
+			_ = pipes[i-1].stdinR.Close()
 		}
 	}
 	return nil
@@ -455,33 +506,42 @@ type pipeWaitResult struct {
 	err error
 }
 
-// waitPipeline waits for all blocks, cancels on any failure, and returns the
-// last block's stdout string or the earliest-index block error.
-func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPolicy, n int) (string, []string, error) {
-	pipeCtx, pipeCancel := context.WithCancel(context.Background())
-	defer pipeCancel()
-
+// waitPipeline waits for all blocks, aborts the rest on any counted failure,
+// and returns the last block's stdout string or the earliest-index counted
+// block error.
+//
+// A block that dies of a broken pipe after its downstream block has exited is
+// not counted: the downstream stopped reading, like `head`, and the output the
+// block could not deliver had nowhere left to go. A block killed by the abort
+// is not counted either; the block that failed first is.
+func waitPipeline(built []builtBlock, pipes []pipeLink, sandbox SandboxPolicy, abort context.CancelCauseFunc) (string, []string, error) {
+	n := len(built)
 	results := make(chan pipeWaitResult, n)
 	for i := range built {
-		go waitOne(i, built, pipes, n, sandbox, results)
+		go waitOne(i, built, pipes, sandbox, results)
 	}
 
+	exited := make([]bool, n)
 	errs := make([]error, n)
 	stderrs := make([]string, n)
 	for range n {
 		r := <-results
-		if r.err != nil {
-			errs[r.idx] = r.err
-			stderrs[r.idx] = built[r.idx].errBuf.String()
-			pipeCancel()
+		exited[r.idx] = true
+		if r.err == nil {
+			continue
 		}
+		stderrs[r.idx] = built[r.idx].errBuf.String()
+		stoppedReading := r.idx < n-1 && exited[r.idx+1] && brokenPipe(r.err)
+		if stoppedReading || built[r.idx].aborted {
+			continue
+		}
+		errs[r.idx] = r.err
+		abort(errPipelineAborted)
 	}
-	_ = pipeCtx // pipeCancel already deferred
 
-	// Return the earliest-index block failure.
 	for i, e := range errs {
 		if e != nil {
-			if built[i].blockCtx.Err() != nil {
+			if built[i].outcome == BlockTimeout {
 				return "", stderrs, execErrf(KindTimeout, "coderun: %stimed out", blockPrefix(i, n))
 			}
 			msg := stderrs[i]
@@ -492,7 +552,7 @@ func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPol
 		}
 	}
 
-	// All blocks succeeded; extract the last block's stdout via the Stdout pointer.
+	// All counted blocks succeeded; extract the last block's stdout via the Stdout pointer.
 	lastBuf, ok := built[n-1].cmd.Stdout.(*limitedBuffer)
 	if !ok || lastBuf == nil {
 		return "", stderrs, &ExecError{Kind: KindInternal, Err: errLastStdoutMissing}
@@ -505,26 +565,51 @@ func waitPipeline(built []builtBlock, pipes []*io.PipeWriter, sandbox SandboxPol
 }
 
 // waitOne waits for block idx and sends its result on ch. Closes the
-// downstream pipe writer (if any) so the next block sees EOF.
-func waitOne(idx int, built []builtBlock, pipes []*io.PipeWriter, n int, sandbox SandboxPolicy, ch chan<- pipeWaitResult) {
-	werr := built[idx].cmd.Wait()
-	built[idx].finishedAt = time.Now()
-	built[idx].outcome = classifyPipelineBlock(&built[idx])
-	if idx < n-1 {
+// downstream pipe writer (if any) so the next block sees EOF, and — after the
+// result is sent, so waitPipeline sees this block exit first — closes the
+// upstream pipe reader so the previous block's writes fail instead of blocking.
+func waitOne(idx int, built []builtBlock, pipes []pipeLink, sandbox SandboxPolicy, ch chan<- pipeWaitResult) {
+	bb := &built[idx]
+	werr := finishChild(bb.cmd, bb.cmd.Wait())
+	bb.finishedAt = time.Now()
+	bb.aborted = bb.blockCtx.Err() != nil && errors.Is(context.Cause(bb.blockCtx), errPipelineAborted)
+	bb.outcome = classifyPipelineBlock(bb)
+	if idx < len(pipes) {
 		if werr != nil {
-			_ = pipes[idx].CloseWithError(werr)
+			_ = pipes[idx].w.CloseWithError(werr)
 		} else {
-			_ = pipes[idx].Close()
+			_ = pipes[idx].w.Close()
 		}
 	}
 	// BestEffort mode: sandboxed child failed to start (ProcessState == nil).
 	// We can't fall back mid-pipeline — report it clearly.
-	if werr != nil && built[idx].sandboxed && built[idx].cmd.ProcessState == nil && built[idx].blockCtx.Err() == nil {
+	if werr != nil && bb.sandboxed && bb.cmd.ProcessState == nil && bb.blockCtx.Err() == nil {
 		if !sandbox.Mode.enforcing() {
 			werr = fmt.Errorf("sandboxed child failed to start; pipeline cannot fall back mid-run: %w", werr)
 		}
 	}
 	ch <- pipeWaitResult{idx, werr}
+	if idx > 0 {
+		_ = pipes[idx-1].r.CloseWithError(errDownstreamExited)
+	}
+}
+
+// brokenPipe reports whether a block ended the way a writer ends when its
+// reader goes away: killed by SIGPIPE, exit 141 (a shell whose last command
+// was), or an otherwise clean exit whose output copy hit errDownstreamExited.
+// Interpreters that turn EPIPE into an exception (python) exit 1 and still count.
+func brokenPipe(err error) bool {
+	if errors.Is(err, errDownstreamExited) {
+		return true
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		return false
+	}
+	if ws, ok := exitErr.Sys().(syscall.WaitStatus); ok && ws.Signaled() && ws.Signal() == syscall.SIGPIPE {
+		return true
+	}
+	return exitErr.ExitCode() == 128+int(syscall.SIGPIPE)
 }
 
 // cleanupPipeline cancels all block contexts and removes all workdirs.
@@ -535,12 +620,17 @@ func cleanupPipeline(built []builtBlock) {
 	}
 }
 
-// closeAllPipes closes all inter-block pipe writers. Safe to call after Wait.
-func closeAllPipes(pipes []*io.PipeWriter) {
-	for _, pw := range pipes {
-		if pw != nil {
-			_ = pw.Close()
-		}
+// closeAllPipes closes every inter-block pipe and waits for the copiers, so
+// the debug taps they write are safe to read afterwards. Safe to call after Wait.
+func closeAllPipes(pipes []pipeLink) {
+	for _, p := range pipes {
+		_ = p.w.Close()
+		_ = p.r.CloseWithError(errDownstreamExited)
+		_ = p.stdinR.Close()
+		_ = p.stdinW.Close()
+	}
+	for _, p := range pipes {
+		<-p.copied
 	}
 }
 
@@ -616,12 +706,11 @@ func buildBlockCmd(ctx context.Context, code, program string, in CodeInput) (bui
 			sandboxed = false
 		} else {
 			cmd = sbCmd
+			cmd.WaitDelay = childWaitDelay
 		}
 	}
 	if !sandboxed {
-		// gosec G204: operator-allowlisted interpreter on role's rendered code —
-		// executing that code IS the feature, off by default. Same rationale as RunBlock.
-		cmd = exec.CommandContext(blockCtx, fullArgv[0], fullArgv[1:]...) //nolint:gosec // allowlisted interpreter
+		cmd = plainCommand(blockCtx, fullArgv)
 	}
 	cmd.Dir = workDir
 	cmd.Env = env
