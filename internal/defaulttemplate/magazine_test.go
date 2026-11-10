@@ -295,22 +295,32 @@ func TestMagazineItemExcerpt(t *testing.T) {
 	}{
 		{
 			name: "description wins over intro",
-			nv:   &model.NoteView{Description: &desc, PartialRenderer: introTextStub{text: "Intro."}},
+			nv:   &model.NoteView{Free: true, Description: &desc, PartialRenderer: introTextStub{text: "Intro."}},
 			want: "From frontmatter.",
 		},
 		{
 			name: "empty description falls back to intro",
-			nv:   &model.NoteView{Description: &empty, PartialRenderer: introTextStub{text: "Intro."}},
+			nv:   &model.NoteView{Free: true, Description: &empty, PartialRenderer: introTextStub{text: "Intro."}},
 			want: "Intro.",
 		},
 		{
 			name: "no description uses intro",
-			nv:   &model.NoteView{PartialRenderer: introTextStub{text: "Intro."}},
+			nv:   &model.NoteView{Free: true, PartialRenderer: introTextStub{text: "Intro."}},
 			want: "Intro.",
 		},
 		{
 			name: "no description and no renderer",
-			nv:   &model.NoteView{},
+			nv:   &model.NoteView{Free: true},
+			want: "",
+		},
+		{
+			name: "paid note keeps its description",
+			nv:   &model.NoteView{Description: &desc, PartialRenderer: introTextStub{text: "Paid intro."}},
+			want: "From frontmatter.",
+		},
+		{
+			name: "paid note without description shows no body text",
+			nv:   &model.NoteView{PartialRenderer: introTextStub{text: "Paid intro."}},
 			want: "",
 		},
 	}
@@ -321,6 +331,27 @@ func TestMagazineItemExcerpt(t *testing.T) {
 			require.Equal(t, tt.want, item.Excerpt())
 		})
 	}
+}
+
+func TestMagazine_PaidCardShowsNoBodyText(t *testing.T) {
+	nvs := model.NewNoteViews()
+	nvs.PathMap["index.md"] = &model.NoteView{Path: "index.md", Title: "Index", Permalink: "/", Free: true}
+	nvs.PathMap["free.md"] = &model.NoteView{
+		Path: "free.md", Title: "Free post", Permalink: "/free", Free: true,
+		PartialRenderer: introTextStub{text: "Free intro."},
+	}
+	nvs.PathMap["paid.md"] = &model.NoteView{
+		Path: "paid.md", Title: "Paid post", Permalink: "/paid",
+		PartialRenderer: introTextStub{text: "Paid intro."},
+	}
+	views := templateviews.NewNVS(nvs, "live")
+
+	html := Magazine(&Ctx{Note: views.NoteByPath("index.md"), Notes: views})
+
+	require.Contains(t, html, "Free intro.")
+	require.Contains(t, html, `href="/paid"`)
+	require.Contains(t, html, "Paid post")
+	require.NotContains(t, html, "Paid intro.")
 }
 
 func TestMagazineShowDate(t *testing.T) {

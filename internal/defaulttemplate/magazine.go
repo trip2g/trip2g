@@ -23,9 +23,16 @@ type MagazineItem struct {
 
 // Excerpt returns the card text: the note's description frontmatter, or the
 // first intro paragraph as plain text.
+//
+// The intro is derived only for a note an anonymous visitor may read, the
+// rule deriveMetaDescription follows: a magazine page can be served from the
+// anonymous page cache, so body text of a closed note must never reach it.
 func (item MagazineItem) Excerpt() string {
 	if desc := item.Note.Description(); desc != "" {
 		return desc
+	}
+	if !templateviews.NoteView(item.Note).IsAnonymouslyReadable() {
+		return ""
 	}
 	if pr := item.Note.PartialRenderer(); pr != nil {
 		return pr.IntroText()
