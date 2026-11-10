@@ -79,7 +79,7 @@ Every note under `course/` gets `subgraph: course` at load time — you never to
 
 ### Files and folders starting with `_` are hidden
 
-Any file or folder whose name starts with `_` is treated as a system file: hidden from magazine listings, site search, RSS, and similar-notes suggestions. The note's URL still works — it is hidden from discovery, not from access.
+Any file or folder whose name starts with `_` is treated as a system file: hidden from magazine listings, site search, RSS, and similar-notes suggestions. The note's own URL answers `404`; the note can still be embedded and opened by path over MCP. The underscore hides a note from listings, it does not set who may read it.
 
 The rule applies to any path component, not just the filename:
 
