@@ -90,6 +90,8 @@ func (m *Manager) PerformBackup(ctx context.Context) error {
 
 	err = m.env.PutPrivateObject(ctx, pr, objectName)
 	if err != nil {
+		// The upload may stop before draining the pipe; unblock the gzip writer.
+		_ = pr.CloseWithError(err)
 		return fmt.Errorf("failed to upload backup: %w", err)
 	}
 

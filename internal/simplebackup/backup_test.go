@@ -278,6 +278,31 @@ func TestPerformBackup_UploadFails(t *testing.T) {
 	require.ErrorContains(t, err, "upload failed")
 }
 
+// TestPerformBackup_UploadFailsBeforeReading verifies the pipe is closed when
+// the upload gives up without draining it, so the gzip goroutine can exit.
+func TestPerformBackup_UploadFailsBeforeReading(t *testing.T) {
+	dbPath := createTestDB(t)
+	db := openTestDB(t, dbPath)
+	t.Cleanup(func() { db.Close() })
+
+	var reader io.Reader
+	env := newEnv(db)
+	env.PutPrivateObjectFunc = func(ctx context.Context, r io.Reader, objectID string) error {
+		reader = r
+		return errors.New("upload failed: connection refused")
+	}
+	env.ListPrivateObjectsFunc = func(ctx context.Context, opts miniostorage.ListOptions) ([]model.PrivateObject, error) {
+		return nil, nil
+	}
+
+	mgr := simplebackup.New(env, dbPath)
+	err := mgr.PerformBackup(context.Background())
+	require.ErrorContains(t, err, "upload failed")
+
+	_, err = reader.Read(make([]byte, 1))
+	require.ErrorIs(t, err, io.ErrClosedPipe)
+}
+
 // TestPerformBackup_RetentionDeletesOldest verifies that oldest backups are deleted when over retentionCount.
 // enforceRetention is called after upload, and the mock list contains 5 existing backups.
 // filterAndSortBackups gets 5 items, keeps 3 newest → deletes 2 oldest.
