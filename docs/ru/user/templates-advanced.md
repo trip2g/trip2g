@@ -50,7 +50,7 @@ model.NoteView, model.NoteViews
 | `Description()` | `string` | SEO-описание |
 | `OGImageURL()` | `string` | URL картинки из `og_image` (иначе `cover`), `""` если не найдена |
 | `FirstImageURL()` | `string` | URL первой картинки в заметке, `""` если нет |
-| `FirstListHTML()` | `string` | HTML первого `<ul>` в заметке, `""` если нет |
+| `FirstListHTML()` | `string` | HTML первого списка в заметке, `<ul>` или `<ol>`, `""` если нет |
 | `Lang()` | `string` | Нормализованный код языка (`ru`, `en`) |
 | `LangName()` | `string` | Название языка на нём самом (`Русский`) |
 | `HasLangAlternatives()` | `bool` | Есть версии на других языках |
@@ -324,8 +324,9 @@ type Section struct {
 }
 
 type ListItem struct {
-    Text     string
-    URL      string
+    Text     string  // Весь пункт как простой текст, без разметки и метки задачи
+    HTML     string  // То же, отрисованное как на странице, без <li> и вложенного списка
+    URL      string  // Адрес первой ссылки пункта
     Task     string  // "", "todo" для [ ], "done" для любого другого символа
     TaskMark string  // Символ в скобках: " ", "x", "/"…; "" без чекбокса
     Children []ListItem

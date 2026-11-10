@@ -58,6 +58,47 @@ func TestNote_HTMLString_MainDomainDomainHTML(t *testing.T) {
 		"no DomainHTML: HTMLString should return nv.HTML")
 }
 
+func TestNote_FirstListHTML(t *testing.T) {
+	tests := []struct {
+		name string
+		html string
+		want string
+	}{
+		{
+			name: "unordered list",
+			html: `<p>intro</p><ul><li>a</li></ul>`,
+			want: `<ul><li>a</li></ul>`,
+		},
+		{
+			name: "ordered list",
+			html: `<p>intro</p><ol><li>a</li></ol>`,
+			want: `<ol><li>a</li></ol>`,
+		},
+		{
+			name: "ordered list before an unordered one",
+			html: `<ol><li>a</li></ol><ul><li>b</li></ul>`,
+			want: `<ol><li>a</li></ol>`,
+		},
+		{
+			name: "unordered list before an ordered one",
+			html: `<ul><li>b</li></ul><ol><li>a</li></ol>`,
+			want: `<ul><li>b</li></ul>`,
+		},
+		{
+			name: "no list",
+			html: `<p>intro</p>`,
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			note := NewNote(&model.NoteView{HTML: template.HTML(tt.html)})
+			require.Equal(t, tt.want, note.FirstListHTML().String())
+		})
+	}
+}
+
 func TestNote_PermalinkEncoded(t *testing.T) {
 	nv := &model.NoteView{Permalink: "/поиск_астрономия"}
 	note := NewNote(nv)

@@ -102,9 +102,12 @@ func (s *NoteViewSection) Section(title string) any {
 // NoteViewHeadingBlock is an alias for NoteViewSection (deprecated, use NoteViewSection).
 type NoteViewHeadingBlock = NoteViewSection
 
-// NoteViewListItem represents a single item in a markdown list.
+// NoteViewListItem represents a single item in a markdown list. Text is the
+// item's own content as plain text, HTML the same content rendered the way
+// the page renders it, without the <li> and without nested lists.
 type NoteViewListItem struct {
 	Text string
+	HTML SafeHTML
 	URL  string
 	// Task is "" for a plain item, "todo" for "[ ]" and "done" for any other
 	// mark: Obsidian renders every non-space mark as a checked box.

@@ -47,7 +47,7 @@ Read this first. `{{ value }}` HTML-escapes the value, so a title like `Q&A <dra
 
 What follows from this:
 
-- Methods and fields that return HTML the server built print as is, without a filter: `note.HTMLString()`, `FirstListHTML()`, `FormSpecJSON()`, `SubgraphNamesJSON()`, section `TitleHTML` / `ContentHTML`, code block `HTML`, the `defaultTemplate.*` functions and `asset()`.
+- Methods and fields that return HTML the server built print as is, without a filter: `note.HTMLString()`, `FirstListHTML()`, `FormSpecJSON()`, `SubgraphNamesJSON()`, section `TitleHTML` / `ContentHTML`, code block `HTML`, list item `HTML`, the `defaultTemplate.*` functions and `asset()`.
 - `| unsafe` and `| raw` print a plain string without escaping. You need them only for markup the template builds itself or keeps in a string, and for `injection.Content` of the site's [[en/user/templates#HTML injections|HTML injections]].
 - `| html` is no longer needed for text. It escapes once and marks the result as safe, so `{{ title | html }}` in an older template prints the same as `{{ title }}`, not a double-escaped `&amp;amp;`.
 - A string function or `+` applied to safe output returns a plain string, and that string is escaped: `{{ upper(note.HTMLString()) }}` prints the tags as text.
@@ -507,7 +507,7 @@ Documented in [[en/user/templates#What's available in a custom template|Template
 | `Tags()` | `[]string` | From `tags`, else `keywords`; a list or a comma-separated string. `nil` if unset |
 | `OGImageURL()` | `string` | URL of the `og_image` (else `cover`) frontmatter image, `""` if unresolved |
 | `FirstImageURL()` | `string` | URL of the first image in the note, `""` if none |
-| `FirstListHTML()` | `string` | HTML of the first `<ul>` in the note, `""` if none |
+| `FirstListHTML()` | `string` | HTML of the first list in the note, `<ul>` or `<ol>`, `""` if none |
 | `TOC()` | list of `{Text, Level, ID}` | Headings for a table of contents; empty when the note's TOC setting hides it |
 | `PermalinkEncoded()` | `string` | `Permalink()` with each path segment percent-encoded: `/привет мир` → `/%D0%BF…%20%D0%BC…`. See below |
 | `Path()` | `string` | File path in the vault, e.g. `blog/post.md` |
@@ -607,6 +607,7 @@ A lookup that finds nothing (`ByPath`, `ByPermalink`, `ByWikilink`, a query's `F
 | section `.Title` | Heading as plain text |
 | section `.Sections(level)`, `.Section("Title")` | Subsections of a section |
 | list item `.Task`, `.TaskMark` | `""`, `"todo"` or `"done"`, and the character inside `[ ]` |
+| list item `.Text`, `.HTML` | The item as plain text, and rendered as on the page without the `<li>` — `{{ item.HTML }}` prints as is |
 
 ### Worked example: latest posts with a count
 

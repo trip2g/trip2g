@@ -3,6 +3,7 @@ package templateviews
 import (
 	"bytes"
 	"encoding/json"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -349,8 +350,8 @@ func (n *Note) FirstImageURL() string {
 	return ar.URL
 }
 
-// FirstListHTML returns the outer HTML of the first <ul> element in rendered HTML.
-// Returns "" if no <ul> found.
+// FirstListHTML returns the outer HTML of the first list in the rendered HTML,
+// <ul> or <ol>, whichever comes first. Returns "" if the note has no list.
 func (n *Note) FirstListHTML() model.SafeHTML {
 	htmlStr := n.HTMLString().String()
 	if htmlStr == "" {
@@ -362,25 +363,25 @@ func (n *Note) FirstListHTML() model.SafeHTML {
 		return ""
 	}
 
-	ul := findFirstElement(doc, "ul")
-	if ul == nil {
+	list := findFirstElement(doc, "ul", "ol")
+	if list == nil {
 		return ""
 	}
 
 	var buf bytes.Buffer
-	if renderErr := html.Render(&buf, ul); renderErr != nil {
+	if renderErr := html.Render(&buf, list); renderErr != nil {
 		return ""
 	}
 	return model.SafeHTML(buf.String())
 }
 
-// findFirstElement finds the first element with the given tag name in the HTML tree.
-func findFirstElement(n *html.Node, tag string) *html.Node {
-	if n.Type == html.ElementNode && n.Data == tag {
+// findFirstElement finds the first element with one of the tag names in document order.
+func findFirstElement(n *html.Node, tags ...string) *html.Node {
+	if n.Type == html.ElementNode && slices.Contains(tags, n.Data) {
 		return n
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if found := findFirstElement(c, tag); found != nil {
+		if found := findFirstElement(c, tags...); found != nil {
 			return found
 		}
 	}

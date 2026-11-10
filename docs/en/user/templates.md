@@ -315,7 +315,7 @@ A table of contents where each entry also shows the first lines of its section:
 
 ### Lists and tasks
 
-`FirstList()` and `Lists()` return lists as data: each item has `Text`, `URL` (when the item is a link), `Children`, and two task fields:
+`FirstList()` and `Lists()` return lists as data: each item has `Text`, `HTML`, `URL` (when the item holds a link), `Children`, and two task fields:
 
 | Item | `Task` | `TaskMark` |
 |---|---|---|
@@ -325,6 +325,8 @@ A table of contents where each entry also shows the first lines of its section:
 | `- [/] started`, `- [-] dropped`, `- [>] moved` | `"done"` | `"/"`, `"-"`, `">"` |
 
 Any character other than a space counts as `done`, the way Obsidian shows such a box as checked. `TaskMark` keeps the character itself, so a template can tell Obsidian's custom statuses apart. The published page renders only `[ ]`, `[x]` and `[X]` as checkboxes; `- [/] started` shows on the page as the text "[/] started", while `Text` holds just "started".
+
+`Text` is the whole item as plain text: markup removed, whitespace collapsed, the task mark cut off. `HTML` is the same content rendered the way the page renders it — emphasis, code, links and wikilinks resolved — without the `<li>`, the checkbox or a nested list, which stays in `Children`. It prints as is, so for `- see *[Other](/other)*` the line `<li>{{ item.HTML }}</li>` gives `<li>see <em><a href="/other">Other</a></em></li>`.
 
 ```jet
 {{ if list := note.PartialRenderer().FirstList(); list }}
