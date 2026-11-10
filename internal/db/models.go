@@ -642,9 +642,10 @@ type Secret struct {
 }
 
 type SignInCode struct {
-	UserID    int64     `json:"user_id"`
-	Code      string    `json:"code"`
-	CreatedAt time.Time `json:"created_at"`
+	UserID         int64     `json:"user_id"`
+	Code           string    `json:"code"`
+	CreatedAt      time.Time `json:"created_at"`
+	FailedAttempts int64     `json:"failed_attempts"`
 }
 
 type Subgraph struct {

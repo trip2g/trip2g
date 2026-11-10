@@ -3587,6 +3587,45 @@ func (q *WriteQueries) SoftDeletePatreonCredentials(ctx context.Context, arg Sof
 	return i, err
 }
 
+const spendSignInCodeAttempt = `-- name: SpendSignInCodeAttempt :many
+update sign_in_codes
+   set failed_attempts = failed_attempts + 1
+ where user_id = (select id from users where email = ?)
+   and created_at > datetime('now', '-5 minutes')
+returning user_id, code, failed_attempts
+`
+
+type SpendSignInCodeAttemptRow struct {
+	UserID         int64  `json:"user_id"`
+	Code           string `json:"code"`
+	FailedAttempts int64  `json:"failed_attempts"`
+}
+
+// Charges one attempt to every active code of the user before the code is
+// compared, so parallel guesses cannot all see the same count.
+func (q *WriteQueries) SpendSignInCodeAttempt(ctx context.Context, email *string) ([]SpendSignInCodeAttemptRow, error) {
+	rows, err := q.db.QueryContext(ctx, spendSignInCodeAttempt, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SpendSignInCodeAttemptRow
+	for rows.Next() {
+		var i SpendSignInCodeAttemptRow
+		if err := rows.Scan(&i.UserID, &i.Code, &i.FailedAttempts); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const unbanUser = `-- name: UnbanUser :exec
 delete from user_bans where user_id = ?
 `
@@ -5287,11 +5326,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

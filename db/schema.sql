@@ -16,7 +16,7 @@ CREATE TABLE sign_in_codes (
   user_id integer not null,
   code text not null,
   created_at datetime not null default current_timestamp
-);
+, failed_attempts integer not null default 0);
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE TABLE backlite_tasks (
     id text PRIMARY KEY,
@@ -1014,4 +1014,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260821014419'),
   ('20260822050102'),
   ('20260822084659'),
-  ('20260921153702');
+  ('20260921153702'),
+  ('20261110120000');
