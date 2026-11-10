@@ -1,12 +1,12 @@
 ---
 title: "A team knowledge base your AI agents can query (MCP)"
-description: "Run a self-hosted team wiki that your AI agents reach over MCP. Authors write in Obsidian, agents query the same notes with per-subscription access control."
+description: "Run a self-hosted team wiki that your AI agents reach over MCP. The owner writes in Obsidian, agents query the same notes with per-subscription access control."
 free: true
 home_position: 40
 lang_redirect: "[[ru/user/team-knowledge-base-mcp]]"
 ---
 
-Give your team one knowledge base that people read as a website and agents query over MCP, from the same notes. Authors write in Obsidian, the base is served on your own server, and access is scoped per subscriber so an agent only sees what its caller is allowed to see. No copy of the docs is shipped to a vendor.
+Give your team one knowledge base that people read as a website and agents query over MCP, from the same notes. The owner writes in Obsidian, the base is served on your own server, and access is scoped per subscriber so an agent only sees what its caller is allowed to see. No copy of the docs is shipped to a vendor.
 
 ### The problem: AI hallucinates your company's facts
 
@@ -14,7 +14,7 @@ An assistant that does not know your internal docs will confidently invent polic
 
 Most teams try to bolt that on with two disconnected systems: a wiki humans edit, and a separate RAG pipeline that ingests a stale export of it into a vector store the AI queries. The pipeline drifts. The AI answers from last month's docs. And the permissions model from the wiki rarely survives the copy, so the agent can surface a page a given user should never see.
 
-trip2g removes the second system. The notes your team edits *are* the thing the agent queries. There is no export step and no separate index to keep in sync, because search is built into the same server that serves the pages.
+trip2g removes the second system. The notes the owner edits *are* the thing the agent queries. There is no export step and no separate index to keep in sync, because search is built into the same server that serves the pages.
 
 ### MCP vs RAG vs file upload
 
@@ -81,10 +81,12 @@ The token and access-level details are in [[en/user/mcp|MCP server]].
 
 If two teams each run a hub, you can [[en/user/federation|federate]] them: one agent query fans out across both bases without merging the systems or sharing raw storage. Each hub still enforces its own access per base. That covers the "company plus per-team hubs" and "two orgs, one bridge" shapes without a central data lake.
 
+This page describes a base with one writer. When several people or teams write, each gets its own base and a keeper agent assembles the shared level: see [[en/user/org-knowledge-base|An organisation's knowledge base]].
+
 ### Honest tradeoffs
 
 - **You run the server.** A hosted wiki with an AI add-on needs no ops. trip2g is one Go binary on SQLite, but it is still yours to run or rent.
-- **Authors write in markdown.** If your team will only use a WYSIWYG web editor, that is a real adoption cost. The upside is that docs stay portable files.
+- **The writer works in markdown.** If your team will only use a WYSIWYG web editor, that is a real adoption cost. The upside is that docs stay portable files.
 - **Semantic search needs an embeddings key.** Full-text works out of the box; vector search wants an OpenAI-compatible endpoint (see [[en/user/selfhosted|self-hosted setup]]).
 
 Pick this when you want your internal docs to be both readable and directly queryable by the team's agents, on infrastructure you control, without a second RAG stack to babysit.

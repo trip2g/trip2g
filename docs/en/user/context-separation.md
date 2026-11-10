@@ -24,6 +24,8 @@ The two axes are orthogonal, and that is the whole point. You can grant search a
 
 "An edge = who may search. A subgraph = what's visible while doing so."
 
+The same two axes sort an organisation by authorship. An edge joins bases that have different writers. A subgraph splits the readers of one writer's base. [[en/user/org-knowledge-base|An organisation's knowledge base]] builds a layout from that: one base per writer, and a keeper agent that assembles the level above.
+
 ### A worked org example
 
 Take an organization with two companies under a shared owner. Ten knowledge bases, eleven directed edges. Each base is its own trip2g instance with its own `/_system/mcp` endpoint, its own notes, and its own admin.
