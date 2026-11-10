@@ -34,6 +34,7 @@ var blockedPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("240.0.0.0/4"),     // reserved
 	netip.MustParsePrefix("255.255.255.255/32"),
 	// IPv6
+	netip.MustParsePrefix("::/128"),        // unspecified (connects to the local host)
 	netip.MustParsePrefix("::1/128"),       // loopback
 	netip.MustParsePrefix("fc00::/7"),      // unique local (RFC4193)
 	netip.MustParsePrefix("fe80::/10"),     // link-local
