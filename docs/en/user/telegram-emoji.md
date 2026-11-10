@@ -7,7 +7,7 @@ lang_redirect: "[[ru/user/Кастомные эмодзи]]"
 
 Telegram supports custom emoji — animated and static images from sticker packs. They are more expressive than standard Unicode emoji and display inline with text.
 
-**Requirement:** custom emoji only work when publishing through a [[en/user/telegram|Telegram account with Premium status]]. Bots cannot send custom emoji.
+**Requirement:** custom emoji only work when publishing through a [[en/user/telegram-accounts|Telegram account with Premium status]]. Bots cannot send custom emoji.
 
 ### Get the markdown code
 
