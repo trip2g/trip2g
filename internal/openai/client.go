@@ -34,16 +34,25 @@ const (
 	KindDebug     = "debug"
 )
 
+// requestTimeout bounds one embeddings request. A batch on a CPU embedder can
+// take tens of seconds; past this the server is treated as hung.
+const requestTimeout = 2 * time.Minute
+
 // New creates a new OpenAI-compatible embedding client.
 // modelName is the model identifier sent in API requests (e.g. "text-embedding-3-small"
 // or any name accepted by the server).
 // baseURL is optional; when non-empty it overrides the default OpenAI endpoint
 // (e.g. "http://localhost:8080/v1" for a local TEI server).
 func New(apiKey string, modelName string, baseURL string) *Client {
+	return newWithTimeout(apiKey, modelName, baseURL, requestTimeout)
+}
+
+func newWithTimeout(apiKey string, modelName string, baseURL string, timeout time.Duration) *Client {
 	cfg := openai.DefaultConfig(apiKey)
 	if baseURL != "" {
 		cfg.BaseURL = baseURL
 	}
+	cfg.HTTPClient = &http.Client{Timeout: timeout}
 	return &Client{
 		client:    openai.NewClientWithConfig(cfg),
 		modelName: modelName,

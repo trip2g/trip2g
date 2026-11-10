@@ -166,6 +166,31 @@ func TestFederatedInstructionsCacheHitSkipsForward(t *testing.T) {
 	require.Equal(t, "guidance once", second.Result.(mcp.CallToolResult).Content[0].Text)
 }
 
+func TestFederatedInstructionsCacheHitStillChecksAccess(t *testing.T) {
+	nvs := fedInstrNoteViews()
+	cache := fedinstr.New()
+	cache.StoreFederatedInstructions("bob", appmodel.FederationResult{
+		Content: []appmodel.FederationContent{{Type: "text", Text: "cached guidance"}},
+	})
+	env := &EnvMock{
+		FeaturesFunc: func() features.Features { return features.Features{} },
+
+		FederatedFanoutTimeoutFunc:      func() time.Duration { return 2 * time.Second },
+		MCPMetricsFunc:                  func() *metrics.MCPMetrics { return nil },
+		LatestNoteViewsFunc:             func() *appmodel.NoteViews { return nvs },
+		CanReadNoteFunc:                 func(context.Context, *appmodel.NoteView) (bool, error) { return false, nil },
+		CachedFederatedInstructionsFunc: cache.CachedFederatedInstructions,
+		StoreFederatedInstructionsFunc:  cache.StoreFederatedInstructions,
+	}
+
+	resp := callFederatedInstructions(t, env, `{"kb_id":"bob"}`)
+	require.Nil(t, resp.Error)
+	result := resp.Result.(mcp.CallToolResult)
+	require.NotContains(t, result.Content[0].Text, "cached guidance")
+	payload := decodePayload[mcp.FederationStatusPayload](t, result)
+	require.Equal(t, "federation_not_configured", payload.Status)
+}
+
 func TestFederatedInstructionsCacheConcurrent(t *testing.T) {
 	nvs := fedInstrNoteViews()
 	cache := fedinstr.New()

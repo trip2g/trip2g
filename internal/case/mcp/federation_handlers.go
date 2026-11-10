@@ -109,23 +109,48 @@ func federatedSingleKBResult(
 	kbID string,
 	call func(client model.Federation, rest string) (model.FederationResult, error),
 ) (model.FederationResult, *Response) {
-	if errResp := federationPathDepthExceeded(ctx, env, id, kbID); errResp != nil {
+	target, errResp := resolveFederatedKB(ctx, env, id, kbID)
+	if errResp != nil {
 		return model.FederationResult{}, errResp
+	}
+	return callResolvedKB(ctx, env, id, target, call)
+}
+
+// federatedKBTarget is a kb_id the caller is allowed to reach, resolved
+// against the bases they can read.
+type federatedKBTarget struct {
+	kb   *model.MCPFederationNote
+	rest string
+	kbs  []*model.MCPFederationNote
+}
+
+// resolveFederatedKB runs the depth and access checks for kbID without any
+// outbound call.
+func resolveFederatedKB(ctx context.Context, env Env, id any, kbID string) (federatedKBTarget, *Response) {
+	if errResp := federationPathDepthExceeded(ctx, env, id, kbID); errResp != nil {
+		return federatedKBTarget{}, errResp
 	}
 	kbs, err := accessibleKBNotes(ctx, env)
 	if err != nil {
 		resp := errorResponse(id, ErrCodeInternal, err.Error())
-		return model.FederationResult{}, &resp
-	}
-	if len(kbs) == 0 {
-		resp := federationNotConfiguredResponse(id, kbID, kbs)
-		return model.FederationResult{}, &resp
+		return federatedKBTarget{}, &resp
 	}
 	kb, rest := findFederationKB(kbs, kbID)
 	if kb == nil {
 		resp := federationNotConfiguredResponse(id, kbID, kbs)
-		return model.FederationResult{}, &resp
+		return federatedKBTarget{}, &resp
 	}
+	return federatedKBTarget{kb: kb, rest: rest, kbs: kbs}, nil
+}
+
+func callResolvedKB(
+	ctx context.Context,
+	env Env,
+	id any,
+	target federatedKBTarget,
+	call func(client model.Federation, rest string) (model.FederationResult, error),
+) (model.FederationResult, *Response) {
+	kb, rest, kbs := target.kb, target.rest, target.kbs
 	// Bound the hop like the fan-out path does. Without a deadline a peer that
 	// accepts the connection and never answers leaves the agent waiting on a
 	// tool that never returns, which is worse for it than a fast failure.
@@ -157,11 +182,16 @@ func handleFederatedInstructions(ctx context.Context, env Env, id any, argsRaw j
 		return errorResponse(id, ErrCodeInvalidParams, "kb_id is required")
 	}
 
+	// The cache is keyed by kb_id only, so access is checked before it is read.
+	target, errResp := resolveFederatedKB(ctx, env, id, args.KBID)
+	if errResp != nil {
+		return *errResp
+	}
 	if cached, ok := env.CachedFederatedInstructions(args.KBID); ok {
 		return successResponse(id, federationResultToToolResult(cached))
 	}
 
-	result, errResp := federatedSingleKBResult(ctx, env, id, args.KBID,
+	result, errResp := callResolvedKB(ctx, env, id, target,
 		func(client model.Federation, rest string) (model.FederationResult, error) {
 			if rest == "" {
 				return client.Instructions(ctx)

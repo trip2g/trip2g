@@ -417,7 +417,7 @@ select value as path, p.id as path_id, v.id as version_id, content, v.created_at
   join release_note_versions rnv on v.id = rnv.note_version_id
   join releases r on rnv.release_id = r.id
   left join note_version_embeddings e on v.id = e.version_id
- where r.is_live = true;
+ where r.is_live = true and p.hidden_by is null;
 
 -- name: AllLiveNoteEmbeddings :many
 select v.id as version_id, e.embedding
@@ -426,7 +426,7 @@ select v.id as version_id, e.embedding
   join release_note_versions rnv on v.id = rnv.note_version_id
   join releases r on rnv.release_id = r.id
   join note_version_embeddings e on v.id = e.version_id
- where r.is_live = true;
+ where r.is_live = true and p.hidden_by is null;
 
 -- name: AllLiveNoteAssets :many
 with live_versions as (
