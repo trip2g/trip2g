@@ -2,6 +2,7 @@ package personaltoken_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"sync"
 	"testing"
@@ -21,6 +22,7 @@ type mockEnv struct {
 
 	tokenByHashFunc     func(ctx context.Context, hash string) (db.UserToken, error)
 	adminByUserIDFunc   func(ctx context.Context, userID int64) (db.Admin, error)
+	userBanFunc         func(ctx context.Context, userID int64) (*db.UserBan, error)
 	updateLastUsedFunc  func(ctx context.Context, id string) error
 	tokenByHashCalls    int
 	updateLastUsedCalls int
@@ -35,6 +37,13 @@ func (m *mockEnv) UserTokenByHash(ctx context.Context, hash string) (db.UserToke
 
 func (m *mockEnv) AdminByUserID(ctx context.Context, userID int64) (db.Admin, error) {
 	return m.adminByUserIDFunc(ctx, userID)
+}
+
+func (m *mockEnv) UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error) {
+	if m.userBanFunc != nil {
+		return m.userBanFunc(ctx, userID)
+	}
+	return nil, nil
 }
 
 func (m *mockEnv) UpdateUserTokenLastUsedAt(ctx context.Context, id string) error {
@@ -212,4 +221,51 @@ func TestResolver_ForgetLeavesOtherTokensCached(t *testing.T) {
 	calls := env.tokenByHashCalls
 	env.mu.Unlock()
 	require.Equal(t, 1, calls, "forgetting another token must not evict this one")
+}
+
+func TestResolver_BannedUserIsRefused(t *testing.T) {
+	banned := false
+	env := userEnv(7)
+	env.userBanFunc = func(_ context.Context, _ int64) (*db.UserBan, error) {
+		if banned {
+			return &db.UserBan{UserID: 7, Reason: "spam"}, nil
+		}
+		return nil, nil
+	}
+	r := personaltoken.NewResolver(env)
+	tok := personaltoken.Generate()
+
+	_, err := r.Resolve(context.Background(), tok)
+	require.NoError(t, err)
+
+	banned = true
+
+	data, err := r.Resolve(context.Background(), tok)
+	require.ErrorIs(t, err, personaltoken.ErrBanned, "a ban must apply within the cache window")
+	require.ErrorContains(t, err, "spam")
+	require.Nil(t, data)
+}
+
+func TestResolver_RemovedAdminLosesAdminWithinTheCacheWindow(t *testing.T) {
+	removed := false
+	env := adminEnv(42)
+	env.adminByUserIDFunc = func(_ context.Context, _ int64) (db.Admin, error) {
+		if removed {
+			return db.Admin{}, sql.ErrNoRows
+		}
+		return db.Admin{}, nil
+	}
+	r := personaltoken.NewResolver(env)
+	tok := personaltoken.Generate()
+
+	data, err := r.Resolve(context.Background(), tok)
+	require.NoError(t, err)
+	require.True(t, data.IsAdmin())
+
+	removed = true
+
+	data, err = r.Resolve(context.Background(), tok)
+	require.NoError(t, err)
+	require.Equal(t, 42, data.ID)
+	require.Equal(t, "user", data.Role)
 }

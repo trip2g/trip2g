@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/db"
 	"trip2g/internal/model"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -377,6 +378,16 @@ func authenticateAnonymousRequest(ctx context.Context, req *appreq.Request, env 
 			return ctx, authAPIKey, &resp
 		}
 		adminTools := apiKey.EnableMcpAdminTools != nil && *apiKey.EnableMcpAdminTools
+		// The admin tools act with the creator's rights, so they end with the
+		// creator's admin status.
+		if adminTools {
+			_, adminErr := env.AdminByUserID(req.Req, apiKey.CreatedBy)
+			if adminErr != nil && !db.IsNoFound(adminErr) {
+				resp := errorResponse(id, ErrCodeInternal, "Auth failed: "+adminErr.Error())
+				return ctx, authAPIKey, &resp
+			}
+			adminTools = adminErr == nil
+		}
 		// Attribute internal admin GraphQL calls (WithAdminToken) to the API
 		// key owner so mutations like createAdmin record a real granted_by.
 		req.AdminActorUserID = int(apiKey.CreatedBy)

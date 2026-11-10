@@ -2,6 +2,7 @@ package mcp_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -257,4 +258,40 @@ func TestAPIKeyAdminTools_GraphQLIntrospectionFiltering(t *testing.T) {
 	text := callResult.Content[0].Text
 	require.Contains(t, text, `"name":"ApiKey"`)
 	require.NotContains(t, text, `"name":"Unrelated"`)
+}
+
+// TestAPIKeyAdminTools_CreatorNoLongerAdmin: a key with admin tools whose
+// creator was removed from admins must not run the admin tools.
+func TestAPIKeyAdminTools_CreatorNoLongerAdmin(t *testing.T) {
+	env := buildDispatchEnv(t, true)
+	adminTools := true
+	env.ResolveAPIKeyFunc = func(_ context.Context, _, _ string) (*db.ApiKey, error) {
+		return &db.ApiKey{ID: 1, CreatedBy: 9, EnableMcpAdminTools: &adminTools}, nil
+	}
+	env.AdminByUserIDFunc = func(_ context.Context, userID int64) (db.Admin, error) {
+		require.Equal(t, int64(9), userID)
+		return db.Admin{}, sql.ErrNoRows
+	}
+	env.GraphQLRequestFunc = func(_ context.Context, _ string, _ map[string]any) ([]byte, error) {
+		t.Error("GraphQLRequest must NOT be called when the key creator is no longer an admin")
+		return nil, errors.New("must not be called")
+	}
+
+	body := mcpToolsCallBody(t, "graphql_request", map[string]any{
+		"query": "{ __typename }",
+	})
+
+	fasthttpCtx := buildMCPFasthttpCtx(body, "")
+	fasthttpCtx.Request.Header.Set("X-API-Key", "ex-admin-key")
+
+	req := wiredRequest(fasthttpCtx, env, nil)
+	defer appreq.Release(req)
+
+	_, err := (&mcp.Endpoint{}).Handle(req)
+	require.NoError(t, err)
+
+	var resp mcp.Response
+	require.NoError(t, json.Unmarshal(fasthttpCtx.Response.Body(), &resp))
+	require.NotNil(t, resp.Error, "the admin tool must be refused")
+	require.Equal(t, mcp.ErrCodeMethodNotFound, resp.Error.Code)
 }

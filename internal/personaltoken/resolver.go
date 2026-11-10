@@ -3,6 +3,7 @@ package personaltoken
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,10 +12,12 @@ import (
 )
 
 var ErrInvalidToken = errors.New("invalid or expired personal token")
+var ErrBanned = errors.New("user is banned")
 
 type Env interface {
 	UserTokenByHash(ctx context.Context, hash string) (db.UserToken, error)
 	AdminByUserID(ctx context.Context, userID int64) (db.Admin, error)
+	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
 	UpdateUserTokenLastUsedAt(ctx context.Context, id string) error
 }
 
@@ -38,19 +41,41 @@ func NewResolver(env Env) *Resolver {
 }
 
 func (r *Resolver) Resolve(ctx context.Context, plaintext string) (*usertoken.Data, error) {
-	hash := Hash(plaintext)
+	data, tokenID, err := r.resolve(ctx, Hash(plaintext))
+	if err != nil {
+		return nil, err
+	}
 
+	// Bans are checked on every request, cache hit or not; the lookup is in memory.
+	ban, err := r.env.UserBanByUserID(ctx, int64(data.ID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user ban: %w", err)
+	}
+	if ban != nil {
+		return nil, fmt.Errorf("%w: %s", ErrBanned, ban.Reason)
+	}
+
+	r.maybeUpdateLastUsed(tokenID)
+	return data, nil
+}
+
+func (r *Resolver) resolve(ctx context.Context, hash string) (*usertoken.Data, string, error) {
 	if v, ok := r.cache.Load(hash); ok {
 		entry := v.(cacheEntry) //nolint:errcheck // type assertion is safe: sync.Map stores only cacheEntry values
-		if time.Since(entry.fetchedAt) < cacheTTL {
-			r.maybeUpdateLastUsed(entry.tokenID)
-			return entry.data, nil
+		fresh := time.Since(entry.fetchedAt) < cacheTTL
+		// A cached admin role is re-checked so a removed admin loses it at once.
+		if fresh && entry.data.IsAdmin() {
+			_, adminErr := r.env.AdminByUserID(ctx, int64(entry.data.ID))
+			fresh = adminErr == nil
+		}
+		if fresh {
+			return entry.data, entry.tokenID, nil
 		}
 	}
 
 	tok, err := r.env.UserTokenByHash(ctx, hash)
 	if err != nil {
-		return nil, ErrInvalidToken
+		return nil, "", ErrInvalidToken
 	}
 
 	role := "user"
@@ -64,8 +89,7 @@ func (r *Resolver) Resolve(ctx context.Context, plaintext string) (*usertoken.Da
 	}
 
 	r.cache.Store(hash, cacheEntry{data: data, tokenID: tok.ID, fetchedAt: time.Now()})
-	r.maybeUpdateLastUsed(tok.ID)
-	return data, nil
+	return data, tok.ID, nil
 }
 
 // Forget drops every cached resolution of the token with this ID, so the next

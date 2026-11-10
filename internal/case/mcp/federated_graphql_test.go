@@ -103,6 +103,9 @@ func (e *fedGQLEnv) StoreFederatedInstructions(_ string, _ model.FederationResul
 func (e *fedGQLEnv) ResolveAPIKey(_ context.Context, _, _ string) (*db.ApiKey, error) {
 	panic("unexpected")
 }
+func (e *fedGQLEnv) AdminByUserID(_ context.Context, _ int64) (db.Admin, error) {
+	panic("unexpected")
+}
 
 // --- handleGraphQLRequestScoped tests ---
 
