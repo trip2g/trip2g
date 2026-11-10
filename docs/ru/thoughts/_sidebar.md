@@ -19,6 +19,7 @@ title: "Навигация"
 - [[ru/thoughts/admin-panel|Админка как универсальный конфиг]]
 - [[ru/thoughts/three-zones|Три зоны: приватное, публичное, платное]]
 - [[ru/thoughts/one-writer-per-base|Один автор на базу]]
+- [[ru/thoughts/nobody-writes-to-the-shared-place|В общее место никто не пишет]]
 - [[ru/thoughts/data-mesh-for-knowledge|Data mesh для знаний]]
 
 **Знания и контент**

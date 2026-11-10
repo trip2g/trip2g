@@ -19,6 +19,7 @@ title: "Navigation"
 - [[en/thoughts/admin-panel|Admin panel as universal config]]
 - [[en/thoughts/three-zones|Three zones: private, public, paid]]
 - [[en/thoughts/one-writer-per-base|One writer per base]]
+- [[en/thoughts/nobody-writes-to-the-shared-place|Nobody writes to the shared place]]
 - [[en/thoughts/data-mesh-for-knowledge|Data mesh for knowledge]]
 
 **Knowledge & Content**
