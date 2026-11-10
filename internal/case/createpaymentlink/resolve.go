@@ -48,10 +48,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 
-		if user.Email != nil {
-			input.Email = user.Email
+		// Accounts created via Telegram may have no email to attach the purchase to.
+		if user.Email == nil {
+			return &model.ErrorPayload{Message: "email_required"}, nil
 		}
 
+		input.Email = user.Email
 		isAuthenticated = true
 	} else {
 		_, userErr := env.UserByEmail(ctx, *input.Email)

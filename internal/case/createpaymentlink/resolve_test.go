@@ -272,6 +272,30 @@ func TestResolve(t *testing.T) {
 			},
 		},
 		{
+			name: "error - authenticated user without email",
+			env: &envMock{
+				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 123}, nil
+				},
+				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
+					return db.User{ID: 123}, nil
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: model.CreatePaymentLinkInput{
+					OfferID:    "offer-123",
+					ReturnPath: "/user/space",
+				},
+			},
+			want:    &model.ErrorPayload{Message: "email_required"},
+			wantErr: false,
+			afterCallback: func(t *testing.T, mockEnv *envMock) {
+				require.Empty(t, mockEnv.ActiveOfferByPublicIDCalls())
+				require.Empty(t, mockEnv.InsertPurchaseCalls())
+			},
+		},
+		{
 			name: "error - offer has no price",
 			env: &envMock{
 				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
