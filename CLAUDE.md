@@ -232,3 +232,4 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `aiderlog.md` | Historical aider session log |
 | `null_string_refactoring.md` | sql.Null* → pointers migration |
 | `mdloader_same_name_bug.md` | Known bug: image with same name as note |
+| `2026-11-10_fable52_report.md` | Bug hunt across access, auth, sync, queues, fleet, payments: findings and decisions |
