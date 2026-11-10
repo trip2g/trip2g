@@ -362,25 +362,31 @@ func (pr *PartialRenderer) IntroText() string {
 
 func (pr *PartialRenderer) paragraphText(node ast.Node, buf *bytes.Buffer) {
 	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
-		switch n := child.(type) {
-		case *ast.Image, *ast.RawHTML:
-			continue
-		case *wikilink.Node:
-			if n.Embed {
-				continue
-			}
-		case *ast.Text:
-			buf.Write(n.Segment.Value(pr.content))
-			if n.SoftLineBreak() || n.HardLineBreak() {
-				buf.WriteByte(' ')
-			}
-			continue
-		case *ast.String:
-			buf.Write(n.Value)
-			continue
-		}
-		pr.paragraphText(child, buf)
+		pr.inlineText(child, buf)
 	}
+}
+
+// inlineText appends the plain text of an inline node: images, raw HTML and
+// embeds are dropped, a line break becomes a space.
+func (pr *PartialRenderer) inlineText(node ast.Node, buf *bytes.Buffer) {
+	switch n := node.(type) {
+	case *ast.Image, *ast.RawHTML:
+		return
+	case *wikilink.Node:
+		if n.Embed {
+			return
+		}
+	case *ast.Text:
+		buf.Write(n.Segment.Value(pr.content))
+		if n.SoftLineBreak() || n.HardLineBreak() {
+			buf.WriteByte(' ')
+		}
+		return
+	case *ast.String:
+		buf.Write(n.Value)
+		return
+	}
+	pr.paragraphText(node, buf)
 }
 
 // renderExcerptRange renders nodes [start,end) like renderNodeRange, but drops
@@ -405,32 +411,6 @@ func (pr *PartialRenderer) renderExcerptRange(allNodes []ast.Node, start, end in
 	})
 
 	return buf.String()
-}
-
-// extractLinkText builds the text content of a link node.
-func (pr *PartialRenderer) extractLinkText(link *ast.Link) string {
-	var buf bytes.Buffer
-	for t := link.FirstChild(); t != nil; t = t.NextSibling() {
-		extractTextFromNodeRecursive(pr.content, t, &buf)
-	}
-	return buf.String()
-}
-
-// applyInlineNode applies a single inline AST node's content to item.
-func (pr *PartialRenderer) applyInlineNode(item *model.NoteViewListItem, n ast.Node) {
-	switch c := n.(type) {
-	case *ast.Link:
-		item.URL = string(c.Destination)
-		item.Text = pr.extractLinkText(c)
-	case *ast.Text:
-		if item.Text == "" {
-			item.Text = string(c.Segment.Value(pr.content))
-		}
-	case *ast.String:
-		if item.Text == "" {
-			item.Text = string(c.Value)
-		}
-	}
 }
 
 var taskMarkerRE = regexp.MustCompile(`^\[([^\[\]])\](?:[ \t]|$)`)
@@ -475,7 +455,9 @@ func taskState(mark string) string {
 	}
 }
 
-// walkListItem recursively converts an ast.ListItem node into a model.NoteViewListItem.
+// walkListItem converts an ast.ListItem into a model.NoteViewListItem. Every
+// block of the item except nested lists goes into Text and HTML; a task mark
+// goldmark left as text is cut from both.
 func (pr *PartialRenderer) walkListItem(node ast.Node) model.NoteViewListItem {
 	var item model.NoteViewListItem
 
@@ -483,42 +465,115 @@ func (pr *PartialRenderer) walkListItem(node ast.Node) model.NoteViewListItem {
 	item.TaskMark, skip = pr.taskMarker(node)
 	item.Task = taskState(item.TaskMark)
 
+	var text bytes.Buffer
+	var html []string
 	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
-		switch c := child.(type) {
-		case *ast.Link:
-			item.URL = string(c.Destination)
-			item.Text = pr.extractLinkText(c)
-		case *ast.Text:
-			if item.Text == "" {
-				item.Text = string(c.Segment.Value(pr.content))
-			}
-		case *ast.String:
-			if item.Text == "" {
-				item.Text = string(c.Value)
-			}
-		case *ast.List:
-			for subItem := c.FirstChild(); subItem != nil; subItem = subItem.NextSibling() {
+		if list, ok := child.(*ast.List); ok {
+			for subItem := list.FirstChild(); subItem != nil; subItem = subItem.NextSibling() {
 				item.Children = append(item.Children, pr.walkListItem(subItem))
 			}
-		default:
-			// For paragraph or other wrapper nodes, recurse into children.
-			for inner := child.FirstChild(); inner != nil; inner = inner.NextSibling() {
-				text, isText := inner.(*ast.Text)
-				if skip > 0 && isText {
-					value := text.Segment.Value(pr.content)
-					cut := min(skip, len(value))
-					skip -= cut
-					if rest := strings.TrimLeft(string(value[cut:]), " \t"); rest != "" {
-						item.Text = rest
-					}
-					continue
-				}
-				skip = 0
-				pr.applyInlineNode(&item, inner)
-			}
+			continue
+		}
+
+		inlines := pr.itemInlines(child, skip)
+		skip = 0
+
+		for _, inline := range inlines {
+			pr.inlineText(inline, &text)
+		}
+		text.WriteByte(' ')
+		html = append(html, pr.renderInlines(inlines))
+		if item.URL == "" {
+			item.URL = firstLinkURL(inlines)
 		}
 	}
+
+	item.Text = strings.Join(strings.Fields(text.String()), " ")
+	item.HTML = model.SafeHTML(strings.TrimSpace(strings.Join(html, "\n")))
 	return item
+}
+
+// itemInlines returns the nodes that make up a list item block's content:
+// the inline children of a paragraph, with the first skip bytes of a text
+// task mark and the whitespace after it cut off, or any other block as is.
+func (pr *PartialRenderer) itemInlines(block ast.Node, skip int) []ast.Node {
+	switch block.(type) {
+	case *ast.Paragraph, *ast.TextBlock:
+	default:
+		return []ast.Node{block}
+	}
+
+	var nodes []ast.Node
+	for child := block.FirstChild(); child != nil; child = child.NextSibling() {
+		nodes = append(nodes, child)
+	}
+
+	for len(nodes) > 0 {
+		text, isText := nodes[0].(*ast.Text)
+		if !isText {
+			break
+		}
+		value := text.Segment.Value(pr.content)
+		cut := min(skip, len(value))
+		skip -= cut
+		if skip == 0 {
+			cut += len(value[cut:]) - len(bytes.TrimLeft(value[cut:], " \t"))
+		}
+		if cut < len(value) {
+			if cut > 0 {
+				nodes[0] = textFrom(text, cut)
+			}
+			break
+		}
+		nodes = nodes[1:]
+	}
+
+	return nodes
+}
+
+// textFrom returns a copy of text that starts offset bytes later.
+func textFrom(text *ast.Text, offset int) *ast.Text {
+	cut := ast.NewTextSegment(text.Segment.WithStart(text.Segment.Start + offset))
+	cut.SetSoftLineBreak(text.SoftLineBreak())
+	cut.SetHardLineBreak(text.HardLineBreak())
+	cut.SetRaw(text.IsRaw())
+	return cut
+}
+
+// renderInlines renders nodes as the page does, without the checkbox a task
+// item carries: Task and TaskMark already say what it was.
+func (pr *PartialRenderer) renderInlines(nodes []ast.Node) string {
+	var buf bytes.Buffer
+
+	pr.withCurrentPage(func() {
+		for _, node := range nodes {
+			if _, isCheckBox := node.(*extast.TaskCheckBox); isCheckBox {
+				continue
+			}
+			pr.renderNode(&buf, node)
+		}
+	})
+
+	return buf.String()
+}
+
+// firstLinkURL returns the destination of the first markdown link in nodes.
+func firstLinkURL(nodes []ast.Node) string {
+	for _, node := range nodes {
+		var found string
+		_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+			link, isLink := n.(*ast.Link)
+			if entering && isLink {
+				found = string(link.Destination)
+				return ast.WalkStop, nil
+			}
+			return ast.WalkContinue, nil
+		})
+		if found != "" {
+			return found
+		}
+	}
+	return ""
 }
 
 // listMaxDepth calculates the maximum nesting depth of a NoteViewList's items.

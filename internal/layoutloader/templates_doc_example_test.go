@@ -367,6 +367,20 @@ func TestTemplatesDocExamples(t *testing.T) {
 	}
 }
 
+func TestListItemHTMLAndTextInLayout(t *testing.T) {
+	notes := loadDocNotes(t, map[string]string{
+		"list.md":  "- [/] half **done**\n- see [[Other|the other]] and `code`\n- [there](https://example.com)\n- see *[Other](/other)*\n",
+		"Other.md": "Other note.",
+	})
+	layout := `{{ range i, it := note.PartialRenderer().FirstList().Items }}{{ it.HTML }}|{{ it.Text }};{{ end }}`
+	out := renderDocLayout(t, []model.LayoutSourceFile{page("/p", layout)}, docVars(notes, "list.md"))
+	want := `half <strong>done</strong>|half done;` +
+		`see <a class="paywall paywall:core" data-pid="0" href="/other">the other</a> and <code>code</code>|see the other and code;` +
+		`<a href="https://example.com">there</a>|there;` +
+		`see <em><a href="/other">Other</a></em>|see Other;`
+	require.Equal(t, want, out)
+}
+
 func TestTemplatesDocBaseSlotForms(t *testing.T) {
 	tests := []struct {
 		name string

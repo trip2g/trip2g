@@ -324,8 +324,9 @@ type Section struct {
 }
 
 type ListItem struct {
-    Text     string
-    URL      string
+    Text     string  // Весь пункт как простой текст, без разметки и метки задачи
+    HTML     string  // То же, отрисованное как на странице, без <li> и вложенного списка
+    URL      string  // Адрес первой ссылки пункта
     Task     string  // "", "todo" для [ ], "done" для любого другого символа
     TaskMark string  // Символ в скобках: " ", "x", "/"…; "" без чекбокса
     Children []ListItem

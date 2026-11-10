@@ -167,9 +167,9 @@ func TestListTaskStates(t *testing.T) {
 		{"open", "", "todo", " "},
 		{"closed", "", "done", "x"},
 		{"closed", "", "done", "X"},
-		{"half ", "", "done", "/"},
+		{"half done", "", "done", "/"},
 		{"dropped", "", "done", "-"},
-		{"there", "https://example.com", "done", ">"},
+		{"moved there", "https://example.com", "done", ">"},
 		{"link", "https://example.com", "", ""},
 	}, got)
 }
