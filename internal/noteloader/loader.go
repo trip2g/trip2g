@@ -82,6 +82,12 @@ type Env interface {
 
 type Loader struct {
 	sync.Mutex
+
+	// loadMu serialises Load, which builds the next snapshot and the search
+	// index state outside the embedded lock. Each Load reads the database only
+	// once it holds loadMu, so the last one to publish has read the latest data.
+	loadMu sync.Mutex
+
 	env Env
 	nvs *model.NoteViews
 	log logger.Logger
@@ -216,6 +222,9 @@ type LoadOptions struct {
 
 //nolint:gocognit,funlen // complex loading logic with multiple data sources
 func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
+	l.loadMu.Lock()
+	defer l.loadMu.Unlock()
+
 	// Load site config from database (hot-reloadable URL normalization method, etc.)
 	siteConfig, err := l.env.LoadSiteConfig(ctx)
 	if err != nil {
@@ -566,6 +575,10 @@ func (l *Loader) NoteChunks() []model.NoteChunk {
 // job writes both after the notes were loaded, so this is what makes them
 // reach vector search and similar-notes before the next full Load.
 func (l *Loader) ReloadEmbeddings(ctx context.Context) error {
+	// Load writes embeddings onto the same cached note views.
+	l.loadMu.Lock()
+	defer l.loadMu.Unlock()
+
 	embeddings, err := l.env.RawNoteEmbeddings(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get note embeddings: %w", err)
