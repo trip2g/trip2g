@@ -2,6 +2,7 @@
 free: true
 home_position: 85
 title: Telegram
+lang_redirect: "[[en/user/telegram]]"
 ---
 
 Пишите посты в Obsidian, публикуйте в канал по расписанию или сразу.

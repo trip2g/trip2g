@@ -2,6 +2,7 @@
 free: true
 title: Instagram-карусели
 home_position: 71
+lang_redirect: "[[en/user/instaframes]]"
 ---
 
 `layout: trip2g/instaframe` превращает markdown-файл в карусель из готовых PNG для Instagram и других соцсетей — без Canva, без дизайнера, без экспорта.

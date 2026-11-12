@@ -1,6 +1,7 @@
 ---
 title: Local quickstart: run trip2g and push content
 description: Run a trip2g instance locally from the Docker image (or a binary) and publish a content vault over the API in a few minutes.
+lang_redirect: "[[ru/user/local-quickstart]]"
 ---
 
 # Local quickstart

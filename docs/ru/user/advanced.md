@@ -2,6 +2,7 @@
 free: true
 home_position: 60
 title: Дополнительно
+lang_redirect: "[[en/user/advanced]]"
 ---
 
 [[multidomains|Кастомные домены]]
