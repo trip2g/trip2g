@@ -76,12 +76,14 @@ The `NoteChunk.Content` field (`internal/model/chunk.go`) stores the full `{brea
 Chunk boundaries are based on estimated token counts, not character counts:
 
 ```
-chunkTargetTokens = 450  // keep under bge-m3's 512-token encoder window
+chunkTargetTokens = 450  // target and hard cap, under bge-m3's 512-token encoder window
 chunkMinTokens    = 60
 chunkOverlap      = 200  // chars — tail of the previous chunk prepended to the next
 ```
 
 Cyrillic tokenizes to ~1 token per 2 characters; Latin to ~1 per 4. The old 2000-character target overflowed bge-m3's 512-token window for Russian text, silently truncating the tail of each chunk before it was embedded.
+
+The target is also a hard cap on the chunk body. A block that does not fit (a long paragraph, a transcript, a chat log with single newlines, a big table or code fence) is cut at the last newline that fits, else the last sentence end, else the last whitespace. Before 2026-11-12 such a block became one chunk of any size: in a 50 000-document benchmark 28–77% of chunks per source were over 2048 characters, up to 24 254, and TEI's `--auto-truncate` dropped everything past 512 tokens. The cap is by estimate, so code or URL-heavy text can still tokenize denser than assumed. Cut tables lose their header row and cut fences their closing marker.
 
 ## Per-language BM25 analyzer
 
