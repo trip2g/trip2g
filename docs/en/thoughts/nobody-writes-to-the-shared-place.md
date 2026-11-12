@@ -12,9 +12,18 @@ lang_redirect: "[[ru/thoughts/nobody-writes-to-the-shared-place]]"
 
 ## The diagram with an agent per function
 
-The first diagram of "AI in the company" usually has a box per function: an HR agent, a legal agent, a sales agent. Each box gets a prompt, a pile of documents and a list of people who may ask it.
+When a company draws how AI will work inside it, the first diagram usually looks like this: a box per function. An HR agent, a legal agent, a sales agent. Each box gets a prompt, a pile of documents and a list of people who may ask it.
 
-Take the HR box apart and it holds four things.
+```mermaid
+graph LR
+  U["Employee"] --> HR["HR agent<br/>prompt, documents,<br/>who may ask"]
+  U --> L["Legal agent<br/>prompt, documents,<br/>who may ask"]
+  U --> S["Sales agent<br/>prompt, documents,<br/>who may ask"]
+```
+
+*The first diagram: an agent for every function.*
+
+Take the "HR agent" box apart and it holds four things.
 
 **Documents.** The vacation policy, the onboarding checklist, the salary bands. These belong in a base.
 
@@ -22,7 +31,7 @@ Take the HR box apart and it holds four things.
 
 **A list of who may ask what.** That is read access, and the base already has it.
 
-**Actions.** If the box files a vacation request, that part is a tool, and nothing here replaces it.
+**Actions.** If the HR agent files a vacation request, that part is a tool, and nothing here replaces it.
 
 Three of the four are a knowledge base with a chat window attached. The person asking usually has an agent already, in an editor, a terminal or a messenger. Someone who has none needs one chat window pointed at the hub with their own access, not one window per function.
 
@@ -49,6 +58,19 @@ How many writers a company has is not something the software decides. The people
 People do not write company pages. They write to themselves: notes, call transcripts, drafts, half a thought before a meeting. A personal vault is a pile, and that is fine, because it has one owner who knows what is in it.
 
 The level above has a writer too, and it is an agent. I call it the keeper. It reads what people chose to hand over, reads outside sources, and writes the assembled pages. There is one keeper per writer, not one per function.
+
+```mermaid
+graph LR
+  A["Personal vault 1"] --> I["inbox/"]
+  B["Personal vault 2"] --> I
+  X["Outside source"] --> I
+  I --> K["Keeper<br/>(fleet role)"]
+  K --> O["org/<br/>HR section,<br/>handbook"]
+  P1["Personal agent 1"] -. reads .-> O
+  P2["Personal agent 2"] -. reads .-> O
+```
+
+*The second diagram: people write to themselves, the keeper writes the assembled pages, personal agents read them with their owner's access.*
 
 In trip2g a keeper is a [[en/user/fleet|fleet]] role, and a role is a note. The frontmatter says what it may read, what it may write and what wakes it up. The body is the instruction.
 
