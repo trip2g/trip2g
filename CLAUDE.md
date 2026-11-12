@@ -189,6 +189,7 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `sitemap.md` | Sitemap.xml generation |
 | `rss.md` | RSS feed |
 | `vector_search.md` | Vector search (OpenAI embeddings) |
+| `sizing.md` | You need to say what a large vault costs: memory, disk, start and search time measured at 50 000 notes |
 | `google_github_auth.md` | OAuth implementation |
 
 ### Design Docs & Plans
