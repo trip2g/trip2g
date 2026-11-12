@@ -14,7 +14,7 @@ Write in Obsidian, press Sync, your notes are live. The same hub also publishes 
 
 **New here?** Follow [[en/user/getting-started|Getting started]]: sign in to your instance, download the starter vault, open it in Obsidian, press Sync. No instance yet? Try the free [[en/user/cloud|cloud sandbox]].
 
-Below are the key pages, grouped by topic. The sidebar on the left lists everything.
+Below are the key pages, grouped by topic. The sidebar on the left has the full list, apart from demo pages.
 
 ## Getting started
 
@@ -35,6 +35,19 @@ Below are the key pages, grouped by topic. The sidebar on the left lists everyth
 - [[en/user/jsonnet|Jsonnet in trip2g]] — the language of patches, validators, note queries and webhook transforms, in ten minutes.
 - [[en/user/note-queries|Note queries]] — give a JavaScript page a list of notes by frontmatter, without exposing the frontmatter.
 
+## Knowledge base for a team
+
+- [[en/user/org-knowledge-base|Personal bases and keepers]] — nobody writes to a shared place: one writer per base, and a keeper agent builds the level above.
+- [[en/user/team-knowledge-base-mcp|Team knowledge base for AI agents]] — people read a site, agents query over MCP.
+- [[en/user/mcp|MCP server]] — an AI client answers questions from your knowledge base.
+- [[en/user/instructions_guide|Instructions for a knowledge base]] — teach the agent how to search your base.
+- [[en/user/federation|MCP Federation]] — one endpoint for the agent, several bases behind it.
+- [[en/user/context-separation|Context separation]] — who may search whom, and what they see.
+- [[en/user/hub|Public hub of curated bases]] — bases you can connect to today.
+- [[en/user/subgraphs|Subgraphs]] — a public blog, a paid course and an internal wiki in one vault.
+- [[en/user/access|Who can read a note]] — what each reader sees on the page, in search, in feeds and over MCP.
+- [[en/user/fleet|Fleet]] — agents you describe as plain notes.
+
 ## Telegram
 
 - [[en/user/telegram|Telegram publishing]] — posts from your notes go to your channel on a schedule or right away.
@@ -47,8 +60,6 @@ Below are the key pages, grouped by topic. The sidebar on the left lists everyth
 Leave `free: true` off and only subscribers can read the note; everyone else gets a preview and a sign-in form.
 
 - [[en/user/monetization|Monetization]] — access through a Patreon or Boosty subscription, or for crypto.
-- [[en/user/subgraphs|Subgraphs]] — a public blog, a paid course and an internal wiki in one vault.
-- [[en/user/access|Who can read a note]] — what each reader sees on the page, in search, in feeds and over MCP.
 - [[en/user/telegram-access|Telegram group access]] — group members read gated notes.
 
 ## Templates
@@ -60,11 +71,8 @@ Leave `free: true` off and only subscribers can read the note; everyone else get
 - [[en/user/spa|An app on top of trip2g]] — a note as an app, such as a kanban board.
 - [[en/user/calls-dashboard|Calls dashboard]] — a timeline of call threads and a screen to check one call.
 
-## AI agents and automation
+## Automation
 
-- [[en/user/mcp|MCP server]] — an AI client answers questions from your knowledge base.
-- [[en/user/instructions_guide|Instructions for a knowledge base]] — teach the agent how to search your base.
-- [[en/user/fleet|Fleet]] — agents you describe as plain notes.
 - [[en/user/webhooks|Webhooks]] — call external services on note changes or on a schedule.
 - [[en/user/forms|Forms in notes]] — collect requests and reader answers right on the page.
 
@@ -84,7 +92,6 @@ For writers with paid channels, teams with internal wikis, course authors and op
 - [[en/user/many-doors|What can you do with trip2g]] — where to start: a site, a wiki, agents, Telegram, sales.
 - [[en/user/telegram-blog-from-obsidian|Telegram blog from Obsidian]] — a channel without copy-paste or manual formatting.
 - [[en/user/sell-obsidian-notes|Sell access to your Obsidian notes]] — paid access from your own domain.
-- [[en/user/team-knowledge-base-mcp|Team knowledge base for AI agents]] — people read a site, agents query over MCP.
 - [[en/user/self-hosted-wiki-sqlite|Self-hosted wiki on SQLite]] — compared with Wiki.js, BookStack and Outline.
 - [[en/team-knowledge-base|Team knowledge base on a bare VM]] — deployment on a single virtual machine.
 - [[en/user/digital-garden|Digital garden]] — a site readers explore by links, not by date.
