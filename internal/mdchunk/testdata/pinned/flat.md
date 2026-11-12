@@ -1,0 +1,8 @@
+Meeting notes, no headings at all.
+
+Anna: the import is done, 1200 rows moved.
+Boris: two rows failed on a duplicate key.
+Anna: I will rerun them by hand tomorrow.
+
+Next sync is on Thursday. Нужно ещё проверить отчёт за октябрь — цифры там
+расходятся с выгрузкой примерно на 3%.

@@ -2,6 +2,7 @@ package mdchunk
 
 import (
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/yuin/goldmark/parser"
@@ -13,7 +14,10 @@ const (
 	// ~2 chars/token for Cyrillic, the old 2000-char target overflowed the
 	// 512-token window of bge-m3/E5, so the tail of Russian chunks was silently
 	// truncated server-side and never embedded.
-	chunkTargetTokens = 450 // keep comfortably under a 512-token encoder window
+	//
+	// The target is also the hard cap on a chunk body: the 62 tokens left in a
+	// 512-token window go to the breadcrumb, the passage prefix and estimator error.
+	chunkTargetTokens = 450
 	chunkMinTokens    = 60
 	chunkOverlap      = 200 // chars — tail of prev chunk prepended to next
 )
@@ -45,6 +49,8 @@ func EstimateTokens(s string) int {
 // chunks by accumulating below chunkMinTokens, sizes by estimated tokens, and
 // prepends a heading breadcrumb ("{title} > {h1} > {h2}...") to every chunk so
 // deep chunks carry their document context (a cheap form of contextual retrieval).
+// No chunk body exceeds chunkTargetTokens: a block that does not fit is cut
+// into pieces (see cutBlock), each chunked like a block of its own.
 func Split(title string, rawContent []byte) []Chunk { //nolint:gocognit // inherently complex markdown chunking logic
 	body := StripFrontmatter(string(rawContent))
 	blocks := splitIntoBlocks(body)
@@ -117,6 +123,20 @@ func Split(title string, rawContent []byte) []Chunk { //nolint:gocognit // inher
 		headingStack[level-1] = text
 	}
 
+	add := func(block string) {
+		current = append(current, block)
+		currentSize += EstimateTokens(block)
+	}
+
+	// room is how many leading bytes of block the current chunk can still take.
+	room := func(block string) int {
+		lead := ""
+		if len(current) > 0 {
+			lead = strings.Join(current, "\n\n") + "\n\n"
+		}
+		return len(TruncateToTokens(lead+block, chunkTargetTokens)) - len(lead)
+	}
+
 	for i, block := range blocks {
 		// Heading always causes a split if there is accumulated content before it,
 		// then updates the breadcrumb stack for the chunk it begins.
@@ -127,8 +147,19 @@ func Split(title string, rawContent []byte) []Chunk { //nolint:gocognit // inher
 			setHeading(level, text)
 		}
 
-		current = append(current, block)
-		currentSize += EstimateTokens(block)
+		// A chunk worth keeping is closed before a block that would overflow
+		// it; a smaller one (a lone heading, the overlap) is topped up instead.
+		if room(block) < len(block) && currentSize >= chunkMinTokens {
+			startNewChunk()
+		}
+		for n := room(block); n < len(block); n = room(block) {
+			var head string
+			head, block = cutBlock(block, n)
+			add(head)
+			startNewChunk()
+		}
+
+		add(block)
 
 		// Flush when we reach the target size (if above min size),
 		// but not on the last block — the remaining flush handles that.
@@ -148,9 +179,50 @@ func Split(title string, rawContent []byte) []Chunk { //nolint:gocognit // inher
 	return chunks
 }
 
+// cutBlock cuts block within its first room bytes at the most natural boundary:
+// the last newline, else the last sentence end, else the last whitespace, else
+// the last rune boundary. It always takes at least one rune.
+func cutBlock(block string, room int) (string, string) {
+	for room > 0 && room < len(block) && !utf8.RuneStart(block[room]) {
+		room--
+	}
+	if room <= 0 {
+		_, room = utf8.DecodeRuneInString(block)
+	}
+	window := block[:room]
+
+	cut := strings.LastIndexByte(window, '\n')
+	if cut <= 0 {
+		cut = lastSentenceEnd(window)
+	}
+	if cut <= 0 {
+		cut = strings.LastIndexFunc(window, unicode.IsSpace)
+	}
+	if cut <= 0 {
+		cut = room
+	}
+
+	head := strings.TrimRightFunc(block[:cut], unicode.IsSpace)
+	rest := strings.TrimLeftFunc(block[cut:], unicode.IsSpace)
+	return head, rest
+}
+
+// lastSentenceEnd returns the index of the last space that follows sentence
+// punctuation, or -1.
+func lastSentenceEnd(s string) int {
+	for i := strings.LastIndexByte(s, ' '); i > 0; i = strings.LastIndexByte(s[:i], ' ') {
+		r, _ := utf8.DecodeLastRuneInString(s[:i])
+		if strings.ContainsRune(".!?…", r) {
+			return i
+		}
+	}
+	return -1
+}
+
 // splitIntoBlocks splits markdown content into paragraph-level blocks at
 // double-newline boundaries. Code fences (``` ... ```) are treated as atomic
-// units — blank lines inside a code fence do not end the current block.
+// units — blank lines inside a code fence do not end the current block. Split
+// still cuts a fence that is over the cap, like any other oversized block.
 func splitIntoBlocks(content string) []string {
 	content = strings.TrimSpace(content)
 	if content == "" {

@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### Long paragraphs are searchable to the end
+
+- **What.** A paragraph, transcript, chat log or table with no blank lines inside is now cut into several search chunks instead of becoming one oversized chunk.
+- **Why.** The embedding model reads only the first 512 tokens of a chunk, so the rest of such a block was never found by semantic search. On a 50 000-document benchmark up to three quarters of the chunks in some sources were over the limit.
+- **How to use.** Nothing to change. After the upgrade the affected notes are embedded again in the background; notes whose chunks already fit are untouched.
+
 ### Search finds answers to questions, not only exact word sets
 
 - **What.** A note now matches when it holds at least half of the query's words instead of all of them, and its title counts as part of its text. The full-text index rebuilds once on upgrade.
