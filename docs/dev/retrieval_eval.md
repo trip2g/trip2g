@@ -81,6 +81,8 @@ Per-direction at baseline: ru→ru nDCG 0.935 / MRR 0.972 · en→en 0.932 / 0.9
 
 ## Min match and title in the body (2026-11-04)
 
+Kit: `scripts/enterprise-rag-bench/` (README there). Memory and timing from the same run: [sizing.md](./sizing.md).
+
 Measured on commit `9f805d36` with one change to the text lane per column. Every column has the same vectors (bge-m3 through OpenRouter). "50k" is EnterpriseRAG-Bench: 722 gold documents plus 50 000 random ones of its 511 962, all 500 questions. It reads high against its leaderboard, because the near-duplicates that make the benchmark hard mostly fell out of the sample.
 
 | Set, metric | All terms, separate title | Any term, title in body | Half the terms, title in body |
