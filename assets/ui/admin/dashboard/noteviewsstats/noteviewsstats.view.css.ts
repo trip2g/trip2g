@@ -24,9 +24,36 @@ namespace $ {
 }
 
 namespace $ {
-	const {px} = $mol_style_unit
+	const {px, rem} = $mol_style_unit
 
 	$mol_style_define($trip2g_admin_dashboard_noteviewsstats, {
+		Notes_labeler: {
+			margin: {
+				top: rem(3.5),
+			},
+		},
+		Readers_labeler: {
+			margin: {
+				top: rem(3.5),
+			},
+		},
+		Sources_labeler: {
+			margin: {
+				top: rem(3.5),
+			},
+		},
+		Notes_head: {
+			color: $mol_theme.shade,
+			boxShadow: 'inset 0 -1px 0 0 var(--mol_theme_line)',
+		},
+		Readers_head: {
+			color: $mol_theme.shade,
+			boxShadow: 'inset 0 -1px 0 0 var(--mol_theme_line)',
+		},
+		Sources_head: {
+			color: $mol_theme.shade,
+			boxShadow: 'inset 0 -1px 0 0 var(--mol_theme_line)',
+		},
 		Chart: {
 			margin: {
 				left: px(5),
