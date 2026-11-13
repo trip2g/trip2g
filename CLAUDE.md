@@ -206,6 +206,7 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `subprocess_agent.md` | Subprocess agent (subot) |
 | `fleet_write_validation.md` | Fleet: surfacing scope denials and a `strict` linter for agent writes; testing plan — design, not yet built |
 | `note_queries.md` | Named note queries (`noteQuery`, `type: note-query`): contract, access model, cost — MVP |
+| `federation_guest_handoff.md` | A person opens a federated neighbour's base in the browser as a read-only guest: the case, what a guest reads, protections, open holes — spike, not merged |
 | `note_validators.md` | Jsonnet note validators (`validate:` frontmatter): contract, `nodes` shape, cost per sync — MVP |
 | `update_note_mutation.md` | Atomic note updates via find/replace |
 | `obsidian_sync_refactoring.md` | Sync plugin refactoring plan |

@@ -324,6 +324,18 @@ window.__trip2g_settings = {
     {% endfor %}
   </div>
   {% endif %}
+  {% if kb := ctx.KBButton(); kb != nil %}
+  <div class="tg-buttons">
+    {% if kb.Handoff %}
+    <form class="kb-open" method="post" action="/_system/federation/handoff">
+      <input type="hidden" name="note" value="{%s kb.NotePath %}">
+      <button type="submit" class="tg-button">{%s ctx.T("kb_open") %}</button>
+    </form>
+    {% else %}
+    <a href="{%s kb.Site %}/" class="tg-button" rel="noopener">{%s ctx.T("kb_open") %}</a>
+    {% endif %}
+  </div>
+  {% endif %}
   {% if !ctx.Note.HasH1() %}<h1 class="content__title">{%s ctx.Note.Title() %}</h1>{% endif %}
   <div class="content__body">{%s= ctx.Note.HTMLString().String() %}</div>
   {% if ctx.UserToken.IsAdmin() && ctx.Note.HasTaskListItems() %}

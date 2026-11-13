@@ -327,6 +327,27 @@ func RequireUnscoped(ctx context.Context) error {
 	return nil
 }
 
+// ErrGuestReadOnly is returned by DenyGuest to a federation guest.
+var ErrGuestReadOnly = errors.New("a federation guest can only read")
+
+// DenyGuest is the one guard every write and every token-issuing path asks
+// before acting: a federation guest reads and does nothing else. A request
+// whose session cannot be read is left to the path's own auth.
+func DenyGuest(ctx context.Context) error {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		return nil //nolint:nilerr // no request: nothing a guest could have sent
+	}
+	token, err := req.UserToken()
+	if err != nil {
+		return nil //nolint:nilerr // the path's own auth refuses an unreadable session
+	}
+	if token.IsFederationGuest() {
+		return ErrGuestReadOnly
+	}
+	return nil
+}
+
 // WebhookWritePatterns returns the write-scope globs stamped on the request
 // by a shortapitoken delivery. Empty/nil means unscoped (no enforcement).
 func WebhookWritePatterns(ctx context.Context) []string {
