@@ -1,12 +1,15 @@
 {
 	"$trip2g_admin_dashboard_noteviewsstats_notice": "Читатели с входом, последние 30 дней. Анонимные просмотры не учитываются.",
-	"$trip2g_admin_dashboard_noteviewsstats_Days_section_title": "Просмотры по дням",
+	"$trip2g_admin_dashboard_noteviewsstats_Days_labeler_title": "Просмотры по дням",
 	"$trip2g_admin_dashboard_noteviewsstats_views_title": "Просмотры",
-	"$trip2g_admin_dashboard_noteviewsstats_Notes_section_title": "Популярные заметки",
-	"$trip2g_admin_dashboard_noteviewsstats_Readers_section_title": "Активные читатели",
-	"$trip2g_admin_dashboard_noteviewsstats_Sources_section_title": "Просмотры по способу регистрации",
-	"$trip2g_admin_dashboard_noteviewsstats_views_label": "просм.",
-	"$trip2g_admin_dashboard_noteviewsstats_readers_label": "читат.",
+	"$trip2g_admin_dashboard_noteviewsstats_Notes_labeler_title": "Популярные заметки",
+	"$trip2g_admin_dashboard_noteviewsstats_Readers_labeler_title": "Активные читатели",
+	"$trip2g_admin_dashboard_noteviewsstats_Sources_labeler_title": "Просмотры по способу регистрации",
+	"$trip2g_admin_dashboard_noteviewsstats_note_label": "Заметка",
+	"$trip2g_admin_dashboard_noteviewsstats_reader_label": "Читатель",
+	"$trip2g_admin_dashboard_noteviewsstats_source_label": "Источник",
+	"$trip2g_admin_dashboard_noteviewsstats_views_label": "Просмотры",
+	"$trip2g_admin_dashboard_noteviewsstats_readers_label": "Читатели",
 	"$trip2g_admin_dashboard_noteviewsstats_reader_fallback": "Пользователь",
 	"$trip2g_admin_dashboard_noteviewsstats_empty_label": "Просмотров пока нет"
 }

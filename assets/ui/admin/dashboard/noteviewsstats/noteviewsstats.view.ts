@@ -19,17 +19,17 @@ namespace $.$$ {
 
 		override note_rows() {
 			const rows = this.data().topNotes.map( ( _, i ) => this.Note_row( i ) )
-			return rows.length ? rows : [ this.Empty() ]
+			return rows.length ? [ this.Notes_head(), ...rows ] : [ this.Empty() ]
 		}
 
 		override reader_rows() {
 			const rows = this.data().topReaders.map( ( _, i ) => this.Reader_row( i ) )
-			return rows.length ? rows : [ this.Empty() ]
+			return rows.length ? [ this.Readers_head(), ...rows ] : [ this.Empty() ]
 		}
 
 		override source_rows() {
 			const rows = this.data().bySource.map( ( _, i ) => this.Source_row( i ) )
-			return rows.length ? rows : [ this.Empty() ]
+			return rows.length ? [ this.Sources_head(), ...rows ] : [ this.Empty() ]
 		}
 
 		override Note_cell( index: number ) {
@@ -45,9 +45,12 @@ namespace $.$$ {
 			return row.note?.title || row.path
 		}
 
-		override note_stat( index: number ) {
-			const row = this.data().topNotes[ index ]
-			return `${ row.views } ${ this.views_label() }, ${ row.readers } ${ this.readers_label() }`
+		override note_views( index: number ) {
+			return String( this.data().topNotes[ index ].views )
+		}
+
+		override note_readers( index: number ) {
+			return String( this.data().topNotes[ index ].readers )
 		}
 
 		override reader_id( index: number ) {
@@ -59,17 +62,20 @@ namespace $.$$ {
 			return row.email || `${ this.reader_fallback() } #${ row.userId }`
 		}
 
-		override reader_stat( index: number ) {
-			return `${ this.data().topReaders[ index ].views } ${ this.views_label() }`
+		override reader_views( index: number ) {
+			return String( this.data().topReaders[ index ].views )
 		}
 
 		override source_name( index: number ) {
 			return this.data().bySource[ index ].createdVia
 		}
 
-		override source_stat( index: number ) {
-			const row = this.data().bySource[ index ]
-			return `${ row.views } ${ this.views_label() }, ${ row.readers } ${ this.readers_label() }`
+		override source_views( index: number ) {
+			return String( this.data().bySource[ index ].views )
+		}
+
+		override source_readers( index: number ) {
+			return String( this.data().bySource[ index ].readers )
 		}
 	}
 }
