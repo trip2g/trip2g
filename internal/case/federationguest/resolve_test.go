@@ -52,10 +52,10 @@ func newEnv(claims mcp.GuestHandoffClaims) *EnvMock {
 func TestAnAdmittedGuestEntersAsTheSyntheticUserOfItsEdge(t *testing.T) {
 	env := newEnv(validClaims())
 
-	ticket, err := federationguest.Admit(t.Context(), env, validForm())
+	admitted, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
 
-	data, path, err := federationguest.Enter(env, ticket)
+	data, path, err := federationguest.Enter(env, admitted.Ticket, admitted.Nonce)
 	require.NoError(t, err)
 	require.Equal(t, "/", path)
 	want := usertoken.Data{ID: 42, Role: usertoken.RoleFederationGuest, Kid: "edge", Hop: 1, Reader: testReader}
@@ -67,15 +67,32 @@ func TestAnAdmittedGuestEntersAsTheSyntheticUserOfItsEdge(t *testing.T) {
 	require.Equal(t, testReader, calls[0].Reader)
 }
 
+func TestATicketOpensOnlyWithTheNonceOfItsPost(t *testing.T) {
+	env := newEnv(validClaims())
+
+	admitted, err := federationguest.Admit(t.Context(), env, validForm())
+	require.NoError(t, err)
+	require.NotEmpty(t, admitted.Nonce)
+	require.NotContains(t, admitted.Ticket, admitted.Nonce)
+
+	for _, nonce := range []string{"", "wrong", admitted.Nonce + "x"} {
+		_, _, err = federationguest.Enter(env, admitted.Ticket, nonce)
+		require.ErrorIs(t, err, federationguest.ErrRefused, "nonce %q", nonce)
+	}
+
+	_, _, err = federationguest.Enter(env, admitted.Ticket, admitted.Nonce)
+	require.NoError(t, err, "a wrong nonce does not spend the ticket")
+}
+
 func TestATicketOpensOneSession(t *testing.T) {
 	env := newEnv(validClaims())
 
-	ticket, err := federationguest.Admit(t.Context(), env, validForm())
+	admitted, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
-	_, _, err = federationguest.Enter(env, ticket)
+	_, _, err = federationguest.Enter(env, admitted.Ticket, admitted.Nonce)
 	require.NoError(t, err)
 
-	_, _, err = federationguest.Enter(env, ticket)
+	_, _, err = federationguest.Enter(env, admitted.Ticket, admitted.Nonce)
 	require.ErrorIs(t, err, federationguest.ErrRefused)
 }
 
@@ -159,21 +176,21 @@ func TestAReplayedHandoffIsRefused(t *testing.T) {
 
 func TestTurningTheSettingOffRefusesAnOutstandingTicket(t *testing.T) {
 	env := newEnv(validClaims())
-	ticket, err := federationguest.Admit(t.Context(), env, validForm())
+	admitted, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
 
 	env.FederationGuestsEnabledFunc = func() bool { return false }
 
-	_, _, err = federationguest.Enter(env, ticket)
+	_, _, err = federationguest.Enter(env, admitted.Ticket, admitted.Nonce)
 	require.ErrorIs(t, err, federationguest.ErrRefused)
 }
 
 func TestATamperedTicketIsRefused(t *testing.T) {
 	env := newEnv(validClaims())
-	ticket, err := federationguest.Admit(t.Context(), env, validForm())
+	admitted, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
 
-	_, _, err = federationguest.Enter(env, strings.TrimSuffix(ticket, ticket[len(ticket)-2:])+"xx")
+	_, _, err = federationguest.Enter(env, strings.TrimSuffix(admitted.Ticket, admitted.Ticket[len(admitted.Ticket)-2:])+"xx", admitted.Nonce)
 	require.ErrorIs(t, err, federationguest.ErrRefused)
 }
 

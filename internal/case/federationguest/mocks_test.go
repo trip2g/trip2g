@@ -33,6 +33,9 @@ var _ federationguest.Env = &EnvMock{}
 //			GuestTicketSecretFunc: func() string {
 //				panic("mock out the GuestTicketSecret method")
 //			},
+//			InsecureFunc: func() bool {
+//				panic("mock out the Insecure method")
+//			},
 //			SpendFederationGuestIDFunc: func(id string, expiresAt time.Time) bool {
 //				panic("mock out the SpendFederationGuestID method")
 //			},
@@ -57,6 +60,9 @@ type EnvMock struct {
 
 	// GuestTicketSecretFunc mocks the GuestTicketSecret method.
 	GuestTicketSecretFunc func() string
+
+	// InsecureFunc mocks the Insecure method.
+	InsecureFunc func() bool
 
 	// SpendFederationGuestIDFunc mocks the SpendFederationGuestID method.
 	SpendFederationGuestIDFunc func(id string, expiresAt time.Time) bool
@@ -84,6 +90,9 @@ type EnvMock struct {
 		// GuestTicketSecret holds details about calls to the GuestTicketSecret method.
 		GuestTicketSecret []struct {
 		}
+		// Insecure holds details about calls to the Insecure method.
+		Insecure []struct {
+		}
 		// SpendFederationGuestID holds details about calls to the SpendFederationGuestID method.
 		SpendFederationGuestID []struct {
 			// ID is the id argument value.
@@ -103,6 +112,7 @@ type EnvMock struct {
 	lockFederationGuestsEnabled sync.RWMutex
 	lockFederationMaxDepth      sync.RWMutex
 	lockGuestTicketSecret       sync.RWMutex
+	lockInsecure                sync.RWMutex
 	lockSpendFederationGuestID  sync.RWMutex
 	lockVerifyGuestHandoff      sync.RWMutex
 }
@@ -225,6 +235,33 @@ func (mock *EnvMock) GuestTicketSecretCalls() []struct {
 	mock.lockGuestTicketSecret.RLock()
 	calls = mock.calls.GuestTicketSecret
 	mock.lockGuestTicketSecret.RUnlock()
+	return calls
+}
+
+// Insecure calls InsecureFunc.
+func (mock *EnvMock) Insecure() bool {
+	if mock.InsecureFunc == nil {
+		panic("EnvMock.InsecureFunc: method is nil but Env.Insecure was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockInsecure.Lock()
+	mock.calls.Insecure = append(mock.calls.Insecure, callInfo)
+	mock.lockInsecure.Unlock()
+	return mock.InsecureFunc()
+}
+
+// InsecureCalls gets all the calls that were made to Insecure.
+// Check the length with:
+//
+//	len(mockedEnv.InsecureCalls())
+func (mock *EnvMock) InsecureCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockInsecure.RLock()
+	calls = mock.calls.Insecure
+	mock.lockInsecure.RUnlock()
 	return calls
 }
 

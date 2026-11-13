@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -305,6 +306,45 @@ func TestAHandoffPostedFromAnotherSiteIsRefused(t *testing.T) {
 
 	r = newBrowser().arrive(t, s.peer, form, s.hub.url)
 	require.Equal(t, http.StatusFound, r.status, "the refusals did not spend the handoff, and the hub's own page still works")
+}
+
+func TestATicketOpensOnlyInTheBrowserThatPostedTheHandoff(t *testing.T) {
+	s := seedTwoSites(t)
+
+	// The attacker is a hub reader: they post their own handoff from the hub's
+	// real page and keep the ticket URL instead of following it.
+	attacker := newBrowser()
+	attacker.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+	_, form := attacker.pressButton(t, s.hub, hubKBNote)
+	posted := attacker.post(t, s.peer, federationguest.Path, form, s.hub.url)
+	require.Equal(t, http.StatusSeeOther, posted.status, posted.body)
+
+	attrs := strings.ToLower(posted.nonceCookie)
+	for _, attr := range []string{"httponly", "path=/_system/federation/guest", "max-age=30", "samesite=lax"} {
+		require.Contains(t, attrs, attr, posted.nonceCookie)
+	}
+	require.NotContains(t, attrs, "secure", "insecure test config, the same condition as the session cookie")
+	require.NotContains(t, posted.location, attacker.nonces[s.peer.host])
+
+	victim := newBrowser()
+	r := victim.get(t, s.peer, posted.location)
+	require.Equal(t, http.StatusForbidden, r.status, "a ticket opened without the nonce cookie")
+	require.Empty(t, r.cookie)
+	require.Empty(t, victim.cookies)
+
+	victim.nonces[s.peer.host] = "not-the-nonce"
+	r = victim.get(t, s.peer, posted.location)
+	require.Equal(t, http.StatusForbidden, r.status, "a ticket opened with another nonce")
+	require.Empty(t, r.cookie)
+	require.Empty(t, victim.nonces, "a failed attempt clears the nonce cookie too")
+
+	r = attacker.get(t, s.peer, posted.location)
+	require.Equal(t, http.StatusFound, r.status, "failed attempts elsewhere did not burn the ticket")
+	require.NotEmpty(t, attacker.cookies[s.peer.host])
+	require.Empty(t, attacker.nonces)
+
+	r = attacker.get(t, s.peer, posted.location)
+	require.Equal(t, http.StatusForbidden, r.status, "and it opens once")
 }
 
 func TestTheGuestEndpointRefuses(t *testing.T) {

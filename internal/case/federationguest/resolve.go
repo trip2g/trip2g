@@ -12,6 +12,8 @@ package federationguest
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -38,13 +40,16 @@ type Env interface {
 	// (edge, reader).
 	FederationGuestUser(ctx context.Context, kid, reader string) (int64, error)
 	GuestTicketSecret() string
+	// Insecure drops Secure from the nonce cookie, as from the session cookie.
+	Insecure() bool
 }
 
 // ErrRefused is every reason a handoff or ticket does not open a session. The
 // visitor is told only that; the reason goes to the log.
 var ErrRefused = errors.New("federation guest refused")
 
-const ticketTTL = 30 * time.Second
+// TicketTTL is how long a ticket and its nonce cookie live.
+const TicketTTL = 30 * time.Second
 
 type ticketClaims struct {
 	UserID int64  `json:"u"`
@@ -52,7 +57,18 @@ type ticketClaims struct {
 	Hop    int    `json:"h"`
 	Reader string `json:"rd"`
 	Path   string `json:"p"`
+	// NonceHash binds the ticket to the browser that posted the handoff: the
+	// hash of the nonce that browser got in a cookie. The nonce itself never
+	// travels in the URL.
+	NonceHash string `json:"n"`
 	jwt.RegisteredClaims
+}
+
+// Admission is what an accepted handoff hands the browser: the ticket for the
+// URL of the GET leg, and the nonce for the cookie that must ride with it.
+type Admission struct {
+	Ticket string
+	Nonce  string
 }
 
 // Form is a posted handoff: the token, the target the form carried beside it,
@@ -67,14 +83,14 @@ type Form struct {
 // session. The form must carry the target the hub signed and come from a page
 // at the origin the hub signed: a hub reader who copies the form onto another
 // site cannot open a session in someone else's browser with it.
-func Admit(ctx context.Context, env Env, form Form) (string, error) {
+func Admit(ctx context.Context, env Env, form Form) (Admission, error) {
 	if !env.FederationGuestsEnabled() {
-		return "", fmt.Errorf("%w: guests are not accepted here", ErrRefused)
+		return Admission{}, fmt.Errorf("%w: guests are not accepted here", ErrRefused)
 	}
 
 	claims, err := env.VerifyGuestHandoff(ctx, form.Token)
 	if err != nil {
-		return "", fmt.Errorf("%w: %w", ErrRefused, err)
+		return Admission{}, fmt.Errorf("%w: %w", ErrRefused, err)
 	}
 
 	signedOrigin, signedOK := model.SiteOrigin(claims.Origin)
@@ -82,53 +98,62 @@ func Admit(ctx context.Context, env Env, form Form) (string, error) {
 
 	switch {
 	case !signedOK || !postedOK || signedOrigin != postedOrigin:
-		return "", fmt.Errorf("%w: posted from %q, signed for %q", ErrRefused, form.Origin, claims.Origin)
+		return Admission{}, fmt.Errorf("%w: posted from %q, signed for %q", ErrRefused, form.Origin, claims.Origin)
 	case claims.Path != form.Path:
-		return "", fmt.Errorf("%w: token is for %q, not %q", ErrRefused, claims.Path, form.Path)
+		return Admission{}, fmt.Errorf("%w: token is for %q, not %q", ErrRefused, claims.Path, form.Path)
 	case appresp.SamePath(claims.Path) != claims.Path:
-		return "", fmt.Errorf("%w: target %q is not a path on this site", ErrRefused, claims.Path)
+		return Admission{}, fmt.Errorf("%w: target %q is not a path on this site", ErrRefused, claims.Path)
 	case claims.Hop < 1 || claims.Hop > env.FederationMaxDepth():
-		return "", fmt.Errorf("%w: hop %d outside 1..%d", ErrRefused, claims.Hop, env.FederationMaxDepth())
+		return Admission{}, fmt.Errorf("%w: hop %d outside 1..%d", ErrRefused, claims.Hop, env.FederationMaxDepth())
 	case !isReaderID(claims.Reader):
-		return "", fmt.Errorf("%w: reader id is not a sha256 hex", ErrRefused)
+		return Admission{}, fmt.Errorf("%w: reader id is not a sha256 hex", ErrRefused)
 	}
 
 	if !env.SpendFederationGuestID(claims.ID, claims.ExpiresAt) {
-		return "", fmt.Errorf("%w: handoff %s already used", ErrRefused, claims.ID)
+		return Admission{}, fmt.Errorf("%w: handoff %s already used", ErrRefused, claims.ID)
 	}
 
 	userID, err := env.FederationGuestUser(ctx, claims.Caller.KID, claims.Reader)
 	if err != nil {
-		return "", fmt.Errorf("federation guest user: %w", err)
+		return Admission{}, fmt.Errorf("federation guest user: %w", err)
 	}
 
 	id, err := randomID()
 	if err != nil {
-		return "", err
+		return Admission{}, err
+	}
+	nonce, err := randomID()
+	if err != nil {
+		return Admission{}, err
 	}
 	ticket := ticketClaims{
-		UserID: userID,
-		Kid:    claims.Caller.KID,
-		Hop:    claims.Hop,
-		Reader: claims.Reader,
-		Path:   claims.Path,
+		UserID:    userID,
+		Kid:       claims.Caller.KID,
+		Hop:       claims.Hop,
+		Reader:    claims.Reader,
+		Path:      claims.Path,
+		NonceHash: nonceHash(nonce),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        id,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ticketTTL)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TicketTTL)),
 		},
 	}
 
 	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, ticket).SignedString(ticketKey(env))
 	if err != nil {
-		return "", fmt.Errorf("sign guest ticket: %w", err)
+		return Admission{}, fmt.Errorf("sign guest ticket: %w", err)
 	}
-	return signed, nil
+	return Admission{Ticket: signed, Nonce: nonce}, nil
 }
 
 // Enter exchanges a ticket for the guest session it stands for and the path to
-// open. Whether to store that session is the caller's: an existing own session
-// wins.
-func Enter(env Env, ticket string) (usertoken.Data, string, error) {
+// open. nonce is the cookie the browser carries; only the browser that posted
+// the handoff has it. Whether to store that session is the caller's: an
+// existing own session wins.
+//
+// A ticket is spent only once the nonce matches. Spending it on a mismatch
+// would let anyone who sees the URL burn a genuine reader's ticket.
+func Enter(env Env, ticket, nonce string) (usertoken.Data, string, error) {
 	if !env.FederationGuestsEnabled() {
 		return usertoken.Data{}, "", fmt.Errorf("%w: guests are not accepted here", ErrRefused)
 	}
@@ -139,6 +164,10 @@ func Enter(env Env, ticket string) (usertoken.Data, string, error) {
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 	if err != nil {
 		return usertoken.Data{}, "", fmt.Errorf("%w: %w", ErrRefused, err)
+	}
+
+	if nonce == "" || subtle.ConstantTimeCompare([]byte(nonceHash(nonce)), []byte(claims.NonceHash)) != 1 {
+		return usertoken.Data{}, "", fmt.Errorf("%w: ticket opened outside the browser that posted it", ErrRefused)
 	}
 
 	if claims.ID == "" || !env.SpendFederationGuestID(claims.ID, claims.ExpiresAt.Time) {
@@ -159,6 +188,11 @@ func Enter(env Env, ticket string) (usertoken.Data, string, error) {
 // the same secret signs.
 func ticketKey(env Env) []byte {
 	return []byte("federation guest ticket:" + env.GuestTicketSecret())
+}
+
+func nonceHash(nonce string) string {
+	sum := sha256.Sum256([]byte(nonce))
+	return hex.EncodeToString(sum[:])
 }
 
 func isReaderID(s string) bool {
