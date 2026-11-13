@@ -142,9 +142,7 @@ func makeGraphqlErr(log logger.Logger) func(err error) graphql.ResponseHandler {
 	return func(err error) graphql.ResponseHandler {
 		log.Error("graphql error", "error", err)
 
-		return func(ctx context.Context) *graphql.Response {
-			return graphql.ErrorResponse(ctx, "%s", err.Error())
-		}
+		return graphql.OneShot(graphql.ErrorResponse(context.Background(), "%s", err.Error()))
 	}
 }
 
@@ -216,6 +214,9 @@ func makeAroundOperations(
 
 		return func(ctx context.Context) *graphql.Response {
 			resp := rh(ctx)
+			if resp == nil {
+				return nil
+			}
 
 			// А тут интересно, нужно ли отказывать транзакции только в случае ошибок
 			// или в случае ErrorPayload так же нужно? Похоже нужно откатывать в случае
