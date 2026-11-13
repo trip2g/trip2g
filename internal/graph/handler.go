@@ -202,6 +202,12 @@ func makeAroundOperations(
 			disableIntrospection(ctx, operationContext, env)
 		}
 
+		if op.Operation == ast.Mutation && !onlySignOut(op.SelectionSet) {
+			if err := appreq.DenyGuest(ctx); err != nil {
+				return graphqlErr(err)
+			}
+		}
+
 		if shouldSkipTx(op, skipTxMutations) {
 			return next(ctx)
 		}
@@ -250,6 +256,18 @@ func shouldSkipTx(op *ast.OperationDefinition, skipTxMutations map[string]struct
 		return true
 	}
 	return selectionHasSkipTx(op.SelectionSet, skipTxMutations)
+}
+
+// onlySignOut reports a mutation that does nothing but end the session — the
+// one mutation a federation guest may run. Fragments count as something else.
+func onlySignOut(sel ast.SelectionSet) bool {
+	for _, s := range sel {
+		field, ok := s.(*ast.Field)
+		if !ok || field.Name != "signOut" {
+			return false
+		}
+	}
+	return len(sel) > 0
 }
 
 // selectionHasSkipTx walks the selection set recursively. A single @skipTx
