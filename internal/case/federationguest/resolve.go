@@ -19,6 +19,7 @@ import (
 
 	"trip2g/internal/appresp"
 	"trip2g/internal/case/mcp"
+	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -54,22 +55,36 @@ type ticketClaims struct {
 	jwt.RegisteredClaims
 }
 
+// Form is a posted handoff: the token, the target the form carried beside it,
+// and the Origin header of the page that posted it.
+type Form struct {
+	Token  string
+	Path   string
+	Origin string
+}
+
 // Admit checks a handoff and returns the ticket its GET leg exchanges for a
-// session. path is the target the form carried beside the token, which must be
-// the one the hub signed.
-func Admit(ctx context.Context, env Env, token, path string) (string, error) {
+// session. The form must carry the target the hub signed and come from a page
+// at the origin the hub signed: a hub reader who copies the form onto another
+// site cannot open a session in someone else's browser with it.
+func Admit(ctx context.Context, env Env, form Form) (string, error) {
 	if !env.FederationGuestsEnabled() {
 		return "", fmt.Errorf("%w: guests are not accepted here", ErrRefused)
 	}
 
-	claims, err := env.VerifyGuestHandoff(ctx, token)
+	claims, err := env.VerifyGuestHandoff(ctx, form.Token)
 	if err != nil {
 		return "", fmt.Errorf("%w: %w", ErrRefused, err)
 	}
 
+	signedOrigin, signedOK := model.SiteOrigin(claims.Origin)
+	postedOrigin, postedOK := model.SiteOrigin(form.Origin)
+
 	switch {
-	case claims.Path != path:
-		return "", fmt.Errorf("%w: token is for %q, not %q", ErrRefused, claims.Path, path)
+	case !signedOK || !postedOK || signedOrigin != postedOrigin:
+		return "", fmt.Errorf("%w: posted from %q, signed for %q", ErrRefused, form.Origin, claims.Origin)
+	case claims.Path != form.Path:
+		return "", fmt.Errorf("%w: token is for %q, not %q", ErrRefused, claims.Path, form.Path)
 	case appresp.SamePath(claims.Path) != claims.Path:
 		return "", fmt.Errorf("%w: target %q is not a path on this site", ErrRefused, claims.Path)
 	case claims.Hop < 1 || claims.Hop > env.FederationMaxDepth():

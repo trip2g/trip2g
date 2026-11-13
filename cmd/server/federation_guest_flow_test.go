@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/case/federationguest"
 	"trip2g/internal/case/federationhandoff"
 	"trip2g/internal/case/mcp"
+	"trip2g/internal/db"
 	"trip2g/internal/usertoken"
 
 	"github.com/stretchr/testify/require"
@@ -184,7 +185,7 @@ func TestAReaderIDCannotLandInALocalAccount(t *testing.T) {
 
 	for _, reader := range []string{"admin@example.com", "1", strconv.FormatInt(s.peer.adminID, 10)} {
 		token := handoffToken(t, "hub-to-peer", map[string]any{"sub": reader})
-		refused := newBrowser().arrive(t, s.peer, handoffForm(token))
+		refused := newBrowser().arrive(t, s.peer, handoffForm(token), hubOrigin)
 		require.Equal(t, http.StatusForbidden, refused.status, "reader %q is not a hash", reader)
 	}
 
@@ -237,7 +238,7 @@ func TestTheHandoffGoesOneHopFurtherAndStopsAtTheLimit(t *testing.T) {
 	reader.cookies[a.host] = a.signIn(t, "Walker@Example.com")
 	require.Equal(t, http.StatusFound, reader.openKB(t, a, b, "b.md").status)
 
-	page := reader.send(t, b, http.MethodGet, "/c", nil, false)
+	page := reader.get(t, b, "/c")
 	require.Equal(t, http.StatusOK, page.status)
 	require.Contains(t, page.body, `action="/_system/federation/handoff"`, "the guest on b sees b's KB-note button")
 
@@ -251,14 +252,59 @@ func TestTheHandoffGoesOneHopFurtherAndStopsAtTheLimit(t *testing.T) {
 	require.Equal(t, "b-to-c", session.Kid)
 	require.Equal(t, readerHash("walker@example.com"), session.Reader, "b forwards the reader it received")
 
-	c.app.config.MCPFederationMaxDepth = 1
 	_, form := reader.pressButton(t, b, "c.md")
-	refused := newBrowser().arrive(t, c, form)
+	signedOrigin := verifiedOrigin(t, c, form.Get("token"))
+	require.Equal(t, b.url, signedOrigin, "the second hop is signed with b's origin")
+	fromA := newBrowser().arrive(t, c, form, a.url)
+	require.Equal(t, http.StatusForbidden, fromA.status, "c checks the post against b, not the first hub")
+	_, form = reader.pressButton(t, b, "c.md")
+
+	c.app.config.MCPFederationMaxDepth = 1
+	refused := newBrowser().arrive(t, c, form, b.url)
 	require.Equal(t, http.StatusForbidden, refused.status, "c refuses a hop over its limit")
 
 	b.app.config.MCPFederationMaxDepth = 1
-	refusedAtB := reader.send(t, b, http.MethodPost, federationhandoff.Path, url.Values{"note": {"c.md"}}, false)
+	refusedAtB := reader.post(t, b, federationhandoff.Path, url.Values{"note": {"c.md"}}, b.url)
 	require.Equal(t, http.StatusForbidden, refusedAtB.status, "b does not sign a hop over its own limit")
+}
+
+func verifiedOrigin(t *testing.T, peer *site, token string) string {
+	t.Helper()
+	claims, err := mcp.VerifyGuestHandoff(context.Background(), peer.app, token)
+	require.NoError(t, err)
+	return claims.Origin
+}
+
+func TestAHandoffPostedFromAnotherSiteIsRefused(t *testing.T) {
+	s := seedTwoSites(t)
+	ctx := context.Background()
+
+	reader := newBrowser()
+	reader.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+	_, form := reader.pressButton(t, s.hub, hubKBNote)
+	require.Equal(t, s.hub.url, verifiedOrigin(t, s.peer, form.Get("token")))
+
+	// A hub reader copies their own form onto another page; a victim's browser
+	// posts it from there, or with no or an opaque origin.
+	for _, from := range []string{"http://attacker.test", "", "null", "http://hub.test.attacker.test", "https://hub.test"} {
+		victim := newBrowser()
+		r := victim.arrive(t, s.peer, form, from)
+		require.Equal(t, http.StatusForbidden, r.status, "posted from %q", from)
+		require.Empty(t, r.location)
+		require.Empty(t, r.cookie)
+		require.Empty(t, victim.cookies)
+	}
+
+	_, err := s.peer.app.Queries.FederationGuestUser(ctx, "federation:hub-to-peer:"+s.reader)
+	require.True(t, db.IsNoFound(err), "no guest user was looked up into existence: %v", err)
+
+	forged := handoffForm(handoffToken(t, "hub-to-peer", map[string]any{"org": "http://attacker.test"}))
+	forged.Set("token", forged.Get("token")[:len(forged.Get("token"))-4]+"AAAA")
+	r := newBrowser().arrive(t, s.peer, forged, "http://attacker.test")
+	require.Equal(t, http.StatusForbidden, r.status, "the origin claim cannot be changed without the edge secret")
+
+	r = newBrowser().arrive(t, s.peer, form, s.hub.url)
+	require.Equal(t, http.StatusFound, r.status, "the refusals did not spend the handoff, and the hub's own page still works")
 }
 
 func TestTheGuestEndpointRefuses(t *testing.T) {
@@ -267,9 +313,10 @@ func TestTheGuestEndpointRefuses(t *testing.T) {
 	b := newBrowser()
 	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
 	_, form := b.pressButton(t, s.hub, hubKBNote)
-	require.Equal(t, http.StatusFound, newBrowser().arrive(t, s.peer, form).status)
+	require.Equal(t, http.StatusFound, newBrowser().arrive(t, s.peer, form, s.hub.url).status)
 
-	signed, err := mcp.SignGuestHandoff(edgeSecret("hub-to-peer"), "hub-to-peer", "http://hub.test", mcp.GuestHandoff{Path: "/", Hop: 1, Reader: s.reader})
+	handoff := mcp.GuestHandoff{Path: "/", Hop: 1, Reader: s.reader, Origin: hubOrigin}
+	signed, err := mcp.SignGuestHandoff(edgeSecret("hub-to-peer"), "hub-to-peer", "http://hub.test", handoff)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -294,13 +341,13 @@ func TestTheGuestEndpointRefuses(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := newBrowser().arrive(t, s.peer, tt.form)
+			r := newBrowser().arrive(t, s.peer, tt.form, hubOrigin)
 			require.Equal(t, http.StatusForbidden, r.status, r.body)
 			require.Empty(t, r.location)
 			require.Empty(t, r.cookie)
 		})
 	}
 
-	forged := newBrowser().send(t, s.peer, http.MethodGet, federationguest.Path+"?ticket=forged", nil, true)
+	forged := newBrowser().get(t, s.peer, federationguest.Path+"?ticket=forged")
 	require.Equal(t, http.StatusForbidden, forged.status)
 }

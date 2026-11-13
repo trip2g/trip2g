@@ -110,21 +110,47 @@ type reply struct {
 	body     string
 	location string
 	cookie   string
+	referrer string
 }
 
-func (b *browser) send(t *testing.T, s *site, method, uri string, form url.Values, crossSite bool) reply {
+// request is one request the browser makes. from is the origin of the page
+// that made it: the browser sends it as Origin on a POST, and a POST from
+// another site goes without the cookie. Empty from is a typed URL or a link
+// followed on the same site; "null" is an opaque origin.
+type request struct {
+	method string
+	uri    string
+	form   url.Values
+	from   string
+}
+
+func (b *browser) get(t *testing.T, s *site, uri string) reply {
+	t.Helper()
+	return b.send(t, s, request{method: http.MethodGet, uri: uri})
+}
+
+func (b *browser) post(t *testing.T, s *site, uri string, form url.Values, from string) reply {
+	t.Helper()
+	return b.send(t, s, request{method: http.MethodPost, uri: uri, form: form, from: from})
+}
+
+func (b *browser) send(t *testing.T, s *site, req request) reply {
 	t.Helper()
 
 	fctx := &fasthttp.RequestCtx{}
 	fctx.Init(&fasthttp.Request{}, nil, nil)
-	fctx.Request.Header.SetMethod(method)
-	fctx.Request.SetRequestURI(uri)
+	fctx.Request.Header.SetMethod(req.method)
+	fctx.Request.SetRequestURI(req.uri)
 	fctx.Request.Header.SetHost(s.host)
-	if form != nil {
+	if req.form != nil {
 		fctx.Request.Header.SetContentType("application/x-www-form-urlencoded")
-		fctx.Request.SetBodyString(form.Encode())
+		fctx.Request.SetBodyString(req.form.Encode())
 	}
-	if cookie := b.cookies[s.host]; cookie != "" && (!crossSite || method == http.MethodGet) {
+	if req.method == http.MethodPost && req.from != "" {
+		fctx.Request.Header.Set("Origin", req.from)
+	}
+	crossSite := req.from != "" && req.from != s.url
+	if cookie := b.cookies[s.host]; cookie != "" && (!crossSite || req.method == http.MethodGet) {
 		fctx.Request.Header.SetCookie("trip2g_token", cookie)
 	}
 
@@ -134,6 +160,7 @@ func (b *browser) send(t *testing.T, s *site, method, uri string, form url.Value
 		status:   fctx.Response.StatusCode(),
 		body:     string(fctx.Response.Body()),
 		location: string(fctx.Response.Header.Peek("Location")),
+		referrer: string(fctx.Response.Header.Peek("Referrer-Policy")),
 	}
 	if raw := fctx.Response.Header.PeekCookie("trip2g_token"); raw != nil {
 		c := fasthttp.AcquireCookie()
@@ -157,8 +184,12 @@ var formAction = regexp.MustCompile(`<form id="handoff" method="post" action="([
 func (b *browser) pressButton(t *testing.T, hub *site, notePath string) (string, url.Values) {
 	t.Helper()
 
-	r := b.send(t, hub, http.MethodPost, federationhandoff.Path, url.Values{"note": {notePath}}, false)
+	r := b.post(t, hub, federationhandoff.Path, url.Values{"note": {notePath}}, hub.url)
 	require.Equal(t, http.StatusOK, r.status, r.body)
+	// Under no-referrer a browser posts the form with Origin: null.
+	require.Equal(t, "strict-origin", r.referrer)
+	require.NotContains(t, r.body, "<meta name=\"referrer\"", "a referrer meta could make the form's Origin null")
+	require.NotContains(t, r.body, "sandbox", "a sandboxed frame posts with Origin: null")
 
 	action := formAction.FindStringSubmatch(r.body)
 	require.NotNil(t, action, r.body)
@@ -169,17 +200,17 @@ func (b *browser) pressButton(t *testing.T, hub *site, notePath string) (string,
 	return action[1], form
 }
 
-// arrive posts a handoff to the peer cross-site and follows the 303 with a
-// top-level GET, which is the request that may set the cookie.
-func (b *browser) arrive(t *testing.T, peer *site, form url.Values) reply {
+// arrive posts a handoff to the peer from the page at origin from and follows
+// the 303 with a top-level GET, which is the request that may set the cookie.
+func (b *browser) arrive(t *testing.T, peer *site, form url.Values, from string) reply {
 	t.Helper()
 
-	posted := b.send(t, peer, http.MethodPost, federationguest.Path, form, true)
+	posted := b.post(t, peer, federationguest.Path, form, from)
 	if posted.status != http.StatusSeeOther {
 		return posted
 	}
 	require.True(t, strings.HasPrefix(posted.location, federationguest.Path+"?"), posted.location)
-	return b.send(t, peer, http.MethodGet, posted.location, nil, true)
+	return b.send(t, peer, request{method: http.MethodGet, uri: posted.location, from: from})
 }
 
 func (b *browser) openKB(t *testing.T, hub, peer *site, notePath string) reply {
@@ -187,8 +218,11 @@ func (b *browser) openKB(t *testing.T, hub, peer *site, notePath string) reply {
 
 	action, form := b.pressButton(t, hub, notePath)
 	require.Equal(t, peer.url+federationguest.Path, action, "the handoff goes to the peer the KB-note names")
-	return b.arrive(t, peer, form)
+	return b.arrive(t, peer, form, hub.url)
 }
+
+// hubOrigin is the origin handoffToken signs by default.
+const hubOrigin = "http://hub.test"
 
 // handoffToken signs a guest handoff by hand, so a test can say what a hub
 // holding the edge secret could send, including what no hub of ours would.
@@ -200,7 +234,7 @@ func handoffToken(t *testing.T, kid string, claims map[string]any) string {
 	body := map[string]any{
 		"iss": "http://hub.test", "iat": time.Now().Unix(), "exp": time.Now().Add(30 * time.Second).Unix(),
 		"rid": readerHash(strconv.FormatInt(time.Now().UnixNano(), 10)), "use": "guest", "path": "/", "hop": 1,
-		"sub": readerHash("someone@example.com"),
+		"sub": readerHash("someone@example.com"), "org": hubOrigin,
 	}
 	for k, v := range claims {
 		body[k] = v
@@ -272,7 +306,7 @@ func (s *twoSites) readerID(t *testing.T) int64 {
 
 func (b *browser) page(t *testing.T, s *site, path string) string {
 	t.Helper()
-	r := b.send(t, s, http.MethodGet, path, nil, false)
+	r := b.get(t, s, path)
 	var marks []string
 	for _, m := range []string{"zzfrontzz", "zzsharedzz", "zzotherzz"} {
 		if strings.Contains(r.body, m) {
@@ -285,26 +319,26 @@ func (b *browser) page(t *testing.T, s *site, path string) string {
 func TestTheKBButtonIsALinkForAnAnonymousReaderAndAHandoffForASignedInOne(t *testing.T) {
 	s := seedTwoSites(t)
 
-	anonymous := newBrowser().send(t, s.hub, http.MethodGet, "/peer", nil, false)
+	anonymous := newBrowser().get(t, s.hub, "/peer")
 	require.Equal(t, http.StatusOK, anonymous.status)
 	require.Contains(t, anonymous.body, `<a href="http://peer.test/" class="tg-button" rel="noopener">Open knowledge base</a>`)
 	require.NotContains(t, anonymous.body, federationhandoff.Path)
 
 	b := newBrowser()
 	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
-	signedIn := b.send(t, s.hub, http.MethodGet, "/peer", nil, false)
+	signedIn := b.get(t, s.hub, "/peer")
 	require.Equal(t, http.StatusOK, signedIn.status)
 	require.Contains(t, signedIn.body, `<form class="kb-open" method="post" action="/_system/federation/handoff">`)
 	require.Contains(t, signedIn.body, `<input type="hidden" name="note" value="peer.md">`)
 
-	closed := newBrowser().send(t, s.hub, http.MethodGet, "/closed-kb", nil, false)
+	closed := newBrowser().get(t, s.hub, "/closed-kb")
 	require.NotEqual(t, http.StatusOK, closed.status, "an unreadable KB-note is not shown")
 	require.NotContains(t, closed.body, "Open knowledge base")
 
 	_, form := b.pressButton(t, s.hub, hubKBNote)
 	require.NotEmpty(t, form.Get("token"))
-	refused := newBrowser().send(t, s.hub, http.MethodPost, federationhandoff.Path, url.Values{"note": {hubKBNote}}, false)
+	refused := newBrowser().post(t, s.hub, federationhandoff.Path, url.Values{"note": {hubKBNote}}, s.hub.url)
 	require.Equal(t, http.StatusForbidden, refused.status, "an anonymous reader gets no handoff")
-	refused = b.send(t, s.hub, http.MethodPost, federationhandoff.Path, url.Values{"note": {"closed-kb.md"}}, false)
+	refused = b.post(t, s.hub, federationhandoff.Path, url.Values{"note": {"closed-kb.md"}}, s.hub.url)
 	require.Equal(t, http.StatusForbidden, refused.status, "a reader who cannot read the KB-note gets no handoff")
 }
