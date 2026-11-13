@@ -7569,6 +7569,83 @@ func (q *Queries) NoteVersionHistoryByPath(ctx context.Context, arg NoteVersionH
 	return items, nil
 }
 
+const noteViewsByCreatedVia = `-- name: NoteViewsByCreatedVia :many
+select u.created_via,
+       count(*) as views,
+       count(distinct unv.user_id) as readers
+  from user_note_views unv
+  join users u on u.id = unv.user_id
+ where unv.created_at >= date('now', '-29 days')
+ group by u.created_via
+ order by views desc, u.created_via
+`
+
+type NoteViewsByCreatedViaRow struct {
+	CreatedVia string `json:"created_via"`
+	Views      int64  `json:"views"`
+	Readers    int64  `json:"readers"`
+}
+
+func (q *Queries) NoteViewsByCreatedVia(ctx context.Context) ([]NoteViewsByCreatedViaRow, error) {
+	rows, err := q.db.QueryContext(ctx, noteViewsByCreatedVia)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteViewsByCreatedViaRow
+	for rows.Next() {
+		var i NoteViewsByCreatedViaRow
+		if err := rows.Scan(&i.CreatedVia, &i.Views, &i.Readers); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const noteViewsPerDay = `-- name: NoteViewsPerDay :many
+select cast(date(created_at) as text) as day,
+       count(*) as views
+  from user_note_views
+ where created_at >= date('now', '-29 days')
+ group by 1
+ order by 1
+`
+
+type NoteViewsPerDayRow struct {
+	Day   string `json:"day"`
+	Views int64  `json:"views"`
+}
+
+func (q *Queries) NoteViewsPerDay(ctx context.Context) ([]NoteViewsPerDayRow, error) {
+	rows, err := q.db.QueryContext(ctx, noteViewsPerDay)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteViewsPerDayRow
+	for rows.Next() {
+		var i NoteViewsPerDayRow
+		if err := rows.Scan(&i.Day, &i.Views); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const notesReloadSignal = `-- name: NotesReloadSignal :one
 select
   cast(coalesce((select max(id) from note_versions), 0) as integer) as version_gen,
@@ -8455,6 +8532,96 @@ func (q *Queries) TgUserStateByBotIDAndChatID(ctx context.Context, arg TgUserSta
 		&i.Data,
 	)
 	return i, err
+}
+
+const topNoteReaders = `-- name: TopNoteReaders :many
+select u.id as user_id,
+       u.email,
+       count(*) as views
+  from user_note_views unv
+  join users u on u.id = unv.user_id
+ where unv.created_at >= date('now', '-29 days')
+ group by u.id
+ order by views desc, u.id
+ limit 10
+`
+
+type TopNoteReadersRow struct {
+	UserID int64   `json:"user_id"`
+	Email  *string `json:"email"`
+	Views  int64   `json:"views"`
+}
+
+func (q *Queries) TopNoteReaders(ctx context.Context) ([]TopNoteReadersRow, error) {
+	rows, err := q.db.QueryContext(ctx, topNoteReaders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TopNoteReadersRow
+	for rows.Next() {
+		var i TopNoteReadersRow
+		if err := rows.Scan(&i.UserID, &i.Email, &i.Views); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const topViewedNotes = `-- name: TopViewedNotes :many
+select np.id as path_id,
+       np.value as path,
+       count(*) as views,
+       count(distinct unv.user_id) as readers
+  from user_note_views unv
+  join note_versions nv on nv.id = unv.version_id
+  join note_paths np on np.id = nv.path_id
+ where unv.created_at >= date('now', '-29 days')
+ group by np.id
+ order by views desc, np.id
+ limit 10
+`
+
+type TopViewedNotesRow struct {
+	PathID  int64  `json:"path_id"`
+	Path    string `json:"path"`
+	Views   int64  `json:"views"`
+	Readers int64  `json:"readers"`
+}
+
+func (q *Queries) TopViewedNotes(ctx context.Context) ([]TopViewedNotesRow, error) {
+	rows, err := q.db.QueryContext(ctx, topViewedNotes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TopViewedNotesRow
+	for rows.Next() {
+		var i TopViewedNotesRow
+		if err := rows.Scan(
+			&i.PathID,
+			&i.Path,
+			&i.Views,
+			&i.Readers,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const userByEmail = `-- name: UserByEmail :one

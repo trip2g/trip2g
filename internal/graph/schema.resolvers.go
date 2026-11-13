@@ -70,6 +70,7 @@ import (
 	"trip2g/internal/case/admin/listsecretkeys"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/markformsubmitprocessed"
+	"trip2g/internal/case/admin/noteviewsstats"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratenoteembeddings"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
@@ -1486,6 +1487,11 @@ func (r *adminNoteVersionHistoryConnectionResolver) TotalCount(ctx context.Conte
 	return int32(count), nil
 }
 
+// Note is the resolver for the note field.
+func (r *adminNoteViewsNoteResolver) Note(ctx context.Context, obj *model.AdminNoteViewsNote) (*appmodel.NoteView, error) {
+	return r.env(ctx).LatestNoteViews().GetByPathID(obj.PathID), nil
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminOIDCCredentialsResolver) CreatedBy(ctx context.Context, obj *db.OidcCredential) (*db.User, error) {
 	return resolveOnePtr[db.User](ctx, &obj.CreatedBy, r.env(ctx).UserByID)
@@ -2229,6 +2235,11 @@ func (r *adminQueryResolver) StorageUsage(ctx context.Context, obj *appmodel.Adm
 			CurrentBytes: assetsSize,
 		},
 	}, nil
+}
+
+// NoteViewsStats is the resolver for the noteViewsStats field.
+func (r *adminQueryResolver) NoteViewsStats(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminNoteViewsStats, error) {
+	return noteviewsstats.Resolve(ctx, r.env(ctx))
 }
 
 // FormSubmits is the resolver for the formSubmits field.
@@ -4022,6 +4033,11 @@ func (r *Resolver) AdminNoteVersionHistoryConnection() generated.AdminNoteVersio
 	return &adminNoteVersionHistoryConnectionResolver{r}
 }
 
+// AdminNoteViewsNote returns generated.AdminNoteViewsNoteResolver implementation.
+func (r *Resolver) AdminNoteViewsNote() generated.AdminNoteViewsNoteResolver {
+	return &adminNoteViewsNoteResolver{r}
+}
+
 // AdminOIDCCredentials returns generated.AdminOIDCCredentialsResolver implementation.
 func (r *Resolver) AdminOIDCCredentials() generated.AdminOIDCCredentialsResolver {
 	return &adminOIDCCredentialsResolver{r}
@@ -4414,6 +4430,7 @@ type adminNotFoundIgnoredPatternsConnectionResolver struct{ *Resolver }
 type adminNotFoundPathsConnectionResolver struct{ *Resolver }
 type adminNoteAssetResolver struct{ *Resolver }
 type adminNoteVersionHistoryConnectionResolver struct{ *Resolver }
+type adminNoteViewsNoteResolver struct{ *Resolver }
 type adminOIDCCredentialsResolver struct{ *Resolver }
 type adminOIDCCredentialsConnectionResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
