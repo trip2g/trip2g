@@ -46,10 +46,11 @@ func TestFederationGuestAccessMatrix(t *testing.T) {
 	edges := map[string][]string{"fg-paid": {"paid"}, "fg-elsewhere": {"elsewhere"}, "fg-none": nil}
 	names := make([]string, 0, len(edges))
 	for kid, grants := range edges {
-		crypt, err := a.EncryptData(edgeSecret(kid))
-		require.NoError(t, err)
-		_, err = a.WriteQueries.InsertFederationSecret(ctx, db.InsertFederationSecretParams{Kid: kid, SecretCrypt: crypt, CreatedBy: adminID})
-		require.NoError(t, err)
+		crypt, cryptErr := a.EncryptData(edgeSecret(kid))
+		require.NoError(t, cryptErr)
+		secret := db.InsertFederationSecretParams{Kid: kid, SecretCrypt: crypt, CreatedBy: adminID}
+		_, insertErr := a.WriteQueries.InsertFederationSecret(ctx, secret)
+		require.NoError(t, insertErr)
 		for _, name := range grants {
 			sg, sgErr := a.Queries.SubgraphByName(ctx, name)
 			require.NoError(t, sgErr)
@@ -94,6 +95,11 @@ func TestFederationGuestAccessMatrix(t *testing.T) {
 	})
 }
 
+const guestNoteQuery = `{ noteQuery(input: {query: "queries/all.md"}) {
+	... on NoteQueryPayload { result }
+	... on ErrorPayload { message }
+} }`
+
 func (m *freeNoteMatrix) guestTable(t *testing.T, readers []string) string {
 	t.Helper()
 
@@ -102,7 +108,7 @@ func (m *freeNoteMatrix) guestTable(t *testing.T, readers []string) string {
 		searchResults := m.search(t, reader)
 		rssItems := m.rss(t, reader)
 		similar := m.similar(t, reader)
-		queried := m.graphql(t, reader, `{ noteQuery(input: {query: "queries/all.md"}) { ... on NoteQueryPayload { result } ... on ErrorPayload { message } } }`, nil)
+		queried := m.graphql(t, reader, guestNoteQuery, nil)
 		require.Contains(t, queried, `"result":[`, queried)
 		mcpReply := m.do(t, reader, http.MethodPost, "/_system/mcp", []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`),
 			map[string]string{"Content-Type": "application/json"})

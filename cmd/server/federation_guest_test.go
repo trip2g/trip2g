@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"trip2g/internal/case/federationguest"
 	"trip2g/internal/case/federationhandoff"
 	"trip2g/internal/db"
-	"trip2g/internal/noteloader"
 	"trip2g/internal/usertoken"
 
 	"github.com/stretchr/testify/require"
@@ -199,7 +199,7 @@ func handoffToken(t *testing.T, kid string, claims map[string]any) string {
 	require.NoError(t, err)
 	body := map[string]any{
 		"iss": "http://hub.test", "iat": time.Now().Unix(), "exp": time.Now().Add(30 * time.Second).Unix(),
-		"rid": readerHash(fmt.Sprint(time.Now().UnixNano())), "use": "guest", "path": "/", "hop": 1,
+		"rid": readerHash(strconv.FormatInt(time.Now().UnixNano(), 10)), "use": "guest", "path": "/", "hop": 1,
 		"sub": readerHash("someone@example.com"),
 	}
 	for k, v := range claims {
@@ -216,12 +216,6 @@ func handoffToken(t *testing.T, kid string, claims map[string]any) string {
 
 func handoffForm(token string) url.Values {
 	return url.Values{"token": {token}, "path": {"/"}}
-}
-
-func (s *site) reload(t *testing.T) {
-	t.Helper()
-	require.NoError(t, s.app.latestNoteLoader.Load(context.Background(), noteloader.LoadOptions{}))
-	s.app.ClearPageCache()
 }
 
 // twoSites is a hub whose KB-note points at a peer holding notes in three
@@ -248,7 +242,8 @@ func seedTwoSites(t *testing.T) *twoSites {
 	peer.load(t)
 
 	hub := newSite(t, "hub")
-	insertLatestNote(t, hub.app, hubKBNote, "---\nfree: true\nmcp_federation_kb_url: "+peer.url+"/_system/mcp\nmcp_federation_kb_id: peer\n---\nThe peer base.\n")
+	kbFrontmatter := "mcp_federation_kb_url: " + peer.url + "/_system/mcp\n"
+	insertLatestNote(t, hub.app, hubKBNote, "---\nfree: true\n"+kbFrontmatter+"mcp_federation_kb_id: peer\n---\nThe peer base.\n")
 	insertLatestNote(t, hub.app, "closed-kb.md", "---\nmcp_federation_kb_url: "+peer.url+"/_system/mcp\n---\nA closed base.\n")
 	hub.load(t)
 

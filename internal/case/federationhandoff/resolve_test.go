@@ -17,7 +17,9 @@ import (
 
 const kbURL = "https://peer.test/_system/mcp"
 
-var edgeSecret = []byte("12345678901234567890123456789012")
+func edgeSecret() []byte {
+	return []byte("12345678901234567890123456789012")
+}
 
 func kbNote() *model.NoteView {
 	return &model.NoteView{
@@ -41,7 +43,7 @@ func newEnv(token *usertoken.Data) *EnvMock {
 			return db.User{ID: id, Email: &email}, nil
 		},
 		FederationGuestPeerFunc: func(_ context.Context, kbID string) (model.FederationPeer, error) {
-			return model.FederationPeer{KBID: kbID, KBURL: kbURL, KID: "edge", Secret: edgeSecret, Issuer: "https://hub.test"}, nil
+			return model.FederationPeer{KBID: kbID, KBURL: kbURL, KID: "edge", Secret: edgeSecret(), Issuer: "https://hub.test"}, nil
 		},
 		FederationMaxDepthFunc: func() int { return 3 },
 		PublicURLFunc:          func() string { return "https://hub.test" },
@@ -113,7 +115,11 @@ func TestResolveRefuses(t *testing.T) {
 				return model.FederationPeer{KBID: kbID, KBURL: kbURL}, nil
 			}
 		}},
-		{name: "guest already at the depth limit", token: &usertoken.Data{ID: 9, Role: usertoken.RoleFederationGuest, Kid: "in", Hop: 3, Reader: sha("x")}, note: "peer.md"},
+		{
+			name:  "guest already at the depth limit",
+			token: &usertoken.Data{ID: 9, Role: usertoken.RoleFederationGuest, Kid: "in", Hop: 3, Reader: sha("x")},
+			note:  "peer.md",
+		},
 	}
 
 	for _, tt := range tests {

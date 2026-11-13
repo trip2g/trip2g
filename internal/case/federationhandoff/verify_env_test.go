@@ -11,7 +11,7 @@ import (
 type verifyEnv struct{}
 
 func (verifyEnv) FederationSecretByKID(_ context.Context, kid string) (db.FederationSecret, bool, error) {
-	return db.FederationSecret{Kid: kid, SecretCrypt: edgeSecret}, kid == "edge", nil
+	return db.FederationSecret{Kid: kid, SecretCrypt: edgeSecret()}, kid == "edge", nil
 }
 
 func (verifyEnv) ListFederationSecretSubgraphsByKID(context.Context, string) ([]string, error) {

@@ -202,18 +202,8 @@ func makeAroundOperations(
 			disableIntrospection(ctx, operationContext, env)
 		}
 
-		if op.Operation == ast.Mutation && !onlySignOut(op.SelectionSet) {
-			if err := appreq.DenyGuest(ctx); err != nil {
-				// Answers once: the SSE transport keeps asking until it gets nil.
-				answered := false
-				return func(ctx context.Context) *graphql.Response {
-					if answered {
-						return nil
-					}
-					answered = true
-					return graphql.ErrorResponse(ctx, "%s", err.Error())
-				}
-			}
+		if refused := refuseGuestMutation(ctx, op); refused != nil {
+			return refused
 		}
 
 		if shouldSkipTx(op, skipTxMutations) {
@@ -264,6 +254,28 @@ func shouldSkipTx(op *ast.OperationDefinition, skipTxMutations map[string]struct
 		return true
 	}
 	return selectionHasSkipTx(op.SelectionSet, skipTxMutations)
+}
+
+// refuseGuestMutation answers a federation guest's mutation with an error, or
+// returns nil to let the operation run.
+func refuseGuestMutation(ctx context.Context, op *ast.OperationDefinition) graphql.ResponseHandler {
+	if op.Operation != ast.Mutation || onlySignOut(op.SelectionSet) {
+		return nil
+	}
+	err := appreq.DenyGuest(ctx)
+	if err == nil {
+		return nil
+	}
+
+	// Answers once: the SSE transport keeps asking until it gets nil.
+	answered := false
+	return func(ctx context.Context) *graphql.Response {
+		if answered {
+			return nil
+		}
+		answered = true
+		return graphql.ErrorResponse(ctx, "%s", err.Error())
+	}
 }
 
 // onlySignOut reports a mutation that does nothing but end the session — the

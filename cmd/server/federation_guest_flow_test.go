@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -182,7 +182,7 @@ func TestAReaderIDCannotLandInALocalAccount(t *testing.T) {
 	adminReply := hubAdmin.sendJSON(t, s.peer, "/_system/graphql", body)
 	require.NotContains(t, adminReply.body, `"nodes"`, adminReply.body)
 
-	for _, reader := range []string{"admin@example.com", "1", fmt.Sprint(s.peer.adminID)} {
+	for _, reader := range []string{"admin@example.com", "1", strconv.FormatInt(s.peer.adminID, 10)} {
 		token := handoffToken(t, "hub-to-peer", map[string]any{"sub": reader})
 		refused := newBrowser().arrive(t, s.peer, handoffForm(token))
 		require.Equal(t, http.StatusForbidden, refused.status, "reader %q is not a hash", reader)
