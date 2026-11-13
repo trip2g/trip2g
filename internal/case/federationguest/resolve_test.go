@@ -16,9 +16,13 @@ import (
 
 const testReader = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
+func validForm() federationguest.Form {
+	return federationguest.Form{Token: "handoff", Path: "/", Origin: "https://hub.test"}
+}
+
 func validClaims() mcp.GuestHandoffClaims {
 	return mcp.GuestHandoffClaims{
-		GuestHandoff: mcp.GuestHandoff{Path: "/", Hop: 1, Reader: testReader},
+		GuestHandoff: mcp.GuestHandoff{Path: "/", Hop: 1, Reader: testReader, Origin: "https://hub.test"},
 		Caller:       mcp.FederationCaller{KID: "edge"},
 		ID:           "rid-1",
 		ExpiresAt:    time.Now().Add(30 * time.Second),
@@ -48,7 +52,7 @@ func newEnv(claims mcp.GuestHandoffClaims) *EnvMock {
 func TestAnAdmittedGuestEntersAsTheSyntheticUserOfItsEdge(t *testing.T) {
 	env := newEnv(validClaims())
 
-	ticket, err := federationguest.Admit(t.Context(), env, "handoff", "/")
+	ticket, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
 
 	data, path, err := federationguest.Enter(env, ticket)
@@ -66,7 +70,7 @@ func TestAnAdmittedGuestEntersAsTheSyntheticUserOfItsEdge(t *testing.T) {
 func TestATicketOpensOneSession(t *testing.T) {
 	env := newEnv(validClaims())
 
-	ticket, err := federationguest.Admit(t.Context(), env, "handoff", "/")
+	ticket, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
 	_, _, err = federationguest.Enter(env, ticket)
 	require.NoError(t, err)
@@ -81,7 +85,12 @@ func TestAdmitRefuses(t *testing.T) {
 		claims func(*mcp.GuestHandoffClaims)
 		env    func(*EnvMock)
 		path   string
+		origin string
 	}{
+		{name: "posted from another site", origin: "https://attacker.test"},
+		{name: "posted with no Origin", origin: "-"},
+		{name: "posted with Origin null", origin: "null"},
+		{name: "signed origin is not an origin", claims: func(c *mcp.GuestHandoffClaims) { c.Origin = "" }},
 		{name: "setting off", env: func(e *EnvMock) { e.FederationGuestsEnabledFunc = func() bool { return false } }},
 		{name: "bad signature", env: func(e *EnvMock) {
 			e.VerifyGuestHandoffFunc = func(context.Context, string) (mcp.GuestHandoffClaims, error) {
@@ -106,32 +115,51 @@ func TestAdmitRefuses(t *testing.T) {
 			if tt.env != nil {
 				tt.env(env)
 			}
-			path := tt.path
-			if path == "" {
-				path = "/"
+			form := validForm()
+			if tt.path != "" {
+				form.Path = tt.path
+			}
+			switch tt.origin {
+			case "":
+			case "-":
+				form.Origin = ""
+			default:
+				form.Origin = tt.origin
 			}
 
-			_, err := federationguest.Admit(t.Context(), env, "handoff", path)
+			_, err := federationguest.Admit(t.Context(), env, form)
 			require.ErrorIs(t, err, federationguest.ErrRefused)
-			require.Empty(t, env.FederationGuestUserCalls(), "a refused handoff creates no user")
+			require.Empty(t, env.FederationGuestUserCalls(), "a refused handoff neither looks up nor creates a user")
+			require.Empty(t, env.SpendFederationGuestIDCalls(), "a refused handoff does not spend the token")
 		})
 	}
+}
+
+func TestTheOriginIsComparedNormalised(t *testing.T) {
+	claims := validClaims()
+	claims.Origin = "https://hub.test"
+	env := newEnv(claims)
+
+	form := validForm()
+	form.Origin = "HTTPS://Hub.Test:443"
+	_, err := federationguest.Admit(t.Context(), env, form)
+	require.NoError(t, err)
 }
 
 func TestAReplayedHandoffIsRefused(t *testing.T) {
 	env := newEnv(validClaims())
 
-	_, err := federationguest.Admit(t.Context(), env, "handoff", "/")
+	_, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
 
-	_, err = federationguest.Admit(t.Context(), env, "handoff", "/")
+	_, err = federationguest.Admit(t.Context(), env, validForm())
 	require.ErrorIs(t, err, federationguest.ErrRefused)
 	require.Len(t, env.FederationGuestUserCalls(), 1)
 }
 
 func TestTurningTheSettingOffRefusesAnOutstandingTicket(t *testing.T) {
 	env := newEnv(validClaims())
-	ticket, err := federationguest.Admit(t.Context(), env, "handoff", "/")
+	ticket, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
 
 	env.FederationGuestsEnabledFunc = func() bool { return false }
@@ -142,7 +170,7 @@ func TestTurningTheSettingOffRefusesAnOutstandingTicket(t *testing.T) {
 
 func TestATamperedTicketIsRefused(t *testing.T) {
 	env := newEnv(validClaims())
-	ticket, err := federationguest.Admit(t.Context(), env, "handoff", "/")
+	ticket, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)
 
 	_, _, err = federationguest.Enter(env, strings.TrimSuffix(ticket, ticket[len(ticket)-2:])+"xx")
@@ -155,7 +183,7 @@ func TestAFailureToCreateTheGuestIsNotARefusal(t *testing.T) {
 		return 0, errors.New("disk full")
 	}
 
-	_, err := federationguest.Admit(t.Context(), env, "handoff", "/")
+	_, err := federationguest.Admit(t.Context(), env, validForm())
 	require.Error(t, err)
 	require.NotErrorIs(t, err, federationguest.ErrRefused)
 }

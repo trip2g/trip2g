@@ -60,7 +60,7 @@ func TestFederationGuestAccessMatrix(t *testing.T) {
 
 		b := newBrowser()
 		token := handoffToken(t, kid, map[string]any{"sub": readerHash(kid + "@hub.test")})
-		r := b.arrive(t, peer, handoffForm(token))
+		r := b.arrive(t, peer, handoffForm(token), hubOrigin)
 		require.Equal(t, http.StatusFound, r.status, r.body)
 		m.cookies[kid] = b.cookies[peer.host]
 		names = append(names, kid)

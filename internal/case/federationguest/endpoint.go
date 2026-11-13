@@ -25,10 +25,13 @@ func (*Endpoint) Path() string   { return Path }
 func (*Endpoint) Method() string { return http.MethodPost }
 
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
-	token := string(req.Req.PostArgs().Peek("token"))
-	path := string(req.Req.PostArgs().Peek("path"))
+	form := Form{
+		Token:  string(req.Req.PostArgs().Peek("token")),
+		Path:   string(req.Req.PostArgs().Peek("path")),
+		Origin: string(req.Req.Request.Header.Peek("Origin")),
+	}
 
-	ticket, err := Admit(req.Req, req.Env.(Env), token, path)
+	ticket, err := Admit(req.Req, req.Env.(Env), form)
 	if err != nil {
 		return nil, failure(err)
 	}
