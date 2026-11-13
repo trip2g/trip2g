@@ -64,6 +64,21 @@ other = "Не удалось войти"
 [hat_failed_text]
 other = "Что-то пошло не так на нашей стороне. Попробуйте открыть ссылку ещё раз через минуту."
 
+[federation_guest_refused_title]
+other = "База знаний вас не пустила"
+
+[federation_guest_refused_text]
+other = "Вернитесь на сайт, с которого пришли, и нажмите кнопку ещё раз."
+
+[federation_handoff_refused_title]
+other = "Не удалось открыть базу знаний"
+
+[federation_handoff_refused_text]
+other = "С этой страницы туда не попасть. Вернитесь и обновите её."
+
+[kb_open]
+other = "Открыть базу знаний"
+
 [lang_read_in]
 other = "Читать на:"
 
