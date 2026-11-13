@@ -24,9 +24,33 @@ namespace $ {
 }
 
 namespace $ {
-	const {px} = $mol_style_unit
+	const {px, rem} = $mol_style_unit
 
 	$mol_style_define($trip2g_admin_dashboard_noteviewsstats, {
+		Notes_labeler: {
+			margin: {
+				top: rem(2),
+			},
+		},
+		Readers_labeler: {
+			margin: {
+				top: rem(2),
+			},
+		},
+		Sources_labeler: {
+			margin: {
+				top: rem(2),
+			},
+		},
+		Notes_head: {
+			color: $mol_theme.shade,
+		},
+		Readers_head: {
+			color: $mol_theme.shade,
+		},
+		Sources_head: {
+			color: $mol_theme.shade,
+		},
 		Chart: {
 			margin: {
 				left: px(5),

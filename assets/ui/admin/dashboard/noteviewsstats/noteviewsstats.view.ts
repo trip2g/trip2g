@@ -1,4 +1,11 @@
 namespace $.$$ {
+	export class $trip2g_admin_dashboard_noteviewsstats_ruler extends $.$trip2g_admin_dashboard_noteviewsstats_ruler {
+		// start the gridlines where the labels end so they do not strike the numbers
+		override curve() {
+			return super.curve().replace( /M 0 /g, `M ${ this.gap().x.min } ` )
+		}
+	}
+
 	export class $trip2g_admin_dashboard_noteviewsstats extends $.$trip2g_admin_dashboard_noteviewsstats {
 		@$mol_mem
 		data( reset?: null ) {
@@ -15,6 +22,11 @@ namespace $.$$ {
 
 		override day_labels() {
 			return this.data().days.map( d => `${ d.day }: ${ d.views }` )
+		}
+
+		override day_axis_labels() {
+			const lang = this.$.$mol_locale.lang()
+			return this.data().days.map( d => new Date( d.day ).toLocaleDateString( lang, { day: 'numeric', month: 'short', timeZone: 'UTC' } ) )
 		}
 
 		override note_rows() {

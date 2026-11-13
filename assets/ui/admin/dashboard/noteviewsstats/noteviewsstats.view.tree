@@ -2,6 +2,8 @@ $trip2g_admin_dashboard_noteviewsstats_name $mol_view
 
 $trip2g_admin_dashboard_noteviewsstats_num $mol_view
 
+$trip2g_admin_dashboard_noteviewsstats_ruler $mol_plot_ruler_vert
+
 $trip2g_admin_dashboard_noteviewsstats $mol_list
 	rows /
 		<= Notice $mol_view
@@ -13,13 +15,16 @@ $trip2g_admin_dashboard_noteviewsstats $mol_list
 			Content <= Chart $mol_chart
 				style *
 					height \15rem
+				Legend null
 				graphs /
 					<= Views_bars $mol_plot_bar
 						title <= views_title @ \Views
 						series_x <= day_indexes /number
 						series_y <= day_views /number
-					<= Views_ruler $mol_plot_ruler_vert
+					<= Views_ruler $trip2g_admin_dashboard_noteviewsstats_ruler
 						title \
+					<= Days_ruler $mol_plot_mark_hor
+						labels <= day_axis_labels /string
 					<= Views_cross $mol_plot_mark_cross
 						labels <= day_labels /string
 						graphs / <= Views_bars
