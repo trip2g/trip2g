@@ -64,6 +64,21 @@ other = "Couldn't sign you in"
 [hat_failed_text]
 other = "Something went wrong on our side. Try the link again in a minute."
 
+[federation_guest_refused_title]
+other = "This knowledge base didn't let you in"
+
+[federation_guest_refused_text]
+other = "Go back to the site you came from and press the button again."
+
+[federation_handoff_refused_title]
+other = "Couldn't open the knowledge base"
+
+[federation_handoff_refused_text]
+other = "This page can't send you there. Go back and reload it."
+
+[kb_open]
+other = "Open knowledge base"
+
 [lang_read_in]
 other = "Read in:"
 

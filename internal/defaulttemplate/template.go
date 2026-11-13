@@ -26,6 +26,27 @@ type HrefLang struct {
 // <link rel="alternate" type="application/rss+xml"> autodiscovery tag.
 type RSSFeedLink = model.RSSFeedLink
 
+// KBButton opens the base a KB-note points at. An anonymous reader can only be
+// on a free KB-note, and gets a plain link to the peer; a signed-in reader gets
+// a form that asks this hub to sign a handoff for them.
+type KBButton struct {
+	Site     string
+	Handoff  bool
+	NotePath string
+}
+
+func (ctx *Ctx) KBButton() *KBButton {
+	if ctx.Note == nil {
+		return nil
+	}
+	kbURL, _ := ctx.Note.M().Get("mcp_federation_kb_url").(string)
+	site, ok := model.MCPFederationSite(kbURL)
+	if !ok {
+		return nil
+	}
+	return &KBButton{Site: site, Handoff: ctx.UserToken != nil, NotePath: ctx.Note.Path()}
+}
+
 // OGTag is a single Open Graph / Twitter meta tag. It exists so the template can
 // emit ctx.OGTags in a stable (property-sorted) order — see OGTagsSorted.
 type OGTag struct {
