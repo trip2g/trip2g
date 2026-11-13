@@ -204,7 +204,15 @@ func makeAroundOperations(
 
 		if op.Operation == ast.Mutation && !onlySignOut(op.SelectionSet) {
 			if err := appreq.DenyGuest(ctx); err != nil {
-				return graphqlErr(err)
+				// Answers once: the SSE transport keeps asking until it gets nil.
+				answered := false
+				return func(ctx context.Context) *graphql.Response {
+					if answered {
+						return nil
+					}
+					answered = true
+					return graphql.ErrorResponse(ctx, "%s", err.Error())
+				}
 			}
 		}
 
