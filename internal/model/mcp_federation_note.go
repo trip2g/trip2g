@@ -71,6 +71,20 @@ func NewMCPFederationNote(n *NoteView) *MCPFederationNote {
 	}
 }
 
+// MCPFederationSite is a peer's site address, taken from its MCP endpoint by
+// dropping /_system/mcp. It holds only while the peer serves its site and its
+// MCP endpoint at one origin.
+func MCPFederationSite(kbURL string) (string, bool) {
+	parsed, err := url.Parse(strings.TrimSpace(kbURL))
+	if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" {
+		return "", false
+	}
+	if strings.TrimSuffix(parsed.Path, "/") != "/_system/mcp" {
+		return "", false
+	}
+	return parsed.Scheme + "://" + parsed.Host, true
+}
+
 func hostnameFromURL(raw string) string {
 	parsed, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {

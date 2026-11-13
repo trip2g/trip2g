@@ -118,6 +118,9 @@ type Config struct {
 	// both roles: what this instance serves to a peer and what it relays from one.
 	MCPFederationAssetMaxSize datasize.Size
 	MCPFederationAssetTimeout time.Duration
+	// FederationAcceptGuests lets a person a federated hub vouches for open a
+	// read-only guest session here, scoped to that edge's subgraphs.
+	FederationAcceptGuests bool
 
 	CronExecuteWebhooksSchedule string
 	CronTelegramPublishSchedule string
@@ -626,6 +629,8 @@ func (c *Config) defineServerFlags() {
 	)
 	flag.DurationVar(&c.MCPFederationAssetTimeout, "mcp-federation-asset-timeout", time.Minute,
 		"Time one federated_asset transfer from a peer may take, first byte to last")
+	flag.BoolVar(&c.FederationAcceptGuests, "federation-accept-guests", false,
+		"Accept people over a federation edge: a hub's signed handoff opens a read-only guest session scoped to the edge's subgraphs. Off by default.")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 	flag.BoolVar(
 		&c.SimpleBackup.BackupOnShutdown,
