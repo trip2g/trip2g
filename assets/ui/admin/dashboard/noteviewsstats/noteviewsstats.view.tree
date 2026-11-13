@@ -16,6 +16,7 @@ $trip2g_admin_dashboard_noteviewsstats $mol_list
 				style *
 					height \15rem
 				Legend null
+				gap_bottom 40
 				graphs /
 					<= Views_bars $mol_plot_bar
 						title <= views_title @ \Views
@@ -54,6 +55,7 @@ $trip2g_admin_dashboard_noteviewsstats $mol_list
 				sub / <= reader_label
 			<= Readers_head_views $trip2g_admin_dashboard_noteviewsstats_num
 				sub / <= views_label
+			<= Readers_head_pad $trip2g_admin_dashboard_noteviewsstats_num
 	Sources_head $mol_row
 		sub /
 			<= Sources_head_name $trip2g_admin_dashboard_noteviewsstats_name
@@ -90,6 +92,7 @@ $trip2g_admin_dashboard_noteviewsstats $mol_list
 						title <= reader_title* \
 			<= Reader_views* $trip2g_admin_dashboard_noteviewsstats_num
 				sub / <= reader_views* \
+			<= Reader_pad* $trip2g_admin_dashboard_noteviewsstats_num
 	Source_row* $mol_row
 		sub /
 			<= Source_name* $trip2g_admin_dashboard_noteviewsstats_name
