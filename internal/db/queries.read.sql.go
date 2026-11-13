@@ -1530,6 +1530,30 @@ func (q *Queries) DeliveryLogs(ctx context.Context, arg DeliveryLogsParams) ([]*
 	return items, nil
 }
 
+const federationGuestUser = `-- name: FederationGuestUser :one
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via from users
+ where created_via = ?
+   and email is null
+   and tg_user_id is null
+ order by id
+ limit 1
+`
+
+func (q *Queries) FederationGuestUser(ctx context.Context, createdVia string) (User, error) {
+	row := q.db.QueryRowContext(ctx, federationGuestUser, createdVia)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+		&i.TgUserID,
+		&i.CreatedVia,
+	)
+	return i, err
+}
+
 const federationSecretByID = `-- name: FederationSecretByID :one
 select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
  where id = ?

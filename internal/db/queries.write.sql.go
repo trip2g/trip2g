@@ -1379,6 +1379,26 @@ func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context,
 	return i, err
 }
 
+const insertFederationGuestUser = `-- name: InsertFederationGuestUser :one
+insert into users (created_via) values (?)
+returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
+`
+
+func (q *WriteQueries) InsertFederationGuestUser(ctx context.Context, createdVia string) (User, error) {
+	row := q.db.QueryRowContext(ctx, insertFederationGuestUser, createdVia)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+		&i.TgUserID,
+		&i.CreatedVia,
+	)
+	return i, err
+}
+
 const insertFederationSecret = `-- name: InsertFederationSecret :one
 insert into federation_secrets (kid, secret_crypt, kb_url, description, created_by)
 values (?, ?, ?, ?, ?)
