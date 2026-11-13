@@ -17,11 +17,13 @@ const GuestHandoffTTL = 30 * time.Second
 const guestHandoffUse = "guest"
 
 // GuestHandoff is what a hub vouches for when it sends a reader to a peer: the
-// page to open there, how many handoffs deep the reader is, and the reader id.
+// page to open there, how many handoffs deep the reader is, the reader id, and
+// the origin of the hub's site, whose page alone may post it.
 type GuestHandoff struct {
 	Path   string
 	Hop    int
 	Reader string
+	Origin string
 }
 
 // GuestHandoffClaims is a verified handoff together with the edge it arrived
@@ -53,6 +55,7 @@ func SignGuestHandoff(secret []byte, kid, iss string, handoff GuestHandoff) (str
 		Path: handoff.Path,
 		Hop:  handoff.Hop,
 		Sub:  handoff.Reader,
+		Org:  handoff.Origin,
 	}
 
 	headerJSON, err := json.Marshal(header)
@@ -81,10 +84,15 @@ func VerifyGuestHandoff(ctx context.Context, env FederationVerifyEnv, token stri
 	}
 
 	claims := GuestHandoffClaims{
-		GuestHandoff: GuestHandoff{Path: auth.claims.Path, Hop: auth.claims.Hop, Reader: auth.claims.Sub},
-		Caller:       FederationCaller{KID: auth.KID, AllowedSubgraphs: auth.AllowedSubgraphs},
-		ID:           auth.claims.Rid,
-		ExpiresAt:    time.Unix(auth.claims.Exp, 0),
+		GuestHandoff: GuestHandoff{
+			Path:   auth.claims.Path,
+			Hop:    auth.claims.Hop,
+			Reader: auth.claims.Sub,
+			Origin: auth.claims.Org,
+		},
+		Caller:    FederationCaller{KID: auth.KID, AllowedSubgraphs: auth.AllowedSubgraphs},
+		ID:        auth.claims.Rid,
+		ExpiresAt: time.Unix(auth.claims.Exp, 0),
 	}
 	return claims, nil
 }

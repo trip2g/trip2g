@@ -71,18 +71,47 @@ func NewMCPFederationNote(n *NoteView) *MCPFederationNote {
 	}
 }
 
+const (
+	schemeHTTP  = "http"
+	schemeHTTPS = "https"
+)
+
 // MCPFederationSite is a peer's site address, taken from its MCP endpoint by
 // dropping /_system/mcp. It holds only while the peer serves its site and its
 // MCP endpoint at one origin.
 func MCPFederationSite(kbURL string) (string, bool) {
 	parsed, err := url.Parse(strings.TrimSpace(kbURL))
-	if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" {
+	if err != nil || (parsed.Scheme != schemeHTTPS && parsed.Scheme != schemeHTTP) || parsed.Host == "" {
 		return "", false
 	}
 	if strings.TrimSuffix(parsed.Path, "/") != "/_system/mcp" {
 		return "", false
 	}
 	return parsed.Scheme + "://" + parsed.Host, true
+}
+
+// SiteOrigin is the origin of a site URL, as a browser writes it in Origin:
+// lower-case scheme and host, the port only when it is not the default. The
+// path is dropped. "null" and anything but http(s) are not origins.
+func SiteOrigin(raw string) (string, bool) {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || parsed.Host == "" {
+		return "", false
+	}
+	scheme := strings.ToLower(parsed.Scheme)
+	port := parsed.Port()
+	switch {
+	case scheme == schemeHTTPS && port == "443", scheme == schemeHTTP && port == "80":
+		port = ""
+	case scheme != schemeHTTPS && scheme != schemeHTTP:
+		return "", false
+	}
+
+	origin := scheme + "://" + strings.ToLower(parsed.Hostname())
+	if port != "" {
+		origin += ":" + port
+	}
+	return origin, true
 }
 
 func hostnameFromURL(raw string) string {
