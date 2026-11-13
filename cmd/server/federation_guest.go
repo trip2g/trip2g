@@ -90,22 +90,27 @@ func (a *app) guestScope(ctx context.Context, token *usertoken.Data) []string {
 	return subgraphs
 }
 
-// guestWritablePaths are the non-GET paths a guest's request still reaches:
+// guestMayPost names the non-GET paths a guest's request still reaches:
 // GraphQL refuses its mutations itself, and the two handoff legs are how a
 // guest moves on.
-var guestWritablePaths = []string{"/_system/graphql", "/graphql", federationhandoff.Path, federationguest.Path}
+func guestMayPost(path string) bool {
+	for _, allowed := range []string{"/_system/graphql", "/graphql", federationhandoff.Path, federationguest.Path} {
+		if path == allowed || strings.HasPrefix(path, allowed+"/") {
+			return true
+		}
+	}
+	return false
+}
 
 // denyGuestWrites answers every request a guest makes with a method that can
-// change something, outside guestWritablePaths, with 403.
+// change something, outside guestMayPost, with 403.
 func (a *app) denyGuestWrites(req *appreq.Request) bool {
 	switch string(req.Req.Method()) {
 	case http.MethodGet, http.MethodHead, http.MethodOptions:
 		return false
 	}
-	for _, path := range guestWritablePaths {
-		if req.Path == path || strings.HasPrefix(req.Path, path+"/") {
-			return false
-		}
+	if guestMayPost(req.Path) {
+		return false
 	}
 
 	if err := appreq.DenyGuest(req.Req); err != nil {
