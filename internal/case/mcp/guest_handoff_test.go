@@ -19,7 +19,7 @@ func guestHandoffEnv(secret []byte) federationVerifyEnvMock {
 
 func TestAGuestHandoffVerifiesWithTheEdgeSecret(t *testing.T) {
 	secret := []byte("12345678901234567890123456789012")
-	handoff := GuestHandoff{Path: "/", Hop: 1, Reader: "abc"}
+	handoff := GuestHandoff{Path: "/", Hop: 1, Reader: "abc", Origin: "https://hub.test"}
 
 	token, err := SignGuestHandoff(secret, "edge", "https://hub.test", handoff)
 	require.NoError(t, err)

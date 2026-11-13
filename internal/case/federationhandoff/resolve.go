@@ -81,6 +81,12 @@ func Resolve(ctx context.Context, env Env, notePath string) (Handoff, error) {
 		return Handoff{}, fmt.Errorf("%w: no site address in %q", ErrRefused, kb.URL)
 	}
 
+	// The peer accepts the handoff only from a page at this origin.
+	origin, ok := model.SiteOrigin(env.PublicURL())
+	if !ok {
+		return Handoff{}, fmt.Errorf("%w: no public URL to sign as this site's origin", ErrRefused)
+	}
+
 	reader, hop, err := readerAndHop(ctx, env, token)
 	if err != nil {
 		return Handoff{}, err
@@ -97,7 +103,8 @@ func Resolve(ctx context.Context, env Env, notePath string) (Handoff, error) {
 		return Handoff{}, fmt.Errorf("%w: no outbound key for %q", ErrRefused, kb.ID)
 	}
 
-	signed, err := mcp.SignGuestHandoff(peer.Secret, peer.KID, peer.Issuer, mcp.GuestHandoff{Path: targetPath, Hop: hop, Reader: reader})
+	handoff := mcp.GuestHandoff{Path: targetPath, Hop: hop, Reader: reader, Origin: origin}
+	signed, err := mcp.SignGuestHandoff(peer.Secret, peer.KID, peer.Issuer, handoff)
 	if err != nil {
 		return Handoff{}, err
 	}

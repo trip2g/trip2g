@@ -34,7 +34,9 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	req.Req.SetStatusCode(http.StatusOK)
 	req.Req.SetContentType("text/html; charset=utf-8")
 	req.Req.Response.Header.Set("Cache-Control", "no-store")
-	req.Req.Response.Header.Set("Referrer-Policy", "no-referrer")
+	// Not no-referrer: under it a browser sends the form's POST with Origin:
+	// null, and the peer accepts the handoff only from this site's origin.
+	req.Req.Response.Header.Set("Referrer-Policy", "strict-origin")
 	req.Req.SetBodyString(`<!doctype html>
 <html><head><meta charset="utf-8"><title>…</title></head>
 <body>

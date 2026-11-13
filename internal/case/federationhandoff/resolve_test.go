@@ -73,7 +73,7 @@ func TestASignedInReaderIsHandedToThePeerTheNoteNames(t *testing.T) {
 	require.Equal(t, "/", got.Path)
 
 	claims := verified(t, got.Token)
-	want := mcp.GuestHandoff{Path: "/", Hop: 1, Reader: sha("reader@example.com")}
+	want := mcp.GuestHandoff{Path: "/", Hop: 1, Reader: sha("reader@example.com"), Origin: "https://hub.test"}
 	require.Equal(t, want, claims.GuestHandoff)
 	require.Equal(t, "edge", claims.Caller.KID)
 }
@@ -93,7 +93,8 @@ func TestAGuestIsForwardedWithTheReaderItArrivedWithOneHopDeeper(t *testing.T) {
 
 	got, err := federationhandoff.Resolve(t.Context(), env, "peer.md")
 	require.NoError(t, err)
-	require.Equal(t, mcp.GuestHandoff{Path: "/", Hop: 2, Reader: reader}, verified(t, got.Token).GuestHandoff)
+	want := mcp.GuestHandoff{Path: "/", Hop: 2, Reader: reader, Origin: "https://hub.test"}
+	require.Equal(t, want, verified(t, got.Token).GuestHandoff, "the origin is this hub's, not the one the guest came from")
 	require.Empty(t, env.UserByIDCalls(), "a guest's own row says nothing about who the reader is")
 }
 
@@ -114,6 +115,9 @@ func TestResolveRefuses(t *testing.T) {
 			e.FederationGuestPeerFunc = func(_ context.Context, kbID string) (model.FederationPeer, error) {
 				return model.FederationPeer{KBID: kbID, KBURL: kbURL}, nil
 			}
+		}},
+		{name: "hub without a public URL to sign as its origin", token: &usertoken.Data{ID: 5, Role: "user"}, note: "peer.md", env: func(e *EnvMock) {
+			e.PublicURLFunc = func() string { return "" }
 		}},
 		{
 			name:  "guest already at the depth limit",

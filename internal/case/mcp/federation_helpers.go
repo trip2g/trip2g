@@ -102,6 +102,8 @@ type federationJWTClaims struct {
 	Path string `json:"path,omitempty"`
 	Hop  int    `json:"hop,omitempty"`
 	Sub  string `json:"sub,omitempty"`
+	// Org is the origin of the site whose page posts a guest handoff.
+	Org string `json:"org,omitempty"`
 }
 
 func signOutbound(secret []byte, kid, iss, rid string, body []byte) (string, error) {
