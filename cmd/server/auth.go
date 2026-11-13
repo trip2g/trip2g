@@ -25,6 +25,12 @@ import (
 
 func (a *app) setTokenValidator() {
 	a.tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
+		if data.IsFederationGuest() {
+			if guestErr := a.validateFederationGuest(ctx, data); guestErr != nil {
+				return guestErr
+			}
+		}
+
 		ban, banErr := a.UserBanByUserID(ctx, int64(data.ID))
 		if banErr != nil {
 			return fmt.Errorf("failed to get user ban: %w", banErr)
@@ -393,5 +399,13 @@ func (a *app) CurrentFederatedScope(ctx context.Context) ([]string, bool) {
 	if err != nil {
 		return nil, false
 	}
-	return req.FederatedScope()
+	if allowed, ok := req.FederatedScope(); ok {
+		return allowed, true
+	}
+
+	token, err := req.UserToken()
+	if err != nil || !token.IsFederationGuest() {
+		return nil, false
+	}
+	return a.guestScope(ctx, token), true
 }

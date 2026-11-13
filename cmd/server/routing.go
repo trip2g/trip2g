@@ -205,6 +205,7 @@ func (a *app) prepareMiddlewares() []Middleware {
 			a.replicaForwarder.Forward(req.Req)
 			return true
 		},
+		a.denyGuestWrites,
 		a.handleSitemap,
 		func(req *appreq.Request) bool {
 			return a.handleCors(req.Req)
