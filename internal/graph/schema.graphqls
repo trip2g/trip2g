@@ -1274,6 +1274,40 @@ type AdminStorageUsage {
   assets: AdminStorageEntry!
 }
 
+type AdminNoteViewsDay {
+  day: String!
+  views: Int64!
+}
+
+type AdminNoteViewsNote {
+  pathId: Int64!
+  path: String!
+  views: Int64!
+  readers: Int64!
+  "Latest version of the note, null when it is hidden or gone."
+  note: NoteView @goField(forceResolver: true)
+}
+
+type AdminNoteViewsReader {
+  userId: Int64!
+  email: String
+  views: Int64!
+}
+
+type AdminNoteViewsSource {
+  createdVia: String!
+  views: Int64!
+  readers: Int64!
+}
+
+"Views of signed-in readers over the last 30 days. Anonymous views are not recorded."
+type AdminNoteViewsStats {
+  days: [AdminNoteViewsDay!]!
+  topNotes: [AdminNoteViewsNote!]!
+  topReaders: [AdminNoteViewsReader!]!
+  bySource: [AdminNoteViewsSource!]!
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -1387,6 +1421,7 @@ type AdminQuery {
   frontmatterPatch(id: Int64!): AdminFrontmatterPatch
 
   storageUsage: AdminStorageUsage!
+  noteViewsStats: AdminNoteViewsStats!
 
   formSubmits(filter: AdminFormSubmitsFilterInput): AdminFormSubmitsConnection!
   formNotes: [AdminFormNote!]!

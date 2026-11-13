@@ -862,6 +862,40 @@ type AdminNoteVersionMeta struct {
 	CreatedAt     time.Time `json:"createdAt"`
 }
 
+type AdminNoteViewsDay struct {
+	Day   string `json:"day"`
+	Views int64  `json:"views"`
+}
+
+type AdminNoteViewsNote struct {
+	PathID  int64  `json:"pathId"`
+	Path    string `json:"path"`
+	Views   int64  `json:"views"`
+	Readers int64  `json:"readers"`
+	// Latest version of the note, null when it is hidden or gone.
+	Note *model.NoteView `json:"note,omitempty"`
+}
+
+type AdminNoteViewsReader struct {
+	UserID int64   `json:"userId"`
+	Email  *string `json:"email,omitempty"`
+	Views  int64   `json:"views"`
+}
+
+type AdminNoteViewsSource struct {
+	CreatedVia string `json:"createdVia"`
+	Views      int64  `json:"views"`
+	Readers    int64  `json:"readers"`
+}
+
+// Views of signed-in readers over the last 30 days. Anonymous views are not recorded.
+type AdminNoteViewsStats struct {
+	Days       []AdminNoteViewsDay    `json:"days"`
+	TopNotes   []AdminNoteViewsNote   `json:"topNotes"`
+	TopReaders []AdminNoteViewsReader `json:"topReaders"`
+	BySource   []AdminNoteViewsSource `json:"bySource"`
+}
+
 type AdminOIDCCredentialsConnection struct {
 	Nodes []db.OidcCredential `json:"nodes"`
 }

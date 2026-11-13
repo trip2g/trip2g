@@ -94,6 +94,7 @@ type ResolverRoot interface {
 	AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver
 	AdminNoteAsset() AdminNoteAssetResolver
 	AdminNoteVersionHistoryConnection() AdminNoteVersionHistoryConnectionResolver
+	AdminNoteViewsNote() AdminNoteViewsNoteResolver
 	AdminOIDCCredentials() AdminOIDCCredentialsResolver
 	AdminOIDCCredentialsConnection() AdminOIDCCredentialsConnectionResolver
 	AdminOffer() AdminOfferResolver
@@ -497,6 +498,9 @@ type AdminNoteVersionHistoryConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) ([]model.AdminNoteVersionMeta, error)
 	TotalCount(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) (int32, error)
 }
+type AdminNoteViewsNoteResolver interface {
+	Note(ctx context.Context, obj *model.AdminNoteViewsNote) (*model1.NoteView, error)
+}
 type AdminOIDCCredentialsResolver interface {
 	CreatedBy(ctx context.Context, obj *db.OidcCredential) (*db.User, error)
 }
@@ -621,6 +625,7 @@ type AdminQueryResolver interface {
 	AllFrontmatterPatches(ctx context.Context, obj *model1.AdminQuery) (*model.AdminFrontmatterPatchesConnection, error)
 	FrontmatterPatch(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.NoteFrontmatterPatch, error)
 	StorageUsage(ctx context.Context, obj *model1.AdminQuery) (*model.AdminStorageUsage, error)
+	NoteViewsStats(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNoteViewsStats, error)
 	FormSubmits(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminFormSubmitsFilterInput) (*model.AdminFormSubmitsConnection, error)
 	FormNotes(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminFormNote, error)
 	UnprocessedFormSubmitsCount(ctx context.Context, obj *model1.AdminQuery) (int32, error)
@@ -2504,6 +2509,40 @@ type AdminStorageUsage {
   assets: AdminStorageEntry!
 }
 
+type AdminNoteViewsDay {
+  day: String!
+  views: Int64!
+}
+
+type AdminNoteViewsNote {
+  pathId: Int64!
+  path: String!
+  views: Int64!
+  readers: Int64!
+  "Latest version of the note, null when it is hidden or gone."
+  note: NoteView @goField(forceResolver: true)
+}
+
+type AdminNoteViewsReader {
+  userId: Int64!
+  email: String
+  views: Int64!
+}
+
+type AdminNoteViewsSource {
+  createdVia: String!
+  views: Int64!
+  readers: Int64!
+}
+
+"Views of signed-in readers over the last 30 days. Anonymous views are not recorded."
+type AdminNoteViewsStats {
+  days: [AdminNoteViewsDay!]!
+  topNotes: [AdminNoteViewsNote!]!
+  topReaders: [AdminNoteViewsReader!]!
+  bySource: [AdminNoteViewsSource!]!
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -2617,6 +2656,7 @@ type AdminQuery {
   frontmatterPatch(id: Int64!): AdminFrontmatterPatch
 
   storageUsage: AdminStorageUsage!
+  noteViewsStats: AdminNoteViewsStats!
 
   formSubmits(filter: AdminFormSubmitsFilterInput): AdminFormSubmitsConnection!
   formNotes: [AdminFormNote!]!
@@ -21109,6 +21149,575 @@ func (ec *executionContext) fieldContext_AdminNoteVersionMeta_createdAt(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminNoteViewsDay_day(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsDay) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsDay_day,
+		func(ctx context.Context) (any, error) {
+			return obj.Day, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsDay_day(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsDay",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsDay_views(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsDay) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsDay_views,
+		func(ctx context.Context) (any, error) {
+			return obj.Views, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsDay_views(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsDay",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsNote_pathId(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsNote_pathId,
+		func(ctx context.Context) (any, error) {
+			return obj.PathID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsNote_pathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsNote_path(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsNote_path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsNote_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsNote_views(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsNote_views,
+		func(ctx context.Context) (any, error) {
+			return obj.Views, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsNote_views(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsNote_readers(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsNote_readers,
+		func(ctx context.Context) (any, error) {
+			return obj.Readers, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsNote_readers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsNote_note(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsNote_note,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminNoteViewsNote().Note(ctx, obj)
+		},
+		nil,
+		ec.marshalONoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsNote_note(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
+			case "warnings":
+				return ec.fieldContext_NoteView_warnings(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
+			case "isHomePage":
+				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsReader_userId(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsReader) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsReader_userId,
+		func(ctx context.Context) (any, error) {
+			return obj.UserID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsReader_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsReader",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsReader_email(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsReader) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsReader_email,
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsReader_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsReader",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsReader_views(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsReader) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsReader_views,
+		func(ctx context.Context) (any, error) {
+			return obj.Views, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsReader_views(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsReader",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsSource_createdVia(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsSource) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsSource_createdVia,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedVia, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsSource_createdVia(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsSource_views(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsSource) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsSource_views,
+		func(ctx context.Context) (any, error) {
+			return obj.Views, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsSource_views(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsSource_readers(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsSource) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsSource_readers,
+		func(ctx context.Context) (any, error) {
+			return obj.Readers, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsSource_readers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsStats_days(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsStats_days,
+		func(ctx context.Context) (any, error) {
+			return obj.Days, nil
+		},
+		nil,
+		ec.marshalNAdminNoteViewsDay2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsDayᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsStats_days(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "day":
+				return ec.fieldContext_AdminNoteViewsDay_day(ctx, field)
+			case "views":
+				return ec.fieldContext_AdminNoteViewsDay_views(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteViewsDay", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsStats_topNotes(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsStats_topNotes,
+		func(ctx context.Context) (any, error) {
+			return obj.TopNotes, nil
+		},
+		nil,
+		ec.marshalNAdminNoteViewsNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsNoteᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsStats_topNotes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "pathId":
+				return ec.fieldContext_AdminNoteViewsNote_pathId(ctx, field)
+			case "path":
+				return ec.fieldContext_AdminNoteViewsNote_path(ctx, field)
+			case "views":
+				return ec.fieldContext_AdminNoteViewsNote_views(ctx, field)
+			case "readers":
+				return ec.fieldContext_AdminNoteViewsNote_readers(ctx, field)
+			case "note":
+				return ec.fieldContext_AdminNoteViewsNote_note(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteViewsNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsStats_topReaders(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsStats_topReaders,
+		func(ctx context.Context) (any, error) {
+			return obj.TopReaders, nil
+		},
+		nil,
+		ec.marshalNAdminNoteViewsReader2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsReaderᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsStats_topReaders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "userId":
+				return ec.fieldContext_AdminNoteViewsReader_userId(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminNoteViewsReader_email(ctx, field)
+			case "views":
+				return ec.fieldContext_AdminNoteViewsReader_views(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteViewsReader", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteViewsStats_bySource(ctx context.Context, field graphql.CollectedField, obj *model.AdminNoteViewsStats) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteViewsStats_bySource,
+		func(ctx context.Context) (any, error) {
+			return obj.BySource, nil
+		},
+		nil,
+		ec.marshalNAdminNoteViewsSource2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsSourceᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteViewsStats_bySource(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteViewsStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "createdVia":
+				return ec.fieldContext_AdminNoteViewsSource_createdVia(ctx, field)
+			case "views":
+				return ec.fieldContext_AdminNoteViewsSource_views(ctx, field)
+			case "readers":
+				return ec.fieldContext_AdminNoteViewsSource_readers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteViewsSource", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminOIDCCredentials_id(ctx context.Context, field graphql.CollectedField, obj *db.OidcCredential) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27065,6 +27674,45 @@ func (ec *executionContext) fieldContext_AdminQuery_storageUsage(_ context.Conte
 				return ec.fieldContext_AdminStorageUsage_assets(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminStorageUsage", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_noteViewsStats(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_noteViewsStats,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().NoteViewsStats(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminNoteViewsStats2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsStats,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_noteViewsStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "days":
+				return ec.fieldContext_AdminNoteViewsStats_days(ctx, field)
+			case "topNotes":
+				return ec.fieldContext_AdminNoteViewsStats_topNotes(ctx, field)
+			case "topReaders":
+				return ec.fieldContext_AdminNoteViewsStats_topReaders(ctx, field)
+			case "bySource":
+				return ec.fieldContext_AdminNoteViewsStats_bySource(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteViewsStats", field.Name)
 		},
 	}
 	return fc, nil
@@ -41373,6 +42021,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_frontmatterPatch(ctx, field)
 			case "storageUsage":
 				return ec.fieldContext_AdminQuery_storageUsage(ctx, field)
+			case "noteViewsStats":
+				return ec.fieldContext_AdminQuery_noteViewsStats(ctx, field)
 			case "formSubmits":
 				return ec.fieldContext_AdminQuery_formSubmits(ctx, field)
 			case "formNotes":
@@ -68353,6 +69003,286 @@ func (ec *executionContext) _AdminNoteVersionMeta(ctx context.Context, sel ast.S
 	return out
 }
 
+var adminNoteViewsDayImplementors = []string{"AdminNoteViewsDay"}
+
+func (ec *executionContext) _AdminNoteViewsDay(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNoteViewsDay) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteViewsDayImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteViewsDay")
+		case "day":
+			out.Values[i] = ec._AdminNoteViewsDay_day(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "views":
+			out.Values[i] = ec._AdminNoteViewsDay_views(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNoteViewsNoteImplementors = []string{"AdminNoteViewsNote"}
+
+func (ec *executionContext) _AdminNoteViewsNote(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNoteViewsNote) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteViewsNoteImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteViewsNote")
+		case "pathId":
+			out.Values[i] = ec._AdminNoteViewsNote_pathId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "path":
+			out.Values[i] = ec._AdminNoteViewsNote_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "views":
+			out.Values[i] = ec._AdminNoteViewsNote_views(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "readers":
+			out.Values[i] = ec._AdminNoteViewsNote_readers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "note":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNoteViewsNote_note(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNoteViewsReaderImplementors = []string{"AdminNoteViewsReader"}
+
+func (ec *executionContext) _AdminNoteViewsReader(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNoteViewsReader) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteViewsReaderImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteViewsReader")
+		case "userId":
+			out.Values[i] = ec._AdminNoteViewsReader_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "email":
+			out.Values[i] = ec._AdminNoteViewsReader_email(ctx, field, obj)
+		case "views":
+			out.Values[i] = ec._AdminNoteViewsReader_views(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNoteViewsSourceImplementors = []string{"AdminNoteViewsSource"}
+
+func (ec *executionContext) _AdminNoteViewsSource(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNoteViewsSource) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteViewsSourceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteViewsSource")
+		case "createdVia":
+			out.Values[i] = ec._AdminNoteViewsSource_createdVia(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "views":
+			out.Values[i] = ec._AdminNoteViewsSource_views(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "readers":
+			out.Values[i] = ec._AdminNoteViewsSource_readers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNoteViewsStatsImplementors = []string{"AdminNoteViewsStats"}
+
+func (ec *executionContext) _AdminNoteViewsStats(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNoteViewsStats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteViewsStatsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteViewsStats")
+		case "days":
+			out.Values[i] = ec._AdminNoteViewsStats_days(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "topNotes":
+			out.Values[i] = ec._AdminNoteViewsStats_topNotes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "topReaders":
+			out.Values[i] = ec._AdminNoteViewsStats_topReaders(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "bySource":
+			out.Values[i] = ec._AdminNoteViewsStats_bySource(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminOIDCCredentialsImplementors = []string{"AdminOIDCCredentials"}
 
 func (ec *executionContext) _AdminOIDCCredentials(ctx context.Context, sel ast.SelectionSet, obj *db.OidcCredential) graphql.Marshaler {
@@ -72480,6 +73410,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_storageUsage(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "noteViewsStats":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_noteViewsStats(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -89432,6 +90398,212 @@ func (ec *executionContext) marshalNAdminNoteVersionMeta2ᚕtrip2gᚋinternalᚋ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsDay2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsDay(ctx context.Context, sel ast.SelectionSet, v model.AdminNoteViewsDay) graphql.Marshaler {
+	return ec._AdminNoteViewsDay(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsDay2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsDayᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminNoteViewsDay) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminNoteViewsDay2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsDay(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsNote2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsNote(ctx context.Context, sel ast.SelectionSet, v model.AdminNoteViewsNote) graphql.Marshaler {
+	return ec._AdminNoteViewsNote(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsNoteᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminNoteViewsNote) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminNoteViewsNote2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsNote(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsReader2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsReader(ctx context.Context, sel ast.SelectionSet, v model.AdminNoteViewsReader) graphql.Marshaler {
+	return ec._AdminNoteViewsReader(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsReader2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsReaderᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminNoteViewsReader) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminNoteViewsReader2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsReader(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsSource2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsSource(ctx context.Context, sel ast.SelectionSet, v model.AdminNoteViewsSource) graphql.Marshaler {
+	return ec._AdminNoteViewsSource(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsSource2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsSourceᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminNoteViewsSource) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminNoteViewsSource2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsSource(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsStats2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsStats(ctx context.Context, sel ast.SelectionSet, v model.AdminNoteViewsStats) graphql.Marshaler {
+	return ec._AdminNoteViewsStats(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNoteViewsStats2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNoteViewsStats(ctx context.Context, sel ast.SelectionSet, v *model.AdminNoteViewsStats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminNoteViewsStats(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminOIDCCredentials2trip2gᚋinternalᚋdbᚐOidcCredential(ctx context.Context, sel ast.SelectionSet, v db.OidcCredential) graphql.Marshaler {

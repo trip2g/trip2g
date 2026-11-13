@@ -1,0 +1,103 @@
+$trip2g_admin_dashboard_noteviewsstats_name $mol_view
+
+$trip2g_admin_dashboard_noteviewsstats_num $mol_view
+
+$trip2g_admin_dashboard_noteviewsstats $mol_list
+	rows /
+		<= Notice $mol_view
+			style *
+				padding \.5rem .75rem
+			sub / <= notice @ \Signed-in readers, last 30 days. Anonymous views are not recorded.
+		<= Days_labeler $mol_labeler
+			title @ \Views per day
+			Content <= Chart $mol_chart
+				style *
+					height \15rem
+				graphs /
+					<= Views_bars $mol_plot_bar
+						title <= views_title @ \Views
+						series_x <= day_indexes /number
+						series_y <= day_views /number
+					<= Views_ruler $mol_plot_ruler_vert
+						title \
+					<= Views_cross $mol_plot_mark_cross
+						labels <= day_labels /string
+						graphs / <= Views_bars
+		<= Notes_labeler $mol_labeler
+			title @ \Top notes
+			Content <= Notes_table $mol_list
+				rows <= note_rows /$mol_view
+		<= Readers_labeler $mol_labeler
+			title @ \Top readers
+			Content <= Readers_table $mol_list
+				rows <= reader_rows /$mol_view
+		<= Sources_labeler $mol_labeler
+			title @ \Views by sign-up source
+			Content <= Sources_table $mol_list
+				rows <= source_rows /$mol_view
+	Notes_head $mol_row
+		sub /
+			<= Notes_head_name $trip2g_admin_dashboard_noteviewsstats_name
+				sub / <= note_label
+			<= Notes_head_views $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= views_label
+			<= Notes_head_readers $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= readers_label
+	Readers_head $mol_row
+		sub /
+			<= Readers_head_name $trip2g_admin_dashboard_noteviewsstats_name
+				sub / <= reader_label
+			<= Readers_head_views $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= views_label
+	Sources_head $mol_row
+		sub /
+			<= Sources_head_name $trip2g_admin_dashboard_noteviewsstats_name
+				sub / <= source_label
+			<= Sources_head_views $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= views_label
+			<= Sources_head_readers $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= readers_label
+	Note_row* $mol_row
+		sub /
+			<= Note_name* $trip2g_admin_dashboard_noteviewsstats_name
+				sub / <= Note_cell* $mol_view
+			<= Note_views* $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= note_views* \
+			<= Note_readers* $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= note_readers* \
+	Note_link* $mol_link
+		arg *
+			nav \content
+			content_nav \noteviews
+			path <= note_id* \
+		title <= note_title* \
+	Note_plain* $mol_view
+		sub / <= note_title* \
+	Reader_row* $mol_row
+		sub /
+			<= Reader_name* $trip2g_admin_dashboard_noteviewsstats_name
+				sub /
+					<= Reader_link* $mol_link
+						arg *
+							nav \users
+							users_nav \users
+							id <= reader_id* \
+						title <= reader_title* \
+			<= Reader_views* $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= reader_views* \
+	Source_row* $mol_row
+		sub /
+			<= Source_name* $trip2g_admin_dashboard_noteviewsstats_name
+				sub / <= source_name* \
+			<= Source_views* $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= source_views* \
+			<= Source_readers* $trip2g_admin_dashboard_noteviewsstats_num
+				sub / <= source_readers* \
+	Empty $mol_view
+		sub / <= empty_label @ \No views yet
+	note_label @ \Note
+	reader_label @ \Reader
+	source_label @ \Source
+	views_label @ \Views
+	readers_label @ \Readers
+	reader_fallback @ \User

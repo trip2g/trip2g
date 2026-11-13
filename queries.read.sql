@@ -1674,3 +1674,45 @@ select version_id, chart_hash, data_json, fetched_at, last_error, last_error_at
 select
   cast(coalesce((select max(id) from note_versions), 0) as integer) as version_gen,
   cast((select count(*) from note_paths where hidden_by is not null) as integer) as hidden_count;
+
+-- name: NoteViewsPerDay :many
+select cast(date(created_at) as text) as day,
+       count(*) as views
+  from user_note_views
+ where created_at >= date('now', '-29 days')
+ group by 1
+ order by 1;
+
+-- name: TopViewedNotes :many
+select np.id as path_id,
+       np.value as path,
+       count(*) as views,
+       count(distinct unv.user_id) as readers
+  from user_note_views unv
+  join note_versions nv on nv.id = unv.version_id
+  join note_paths np on np.id = nv.path_id
+ where unv.created_at >= date('now', '-29 days')
+ group by np.id
+ order by views desc, np.id
+ limit 10;
+
+-- name: TopNoteReaders :many
+select u.id as user_id,
+       u.email,
+       count(*) as views
+  from user_note_views unv
+  join users u on u.id = unv.user_id
+ where unv.created_at >= date('now', '-29 days')
+ group by u.id
+ order by views desc, u.id
+ limit 10;
+
+-- name: NoteViewsByCreatedVia :many
+select u.created_via,
+       count(*) as views,
+       count(distinct unv.user_id) as readers
+  from user_note_views unv
+  join users u on u.id = unv.user_id
+ where unv.created_at >= date('now', '-29 days')
+ group by u.created_via
+ order by views desc, u.created_via;

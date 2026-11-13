@@ -57,6 +57,7 @@ import (
 	"trip2g/internal/case/admin/listsecretkeys"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/markformsubmitprocessed"
+	"trip2g/internal/case/admin/noteviewsstats"
 	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
 	"trip2g/internal/case/admin/regeneratenoteembeddings"
 	"trip2g/internal/case/admin/regeneratewebhooksecret"
@@ -342,6 +343,7 @@ type Env interface {
 	listactiveusersubgraphs.Env
 	updatecronjob.Env
 	runcronjob.Env
+	noteviewsstats.Env
 	sitesearch.Env
 	similarnotes.Env
 	settgchatpublishtags.Env
