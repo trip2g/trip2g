@@ -113,6 +113,14 @@ select * from users where email = lower(?);
 -- name: UserByID :one
 select * from users where id = ?;
 
+-- name: FederationGuestUser :one
+select * from users
+ where created_via = ?
+   and email is null
+   and tg_user_id is null
+ order by id
+ limit 1;
+
 -- name: CountActiveSignInCodes :one
 select count(*) from sign_in_codes
  where user_id = ?
