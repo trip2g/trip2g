@@ -1,0 +1,64 @@
+$trip2g_admin_dashboard_noteviewsstats $mol_list
+	rows /
+		<= Notice $mol_view
+			sub / <= notice @ \Signed-in readers, last 30 days. Anonymous views are not recorded.
+		<= Days_section $mol_section
+			title @ \Views per day
+			content /
+				<= Chart $mol_chart
+					graphs /
+						<= Views_bars $mol_plot_bar
+							title <= views_title @ \Views
+							series_x <= day_indexes /number
+							series_y <= day_views /number
+						<= Views_ruler $mol_plot_ruler_vert
+							title \
+						<= Views_cross $mol_plot_mark_cross
+							labels <= day_labels /string
+							graphs / <= Views_bars
+		<= Notes_section $mol_section
+			title @ \Top notes
+			content / <= Notes_list $mol_list
+				rows <= note_rows /$mol_view
+		<= Readers_section $mol_section
+			title @ \Top readers
+			content / <= Readers_list $mol_list
+				rows <= reader_rows /$mol_view
+		<= Sources_section $mol_section
+			title @ \Views by sign-up source
+			content / <= Sources_list $mol_list
+				rows <= source_rows /$mol_view
+	Note_row* $mol_row
+		sub /
+			<= Note_cell* $mol_view
+			<= Note_stat* $mol_view
+				sub / <= note_stat* \
+	Note_link* $mol_link
+		arg *
+			nav \content
+			content_nav \noteviews
+			path <= note_id* \
+		title <= note_title* \
+	Note_plain* $mol_view
+		sub / <= note_title* \
+	Reader_row* $mol_row
+		sub /
+			<= Reader_link* $mol_link
+				arg *
+					nav \users
+					users_nav \users
+					id <= reader_id* \
+				title <= reader_title* \
+			<= Reader_stat* $mol_view
+				sub / <= reader_stat* \
+	Source_row* $mol_row
+		sub /
+			<= Source_name* $mol_view
+				sub / <= source_name* \
+			<= Source_stat* $mol_view
+				sub / <= source_stat* \
+	Empty $mol_view
+		sub / <= empty_label @ \No views yet
+	views_label @ \views
+	readers_label @ \readers
+	reader_fallback @ \User

@@ -1,0 +1,30 @@
+query {
+	admin {
+		noteViewsStats {
+			days {
+				day
+				views
+			}
+			topNotes {
+				pathId
+				path
+				views
+				readers
+				note {
+					id
+					title
+				}
+			}
+			topReaders {
+				userId
+				email
+				views
+			}
+			bySource {
+				createdVia
+				views
+				readers
+			}
+		}
+	}
+}

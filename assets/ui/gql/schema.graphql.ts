@@ -1304,6 +1304,45 @@ export type AdminNoteVersionMeta = {
   versionId: Scalars['Int64']['output'];
 };
 
+export type AdminNoteViewsDay = {
+  __typename?: 'AdminNoteViewsDay';
+  day: Scalars['String']['output'];
+  views: Scalars['Int64']['output'];
+};
+
+export type AdminNoteViewsNote = {
+  __typename?: 'AdminNoteViewsNote';
+  /** Latest version of the note, null when it is hidden or gone. */
+  note?: Maybe<NoteView>;
+  path: Scalars['String']['output'];
+  pathId: Scalars['Int64']['output'];
+  readers: Scalars['Int64']['output'];
+  views: Scalars['Int64']['output'];
+};
+
+export type AdminNoteViewsReader = {
+  __typename?: 'AdminNoteViewsReader';
+  email?: Maybe<Scalars['String']['output']>;
+  userId: Scalars['Int64']['output'];
+  views: Scalars['Int64']['output'];
+};
+
+export type AdminNoteViewsSource = {
+  __typename?: 'AdminNoteViewsSource';
+  createdVia: Scalars['String']['output'];
+  readers: Scalars['Int64']['output'];
+  views: Scalars['Int64']['output'];
+};
+
+/** Views of signed-in readers over the last 30 days. Anonymous views are not recorded. */
+export type AdminNoteViewsStats = {
+  __typename?: 'AdminNoteViewsStats';
+  bySource: Array<AdminNoteViewsSource>;
+  days: Array<AdminNoteViewsDay>;
+  topNotes: Array<AdminNoteViewsNote>;
+  topReaders: Array<AdminNoteViewsReader>;
+};
+
 export type AdminOIDCCredentials = {
   __typename?: 'AdminOIDCCredentials';
   active: Scalars['Boolean']['output'];
@@ -1495,6 +1534,7 @@ export type AdminQuery = {
   noteVersionDiff?: Maybe<NoteVersionDiff>;
   noteVersionHistory: AdminNoteVersionHistoryConnection;
   noteView?: Maybe<NoteView>;
+  noteViewsStats: AdminNoteViewsStats;
   offer?: Maybe<AdminOffer>;
   oidcCredentials?: Maybe<AdminOIDCCredentials>;
   patreonCredentials?: Maybe<AdminPatreonCredentials>;

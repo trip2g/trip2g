@@ -22,3 +22,7 @@ $trip2g_admin_dashboard $mol_page
 					title <= RecentlyModifiedNotes_title @ \Recently Modified Notes
 					sub /
 						<= RecentlyModifiedNotes $trip2g_admin_dashboard_recentlymodifiednotes
+				<= NoteViewsStatsItem $mol_view
+					title <= NoteViewsStats_title @ \Note Views
+					sub /
+						<= NoteViewsStats $trip2g_admin_dashboard_noteviewsstats
