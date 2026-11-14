@@ -1324,6 +1324,11 @@ select * from note_version_embeddings where version_id in (sqlc.slice('version_i
 -- name: GetNoteVersionChunks :many
 select * from note_version_chunks where version_id = ? order by chunk_index;
 
+-- name: GetNoteVersionChunkHashesByVersionIDs :many
+select version_id, chunk_index, model_id, content_hash
+  from note_version_chunks
+ where version_id in (sqlc.slice('version_ids'));
+
 -- name: GetAllLatestNoteChunksWithEmbeddings :many
 select nc.version_id, nc.chunk_index, nc.content, nc.embedding, np.value as path
 from note_paths np

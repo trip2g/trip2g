@@ -20,6 +20,7 @@ type Env interface {
 	Features() features.Features
 	LatestNoteViews() *model.NoteViews
 	GetNoteVersionEmbeddingsByVersionIDs(ctx context.Context, versionIDs []int64) ([]db.NoteVersionEmbedding, error)
+	GetNoteVersionChunkHashesByVersionIDs(ctx context.Context, versionIDs []int64) ([]db.GetNoteVersionChunkHashesByVersionIDsRow, error)
 	EnqueueGenerateNoteVersionEmbedding(ctx context.Context, versionID int64) error
 }
 
@@ -78,20 +79,28 @@ func resolve(ctx context.Context, env Env, force bool) (*Result, error) {
 		return nil, err
 	}
 
-	// Build map of version_id -> content_hash
-	embeddingHashes := make(map[int64][]byte, len(embeddings))
-	for _, emb := range embeddings {
-		embeddingHashes[emb.VersionID] = emb.ContentHash
+	embeddingByVersion := make(map[int64]*db.NoteVersionEmbedding, len(embeddings))
+	for i := range embeddings {
+		embeddingByVersion[embeddings[i].VersionID] = &embeddings[i]
 	}
 
-	// Check each note and enqueue if needed. The expected hash must match what
-	// the generator stores (fingerprinted), or fresh rows get re-enqueued forever.
+	chunks, err := env.GetNoteVersionChunkHashesByVersionIDs(ctx, versionIDs)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	chunksByVersion := make(map[int64][]db.GetNoteVersionChunkHashesByVersionIDsRow)
+	for _, c := range chunks {
+		chunksByVersion[c.VersionID] = append(chunksByVersion[c.VersionID], c)
+	}
+
+	// A note counts as up to date only when the generator would not call the
+	// embedding endpoint for it: whole-note row and every chunk current. A job
+	// that failed after saving the whole-note row leaves chunks missing, and a
+	// hash-only check would call that note up to date forever.
 	vsConfig := env.Features().VectorSearch
 	for _, note := range noteViews.List {
-		currentHash := generatenoteversionembedding.NoteContentHash(note.Title, note.Content, vsConfig)
-
-		existingHash, hasEmbedding := embeddingHashes[note.VersionID]
-		if !force && hasEmbedding && bytesEqual(existingHash, currentHash) {
+		if !force && generatenoteversionembedding.UpToDate(note, embeddingByVersion[note.VersionID], chunksByVersion[note.VersionID], vsConfig) {
 			result.UpToDateCount++
 			continue
 		}
@@ -113,16 +122,4 @@ func resolve(ctx context.Context, env Env, force bool) (*Result, error) {
 	)
 
 	return result, nil
-}
-
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }

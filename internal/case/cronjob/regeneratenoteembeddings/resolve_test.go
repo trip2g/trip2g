@@ -2,6 +2,8 @@ package regeneratenoteembeddings_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"strconv"
 	"testing"
 
 	"trip2g/internal/case/backjob/generatenoteversionembedding"
@@ -9,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdchunk"
 	"trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
@@ -24,8 +27,23 @@ func TestResolve(t *testing.T) {
 		Permalink: "/test-note",
 	}
 
+	// freshChunks builds the chunk rows the generator stores for noteView.
+	freshChunks := func(cfg features.VectorSearchConfig) []db.GetNoteVersionChunkHashesByVersionIDsRow {
+		split := mdchunk.Split(noteView.Title, noteView.Content)
+		rows := make([]db.GetNoteVersionChunkHashesByVersionIDsRow, len(split))
+		for i, c := range split {
+			h := sha256.Sum256([]byte(c.Content + modelFingerprint(cfg)))
+			rows[i] = db.GetNoteVersionChunkHashesByVersionIDsRow{VersionID: 1, ChunkIndex: int64(c.Index), ContentHash: h[:]}
+		}
+		return rows
+	}
+
 	newEnv := func(cfg features.VectorSearchConfig, storedHash []byte) *EnvMock {
+		chunks := freshChunks(cfg)
 		return &EnvMock{
+			GetNoteVersionChunkHashesByVersionIDsFunc: func(ctx context.Context, versionIDs []int64) ([]db.GetNoteVersionChunkHashesByVersionIDsRow, error) {
+				return chunks, nil
+			},
 			FeaturesFunc: func() features.Features {
 				return features.Features{VectorSearch: cfg}
 			},
@@ -55,6 +73,50 @@ func TestResolve(t *testing.T) {
 		require.Equal(t, 1, result.UpToDateCount)
 		require.Equal(t, 0, result.EnqueuedCount)
 		require.Empty(t, env.EnqueueGenerateNoteVersionEmbeddingCalls())
+	})
+
+	t.Run("enqueues a note whose whole-note row is current but chunks are missing", func(t *testing.T) {
+		// A job that saved the whole-note row and then failed on the chunk
+		// embeddings leaves the note invisible to chunk search. Its content never
+		// changes again, so only the sweep can bring it back.
+		cfg := features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall}
+		storedHash := generatenoteversionembedding.NoteContentHash(noteView.Title, noteView.Content, cfg)
+
+		env := newEnv(cfg, storedHash)
+		env.GetNoteVersionChunkHashesByVersionIDsFunc = func(ctx context.Context, versionIDs []int64) ([]db.GetNoteVersionChunkHashesByVersionIDsRow, error) {
+			return nil, nil
+		}
+		result, err := regeneratenoteembeddings.Resolve(ctx, env)
+		require.NoError(t, err)
+		require.Equal(t, 0, result.UpToDateCount)
+		require.Equal(t, 1, result.EnqueuedCount)
+		require.Len(t, env.EnqueueGenerateNoteVersionEmbeddingCalls(), 1)
+	})
+
+	t.Run("enqueues a note that has no embedding at all", func(t *testing.T) {
+		cfg := features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall}
+
+		env := newEnv(cfg, nil)
+		env.GetNoteVersionEmbeddingsByVersionIDsFunc = func(ctx context.Context, versionIDs []int64) ([]db.NoteVersionEmbedding, error) {
+			return nil, nil
+		}
+		result, err := regeneratenoteembeddings.Resolve(ctx, env)
+		require.NoError(t, err)
+		require.Equal(t, 1, result.EnqueuedCount)
+		require.Equal(t, int64(1), env.EnqueueGenerateNoteVersionEmbeddingCalls()[0].VersionID)
+	})
+
+	t.Run("enqueues a note whose whole-note row has another model", func(t *testing.T) {
+		cfg := features.VectorSearchConfig{Enabled: true, Model: features.EmbeddingModelSmall}
+		storedHash := generatenoteversionembedding.NoteContentHash(noteView.Title, noteView.Content, cfg)
+
+		env := newEnv(cfg, storedHash)
+		env.GetNoteVersionEmbeddingsByVersionIDsFunc = func(ctx context.Context, versionIDs []int64) ([]db.NoteVersionEmbedding, error) {
+			return []db.NoteVersionEmbedding{{VersionID: 1, ContentHash: storedHash, ModelID: int64(features.EmbeddingModelSmall) + 1}}, nil
+		}
+		result, err := regeneratenoteembeddings.Resolve(ctx, env)
+		require.NoError(t, err)
+		require.Equal(t, 1, result.EnqueuedCount)
 	})
 
 	t.Run("force enqueues a note the hash calls up to date", func(t *testing.T) {
@@ -90,4 +152,11 @@ func TestResolve(t *testing.T) {
 		require.Equal(t, 1, result.EnqueuedCount)
 		require.Len(t, env.EnqueueGenerateNoteVersionEmbeddingCalls(), 1)
 	})
+}
+
+func modelFingerprint(cfg features.VectorSearchConfig) string {
+	return "\x00model=" + cfg.ResolvedModelName() +
+		"\x00passage_prefix=" + cfg.ResolvedPassagePrefix() +
+		"\x00dimensions=" + strconv.Itoa(cfg.ResolvedDimensions()) +
+		"\x00max_input_tokens=" + strconv.Itoa(cfg.ResolvedMaxInputTokens())
 }

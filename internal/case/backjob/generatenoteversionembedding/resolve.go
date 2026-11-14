@@ -22,6 +22,7 @@ import (
 
 type Params struct {
 	VersionID int64
+	Attempt   int // failed tries before this one; 0 for a fresh job
 }
 
 type Env interface {
@@ -68,7 +69,7 @@ func resolve(ctx context.Context, env Env, params Params) error {
 
 	// Check if embedding already exists with same content hash and model
 	existing, err := env.GetNoteVersionEmbedding(ctx, params.VersionID)
-	if err == nil && bytes.Equal(existing.ContentHash, contentHash) && storedModelMatches(existing.ModelID, vsConfig.Model) {
+	if err == nil && wholeNoteUpToDate(existing, contentHash, vsConfig) {
 		// Hash matches — skip whole-note embedding regeneration.
 		if noteView.ExcludeSearch || noteView.IsSystem() {
 			env.Logger().Debug("embedding already up to date, skipping", "version_id", params.VersionID)
@@ -168,8 +169,7 @@ func generateChunkEmbeddings(ctx context.Context, env Env, versionID int64, titl
 	var toEmbed []pendingChunk
 	for _, c := range chunks {
 		h := sha256.Sum256([]byte(c.Content + fingerprint))
-		if ec, ok := existingByIndex[int64(c.Index)]; ok && bytes.Equal(ec.ContentHash, h[:]) &&
-			(ec.ModelID == nil || storedModelMatches(*ec.ModelID, vsConfig.Model)) {
+		if ec, ok := existingByIndex[int64(c.Index)]; ok && chunkUpToDate(ec.ContentHash, ec.ModelID, h[:], vsConfig) {
 			continue // content and model unchanged, skip
 		}
 		toEmbed = append(toEmbed, pendingChunk{chunk: c, hash: h})
@@ -271,6 +271,54 @@ func modelFingerprint(cfg features.VectorSearchConfig) string {
 		"\x00passage_prefix=" + cfg.ResolvedPassagePrefix() +
 		"\x00dimensions=" + strconv.Itoa(cfg.ResolvedDimensions()) +
 		"\x00max_input_tokens=" + strconv.Itoa(cfg.ResolvedMaxInputTokens())
+}
+
+// UpToDate reports whether the stored whole-note row and chunk rows are
+// exactly what Resolve leaves behind for note, so running it would change
+// nothing. embedding is nil when the note has no whole-note row.
+func UpToDate(
+	note *model.NoteView,
+	embedding *db.NoteVersionEmbedding,
+	chunks []db.GetNoteVersionChunkHashesByVersionIDsRow,
+	cfg features.VectorSearchConfig,
+) bool {
+	if embedding == nil || !wholeNoteUpToDate(*embedding, NoteContentHash(note.Title, note.Content, cfg), cfg) {
+		return false
+	}
+	if note.ExcludeSearch || note.IsSystem() {
+		return true
+	}
+
+	split := mdchunk.Split(note.Title, note.Content)
+	if len(chunks) != len(split) {
+		return false
+	}
+
+	byIndex := make(map[int64]db.GetNoteVersionChunkHashesByVersionIDsRow, len(chunks))
+	for _, c := range chunks {
+		byIndex[c.ChunkIndex] = c
+	}
+
+	fingerprint := modelFingerprint(cfg)
+	for _, c := range split {
+		h := sha256.Sum256([]byte(c.Content + fingerprint))
+		stored, ok := byIndex[int64(c.Index)]
+		if !ok || !chunkUpToDate(stored.ContentHash, stored.ModelID, h[:], cfg) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func wholeNoteUpToDate(stored db.NoteVersionEmbedding, contentHash []byte, cfg features.VectorSearchConfig) bool {
+	return bytes.Equal(stored.ContentHash, contentHash) && storedModelMatches(stored.ModelID, cfg.Model)
+}
+
+// chunkUpToDate treats a chunk row without a model as current: chunk rows
+// written before model tracking carry a NULL model_id.
+func chunkUpToDate(storedHash []byte, storedModel *int64, contentHash []byte, cfg features.VectorSearchConfig) bool {
+	return bytes.Equal(storedHash, contentHash) && (storedModel == nil || storedModelMatches(*storedModel, cfg.Model))
 }
 
 // storedModelMatches reports whether a stored row was embedded by the configured

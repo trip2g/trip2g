@@ -2361,6 +2361,57 @@ func (q *Queries) GetLatestConfigString(ctx context.Context, valueID string) (Ge
 	return i, err
 }
 
+const getNoteVersionChunkHashesByVersionIDs = `-- name: GetNoteVersionChunkHashesByVersionIDs :many
+select version_id, chunk_index, model_id, content_hash
+  from note_version_chunks
+ where version_id in (/*SLICE:version_ids*/?)
+`
+
+type GetNoteVersionChunkHashesByVersionIDsRow struct {
+	VersionID   int64  `json:"version_id"`
+	ChunkIndex  int64  `json:"chunk_index"`
+	ModelID     *int64 `json:"model_id"`
+	ContentHash []byte `json:"content_hash"`
+}
+
+func (q *Queries) GetNoteVersionChunkHashesByVersionIDs(ctx context.Context, versionIds []int64) ([]GetNoteVersionChunkHashesByVersionIDsRow, error) {
+	query := getNoteVersionChunkHashesByVersionIDs
+	var queryParams []interface{}
+	if len(versionIds) > 0 {
+		for _, v := range versionIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:version_ids*/?", strings.Repeat(",?", len(versionIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:version_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNoteVersionChunkHashesByVersionIDsRow
+	for rows.Next() {
+		var i GetNoteVersionChunkHashesByVersionIDsRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.ChunkIndex,
+			&i.ModelID,
+			&i.ContentHash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getNoteVersionChunks = `-- name: GetNoteVersionChunks :many
 select id, version_id, chunk_index, content, embedding, model_id, content_hash, tokens, created_at from note_version_chunks where version_id = ? order by chunk_index
 `

@@ -10,6 +10,12 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ## Unreleased
 
+### A note whose embedding failed is embedded later
+
+- **What.** When the embedding endpoint fails or times out, the note is tried again after 1 minute, then 2, 4 and so on up to an hour between tries, ten tries in all. The weekly embedding sweep also picks up notes whose chunk embeddings are missing or stale, not only notes without a whole-note embedding.
+- **Why.** A failed embedding was retried a few times within seconds and then dropped. With a slow embedding server many notes stayed out of semantic search until their text changed, and a restart or a re-sync of the same files did not help.
+- **How to use.** Nothing to change. To pick up notes that failed before the upgrade without waiting for the weekly sweep, run the `regenerateNoteEmbeddings` admin mutation.
+
 ### Long paragraphs are searchable to the end
 
 - **What.** A paragraph, transcript, chat log or table with no blank lines inside is now cut into several search chunks instead of becoming one oversized chunk.

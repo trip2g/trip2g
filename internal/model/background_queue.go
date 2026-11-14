@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type BackgroundQueue struct {
 	Name    string
 	Stopped bool
@@ -37,4 +39,5 @@ type BackgroundTask struct {
 	Queue    BackgroundQueueID
 	Data     any
 	Priority int
+	Delay    time.Duration // how long the task waits before it can first run
 }
