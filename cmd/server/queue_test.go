@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 	"trip2g/internal/logger"
+	"trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
 	"maragu.dev/goqite"
@@ -152,4 +153,24 @@ func TestAppQueue_StartIdempotent(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("stopAndWait deadlocked after multiple start() calls")
 	}
+}
+
+func TestEnqueueJobToQ_DelayHoldsTaskBack(t *testing.T) {
+	ctx := context.Background()
+	aq := newTestQueue(t, ctx)
+	a := &app{appState: &appState{log: &logger.TestLogger{}}}
+
+	err := a.enqueueJobToQ(ctx, aq, model.BackgroundTask{ID: "noop", Delay: time.Hour})
+	require.NoError(t, err)
+
+	m, err := aq.q.Receive(ctx)
+	require.NoError(t, err)
+	require.Nil(t, m, "a delayed task must not be received before its delay")
+
+	err = a.enqueueJobToQ(ctx, aq, model.BackgroundTask{ID: "noop"})
+	require.NoError(t, err)
+
+	m, err = aq.q.Receive(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, m, "an undelayed task is received at once")
 }

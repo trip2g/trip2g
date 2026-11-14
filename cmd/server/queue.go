@@ -298,6 +298,7 @@ func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, job model.Backgro
 	gqMsg := goqite.Message{
 		Body:     rawData,
 		Priority: job.Priority,
+		Delay:    job.Delay,
 	}
 
 	// Enqueue inside the open write transaction if one is visible from ctx

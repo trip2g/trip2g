@@ -29,6 +29,9 @@ var _ regeneratenoteembeddings.Env = &EnvMock{}
 //			FeaturesFunc: func() features.Features {
 //				panic("mock out the Features method")
 //			},
+//			GetNoteVersionChunkHashesByVersionIDsFunc: func(ctx context.Context, versionIDs []int64) ([]db.GetNoteVersionChunkHashesByVersionIDsRow, error) {
+//				panic("mock out the GetNoteVersionChunkHashesByVersionIDs method")
+//			},
 //			GetNoteVersionEmbeddingsByVersionIDsFunc: func(ctx context.Context, versionIDs []int64) ([]db.NoteVersionEmbedding, error) {
 //				panic("mock out the GetNoteVersionEmbeddingsByVersionIDs method")
 //			},
@@ -51,6 +54,9 @@ type EnvMock struct {
 	// FeaturesFunc mocks the Features method.
 	FeaturesFunc func() features.Features
 
+	// GetNoteVersionChunkHashesByVersionIDsFunc mocks the GetNoteVersionChunkHashesByVersionIDs method.
+	GetNoteVersionChunkHashesByVersionIDsFunc func(ctx context.Context, versionIDs []int64) ([]db.GetNoteVersionChunkHashesByVersionIDsRow, error)
+
 	// GetNoteVersionEmbeddingsByVersionIDsFunc mocks the GetNoteVersionEmbeddingsByVersionIDs method.
 	GetNoteVersionEmbeddingsByVersionIDsFunc func(ctx context.Context, versionIDs []int64) ([]db.NoteVersionEmbedding, error)
 
@@ -72,6 +78,13 @@ type EnvMock struct {
 		// Features holds details about calls to the Features method.
 		Features []struct {
 		}
+		// GetNoteVersionChunkHashesByVersionIDs holds details about calls to the GetNoteVersionChunkHashesByVersionIDs method.
+		GetNoteVersionChunkHashesByVersionIDs []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// VersionIDs is the versionIDs argument value.
+			VersionIDs []int64
+		}
 		// GetNoteVersionEmbeddingsByVersionIDs holds details about calls to the GetNoteVersionEmbeddingsByVersionIDs method.
 		GetNoteVersionEmbeddingsByVersionIDs []struct {
 			// Ctx is the ctx argument value.
@@ -86,11 +99,12 @@ type EnvMock struct {
 		Logger []struct {
 		}
 	}
-	lockEnqueueGenerateNoteVersionEmbedding  sync.RWMutex
-	lockFeatures                             sync.RWMutex
-	lockGetNoteVersionEmbeddingsByVersionIDs sync.RWMutex
-	lockLatestNoteViews                      sync.RWMutex
-	lockLogger                               sync.RWMutex
+	lockEnqueueGenerateNoteVersionEmbedding   sync.RWMutex
+	lockFeatures                              sync.RWMutex
+	lockGetNoteVersionChunkHashesByVersionIDs sync.RWMutex
+	lockGetNoteVersionEmbeddingsByVersionIDs  sync.RWMutex
+	lockLatestNoteViews                       sync.RWMutex
+	lockLogger                                sync.RWMutex
 }
 
 // EnqueueGenerateNoteVersionEmbedding calls EnqueueGenerateNoteVersionEmbeddingFunc.
@@ -153,6 +167,42 @@ func (mock *EnvMock) FeaturesCalls() []struct {
 	mock.lockFeatures.RLock()
 	calls = mock.calls.Features
 	mock.lockFeatures.RUnlock()
+	return calls
+}
+
+// GetNoteVersionChunkHashesByVersionIDs calls GetNoteVersionChunkHashesByVersionIDsFunc.
+func (mock *EnvMock) GetNoteVersionChunkHashesByVersionIDs(ctx context.Context, versionIDs []int64) ([]db.GetNoteVersionChunkHashesByVersionIDsRow, error) {
+	if mock.GetNoteVersionChunkHashesByVersionIDsFunc == nil {
+		panic("EnvMock.GetNoteVersionChunkHashesByVersionIDsFunc: method is nil but Env.GetNoteVersionChunkHashesByVersionIDs was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		VersionIDs []int64
+	}{
+		Ctx:        ctx,
+		VersionIDs: versionIDs,
+	}
+	mock.lockGetNoteVersionChunkHashesByVersionIDs.Lock()
+	mock.calls.GetNoteVersionChunkHashesByVersionIDs = append(mock.calls.GetNoteVersionChunkHashesByVersionIDs, callInfo)
+	mock.lockGetNoteVersionChunkHashesByVersionIDs.Unlock()
+	return mock.GetNoteVersionChunkHashesByVersionIDsFunc(ctx, versionIDs)
+}
+
+// GetNoteVersionChunkHashesByVersionIDsCalls gets all the calls that were made to GetNoteVersionChunkHashesByVersionIDs.
+// Check the length with:
+//
+//	len(mockedEnv.GetNoteVersionChunkHashesByVersionIDsCalls())
+func (mock *EnvMock) GetNoteVersionChunkHashesByVersionIDsCalls() []struct {
+	Ctx        context.Context
+	VersionIDs []int64
+} {
+	var calls []struct {
+		Ctx        context.Context
+		VersionIDs []int64
+	}
+	mock.lockGetNoteVersionChunkHashesByVersionIDs.RLock()
+	calls = mock.calls.GetNoteVersionChunkHashesByVersionIDs
+	mock.lockGetNoteVersionChunkHashesByVersionIDs.RUnlock()
 	return calls
 }
 
