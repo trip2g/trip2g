@@ -95,6 +95,9 @@ whether to set a guest session (section 6).
 
 Verified in a real browser (Chromium via Playwright, two local instances): the
 whole flow above ends in a guest session with the nonce cookie cleared.
+`e2e/federation-guest.spec.js` repeats it on three instances of the test stack
+(peer → peer2 → peer3): the handoff, the second hop, the read-only guard, a
+form posted from another site, the reader's own session and a revoked edge.
 
 **Where in the code:** the button is `KBButton` in
 `internal/defaulttemplate/template.go` and the `SelfContent` block in
