@@ -48,10 +48,9 @@ $trip2g_editor_pane $mol_view
 						<= save_text @ \Save {0} files
 			body <= editor_body /
 		<= right_sidebar_widget null $mol_view
-	ContentTextarea $trip2g_editor_pane_textarea
+	ContentEditor $trip2g_editor_codemirror
 		value? <=> content?
-		hover? <=> handle_content_hover? null
-		click? <=> handle_content_click? null
+		link_open? <=> handle_wikilink_open? null
 	Placeholder $mol_view
 		sub /
 			<= placeholder_text @ \Choose file in the left panel
@@ -101,9 +100,3 @@ $trip2g_editor_pane $mol_view
 	newfile_msg_empty @ \Enter a file name
 	newfile_msg_exists @ \A file with this name already exists
 	newfile_msg_exists_remote @ \This file was just created elsewhere
-
-$trip2g_editor_pane_textarea $mol_textarea
-	click? null
-	event *
-		^
-		click? <=> click?

@@ -13,9 +13,17 @@
     "toc": "node assets/toc/esbuild.browser.mjs",
     "chart": "node assets/chart/esbuild.browser.mjs",
     "mermaid": "node assets/mermaid/esbuild.browser.mjs",
-    "codeblock": "node assets/codeblock/esbuild.browser.mjs"
+    "codeblock": "node assets/codeblock/esbuild.browser.mjs",
+    "cmeditor": "node assets/cmeditor/esbuild.browser.mjs"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-markdown": "^6.3.3",
+    "@codemirror/language": "^6.11.2",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.0",
+    "@lezer/common": "^1.2.3",
+    "@lezer/markdown": "^1.8.1",
     "@mostlylucid/mermaid-enhancements": "^1.0.0",
     "@types/change-case": "^0.0.30",
     "beautiful-mermaid": "^1.1.3",

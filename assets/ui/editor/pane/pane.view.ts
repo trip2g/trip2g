@@ -68,37 +68,13 @@ namespace $.$$ {
 			return next ?? 0
 		}
 
-		override handle_content_click(next?: MouseEvent | null): null {
-			if (next?.ctrlKey) {
-				const pos = document.caretPositionFromPoint(next.clientX, next.clientY)
-				if (pos?.offsetNode?.nodeType === Node.TEXT_NODE) {
-					const link = $trip2g_editor_wikilink(this.content(), pos.offset)
-					if (link) {
-						const pathId = this.note_path_id()
-						if (pathId !== null) {
-							const res = $trip2g_editor_pane_resolve({ filter: { notePathId: pathId, links: [link] } })
-							const resolved = res.resolveWikilinks[0]
-							if (resolved?.path) this.path(resolved.path)
-						}
-					}
-				}
-			}
-			return null
-		}
-
-		override handle_content_hover(next?: PointerEvent | null): null {
-			if (next) {
-				const ta = next.target as HTMLTextAreaElement
-				if (next.ctrlKey) {
-					const pos = document.caretPositionFromPoint(next.clientX, next.clientY)
-					const link = pos?.offsetNode?.nodeType === Node.TEXT_NODE
-						? $trip2g_editor_wikilink(this.content(), pos.offset)
-						: null
-					ta.style.cursor = link ? 'pointer' : ''
-				} else {
-					ta.style.cursor = ''
-				}
-			}
+		override handle_wikilink_open(link?: string | null): null {
+			if (!link) return null
+			const pathId = this.note_path_id()
+			if (pathId === null) return null
+			const res = $trip2g_editor_pane_resolve({ filter: { notePathId: pathId, links: [link] } })
+			const resolved = res.resolveWikilinks[0]
+			if (resolved?.path) this.path(resolved.path)
 			return null
 		}
 
@@ -136,7 +112,7 @@ namespace $.$$ {
 		override editor_body(): readonly $mol_view[] {
 			const views: $mol_view[] = []
 			if (this.pending_external_update()) views.push(this.UpdateBanner())
-			views.push(this.path() ? this.ContentTextarea() : this.Placeholder())
+			views.push(this.path() ? this.ContentEditor() : this.Placeholder())
 			return views
 		}
 

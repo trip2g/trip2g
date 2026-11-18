@@ -1,0 +1,4 @@
+$trip2g_editor_codemirror $mol_view
+	value? \
+	link_open? null
+	bundle_uri \/assets/cmeditor.js
