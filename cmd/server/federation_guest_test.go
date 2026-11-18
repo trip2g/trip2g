@@ -345,7 +345,7 @@ func TestTheKBButtonIsALinkForAnAnonymousReaderAndAHandoffForASignedInOne(t *tes
 
 	anonymous := newBrowser().get(t, s.hub, "/peer")
 	require.Equal(t, http.StatusOK, anonymous.status)
-	require.Contains(t, anonymous.body, `<a href="http://peer.test/" class="tg-button" rel="noopener">Open knowledge base</a>`)
+	require.Contains(t, anonymous.body, `<a href="http://peer.test/" class="kb-open__button" rel="noopener">Open knowledge base</a>`)
 	require.NotContains(t, anonymous.body, federationhandoff.Path)
 
 	b := newBrowser()
