@@ -215,6 +215,7 @@ Read the relevant doc before working in that area. Docs are partially outdated (
 | `excalidraw.md` | Rendering Excalidraw drawings — design, not yet built |
 | `grid_layouts.md` | Flexible grid/flex page-layout DSL — subsumes magazine/wide/sidebars; design, not yet built |
 | `password_signin.md` | Password sign-in by default, email code only with SMTP, session cutoffs on reset — design, not yet built |
+| `2026-11-18_view_as_user_plan.md` | Admin views the site as a user: override cookie, read-only, banner — plan, pending approval, not built |
 | `2026-11-18_federation_guest_handoff_plan.md` | Federation guest handoff from spike #518 to a real version: guests table, per-edge setting, 12-hour session, open link through the hub — plan, pending approval, not built |
 
 ### Testing & Ops
