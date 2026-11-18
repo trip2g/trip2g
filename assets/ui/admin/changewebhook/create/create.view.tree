@@ -13,7 +13,8 @@ $trip2g_admin_changewebhook_create $mol_page
 				Content <= CreatedSecret $trip2g_admin_cell
 					content <= created_secret? \
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Url_field $mol_form_field

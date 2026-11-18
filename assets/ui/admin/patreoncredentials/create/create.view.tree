@@ -7,7 +7,8 @@ $trip2g_admin_patreoncredentials_create $mol_page
 				Content <= CredentialsId $trip2g_admin_cell
 					content <= credentials_id_string? \
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Token_field $mol_form_field

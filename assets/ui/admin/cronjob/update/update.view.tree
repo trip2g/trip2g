@@ -1,7 +1,8 @@
 $trip2g_admin_cronjob_update $mol_view
 	cronjob_id 0
 	sub /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Name_labeler $mol_labeler

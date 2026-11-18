@@ -2,7 +2,7 @@ $trip2g_user_paywall_conversationprompt_email $mol_view
 	SuccessView $mol_view
 		sub / <= success_message @ \Thanks, we got your e-mail and will let you know when offers appear.
 	sub /
-		<= Form $mol_form
+		<= Form $trip2g_form
 			body /
 				<= Email_field $mol_form_field
 					name @ \Your e-mail

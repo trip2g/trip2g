@@ -2,7 +2,8 @@ $trip2g_admin_user_banuser $mol_page
 	user_id 0
 	title \Ban
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= Reason_field $mol_form_field
 					name \Reason

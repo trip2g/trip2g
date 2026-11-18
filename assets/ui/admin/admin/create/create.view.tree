@@ -2,7 +2,8 @@ $trip2g_admin_admin_create $mol_page
 	title \Create Admin
 	user_id 0
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= Warning $mol_form_field
 					name \Warning

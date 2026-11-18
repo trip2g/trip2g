@@ -2,7 +2,8 @@ $trip2g_admin_frontmatterpatch_create $mol_page
 	title @ \Create Frontmatter Patch
 	after_success? 0
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Description_field $mol_form_field

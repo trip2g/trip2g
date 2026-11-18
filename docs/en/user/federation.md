@@ -157,6 +157,8 @@ Before the row is stored, your hub calls Bob's and replaces the handed-over secr
 
 A new inbound key starts with access to nothing. Bob opens the key's row in his admin and picks subgraphs under Subgraph Access. Until he does, your searches through that key authenticate and come back empty, which looks exactly like a query that matched nothing.
 
+The first subgraph Bob grants opens more than itself. A key with at least one subgraph also reads every note of his that has no subgraph, and every note in a subgraph marked **Require sign-in**. To keep untagged notes out, Bob puts them in a subgraph of their own with one patch: [[en/user/subgraphs#Make the whole vault private by default|Subgraphs]] shows how. No patch closes a **Require sign-in** subgraph to a key, so it should hold only what any peer with a grant may read. The same holds for the key you issue to Bob.
+
 **Step 4: Create the KB-note.**
 
 ```yaml
@@ -348,6 +350,7 @@ To reduce scope without full revocation, remove individual subgraphs from the `k
 
 ### Related
 
+- [[en/user/federation-model|A network of bases instead of one shared workspace]]: the idea behind federation and the access rule a key follows
 - [[en/hub/_index|Hub]]: knowledge bases federated into this hub
 - [[en/user/mcp|MCP Server]]: how the local MCP server works
 - [[en/user/selfhosted|Self-hosted]]: `MCP_FEDERATION_MAX_DEPTH` and other environment variables

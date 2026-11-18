@@ -3,7 +3,8 @@ $trip2g_admin_usersubgraphaccesses_show $mol_page
 	title \Subgraph Access
 	minimal_width 400
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= Subgraph_field $mol_form_field
 					name \Subgraph

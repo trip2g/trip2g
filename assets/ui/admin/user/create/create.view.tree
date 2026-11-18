@@ -1,7 +1,8 @@
 $trip2g_admin_user_create $mol_page
 	title \Create User
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Email_field $mol_form_field
