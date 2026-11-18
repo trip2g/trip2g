@@ -7,7 +7,8 @@ $trip2g_admin_notfoundpattern_create $mol_page
 				Content <= PatternId $trip2g_admin_cell
 					content <= pattern_id_string? \
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Pattern_field $mol_form_field

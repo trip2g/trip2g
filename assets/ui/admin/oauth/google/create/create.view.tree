@@ -22,7 +22,8 @@ $trip2g_admin_oauth_google_create $mol_page
 					<= CopyCallbackUrl $mol_button_copy
 						text <= callback_url
 						title \Copy
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= Name_field $mol_form_field
 					name \Name

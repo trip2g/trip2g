@@ -1,6 +1,7 @@
 $trip2g_admin_telegramaccount_show_dialogs_import $mol_view
 	sub /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= BasePath_field $mol_form_field
 					name \Base Path

@@ -1,7 +1,8 @@
 $trip2g_admin_federation_outbound $mol_page
 	title @ \Add Outbound Secret
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= Key_field $mol_form_field
 					name @ \Handover key (paste this instead of the three below)

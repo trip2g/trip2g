@@ -2,7 +2,8 @@ $trip2g_admin_subgraph_show $mol_page
 	subgraph_id 0
 	title <= subgraph_name \
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= Name_labeler $mol_labeler
 					title \Name

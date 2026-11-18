@@ -2,7 +2,8 @@ $trip2g_admin_notfoundpattern_update $mol_page
 	pattern_id? 0
 	title \Update Ignored Pattern
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Pattern_field $mol_form_field
