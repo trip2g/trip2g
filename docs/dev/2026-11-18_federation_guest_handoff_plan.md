@@ -286,6 +286,102 @@ is new:
 - **The documented patch:** with it, a guest gets 403 on a note with no
   subgraph. This pins the recipe the docs point to.
 
+
+### 8.1 Security tests
+
+The owner asked for these by name on 2026-11-18: end-to-end tests that try to
+break in. Each row is an attack with the answer it must get. "Browser" means
+the Playwright spec against three real instances; "in-process" means a Go test
+in `cmd/server` that sends real HTTP requests to an app built in the test.
+A browser test is used where the browser itself is part of the wall (cookies,
+`Origin`, frames); everything else is cheaper and stricter in-process.
+
+**Getting in without the right**
+
+| Attack | Must answer | Level | In the spike |
+|---|---|---|---|
+| Post a reader's own handoff form from another site | 403, no cookie; the same form from the hub's site is accepted | browser | yes |
+| Post the same form twice | second post 403 | browser | in-process only |
+| Post a form older than 30 seconds | 403 | in-process, with the clock moved | yes |
+| Change the path, the origin, the hop or the reader in a signed token | 403 | in-process | a wrong signature, a wrong origin and a tampered ticket; not each field in turn |
+| Open a copied ticket link in another browser profile | 403, and the first browser's ticket still works once | browser | by hand and in-process |
+| Open a ticket twice | second 403 | browser | by hand and in-process |
+| Use a handoff token as an MCP bearer token, and an MCP token as a handoff | refused both ways | in-process | yes |
+| Present a guest cookie whose edge does not exist here (two instances sharing a JWT secret by mistake) | anonymous, cookie cleared | in-process | no |
+| Hand off over an edge whose "accept people" is off | 403 | browser | flag only |
+| Hand off one hop past the depth limit | 403 on both the signing and the accepting side | in-process | yes |
+| Frame the hub's KB-note in a page on another site and get the click | the framed page has no handoff button, because the session cookie is `SameSite=Lax` and is not sent into a cross-site frame | browser | no |
+| Follow an "open" link from another site without pressing anything | no guest session is opened; the page waits for the button | browser | not built |
+
+**Going where the link should not lead**
+
+| Attack | Must answer | Level | In the spike |
+|---|---|---|---|
+| `path=//evil.example`, `path=https://evil.example`, `path=/\evil.example`, a path with a line break | refused before signing, on the hub; refused again on the neighbour | in-process | the neighbour refuses an absolute and a `//` target; the hub side is not built |
+| `mcp_federation_site_url` pointing at a third site | the browser goes there only with a token that site cannot verify; no session anywhere | in-process | not built |
+| A neighbour's name or origin with markup in it, shown in the bar | escaped | in-process | not built |
+
+**Doing more than reading**
+
+| Attack | Must answer | Level | In the spike |
+|---|---|---|---|
+| Every mutation in the schema, sent by a guest | refused with the guest error, before the mutation's own validation | in-process, **the list is read from the schema**, so a mutation added later is covered without anyone remembering | a sample only |
+| Every registered non-GET endpoint, sent by a guest | 403, except the handoff and guest endpoints | in-process, the list is read from the router | a sample only |
+| Any `admin { ... }` query or mutation | refused | in-process | one admin mutation |
+| Mint a personal token, an API key or a sign-in link | refused | in-process | not checked one by one |
+| Reach MCP with the guest's browser session | 403 | browser | yes |
+| Sign in to the guest's synthetic user by email code, HAT link, OAuth or Telegram | no path reaches a user with no email and no Telegram id | in-process | argued in the spike's document; one test shows a reader id equal to a local email gets a row of its own |
+
+**Reading more than was granted**
+
+One test seeds a note in a subgraph the edge was not granted, with a marker
+string in its body, its attachment and its frontmatter, and then asks for it
+every way a reader can. The marker must appear in none of the answers.
+
+| Read path | Level | In the spike |
+|---|---|---|
+| The page, and the same page with `?version=latest` | in-process | page only |
+| GraphQL `note`, `noteQuery`, similar notes, backlinks | in-process | all but backlinks |
+| Site search, including the snippet text | in-process and browser | yes |
+| The attachment by its direct address | in-process | yes |
+| RSS, sitemap, the note-changes subscription | in-process | RSS |
+| A free note that embeds the closed one | in-process | noted in the spike, not pinned |
+| The neighbour's own onward handoff: a guest pressing a KB-note they cannot read | in-process | yes |
+
+Two leaks are known and stay unless the owner decides otherwise; the tests pin
+them so that they do not grow:
+
+- **A closed note's title is shown** on its closed page and in search results.
+- **Subgraph names are in the HTML of every link** (`class="paywall paywall-internal"`),
+  for every visitor, guests and anonymous readers included.
+
+**Staying in after the right is gone**
+
+| Event | Must happen on the next request | Level | In the spike |
+|---|---|---|---|
+| The inbound key is revoked | anonymous, cookie cleared, the button leads to the refusal page | browser | yes |
+| "Accept people" is switched off for the edge | anonymous for that edge's guests only | browser | flag only |
+| A subgraph is removed from the key | its notes are closed | in-process | no |
+| Twelve hours pass | anonymous | in-process, with the clock moved | not built |
+| The guest user is banned on the neighbour | refused; what the page shows was never looked at | browser | no |
+
+**What the browser carries**
+
+| Check | Level | In the spike |
+|---|---|---|
+| Session and nonce cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` on an HTTPS instance | browser, on the deployed pair of section 9 | attributes read in code only |
+| The nonce cookie is limited to the guest endpoint's path and is gone after the ticket leg, on success and on refusal | browser | on success |
+| The handoff page is `no-store` and sends `Referrer-Policy: strict-origin` | in-process | not confirmed for this plan |
+| The reader's own session on the neighbour survives a handoff | browser | yes |
+
+**What these tests do not show.** They pin the attacks listed here. They do
+not show that no other attack exists. Three things cover what a list cannot:
+the two tests that read their list from the code (mutations, endpoints), the
+security review that opens the work (section 4.9), and section 9, which names
+what nobody has tried. A wall counts as standing only while a test in this
+section still fails when the wall is taken out; the build shows that once for
+each row by breaking the check and watching the test go red.
+
 Done is the scenario walked by hand on three instances, with a transcript and
 screenshots checked by an agent that has not seen the code.
 
