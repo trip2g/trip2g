@@ -18,6 +18,7 @@ export const pageTheme = EditorView.theme({
     colorScheme: 'light',
     color: 'var(--lp-color)',
     backgroundColor: 'var(--lp-bg)',
+    flexGrow: '1',
     '--lp-root': '16px',
     height: '100%',
     fontSize: 'var(--lp-root)',

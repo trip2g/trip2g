@@ -25,6 +25,10 @@ namespace $ {
 			},
 			minWidth: 0,
 			minHeight: 0,
+			Body_content: {
+				padding: 0,
+				minHeight: '100%',
+			},
 		},
 
 		UpdateBanner: {
