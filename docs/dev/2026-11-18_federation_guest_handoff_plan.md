@@ -51,6 +51,9 @@ full; this plan does not repeat it.
 | 2026-11-18 | **A guest reads what an agent on the same edge reads.** Notes with no subgraph stay readable to any edge that grants at least one subgraph. An owner who wants otherwise applies the existing "private by default" patch. A stricter rule for guests would be a second access rule beside the first. |
 | 2026-11-18 | **A guest session lives 12 hours**, not the 30 days of an ordinary session. |
 | 2026-11-18 | **An agent's link to a neighbour's page goes through the reader's own hub**, which signs the handoff with the page as its target. |
+| 2026-11-18 | **The two migrations of section 5 are confirmed** as written. |
+| 2026-11-18 | **No count of untagged notes in the admin** when people are let in over an edge. The documentation carries that warning. |
+| 2026-11-18 | **Results from a second hop get no open link in this version.** An agent that found a page two bases away reports it; the reader walks there through two buttons. A chained link is a later plan of its own. |
 | 2026-11-18 | **The guest bar is drawn by the default template only.** A custom layout shows it by calling a method. The server does not splice it into a layout's HTML. |
 
 ## 4. What the real version adds
@@ -70,11 +73,6 @@ The spike has one flag for the whole instance, `--federation-accept-guests`
 real version has a checkbox on the inbound key in the admin, off by default,
 stored on the key's row (section 5). The flag is removed. One neighbour can
 then accept people from Sales and not from Support.
-
-Turning it on shows one line under the checkbox: how many notes on this
-instance have no subgraph, with a link to the "private by default" recipe.
-The rule does not change; the owner learns its consequence before switching.
-Section 7, decision 3.
 
 ### 4.3 Twelve hours
 
@@ -176,7 +174,7 @@ transport, is already fixed on `main` (#519) and will conflict in
 
 ## 5. Migrations
 
-Two. Shown here for confirmation; neither file exists.
+Two. The owner confirmed the SQL on 2026-11-18; neither file exists yet.
 
 ```sql
 -- migrate:up
@@ -206,6 +204,16 @@ No backfill: the spike was never deployed, so no instance has guest rows in
 
 ## 6. Options that lost
 
+- **A count of notes with no subgraph under the "accept people" checkbox.** It
+  would tell an owner what the first grant brings with it at the moment they
+  switch people on. The owner called it unnecessary: the rule is not new, the
+  subgraphs page says it, and PR #524 adds it to the federation page.
+- **A chained open link**, one link that walks a reader through two handoffs
+  to a page two bases away. It would let a person reach everything an agent
+  found. It lost for this version: the whole route has to be signed, every
+  base in the middle has to agree to pass the reader on, and that is new
+  ground for a mistake in security. Results from a second hop are the rarer
+  case.
 - **A stricter access rule for guests** (free notes and granted subgraphs
   only). It was this plan's author's recommendation: a person follows links
   further than an agent searches, and an owner expects to have shared only
@@ -249,11 +257,8 @@ No backfill: the spike was never deployed, so no instance has guest rows in
 
 ## 7. Decisions left to the owner
 
-1. **The two migrations of section 5.** Confirm the SQL.
-2. **The warning under the checkbox** (section 4.2): a count of notes with no
-   subgraph, or nothing.
-3. **Links for results from a second hop** (section 4.4): none in this
-   version, or a design for a chained open link first.
+None. Every question this plan raised was answered on 2026-11-18; section 3
+has the answers. What remains is the approval of the plan as a whole.
 
 ## 8. Tests the build must bring
 
