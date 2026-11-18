@@ -69,6 +69,7 @@ Extract stateful, multi-step logic (caches, queues, background loops) into a pac
 ### Frontend ($mol)
 - Components in `assets/ui/` with `.view.tree` (structure) + `.view.ts` (behavior)
 - Symlink: `assets/ui/` ← `../mam/trip2g/`
+- The admin theme is [airkit](https://github.com/alexesDev/airkit): the mam workspace's `.meta.tree` needs `pack airkit git \https://github.com/alexesDev/airkit.git`
 - `$mol_wire_sync` for async→sync integration
 - `$mol_import.script` for async script loading
 - Localization: `@` marker in view.tree, locale files `*.view.tree.locale=ru.json`

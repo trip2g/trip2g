@@ -32,6 +32,10 @@ RUN mkdir fragment && \
     mkdir -p version/id && \
     mkdir input
 
+# The admin panel's theme comes from airkit, a mam package; mam clones it on
+# the first build that names an $airkit_ module.
+RUN echo 'pack airkit git \https://github.com/alexesDev/airkit.git' >> .meta.tree
+
 COPY ./assets/ui ./trip2g
 
 # typescript 7 dropped convertCompilerOptionsFromJson which the mam builder uses;
