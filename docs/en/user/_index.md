@@ -41,6 +41,7 @@ Below are the key pages, grouped by topic. The sidebar on the left has the full 
 - [[en/user/team-knowledge-base-mcp|Team knowledge base for AI agents]] — people read a site, agents query over MCP.
 - [[en/user/mcp|MCP server]] — an AI client answers questions from your knowledge base.
 - [[en/user/instructions_guide|Instructions for a knowledge base]] — teach the agent how to search your base.
+- [[en/user/federation-model|A network of bases]] — every owner keeps a base, and a neighbour reads only what was granted; what that buys and what it costs.
 - [[en/user/federation|MCP Federation]] — one endpoint for the agent, several bases behind it.
 - [[en/user/context-separation|Context separation]] — who may search whom, and what they see.
 - [[en/user/hub|Public hub of curated bases]] — bases you can connect to today.
