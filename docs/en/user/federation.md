@@ -350,6 +350,7 @@ To reduce scope without full revocation, remove individual subgraphs from the `k
 
 ### Related
 
+- [[en/user/federation-model|A network of bases instead of one shared workspace]]: the idea behind federation and the access rule a key follows
 - [[en/hub/_index|Hub]]: knowledge bases federated into this hub
 - [[en/user/mcp|MCP Server]]: how the local MCP server works
 - [[en/user/selfhosted|Self-hosted]]: `MCP_FEDERATION_MAX_DEPTH` and other environment variables
