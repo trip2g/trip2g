@@ -51,6 +51,7 @@ full; this plan does not repeat it.
 | 2026-11-18 | **A guest reads what an agent on the same edge reads.** Notes with no subgraph stay readable to any edge that grants at least one subgraph. An owner who wants otherwise applies the existing "private by default" patch. A stricter rule for guests would be a second access rule beside the first. |
 | 2026-11-18 | **A guest session lives 12 hours**, not the 30 days of an ordinary session. |
 | 2026-11-18 | **An agent's link to a neighbour's page goes through the reader's own hub**, which signs the handoff with the page as its target. |
+| 2026-11-18 | **The guest bar is drawn by the default template only.** A custom layout shows it by calling a method. The server does not splice it into a layout's HTML. |
 
 ## 4. What the real version adds
 
@@ -124,9 +125,18 @@ session beside the edge's key id. On a second hop the bar names the base the
 reader came from last, and "Back" goes one step, because that is all the
 second neighbour knows.
 
-Custom layouts do not get the bar unless they ask for it. The same question is
-open in the "view as a user" plan (PR #521, decision 1), and the answer should
-be one for both.
+The default template renders the bar itself. A custom Jet layout gets it by
+calling one method on the `defaultTemplate` variable it already receives
+(`internal/case/rendernotepage/userspace.go:197-204`), next to `Header` and
+`Footer`. The method returns the finished HTML, and an empty string for a
+reader who is not a guest, so a layout calls it without a condition. The
+"view as a user" plan (PR #521) uses the same method for its banner: one call
+in a layout shows whichever applies.
+
+A guest's page is never stored in the page cache, because the cache holds
+pages for a nil session only
+(`internal/case/rendernotepage/pagecache.go:67-69`), so a layout that calls
+the method needs no new cache rule.
 
 ### 4.7 Dead ends
 
@@ -230,14 +240,19 @@ No backfill: the spike was never deployed, so no instance has guest rows in
   It lost because the spike made the handoff a form post on purpose: a link on
   any other site could otherwise walk a reader's browser into a guest session.
 
+- **Splicing the bar into every HTML page**, custom layouts included. One bar
+  everywhere, and it was the plan author's recommendation, because the bar is
+  the only way out a person can see. It lost on the owner's decision: the
+  server would be editing HTML that a layout author wrote, and a layout with
+  unusual markup could show it in an odd place. A method the layout calls
+  leaves the author in charge of their page.
+
 ## 7. Decisions left to the owner
 
 1. **The two migrations of section 5.** Confirm the SQL.
-2. **The bar in custom layouts** (section 4.6): default template only, or
-   spliced into every HTML page. One answer for this plan and for #521.
-3. **The warning under the checkbox** (section 4.2): a count of notes with no
+2. **The warning under the checkbox** (section 4.2): a count of notes with no
    subgraph, or nothing.
-4. **Links for results from a second hop** (section 4.4): none in this
+3. **Links for results from a second hop** (section 4.4): none in this
    version, or a design for a chained open link first.
 
 ## 8. Tests the build must bring
@@ -263,7 +278,9 @@ is new:
 - **Site override:** a KB-note with `mcp_federation_site_url` sends the
   browser there and still signs with the edge of its MCP address.
 - **Bar:** names the hub, "Back" leads to the hub's origin, "Leave" ends the
-  guest session; on a second hop it names the middle base.
+  guest session; on a second hop it names the middle base. A Jet layout that
+  calls the method shows the same bar for a guest and nothing for anyone else;
+  a layout that does not call it shows none.
 - **Dead ends:** an expired guest cookie gets the added line once; the refusal
   page links back only for a validly signed token.
 - **The documented patch:** with it, a guest gets 403 on a note with no
