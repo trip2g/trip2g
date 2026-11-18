@@ -11,7 +11,9 @@
 - **Decided by the owner on 2026-11-18:** a separate PR from `main`, read-only,
   an ordinary user as the target, a second cookie beside the admin's own
   session, a banner "you are viewing as X" with a button that returns the
-  admin's rights.
+  admin's rights. The banner is drawn by the default template only; a custom
+  layout shows it by calling a method. The plan's author had recommended
+  splicing it into every page instead, as the only exit a person can see.
 
 ## 1. Why
 
@@ -152,9 +154,17 @@ endpoint. The default template has one `<body>` for every mode
 (`internal/defaulttemplate/views.html:84`), so a block right after it shows on
 note pages, the paywall, the sign-in wall and 404.
 
-Custom Jet layouts render their own HTML into a buffer
-(`internal/case/rendernotepage/endpoint.go:465-474`) and would not show it.
-Section 7, decision 1, is about that.
+Custom Jet layouts render their own HTML and do not get the banner by
+themselves. A layout shows it by calling one method on the `defaultTemplate`
+variable it already receives (`internal/case/rendernotepage/userspace.go:197-204`),
+next to `Header` and `Footer`. The method returns the finished HTML, and an
+empty string when no view is active, so a layout calls it without a condition.
+The server does not splice anything into a layout's HTML. The federation guest
+plan (PR #522) uses the same method for its guest bar.
+
+An admin inside a layout that does not call the method has no reminder that
+they are someone else. Nothing they do there can change anything, and the view
+ends by itself after an hour.
 
 The banner names the target by email, or by "user #id" when the user has none.
 That costs one user lookup per request, only while a view is active.
@@ -229,27 +239,25 @@ the price of having one identity per request.
   would be indistinguishable from the user's unless every write path learned
   to mark them.
 
+- **Splicing the bar into every HTML page**, custom layouts included. One bar
+  everywhere, and it was the plan author's recommendation, because the bar is
+  the only way out a person can see. It lost on the owner's decision: the
+  server would be editing HTML that a layout author wrote, and a layout with
+  unusual markup could show it in an odd place. A method the layout calls
+  leaves the author in charge of their page.
+
 ## 7. Decisions left to the owner
 
-1. **How far the banner reaches.**
-   - *Default template only*, plus a `currentUser.viewAs` variable for layout
-     authors. Small. An admin inside a custom layout has no reminder that they
-     are someone else, though nothing they do can change anything.
-   - *Spliced into every HTML page* after the opening `<body>` tag, in the
-     layout buffer too. One banner everywhere. The server starts editing HTML
-     a layout author wrote, and a layout with unusual markup may show it in
-     an odd place. **Recommended**, because the banner is the only exit a
-     person can see.
-2. **Who may be a target.** The plan refuses admins (pointless, and it avoids
+1. **Who may be a target.** The plan refuses admins (pointless, and it avoids
    an admin acting under another admin's name in the audit log) and banned
    users (a banned session answers 503 today, `internal/router/router.go:129-132`).
    Allowing a banned target would show exactly that broken page.
-3. **Lifetime.** One hour, fixed. Shorter is safer against a forgotten tab;
+2. **Lifetime.** One hour, fixed. Shorter is safer against a forgotten tab;
    longer suits a long review.
-4. **`signOut` while viewing.** The plan makes it end the view and keep the
+3. **`signOut` while viewing.** The plan makes it end the view and keep the
    admin signed in. The alternative is to refuse it like every other mutation
    and leave the widget's button dead.
-5. **Viewing as an anonymous visitor.** Not in this PR. It needs its own gate
+4. **Viewing as an anonymous visitor.** Not in this PR. It needs its own gate
    on the page cache, which treats every nil token as shareable
    (`pagecache.go:67`, `:126`).
 
@@ -273,6 +281,8 @@ Written first, red before green.
 - **Losing the role:** remove the admin row mid-view; the next request is an
   ordinary user and the override is gone.
 - **Use cases:** table tests with moq for `startviewas` and `stopviewas`.
+- **Layouts:** a Jet layout that calls the method shows the banner during a
+  view and nothing otherwise; one that does not call it shows none.
 - **E2E:** one Playwright spec. The admin opens a user's page, presses the
   button, sees the banner, gets the closed page on a note the user cannot
   read, has a mutation refused, presses Back to admin and is an admin again.
@@ -309,9 +319,10 @@ transcript and screenshots checked by an agent that has not seen the code.
   it for a browser under view-as. Whether any browser-side feature relies on
   that POST was not checked. *Experiment:* grep the `$mol` sources for
   `/_system/mcp` before building.
-- **The splice of decision 1** on `content_type` notes, which are not HTML
-  (`endpoint.go:264-281`). *Experiment:* a JSON-layout note under view-as is
-  byte-identical to the same note without the banner.
+- **A layout that does not call the method** leaves the admin with no visible
+  way back. *Experiment:* during the hand-walked scenario, open a page with a
+  custom layout under a view and note how a person gets out (the admin user
+  page in another tab, or waiting an hour).
 - **Expiry returns the admin's rights silently.** A tab left open for an hour
   shows a banner-less page on the next click with full admin rights. No fix is
   proposed; it is the direction of least surprise for the cookie, and the
