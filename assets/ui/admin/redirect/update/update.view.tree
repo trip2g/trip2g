@@ -1,7 +1,8 @@
 $trip2g_admin_redirect_update $mol_view
 	redirect_id 0
 	sub /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Pattern_field $mol_form_field

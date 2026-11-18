@@ -1,7 +1,8 @@
 $trip2g_admin_user_update $mol_view
 	user_id 0
 	sub /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Id_labeler $mol_labeler

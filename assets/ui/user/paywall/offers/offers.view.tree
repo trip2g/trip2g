@@ -28,7 +28,7 @@ $trip2g_user_paywall_offers $mol_view
 	sub /
 		<= List
 
-$trip2g_user_paywall_offers_enter_email $mol_form
+$trip2g_user_paywall_offers_enter_email $trip2g_form
 	to_sign_in? null
 	handle_email? \
 	body /

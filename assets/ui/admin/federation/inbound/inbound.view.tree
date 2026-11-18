@@ -27,7 +27,8 @@ $trip2g_admin_federation_inbound $mol_page
 				Content <= KidOutCell $trip2g_admin_cell
 					content <= kid
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= Kid_field $mol_form_field
 					name @ \Key ID (kid)

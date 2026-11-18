@@ -24,7 +24,8 @@ $trip2g_admin_config_show $mol_page
 		<= EditSection $mol_section
 			title @ \Edit Value
 			content /
-				<= EditForm $mol_form
+				<= EditForm $trip2g_form
+					submit? <=> save?
 					body /
 						<= Value_field $mol_form_field
 							name @ \New Value

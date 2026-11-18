@@ -22,7 +22,8 @@ $trip2g_admin_personaltoken_new $mol_page
 						title \Copy token only
 						text <= created \
 	body /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			body /
 				<= UserId_field $mol_form_field
 					name \User ID

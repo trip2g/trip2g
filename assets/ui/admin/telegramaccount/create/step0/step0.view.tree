@@ -1,7 +1,8 @@
 $trip2g_admin_telegramaccount_create_step0 $mol_view
 	on_success? null
 	sub /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Phone_field $mol_form_field

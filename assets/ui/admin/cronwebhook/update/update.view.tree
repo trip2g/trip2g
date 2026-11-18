@@ -1,7 +1,8 @@
 $trip2g_admin_cronwebhook_update $mol_view
 	cronwebhook_id 0
 	sub /
-		<= Form $mol_form
+		<= Form $trip2g_form
+			submit? <=> submit?
 			submit_allowed => submit_allowed
 			body /
 				<= Url_field $mol_form_field
