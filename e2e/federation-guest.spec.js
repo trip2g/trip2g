@@ -137,6 +137,13 @@ async function postHandoffForm(page, form) {
   return response.status();
 }
 
+/** The closed page a guest gets: told it is not shared, offered no sign-in or purchase. */
+async function expectClosedForGuest(page, url, body) {
+  await expectPage(page, url, 403, { lacks: body });
+  await expect(page.locator('.paywall-page__federation-guest')).toBeVisible();
+  await expect(page.locator('#paywall')).toHaveCount(0);
+}
+
 async function expectPage(page, url, status, { has, lacks } = {}) {
   const response = await page.goto(url);
   expect(response?.status(), url).toBe(status);
@@ -298,7 +305,7 @@ test.describe.serial('Federation guest handoff', () => {
     expect(page.url()).toBe(`${ENG.site}/`);
 
     await expectPage(page, pageURL(ENG, NOTE.engShared), 200, { has: BODY.engShared });
-    await expectPage(page, pageURL(ENG, NOTE.engClosed), 403, { lacks: BODY.engClosed });
+    await expectClosedForGuest(page, pageURL(ENG, NOTE.engClosed), BODY.engClosed);
 
     const cookies = await reader.cookies([ENG.site, `${ENG.site}${GUEST_PATH}`]);
     expect(cookies.map((cookie) => cookie.name), 'session set, nonce cleared').toEqual([ENG.cookie]);
@@ -331,7 +338,7 @@ test.describe.serial('Federation guest handoff', () => {
     expect(trail).toEqual(handoffTrail(ENG, DESIGN));
 
     await expectPage(page, pageURL(DESIGN, NOTE.designShared), 200, { has: BODY.designShared });
-    await expectPage(page, pageURL(DESIGN, NOTE.designClosed), 403, { lacks: BODY.designClosed });
+    await expectClosedForGuest(page, pageURL(DESIGN, NOTE.designClosed), BODY.designClosed);
   });
 
   test('a handoff form posted from another site is refused', async ({ browser }) => {

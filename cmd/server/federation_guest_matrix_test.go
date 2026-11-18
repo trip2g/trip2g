@@ -83,8 +83,8 @@ func TestFederationGuestAccessMatrix(t *testing.T) {
 		require.Equal(t, "open-closed.md", n6.path)
 		require.Equal(t, "200[n2]", m.pageCell(t, "fg-elsewhere", n2))
 		require.Equal(t, "200[n6]", m.pageCell(t, "fg-elsewhere", n6))
-		require.Equal(t, "403:paywall[]", m.pageCell(t, "fg-none", n2))
-		require.Equal(t, "403:paywall[]", m.pageCell(t, "fg-none", n6))
+		require.Equal(t, "403:notshared[]", m.pageCell(t, "fg-none", n2))
+		require.Equal(t, "403:notshared[]", m.pageCell(t, "fg-none", n6))
 	})
 
 	t.Run("page cache never crosses readers", func(t *testing.T) {
@@ -148,19 +148,19 @@ n10  fg-elsewhere page=200[n10] gql=[n10] search=[n10] query=+ mcp=403 asset=200
 n10  fg-none      page=200[n10] gql=[n10] search=[n10] query=+ mcp=403 asset=200 cache=- rss=- similar=[n10]
 n10  fg-paid      page=200[n10] gql=[n10] search=[n10] query=+ mcp=403 asset=200 cache=- rss=- similar=[n10]
 n2   fg-elsewhere page=200[n2] gql=[n2] search=[n2] query=+ mcp=403 asset=200 cache=- rss=- similar=[n2]
-n2   fg-none      page=403:paywall[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
+n2   fg-none      page=403:notshared[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
 n2   fg-paid      page=200[n2] gql=[n2] search=[n2] query=+ mcp=403 asset=200 cache=- rss=- similar=[n2]
 n3   fg-elsewhere page=200[n3] gql=[n3] search=[n3] query=+ mcp=403 asset=200 cache=- rss=[n3] similar=[n3]
 n3   fg-none      page=200[n3] gql=[n3] search=[n3] query=+ mcp=403 asset=200 cache=- rss=[n3] similar=[n3]
 n3   fg-paid      page=200[n3] gql=[n3] search=[n3] query=+ mcp=403 asset=200 cache=- rss=[n3] similar=[n3]
-n4   fg-elsewhere page=403:paywall[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
-n4   fg-none      page=403:paywall[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
+n4   fg-elsewhere page=403:notshared[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
+n4   fg-none      page=403:notshared[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
 n4   fg-paid      page=200[n4] gql=[n4] search=[n4] query=+ mcp=403 asset=200 cache=- rss=- similar=[n4]
 n5   fg-elsewhere page=200[n5] gql=[n5] search=[n5] query=+ mcp=403 asset=200 cache=- rss=[n5] similar=[n5]
 n5   fg-none      page=200[n5] gql=[n5] search=[n5] query=+ mcp=403 asset=200 cache=- rss=[n5] similar=[n5]
 n5   fg-paid      page=200[n5] gql=[n5] search=[n5] query=+ mcp=403 asset=200 cache=- rss=[n5] similar=[n5]
 n6   fg-elsewhere page=200[n6] gql=[n6] search=[n6] query=+ mcp=403 asset=200 cache=- rss=- similar=[n6]
-n6   fg-none      page=403:paywall[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
+n6   fg-none      page=403:notshared[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
 n6   fg-paid      page=200[n6] gql=[n6] search=[n6] query=+ mcp=403 asset=200 cache=- rss=- similar=[n6]
 n7   fg-elsewhere page=404[] gql=error search=- query=- mcp=403 asset=403 cache=- rss=- similar=-
 n7   fg-none      page=404[] gql=error search=- query=- mcp=403 asset=403 cache=- rss=- similar=-
@@ -168,8 +168,8 @@ n7   fg-paid      page=404[] gql=error search=- query=- mcp=403 asset=403 cache=
 n8   fg-elsewhere page=404[] gql=error search=- query=- mcp=403 asset=- cache=- rss=- similar=-
 n8   fg-none      page=404[] gql=error search=- query=- mcp=403 asset=- cache=- rss=- similar=-
 n8   fg-paid      page=404[] gql=error search=- query=- mcp=403 asset=- cache=- rss=- similar=-
-n9a  fg-elsewhere page=403:paywall[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
-n9a  fg-none      page=403:paywall[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
+n9a  fg-elsewhere page=403:notshared[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
+n9a  fg-none      page=403:notshared[] gql=error search=[] query=- mcp=403 asset=403 cache=- rss=- similar=-
 n9a  fg-paid      page=200[n3,n9a] gql=[n3,n9a] search=[n3,n9a] query=+ mcp=403 asset=200 cache=- rss=- similar=[n3,n9a]
 n9b  fg-elsewhere page=200[n4,n9b] gql=[n4,n9b] search=[n4,n9b] query=+ mcp=403 asset=200 cache=- rss=[n4,n9b] similar=[n4,n9b]
 n9b  fg-none      page=200[n4,n9b] gql=[n4,n9b] search=[n4,n9b] query=+ mcp=403 asset=200 cache=- rss=[n4,n9b] similar=[n4,n9b]
