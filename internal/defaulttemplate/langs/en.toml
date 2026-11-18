@@ -76,6 +76,12 @@ other = "Couldn't open the knowledge base"
 [federation_handoff_refused_text]
 other = "This page can't send you there. Go back and reload it."
 
+[guest_closed_message]
+other = "You are here as a guest. Access to this page is requested separately from the owner of this knowledge base."
+
+[guest_closed_title]
+other = "This page is not shared with your knowledge base over federation"
+
 [kb_open]
 other = "Open knowledge base"
 

@@ -58,11 +58,11 @@ has an account on the Sales hub and none on Engineering.
 5. **Maria is now reading Engineering** as a guest. She can open, search and
    download attachments of exactly the notes the Sales edge was granted (see
    section 4 for the precise rule). On a page that is not shared with the
-   Sales edge she gets the same closed page any signed-in reader without
-   access gets: status 403, the page title, "This page is closed" and
-   "Ask the owner of this knowledge base for access, or sign in."
-   (the English text of the paywall widget; I did not look at it rendered for
-   a guest). The body of the note is not sent.
+   Sales edge she gets a closed page of her own: status 403, the page title,
+   "This page is not shared with your knowledge base over federation" and
+   "You are here as a guest. Access to this page is requested separately from
+   the owner of this knowledge base." The body of the note is not sent, and
+   neither is the sign-in and purchase widget a local reader gets.
 6. **Engineering may have its own KB-notes**, for example one pointing at the
    Design department. If Maria, as a guest, can read that KB-note, she sees
    the same button and can go one hop further (section 10).
@@ -269,12 +269,13 @@ HAT GET link, OAuth callbacks, the Telegram sign-in link, the purchase-token
 cookie). Each needs its own proof of a real account and replaces the guest
 session with that account; none of them attaches anything to the guest user.
 
-The closed page a guest gets on a note outside the edge is the ordinary
-paywall: 403, the note title and description, "This page is closed", the
-sign-in widget, and any purchase offers. A guest cannot buy (the purchase is a
-mutation) and cannot sign in by email while they are a guest (also a
-mutation). What the sign-in widget shows to a guest I did not check in a
-browser.
+The closed page a guest gets on a note outside the edge is not the ordinary
+paywall. It is 403 with the note title and description and two lines of text
+from the server template: the page is not shared over federation, and access
+is requested separately from the owner. The sign-in widget and purchase offers
+are left out, since a guest can use neither (both are mutations). There is no
+request button: the text is all the guest gets
+(`TestAClosedPageTellsAGuestItIsNotSharedOverFederation`).
 
 **Where in the code:** `appreq.DenyGuest` in `internal/appreq/request.go` is
 the check; `refuseGuestMutation` in `internal/graph/handler.go` applies it to

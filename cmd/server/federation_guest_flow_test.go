@@ -33,6 +33,25 @@ func TestAGuestReadsTheEdgeSubgraphsAndNothingElse(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestAClosedPageTellsAGuestItIsNotSharedOverFederation(t *testing.T) {
+	s := seedTwoSites(t)
+
+	const notShared = "paywall-page__federation-guest"
+	const paywall = "$trip2g_user_paywall"
+
+	guest := s.guest(t).get(t, s.peer, "/other")
+	require.Equal(t, http.StatusForbidden, guest.status)
+	require.Contains(t, guest.body, notShared)
+	require.NotContains(t, guest.body, paywall, "a guest can neither sign in nor buy")
+
+	local := newBrowser()
+	local.cookies[s.peer.host] = s.peer.signIn(t, "local@example.com")
+	own := local.get(t, s.peer, "/other")
+	require.Equal(t, http.StatusForbidden, own.status)
+	require.Contains(t, own.body, paywall)
+	require.NotContains(t, own.body, notShared)
+}
+
 func TestAGuestPageViewIsRecordedUnderTheSyntheticUserOfTheEdge(t *testing.T) {
 	s := seedTwoSites(t)
 	b := s.guest(t)
