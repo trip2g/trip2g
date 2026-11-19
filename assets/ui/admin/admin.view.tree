@@ -1,4 +1,9 @@
 $trip2g_admin $trip2g_auth
+	plugins /
+		<= Theme $mol_theme_auto
+		<= Air $airkit_air
+		<= Brand $airkit_brand
+			name \neutral
 	AppView $trip2g_admin_app
 		title => title
 		- ProfileEmail <= ProfileInfo $trip2g_admin_cell
@@ -10,8 +15,6 @@ $trip2g_admin $trip2g_auth
 $trip2g_admin_app $trip2g_admin_catalog
 	param \nav
 	menu_title @ \Admin Panel
-	plugins /
-		<= Theme $mol_theme_auto
 	menu_foot /
 		<= Footer $mol_view
 			style *
