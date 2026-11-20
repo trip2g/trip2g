@@ -326,6 +326,16 @@ window.__trip2g_settings = {
   {% endif %}
   {% if !ctx.Note.HasH1() %}<h1 class="content__title">{%s ctx.Note.Title() %}</h1>{% endif %}
   <div class="content__body">{%s= ctx.Note.HTMLString().String() %}</div>
+  {% if kb := ctx.KBButton(); kb != nil %}
+  {% if kb.Handoff %}
+  <form class="kb-open" method="post" action="/_system/federation/handoff">
+    <input type="hidden" name="note" value="{%s kb.NotePath %}">
+    <button type="submit" class="kb-open__button">{%s ctx.T("kb_open") %}</button>
+  </form>
+  {% else %}
+  <p class="kb-open"><a href="{%s kb.Site %}/" class="kb-open__button" rel="noopener">{%s ctx.T("kb_open") %}</a></p>
+  {% endif %}
+  {% endif %}
   {% if ctx.UserToken.IsAdmin() && ctx.Note.HasTaskListItems() %}
   <div mol_view_root="$trip2g_user_tasklist" class="content__tasklist" data-pid="{%dl ctx.Note.PathID() %}" data-path="{%s ctx.Note.Path() %}"></div>
   {% endif %}
@@ -502,7 +512,12 @@ window.__trip2g_settings = {
   <p>{%s ctx.Note.Description() %}</p>
   {% endif %}
 
-  {% if ctx.PaywallError != nil %}
+  {% if ctx.PaywallError != nil && ctx.UserToken.IsFederationGuest() %}
+  <div class="paywall-page__federation-guest">
+    <p><strong>{%s ctx.T("guest_closed_title") %}</strong></p>
+    <p>{%s ctx.T("guest_closed_message") %}</p>
+  </div>
+  {% elseif ctx.PaywallError != nil %}
   <script>
     window.__trip2g_paywall = {
       page_id: {%dl ctx.Note.PathID() %},
