@@ -47,6 +47,7 @@ Below are the key pages, grouped by topic. The sidebar on the left has the full 
 - [[en/user/hub|Public hub of curated bases]] — bases you can connect to today.
 - [[en/user/subgraphs|Subgraphs]] — a public blog, a paid course and an internal wiki in one vault.
 - [[en/user/access|Who can read a note]] — what each reader sees on the page, in search, in feeds and over MCP.
+- [[en/user/access-mistakes|Access mistakes]] — seven ways to open more than you meant, and how to check what a reader really gets.
 - [[en/user/fleet|Fleet]] — agents you describe as plain notes.
 
 ## Telegram
