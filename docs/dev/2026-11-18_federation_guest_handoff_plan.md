@@ -1,7 +1,8 @@
 # Federation guest handoff: from the spike to a real version
 
-**Status: pending approval. Nothing in this plan is built.** The spike it
-grows from exists and runs, on a branch that is not for merge.
+**Status: approved by the owner on 2026-11-18, amended the same day after the
+security review. Nothing in this plan is built.** The spike it grows from
+exists and runs, on a branch that is not for merge.
 
 - **Who builds:** a separate agent, after the owner has read and approved this
   plan. **Who reviews:** a third, with a security pass of its own.
@@ -14,6 +15,12 @@ grows from exists and runs, on a branch that is not for merge.
   parallel suite; the "private by default" frontmatter patch applied on one
   instance and checked as a guest.
 - **Not measured:** listed in section 9, each with its experiment.
+- **Amended after the security review** of the spike (a separate agent, the
+  spike at `8149f0dd`, against the live stand): sections 4.5, 4.10 and 4.11
+  and the rows marked *review* in section 8.1. The owner delegated two
+  choices to this plan's author ("take the optimal options, I do not see all
+  the consequences yet"); section 3 marks them, and both were made toward the
+  smaller and reversible side.
 
 ## 1. The problem
 
@@ -53,7 +60,9 @@ full; this plan does not repeat it.
 | 2026-11-18 | **An agent's link to a neighbour's page goes through the reader's own hub**, which signs the handoff with the page as its target. |
 | 2026-11-18 | **The two migrations of section 5 are confirmed** as written. |
 | 2026-11-18 | **No count of untagged notes in the admin** when people are let in over an edge. The documentation carries that warning. |
-| 2026-11-18 | **Results from a second hop get no open link in this version.** An agent that found a page two bases away reports it; the reader walks there through two buttons. A chained link is a later plan of its own. |
+| 2026-11-18 | **Results from a second hop get no open link in this version.** An agent that found a page two bases away reports it. With one hop only (below) the reader cannot follow it there in this version, unless their own base is paired with that one. |
+| 2026-11-18 | **One hop only in this version** (section 4.10). *Chosen by the plan's author on the owner's delegation.* The other options were to sign the route into the token, or to let an owner open onward hops per edge; both keep chains and both need a design first. Reversible: a later plan opens chains. |
+| 2026-11-18 | **No site address in the KB-note** (section 4.5). *Chosen by the plan's author on the owner's delegation.* The other option was to put the override on the key now, with a third migration. Reversible: a later change adds it there. |
 | 2026-11-18 | **The guest bar is drawn by the default template only.** A custom layout shows it by calling a method. The server does not splice it into a layout's HTML. |
 
 ## 4. What the real version adds
@@ -104,24 +113,33 @@ one leading slash, never `//host`.
 
 The federated search and note tools add such a link to every result that came
 from a direct neighbour, so an agent passes it on without building anything.
-Results that came through a second hop get no link in this version.
+Results that came through a second hop get no link in this version, and a
+reader cannot follow them there (section 4.10).
 
-### 4.5 The neighbour's site address
+### 4.5 The neighbour's site address comes from the key, never from the note
 
-The spike derives the neighbour's site from its MCP address by dropping
-`/_system/mcp` (`MCPFederationSite` in `internal/model/mcp_federation_note.go`
-*(spike)*). That is wrong for a neighbour reached by agents on an internal
-address. A new optional frontmatter key, `mcp_federation_site_url`, overrides
-it. Without the key the derivation stays.
+The hub sends a reader, and the signed token with them, to one address only:
+the site of the MCP address its outbound key is bound to. The spike builds
+that address from the KB-note being opened and picks the key separately, by
+the note's `kb_id`; the two are never compared. The real version refuses to
+sign for a KB-note whose `mcp_federation_kb_url` is not the key's own address.
+A note is something any writer on the hub can push; a key is something only
+an admin creates.
+
+The first draft of this plan added a frontmatter key,
+`mcp_federation_site_url`, to override the derived address. It is withdrawn:
+it would let a note name the destination again. A neighbour whose MCP address
+is not the address browsers use (an internal address, a separate site domain)
+cannot accept people in this version. Agents reach it as before. The override
+belongs on the key, in the admin, and is a later change with a migration of
+its own.
 
 ### 4.6 A bar that says where the reader is
 
 On every page of the default template a guest sees one line: "You are a guest
 from sales.example.com · Back to sales.example.com · Leave". The hub's origin
 is already signed into the handoff; the real version keeps it in the guest
-session beside the edge's key id. On a second hop the bar names the base the
-reader came from last, and "Back" goes one step, because that is all the
-second neighbour knows.
+session beside the edge's key id.
 
 The default template renders the bar itself. A custom Jet layout gets it by
 calling one method on the `defaultTemplate` variable it already receives
@@ -172,6 +190,35 @@ spike's own findings, the response handler that never ends on the SSE
 transport, is already fixed on `main` (#519) and will conflict in
 `internal/graph/handler.go`.
 
+### 4.10 One hop
+
+A guest cannot go further. A base refuses to sign a handoff for a reader who
+is a guest here, and refuses to accept a token whose hop count is above 1.
+The hop count stays in the token, so that a later version can open chains
+without changing its format.
+
+The spike allows chains up to the federation depth limit, and the review
+showed what that gives a reader: the union of every grant reachable within
+the limit. A chain can come back to a base it passed through, over a
+different edge with a wider grant. Opening chains safely needs either the
+route signed into the token or an owner's consent per edge, and each is a
+design of its own.
+
+### 4.11 What the review asks of the session, the nonce and the ticket
+
+- **A guest session belongs to one key, not to a name.** It carries the id of
+  the inbound key it was opened under, and every request compares it. A key
+  created later under the same `kid` does not revive a session opened under
+  the revoked one. Rotation keeps the row and so keeps the session. Creating
+  an inbound key under a `kid` that has existed is refused.
+- **The nonce cookie is host-only.** Its name takes the `__Host-` prefix
+  whenever the cookie is `Secure`, so a page on a sibling subdomain cannot set
+  it. Note pages send `frame-ancestors 'self'`.
+- **The ticket is opaque.** A random id in the redirect, with what it stands
+  for kept on the server beside the spent ids. Today the ticket is a readable
+  token that carries the reader's hash through access logs and browser
+  history.
+
 ## 5. Migrations
 
 Two. The owner confirmed the SQL on 2026-11-18; neither file exists yet.
@@ -214,6 +261,14 @@ No backfill: the spike was never deployed, so no instance has guest rows in
   base in the middle has to agree to pass the reader on, and that is new
   ground for a mistake in security. Results from a second hop are the rarer
   case.
+- **Chains in this version**, guarded by a signed route or by a per-edge
+  "pass guests on" setting. Either would keep the second hop the spike
+  demonstrated. They lost to "one hop" on the owner's delegation: each is a
+  new mechanism whose consequences nobody has walked through yet, and the
+  first version is safer without it.
+- **A site address in the KB-note** (`mcp_federation_site_url`), this plan's
+  own first draft. It lost to the review: the destination of a signed token
+  must not be something a note author chooses.
 - **A stricter access rule for guests** (free notes and granted subgraphs
   only). It was this plan's author's recommendation: a person follows links
   further than an agent searches, and an owner expects to have shared only
@@ -280,10 +335,8 @@ is new:
   sign in and then continues; a reader who cannot read the KB-note is refused.
 - **Tool results:** a federated search result from a direct neighbour carries
   an open link that the test then follows in a browser.
-- **Site override:** a KB-note with `mcp_federation_site_url` sends the
-  browser there and still signs with the edge of its MCP address.
 - **Bar:** names the hub, "Back" leads to the hub's origin, "Leave" ends the
-  guest session; on a second hop it names the middle base. A Jet layout that
+  guest session. A Jet layout that
   calls the method shows the same bar for a guest and nothing for anyone else;
   a layout that does not call it shows none.
 - **Dead ends:** an expired guest cookie gets the added line once; the refusal
@@ -305,6 +358,12 @@ A browser test is used where the browser itself is part of the wall (cookies,
 
 | Attack | Must answer | Level | In the spike |
 |---|---|---|---|
+| *review:* open a KB-note that carries a real edge's `kb_id` and another address | no token is signed; the page says the note does not match its key | in-process and browser | no |
+| *review:* present a guest cookie opened under a key that was revoked and re-created with the same `kid` | anonymous, cookie cleared | in-process | no |
+| *review:* create an inbound key under a `kid` that has existed | refused | in-process | no |
+| *review:* a guest presses a KB-note button | refused by the base they are a guest on | browser | the spike allows it |
+| *review:* a token with hop 2 | 403 | in-process | the spike allows it |
+| *review:* set the nonce cookie for the parent domain from a sibling subdomain, then open a ticket | the host-only cookie is not overwritten; 403 | browser, on the deployed pair of section 9 | no |
 | Post a reader's own handoff form from another site | 403, no cookie; the same form from the hub's site is accepted | browser | yes |
 | Post the same form twice | second post 403 | browser | in-process only |
 | Post a form older than 30 seconds | 403 | in-process, with the clock moved | yes |
@@ -314,8 +373,7 @@ A browser test is used where the browser itself is part of the wall (cookies,
 | Use a handoff token as an MCP bearer token, and an MCP token as a handoff | refused both ways | in-process | yes |
 | Present a guest cookie whose edge does not exist here (two instances sharing a JWT secret by mistake) | anonymous, cookie cleared | in-process | no |
 | Hand off over an edge whose "accept people" is off | 403 | browser | flag only |
-| Hand off one hop past the depth limit | 403 on both the signing and the accepting side | in-process | yes |
-| Frame the hub's KB-note in a page on another site and get the click | the framed page has no handoff button, because the session cookie is `SameSite=Lax` and is not sent into a cross-site frame | browser | no |
+| Frame the hub's KB-note in a page on another site, or on a sibling subdomain, and get the click | the page refuses to be framed (`frame-ancestors 'self'`). The first draft relied on `SameSite=Lax` alone, which does not hold between subdomains of one site | browser | no |
 | Follow an "open" link from another site without pressing anything | no guest session is opened; the page waits for the button | browser | not built |
 
 **Going where the link should not lead**
@@ -323,7 +381,6 @@ A browser test is used where the browser itself is part of the wall (cookies,
 | Attack | Must answer | Level | In the spike |
 |---|---|---|---|
 | `path=//evil.example`, `path=https://evil.example`, `path=/\evil.example`, a path with a line break | refused before signing, on the hub; refused again on the neighbour | in-process | the neighbour refuses an absolute and a `//` target; the hub side is not built |
-| `mcp_federation_site_url` pointing at a third site | the browser goes there only with a token that site cannot verify; no session anywhere | in-process | not built |
 | A neighbour's name or origin with markup in it, shown in the bar | escaped | in-process | not built |
 
 **Doing more than reading**
@@ -351,7 +408,6 @@ every way a reader can. The marker must appear in none of the answers.
 | The attachment by its direct address | in-process | yes |
 | RSS, sitemap, the note-changes subscription | in-process | RSS |
 | A free note that embeds the closed one | in-process | noted in the spike, not pinned |
-| The neighbour's own onward handoff: a guest pressing a KB-note they cannot read | in-process | yes |
 
 Two leaks are known and stay unless the owner decides otherwise; the tests pin
 them so that they do not grow:
@@ -429,11 +485,12 @@ screenshots checked by an agent that has not seen the code.
 
 ## 10. Order of work
 
-1. Security review of the spike as it is; fix what it finds.
+1. Security review of the spike as it is: done on 2026-11-18. Fix what it
+   found first (sections 4.5, 4.10, 4.11), each with its test from 8.1.
 2. Rebase on `main`.
 3. Migrations, guests table, per-edge setting, flag removed.
 4. Twelve-hour guest session.
-5. Landing page key, site override, open link, links in tool results.
+5. Landing page key, open link, links in tool results.
 6. Bar and dead ends.
 7. Documentation.
 8. The hand-walked scenario and its screenshots.

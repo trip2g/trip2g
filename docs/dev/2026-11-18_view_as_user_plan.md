@@ -1,6 +1,6 @@
 # View the site as a user
 
-**Status: pending approval. Nothing here is built.**
+**Status: approved by the owner on 2026-11-18. Nothing here is built.**
 
 - **Who builds:** a separate agent, after the owner has read and approved this
   plan. **Who reviews:** a third.
@@ -246,19 +246,21 @@ the price of having one identity per request.
   unusual markup could show it in an odd place. A method the layout calls
   leaves the author in charge of their page.
 
-## 7. Decisions left to the owner
+## 7. Decisions
 
-1. **Who may be a target.** The plan refuses admins (pointless, and it avoids
-   an admin acting under another admin's name in the audit log) and banned
-   users (a banned session answers 503 today, `internal/router/router.go:129-132`).
-   Allowing a banned target would show exactly that broken page.
-2. **Lifetime.** One hour, fixed. Shorter is safer against a forgotten tab;
-   longer suits a long review.
-3. **`signOut` while viewing.** The plan makes it end the view and keep the
-   admin signed in. The alternative is to refuse it like every other mutation
-   and leave the widget's button dead.
-4. **Viewing as an anonymous visitor.** Not in this PR. It needs its own gate
-   on the page cache, which treats every nil token as shareable
+The owner approved the plan on 2026-11-18 with the options it proposed, and
+left the choice among them to the plan's author. All four are the narrower
+option and can be widened later without changing what is built.
+
+1. **Who may be a target.** An ordinary user only. Admins are refused
+   (pointless, and it avoids an admin acting under another admin's name in the
+   audit log), and so are banned users (a banned session answers 503 today,
+   `internal/router/router.go:129-132`, and that broken page is all a view
+   would show).
+2. **Lifetime.** One hour, fixed.
+3. **`signOut` while viewing** ends the view and keeps the admin signed in.
+4. **Viewing as an anonymous visitor** is not in this build. It needs its own
+   gate on the page cache, which treats every nil token as shareable
    (`pagecache.go:67`, `:126`).
 
 ## 8. Tests the build must bring
