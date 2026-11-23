@@ -1842,6 +1842,19 @@ function resolveAssetUrl(apiUrl, url) {
   }
 }
 __name(resolveAssetUrl, "resolveAssetUrl");
+var SYSTEM_ASSETS_PATH = "/_system/assets/";
+function assetFetchTarget(apiUrl, url) {
+  try {
+    const parsed = new URL(url, apiUrl);
+    if (parsed.pathname.startsWith(SYSTEM_ASSETS_PATH)) {
+      return { url: new URL(parsed.pathname + parsed.search, apiUrl).toString(), sendKey: true };
+    }
+  } catch {
+  }
+  const resolved = resolveAssetUrl(apiUrl, url);
+  return { url: resolved, sendKey: sameOrigin(apiUrl, resolved) };
+}
+__name(assetFetchTarget, "assetFetchTarget");
 
 // src/sync/resolve.ts
 function pickByBasename(paths, name) {
@@ -3011,9 +3024,10 @@ ${body}`);
     return true;
   }
   async downloadAsset(url) {
-    const resolvedUrl = resolveAssetUrl(this.apiUrl, url);
+    const target = assetFetchTarget(this.apiUrl, url);
+    const resolvedUrl = target.url;
     try {
-      const headers = sameOrigin(this.apiUrl, resolvedUrl) ? { "X-API-Key": this.apiKey } : void 0;
+      const headers = target.sendKey ? { "X-API-Key": this.apiKey } : void 0;
       const response = await fetch(resolvedUrl, { headers });
       if (!response.ok) {
         console.error(`\u274C Failed to download asset: HTTP ${response.status}`);
