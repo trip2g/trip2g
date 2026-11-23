@@ -7,13 +7,13 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	pathpkg "path"
 	"strings"
 
 	"trip2g/internal/db"
 	"trip2g/internal/frontmatteredit"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/notepath"
 	"trip2g/internal/webhookutil"
 )
 
@@ -40,26 +40,6 @@ func hashContent(content []byte) string {
 	return base64.URLEncoding.EncodeToString(h.Sum(nil))
 }
 
-// normalizeNotePath mirrors agentruntime's scope-path normalization: clients
-// (especially small LLMs) sometimes prepend "/" or "./" to a path, but
-// write_patterns and nvs.PathMap keys are both slash-less. Strips leading "/"
-// and "./", then path.Clean-resolves "."/".." segments. Returns "" when the
-// path resolves outside the vault root — callers treat that as invalid.
-func normalizeNotePath(p string) string {
-	p = strings.TrimSpace(p)
-	for strings.HasPrefix(p, "./") || strings.HasPrefix(p, "/") {
-		p = strings.TrimPrefix(strings.TrimPrefix(p, "./"), "/")
-	}
-	if p == "" {
-		return ""
-	}
-	c := pathpkg.Clean(p)
-	if c == "." || c == ".." || strings.HasPrefix(c, "../") {
-		return ""
-	}
-	return c
-}
-
 func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
 	if webhookutil.WriteScopeDenied(ctx, path) {
 		return &model.ErrorPayload{Message: "write denied for path: " + path}
@@ -70,7 +50,7 @@ func webhookWriteDenied(ctx context.Context, path string) *model.ErrorPayload {
 // normalizeAndAuthorize normalizes a change path and checks it against the
 // request's write scope. Returns the canonical path, or an ErrorPayload.
 func normalizeAndAuthorize(ctx context.Context, raw string) (string, *model.ErrorPayload) {
-	norm := normalizeNotePath(raw)
+	norm := notepath.Normalize(raw)
 	if norm == "" {
 		return "", &model.ErrorPayload{Message: "invalid path: " + raw}
 	}
