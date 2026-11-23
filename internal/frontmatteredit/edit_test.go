@@ -428,3 +428,22 @@ func TestApplyRefuses(t *testing.T) {
 		})
 	}
 }
+
+func TestBody(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{name: "frontmatter is cut", content: "---\nstatus: done\n---\nBody\n", want: "Body\n"},
+		{name: "byte order mark before the fence", content: "\uFEFF---\na: 1\n---\nBody", want: "Body"},
+		{name: "no frontmatter", content: "Body\n", want: "Body\n"},
+		{name: "unclosed frontmatter is kept", content: "---\na: 1\nBody\n", want: "---\na: 1\nBody\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, frontmatteredit.Body(tt.content))
+		})
+	}
+}

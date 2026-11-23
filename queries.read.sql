@@ -1664,6 +1664,31 @@ select count(*) from note_versions nv
   join note_paths np on np.id = nv.path_id
  where np.value = ?;
 
+-- name: ListNoteVersionsWithEditorByPath :many
+select
+  nv.id,
+  nv.version,
+  nv.content,
+  nv.created_at,
+  nv.created_by_user_id,
+  nv.created_by_api_key_id,
+  nv.created_by_client,
+  u.email       as user_email,
+  k.description as api_key_description
+from note_versions nv
+join note_paths np on np.id = nv.path_id
+left join users u on u.id = nv.created_by_user_id
+left join api_keys k on k.id = nv.created_by_api_key_id
+where np.value = ?
+order by nv.version;
+
+-- name: ListNoteVersionFrontmattersByPath :many
+select f.version_id, cast(f.data as text) as data
+from note_version_frontmatters f
+join note_versions nv on nv.id = f.version_id
+join note_paths np on np.id = nv.path_id
+where np.value = ?;
+
 -- name: GetSecret :one
 select id, key, value_crypt, created_at, created_by from secrets where key = ?;
 

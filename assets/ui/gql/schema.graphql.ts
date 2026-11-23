@@ -1275,6 +1275,52 @@ export type AdminNoteAsset = {
   url: Scalars['String']['output'];
 };
 
+export type AdminNoteFieldChange = {
+  __typename?: 'AdminNoteFieldChange';
+  from?: Maybe<Scalars['JSON']['output']>;
+  key: Scalars['String']['output'];
+  to?: Maybe<Scalars['JSON']['output']>;
+};
+
+export type AdminNoteFieldHistory = {
+  __typename?: 'AdminNoteFieldHistory';
+  nodes: Array<AdminNoteFieldHistoryEntry>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type AdminNoteFieldHistoryEntry = {
+  __typename?: 'AdminNoteFieldHistoryEntry';
+  author: AdminNoteVersionAuthor;
+  bodyChanged: Scalars['Boolean']['output'];
+  changes: Array<AdminNoteFieldChange>;
+  createdAt: Scalars['Time']['output'];
+  kind: AdminNoteFieldHistoryKind;
+  version: Scalars['Int']['output'];
+  versionId: Scalars['Int64']['output'];
+};
+
+export type AdminNoteFieldHistoryFilter = {
+  includeBodyOnly?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  path: Scalars['String']['input'];
+};
+
+export enum AdminNoteFieldHistoryKind {
+  BODY_ONLY = 'BODY_ONLY',
+  CHANGED = 'CHANGED',
+  CREATED = 'CREATED',
+  UNKNOWN = 'UNKNOWN'
+}
+
+export type AdminNoteVersionAuthor = {
+  __typename?: 'AdminNoteVersionAuthor';
+  apiKeyId?: Maybe<Scalars['Int64']['output']>;
+  client?: Maybe<Scalars['String']['output']>;
+  label: Scalars['String']['output'];
+  userId?: Maybe<Scalars['Int64']['output']>;
+};
+
 export type AdminNoteVersionDetail = {
   __typename?: 'AdminNoteVersionDetail';
   content: Scalars['String']['output'];
@@ -1530,6 +1576,7 @@ export type AdminQuery = {
   htmlInjection?: Maybe<AdminHtmlInjection>;
   layoutBlocks: Array<LayoutBlock>;
   noteAsset?: Maybe<AdminNoteAsset>;
+  noteFieldHistory: AdminNoteFieldHistory;
   noteVersion?: Maybe<AdminNoteVersionDetail>;
   noteVersionDiff?: Maybe<NoteVersionDiff>;
   noteVersionHistory: AdminNoteVersionHistoryConnection;
@@ -1682,6 +1729,11 @@ export type AdminQueryhtmlInjectionArgs = {
 
 export type AdminQuerynoteAssetArgs = {
   id: Scalars['Int64']['input'];
+};
+
+
+export type AdminQuerynoteFieldHistoryArgs = {
+  filter: AdminNoteFieldHistoryFilter;
 };
 
 

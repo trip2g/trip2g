@@ -835,6 +835,41 @@ type AdminNotFoundPathsConnection struct {
 	Nodes []db.NotFoundPath `json:"nodes"`
 }
 
+type AdminNoteFieldChange struct {
+	Key  string `json:"key"`
+	From any    `json:"from,omitempty"`
+	To   any    `json:"to,omitempty"`
+}
+
+type AdminNoteFieldHistory struct {
+	Nodes      []AdminNoteFieldHistoryEntry `json:"nodes"`
+	TotalCount int32                        `json:"totalCount"`
+}
+
+type AdminNoteFieldHistoryEntry struct {
+	VersionID   int64                     `json:"versionId"`
+	Version     int32                     `json:"version"`
+	CreatedAt   time.Time                 `json:"createdAt"`
+	Kind        AdminNoteFieldHistoryKind `json:"kind"`
+	Author      *AdminNoteVersionAuthor   `json:"author"`
+	Changes     []AdminNoteFieldChange    `json:"changes"`
+	BodyChanged bool                      `json:"bodyChanged"`
+}
+
+type AdminNoteFieldHistoryFilter struct {
+	Path            string `json:"path"`
+	Limit           *int32 `json:"limit,omitempty"`
+	Offset          *int32 `json:"offset,omitempty"`
+	IncludeBodyOnly *bool  `json:"includeBodyOnly,omitempty"`
+}
+
+type AdminNoteVersionAuthor struct {
+	Label    string  `json:"label"`
+	UserID   *int64  `json:"userId,omitempty"`
+	APIKeyID *int64  `json:"apiKeyId,omitempty"`
+	Client   *string `json:"client,omitempty"`
+}
+
 type AdminNoteVersionDetail struct {
 	VersionID int64     `json:"versionId"`
 	Path      string    `json:"path"`
@@ -3095,6 +3130,65 @@ type Vector2 struct {
 
 type ViewerOffersFilter struct {
 	PageID *int64 `json:"pageId,omitempty"`
+}
+
+type AdminNoteFieldHistoryKind string
+
+const (
+	AdminNoteFieldHistoryKindCreated  AdminNoteFieldHistoryKind = "CREATED"
+	AdminNoteFieldHistoryKindChanged  AdminNoteFieldHistoryKind = "CHANGED"
+	AdminNoteFieldHistoryKindBodyOnly AdminNoteFieldHistoryKind = "BODY_ONLY"
+	AdminNoteFieldHistoryKindUnknown  AdminNoteFieldHistoryKind = "UNKNOWN"
+)
+
+var AllAdminNoteFieldHistoryKind = []AdminNoteFieldHistoryKind{
+	AdminNoteFieldHistoryKindCreated,
+	AdminNoteFieldHistoryKindChanged,
+	AdminNoteFieldHistoryKindBodyOnly,
+	AdminNoteFieldHistoryKindUnknown,
+}
+
+func (e AdminNoteFieldHistoryKind) IsValid() bool {
+	switch e {
+	case AdminNoteFieldHistoryKindCreated, AdminNoteFieldHistoryKindChanged, AdminNoteFieldHistoryKindBodyOnly, AdminNoteFieldHistoryKindUnknown:
+		return true
+	}
+	return false
+}
+
+func (e AdminNoteFieldHistoryKind) String() string {
+	return string(e)
+}
+
+func (e *AdminNoteFieldHistoryKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AdminNoteFieldHistoryKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AdminNoteFieldHistoryKind", str)
+	}
+	return nil
+}
+
+func (e AdminNoteFieldHistoryKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *AdminNoteFieldHistoryKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e AdminNoteFieldHistoryKind) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type AdminTelegramAccountAuthStateEnum string

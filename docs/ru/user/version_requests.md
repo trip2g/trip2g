@@ -74,3 +74,45 @@ noteVersionHistory(filter: { path: "папка/моя-заметка.md", limit:
 ```
 
 Размер страницы по умолчанию — 50 записей. Общее количество версий возвращает поле `totalCount`.
+
+### Кто какое поле поменял
+
+Для заметок-записей — задачи со `status`, `owner` и `due` во frontmatter — `noteFieldHistory` перечисляет от новых к старым, какие поля frontmatter изменила каждая версия и кто её отправил:
+
+```graphql
+query {
+  admin {
+    noteFieldHistory(filter: { path: "tasks/ship.md" }) {
+      totalCount
+      nodes {
+        versionId
+        createdAt
+        kind
+        author { label userId apiKeyId client }
+        changes { key from to }
+        bodyChanged
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "versionId": 212,
+  "createdAt": "2026-11-23T14:02:00Z",
+  "kind": "CHANGED",
+  "author": { "label": "alexey@example.com · via web", "userId": 7, "apiKeyId": null, "client": "web" },
+  "changes": [
+    { "key": "due", "from": null, "to": "2026-11-24" },
+    { "key": "status", "from": "Planned", "to": "In progress" }
+  ],
+  "bodyChanged": false
+}
+```
+
+- В `changes` только ключи, которые отличаются от предыдущей версии, по алфавиту. У появившегося ключа `from: null`, у удалённого — `to: null`. Значения — JSON в том виде, в каком они лежат во frontmatter, уже с применёнными патчами frontmatter.
+- `kind` равен `CREATED` у первой версии (все ключи, у каждого `from: null`), `CHANGED`, когда поменялось поле, `BODY_ONLY`, когда поменялся только текст под frontmatter, и `UNKNOWN`, когда эта версия или предыдущая сохранены до того, как trip2g начал хранить разобранный frontmatter, — изменения полей неизвестны, и `changes` пуст.
+- Версии `BODY_ONLY` пропускаются, если не передать `includeBodyOnly: true`. `bodyChanged` показывает, отличается ли текст под frontmatter от предыдущей версии.
+- `author.label` — email пользователя или описание API-ключа, с ` · via <client>`, если клиент себя назвал. Пусто у версий, сохранённых до того, как trip2g начал записывать авторов.
+- `limit` (по умолчанию 50) и `offset` листают записи; `totalCount` — сколько записей возвращает фильтр.

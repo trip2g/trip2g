@@ -74,3 +74,45 @@ noteVersionHistory(filter: { path: "folder/my-note.md", limit: 20, offset: 40 })
 ```
 
 The default page size is 50. `totalCount` tells you how many versions exist in total.
+
+### Who changed which field
+
+For notes used as records — a task with `status`, `owner` and `due` in its frontmatter — `noteFieldHistory` lists, newest first, which frontmatter fields each version changed and who pushed it:
+
+```graphql
+query {
+  admin {
+    noteFieldHistory(filter: { path: "tasks/ship.md" }) {
+      totalCount
+      nodes {
+        versionId
+        createdAt
+        kind
+        author { label userId apiKeyId client }
+        changes { key from to }
+        bodyChanged
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "versionId": 212,
+  "createdAt": "2026-11-23T14:02:00Z",
+  "kind": "CHANGED",
+  "author": { "label": "alexey@example.com · via web", "userId": 7, "apiKeyId": null, "client": "web" },
+  "changes": [
+    { "key": "due", "from": null, "to": "2026-11-24" },
+    { "key": "status", "from": "Planned", "to": "In progress" }
+  ],
+  "bodyChanged": false
+}
+```
+
+- `changes` holds only the keys that differ from the previous version, sorted by key. A key that appeared has `from: null`; a key that was removed has `to: null`. Values are JSON as the frontmatter holds them, after frontmatter patches.
+- `kind` is `CREATED` for the first version (every key, each with `from: null`), `CHANGED` when a field changed, `BODY_ONLY` when only the text below the frontmatter changed, and `UNKNOWN` when this version or the one before it was saved before trip2g began storing parsed frontmatter — its field changes are not known, and `changes` is empty.
+- `BODY_ONLY` versions are skipped unless you pass `includeBodyOnly: true`. `bodyChanged` tells whether the text below the frontmatter differs from the previous version.
+- `author.label` is the user's email, or the API key's description, with ` · via <client>` when the push named its client. It is empty for versions saved before trip2g recorded authors.
+- `limit` (default 50) and `offset` page the entries; `totalCount` counts the entries the filter returns.

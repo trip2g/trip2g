@@ -5944,6 +5944,106 @@ func (q *Queries) ListNotePathsLike(ctx context.Context, value string) ([]NotePa
 	return items, nil
 }
 
+const listNoteVersionFrontmattersByPath = `-- name: ListNoteVersionFrontmattersByPath :many
+select f.version_id, cast(f.data as text) as data
+from note_version_frontmatters f
+join note_versions nv on nv.id = f.version_id
+join note_paths np on np.id = nv.path_id
+where np.value = ?
+`
+
+type ListNoteVersionFrontmattersByPathRow struct {
+	VersionID int64  `json:"version_id"`
+	Data      string `json:"data"`
+}
+
+func (q *Queries) ListNoteVersionFrontmattersByPath(ctx context.Context, value string) ([]ListNoteVersionFrontmattersByPathRow, error) {
+	rows, err := q.db.QueryContext(ctx, listNoteVersionFrontmattersByPath, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListNoteVersionFrontmattersByPathRow
+	for rows.Next() {
+		var i ListNoteVersionFrontmattersByPathRow
+		if err := rows.Scan(&i.VersionID, &i.Data); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listNoteVersionsWithEditorByPath = `-- name: ListNoteVersionsWithEditorByPath :many
+select
+  nv.id,
+  nv.version,
+  nv.content,
+  nv.created_at,
+  nv.created_by_user_id,
+  nv.created_by_api_key_id,
+  nv.created_by_client,
+  u.email       as user_email,
+  k.description as api_key_description
+from note_versions nv
+join note_paths np on np.id = nv.path_id
+left join users u on u.id = nv.created_by_user_id
+left join api_keys k on k.id = nv.created_by_api_key_id
+where np.value = ?
+order by nv.version
+`
+
+type ListNoteVersionsWithEditorByPathRow struct {
+	ID                int64     `json:"id"`
+	Version           int64     `json:"version"`
+	Content           string    `json:"content"`
+	CreatedAt         time.Time `json:"created_at"`
+	CreatedByUserID   *int64    `json:"created_by_user_id"`
+	CreatedByApiKeyID *int64    `json:"created_by_api_key_id"`
+	CreatedByClient   *string   `json:"created_by_client"`
+	UserEmail         *string   `json:"user_email"`
+	ApiKeyDescription *string   `json:"api_key_description"`
+}
+
+func (q *Queries) ListNoteVersionsWithEditorByPath(ctx context.Context, value string) ([]ListNoteVersionsWithEditorByPathRow, error) {
+	rows, err := q.db.QueryContext(ctx, listNoteVersionsWithEditorByPath, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListNoteVersionsWithEditorByPathRow
+	for rows.Next() {
+		var i ListNoteVersionsWithEditorByPathRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Version,
+			&i.Content,
+			&i.CreatedAt,
+			&i.CreatedByUserID,
+			&i.CreatedByApiKeyID,
+			&i.CreatedByClient,
+			&i.UserEmail,
+			&i.ApiKeyDescription,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOIDCCredentials = `-- name: ListOIDCCredentials :many
 select id, name, issuer, client_id, client_secret_encrypted, scopes, auto_provision, allowed_email_domain, required_group, active, created_at, created_by, display_name from oidc_credentials order by created_at desc
 `
