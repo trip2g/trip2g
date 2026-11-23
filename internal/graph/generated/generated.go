@@ -86,7 +86,6 @@ type ResolverRoot interface {
 	AdminGoogleOAuthCredentialsConnection() AdminGoogleOAuthCredentialsConnectionResolver
 	AdminHtmlInjection() AdminHtmlInjectionResolver
 	AdminHtmlInjectionsConnection() AdminHtmlInjectionsConnectionResolver
-	AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver
 	AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver
 	AdminMutation() AdminMutationResolver
 	AdminNotFoundIgnoredPattern() AdminNotFoundIgnoredPatternResolver
@@ -369,9 +368,6 @@ type AdminHtmlInjectionResolver interface {
 type AdminHtmlInjectionsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminHTMLInjectionsConnection) ([]db.HtmlInjection, error)
 }
-type AdminLatestNoteAssetsConnectionResolver interface {
-	Nodes(ctx context.Context, obj *model.AdminLatestNoteAssetsConnection) ([]db.NoteAsset, error)
-}
 type AdminLatestNoteViewsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminLatestNoteViewsConnection) ([]model1.NoteView, error)
 }
@@ -562,7 +558,7 @@ type AdminQueryResolver interface {
 	AllRedirects(ctx context.Context, obj *model1.AdminQuery) (*model.AdminRedirectsConnection, error)
 	AllNotFoundPaths(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundPathsConnection, error)
 	AllNotFoundIgnoredPatterns(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundIgnoredPatternsConnection, error)
-	AllLatestNoteAssets(ctx context.Context, obj *model1.AdminQuery) (*model.AdminLatestNoteAssetsConnection, error)
+	AllLatestNoteAssets(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminLatestNoteAssetsFilter) (*model.AdminLatestNoteAssetsConnection, error)
 	AllHTMLInjections(ctx context.Context, obj *model1.AdminQuery) (*model.AdminHTMLInjectionsConnection, error)
 	AllCronJobs(ctx context.Context, obj *model1.AdminQuery) (*model.AdminCronJobsConnection, error)
 	AllTelegramPublishTags(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramPublishTagsConnection, error)
@@ -980,6 +976,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminFormSubmitsDateFilter,
 		ec.unmarshalInputAdminFormSubmitsFilterInput,
 		ec.unmarshalInputAdminImportTelegramAccountChannelInput,
+		ec.unmarshalInputAdminLatestNoteAssetsFilter,
 		ec.unmarshalInputAdminLatestNoteViewsFilter,
 		ec.unmarshalInputAdminNoteFieldHistoryFilter,
 		ec.unmarshalInputAdminNoteVersionHistoryFilter,
@@ -1940,8 +1937,25 @@ type AdminNoteAsset @goModel(model: "trip2g/internal/db.NoteAsset") {
   size: Int64!
 }
 
+"""
+Narrows admin.allLatestNoteAssets. Without a filter, or without limit, every
+asset is listed.
+"""
+input AdminLatestNoteAssetsFilter {
+  "Keeps assets whose absolutePath starts with it, e.g. \"/uploads/\"."
+  pathPrefix: String
+  "Keeps assets whose absolutePath contains it, ignoring case."
+  search: String
+  "Page size, at most 500."
+  limit: Int
+  offset: Int
+}
+
+"Each asset once, newest first."
 type AdminLatestNoteAssetsConnection {
-  nodes: [AdminNoteAsset!]! @goField(forceResolver: true)
+  nodes: [AdminNoteAsset!]!
+  "Assets matching the filter, before limit and offset."
+  totalCount: Int!
 }
 
 type AdminHtmlInjection @goModel(model: "trip2g/internal/db.HtmlInjection") {
@@ -2563,7 +2577,7 @@ type AdminQuery {
   allRedirects: AdminRedirectsConnection!
   allNotFoundPaths: AdminNotFoundPathsConnection!
   allNotFoundIgnoredPatterns: AdminNotFoundIgnoredPatternsConnection!
-  allLatestNoteAssets: AdminLatestNoteAssetsConnection!
+  allLatestNoteAssets(filter: AdminLatestNoteAssetsFilter): AdminLatestNoteAssetsConnection!
   allHtmlInjections: AdminHtmlInjectionsConnection!
   allCronJobs: AdminCronJobsConnection!
   allTelegramPublishTags: AdminTelegramPublishTagsConnection!
@@ -6656,6 +6670,17 @@ func (ec *executionContext) field_AdminQuery_allBoostyCredentials_args(ctx conte
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOAdminBoostyCredentialsFilterInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyCredentialsFilterInput)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_allLatestNoteAssets_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOAdminLatestNoteAssetsFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteAssetsFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -15898,7 +15923,7 @@ func (ec *executionContext) _AdminLatestNoteAssetsConnection_nodes(ctx context.C
 		field,
 		ec.fieldContext_AdminLatestNoteAssetsConnection_nodes,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminLatestNoteAssetsConnection().Nodes(ctx, obj)
+			return obj.Nodes, nil
 		},
 		nil,
 		ec.marshalNAdminNoteAsset2ᚕtrip2gᚋinternalᚋdbᚐNoteAssetᚄ,
@@ -15911,8 +15936,8 @@ func (ec *executionContext) fieldContext_AdminLatestNoteAssetsConnection_nodes(_
 	fc = &graphql.FieldContext{
 		Object:     "AdminLatestNoteAssetsConnection",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -15929,6 +15954,35 @@ func (ec *executionContext) fieldContext_AdminLatestNoteAssetsConnection_nodes(_
 				return ec.fieldContext_AdminNoteAsset_size(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminNoteAsset", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminLatestNoteAssetsConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminLatestNoteAssetsConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminLatestNoteAssetsConnection_totalCount,
+		func(ctx context.Context) (any, error) {
+			return obj.TotalCount, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminLatestNoteAssetsConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminLatestNoteAssetsConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -25187,7 +25241,8 @@ func (ec *executionContext) _AdminQuery_allLatestNoteAssets(ctx context.Context,
 		field,
 		ec.fieldContext_AdminQuery_allLatestNoteAssets,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminQuery().AllLatestNoteAssets(ctx, obj)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().AllLatestNoteAssets(ctx, obj, fc.Args["filter"].(*model.AdminLatestNoteAssetsFilter))
 		},
 		nil,
 		ec.marshalNAdminLatestNoteAssetsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteAssetsConnection,
@@ -25196,7 +25251,7 @@ func (ec *executionContext) _AdminQuery_allLatestNoteAssets(ctx context.Context,
 	)
 }
 
-func (ec *executionContext) fieldContext_AdminQuery_allLatestNoteAssets(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminQuery_allLatestNoteAssets(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminQuery",
 		Field:      field,
@@ -25206,9 +25261,22 @@ func (ec *executionContext) fieldContext_AdminQuery_allLatestNoteAssets(_ contex
 			switch field.Name {
 			case "nodes":
 				return ec.fieldContext_AdminLatestNoteAssetsConnection_nodes(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_AdminLatestNoteAssetsConnection_totalCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminLatestNoteAssetsConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_allLatestNoteAssets_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -51077,6 +51145,54 @@ func (ec *executionContext) unmarshalInputAdminImportTelegramAccountChannelInput
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAdminLatestNoteAssetsFilter(ctx context.Context, obj any) (model.AdminLatestNoteAssetsFilter, error) {
+	var it model.AdminLatestNoteAssetsFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pathPrefix", "search", "limit", "offset"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pathPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PathPrefix = data
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Limit = data
+		case "offset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Offset = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdminLatestNoteViewsFilter(ctx context.Context, obj any) (model.AdminLatestNoteViewsFilter, error) {
 	var it model.AdminLatestNoteViewsFilter
 	asMap := map[string]any{}
@@ -65119,41 +65235,15 @@ func (ec *executionContext) _AdminLatestNoteAssetsConnection(ctx context.Context
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AdminLatestNoteAssetsConnection")
 		case "nodes":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminLatestNoteAssetsConnection_nodes(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminLatestNoteAssetsConnection_nodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
+		case "totalCount":
+			out.Values[i] = ec._AdminLatestNoteAssetsConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -97809,6 +97899,14 @@ func (ec *executionContext) marshalOAdminHtmlInjection2ᚖtrip2gᚋinternalᚋdb
 		return graphql.Null
 	}
 	return ec._AdminHtmlInjection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOAdminLatestNoteAssetsFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteAssetsFilter(ctx context.Context, v any) (*model.AdminLatestNoteAssetsFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAdminLatestNoteAssetsFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOAdminLatestNoteViewsFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteViewsFilter(ctx context.Context, v any) (*model.AdminLatestNoteViewsFilter, error) {

@@ -703,8 +703,25 @@ type AdminNoteAsset @goModel(model: "trip2g/internal/db.NoteAsset") {
   size: Int64!
 }
 
+"""
+Narrows admin.allLatestNoteAssets. Without a filter, or without limit, every
+asset is listed.
+"""
+input AdminLatestNoteAssetsFilter {
+  "Keeps assets whose absolutePath starts with it, e.g. \"/uploads/\"."
+  pathPrefix: String
+  "Keeps assets whose absolutePath contains it, ignoring case."
+  search: String
+  "Page size, at most 500."
+  limit: Int
+  offset: Int
+}
+
+"Each asset once, newest first."
 type AdminLatestNoteAssetsConnection {
-  nodes: [AdminNoteAsset!]! @goField(forceResolver: true)
+  nodes: [AdminNoteAsset!]!
+  "Assets matching the filter, before limit and offset."
+  totalCount: Int!
 }
 
 type AdminHtmlInjection @goModel(model: "trip2g/internal/db.HtmlInjection") {
@@ -1326,7 +1343,7 @@ type AdminQuery {
   allRedirects: AdminRedirectsConnection!
   allNotFoundPaths: AdminNotFoundPathsConnection!
   allNotFoundIgnoredPatterns: AdminNotFoundIgnoredPatternsConnection!
-  allLatestNoteAssets: AdminLatestNoteAssetsConnection!
+  allLatestNoteAssets(filter: AdminLatestNoteAssetsFilter): AdminLatestNoteAssetsConnection!
   allHtmlInjections: AdminHtmlInjectionsConnection!
   allCronJobs: AdminCronJobsConnection!
   allTelegramPublishTags: AdminTelegramPublishTagsConnection!

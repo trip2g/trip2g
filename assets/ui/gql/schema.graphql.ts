@@ -601,9 +601,26 @@ export type AdminImportTelegramAccountChannelPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+/** Each asset once, newest first. */
 export type AdminLatestNoteAssetsConnection = {
   __typename?: 'AdminLatestNoteAssetsConnection';
   nodes: Array<AdminNoteAsset>;
+  /** Assets matching the filter, before limit and offset. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/**
+ * Narrows admin.allLatestNoteAssets. Without a filter, or without limit, every
+ * asset is listed.
+ */
+export type AdminLatestNoteAssetsFilter = {
+  /** Page size, at most 500. */
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  /** Keeps assets whose absolutePath starts with it, e.g. "/uploads/". */
+  pathPrefix?: InputMaybe<Scalars['String']['input']>;
+  /** Keeps assets whose absolutePath contains it, ignoring case. */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type AdminLatestNoteViewsConnection = {
@@ -1612,6 +1629,11 @@ export type AdminQueryactiveUserSubgraphsArgs = {
 
 export type AdminQueryallBoostyCredentialsArgs = {
   filter?: InputMaybe<AdminBoostyCredentialsFilterInput>;
+};
+
+
+export type AdminQueryallLatestNoteAssetsArgs = {
+  filter?: InputMaybe<AdminLatestNoteAssetsFilter>;
 };
 
 
