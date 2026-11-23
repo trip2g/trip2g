@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/logger"
 
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/notepath"
 )
 
 type Env interface {
@@ -73,13 +74,12 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	// Validate the whole batch before writing anything: callers (e.g. gitapi's
 	// applyDiff) roll back only their own state on failure, so a partially
 	// inserted prefix would diverge the DB from Git.
-	for _, update := range input.Updates {
-		if errPayload := validateUpdate(log, update); errPayload != nil {
-			return errPayload, nil
-		}
+	updates, errPayload := validateUpdates(log, input.Updates)
+	if errPayload != nil {
+		return errPayload, nil
 	}
 
-	for _, update := range input.Updates {
+	for _, update := range updates {
 		mismatch, err := checkExpectedHash(ctx, env, update)
 		if err != nil {
 			return nil, err
@@ -164,6 +164,26 @@ func checkExpectedHash(ctx context.Context, env Env, update model.PushNoteInput)
 	}
 
 	return &model.NoteHashMismatch{Path: update.Path, ActualHash: actualHash}, nil
+}
+
+func validateUpdates(log logger.Logger, raw []model.PushNoteInput) ([]model.PushNoteInput, *model.ErrorPayload) {
+	updates := make([]model.PushNoteInput, 0, len(raw))
+	for _, update := range raw {
+		normalized := notepath.Normalize(update.Path)
+		if normalized == "" {
+			log.Info("invalid note path", "path", update.Path)
+			return nil, &model.ErrorPayload{Message: "invalid path: " + update.Path}
+		}
+
+		update.Path = normalized
+		if errPayload := validateUpdate(log, update); errPayload != nil {
+			return nil, errPayload
+		}
+
+		updates = append(updates, update)
+	}
+
+	return updates, nil
 }
 
 func validateUpdate(log logger.Logger, update model.PushNoteInput) *model.ErrorPayload {

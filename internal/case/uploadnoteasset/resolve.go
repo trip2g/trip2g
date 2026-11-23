@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/notepath"
 	"trip2g/internal/translit"
 	"trip2g/internal/webhookutil"
 )
@@ -60,7 +61,29 @@ func scopedWriteDenied(ctx context.Context, env Env, noteID int64) (*model.Error
 	return nil, nil
 }
 
+// normalizeAbsolutePath keeps the leading "/" convention of stored asset paths
+// while resolving "."/".." segments; ok is false when the path leaves the vault.
+func normalizeAbsolutePath(raw string) (string, bool) {
+	normalized := notepath.Normalize(raw)
+	if normalized == "" {
+		return "", false
+	}
+
+	if strings.HasPrefix(raw, "/") {
+		return "/" + normalized, true
+	}
+
+	return normalized, true
+}
+
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	absolutePath, ok := normalizeAbsolutePath(input.AbsolutePath)
+	if !ok {
+		return &model.ErrorPayload{Message: "invalid asset path: " + input.AbsolutePath}, nil
+	}
+
+	input.AbsolutePath = absolutePath
+
 	denied, deniedErr := scopedWriteDenied(ctx, env, input.NoteID)
 	if deniedErr != nil {
 		return nil, deniedErr
