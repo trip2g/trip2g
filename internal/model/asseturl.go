@@ -1,13 +1,25 @@
 package model
 
 import (
+	"mime"
 	"net/url"
+	"path/filepath"
 	"strings"
 )
 
 // AssetRoutePrefix is the stable, content-addressed note-asset route prefix.
 // Assets are served as /_system/assets/{sha256}/{fileName}.
 const AssetRoutePrefix = "/_system/assets/"
+
+// AssetContentType is the Content-Type the asset route serves for fileName.
+func AssetContentType(fileName string) string {
+	t := mime.TypeByExtension(filepath.Ext(fileName))
+	if t == "" {
+		return "application/octet-stream"
+	}
+
+	return t
+}
 
 // NoteAssetURLPath builds the stable public URL path for a note asset.
 // The URL is content-addressed (sha256), so it never expires and is safe to

@@ -701,6 +701,10 @@ type AdminNoteAsset @goModel(model: "trip2g/internal/db.NoteAsset") {
   createdAt: Time!
   url: String!
   size: Int64!
+  "The Content-Type the asset URL serves, from the file name's extension."
+  contentType: String!
+  "The published notes that embed or link this file."
+  notes: [NoteView!]!
 }
 
 type AdminLatestNoteAssetsConnection {
