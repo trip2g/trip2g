@@ -220,3 +220,33 @@ func TestHideNotesExpectedHash(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, contentHash("restored"), actual)
 }
+
+func TestHideNotesHidesLegacyUnnormalizedRow(t *testing.T) {
+	a := newTxTestApp(t)
+	ctx := newNoteTestRequest(t, a)
+
+	user, err := a.WriteQueries.InsertUserWithEmail(ctx, db.InsertUserWithEmailParams{Email: "admin@example.com", CreatedVia: "test"})
+	require.NoError(t, err)
+	_, err = a.WriteQueries.InsertAdmin(ctx, db.InsertAdminParams{UserID: user.ID})
+	require.NoError(t, err)
+
+	legacy := "legacy/../../x.md"
+	_, err = a.WriteQueries.InsertNotePath(ctx, db.InsertNotePathParams{Value: legacy, ValueHash: "legacyhash", LatestContentHash: "h"})
+	require.NoError(t, err)
+
+	fctx := newNoteTestRequest(t, a)
+	require.NoError(t, a.AcquireTxEnvInRequest(fctx, "hideNotes"))
+
+	input := model.HideNotesInput{
+		Paths:  []string{legacy},
+		ApiKey: db.ApiKey{CreatedBy: user.ID},
+	}
+	result, err := hidenotes.Resolve(fctx, requestTxEnv(fctx), input)
+	require.NoError(t, err)
+	require.NoError(t, a.ReleaseTxEnvInRequest(fctx, true))
+	require.IsType(t, &model.HideNotesPayload{}, result)
+
+	row, err := a.WriteQueries.InsertNotePath(ctx, db.InsertNotePathParams{Value: legacy, ValueHash: "legacyhash", LatestContentHash: "h"})
+	require.NoError(t, err)
+	require.NotNil(t, row.HiddenBy)
+}

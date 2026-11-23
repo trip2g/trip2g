@@ -11,6 +11,7 @@ import (
 
 	"trip2g/internal/frontmatteredit"
 	"trip2g/internal/model"
+	"trip2g/internal/notepath"
 	"trip2g/internal/ptr"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -118,6 +119,12 @@ func (c AgentChange) Validate() error {
 func ResolveAgentChanges(changes []AgentChange, nvs *model.NoteViews, writePatterns []string) ([]model.RawNote, error) {
 	notes := make([]model.RawNote, 0, len(changes))
 	for _, change := range changes {
+		normalized := notepath.Normalize(change.Path)
+		if normalized == "" {
+			return nil, fmt.Errorf("invalid path %q", change.Path)
+		}
+		change.Path = normalized
+
 		// Deny-all when write_patterns is empty: a webhook delivery is always a
 		// scoped context, so an empty list means "no writes permitted" rather
 		// than "allow all". Also deny on no-match when non-empty.
