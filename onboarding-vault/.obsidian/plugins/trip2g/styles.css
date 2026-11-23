@@ -554,3 +554,12 @@ img[src*="ce.trip2g.com"] {
 	font-size: 14px;
 	padding: 8px 14px;
 }
+
+.trip2g-status-bar-url {
+	cursor: pointer;
+}
+
+.trip2g-sync-dir-error {
+	color: var(--text-error);
+	margin-bottom: 10px;
+}
