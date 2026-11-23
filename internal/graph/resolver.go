@@ -54,6 +54,7 @@ import (
 	"trip2g/internal/case/admin/federationpeerscope"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
+	"trip2g/internal/case/admin/listnotefieldhistory"
 	"trip2g/internal/case/admin/listsecretkeys"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/markformsubmitprocessed"
@@ -423,6 +424,7 @@ type Env interface {
 	// Secrets
 	setsecret.Env
 	deletesecret.Env
+	listnotefieldhistory.Env
 	listsecretkeys.Env
 
 	// Frontmatter patches

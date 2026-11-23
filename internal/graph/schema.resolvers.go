@@ -67,6 +67,7 @@ import (
 	"trip2g/internal/case/admin/federationpeerscope"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/listfederationsecrets"
+	"trip2g/internal/case/admin/listnotefieldhistory"
 	"trip2g/internal/case/admin/listsecretkeys"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/markformsubmitprocessed"
@@ -2021,6 +2022,11 @@ func (r *adminQueryResolver) NoteVersionDiff(ctx context.Context, obj *appmodel.
 		RemovedLines: int32(d.RemovedLines),
 		ChangedWords: int32(d.ChangedWords),
 	}, nil
+}
+
+// NoteFieldHistory is the resolver for the noteFieldHistory field.
+func (r *adminQueryResolver) NoteFieldHistory(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminNoteFieldHistoryFilter) (*model.AdminNoteFieldHistory, error) {
+	return listnotefieldhistory.Resolve(ctx, r.env(ctx), filter)
 }
 
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.

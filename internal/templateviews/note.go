@@ -35,6 +35,17 @@ type NoteEditor struct {
 	CreatedAt         time.Time // when the version was committed
 }
 
+func (e *NoteEditor) Label() string {
+	label := e.UserEmail
+	if label == "" {
+		label = e.APIKeyDescription
+	}
+	if e.Client != "" {
+		label += " · via " + e.Client
+	}
+	return label
+}
+
 // NewNote creates a new template Note wrapper.
 func NewNote(nv *model.NoteView) *Note {
 	if nv == nil {
@@ -211,15 +222,7 @@ func (n *Note) LastEditedByLabel() string {
 	if editor == nil {
 		return ""
 	}
-
-	label := editor.UserEmail
-	if label == "" {
-		label = editor.APIKeyDescription
-	}
-	if editor.Client != "" {
-		label += " · via " + editor.Client
-	}
-	return label
+	return editor.Label()
 }
 
 // HasCharts reports whether the note contains any datachart blocks. Drives

@@ -88,6 +88,14 @@ func Validate(set map[string]any, unset []string) error {
 	return nil
 }
 
+func Body(content string) string {
+	f, err := split(strings.TrimPrefix(content, bom))
+	if err != nil {
+		return content
+	}
+	return f.body
+}
+
 func validateKey(key string) error {
 	if strings.TrimSpace(key) == "" {
 		return ErrEmptyKey
