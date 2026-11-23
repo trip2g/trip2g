@@ -67,6 +67,7 @@ type Env interface {
 	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
 	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
+	CommitNotes(ctx context.Context) (model.CommitNotesOrErrorPayload, error)
 
 	// materialize / mirror
 	LatestNoteSources(ctx context.Context) ([]NoteSource, error)

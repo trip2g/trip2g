@@ -1,15 +1,20 @@
 package gitapi
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"trip2g/internal/graph/model"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 const emptyTree = "4b825dc642cb6eb9a060e54bf8d69288fbee4904" // git's well-known empty tree
@@ -43,9 +48,10 @@ func (api *API) diffChangedFiles(oldRev, newRev string) ([]string, []string, err
 	return changed, deleted, nil
 }
 
-// applyDiff applies the changes between oldRev and newRev to the DB:
-// changed markdown/html notes are pushed (hash-skipped if already current),
-// deletions are hidden.
+// applyDiff applies the changes between oldRev and newRev to the DB the way
+// the sync plugin does: changed markdown/html notes are pushed (hash-skipped if
+// already current) without committing, the assets those notes reference are
+// uploaded and linked, then the batch is committed. Deletions are hidden.
 func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) error {
 	changed, deleted, err := api.diffChangedFiles(oldRev, newRev)
 	if err != nil {
@@ -61,10 +67,12 @@ func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) error {
 		dbHash[np.Value] = np.LatestContentHash
 	}
 
-	input := model.PushNotesInput{}
+	skipCommit := true
+	input := model.PushNotesInput{SkipCommit: &skipCommit}
+	changedAssets := 0
 	for _, f := range changed {
-		ext := strings.ToLower(filepath.Ext(f))
-		if ext != ".md" && ext != ".html" {
+		if !isNoteFile(f) {
+			changedAssets++
 			continue
 		}
 		content, rerr := api.showFile(newRev, f)
@@ -79,20 +87,16 @@ func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) error {
 		input.Updates = append(input.Updates, model.PushNoteInput{Path: f, Content: string(content)})
 	}
 
-	if len(input.Updates) > 0 {
-		payload, perr := api.env.PushNotes(ctx, input)
-		if perr != nil {
-			return fmt.Errorf("apply: push notes: %w", perr)
-		}
-		if ep, ok := payload.(*model.ErrorPayload); ok {
-			return fmt.Errorf("apply: push notes: %s", ep.Message)
+	if len(input.Updates) > 0 || changedAssets > 0 {
+		err = api.pushAndCommit(ctx, input, newRev, changed)
+		if err != nil {
+			return err
 		}
 	}
 
 	var deletedNotes []string
 	for _, f := range deleted {
-		ext := strings.ToLower(filepath.Ext(f))
-		if ext == ".md" || ext == ".html" {
+		if isNoteFile(f) {
 			deletedNotes = append(deletedNotes, f)
 		}
 	}
@@ -103,6 +107,130 @@ func (api *API) applyDiff(ctx context.Context, oldRev, newRev string) error {
 	}
 
 	return nil
+}
+
+func isNoteFile(p string) bool {
+	ext := strings.ToLower(filepath.Ext(p))
+	return ext == ".md" || ext == ".html"
+}
+
+func (api *API) pushAndCommit(ctx context.Context, input model.PushNotesInput, rev string, changed []string) error {
+	payload, err := api.env.PushNotes(ctx, input)
+	if err != nil {
+		return fmt.Errorf("apply: push notes: %w", err)
+	}
+	if ep, ok := payload.(*model.ErrorPayload); ok {
+		return fmt.Errorf("apply: push notes: %s", ep.Message)
+	}
+	pushed, ok := payload.(*model.PushNotesPayload)
+	if !ok {
+		return fmt.Errorf("apply: push notes: unexpected payload %T", payload)
+	}
+
+	err = api.uploadAssets(ctx, rev, changed, pushed.Notes)
+	if err != nil {
+		return err
+	}
+
+	commit, err := api.env.CommitNotes(ctx)
+	if err != nil {
+		return fmt.Errorf("apply: commit notes: %w", err)
+	}
+	if ep, refused := commit.(*model.ErrorPayload); refused {
+		return fmt.Errorf("apply: commit notes: %s", ep.Message)
+	}
+
+	return nil
+}
+
+// uploadAssets stores the files of rev that notes reference, for every note
+// changed in this push and every referenced file changed in it. An asset the
+// server already holds at the same path and hash is skipped, as the plugin
+// skips it.
+func (api *API) uploadAssets(ctx context.Context, rev string, changed []string, notes []model.PushedNote) error {
+	changedSet := make(map[string]struct{}, len(changed))
+	for _, f := range changed {
+		changedSet[f] = struct{}{}
+	}
+
+	files, err := api.treeFiles(rev)
+	if err != nil {
+		return err
+	}
+
+	for _, note := range notes {
+		_, noteChanged := changedSet[note.Path]
+		for _, asset := range note.Assets {
+			resolved := resolveAssetPath(files, asset.Path, note.Path)
+			if resolved == "" {
+				continue
+			}
+			if _, assetChanged := changedSet[resolved]; !noteChanged && !assetChanged {
+				continue
+			}
+
+			err = api.uploadAsset(ctx, rev, note, asset, resolved)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (api *API) uploadAsset(ctx context.Context, rev string, note model.PushedNote, asset model.PushedNoteAsset, resolved string) error {
+	content, err := api.showFile(rev, resolved)
+	if err != nil {
+		return fmt.Errorf("apply: read asset %s: %w", resolved, err)
+	}
+
+	sum := sha256.Sum256(content)
+	hash := hex.EncodeToString(sum[:])
+	if asset.Sha256Hash != nil && *asset.Sha256Hash == hash && strings.TrimPrefix(asset.AbsolutePath, "/") == resolved {
+		return nil
+	}
+
+	skipCommit := true
+	input := model.UploadNoteAssetInput{
+		SkipCommit: &skipCommit,
+		File: graphql.Upload{
+			File:     bytes.NewReader(content),
+			Filename: path.Base(resolved),
+			Size:     int64(len(content)),
+		},
+		NoteID:       note.ID,
+		Sha256Hash:   hash,
+		Path:         asset.Path,
+		AbsolutePath: resolved,
+	}
+
+	payload, err := api.env.UploadNoteAsset(ctx, input)
+	if err != nil {
+		return fmt.Errorf("apply: upload asset %s: %w", resolved, err)
+	}
+	if ep, ok := payload.(*model.ErrorPayload); ok {
+		return fmt.Errorf("apply: upload asset %s: %s", resolved, ep.Message)
+	}
+
+	return nil
+}
+
+// treeFiles lists every file path in rev.
+func (api *API) treeFiles(rev string) (map[string]struct{}, error) {
+	out, err := api.gitCmd(os.Environ(), nil, "ls-tree", "-r", "--name-only", "-z", rev)
+	if err != nil {
+		return nil, fmt.Errorf("apply: list tree: %w", err)
+	}
+
+	files := map[string]struct{}{}
+	for _, p := range strings.Split(out, "\x00") {
+		if p != "" {
+			files[p] = struct{}{}
+		}
+	}
+
+	return files, nil
 }
 
 // showFile reads a file's content at a given commit.
