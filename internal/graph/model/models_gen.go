@@ -814,8 +814,23 @@ type AdminImportTelegramAccountChannelPayload struct {
 
 func (AdminImportTelegramAccountChannelPayload) IsAdminImportTelegramAccountChannelOrErrorPayload() {}
 
+// Each asset once, newest first.
 type AdminLatestNoteAssetsConnection struct {
 	Nodes []db.NoteAsset `json:"nodes"`
+	// Assets matching the filter, before limit and offset.
+	TotalCount int32 `json:"totalCount"`
+}
+
+// Narrows admin.allLatestNoteAssets. Without a filter, or without limit, every
+// asset is listed.
+type AdminLatestNoteAssetsFilter struct {
+	// Keeps assets whose absolutePath starts with it, e.g. "/uploads/".
+	PathPrefix *string `json:"pathPrefix,omitempty"`
+	// Keeps assets whose absolutePath contains it, ignoring case.
+	Search *string `json:"search,omitempty"`
+	// Page size, at most 500.
+	Limit  *int32 `json:"limit,omitempty"`
+	Offset *int32 `json:"offset,omitempty"`
 }
 
 type AdminLatestNoteViewsConnection struct {

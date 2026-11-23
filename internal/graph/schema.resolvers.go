@@ -138,6 +138,7 @@ import (
 	"trip2g/internal/case/getpublicnote"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/listactiveusersubgraphs"
+	"trip2g/internal/case/listlatestnoteassets"
 	"trip2g/internal/case/listnotepaths"
 	"trip2g/internal/case/listunreleasedchanges"
 	"trip2g/internal/case/pushnotes"
@@ -790,21 +791,6 @@ func (r *adminHtmlInjectionResolver) Position(ctx context.Context, obj *db.HtmlI
 // Nodes is the resolver for the nodes field.
 func (r *adminHtmlInjectionsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminHTMLInjectionsConnection) ([]db.HtmlInjection, error) {
 	return r.env(ctx).ListHTMLInjections(ctx)
-}
-
-// Nodes is the resolver for the nodes field.
-func (r *adminLatestNoteAssetsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminLatestNoteAssetsConnection) ([]db.NoteAsset, error) {
-	assets, err := r.env(ctx).AllLatestNoteAssets(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get latest note assets: %w", err)
-	}
-
-	res := make([]db.NoteAsset, len(assets))
-	for i, asset := range assets {
-		res[i] = asset.NoteAsset
-	}
-
-	return res, nil
 }
 
 // Nodes is the resolver for the nodes field.
@@ -1769,8 +1755,8 @@ func (r *adminQueryResolver) AllNotFoundIgnoredPatterns(ctx context.Context, obj
 }
 
 // AllLatestNoteAssets is the resolver for the allLatestNoteAssets field.
-func (r *adminQueryResolver) AllLatestNoteAssets(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminLatestNoteAssetsConnection, error) {
-	return &model.AdminLatestNoteAssetsConnection{}, nil
+func (r *adminQueryResolver) AllLatestNoteAssets(ctx context.Context, obj *appmodel.AdminQuery, filter *model.AdminLatestNoteAssetsFilter) (*model.AdminLatestNoteAssetsConnection, error) {
+	return listlatestnoteassets.Resolve(ctx, r.env(ctx), filter)
 }
 
 // AllHTMLInjections is the resolver for the allHTMLInjections field.
@@ -4001,11 +3987,6 @@ func (r *Resolver) AdminHtmlInjectionsConnection() generated.AdminHtmlInjections
 	return &adminHtmlInjectionsConnectionResolver{r}
 }
 
-// AdminLatestNoteAssetsConnection returns generated.AdminLatestNoteAssetsConnectionResolver implementation.
-func (r *Resolver) AdminLatestNoteAssetsConnection() generated.AdminLatestNoteAssetsConnectionResolver {
-	return &adminLatestNoteAssetsConnectionResolver{r}
-}
-
 // AdminLatestNoteViewsConnection returns generated.AdminLatestNoteViewsConnectionResolver implementation.
 func (r *Resolver) AdminLatestNoteViewsConnection() generated.AdminLatestNoteViewsConnectionResolver {
 	return &adminLatestNoteViewsConnectionResolver{r}
@@ -4428,7 +4409,6 @@ type adminGoogleOAuthCredentialsResolver struct{ *Resolver }
 type adminGoogleOAuthCredentialsConnectionResolver struct{ *Resolver }
 type adminHtmlInjectionResolver struct{ *Resolver }
 type adminHtmlInjectionsConnectionResolver struct{ *Resolver }
-type adminLatestNoteAssetsConnectionResolver struct{ *Resolver }
 type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNotFoundIgnoredPatternResolver struct{ *Resolver }
