@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/renderpreview"
+	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/db"
@@ -26,6 +27,10 @@ func (a *app) MaterializeGitMirror(ctx context.Context) error {
 
 func (a *app) PushNotes(ctx context.Context, input graphmodel.PushNotesInput) (graphmodel.PushNotesOrErrorPayload, error) {
 	return pushnotes.Resolve(ctx, a, input)
+}
+
+func (a *app) CommitNotes(ctx context.Context) (graphmodel.CommitNotesOrErrorPayload, error) {
+	return commitnotes.Resolve(ctx, a)
 }
 
 func (a *app) LockNoteWrites() { a.noteWriteMu.Lock() }

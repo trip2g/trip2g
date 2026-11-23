@@ -25,6 +25,9 @@ var _ Env = &EnvMock{}
 //			AllVisibleNotePathsFunc: func(ctx context.Context) ([]db.NotePath, error) {
 //				panic("mock out the AllVisibleNotePaths method")
 //			},
+//			CommitNotesFunc: func(ctx context.Context) (model.CommitNotesOrErrorPayload, error) {
+//				panic("mock out the CommitNotes method")
+//			},
 //			GetPrivateObjectFunc: func(ctx context.Context, objectID string) (io.ReadCloser, error) {
 //				panic("mock out the GetPrivateObject method")
 //			},
@@ -74,6 +77,9 @@ type EnvMock struct {
 	// AllVisibleNotePathsFunc mocks the AllVisibleNotePaths method.
 	AllVisibleNotePathsFunc func(ctx context.Context) ([]db.NotePath, error)
 
+	// CommitNotesFunc mocks the CommitNotes method.
+	CommitNotesFunc func(ctx context.Context) (model.CommitNotesOrErrorPayload, error)
+
 	// GetPrivateObjectFunc mocks the GetPrivateObject method.
 	GetPrivateObjectFunc func(ctx context.Context, objectID string) (io.ReadCloser, error)
 
@@ -117,6 +123,11 @@ type EnvMock struct {
 	calls struct {
 		// AllVisibleNotePaths holds details about calls to the AllVisibleNotePaths method.
 		AllVisibleNotePaths []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// CommitNotes holds details about calls to the CommitNotes method.
+		CommitNotes []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
@@ -199,6 +210,7 @@ type EnvMock struct {
 		}
 	}
 	lockAllVisibleNotePaths   sync.RWMutex
+	lockCommitNotes           sync.RWMutex
 	lockGetPrivateObject      sync.RWMutex
 	lockGitTokenByValueSha256 sync.RWMutex
 	lockHideNotePaths         sync.RWMutex
@@ -243,6 +255,38 @@ func (mock *EnvMock) AllVisibleNotePathsCalls() []struct {
 	mock.lockAllVisibleNotePaths.RLock()
 	calls = mock.calls.AllVisibleNotePaths
 	mock.lockAllVisibleNotePaths.RUnlock()
+	return calls
+}
+
+// CommitNotes calls CommitNotesFunc.
+func (mock *EnvMock) CommitNotes(ctx context.Context) (model.CommitNotesOrErrorPayload, error) {
+	if mock.CommitNotesFunc == nil {
+		panic("EnvMock.CommitNotesFunc: method is nil but Env.CommitNotes was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockCommitNotes.Lock()
+	mock.calls.CommitNotes = append(mock.calls.CommitNotes, callInfo)
+	mock.lockCommitNotes.Unlock()
+	return mock.CommitNotesFunc(ctx)
+}
+
+// CommitNotesCalls gets all the calls that were made to CommitNotes.
+// Check the length with:
+//
+//	len(mockedEnv.CommitNotesCalls())
+func (mock *EnvMock) CommitNotesCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockCommitNotes.RLock()
+	calls = mock.calls.CommitNotes
+	mock.lockCommitNotes.RUnlock()
 	return calls
 }
 

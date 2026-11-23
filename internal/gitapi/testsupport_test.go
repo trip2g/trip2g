@@ -63,6 +63,12 @@ type fakeEnv struct {
 	dbHashes map[string]string
 	pushErr  bool
 
+	pushedNotes   []model.PushedNote // what PushNotes reports back
+	pushInputs    []model.PushNotesInput
+	uploads       []uploadCall
+	uploadPayload model.UploadNoteAssetOrErrorPayload
+	commits       int
+
 	gitToken    db.GitToken
 	gitTokenErr error
 }
@@ -91,13 +97,36 @@ func (f *fakeEnv) PushNotes(_ context.Context, in model.PushNotesInput) (model.P
 	if f.pushErr {
 		return nil, errors.New("boom")
 	}
+	f.pushInputs = append(f.pushInputs, in)
 	for _, u := range in.Updates {
 		f.pushed = append(f.pushed, u.Path)
 	}
-	return &model.PushNotesPayload{Notes: []model.PushedNote{}}, nil
+	notes := f.pushedNotes
+	if notes == nil {
+		notes = []model.PushedNote{}
+	}
+	return &model.PushNotesPayload{Notes: notes}, nil
 }
-func (f *fakeEnv) UploadNoteAsset(context.Context, model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error) {
+
+type uploadCall struct {
+	input   model.UploadNoteAssetInput
+	content []byte
+}
+
+func (f *fakeEnv) UploadNoteAsset(_ context.Context, in model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error) {
+	content, err := io.ReadAll(in.File.File)
+	if err != nil {
+		return nil, err
+	}
+	f.uploads = append(f.uploads, uploadCall{input: in, content: content})
+	if f.uploadPayload != nil {
+		return f.uploadPayload, nil
+	}
 	return &model.UploadNoteAssetPayload{}, nil
+}
+func (f *fakeEnv) CommitNotes(context.Context) (model.CommitNotesOrErrorPayload, error) {
+	f.commits++
+	return &model.CommitNotesPayload{Success: true}, nil
 }
 func (f *fakeEnv) PutPrivateObject(context.Context, io.Reader, string) error { return nil }
 func (f *fakeEnv) GetPrivateObject(context.Context, string) (io.ReadCloser, error) {
