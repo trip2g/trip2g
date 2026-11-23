@@ -151,6 +151,8 @@ type appState struct {
 	fedAssetHTTPClient *fasthttp.Client
 	// Spent holds the federated_asset links already downloaded in this process.
 	federatedassetlink.Spent
+	// guestSpent holds the federation handoff and ticket ids already used.
+	guestSpent federatedassetlink.Spent
 
 	webhookTestCalls []webhookTestCall
 	webhookTestMu    sync.Mutex

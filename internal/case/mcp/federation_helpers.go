@@ -24,6 +24,7 @@ var (
 	ErrFedAuthExpired     = errors.New("federation auth expired")
 	ErrFedAuthFutureIAT   = errors.New("federation auth future iat")
 	ErrFedAuthBodyChanged = errors.New("federation auth body does not match the signature")
+	ErrFedAuthWrongUse    = errors.New("federation auth token was issued for another use")
 )
 
 const federationJWTSkew = 5 * time.Second
@@ -78,6 +79,8 @@ type federationAuth struct {
 	AllowedSubgraphs []string
 	SecretID         int64
 	BodyBound        bool
+
+	claims federationJWTClaims
 }
 
 type federationJWTHeader struct {
@@ -92,6 +95,15 @@ type federationJWTClaims struct {
 	Exp int64  `json:"exp"`
 	Rid string `json:"rid"`
 	Bh  string `json:"bh,omitempty"`
+
+	// Use names what a token other than a tool call is for. The tool surface
+	// refuses any token that carries one, and each other use insists on its own.
+	Use  string `json:"use,omitempty"`
+	Path string `json:"path,omitempty"`
+	Hop  int    `json:"hop,omitempty"`
+	Sub  string `json:"sub,omitempty"`
+	// Org is the origin of the site whose page posts a guest handoff.
+	Org string `json:"org,omitempty"`
 }
 
 func signOutbound(secret []byte, kid, iss, rid string, body []byte) (string, error) {
@@ -129,12 +141,19 @@ func signOutboundAt(secret []byte, kid, iss, rid string, issuedAt time.Time, ttl
 }
 
 func verifyInbound(ctx context.Context, env federationVerifyEnv, token string, body []byte) (federationAuth, error) {
+	return verifyInboundFor(ctx, env, token, body, "")
+}
+
+func verifyInboundFor(ctx context.Context, env federationVerifyEnv, token string, body []byte, use string) (federationAuth, error) {
 	header, claims, unsigned, signature, err := parseFederationJWT(token)
 	if err != nil {
 		return federationAuth{}, err
 	}
 	if header.Alg != "HS256" || header.Kid == "" {
 		return federationAuth{}, ErrFedAuthBadSig
+	}
+	if claims.Use != use {
+		return federationAuth{}, ErrFedAuthWrongUse
 	}
 
 	secretRow, ok, err := env.FederationSecretByKID(ctx, header.Kid)
@@ -206,6 +225,7 @@ func verifyInbound(ctx context.Context, env federationVerifyEnv, token string, b
 		AllowedSubgraphs: allowedSubgraphs,
 		SecretID:         secretRow.ID,
 		BodyBound:        claims.Bh != "",
+		claims:           claims,
 	}, nil
 }
 

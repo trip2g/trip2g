@@ -300,6 +300,8 @@ services:
       # JWT
       - JWT_SECRET=test-peer-secret-key-do-not-use
       - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer
+      # Plain http on a docker name: a browser drops a Secure cookie there (e2e/federation-guest.spec.js).
+      - USER_TOKEN_INSECURE=true
 
       # Git API (DB-canonical mirror; writable bare repo, distinct per service)
       - GIT_API_REPO_PATH=/data/git-peer
@@ -364,6 +366,8 @@ services:
       # JWT
       - JWT_SECRET=test-peer2-secret-key-do-not-use
       - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer2
+      # Plain http on a docker name: a browser drops a Secure cookie there (e2e/federation-guest.spec.js).
+      - USER_TOKEN_INSECURE=true
 
       # Git API (DB-canonical mirror; writable bare repo, distinct per service)
       - GIT_API_REPO_PATH=/data/git-peer2
@@ -376,6 +380,7 @@ services:
       - MCP_FEDERATION_MAX_DEPTH=3
       - MCP_FEDERATION_TIMEOUT=10s
       - MCP_FEDERATED_GRAPHQL=true
+      - FEDERATION_ACCEPT_GUESTS=true
     volumes:
       - ./tmp/data:/data
       - ./testdata/seedvault2:/app/testdata/seedvault2:ro
@@ -428,6 +433,8 @@ services:
       # JWT
       - JWT_SECRET=test-peer3-secret-key-do-not-use
       - USER_TOKEN_COOKIE_NAME=trip2g_e2e_peer3
+      # Plain http on a docker name: a browser drops a Secure cookie there (e2e/federation-guest.spec.js).
+      - USER_TOKEN_INSECURE=true
 
       # Git API (DB-canonical mirror; writable bare repo, distinct per service)
       - GIT_API_REPO_PATH=/data/git-peer3
@@ -440,6 +447,7 @@ services:
       - MCP_FEDERATION_MAX_DEPTH=3
       - MCP_FEDERATION_TIMEOUT=10s
       - MCP_FEDERATED_GRAPHQL=true
+      - FEDERATION_ACCEPT_GUESTS=true
     volumes:
       - ./tmp/data:/data
       - ./testdata/seedvault3:/app/testdata/seedvault3:ro

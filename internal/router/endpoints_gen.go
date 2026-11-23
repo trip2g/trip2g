@@ -5,9 +5,9 @@
 package router
 
 import (
-	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
-	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
 	downloadonboardingvaultdownloadonboardingvault "trip2g/internal/case/downloadonboardingvault"
+	federationguestfederationguest "trip2g/internal/case/federationguest"
+	federationhandofffederationhandoff "trip2g/internal/case/federationhandoff"
 	handlegithubcallbackhandlegithubcallback "trip2g/internal/case/handlegithubcallback"
 	handlegithubstarthandlegithubstart "trip2g/internal/case/handlegithubstart"
 	handlegooglecallbackhandlegooglecallback "trip2g/internal/case/handlegooglecallback"
@@ -21,6 +21,8 @@ import (
 	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	signinbyhatsigninbyhat "trip2g/internal/case/signinbyhat"
+	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
+	renderpreviewrenderpreview "trip2g/internal/case/admin/renderpreview"
 	federatedassetrelayfederatedassetrelay "trip2g/internal/case/system/federatedassetrelay"
 	federationassetfederationasset "trip2g/internal/case/system/federationasset"
 	federationdescribefederationdescribe "trip2g/internal/case/system/federationdescribe"
@@ -30,6 +32,9 @@ import (
 
 var endpoints = []Endpoint{
 	&downloadonboardingvaultdownloadonboardingvault.Endpoint{},
+	&federationguestfederationguest.Endpoint{},
+	&federationguestfederationguest.GetEndpoint{},
+	&federationhandofffederationhandoff.Endpoint{},
 	&handlegithubcallbackhandlegithubcallback.Endpoint{},
 	&handlegithubstarthandlegithubstart.Endpoint{},
 	&handlegooglecallbackhandlegooglecallback.Endpoint{},
@@ -58,6 +63,8 @@ var endpoints = []Endpoint{
 
 type RoutesEnv interface {
 	downloadonboardingvaultdownloadonboardingvault.Env
+	federationguestfederationguest.Env
+	federationhandofffederationhandoff.Env
 	handlegithubcallbackhandlegithubcallback.Env
 	handlegithubstarthandlegithubstart.Env
 	handlegooglecallbackhandlegooglecallback.Env
@@ -79,3 +86,4 @@ type RoutesEnv interface {
 	federationtopologyfederationtopology.Env
 	syncclisynccli.Env
 }
+

@@ -73,6 +73,10 @@ set hidden_at = case when exists (
 insert into users (email, created_via) values (lower(sqlc.arg(email)), sqlc.arg(created_via))
 returning *;
 
+-- name: InsertFederationGuestUser :one
+insert into users (created_via) values (?)
+returning *;
+
 -- name: InsertUserWithTgUserID :one
 insert into users (tg_user_id, created_via)
 values (?, 'telegram')
