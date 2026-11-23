@@ -1,9 +1,9 @@
 {
 	"id": "trip2g",
 	"name": "trip2g sync",
-	"version": "0.11.0",
-	"minAppVersion": "0.15.0",
-	"description": "Upload your notes to trip2g system.",
+	"version": "1.0.7",
+	"minAppVersion": "1.8.7",
+	"description": "Publish a website from your vault and share the parts you choose with friends, colleagues or subscribers. Link your vaults into a knowledge network with them. Landing pages, digital gardens, dashboards and RAG for AI agents, live on your own server.",
 	"author": "Alexey Yurchenko",
 	"authorUrl": "https://trip2g.com",
 	"isDesktopOnly": false
