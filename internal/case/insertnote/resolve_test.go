@@ -239,3 +239,17 @@ func TestNewNoteCreatesVersionWithoutUnhide(t *testing.T) {
 	require.False(t, saved.Unhidden, "a new path was never hidden")
 	require.True(t, saved.Versioned())
 }
+
+func TestRejectsUnnormalizedPath(t *testing.T) {
+	for _, path := range []string{"a/../../x.md", "/a.md", "./a.md", " a.md", `a\..\x.md`, "a/./b.md", "", "a\x00b.md"} {
+		env := &EnvMock{
+			InsertNotePathFunc: func(ctx context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error) {
+				t.Errorf("InsertNotePath called for %q", path)
+				return db.InsertNotePathRow{}, nil
+			},
+		}
+
+		_, err := insertnote.Resolve(context.Background(), env, model.RawNote{Path: path, Content: "x"})
+		require.ErrorIs(t, err, insertnote.ErrInvalidNotePath, "path %q", path)
+	}
+}

@@ -10,18 +10,22 @@ import (
 
 func TestNormalize(t *testing.T) {
 	cases := map[string]string{
-		"a.md":           "a.md",
-		"/a.md":          "a.md",
-		"./a.md":         "a.md",
-		"\ta/./b/../c\t": "a/c",
-		"":               "",
-		".":              "",
-		"..":             "",
-		"../x.md":        "",
-		"a/../../x.md":   "",
-		"/../x.md":       "",
-		"a\x00b.md":      "",
-		"..hidden/a.md":  "..hidden/a.md",
+		"a.md":            "a.md",
+		"/a.md":           "a.md",
+		"./a.md":          "a.md",
+		"\ta/./b/../c\t":  "",
+		" a.md":           "",
+		"a.md ":           "",
+		"a\\..\\..\\x.md": "",
+		"a\\b.md":         "",
+		"":                "",
+		".":               "",
+		"..":              "",
+		"../x.md":         "",
+		"a/../../x.md":    "",
+		"/../x.md":        "",
+		"a\x00b.md":       "",
+		"..hidden/a.md":   "..hidden/a.md",
 	}
 
 	for raw, want := range cases {

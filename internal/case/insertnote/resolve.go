@@ -11,10 +11,12 @@ import (
 	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
+	"trip2g/internal/notepath"
 )
 
 var ErrNotePathHashUnresolvedCollision = errors.New("note path hash unresolved collision")
 var ErrNoteVersionAlreadyExists = errors.New("note version already exists")
+var ErrInvalidNotePath = errors.New("invalid note path")
 
 type Env interface {
 	InsertNotePath(ctx context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error)
@@ -33,6 +35,10 @@ type Env interface {
 // whether it brought a hidden path back. Callers use that to tell a real change
 // from a write that changed nothing.
 func Resolve(ctx context.Context, env Env, arg model.RawNote) (model.NoteSaveResult, error) {
+	if !isCanonical(arg.Path) {
+		return model.NoteSaveResult{}, fmt.Errorf("%w: %q", ErrInvalidNotePath, arg.Path)
+	}
+
 	sha := sha256.New()
 
 	sha.Write([]byte(arg.Path))
@@ -128,4 +134,8 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) (model.NoteSaveRes
 	result.VersionID = versionID
 
 	return result, nil
+}
+
+func isCanonical(path string) bool {
+	return path != "" && notepath.Normalize(path) == path
 }

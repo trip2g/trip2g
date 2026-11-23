@@ -240,3 +240,18 @@ func TestAgentLogRoundTrip(t *testing.T) {
 	require.Contains(t, *stored, "write outside scope")
 	require.NotContains(t, *stored, "content")
 }
+
+func TestResolveAgentChanges_NormalizesBeforeScopeCheck(t *testing.T) {
+	patterns := []string{"allowed/**"}
+
+	_, err := ResolveAgentChanges([]AgentChange{{Path: "allowed/../../x.md", Content: "x"}}, nil, patterns)
+	require.Error(t, err)
+
+	_, err = ResolveAgentChanges([]AgentChange{{Path: "allowed/../other/x.md", Content: "x"}}, nil, patterns)
+	require.Error(t, err)
+
+	notes, err := ResolveAgentChanges([]AgentChange{{Path: "/allowed/./sub/../a.md", Content: "x"}}, nil, patterns)
+	require.NoError(t, err)
+	require.Len(t, notes, 1)
+	require.Equal(t, "allowed/a.md", notes[0].Path)
+}
