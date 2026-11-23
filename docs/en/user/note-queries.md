@@ -63,6 +63,7 @@ const posts = data.noteQuery.result
 | `notes` | a list of notes, sorted by path: `{ path, path_id, version_id, title, permalink, meta }` |
 | `params` | the parsed `params`, `{}` when none were passed |
 | `currentUser` | who is asking: `{ id, role, isAdmin, signedIn }`; a guest has `null` for `id` and `role`; a [[en/user/federation|federation]] peer has role `federated` and `null` for `id` |
+| `now` | when the query runs: `{ date, time, unix }`; `date` is `YYYY-MM-DD` and `time` is ISO 8601 with the offset, both in the site's timezone; `unix` is seconds since 1970 |
 
 `meta` is the note's frontmatter after [[en/user/frontmatter-patches|frontmatter patches]]. `path_id` names the note and stays the same across edits; `version_id` names its current version. With `all_notes: true` each note also has `readable`. System notes (paths starting with `_`) and files that aren't markdown notes (canvas, base, excalidraw) are left out.
 
@@ -157,9 +158,30 @@ local status(n) = std.get(n.meta, 'status', 'none');
 
 `{ [key]: value for … }` builds an object with computed keys, and `std.set` removes duplicates and sorts.
 
+#### Overdue tasks
+
+Open tasks whose `due` date has passed. With `due: 2026-11-20` on a task, a call on 23 November gives `["Fix scroll"]`:
+
+```jsonnet
+local overdue(n) =
+  std.objectHas(n.meta, 'due') && n.meta.due < now.date;
+
+[
+  n.title
+  for n in notes
+  if std.startsWith(n.path, 'tasks/')
+  && std.get(n.meta, 'status') != 'done'
+  && overdue(n)
+]
+```
+
+A frontmatter date such as `due: 2026-11-20` reaches the query as the string `"2026-11-20"`, and `YYYY-MM-DD` strings sort the way the dates do, so `<` compares them. `now.date` is today in the site's timezone, the **Timezone** field in the admin settings, UTC unless you change it. A visitor in another timezone sees the site's today, not their own, so near midnight their "today" can differ by a day.
+
+A page a guest sees is cached for up to 30 seconds, so just after midnight a guest can see yesterday's list for that long.
+
 #### Notes per folder
 
-How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 6, "tasks": 3}`; an admin, who also sees the members-only post, gets `{"blog": 4, "queries": 6, "tasks": 3}`:
+How many notes the visitor can read in each top-level folder. A guest gets `{"blog": 3, "queries": 7, "tasks": 3}`; an admin, who also sees the members-only post, gets `{"blog": 4, "queries": 7, "tasks": 3}`:
 
 ```jsonnet
 local folder(n) =

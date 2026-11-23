@@ -41,6 +41,7 @@ func rowsEnv(nvs *appmodel.NoteViews, user *usertoken.Data) *runnotequery.EnvMoc
 	return &runnotequery.EnvMock{
 		LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
 		CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
+		NowFunc:                   fixedNow,
 		ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
 		CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 		CurrentUserTokenFunc:      func(context.Context) (*usertoken.Data, error) { return user, nil },

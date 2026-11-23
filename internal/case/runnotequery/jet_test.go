@@ -40,6 +40,10 @@ func (e noteQueryEnv) CurrentUserToken(context.Context) (*usertoken.Data, error)
 	return e.user, nil
 }
 
+func (e noteQueryEnv) Now() time.Time {
+	return fixedNow()
+}
+
 func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
 	t.Helper()
 
