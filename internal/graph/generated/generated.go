@@ -489,6 +489,9 @@ type AdminNotFoundPathsConnectionResolver interface {
 }
 type AdminNoteAssetResolver interface {
 	URL(ctx context.Context, obj *db.NoteAsset) (string, error)
+
+	ContentType(ctx context.Context, obj *db.NoteAsset) (string, error)
+	Notes(ctx context.Context, obj *db.NoteAsset) ([]model1.NoteView, error)
 }
 type AdminNoteVersionHistoryConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) ([]model.AdminNoteVersionMeta, error)
@@ -1935,6 +1938,10 @@ type AdminNoteAsset @goModel(model: "trip2g/internal/db.NoteAsset") {
   createdAt: Time!
   url: String!
   size: Int64!
+  "The Content-Type the asset URL serves, from the file name's extension."
+  contentType: String!
+  "The published notes that embed or link this file."
+  notes: [NoteView!]!
 }
 
 """
@@ -15952,6 +15959,10 @@ func (ec *executionContext) fieldContext_AdminLatestNoteAssetsConnection_nodes(_
 				return ec.fieldContext_AdminNoteAsset_url(ctx, field)
 			case "size":
 				return ec.fieldContext_AdminNoteAsset_size(ctx, field)
+			case "contentType":
+				return ec.fieldContext_AdminNoteAsset_contentType(ctx, field)
+			case "notes":
+				return ec.fieldContext_AdminNoteAsset_notes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminNoteAsset", field.Name)
 		},
@@ -20925,6 +20936,106 @@ func (ec *executionContext) fieldContext_AdminNoteAsset_size(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteAsset_contentType(ctx context.Context, field graphql.CollectedField, obj *db.NoteAsset) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteAsset_contentType,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminNoteAsset().ContentType(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteAsset_contentType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteAsset",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteAsset_notes(ctx context.Context, field graphql.CollectedField, obj *db.NoteAsset) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminNoteAsset_notes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminNoteAsset().Notes(ctx, obj)
+		},
+		nil,
+		ec.marshalNNoteView2ᚕtrip2gᚋinternalᚋmodelᚐNoteViewᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteAsset_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteAsset",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteView_url(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
+			case "warnings":
+				return ec.fieldContext_NoteView_warnings(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
+			case "isHomePage":
+				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			case "appliedFrontmatterPatches":
+				return ec.fieldContext_NoteView_appliedFrontmatterPatches(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
 	}
 	return fc, nil
@@ -27263,6 +27374,10 @@ func (ec *executionContext) fieldContext_AdminQuery_noteAsset(ctx context.Contex
 				return ec.fieldContext_AdminNoteAsset_url(ctx, field)
 			case "size":
 				return ec.fieldContext_AdminNoteAsset_size(ctx, field)
+			case "contentType":
+				return ec.fieldContext_AdminNoteAsset_contentType(ctx, field)
+			case "notes":
+				return ec.fieldContext_AdminNoteAsset_notes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminNoteAsset", field.Name)
 		},
@@ -69502,6 +69617,78 @@ func (ec *executionContext) _AdminNoteAsset(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "contentType":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNoteAsset_contentType(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "notes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNoteAsset_notes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

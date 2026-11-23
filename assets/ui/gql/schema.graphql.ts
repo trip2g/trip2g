@@ -1285,9 +1285,13 @@ export type AdminNotFoundPathsConnection = {
 export type AdminNoteAsset = {
   __typename?: 'AdminNoteAsset';
   absolutePath: Scalars['String']['output'];
+  /** The Content-Type the asset URL serves, from the file name's extension. */
+  contentType: Scalars['String']['output'];
   createdAt: Scalars['Time']['output'];
   fileName: Scalars['String']['output'];
   id: Scalars['Int64']['output'];
+  /** The published notes that embed or link this file. */
+  notes: Array<NoteView>;
   size: Scalars['Int64']['output'];
   url: Scalars['String']['output'];
 };

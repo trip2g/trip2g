@@ -36,3 +36,24 @@ func TestNoteAssetURLPath_IsRelative(t *testing.T) {
 	require.Equal(t, "/_system/assets/deadbeef/pic.png", got)
 	require.NotContains(t, got, "://")
 }
+
+func TestAssetContentType(t *testing.T) {
+	tests := []struct {
+		fileName string
+		want     string
+	}{
+		{"photo.png", "image/png"},
+		{"Photo.JPG", "image/jpeg"},
+		{"report.pdf", "application/pdf"},
+		{"clip.mp4", "video/mp4"},
+		{"notes.txt", "text/plain; charset=utf-8"},
+		{"no_extension", "application/octet-stream"},
+		{"archive.unknownext", "application/octet-stream"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.fileName, func(t *testing.T) {
+			require.Equal(t, tt.want, model.AssetContentType(tt.fileName))
+		})
+	}
+}

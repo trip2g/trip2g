@@ -1430,6 +1430,23 @@ func (r *adminNoteAssetResolver) URL(ctx context.Context, obj *db.NoteAsset) (st
 	return appmodel.NoteAssetURLPath(obj.Sha256Hash, obj.FileName), nil
 }
 
+// ContentType is the resolver for the contentType field.
+func (r *adminNoteAssetResolver) ContentType(ctx context.Context, obj *db.NoteAsset) (string, error) {
+	return appmodel.AssetContentType(obj.FileName), nil
+}
+
+// Notes is the resolver for the notes field.
+func (r *adminNoteAssetResolver) Notes(ctx context.Context, obj *db.NoteAsset) ([]appmodel.NoteView, error) {
+	ownership, _ := r.env(ctx).AssetOwnership(obj.Sha256Hash, obj.FileName)
+
+	notes := make([]appmodel.NoteView, 0, len(ownership.Notes))
+	for _, note := range ownership.Notes {
+		notes = append(notes, *note)
+	}
+
+	return notes, nil
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminNoteVersionHistoryConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteVersionHistoryConnection) ([]model.AdminNoteVersionMeta, error) {
 	f := obj.Filter

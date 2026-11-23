@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"trip2g/internal/appreq"
+	"trip2g/internal/assetindex"
 	"trip2g/internal/case/admin/addfederationsecretsubgraph"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
@@ -245,6 +246,7 @@ type Env interface {
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 
 	LatestNoteViews() *model.NoteViews
+	AssetOwnership(sha256Hash, fileName string) (assetindex.Ownership, bool)
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 	canreadnote.Env
 	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)

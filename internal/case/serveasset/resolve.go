@@ -18,9 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -120,7 +118,7 @@ func Handle(req *appreq.Request) bool {
 		return true
 	}
 
-	ctx.SetContentType(contentType(fileName))
+	ctx.SetContentType(model.AssetContentType(fileName))
 
 	offset, length, status, handled := resolveRange(ctx, h, asset)
 	if handled {
@@ -260,13 +258,6 @@ func isHex(s string) bool {
 		}
 	}
 	return true
-}
-
-func contentType(fileName string) string {
-	if t := mime.TypeByExtension(filepath.Ext(fileName)); t != "" {
-		return t
-	}
-	return "application/octet-stream"
 }
 
 // parseRange parses a single-range "bytes=" header against size.
