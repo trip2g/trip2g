@@ -30,14 +30,16 @@ type Env interface {
 	// ObserveNoteQuery records the call's duration for metrics and logs a
 	// slow one. query is the query note's path, or "unknown".
 	ObserveNoteQuery(query, result string, elapsed time.Duration, paramsBytes int)
+	Now() time.Time
 }
 
 const maxParamsBytes = 16 << 10
 
-// queryPrelude gives the query `notes`, `params` and `currentUser` as values.
+// queryPrelude gives the query `notes`, `params`, `currentUser` and `now` as
+// values.
 // It shares the block's first line, so jsonnet error line numbers match the
 // block.
-const queryPrelude = `local notes = std.parseJson(std.extVar("notes")), params = std.parseJson(std.extVar("params")), currentUser = std.parseJson(std.extVar("currentUser")); `
+const queryPrelude = `local notes = std.parseJson(std.extVar("notes")), params = std.parseJson(std.extVar("params")), currentUser = std.parseJson(std.extVar("currentUser")), now = std.parseJson(std.extVar("now")); `
 
 type queryNote struct {
 	Path      string         `json:"path"`
@@ -155,6 +157,7 @@ func resolve(ctx context.Context, env Env, queryName, params string, query *stri
 		"notes":       string(notesJSON),
 		"params":      params,
 		"currentUser": user,
+		"now":         nowJSON(env.Now()),
 	})
 	if err != nil {
 		msg := strings.TrimPrefix(err.Error(), "evaluate jsonnet: ")
@@ -298,4 +301,13 @@ func currentUser(ctx context.Context, env Env) (string, error) {
 		return "", fmt.Errorf("failed to marshal current user: %w", err)
 	}
 	return string(b), nil
+}
+
+func nowJSON(t time.Time) string {
+	b, _ := json.Marshal(map[string]any{
+		"date": t.Format(time.DateOnly),
+		"time": t.Format(time.RFC3339),
+		"unix": t.Unix(),
+	})
+	return string(b)
 }

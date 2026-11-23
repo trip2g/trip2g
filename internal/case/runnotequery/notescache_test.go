@@ -32,6 +32,7 @@ func TestResolveNotesCacheKeepsAccessClassesApart(t *testing.T) {
 	var subgraphs []string
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
+		NowFunc:              fixedNow,
 		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
 		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
 			return viewer, nil

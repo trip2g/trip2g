@@ -100,6 +100,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			NoteVersionEditorFunc: func(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error) {
 //				panic("mock out the NoteVersionEditor method")
 //			},
+//			NowFunc: func() time.Time {
+//				panic("mock out the Now method")
+//			},
 //			ObserveNoteQueryFunc: func(query string, result string, elapsed time.Duration, paramsBytes int)  {
 //				panic("mock out the ObserveNoteQuery method")
 //			},
@@ -217,6 +220,9 @@ type EnvMock struct {
 
 	// NoteVersionEditorFunc mocks the NoteVersionEditor method.
 	NoteVersionEditorFunc func(ctx context.Context, versionID int64) (*templateviews.NoteEditor, error)
+
+	// NowFunc mocks the Now method.
+	NowFunc func() time.Time
 
 	// ObserveNoteQueryFunc mocks the ObserveNoteQuery method.
 	ObserveNoteQueryFunc func(query string, result string, elapsed time.Duration, paramsBytes int)
@@ -381,6 +387,9 @@ type EnvMock struct {
 			// VersionID is the versionID argument value.
 			VersionID int64
 		}
+		// Now holds details about calls to the Now method.
+		Now []struct {
+		}
 		// ObserveNoteQuery holds details about calls to the ObserveNoteQuery method.
 		ObserveNoteQuery []struct {
 			// Query is the query argument value.
@@ -477,6 +486,7 @@ type EnvMock struct {
 	lockLiveNoteViews                       sync.RWMutex
 	lockLogger                              sync.RWMutex
 	lockNoteVersionEditor                   sync.RWMutex
+	lockNow                                 sync.RWMutex
 	lockObserveNoteQuery                    sync.RWMutex
 	lockPublicURL                           sync.RWMutex
 	lockPublishReaderMove                   sync.RWMutex
@@ -1251,6 +1261,33 @@ func (mock *EnvMock) NoteVersionEditorCalls() []struct {
 	mock.lockNoteVersionEditor.RLock()
 	calls = mock.calls.NoteVersionEditor
 	mock.lockNoteVersionEditor.RUnlock()
+	return calls
+}
+
+// Now calls NowFunc.
+func (mock *EnvMock) Now() time.Time {
+	if mock.NowFunc == nil {
+		panic("EnvMock.NowFunc: method is nil but Env.Now was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockNow.Lock()
+	mock.calls.Now = append(mock.calls.Now, callInfo)
+	mock.lockNow.Unlock()
+	return mock.NowFunc()
+}
+
+// NowCalls gets all the calls that were made to Now.
+// Check the length with:
+//
+//	len(mockedEnv.NowCalls())
+func (mock *EnvMock) NowCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockNow.RLock()
+	calls = mock.calls.Now
+	mock.lockNow.RUnlock()
 	return calls
 }
 

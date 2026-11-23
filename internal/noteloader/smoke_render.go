@@ -45,6 +45,10 @@ func (smokeQueryEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, 
 
 func (smokeQueryEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 
+func (smokeQueryEnv) Now() time.Time {
+	return time.Now()
+}
+
 // smokeQueries are the note query functions a smoke render gives a layout.
 type smokeQueries struct {
 	noteQuery     jet.Func

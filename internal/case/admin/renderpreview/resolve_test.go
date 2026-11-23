@@ -35,6 +35,10 @@ func (e *testEnv) ListActiveUserSubgraphs(context.Context, int64) ([]string, err
 }
 func (e *testEnv) ObserveNoteQuery(string, string, time.Duration, int) {}
 
+func (e *testEnv) Now() time.Time {
+	return time.Now()
+}
+
 func (e *testEnv) CachedQueryNotes(_ uint64, _ canreadnote.Class, _ bool, build func() ([]byte, error)) ([]byte, error) {
 	return build()
 }

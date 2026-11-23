@@ -37,6 +37,9 @@ var _ Env = &EnvMock{}
 //			ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
 //				panic("mock out the ListActiveUserSubgraphs method")
 //			},
+//			NowFunc: func() time.Time {
+//				panic("mock out the Now method")
+//			},
 //			ObserveNoteQueryFunc: func(query string, result string, elapsed time.Duration, paramsBytes int)  {
 //				panic("mock out the ObserveNoteQuery method")
 //			},
@@ -61,6 +64,9 @@ type EnvMock struct {
 
 	// ListActiveUserSubgraphsFunc mocks the ListActiveUserSubgraphs method.
 	ListActiveUserSubgraphsFunc func(ctx context.Context, userID int64) ([]string, error)
+
+	// NowFunc mocks the Now method.
+	NowFunc func() time.Time
 
 	// ObserveNoteQueryFunc mocks the ObserveNoteQuery method.
 	ObserveNoteQueryFunc func(query string, result string, elapsed time.Duration, paramsBytes int)
@@ -98,6 +104,9 @@ type EnvMock struct {
 			// UserID is the userID argument value.
 			UserID int64
 		}
+		// Now holds details about calls to the Now method.
+		Now []struct {
+		}
 		// ObserveNoteQuery holds details about calls to the ObserveNoteQuery method.
 		ObserveNoteQuery []struct {
 			// Query is the query argument value.
@@ -115,6 +124,7 @@ type EnvMock struct {
 	lockCurrentUserToken        sync.RWMutex
 	lockLatestNoteViews         sync.RWMutex
 	lockListActiveUserSubgraphs sync.RWMutex
+	lockNow                     sync.RWMutex
 	lockObserveNoteQuery        sync.RWMutex
 }
 
@@ -286,6 +296,33 @@ func (mock *EnvMock) ListActiveUserSubgraphsCalls() []struct {
 	mock.lockListActiveUserSubgraphs.RLock()
 	calls = mock.calls.ListActiveUserSubgraphs
 	mock.lockListActiveUserSubgraphs.RUnlock()
+	return calls
+}
+
+// Now calls NowFunc.
+func (mock *EnvMock) Now() time.Time {
+	if mock.NowFunc == nil {
+		panic("EnvMock.NowFunc: method is nil but Env.Now was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockNow.Lock()
+	mock.calls.Now = append(mock.calls.Now, callInfo)
+	mock.lockNow.Unlock()
+	return mock.NowFunc()
+}
+
+// NowCalls gets all the calls that were made to Now.
+// Check the length with:
+//
+//	len(mockedEnv.NowCalls())
+func (mock *EnvMock) NowCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockNow.RLock()
+	calls = mock.calls.Now
+	mock.lockNow.RUnlock()
 	return calls
 }
 

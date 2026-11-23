@@ -41,6 +41,10 @@ func withoutNotes(t *testing.T, res model.NoteQueryOrErrorPayload) {
 	}
 }
 
+func fixedNow() time.Time {
+	return time.Date(2026, 11, 23, 1, 30, 0, 0, time.FixedZone("MSK", 3*60*60))
+}
+
 func query(src string) string {
 	return "---\ntype: note-query\nfree: true\n---\n```jsonnet\n" + src + "\n```\n"
 }
@@ -66,6 +70,7 @@ func TestResolve(t *testing.T) {
 		"queries/all.md": "---\ntype: note-query\nfree: true\nall_notes: true\n---\n```jsonnet\n" +
 			"{user: currentUser, notes: [[n.path, n.readable] for n in notes if std.startsWith(n.path, 'blog/')]}\n```\n",
 		"queries/no_user.md": query(`currentUser`),
+		"queries/now.md":     query(`now`),
 	}
 
 	tests := []struct {
@@ -149,9 +154,16 @@ func TestResolve(t *testing.T) {
 			observed: "queries/no_user.md ok",
 		},
 		{
+			name:  "now is the call's time in the site's timezone",
+			input: model.NoteQueryInput{Query: "queries/now.md"},
+			expected: &model.NoteQueryPayload{Result: json.RawMessage(
+				`{"date":"2026-11-23","time":"2026-11-23T01:30:00+03:00","unix":1795386600}`)},
+			observed: "queries/now.md ok",
+		},
+		{
 			name:     "a static error starts with the query's location",
 			input:    model.NoteQueryInput{Query: "queries/static.md"},
-			expected: &model.ErrorPayload{Message: "queries/static.md:1:153-157 Unknown variable: nope"},
+			expected: &model.ErrorPayload{Message: "queries/static.md:1:193-197 Unknown variable: nope"},
 			observed: "queries/static.md error",
 		},
 		{
@@ -172,6 +184,7 @@ func TestResolve(t *testing.T) {
 				},
 				LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
 				CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
+				NowFunc:                   fixedNow,
 				CurrentUserTokenFunc:      func(context.Context) (*usertoken.Data, error) { return nil, nil },
 				CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 			}
@@ -198,6 +211,7 @@ func TestResolveSignedInLooksUpSubgraphsOnce(t *testing.T) {
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
 		CachedQueryNotesFunc: runnotequery.NewNotesCache().CachedQueryNotes,
+		NowFunc:              fixedNow,
 		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
 		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
 			return &usertoken.Data{ID: 5, Role: "user"}, nil
@@ -222,6 +236,7 @@ func TestResolveFederatedUserHasNoID(t *testing.T) {
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:  func() *appmodel.NoteViews { return nvs },
 		CachedQueryNotesFunc: runnotequery.NewNotesCache().CachedQueryNotes,
+		NowFunc:              fixedNow,
 		ObserveNoteQueryFunc: func(string, string, time.Duration, int) {},
 		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
 			return &usertoken.Data{Role: usertoken.RoleFederated}, nil

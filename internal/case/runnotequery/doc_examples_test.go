@@ -64,6 +64,7 @@ func TestDocExamples(t *testing.T) {
 		env := &runnotequery.EnvMock{
 			LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
 			CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
+			NowFunc:                   fixedNow,
 			ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
 			CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 			CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
@@ -103,8 +104,9 @@ func TestDocExamples(t *testing.T) {
 		{false, "[[latest]]", `{"limit": 2}`, `["Go on the web","Web basics"]`},
 		{false, "[[latest]]", ``, `["Go on the web","Web basics","Hello, Go"]`},
 		{false, "[[task_counts]]", ``, `{"done":1,"todo":2}`},
-		{false, "[[folder_counts]]", ``, `{"blog":3,"queries":6,"tasks":3}`},
-		{true, "[[folder_counts]]", ``, `{"blog":4,"queries":6,"tasks":3}`},
+		{false, "[[folder_counts]]", ``, `{"blog":3,"queries":7,"tasks":3}`},
+		{true, "[[folder_counts]]", ``, `{"blog":4,"queries":7,"tasks":3}`},
+		{false, "[[overdue]]", ``, `["Fix scroll"]`},
 		{false, "[[teaser]]", ``, `{"locked":1,"open":["Go on the web","Hello, Go","Web basics"],"signedIn":false}`},
 		{true, "[[teaser]]", ``, `{"locked":0,"open":["Go on the web","Hello, Go","Members only","Web basics"],"signedIn":true}`},
 	}
@@ -122,6 +124,7 @@ func TestDocRowsExample(t *testing.T) {
 		env := &runnotequery.EnvMock{
 			LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
 			CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
+			NowFunc:                   fixedNow,
 			ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
 			CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 			CurrentUserTokenFunc:      func(context.Context) (*usertoken.Data, error) { return user, nil },
@@ -154,7 +157,7 @@ func TestDocSnippets(t *testing.T) {
 		doc, err := os.ReadFile("../../../docs/" + page + ".md")
 		require.NoError(t, err)
 
-		for _, name := range []string{"by_tag", "latest", "task_counts", "folder_counts", "teaser", "newest"} {
+		for _, name := range []string{"by_tag", "latest", "task_counts", "folder_counts", "teaser", "newest", "overdue"} {
 			src, readErr := os.ReadFile(demoVault + "/queries/" + name + ".md")
 			require.NoError(t, readErr)
 
@@ -174,6 +177,7 @@ func TestOntologyHealthQuery(t *testing.T) {
 	env := &runnotequery.EnvMock{
 		LatestNoteViewsFunc:       func() *appmodel.NoteViews { return nvs },
 		CachedQueryNotesFunc:      runnotequery.NewNotesCache().CachedQueryNotes,
+		NowFunc:                   fixedNow,
 		ObserveNoteQueryFunc:      func(string, string, time.Duration, int) {},
 		CurrentFederatedScopeFunc: func(context.Context) ([]string, bool) { return nil, false },
 		CurrentUserTokenFunc: func(context.Context) (*usertoken.Data, error) {
