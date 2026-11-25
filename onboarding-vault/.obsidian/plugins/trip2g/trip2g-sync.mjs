@@ -1749,7 +1749,7 @@ var init_esm2 = __esm({
 });
 
 // src/sync/cli/cmd.ts
-import * as fs6 from "fs";
+import * as fs5 from "fs";
 import * as path5 from "path";
 
 // src/sync/cli/env.ts
@@ -2689,10 +2689,17 @@ var NodeEnv = class {
   }
   /** Remove prefix from remote path to get local path */
   toLocalPath(remotePath) {
+    if (this.prefix && remotePath === this.prefix) {
+      return "";
+    }
     if (this.prefix && remotePath.startsWith(this.prefix + "/")) {
       return remotePath.substring(this.prefix.length + 1);
     }
     return remotePath;
+  }
+  /** The file on disk for a path as the server names it */
+  localFile(remotePath) {
+    return safeJoin(this.folder, this.toLocalPath(remotePath));
   }
   /** Check if remote path belongs to this prefix */
   matchesPrefix(remotePath) {
@@ -2752,7 +2759,8 @@ var NodeEnv = class {
             files.push({
               // Use remote path with prefix for sync comparison
               path: this.toRemotePath(relPath),
-              mtime: stat4.mtimeMs
+              mtime: stat4.mtimeMs,
+              size: stat4.size
             });
           }
         }
@@ -2783,38 +2791,39 @@ var NodeEnv = class {
     return b64.replace(/\+/g, "-").replace(/\//g, "_");
   }
   async readFileContent(filePath) {
-    const localPath = this.toLocalPath(filePath);
-    const fullPath = safeJoin(this.folder, localPath);
-    return fs3.readFileSync(fullPath, "utf-8");
+    return fs3.readFileSync(this.localFile(filePath), "utf-8");
   }
   // ============ File Operations ============
   async writeFile(filePath, content) {
-    const fullPath = safeJoin(this.folder, filePath);
-    writeFileAtomic(fullPath, content);
+    writeFileAtomic(this.localFile(filePath), content);
   }
   async writeBinaryFile(filePath, data) {
-    const fullPath = safeJoin(this.folder, filePath);
-    writeFileAtomic(fullPath, Buffer.from(data));
+    writeFileAtomic(this.localFile(filePath), Buffer.from(data));
   }
   async openBinaryBlob(filePath) {
-    return fs3.openAsBlob(safeJoin(this.folder, filePath));
+    return fs3.openAsBlob(this.localFile(filePath));
   }
   async deleteFile(filePath) {
-    const fullPath = safeJoin(this.folder, filePath);
+    const fullPath = this.localFile(filePath);
     if (fs3.existsSync(fullPath)) {
       fs3.unlinkSync(fullPath);
     }
   }
   async createFolder(folderPath) {
-    const fullPath = safeJoin(this.folder, folderPath);
-    fs3.mkdirSync(fullPath, { recursive: true });
+    if (this.toLocalPath(folderPath) === "") {
+      return;
+    }
+    fs3.mkdirSync(this.localFile(folderPath), { recursive: true });
   }
   async fileExists(filePath) {
     return this.fileExistsSync(filePath);
   }
   fileExistsSync(filePath) {
+    return this.localFileExistsSync(this.toLocalPath(filePath));
+  }
+  localFileExistsSync(localPath) {
     try {
-      return fs3.existsSync(safeJoin(this.folder, filePath));
+      return fs3.existsSync(safeJoin(this.folder, localPath));
     } catch (e) {
       if (e instanceof PathOutsideVaultError || UNWALKABLE_PATH_CODES.has(e.code ?? "")) {
         return false;
@@ -3067,14 +3076,19 @@ ${body}`);
   // ============ Asset Operations ============
   async hashBinaryFile(filePath) {
     const hash = crypto2.createHash("sha256");
-    const stream = fs3.createReadStream(safeJoin(this.folder, filePath));
+    const stream = fs3.createReadStream(this.localFile(filePath));
     for await (const chunk of stream) {
       hash.update(chunk);
     }
     return hash.digest("hex");
   }
   async resolveAssetPath(assetPath, notePath) {
-    return resolveAssetPath(this, assetPath, notePath);
+    const local = {
+      fileExistsSync: /* @__PURE__ */ __name((p) => this.localFileExistsSync(p), "fileExistsSync"),
+      listVaultFiles: /* @__PURE__ */ __name(() => this.listVaultFiles(), "listVaultFiles")
+    };
+    const resolved = resolveAssetPath(local, assetPath, this.toLocalPath(notePath));
+    return resolved === null ? null : this.toRemotePath(resolved);
   }
   // ============ UI Callbacks (CLI versions) ============
   onProgress(progress) {
@@ -3322,18 +3336,31 @@ async function classifySync(env) {
   }
   const localHashes = /* @__PURE__ */ new Map();
   const cachedMtimes = syncState.mtimes || {};
+  const cachedSizes = syncState.sizes || {};
   const cachedLocalHashes = syncState.localHashes || {};
+  const mtimes = {};
+  const sizes = {};
+  const hashes = {};
   for (const file of localFiles) {
-    const cachedMtime = cachedMtimes[file.path];
     const cachedHash = cachedLocalHashes[file.path];
-    if (cachedMtime === file.mtime && cachedHash) {
-      localHashes.set(file.path, cachedHash);
+    const unchangedOnDisk = cachedMtimes[file.path] === file.mtime && cachedSizes[file.path] === file.size;
+    let hash;
+    if (cachedHash && unchangedOnDisk) {
+      hash = cachedHash;
     } else {
       const content = await env.readFileContent(file.path);
-      const hash = await env.computeHash(content);
-      localHashes.set(file.path, hash);
+      hash = await env.computeHash(content);
     }
+    localHashes.set(file.path, hash);
+    mtimes[file.path] = file.mtime;
+    if (file.size !== void 0) {
+      sizes[file.path] = file.size;
+    }
+    hashes[file.path] = hash;
   }
+  syncState.mtimes = mtimes;
+  syncState.sizes = sizes;
+  syncState.localHashes = hashes;
   const allPaths = /* @__PURE__ */ new Set([
     ...localHashes.keys(),
     ...serverHashMap.keys()
@@ -4480,9 +4507,92 @@ var LivePullConnection = class {
   }
 };
 
+// src/sync/cli/sync-report.ts
+function writeUpdatedOutput(file, updatedUrls) {
+  writeFileAtomic(file, JSON.stringify(updatedUrls, null, 2));
+}
+__name(writeUpdatedOutput, "writeUpdatedOutput");
+var EXIT_FAILURE = 1;
+function printSyncResult(result, totalActions, updatedOutput) {
+  const upToDate = totalActions === 0 && result.assetsUploaded === 0 && result.assetsDownloaded === 0 && result.errors.length === 0;
+  if (upToDate) {
+    console.log("\n\u2705 Everything is up to date!");
+    return 0;
+  }
+  console.log("\n" + "=".repeat(60));
+  console.log("\u{1F4CA} SYNC RESULTS:");
+  console.log("=".repeat(60));
+  console.log(`  Pushed:             ${result.pushed}`);
+  console.log(`  Pulled:             ${result.pulled}`);
+  console.log(`  Conflicts resolved: ${result.conflictsResolved}`);
+  console.log(`  Assets uploaded:    ${result.assetsUploaded}`);
+  console.log(`  Assets downloaded:  ${result.assetsDownloaded}`);
+  if (result.errors.length > 0) {
+    console.log(`  Errors:             ${result.errors.length}`);
+    for (const err of result.errors) {
+      console.log(`    \u274C ${err}`);
+    }
+  }
+  if (result.warnings.length > 0) {
+    console.log(`  Warnings:           ${result.warnings.length}`);
+  }
+  console.log("=".repeat(60));
+  let hasCritical = false;
+  if (result.warnings.length > 0) {
+    const RED = "\x1B[31m";
+    const YELLOW = "\x1B[33m";
+    const RESET = "\x1B[0m";
+    const byPath = /* @__PURE__ */ new Map();
+    for (const w of result.warnings) {
+      const forPath = byPath.get(w.path) ?? [];
+      forPath.push(w);
+      byPath.set(w.path, forPath);
+    }
+    console.log("\n\u26A0\uFE0F  Warnings:");
+    for (const [path6, warnings] of byPath) {
+      console.log(`  ${JSON.stringify(path6)}`);
+      for (const w of warnings) {
+        const isCritical = w.level === "CRITICAL";
+        hasCritical = hasCritical || isCritical;
+        const color = isCritical ? RED : YELLOW;
+        console.log(`    ${color}[${w.level}]${RESET} ${w.message}`);
+      }
+    }
+  }
+  const updatedUrls = result.updatedUrls ?? [];
+  if (updatedUrls.length > 0) {
+    console.log("\n\u{1F4CE} Published:");
+    if (updatedUrls.length <= 20) {
+      for (const { path: path6, url } of updatedUrls) {
+        console.log(`  ${path6} \u2192 ${url}`);
+      }
+    }
+    if (updatedOutput) {
+      writeUpdatedOutput(updatedOutput, updatedUrls);
+      console.log(`\u{1F4BE} Saved to ${updatedOutput}`);
+    } else {
+      console.log(`\u{1F4A1} --updated-output $(mktemp /tmp/updated-XXXXXX.json)`);
+    }
+  }
+  if (hasCritical) {
+    console.error("\n\u274C Critical warnings detected, aborting.");
+    return EXIT_FAILURE;
+  }
+  if (result.errors.length > 0) {
+    console.error(`
+\u274C ${result.errors.length} operation(s) failed; they stay unsynced and are retried on the next run.`);
+    return EXIT_FAILURE;
+  }
+  return 0;
+}
+__name(printSyncResult, "printSyncResult");
+
 // src/sync/cli/watch.ts
 var FS_DEBOUNCE_MS = 500;
 var FALLBACK_SWEEP_MS = 2e4;
+var RETRY_BASE_MS = 1e3;
+var RETRY_MAX_MS = 6e4;
+var PUBLISHED_LOG_LIMIT = 20;
 var realClock = {
   setInterval: /* @__PURE__ */ __name((h, ms) => setInterval(h, ms), "setInterval"),
   clearInterval: /* @__PURE__ */ __name((h) => clearInterval(h), "clearInterval"),
@@ -4558,8 +4668,31 @@ async function runWatch(args, deps = {}) {
   let watcherRef = null;
   let debounceTimer = null;
   let sweepTimer = null;
+  let retryTimer = null;
+  let retryDelay = RETRY_BASE_MS;
   let resolveRun = null;
   log(`\u{1F440} watch: starting for ${args.folder}`);
+  const reportPublished = /* @__PURE__ */ __name((result) => {
+    const urls = result.updatedUrls;
+    if (urls.length === 0) {
+      return;
+    }
+    if (urls.length <= PUBLISHED_LOG_LIMIT) {
+      for (const { path: notePath, url } of urls) {
+        log(`\u{1F4CE} watch: ${notePath} \u2192 ${url}`);
+      }
+    } else {
+      log(`\u{1F4CE} watch: published ${urls.length} notes`);
+    }
+    if (!args.updatedOutput) {
+      return;
+    }
+    try {
+      writeUpdatedOutput(args.updatedOutput, urls);
+    } catch (e) {
+      console.error(`\u274C watch: cannot write ${args.updatedOutput}: ${String(e)}`);
+    }
+  }, "reportPublished");
   const drain = /* @__PURE__ */ __name(async (signal) => {
     if (settled) {
       return;
@@ -4573,6 +4706,10 @@ async function runWatch(args, deps = {}) {
     if (sweepTimer !== null) {
       clock.clearInterval(sweepTimer);
       sweepTimer = null;
+    }
+    if (retryTimer !== null) {
+      clock.clearTimeout(retryTimer);
+      retryTimer = null;
     }
     if (livePullRef) {
       livePullRef.disconnect();
@@ -4634,7 +4771,7 @@ async function runWatch(args, deps = {}) {
   livePullRef = livePull;
   await lock.run(async () => {
     log("\u{1F4CA} watch: reconciling\u2026");
-    await runOneShot(env, isExcluded);
+    reportPublished(await runOneShot(env, isExcluded));
     reconcileDone = true;
     log("\u2705 watch: reconcile complete");
   });
@@ -4649,6 +4786,38 @@ async function runWatch(args, deps = {}) {
     }
   }
   const dirtyPaths = /* @__PURE__ */ new Set();
+  const scheduleRetry = /* @__PURE__ */ __name(() => {
+    if (draining || retryTimer !== null) {
+      return;
+    }
+    const delay = retryDelay;
+    retryDelay = Math.min(retryDelay * 2, RETRY_MAX_MS);
+    log(`\u{1F501} watch: retrying in ${delay / 1e3}s`);
+    retryTimer = clock.setTimeout(() => {
+      retryTimer = null;
+      void syncLocalChanges();
+    }, delay);
+  }, "scheduleRetry");
+  const syncLocalChanges = /* @__PURE__ */ __name(() => lock.run(async () => {
+    let succeeded;
+    try {
+      const result = await runOneShot(env, isExcluded);
+      reportPublished(result);
+      succeeded = result.pushErrors.length === 0;
+    } catch (e) {
+      console.error(`\u274C watch: sync failed: ${String(e)}`);
+      succeeded = false;
+    }
+    if (!succeeded) {
+      scheduleRetry();
+      return;
+    }
+    retryDelay = RETRY_BASE_MS;
+    if (retryTimer !== null) {
+      clock.clearTimeout(retryTimer);
+      retryTimer = null;
+    }
+  }), "syncLocalChanges");
   const flushBatch = /* @__PURE__ */ __name(() => {
     debounceTimer = null;
     if (draining) {
@@ -4657,12 +4826,9 @@ async function runWatch(args, deps = {}) {
     if (dirtyPaths.size === 0) {
       return;
     }
-    const batch = Array.from(dirtyPaths);
+    log(`\u{1F4E4} watch: pushing ${dirtyPaths.size} local change(s)`);
     dirtyPaths.clear();
-    void lock.run(async () => {
-      log(`\u{1F4E4} watch: pushing ${batch.length} local change(s)`);
-      await runOneShot(env, isExcluded);
-    });
+    void syncLocalChanges();
   }, "flushBatch");
   const onFsChange = /* @__PURE__ */ __name((filePath) => {
     if (draining) {
@@ -4687,9 +4853,7 @@ async function runWatch(args, deps = {}) {
       if (draining) {
         return;
       }
-      void lock.run(async () => {
-        await runOneShot(env, isExcluded);
-      });
+      void syncLocalChanges();
     }, FALLBACK_SWEEP_MS);
   }
   void now;
@@ -4727,6 +4891,7 @@ async function runOneShot(env, isExcluded) {
   for (const err of result.errors) {
     console.error(`\u274C watch: ${err}`);
   }
+  return result;
 }
 __name(runOneShot, "runOneShot");
 async function createWatcher(folder, deps) {
@@ -4804,88 +4969,11 @@ function formatPlanSummary(plan, conflictResolution) {
 }
 __name(formatPlanSummary, "formatPlanSummary");
 
-// src/sync/cli/sync-report.ts
-import * as fs5 from "fs";
-var EXIT_FAILURE = 1;
-function printSyncResult(result, totalActions, updatedOutput) {
-  const upToDate = totalActions === 0 && result.assetsUploaded === 0 && result.assetsDownloaded === 0 && result.errors.length === 0;
-  if (upToDate) {
-    console.log("\n\u2705 Everything is up to date!");
-    return 0;
-  }
-  console.log("\n" + "=".repeat(60));
-  console.log("\u{1F4CA} SYNC RESULTS:");
-  console.log("=".repeat(60));
-  console.log(`  Pushed:             ${result.pushed}`);
-  console.log(`  Pulled:             ${result.pulled}`);
-  console.log(`  Conflicts resolved: ${result.conflictsResolved}`);
-  console.log(`  Assets uploaded:    ${result.assetsUploaded}`);
-  console.log(`  Assets downloaded:  ${result.assetsDownloaded}`);
-  if (result.errors.length > 0) {
-    console.log(`  Errors:             ${result.errors.length}`);
-    for (const err of result.errors) {
-      console.log(`    \u274C ${err}`);
-    }
-  }
-  if (result.warnings.length > 0) {
-    console.log(`  Warnings:           ${result.warnings.length}`);
-  }
-  console.log("=".repeat(60));
-  let hasCritical = false;
-  if (result.warnings.length > 0) {
-    const RED = "\x1B[31m";
-    const YELLOW = "\x1B[33m";
-    const RESET = "\x1B[0m";
-    const byPath = /* @__PURE__ */ new Map();
-    for (const w of result.warnings) {
-      const forPath = byPath.get(w.path) ?? [];
-      forPath.push(w);
-      byPath.set(w.path, forPath);
-    }
-    console.log("\n\u26A0\uFE0F  Warnings:");
-    for (const [path6, warnings] of byPath) {
-      console.log(`  ${JSON.stringify(path6)}`);
-      for (const w of warnings) {
-        const isCritical = w.level === "CRITICAL";
-        hasCritical = hasCritical || isCritical;
-        const color = isCritical ? RED : YELLOW;
-        console.log(`    ${color}[${w.level}]${RESET} ${w.message}`);
-      }
-    }
-  }
-  const updatedUrls = result.updatedUrls ?? [];
-  if (updatedUrls.length > 0) {
-    console.log("\n\u{1F4CE} Published:");
-    if (updatedUrls.length <= 20) {
-      for (const { path: path6, url } of updatedUrls) {
-        console.log(`  ${path6} \u2192 ${url}`);
-      }
-    }
-    if (updatedOutput) {
-      fs5.writeFileSync(updatedOutput, JSON.stringify(updatedUrls, null, 2));
-      console.log(`\u{1F4BE} Saved to ${updatedOutput}`);
-    } else {
-      console.log(`\u{1F4A1} --updated-output $(mktemp /tmp/updated-XXXXXX.json)`);
-    }
-  }
-  if (hasCritical) {
-    console.error("\n\u274C Critical warnings detected, aborting.");
-    return EXIT_FAILURE;
-  }
-  if (result.errors.length > 0) {
-    console.error(`
-\u274C ${result.errors.length} operation(s) failed; they stay unsynced and are retried on the next run.`);
-    return EXIT_FAILURE;
-  }
-  return 0;
-}
-__name(printSyncResult, "printSyncResult");
-
 // src/sync/cli/cmd.ts
 function readDataJson() {
   try {
     const dataPath = path5.join(process.cwd(), ".obsidian", "plugins", "trip2g", "data.json");
-    const data = JSON.parse(fs6.readFileSync(dataPath, "utf8"));
+    const data = JSON.parse(fs5.readFileSync(dataPath, "utf8"));
     const dir = data?.syncDirs?.[0];
     if (!dir) return {};
     return {
@@ -5041,7 +5129,9 @@ Usage:
 Arguments:
   folder                   Local folder to sync (required)
   prefix                   Remote path prefix (optional, for multi-repo setups).
-                           Not supported together with --two-way.
+                           Local "a.md" is the server's "<prefix>/a.md"; with
+                           --two-way, server notes under the prefix are pulled
+                           back to the same local paths. Not supported with --watch.
 
 Options:
   -u, --api-url <url>      GraphQL endpoint (default: $ENDPOINT or .obsidian/plugins/trip2g/data.json or http://localhost:8081/_system/graphql)
@@ -5063,7 +5153,9 @@ Options:
                            - fail:   Exit with error on first conflict
   -m, --meta <key=value>   Add/override frontmatter field for all files (can be repeated)
   -o, --updated-output <file>
-                           Write pushed notes as JSON [{path, url}] to file after sync
+                           Write pushed notes as JSON [{path, url}] to file after sync.
+                           With --watch, the file is rewritten after each sync
+                           that publishes notes, holding that sync's notes.
   -s, --state-file <path>  Sync-state file path (default: .sync-state.<host>.json derived from --api-url)
   -x, --exclude <glob>     Exclude paths from sync (can be repeated). Excluded
                            paths are never pushed; if they exist on the server
@@ -5224,8 +5316,8 @@ async function main() {
     console.error("\u274C Error: --api-key or API_KEY environment variable is required");
     process.exit(1);
   }
-  if (args.prefix && args.twoWaySync) {
-    console.error("\u274C Error: prefix is not supported with --two-way sync");
+  if (args.prefix && args.watch) {
+    console.error("\u274C Error: prefix is not supported with --watch");
     process.exit(1);
   }
   if (args.watch) {
@@ -5241,7 +5333,8 @@ async function main() {
       verbose: args.verbose,
       dataInclude: dataJson.livePullIncludePatterns,
       dataExclude: dataJson.livePullExcludePatterns,
-      stateFile: args.stateFile || void 0
+      stateFile: args.stateFile || void 0,
+      updatedOutput: args.updatedOutput || void 0
     });
     process.exit(exitCode2);
   }
