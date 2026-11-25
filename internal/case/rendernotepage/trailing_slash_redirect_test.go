@@ -2,6 +2,7 @@ package rendernotepage_test
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	"trip2g/internal/appreq"
@@ -17,6 +18,7 @@ func trailingSlashEnv(t *testing.T) *EnvMock {
 
 	views := loadTestVault(t, []mdloader.SourceFile{
 		{Path: "blog.md", Content: []byte("---\nfree: true\n---\nBlog")},
+		{Path: "evilnote.md", Content: []byte("---\nfree: true\nroute: /evil.com\n---\nDotted")},
 		{Path: "index.md", Content: []byte("---\nfree: true\n---\nHome")},
 		{Path: "docs.md", Content: []byte("---\nfree: true\nroute: /docs/\n---\nDocs served at a slash route")},
 	})
@@ -106,4 +108,50 @@ func TestTrailingSlash_NoteServedAtSlashPathIsNotRedirected(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, ctx.Response.StatusCode())
 	require.Empty(t, ctx.Response.Header.Peek("Location"))
+}
+
+func TestTrailingSlash_RedirectLocationIsNeverOffSite(t *testing.T) {
+	paths := []string{
+		"//evil.com/",
+		"/%2F%2Fevil.com/",
+		"/%2f%2fevil.com/",
+		"/\\evil.com/",
+		"/%5Cevil.com/",
+		"/%5cevil.com/",
+		"/evil.com%0d%0aSet-Cookie:%20a=b/",
+		"/%0d%0aevil.com/",
+		"///evil.com/",
+		"/\\/evil.com/",
+		"/%2F/evil.com/",
+		"/evil.com/",
+	}
+
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			env := trailingSlashEnv(t)
+			ctx := newReqCtx(reqOpts{path: path})
+			handleIgnoringRender404(env, ctx)
+
+			location := string(ctx.Response.Header.Peek("Location"))
+			if location == "" {
+				return
+			}
+
+			require.GreaterOrEqual(t, len(location), 2)
+			require.Equal(t, byte('/'), location[0])
+			require.NotContains(t, []byte{'/', '\\'}, location[1])
+			require.False(t, strings.ContainsAny(location, "\r\n"))
+		})
+	}
+}
+
+func TestTrailingSlash_RedirectDropsQueryWithLineBreak(t *testing.T) {
+	env := trailingSlashEnv(t)
+
+	ctx := newReqCtx(reqOpts{path: "/blog/", query: "a=1%0d%0aX-Injected:%20yes"})
+	handleIgnoringRender404(env, ctx)
+
+	location := string(ctx.Response.Header.Peek("Location"))
+	require.False(t, strings.ContainsAny(location, "\r\n"))
+	require.Empty(t, ctx.Response.Header.Peek("X-Injected"))
 }
