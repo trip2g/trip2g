@@ -80,6 +80,15 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	resp, err := Resolve(ctx, env, request)
+	if resp != nil && resp.WithoutTrailingSlash != "" && (ctx.IsGet() || ctx.IsHead()) {
+		redirectURL := strings.TrimSuffix(string(ctx.URI().PathOriginal()), "/")
+		if qs := ctx.URI().QueryString(); len(qs) > 0 {
+			redirectURL += "?" + string(qs)
+		}
+		ctx.Response.Header.Set("Location", redirectURL)
+		ctx.SetStatusCode(http.StatusMovedPermanently)
+		return nil, nil
+	}
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description

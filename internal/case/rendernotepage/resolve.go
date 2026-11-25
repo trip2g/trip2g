@@ -124,6 +124,10 @@ type Response struct {
 
 	OnboardingMode bool
 
+	// WithoutTrailingSlash is set when the requested path ends with "/", no
+	// note is served there, and a note is served at the same path without it.
+	WithoutTrailingSlash string
+
 	TelegramLinks []model.TelegramPostLink
 
 	// domainHost is the normalized custom domain host for this request.
@@ -242,6 +246,12 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 			response.Time = int(time.Now().Unix())
 			return &response, nil
 		}
+
+		trimmed := strings.TrimSuffix(path, "/")
+		if trimmed != path && resolveNote(notes, request.Host, trimmed, publicURL) != nil {
+			response.WithoutTrailingSlash = trimmed
+		}
+
 		return &response, ErrNotFound
 	}
 
