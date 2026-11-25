@@ -793,16 +793,12 @@ func isAlternatePermalink(note *model.NoteView, path string) bool {
 
 func trailingSlashRedirectURL(notePath string, rawQuery []byte) string {
 	target := (&url.URL{Path: notePath}).EscapedPath()
-	if len(target) < 2 || target[0] != '/' || target[1] == '/' || target[1] == '\\' {
+	if len(target) < 2 || target[0] != '/' || target[1] == '/' {
 		return ""
 	}
 
 	if len(rawQuery) > 0 && !bytes.ContainsAny(rawQuery, "\r\n") {
 		target += "?" + string(rawQuery)
-	}
-
-	if strings.ContainsAny(target, "\r\n") {
-		return ""
 	}
 
 	return target
