@@ -76,16 +76,41 @@ func (c *AssetClient) FetchAsset(ctx context.Context, params model.FederatedAsse
 	}
 
 	size := int64(resp.Header.ContentLength())
-	if size < 0 {
-		releaseStreamed(resp)
-		return nil, model.ErrFederatedAssetSizeUnknown
-	}
 	if size > c.limits.MaxSize {
 		releaseStreamed(resp)
 		return nil, model.ErrFederatedAssetTooLarge
 	}
+	if size < 0 {
+		body := &cappedBody{ReadCloser: &streamedBody{resp: resp}, remaining: c.limits.MaxSize}
+		return &model.FederatedAsset{Size: -1, Body: body}, nil
+	}
 
 	return &model.FederatedAsset{Size: size, Body: &streamedBody{resp: resp}}, nil
+}
+
+// cappedBody holds a body sent without Content-Length to the size limit as it
+// is read: the byte past the limit is never handed on, and the read that meets
+// it fails with ErrFederatedAssetTooLarge.
+type cappedBody struct {
+	io.ReadCloser
+	remaining int64
+}
+
+func (b *cappedBody) Read(p []byte) (int, error) {
+	if b.remaining < 0 {
+		return 0, model.ErrFederatedAssetTooLarge
+	}
+	if int64(len(p)) > b.remaining+1 {
+		p = p[:b.remaining+1]
+	}
+
+	n, err := b.ReadCloser.Read(p)
+	b.remaining -= int64(n)
+	if b.remaining < 0 {
+		return n - 1, model.ErrFederatedAssetTooLarge
+	}
+
+	return n, err
 }
 
 // request sends one signed asset request and returns the response with its

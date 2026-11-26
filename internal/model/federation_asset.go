@@ -6,14 +6,9 @@ import (
 	"io"
 )
 
-var (
-	// ErrFederatedAssetTooLarge is a peer offering an attachment over this
-	// side's limit.
-	ErrFederatedAssetTooLarge = errors.New("federated asset exceeds the size limit")
-	// ErrFederatedAssetSizeUnknown is a peer streaming an attachment without
-	// Content-Length, which this side cannot hold to its limit.
-	ErrFederatedAssetSizeUnknown = errors.New("federated asset sent without a size")
-)
+// ErrFederatedAssetTooLarge is a peer offering an attachment over this side's
+// limit, either up front or partway through a body sent without a size.
+var ErrFederatedAssetTooLarge = errors.New("federated asset exceeds the size limit")
 
 // FederatedAssetPath is where a base serves its notes' attachments to a
 // federation caller, relative to the base's MCP URL (a KB-note's url).
@@ -40,6 +35,8 @@ type NoteAssetInfo struct {
 
 // FederatedAsset is a peer's attachment on its way through. Body streams it and
 // must be closed; Size is what the peer declared, and the body never exceeds it.
+// Size is -1 when the peer sent no Content-Length: the body then fails with
+// ErrFederatedAssetTooLarge once it passes this side's limit.
 type FederatedAsset struct {
 	Size int64
 	Body io.ReadCloser

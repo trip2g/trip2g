@@ -3,6 +3,7 @@ package federatedassetrelay_test
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -184,10 +185,51 @@ func TestAFailedDownloadSpendsTheLink(t *testing.T) {
 	require.Equal(t, http.StatusGone, r.get(t, token).StatusCode())
 }
 
-func TestRelayRefusals(t *testing.T) {
-	noLength := func(ctx *fasthttp.RequestCtx) {
-		ctx.SetBodyStream(strings.NewReader(fileBody), -1)
+func chunked(body string) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		ctx.SetBodyStream(strings.NewReader(body), -1)
 	}
+}
+
+func TestRelayStreamsAChunkedAttachmentUnderTheCap(t *testing.T) {
+	r := newRelay(t, peerFetcher(t, chunked(fileBody)))
+
+	resp := r.get(t, link(t, "files/page.html", time.Now().Add(time.Minute)))
+
+	require.Equal(t, http.StatusOK, resp.StatusCode(), string(resp.Body()))
+	require.Equal(t, fileBody, string(resp.Body()))
+	require.Equal(t, `attachment; filename=page.html`, string(resp.Header.Peek("Content-Disposition")))
+}
+
+func TestAChunkedAttachmentOverTheCapStopsAtTheCap(t *testing.T) {
+	fetcher := peerFetcher(t, chunked(strings.Repeat("x", maxSize+1)))
+	params := model.FederatedAssetParams{NotePath: "notes/page.md", Name: "files/big.bin"}
+
+	asset, err := fetcher.FetchAsset(context.Background(), params)
+	require.NoError(t, err)
+
+	got, err := io.ReadAll(asset.Body)
+	require.ErrorIs(t, err, model.ErrFederatedAssetTooLarge)
+	require.Len(t, got, maxSize)
+	require.NoError(t, asset.Body.Close())
+}
+
+func TestRelayAbortsAChunkedAttachmentOverTheCap(t *testing.T) {
+	r := newRelay(t, peerFetcher(t, chunked(strings.Repeat("x", maxSize+1))))
+	r.client.MaxIdemponentCallAttempts = 1
+
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
+	req.SetRequestURI("http://consumer.test" + federatedassetrelay.Path + "?" + federatedassetrelay.LinkParam + "=" +
+		url.QueryEscape(link(t, "files/big.bin", time.Now().Add(time.Minute))))
+
+	resp := &fasthttp.Response{}
+	err := r.client.DoTimeout(req, resp, 5*time.Second)
+
+	require.Error(t, err, "a download cut at the cap must not arrive as a complete file")
+}
+
+func TestRelayRefusals(t *testing.T) {
 	unreachable := &fasthttp.Client{
 		StreamResponseBody: true,
 		Dial: func(string) (net.Conn, error) {
@@ -210,7 +252,6 @@ func TestRelayRefusals(t *testing.T) {
 		{"an expired link", peerSays(servesFile), -time.Minute, http.StatusNotFound},
 		{"the peer has no such attachment", peerSays(peerAnswers(http.StatusNotFound)), time.Minute, http.StatusNotFound},
 		{"the peer says it is too large", peerSays(peerAnswers(http.StatusRequestEntityTooLarge)), time.Minute, http.StatusRequestEntityTooLarge},
-		{"the peer sends no Content-Length", peerSays(noLength), time.Minute, http.StatusBadGateway},
 		{"the peer is unreachable", func(*testing.T) model.FederationAssetFetcher { return newFetcher(unreachable) }, time.Minute, http.StatusBadGateway},
 		{"the peer revoked the pairing", peerSays(peerAnswers(http.StatusUnauthorized)), time.Minute, http.StatusBadGateway},
 	}
