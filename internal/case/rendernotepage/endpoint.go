@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"time"
@@ -80,6 +81,14 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	resp, err := Resolve(ctx, env, request)
+	if resp != nil && resp.WithoutTrailingSlash != "" && (ctx.IsGet() || ctx.IsHead()) {
+		redirectURL := trailingSlashRedirectURL(resp.WithoutTrailingSlash, ctx.URI().QueryString())
+		if isLocalRedirect(redirectURL) {
+			ctx.Response.Header.Set("Location", redirectURL)
+			ctx.SetStatusCode(http.StatusMovedPermanently)
+			return nil, nil
+		}
+	}
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description
@@ -780,4 +789,22 @@ func isAlternatePermalink(note *model.NoteView, path string) bool {
 		}
 	}
 	return false
+}
+
+func trailingSlashRedirectURL(notePath string, rawQuery []byte) string {
+	target := (&url.URL{Path: notePath}).EscapedPath()
+
+	if len(rawQuery) > 0 && !bytes.ContainsAny(rawQuery, "\r\n") {
+		target += "?" + string(rawQuery)
+	}
+
+	return target
+}
+
+func isLocalRedirect(target string) bool {
+	if len(target) < 2 || target[0] != '/' || target[1] == '/' || target[1] == '\\' {
+		return false
+	}
+
+	return !strings.ContainsAny(target, "\r\n")
 }
