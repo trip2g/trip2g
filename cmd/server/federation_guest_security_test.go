@@ -1285,21 +1285,31 @@ func TestSecurityConcurrentReplayAtTheExpiryBoundaryAdmitsOnce(t *testing.T) {
 	})
 
 	const attempts = 12
-	statuses := make(chan int, attempts)
+	forms := make([]*fasthttp.RequestCtx, attempts)
+	for i := range forms {
+		forms[i] = &fasthttp.RequestCtx{}
+		forms[i].Init(&fasthttp.Request{}, nil, nil)
+		forms[i].Request.Header.SetMethod(http.MethodPost)
+		forms[i].Request.SetRequestURI(federationguest.Path)
+		forms[i].Request.Header.SetHost(s.peer.host)
+		forms[i].Request.Header.SetContentType("application/x-www-form-urlencoded")
+		forms[i].Request.Header.Set("Origin", hubOrigin)
+		forms[i].Request.SetBodyString(handoffForm(token).Encode())
+	}
+
 	var wg sync.WaitGroup
-	for range attempts {
+	for _, fctx := range forms {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			statuses <- newBrowser().post(t, s.peer, federationguest.Path, handoffForm(token), hubOrigin).status
+			s.peer.handler(fctx)
 		}()
 	}
 	wg.Wait()
-	close(statuses)
 
 	admitted := 0
-	for status := range statuses {
-		if status == http.StatusSeeOther {
+	for _, fctx := range forms {
+		if fctx.Response.StatusCode() == http.StatusSeeOther {
 			admitted++
 		}
 	}
