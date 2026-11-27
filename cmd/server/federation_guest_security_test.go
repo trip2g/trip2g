@@ -1178,3 +1178,29 @@ func TestSecurityTheRefusalPageLinksBackOnlyForAValidlySignedToken(t *testing.T)
 	require.Equal(t, http.StatusForbidden, unknown.status)
 	require.NotContains(t, unknown.body, "evil.test")
 }
+
+func TestSecurityTheDocumentedPatchClosesNotesWithNoSubgraphToAGuest(t *testing.T) {
+	s := seedTwoSites(t)
+	ctx := context.Background()
+	insertLatestNote(t, s.peer.app, "plain.md", "zzplainzz\n")
+	s.peer.load(t)
+	b := s.guest(t)
+
+	before := b.get(t, s.peer, "/plain")
+	require.Equal(t, http.StatusOK, before.status, "without the patch a guest reads a note with no subgraph, as an agent on the edge does")
+	require.Contains(t, before.body, "zzplainzz")
+
+	patch := db.InsertFrontmatterPatchParams{
+		IncludePatterns: `["**"]`, ExcludePatterns: `[]`, Description: "Private by default", Enabled: true, CreatedBy: s.peer.adminID,
+		Jsonnet: "if std.objectHas(meta, \"subgraph\") || std.objectHas(meta, \"subgraphs\")\nthen {}\nelse { subgraph: \"private\" }",
+	}
+	_, err := s.peer.app.WriteQueries.InsertFrontmatterPatch(ctx, patch)
+	require.NoError(t, err)
+	require.NoError(t, s.peer.app.WriteQueries.InsertSubgraph(ctx, "private"))
+	s.peer.load(t)
+
+	after := b.get(t, s.peer, "/plain")
+	require.Equal(t, http.StatusForbidden, after.status, "with the patch the same guest is refused")
+	require.NotContains(t, after.body, "zzplainzz")
+	require.Equal(t, "200[shared]", b.page(t, s.peer, "/shared"), "and still reads what the edge grants")
+}
