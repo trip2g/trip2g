@@ -31,8 +31,8 @@ func JetFunc(ctx context.Context, env Env) jet.Func {
 
 // JetRowsFunc gives a layout noteQueryRows(query, params?): the same query,
 // whose result must be a list, as rows with Data() and Note(). Notes render
-// for domainHost, like the page around them.
-func JetRowsFunc(ctx context.Context, env Env, domainHost string) jet.Func {
+// for domainHost, like the page around them, and pass guard.
+func JetRowsFunc(ctx context.Context, env Env, domainHost string, guard templateviews.Guard) jet.Func {
 	return func(a jet.Arguments) reflect.Value {
 		query, payload := runJet(ctx, env, "noteQueryRows", a)
 
@@ -46,7 +46,7 @@ func JetRowsFunc(ctx context.Context, env Env, domainHost string) jet.Func {
 
 		out := make([]*JetRow, len(rows))
 		for i := range rows {
-			out[i] = &JetRow{row: rows[i], domainHost: domainHost}
+			out[i] = &JetRow{row: rows[i], domainHost: domainHost, guard: guard}
 		}
 		return reflect.ValueOf(out)
 	}
@@ -87,6 +87,7 @@ func runJet(ctx context.Context, env Env, name string, a jet.Arguments) (string,
 type JetRow struct {
 	row        model.NoteQueryRow
 	domainHost string
+	guard      templateviews.Guard
 }
 
 // Data is the item as the program returned it, as plain maps and lists.
@@ -111,5 +112,5 @@ func (r *JetRow) Note() any {
 	if note == nil {
 		return nil
 	}
-	return templateviews.NewNoteWithDomain(note, r.domainHost)
+	return templateviews.AsForeign(templateviews.WithGuard(templateviews.NewNoteWithDomain(note, r.domainHost), r.guard))
 }

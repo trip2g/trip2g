@@ -53,6 +53,11 @@ func (ldr *loader) generateFreeHTML(p *model.NoteView) error {
 	}
 
 	// Render free content by walking AST and rendering only the allowed nodes
+	if ldr.linkResolver != nil {
+		ldr.linkResolver.renderingPreview = true
+		defer func() { ldr.linkResolver.renderingPreview = false }()
+	}
+
 	var buf bytes.Buffer
 	err := ldr.renderFreeContent(&buf, p.Ast(), p.Content, freeCut, freeParagraphs)
 	if err != nil {

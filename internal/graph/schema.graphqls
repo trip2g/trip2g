@@ -1609,7 +1609,7 @@ type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.No
   notePath: String!
   url: String! @goField(forceResolver: true)
   title: String!
-  html: String!
+  html: String! @goField(forceResolver: true)
   versionId: Int64! @goField(forceResolver: true)
 
   toc: [NoteTocItem!]!

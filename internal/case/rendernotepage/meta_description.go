@@ -21,12 +21,12 @@ const metaDescriptionMaxLen = 155
 // A closed note therefore gets a description only from explicit frontmatter —
 // no explicit description means no description, and nothing but the title
 // (shown on the wall by design) leaves the note.
-func deriveMetaDescription(note *model.NoteView) string {
+func deriveMetaDescription(note *model.NoteView, strip func(string) string) string {
 	if note == nil || note.PartialRenderer == nil || !note.IsAnonymouslyReadable() {
 		return ""
 	}
 	intro := note.PartialRenderer.Introduce()
-	text := collapseSpaces(stripHTMLTags(intro.ContentHTML.String()))
+	text := collapseSpaces(stripHTMLTags(strip(intro.ContentHTML.String())))
 	if text == "" {
 		return ""
 	}

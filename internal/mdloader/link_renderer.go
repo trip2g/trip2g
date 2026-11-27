@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"sync"
+	"trip2g/internal/embedguard"
 	"trip2g/internal/image"
 	"trip2g/internal/model"
 
@@ -101,7 +103,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 	img := resolveAsImage(n)
 	if !img {
 		if n.Embed {
-			return r.renderEmbed(w, dest)
+			return r.renderEmbed(w, n, dest)
 		}
 
 		r.hasDest.Store(n, struct{}{})
@@ -230,7 +232,7 @@ func removeVersion(originalURL string) string {
 	return originalURL[:idx]
 }
 
-func (r *linkRenderer) renderEmbed(w util.BufWriter, dest []byte) (ast.WalkStatus, error) {
+func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []byte) (ast.WalkStatus, error) {
 	url := removeVersion(string(dest))
 
 	note := r.nvs.GetByPath(url)
@@ -249,7 +251,17 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, dest []byte) (ast.WalkStatu
 		return ast.WalkSkipChildren, nil
 	}
 
-	if lr, ok := r.resolver.(*myLinkResolver); ok && lr.embedRendering[note] {
+	lr, isLoadResolver := r.resolver.(*myLinkResolver)
+	if !isLoadResolver || !embedVisibleToParentReaders(lr.currentPage, note, lr.renderingPreview) {
+		_, _ = w.WriteString(`<a href="`)
+		_, _ = w.Write(safeURL(dest))
+		_, _ = w.WriteString(`">`)
+		_, _ = w.Write(util.EscapeHTML(n.Target))
+		_, _ = w.WriteString(`</a>`)
+		return ast.WalkSkipChildren, nil
+	}
+
+	if lr.embedRendering[note] {
 		// The free-preview pass renders the same embed again; warn once.
 		msg := "embed cycle: " + url
 		if !hasWarningMessage(lr.currentPage, msg) {
@@ -263,12 +275,54 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, dest []byte) (ast.WalkStatu
 		class += " embedded-note__" + note.EmbededClass
 	}
 
-	_, err := w.WriteString(`<div class="` + class + `">` + string(note.HTML) + `</div>`)
+	_, err := w.WriteString(`<div class="` + class + `">` + embedguard.Wrap(note.PathID, string(note.HTML)) + `</div>`)
 	if err != nil {
 		return ast.WalkStop, fmt.Errorf("failed to write embedded note HTML: %w", err)
 	}
 
 	return ast.WalkSkipChildren, nil
+}
+
+// embedVisibleToParentReaders reports whether everyone who can read parent can
+// also read target, so inlining target's HTML into parent's discloses nothing.
+// The free preview of a note is shown to anonymous readers, so there only a
+// target that is itself anonymously readable may be inlined.
+func embedVisibleToParentReaders(parent, target *model.NoteView, preview bool) bool {
+	if target.IsAnonymouslyReadable() || target.IsUngatedPartial() {
+		return true
+	}
+
+	if parent == nil || preview || parent.IsAnonymouslyReadable() {
+		return false
+	}
+
+	if strings.HasSuffix(target.Path, ".html") {
+		return false
+	}
+
+	if target.RequiresSignin() {
+		return true
+	}
+
+	if parent.RequiresSignin() {
+		return false
+	}
+
+	if len(target.SubgraphNames) == 0 {
+		return true
+	}
+
+	if len(parent.SubgraphNames) == 0 {
+		return false
+	}
+
+	for _, name := range parent.SubgraphNames {
+		if !slices.Contains(target.SubgraphNames, name) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (r *linkRenderer) exit(w util.BufWriter, n *wikilink.Node) {

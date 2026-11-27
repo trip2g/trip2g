@@ -26,18 +26,18 @@ func (r introPartialRenderer) CodeBlocks(string) []model.NoteViewCodeBlock { ret
 
 func TestDeriveMetaDescription(t *testing.T) {
 	t.Run("nil note", func(t *testing.T) {
-		require.Empty(t, deriveMetaDescription(nil))
+		require.Empty(t, deriveMetaDescription(nil, keepEmbeds))
 	})
 
 	t.Run("no partial renderer", func(t *testing.T) {
-		require.Empty(t, deriveMetaDescription(&model.NoteView{}))
+		require.Empty(t, deriveMetaDescription(&model.NoteView{}, keepEmbeds))
 	})
 
 	t.Run("strips html and collapses whitespace", func(t *testing.T) {
 		note := &model.NoteView{Free: true, PartialRenderer: introPartialRenderer{
 			intro: model.NoteViewSection{ContentHTML: "<p>Hello   <strong>world</strong>\nagain</p>"},
 		}}
-		require.Equal(t, "Hello world again", deriveMetaDescription(note))
+		require.Equal(t, "Hello world again", deriveMetaDescription(note, keepEmbeds))
 	})
 
 	// The derived description reaches the <head> of the paywall / sign-in wall
@@ -47,7 +47,7 @@ func TestDeriveMetaDescription(t *testing.T) {
 		note := &model.NoteView{PartialRenderer: introPartialRenderer{
 			intro: model.NoteViewSection{ContentHTML: "<p>Paid content</p>"},
 		}}
-		require.Empty(t, deriveMetaDescription(note))
+		require.Empty(t, deriveMetaDescription(note, keepEmbeds))
 	})
 
 	t.Run("require_signin subgraph yields nothing for a closed note", func(t *testing.T) {
@@ -57,7 +57,7 @@ func TestDeriveMetaDescription(t *testing.T) {
 				intro: model.NoteViewSection{ContentHTML: "<p>Members only</p>"},
 			},
 		}
-		require.Empty(t, deriveMetaDescription(note))
+		require.Empty(t, deriveMetaDescription(note, keepEmbeds))
 	})
 
 	t.Run("free note in a require_signin subgraph is summarized", func(t *testing.T) {
@@ -68,7 +68,7 @@ func TestDeriveMetaDescription(t *testing.T) {
 				intro: model.NoteViewSection{ContentHTML: "<p>Open to everyone</p>"},
 			},
 		}
-		require.Equal(t, "Open to everyone", deriveMetaDescription(note))
+		require.Equal(t, "Open to everyone", deriveMetaDescription(note, keepEmbeds))
 	})
 
 	t.Run("truncates to about 155 chars with ellipsis on word boundary", func(t *testing.T) {
@@ -76,7 +76,7 @@ func TestDeriveMetaDescription(t *testing.T) {
 		note := &model.NoteView{Free: true, PartialRenderer: introPartialRenderer{
 			intro: model.NoteViewSection{ContentHTML: model.SafeHTML("<p>" + long + "</p>")},
 		}}
-		got := deriveMetaDescription(note)
+		got := deriveMetaDescription(note, keepEmbeds)
 		require.LessOrEqual(t, len([]rune(got)), metaDescriptionMaxLen+1) // +1 for the ellipsis
 		require.True(t, strings.HasSuffix(got, "…"))
 		// Truncation happens on a word boundary: dropping the ellipsis leaves only
@@ -86,4 +86,8 @@ func TestDeriveMetaDescription(t *testing.T) {
 			require.Equal(t, "word", tok)
 		}
 	})
+}
+
+func keepEmbeds(html string) string {
+	return html
 }

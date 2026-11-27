@@ -114,6 +114,11 @@ type Options struct {
 	// ValidateCache keeps validator results across Load calls. Optional; reuse
 	// the same instance across reloads.
 	ValidateCache *ValidateCache
+
+	// RequireSigninSubgraphs names the subgraphs any signed-in user may read.
+	// Embed access is decided while rendering, so the flag must be known
+	// before it.
+	RequireSigninSubgraphs map[string]bool
 }
 
 // Load transforms markdown files into pages.
@@ -240,6 +245,10 @@ func Load(options Options) (*model.NoteViews, error) {
 	// Subgraphs before rendering: link classes read note.Subgraphs, and
 	// request-time renders (partials, lazy domain HTML) see them filled.
 	ldr.nvs.ExtractSubgraphs()
+
+	for name, subgraph := range ldr.nvs.Subgraphs {
+		subgraph.RequireSignin = options.RequireSigninSubgraphs[name]
+	}
 
 	err = ldr.generatePageHTMLs()
 	if err != nil {

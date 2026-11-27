@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	htmltemplate "html/template"
+	"maps"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -121,6 +122,9 @@ type Loader struct {
 	// captured just before re-rendering changed notes. Replaced entirely each Load.
 	// Used by the changedBlocks GraphQL resolver to diff old vs new HTML.
 	prevHTML map[int64]htmltemplate.HTML
+
+	// requireSignin holds the sign-in subgraph names the last Load rendered with.
+	requireSignin map[string]bool
 
 	version            string
 	config             mdloader.Config
@@ -265,6 +269,20 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		return fmt.Errorf("failed to list subgraphs: %w", err)
 	}
 
+	requireSignin := make(map[string]bool, len(dbSubgraphs))
+	for _, sg := range dbSubgraphs {
+		if sg.RequireSignin {
+			requireSignin[sg.Name] = true
+		}
+	}
+
+	// A cached note's HTML embeds other notes by the sign-in flags of the load
+	// that rendered it, so a flag change re-renders every note.
+	if !maps.Equal(l.requireSignin, requireSignin) {
+		patchesChanged = true
+	}
+	l.requireSignin = requireSignin
+
 	chunks, err := l.loadChunks(ctx)
 	if err != nil {
 		// Non-fatal: chunks may not exist yet (before first chunk embedding run)
@@ -369,6 +387,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		PatchCache:         l.patchCache,
 		Validate:           l.validate,
 		ValidateCache:      l.validateCache,
+
+		RequireSigninSubgraphs: requireSignin,
 	}
 
 	nvs, err := mdloader.Load(mdOptions)
@@ -376,16 +396,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		return fmt.Errorf("failed to load pages: %w", err)
 	}
 
-	// Enrich NoteSubgraphs with DB flags (require_signin).
-	dbSubgraphMap := make(map[string]db.Subgraph, len(dbSubgraphs))
-	for _, sg := range dbSubgraphs {
-		dbSubgraphMap[sg.Name] = sg
-	}
 	var requireSigninNames []string
 	for name, noteSg := range nvs.Subgraphs {
-		if dbSg, ok := dbSubgraphMap[name]; ok {
-			noteSg.RequireSignin = dbSg.RequireSignin
-		}
 		if noteSg.RequireSignin {
 			requireSigninNames = append(requireSigninNames, name)
 		}

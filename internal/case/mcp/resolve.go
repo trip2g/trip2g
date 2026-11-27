@@ -363,6 +363,7 @@ func filterSearchResults(ctx context.Context, env Env, results []model.SearchRes
 			return nil, fmt.Errorf("check note access: %w", err)
 		}
 		if ok {
+			r.NoteView = readableNote(ctx, env, r.NoteView)
 			filtered = append(filtered, r)
 		}
 	}
@@ -808,6 +809,8 @@ func handleNoteHTML(ctx context.Context, env Env, id any, argsRaw json.RawMessag
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
 
+	note = readableNote(ctx, env, note)
+
 	log.Debug("note html retrieved", "path", note.Path, "pid", note.PathID)
 
 	resp := noteHTMLAnswer(env, log, id, note, args)
@@ -913,6 +916,8 @@ func handleExpand(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		log.Warn("note access denied", "path", args.Path, "href", args.Href, "pid", args.PID, "note_id", args.NoteID)
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found")
 	}
+
+	note = readableNote(ctx, env, note)
 
 	children := tocChildren(note, args.TocPath)
 	total := len(children)

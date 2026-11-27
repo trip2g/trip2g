@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"trip2g/internal/embedguard"
 	"trip2g/internal/formspec"
 	"trip2g/internal/model"
 
@@ -20,6 +21,47 @@ type Note struct {
 	nv           *model.NoteView
 	domainHost   string
 	lastEditedBy func() *NoteEditor
+
+	// foreign marks a note reached through the NVS: its HTML is injected into
+	// a page it does not belong to.
+	foreign bool
+	guard   Guard
+}
+
+// Guard removes from note HTML what the viewer of the page may not read.
+type Guard func(html string) string
+
+func keepAll(int64) (bool, string) {
+	return true, ""
+}
+
+func applyGuard(guard Guard, html string) string {
+	if guard == nil {
+		return embedguard.Strip(html, keepAll)
+	}
+
+	return guard(html)
+}
+
+// WithGuard sets the guard the HTML of n and of every note reached from it
+// goes through. A function, not a method, so Jet templates can't reach it.
+func WithGuard(n *Note, guard Guard) *Note {
+	if n != nil {
+		n.guard = guard
+	}
+
+	return n
+}
+
+// AsForeign marks n as injected into a page it does not belong to, so its
+// HTML is marked with its note id and guarded as an embed. A function, not a
+// method, so Jet templates can't reach it.
+func AsForeign(n *Note) *Note {
+	if n != nil {
+		n.foreign = true
+	}
+
+	return n
 }
 
 // NoteEditor identifies who pushed a note's current version: the signed-in user
@@ -78,7 +120,12 @@ func (n *Note) HasH1() bool {
 // HTMLString returns the rendered HTML content as served on the domain
 // context's host ("" for the main domain), see model.NoteView.HTMLForHost.
 func (n *Note) HTMLString() model.SafeHTML {
-	return model.SafeHTML(n.nv.HTMLForHost(n.domainHost))
+	html := string(n.nv.HTMLForHost(n.domainHost))
+	if n.foreign {
+		html = embedguard.Wrap(n.nv.PathID, html)
+	}
+
+	return model.SafeHTML(applyGuard(n.guard, html))
 }
 
 // ContentString returns the raw markdown content.

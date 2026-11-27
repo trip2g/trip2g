@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/case/renderlayout"
 	"trip2g/internal/case/runnotequery"
 	"trip2g/internal/db"
+	"trip2g/internal/embedguard"
 	"trip2g/internal/features"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -134,6 +135,10 @@ type Response struct {
 	// Empty string for main domain requests.
 	// Used by NoteHTML() to select domain-specific rendered HTML.
 	domainHost string
+
+	// viewer strips the embedded notes the requester cannot read from every
+	// note HTML this response hands out. nil strips every embedded note.
+	viewer *embedguard.Viewer
 }
 
 func (r *Response) NoteSubgraphsJSON() string {
@@ -150,7 +155,9 @@ func (r *Response) NoteHTML() template.HTML {
 	if r.Note == nil {
 		return ""
 	}
-	return r.Note.HTMLForHost(r.domainHost)
+	stripped := r.viewer.Strip(string(r.Note.HTMLForHost(r.domainHost)))
+
+	return template.HTML(stripped) //nolint:gosec // the note's own HTML minus what the viewer cannot read
 }
 
 // SidebarHTML returns domain-aware HTML for a sidebar note.
@@ -158,7 +165,9 @@ func (r *Response) SidebarHTML(sidebar *model.NoteView) template.HTML {
 	if sidebar == nil {
 		return ""
 	}
-	return sidebar.HTMLForHost(r.domainHost)
+	stripped := r.viewer.Strip(string(sidebar.HTMLForHost(r.domainHost)))
+
+	return template.HTML(stripped) //nolint:gosec // the note's own HTML minus what the viewer cannot read
 }
 
 var ErrNotFound = errors.New("page not found")
@@ -270,7 +279,11 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Note = note
 	response.Notes = notes
 	response.Time = int(time.Now().Unix())
-	response.NoteView = templateviews.NewNoteWithDomain(note, response.domainHost)
+	response.viewer = embedguard.NewViewer(ctx, env, notes).WithOpenPartials()
+	response.NoteView = templateviews.WithGuard(
+		templateviews.NewNoteWithDomain(note, response.domainHost),
+		response.viewer.Strip,
+	)
 
 	// Filter out internal inlinks (keys starting with _) without mutating the
 	// shared cached note — concurrent requests share the same note object.

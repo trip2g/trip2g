@@ -387,3 +387,24 @@ func TestGenerateForDomain_UnderscoreFolderRoutedToDomain(t *testing.T) {
 	require.NoError(t, err)
 	require.NotContains(t, string(main), "_mysite")
 }
+
+func TestGenerate_HreflangAlternatesSkipUnreadable(t *testing.T) {
+	en := &model.NoteView{Permalink: "/en/guide", PermalinkOriginal: "/en/guide", Free: true, Lang: "en"}
+	ru := &model.NoteView{Permalink: "/ru/guide", PermalinkOriginal: "/ru/guide", Free: false, Lang: "ru"}
+	group := &model.LangGroup{
+		Hub: en,
+		Versions: []model.LangRedirect{
+			{Lang: "en", Note: en, URL: "/en/guide"},
+			{Lang: "ru", Note: ru, URL: "/ru/guide"},
+		},
+	}
+	en.LangGroup = group
+	ru.LangGroup = group
+
+	nvs := &model.NoteViews{List: []*model.NoteView{en, ru}}
+
+	result, err := Generate(nvs, "https://example.com")
+	require.NoError(t, err)
+
+	require.NotContains(t, string(result), "/ru/guide")
+}
