@@ -218,6 +218,24 @@ Admin → Federation lists every key with its direction, so an inbound credentia
 
 The list also carries a Rotated At column, and a key's own page spells it out in words. "Never" there means the key is still the one it was created with, which for an outbound key means the one that came out of band.
 
+### Letting people in as guests
+
+An agent is not the only reader a neighbour can have. A signed-in reader of your hub can press **Open knowledge base** on a KB-note and arrive in the neighbour's base in their browser, as a read-only guest, without an account there.
+
+**What each owner switches on.**
+
+- The neighbour switches on **accept people** for the inbound key it gave you. It is off for every key until then, and it is a setting of the key, not of the instance: one neighbour can accept people from one hub and not from another. Switching it off ends that key's guest sessions on the guest's next request. Until the admin screen has the checkbox, use the `setFederationSecretAcceptGuests` mutation (`admin { setFederationSecretAcceptGuests(input: {id: 7, acceptGuests: true}) { ... } }`).
+- The hub needs `--public-url` set, because the neighbour accepts a handoff only from a page at the origin the hub signed.
+- The KB-note points at the neighbour as before. A KB-note may name a landing page on the neighbour with `mcp_federation_kb_path: /shared/start`. Without it the guest lands on the front page.
+
+**What a guest reads.** What an agent on the same key reads: the subgraphs granted to the key, free notes, and notes with no subgraph. A closed page tells a guest it is not shared over federation and that access is requested from the owner separately; it shows no sign-in or purchase. A guest cannot write, cannot create tokens, cannot sign in to an account, and cannot press a KB-note button on the neighbour: a guest goes one base from their own and no further.
+
+**How long.** A guest session lives 12 hours from the handoff and is not renewed by activity. Revoking the key ends the sessions at once. Every page of the default template carries a bar: "You are a guest from the hub", a way back and a way to leave. A custom layout shows it by calling `{{ defaultTemplate.GuestBar() }}`; the call returns nothing for anyone who is not a guest.
+
+**Links an agent can hand over.** A federated search result from a direct neighbour carries an `open_url`. Following it shows the neighbour's name and a button; the button, not the link, starts the handoff. A reader who is not signed in to the hub is asked to sign in first. A result from a base two hops away carries no link.
+
+**Before you grant a key to people.** What a key reads beyond its subgraphs is described above, under the first subgraph a peer grants. For people the same rule holds, and the [[en/user/subgraphs#Make the whole vault private by default|private-by-default patch]] closes untagged notes to a guest as it does to an agent.
+
 ### Federated tools
 
 Your hub exposes the same MCP methods regardless of how many peers are connected:

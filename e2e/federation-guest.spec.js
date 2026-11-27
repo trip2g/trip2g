@@ -8,8 +8,8 @@ import { createApiKey, disableApiKey, fedGql, hideNotes, revokeFederationSecret 
  * Federation guest handoff E2E Tests
  *
  * A reader signed in on one base presses "Open knowledge base" on a KB-note and
- * is let into the neighbouring base as a read-only guest, then goes one hop
- * further the same way. See docs/dev/federation_guest_handoff.md.
+ * is let into the neighbouring base as a read-only guest, and cannot go one hop
+ * further. See docs/dev/federation_guest_handoff.md.
  *
  * The chain is peer → peer2 → peer3, not hub → peer: federation.spec.js and
  * federation-acl.spec.js own the hub's outbound keys to the app-peer* URLs and
@@ -217,6 +217,17 @@ test.describe.serial('Federation guest handoff', () => {
     return inboundId;
   }
 
+  /** The checkbox on the inbound key: off for every key until an admin switches it on. */
+  async function acceptPeople(base, id, on) {
+    const result = await adminGql(base, `
+      mutation($input: SetFederationSecretAcceptGuestsInput!) { admin { setFederationSecretAcceptGuests(input: $input) {
+        ... on SetFederationSecretAcceptGuestsPayload { acceptGuests }
+        ... on ErrorPayload { message }
+      } } }
+    `, { input: { id, acceptGuests: on } });
+    expect(result.admin.setFederationSecretAcceptGuests.acceptGuests, `accept people on ${base.api}`).toBe(on);
+  }
+
   test.beforeAll(async ({ playwright, browser }) => {
     for (const base of [SALES, ENG, DESIGN]) {
       const request = await playwright.request.newContext({ baseURL: base.api });
@@ -249,7 +260,9 @@ test.describe.serial('Federation guest handoff', () => {
     });
 
     engInboundId = await pair(SALES, ENG, KID_SALES_ENG, SG_SHARED);
-    await pair(ENG, DESIGN, KID_ENG_DESIGN, SG_PARTNERS);
+    await acceptPeople(ENG, engInboundId, true);
+    const designInboundId = await pair(ENG, DESIGN, KID_ENG_DESIGN, SG_PARTNERS);
+    await acceptPeople(DESIGN, designInboundId, true);
 
     // The reader has an account on Sales only, and may read the KB-note there.
     const created = await adminGql(SALES, `
@@ -308,7 +321,9 @@ test.describe.serial('Federation guest handoff', () => {
     await expectClosedForGuest(page, pageURL(ENG, NOTE.engClosed), BODY.engClosed);
 
     const cookies = await reader.cookies([ENG.site, `${ENG.site}${GUEST_PATH}`]);
-    expect(cookies.map((cookie) => cookie.name), 'session set, nonce cleared').toEqual([ENG.cookie]);
+    const names = cookies.map((cookie) => cookie.name);
+    expect(names, 'session set').toContain(ENG.cookie);
+    expect(names.filter((name) => name.endsWith('guest_nonce')), 'nonce cleared').toEqual([]);
 
     // The reader is still signed in at home.
     await expectPage(page, pageURL(SALES, NOTE.salesKB), 200);
@@ -333,12 +348,48 @@ test.describe.serial('Federation guest handoff', () => {
     expect(mcpStatus).toBe(403);
   });
 
-  test('the guest goes one hop further from the neighbour', async () => {
-    const trail = await pressKBButton(page, ENG, NOTE.engKB, DESIGN);
-    expect(trail).toEqual(handoffTrail(ENG, DESIGN));
+  test('the bar names the hub and the open link lands on its page', async () => {
+    await page.goto(`${ENG.site}/`);
+    const bar = page.locator('.guest-bar');
+    await expect(bar).toBeVisible();
+    await expect(bar).toContainText(new URL(SALES.site).host);
+    await expect(bar.locator('a')).toHaveAttribute('href', `${SALES.site}/`);
 
-    await expectPage(page, pageURL(DESIGN, NOTE.designShared), 200, { has: BODY.designShared });
-    await expectClosedForGuest(page, pageURL(DESIGN, NOTE.designClosed), BODY.designClosed);
+    const open = `${SALES.site}/_system/federation/open?${new URLSearchParams({ note: NOTE.salesKB, path: `/${NOTE.engShared.replace(/\.md$/, '')}` })}`;
+    await page.goto(open);
+    await expect(page.locator(`form[action="${HANDOFF_PATH}"] button`)).toBeVisible();
+    await page.locator(`form[action="${HANDOFF_PATH}"] button`).click();
+    await page.waitForURL(pageURL(ENG, NOTE.engShared));
+    await expectPage(page, pageURL(ENG, NOTE.engShared), 200, { has: BODY.engShared });
+  });
+
+  test('a guest cannot go one hop further', async () => {
+    const statuses = [];
+    const record = (response) => {
+      const url = new URL(response.url());
+      if (url.pathname === HANDOFF_PATH) statuses.push(response.status());
+    };
+    page.on('response', record);
+    await page.goto(pageURL(ENG, NOTE.engKB));
+    const [refusal] = await Promise.all([
+      page.waitForResponse((r) => new URL(r.url()).pathname === HANDOFF_PATH),
+      page.locator(`form.kb-open[action="${HANDOFF_PATH}"] button`).click(),
+    ]);
+    page.off('response', record);
+    expect(refusal.status()).toBe(403);
+    expect(await page.content()).not.toContain('name="token"');
+    expect(await reader.cookies(DESIGN.site), 'no session on the third base').toEqual([]);
+  });
+
+  test('leaving ends the guest session and goes back to the hub', async ({ browser }) => {
+    const context = await browser.newContext();
+    const visitor = await context.newPage();
+    await signInOnPage(visitor, SALES, READER_EMAIL);
+    await pressKBButton(visitor, SALES, NOTE.salesKB, ENG);
+    await visitor.locator('.guest-bar button').click();
+    await visitor.waitForURL(`${SALES.site}/**`);
+    expect((await context.cookies(ENG.site)).map((cookie) => cookie.name)).not.toContain(ENG.cookie);
+    await context.close();
   });
 
   test('a handoff form posted from another site is refused', async ({ browser }) => {

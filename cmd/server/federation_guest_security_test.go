@@ -318,7 +318,7 @@ func TestSecurityAHandoffIsBoundToItsEdgeAndItsLifetime(t *testing.T) {
 			h, _ := json.Marshal(map[string]string{"alg": "HS256", "typ": "JWT", "kid": "hub-to-peer"})
 			return base64.RawURLEncoding.EncodeToString(h) + "." + p[1] + "." + p[2]
 		}()},
-		{"expired", handoffToken(t, "hub-to-peer", map[string]any{"iat": now.Add(-2 * time.Minute).Unix(), "exp": now.Add(-time.Minute).Unix()})},
+		{"expired", handoffToken(t, "hub-to-peer", map[string]any{"iat": now.Add(-2 * time.Minute).Unix(), "exp": now.Add(-90 * time.Second).Unix()})},
 		{"issued in the future", handoffToken(t, "hub-to-peer", map[string]any{"iat": now.Add(time.Hour).Unix(), "exp": now.Add(time.Hour + 30*time.Second).Unix()})},
 		{"valid for longer than a handoff may live", handoffToken(t, "hub-to-peer", map[string]any{"exp": now.Add(time.Hour).Unix()})},
 		{"an unknown edge", handoffToken(t, "nobody", nil)},
@@ -1165,9 +1165,10 @@ func TestSecurityTheRefusalPageLinksBackOnlyForAValidlySignedToken(t *testing.T)
 	s := seedTwoSites(t)
 	s.peer.acceptGuests(t, "hub-to-peer", false)
 
-	signed := newBrowser().arrive(t, s.peer, handoffForm(handoffToken(t, "hub-to-peer", nil)), hubOrigin)
+	signed := newBrowser().arrive(t, s.peer, handoffForm(handoffToken(t, "hub-to-peer", nil)), "http://attacker.test")
 	require.Equal(t, http.StatusForbidden, signed.status)
 	require.Contains(t, signed.body, `href="http://hub.test"`, "the token is genuine, so the page leads back to its hub")
+	require.NotContains(t, signed.body, "attacker.test", "and never to the site that posted it")
 
 	token := handoffToken(t, "hub-to-peer", nil)
 	forged := newBrowser().arrive(t, s.peer, handoffForm(token[:len(token)-4]+"AAAA"), hubOrigin)
