@@ -378,6 +378,8 @@ func (m *freeNoteMatrix) pageCell(t *testing.T, reader string, note matrixNote) 
 		wall = ":signin"
 	case strings.Contains(resp.body, "window.__trip2g_paywall"):
 		wall = ":paywall"
+	case strings.Contains(resp.body, "paywall-page__federation-guest"):
+		wall = ":notshared"
 	}
 	return fmt.Sprintf("%d%s%s", resp.status, wall, m.markers(resp.body))
 }

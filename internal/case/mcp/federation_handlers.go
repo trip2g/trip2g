@@ -52,7 +52,7 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 			}
 		}
 		m.ObserveFanoutBases(touched)
-		return successResponse(id, aggregateFederationResults(results, skipped, kbIDs(kbs)))
+		return successResponse(id, aggregateFederationResults(results, skipped, kbIDs(kbs), env.PublicURL))
 	}
 
 	kb, rest := findFederationKB(kbs, args.KBID)
@@ -80,6 +80,9 @@ func handleFederatedSearch(ctx context.Context, env Env, id any, argsRaw json.Ra
 		return errorResponse(id, ErrCodeInternal, err.Error())
 	}
 	rewriteFederatedResponse(kb.ID, kbIDs(kbs), &result)
+	if rest == "" {
+		addOpenLinks(env.PublicURL, kb, &result)
+	}
 	return successResponse(id, federationResultToToolResult(result))
 }
 
@@ -166,6 +169,9 @@ func callResolvedKB(
 	// A peer answering "not configured" names the kb_id in its own frame; the
 	// caller must see it in theirs, same as on the fan-out path.
 	rewriteFederatedResponse(kb.ID, kbIDs(kbs), &result)
+	if rest == "" {
+		addOpenLinks(env.PublicURL, kb, &result)
+	}
 	return result, nil
 }
 

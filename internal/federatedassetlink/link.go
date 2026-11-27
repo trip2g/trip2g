@@ -83,12 +83,18 @@ type Spent struct {
 }
 
 // SpendFederatedAssetLink marks the link id as used and reports whether it was
-// still unused.
+// still unused. An id past its deadline is refused here, under the lock: the
+// caller may have checked the expiry earlier, and the cleanup below would
+// otherwise have forgotten the id by the time it is spent.
 func (s *Spent) SpendFederatedAssetLink(id string, expiresAt time.Time) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	now := time.Now()
+	if now.After(expiresAt) {
+		return false
+	}
+
 	for spentID, exp := range s.expiries {
 		if now.After(exp) {
 			delete(s.expiries, spentID)

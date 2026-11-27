@@ -13,19 +13,50 @@ import (
 type Data struct {
 	ID   int    `json:"i,omitzero"`
 	Role string `json:"r"`
+
+	// Kid, Hop and Reader are set only for RoleFederationGuest: the edge the
+	// guest arrived over, how many handoffs deep, and the reader id the hub sent.
+	Kid string `json:"k,omitempty"`
+	// Key is the row of the inbound key the session was opened under: a key
+	// created later under the same Kid is another key.
+	Key    int64  `json:"ki,omitempty"`
+	Hop    int    `json:"h,omitempty"`
+	Reader string `json:"rd,omitempty"`
+	// Origin is the site the guest came from, as the hub signed it.
+	Origin string `json:"o,omitempty"`
 }
 
 func (d *Data) IsAdmin() bool {
 	return d != nil && d.Role == "admin"
 }
 
+// IsFederationGuest reports a read-only session opened by a signed handoff
+// from a federated hub.
+func (d *Data) IsFederationGuest() bool {
+	return d != nil && d.Role == RoleFederationGuest
+}
+
 // RoleFederated marks a non-admin, subgraph-scoped federation identity.
 // It must NEVER satisfy IsAdmin().
 const RoleFederated = "federated"
 
+// GuestSessionLifetime is how long a federation guest session lives, from the
+// handoff, whatever the lifetime of an ordinary session and whatever the guest
+// does meanwhile. A reader removed from the hub stops being a guest within it.
+const GuestSessionLifetime = 12 * time.Hour
+
+// RoleFederationGuest is a person who arrived over a federation edge. Read
+// access comes from the edge's live subgraph grant, never from the user row.
+const RoleFederationGuest = "federation_guest"
+
 type fullData struct {
-	ID   int    `json:"i"`
-	Role string `json:"r"`
+	ID     int    `json:"i"`
+	Role   string `json:"r"`
+	Kid    string `json:"k,omitempty"`
+	Key    int64  `json:"ki,omitempty"`
+	Hop    int    `json:"h,omitempty"`
+	Reader string `json:"rd,omitempty"`
+	Origin string `json:"o,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -68,6 +99,9 @@ type Manager struct {
 var (
 	ErrTokenMissing = errors.New("JWT cookie not found")
 	ErrInvalidToken = errors.New("invalid or expired JWT")
+	// ErrSessionEnded is what a validator wraps to say the session no longer
+	// exists, so the reader is anonymous rather than refused.
+	ErrSessionEnded = errors.New("session ended")
 )
 
 func DefaultConfig() Config {
@@ -110,12 +144,27 @@ func (e *Manager) parseClaims(raw string) (*Data, error) {
 		return nil, errors.New("invalid token claims")
 	}
 
-	return &Data{ID: claims.ID, Role: claims.Role}, nil
+	data := &Data{ID: claims.ID, Role: claims.Role, Kid: claims.Kid, Key: claims.Key, Hop: claims.Hop, Reader: claims.Reader, Origin: claims.Origin}
+
+	if data.IsFederationGuest() && !guestSessionAlive(claims.IssuedAt) {
+		return nil, errors.New("federation guest session is older than its lifetime")
+	}
+
+	return data, nil
+}
+
+// guestSessionAlive holds a guest to its lifetime from the issue time alone, so
+// a token that carries a longer expiry is still cut at twelve hours.
+func guestSessionAlive(issuedAt *jwt.NumericDate) bool {
+	return issuedAt != nil && time.Since(issuedAt.Time) <= GuestSessionLifetime
 }
 
 func (e *Manager) runValidators(ctx context.Context, token *Data) error {
 	for _, v := range e.validators {
 		if validationErr := v(ctx, token); validationErr != nil {
+			if errors.Is(validationErr, ErrSessionEnded) {
+				return validationErr
+			}
 			return &ValidateError{Value: validationErr}
 		}
 	}
@@ -141,6 +190,9 @@ func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
 	}
 
 	if validationErr := e.runValidators(ctx, token); validationErr != nil {
+		if errors.Is(validationErr, ErrSessionEnded) {
+			return nil, e.Delete(ctx)
+		}
 		return nil, validationErr
 	}
 
@@ -157,6 +209,9 @@ func (e *Manager) ParseToken(ctx context.Context, raw string) (*Data, error) {
 	}
 
 	if validationErr := e.runValidators(ctx, token); validationErr != nil {
+		if errors.Is(validationErr, ErrSessionEnded) {
+			return nil, nil
+		}
 		return nil, validationErr
 	}
 
@@ -171,12 +226,22 @@ type StoreData struct {
 // Store serializes Token as JWT and sets it as a secure httpOnly cookie.
 func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error) {
 	now := time.Now()
-	exp := now.Add(e.config.ExpiresIn)
+	lifetime := e.config.ExpiresIn
+	if data.IsFederationGuest() {
+		lifetime = GuestSessionLifetime
+	}
+	exp := now.Add(lifetime)
 
 	claims := fullData{
-		ID:   data.ID,
-		Role: data.Role,
+		ID:     data.ID,
+		Role:   data.Role,
+		Kid:    data.Kid,
+		Key:    data.Key,
+		Hop:    data.Hop,
+		Reader: data.Reader,
+		Origin: data.Origin,
 		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(exp),
 		},
 	}

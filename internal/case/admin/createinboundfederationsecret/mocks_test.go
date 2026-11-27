@@ -27,6 +27,9 @@ var _ createinboundfederationsecret.Env = &EnvMock{}
 //			EncryptDataFunc: func(plaintext []byte) ([]byte, error) {
 //				panic("mock out the EncryptData method")
 //			},
+//			InboundFederationKIDExistsFunc: func(ctx context.Context, kid string) (bool, error) {
+//				panic("mock out the InboundFederationKIDExists method")
+//			},
 //			InsertFederationSecretFunc: func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
 //				panic("mock out the InsertFederationSecret method")
 //			},
@@ -46,6 +49,9 @@ type EnvMock struct {
 	// EncryptDataFunc mocks the EncryptData method.
 	EncryptDataFunc func(plaintext []byte) ([]byte, error)
 
+	// InboundFederationKIDExistsFunc mocks the InboundFederationKIDExists method.
+	InboundFederationKIDExistsFunc func(ctx context.Context, kid string) (bool, error)
+
 	// InsertFederationSecretFunc mocks the InsertFederationSecret method.
 	InsertFederationSecretFunc func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error)
 
@@ -64,6 +70,13 @@ type EnvMock struct {
 			// Plaintext is the plaintext argument value.
 			Plaintext []byte
 		}
+		// InboundFederationKIDExists holds details about calls to the InboundFederationKIDExists method.
+		InboundFederationKIDExists []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Kid is the kid argument value.
+			Kid string
+		}
 		// InsertFederationSecret holds details about calls to the InsertFederationSecret method.
 		InsertFederationSecret []struct {
 			// Ctx is the ctx argument value.
@@ -75,10 +88,11 @@ type EnvMock struct {
 		PublicURL []struct {
 		}
 	}
-	lockCurrentAdminUserToken  sync.RWMutex
-	lockEncryptData            sync.RWMutex
-	lockInsertFederationSecret sync.RWMutex
-	lockPublicURL              sync.RWMutex
+	lockCurrentAdminUserToken      sync.RWMutex
+	lockEncryptData                sync.RWMutex
+	lockInboundFederationKIDExists sync.RWMutex
+	lockInsertFederationSecret     sync.RWMutex
+	lockPublicURL                  sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -142,6 +156,42 @@ func (mock *EnvMock) EncryptDataCalls() []struct {
 	mock.lockEncryptData.RLock()
 	calls = mock.calls.EncryptData
 	mock.lockEncryptData.RUnlock()
+	return calls
+}
+
+// InboundFederationKIDExists calls InboundFederationKIDExistsFunc.
+func (mock *EnvMock) InboundFederationKIDExists(ctx context.Context, kid string) (bool, error) {
+	if mock.InboundFederationKIDExistsFunc == nil {
+		panic("EnvMock.InboundFederationKIDExistsFunc: method is nil but Env.InboundFederationKIDExists was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Kid string
+	}{
+		Ctx: ctx,
+		Kid: kid,
+	}
+	mock.lockInboundFederationKIDExists.Lock()
+	mock.calls.InboundFederationKIDExists = append(mock.calls.InboundFederationKIDExists, callInfo)
+	mock.lockInboundFederationKIDExists.Unlock()
+	return mock.InboundFederationKIDExistsFunc(ctx, kid)
+}
+
+// InboundFederationKIDExistsCalls gets all the calls that were made to InboundFederationKIDExists.
+// Check the length with:
+//
+//	len(mockedEnv.InboundFederationKIDExistsCalls())
+func (mock *EnvMock) InboundFederationKIDExistsCalls() []struct {
+	Ctx context.Context
+	Kid string
+} {
+	var calls []struct {
+		Ctx context.Context
+		Kid string
+	}
+	mock.lockInboundFederationKIDExists.RLock()
+	calls = mock.calls.InboundFederationKIDExists
+	mock.lockInboundFederationKIDExists.RUnlock()
 	return calls
 }
 

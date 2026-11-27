@@ -36,6 +36,7 @@ import (
 	"trip2g/internal/case/backjob/updatetelegramaccountpost"
 	"trip2g/internal/case/backjob/updatetelegrammessage"
 	"trip2g/internal/case/backjob/updatetelegrampost"
+	"trip2g/internal/case/federationguest"
 	"trip2g/internal/case/materializenotefrontmatters"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/case/requestemailsignin"
@@ -151,6 +152,10 @@ type appState struct {
 	fedAssetHTTPClient *fasthttp.Client
 	// Spent holds the federated_asset links already downloaded in this process.
 	federatedassetlink.Spent
+	// guestSpent holds the federation handoff and ticket ids already used.
+	guestSpent federatedassetlink.Spent
+	// guestTickets holds what the tickets handed to browsers stand for.
+	guestTickets federationguest.Tickets
 
 	webhookTestCalls []webhookTestCall
 	webhookTestMu    sync.Mutex

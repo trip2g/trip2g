@@ -53,7 +53,8 @@ func TestALinkIsSpentOnce(t *testing.T) {
 func TestSpentForgetsExpiredLinks(t *testing.T) {
 	var spent federatedassetlink.Spent
 
-	require.True(t, spent.SpendFederatedAssetLink("old", time.Now().Add(-time.Second)))
+	require.True(t, spent.SpendFederatedAssetLink("old", time.Now().Add(20*time.Millisecond)))
+	time.Sleep(40 * time.Millisecond)
 	require.True(t, spent.SpendFederatedAssetLink("new", time.Now().Add(time.Minute)))
 	require.Equal(t, 1, spent.Len(), "an id past its expiry is no longer held")
 }

@@ -70,6 +70,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 //				panic("mock out the IncreaseUserNoteViewCount method")
 //			},
+//			InsecureFunc: func() bool {
+//				panic("mock out the Insecure method")
+//			},
 //			InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 //				panic("mock out the InsertUserNoteView method")
 //			},
@@ -190,6 +193,9 @@ type EnvMock struct {
 
 	// IncreaseUserNoteViewCountFunc mocks the IncreaseUserNoteViewCount method.
 	IncreaseUserNoteViewCountFunc func(ctx context.Context, userID int64) error
+
+	// InsecureFunc mocks the Insecure method.
+	InsecureFunc func() bool
 
 	// InsertUserNoteViewFunc mocks the InsertUserNoteView method.
 	InsertUserNoteViewFunc func(ctx context.Context, params db.InsertUserNoteViewParams) error
@@ -341,6 +347,9 @@ type EnvMock struct {
 			// UserID is the userID argument value.
 			UserID int64
 		}
+		// Insecure holds details about calls to the Insecure method.
+		Insecure []struct {
+		}
 		// InsertUserNoteView holds details about calls to the InsertUserNoteView method.
 		InsertUserNoteView []struct {
 			// Ctx is the ctx argument value.
@@ -476,6 +485,7 @@ type EnvMock struct {
 	lockGetTelegramChatName                 sync.RWMutex
 	lockGetTelegramPostLinksByNoteVersionID sync.RWMutex
 	lockIncreaseUserNoteViewCount           sync.RWMutex
+	lockInsecure                            sync.RWMutex
 	lockInsertUserNoteView                  sync.RWMutex
 	lockIsDevMode                           sync.RWMutex
 	lockLastUserNoteView                    sync.RWMutex
@@ -955,6 +965,33 @@ func (mock *EnvMock) IncreaseUserNoteViewCountCalls() []struct {
 	mock.lockIncreaseUserNoteViewCount.RLock()
 	calls = mock.calls.IncreaseUserNoteViewCount
 	mock.lockIncreaseUserNoteViewCount.RUnlock()
+	return calls
+}
+
+// Insecure calls InsecureFunc.
+func (mock *EnvMock) Insecure() bool {
+	if mock.InsecureFunc == nil {
+		panic("EnvMock.InsecureFunc: method is nil but Env.Insecure was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockInsecure.Lock()
+	mock.calls.Insecure = append(mock.calls.Insecure, callInfo)
+	mock.lockInsecure.Unlock()
+	return mock.InsecureFunc()
+}
+
+// InsecureCalls gets all the calls that were made to Insecure.
+// Check the length with:
+//
+//	len(mockedEnv.InsecureCalls())
+func (mock *EnvMock) InsecureCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockInsecure.RLock()
+	calls = mock.calls.Insecure
+	mock.lockInsecure.RUnlock()
 	return calls
 }
 

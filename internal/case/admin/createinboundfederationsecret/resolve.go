@@ -24,6 +24,9 @@ import (
 const mcpPath = "/_system/mcp"
 
 type Env interface {
+	// InboundFederationKIDExists reports a kid any inbound key ever held,
+	// revoked or not.
+	InboundFederationKIDExists(ctx context.Context, kid string) (bool, error)
 	InsertFederationSecret(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	EncryptData(plaintext []byte) ([]byte, error)
@@ -48,6 +51,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	token, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current admin user token: %w", err)
+	}
+
+	used, err := env.InboundFederationKIDExists(ctx, input.Kid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check the kid: %w", err)
+	}
+	if used {
+		return &model.ErrorPayload{Message: "A federation secret with this kid existed before; choose another kid"}, nil
 	}
 
 	secret, err := resolveSecret(input.SecretHex)

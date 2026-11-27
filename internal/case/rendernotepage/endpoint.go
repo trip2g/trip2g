@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/federationguest"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
 	"trip2g/internal/case/runnotequery"
@@ -66,6 +67,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	ctx := req.Req
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.SetStatusCode(http.StatusOK)
+	ctx.Response.Header.Set("Content-Security-Policy", "frame-ancestors 'self'")
 
 	layoutParams := renderlayout.Params{
 		Client: string(req.Req.QueryArgs().Peek("client")),
@@ -174,6 +176,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			ctx.SetStatusCode(wallStatusCode(resp))
 
 			dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
+			dtCtx.WasGuest = takeWasGuest(req, env, resp)
 			dtCtx.SigninWallError = &defaulttemplate.SigninWallError{
 				Note: resp.NoteView,
 			}
@@ -188,6 +191,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			ctx.SetStatusCode(wallStatusCode(resp))
 
 			dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
+			dtCtx.WasGuest = takeWasGuest(req, env, resp)
 			dtCtx.PaywallError = &defaulttemplate.PaywallError{
 				Note:          resp.NoteView,
 				SubgraphsJSON: resp.NoteSubgraphsJSON(),
@@ -294,6 +298,15 @@ func handleContentTypeNote(ctx *fasthttp.RequestCtx, env Env, resp *Response, la
 // HTML: 401 while nobody is signed in, 403 once a signed-in viewer is simply
 // not entitled to this note. The wall page is served as the response body in
 // both cases.
+// takeWasGuest says once, to a reader who no longer has a session, that they
+// were here as a guest. A reader with a session of their own is never told.
+func takeWasGuest(req *appreq.Request, env Env, resp *Response) bool {
+	if resp.UserToken != nil {
+		return false
+	}
+	return federationguest.TakeWasGuest(req.Req, env.Insecure())
+}
+
 func wallStatusCode(resp *Response) int {
 	if resp == nil || resp.UserToken == nil {
 		return http.StatusUnauthorized

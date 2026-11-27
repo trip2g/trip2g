@@ -11,6 +11,8 @@ type MCPFederationNote struct {
 	URL      string
 	ID       string
 	MaxDepth int
+	// Path is the page of the neighbour a guest lands on; empty means its front page.
+	Path string
 }
 
 func (n *NoteView) extractMCPFederationFields() {
@@ -24,6 +26,9 @@ func (n *NoteView) extractMCPFederationFields() {
 		n.MCPFederationKBID = strings.TrimSpace(id)
 	}
 	n.MCPFederationKBMaxDepth = parseMCPFederationKBMaxDepth(n.RawMeta["mcp_federation_kb_max_depth"])
+	if path, pathOk := n.RawMeta["mcp_federation_kb_path"].(string); pathOk {
+		n.MCPFederationKBPath = strings.TrimSpace(path)
+	}
 }
 
 func parseMCPFederationKBMaxDepth(raw any) int {
@@ -68,7 +73,51 @@ func NewMCPFederationNote(n *NoteView) *MCPFederationNote {
 		URL:      n.MCPFederationKBURL,
 		ID:       id,
 		MaxDepth: n.MCPFederationKBMaxDepth,
+		Path:     n.MCPFederationKBPath,
 	}
+}
+
+const (
+	schemeHTTP  = "http"
+	schemeHTTPS = "https"
+)
+
+// MCPFederationSite is a peer's site address, taken from its MCP endpoint by
+// dropping /_system/mcp. It holds only while the peer serves its site and its
+// MCP endpoint at one origin.
+func MCPFederationSite(kbURL string) (string, bool) {
+	parsed, err := url.Parse(strings.TrimSpace(kbURL))
+	if err != nil || (parsed.Scheme != schemeHTTPS && parsed.Scheme != schemeHTTP) || parsed.Host == "" {
+		return "", false
+	}
+	if strings.TrimSuffix(parsed.Path, "/") != "/_system/mcp" {
+		return "", false
+	}
+	return parsed.Scheme + "://" + parsed.Host, true
+}
+
+// SiteOrigin is the origin of a site URL, as a browser writes it in Origin:
+// lower-case scheme and host, the port only when it is not the default. The
+// path is dropped. "null" and anything but http(s) are not origins.
+func SiteOrigin(raw string) (string, bool) {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || parsed.Host == "" {
+		return "", false
+	}
+	scheme := strings.ToLower(parsed.Scheme)
+	port := parsed.Port()
+	switch {
+	case scheme == schemeHTTPS && port == "443", scheme == schemeHTTP && port == "80":
+		port = ""
+	case scheme != schemeHTTPS && scheme != schemeHTTP:
+		return "", false
+	}
+
+	origin := scheme + "://" + strings.ToLower(parsed.Hostname())
+	if port != "" {
+		origin += ":" + port
+	}
+	return origin, true
 }
 
 func hostnameFromURL(raw string) string {

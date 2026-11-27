@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/langdetect"
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
+	"trip2g/internal/usertoken"
 
 	"github.com/valyala/fasthttp"
 )
@@ -35,6 +36,7 @@ type userSpaceHelper struct {
 	nvs                *templateviews.NVS
 	layoutSections     []model.LayoutSectionEntry
 	settingsEmitted    bool
+	token              *usertoken.Data
 }
 
 // newUserSpaceHelper constructs the helper from pre-extracted data values.
@@ -177,6 +179,12 @@ func (h *userSpaceHelper) footer() model.SafeHTML {
 	return model.SafeHTML(defaulttemplate.Footer(h.dtCtx()))
 }
 
+// guestBar returns the bar a federation guest sees, or an empty string for
+// anyone else. Jet calls this for {{ defaultTemplate.GuestBar() }}.
+func (h *userSpaceHelper) guestBar() model.SafeHTML {
+	return model.SafeHTML(defaulttemplate.GuestBar(h.token, h.uiLang))
+}
+
 // styles returns <link> tags for the default-template stylesheet so a custom
 // layout embedding the standard chrome isn't unstyled. Reuses the existing
 // hashed served URL (renderlayout.Env.UserCSSURLs) — never a hardcoded hash.
@@ -200,6 +208,7 @@ func (h *userSpaceHelper) jetMap() map[string]interface{} {
 		"Header":           h.header,
 		"Footer":           h.footer,
 		"Styles":           h.styles,
+		"GuestBar":         h.guestBar,
 	}
 }
 
@@ -235,6 +244,7 @@ func buildUserSpaceHelper(
 
 	h := newUserSpaceHelper(jsURLs, localeHashes, uiLang, devMode, resp.UserToken.IsAdmin(), resp.Title, resp.NoteView)
 	h.cssURLs = cssURLs
+	h.token = resp.UserToken
 	h.editorJSURL = env.EditorJSURL()
 	h.editorLocaleHashes = env.EditorLocaleHashes()
 	h.nvs = newViewerNVS(resp)

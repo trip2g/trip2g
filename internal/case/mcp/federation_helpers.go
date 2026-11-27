@@ -9,10 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
 
+	"trip2g/internal/appresp"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -24,6 +26,7 @@ var (
 	ErrFedAuthExpired     = errors.New("federation auth expired")
 	ErrFedAuthFutureIAT   = errors.New("federation auth future iat")
 	ErrFedAuthBodyChanged = errors.New("federation auth body does not match the signature")
+	ErrFedAuthWrongUse    = errors.New("federation auth token was issued for another use")
 )
 
 const federationJWTSkew = 5 * time.Second
@@ -77,7 +80,10 @@ type federationAuth struct {
 	KID              string
 	AllowedSubgraphs []string
 	SecretID         int64
+	AcceptGuests     bool
 	BodyBound        bool
+
+	claims federationJWTClaims
 }
 
 type federationJWTHeader struct {
@@ -92,6 +98,15 @@ type federationJWTClaims struct {
 	Exp int64  `json:"exp"`
 	Rid string `json:"rid"`
 	Bh  string `json:"bh,omitempty"`
+
+	// Use names what a token other than a tool call is for. The tool surface
+	// refuses any token that carries one, and each other use insists on its own.
+	Use  string `json:"use,omitempty"`
+	Path string `json:"path,omitempty"`
+	Hop  int    `json:"hop,omitempty"`
+	Sub  string `json:"sub,omitempty"`
+	// Org is the origin of the site whose page posts a guest handoff.
+	Org string `json:"org,omitempty"`
 }
 
 func signOutbound(secret []byte, kid, iss, rid string, body []byte) (string, error) {
@@ -129,12 +144,19 @@ func signOutboundAt(secret []byte, kid, iss, rid string, issuedAt time.Time, ttl
 }
 
 func verifyInbound(ctx context.Context, env federationVerifyEnv, token string, body []byte) (federationAuth, error) {
+	return verifyInboundFor(ctx, env, token, body, "")
+}
+
+func verifyInboundFor(ctx context.Context, env federationVerifyEnv, token string, body []byte, use string) (federationAuth, error) {
 	header, claims, unsigned, signature, err := parseFederationJWT(token)
 	if err != nil {
 		return federationAuth{}, err
 	}
 	if header.Alg != "HS256" || header.Kid == "" {
 		return federationAuth{}, ErrFedAuthBadSig
+	}
+	if claims.Use != use {
+		return federationAuth{}, ErrFedAuthWrongUse
 	}
 
 	secretRow, ok, err := env.FederationSecretByKID(ctx, header.Kid)
@@ -205,7 +227,9 @@ func verifyInbound(ctx context.Context, env federationVerifyEnv, token string, b
 		KID:              header.Kid,
 		AllowedSubgraphs: allowedSubgraphs,
 		SecretID:         secretRow.ID,
+		AcceptGuests:     secretRow.AcceptGuests,
 		BodyBound:        claims.Bh != "",
+		claims:           claims,
 	}, nil
 }
 
@@ -377,6 +401,55 @@ func rewriteFederatedResponse(localSegment string, localKBIDs []string, result *
 			result.StructuredContent = encoded
 		}
 	}
+}
+
+// openLinkPath is where a person is taken to open a neighbour's page: the page
+// shows the neighbour and posts the handoff on a button.
+const openLinkPath = "/_system/federation/open"
+
+// addOpenLinks gives each result a direct neighbour answered with its own note a
+// link a person can follow into that page as a guest, so an agent passes it on
+// without building anything. A result that came through a second hop gets none:
+// a guest goes no further than one base from their own.
+func addOpenLinks(publicURL func() string, kb *model.MCPFederationNote, result *model.FederationResult) {
+	if kb == nil || kb.Note == nil || len(result.StructuredContent) == 0 {
+		return
+	}
+
+	var payload SearchResultPayload
+	if err := json.Unmarshal(result.StructuredContent, &payload); err != nil || len(payload.Results) == 0 {
+		return
+	}
+
+	base := strings.TrimRight(publicURL(), "/")
+	if base == "" {
+		return
+	}
+
+	var lines []string
+	for i := range payload.Results {
+		item := &payload.Results[i]
+		if item.KBID != kb.ID || item.Federation != nil || item.Href == "" || appresp.SamePath(item.Href) != item.Href {
+			continue
+		}
+
+		query := url.Values{"note": {kb.Note.Path}, "path": {item.Href}}
+		item.OpenURL = base + openLinkPath + "?" + query.Encode()
+		lines = append(lines, "- "+item.Title+": "+item.OpenURL)
+	}
+	if len(lines) == 0 {
+		return
+	}
+
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+	result.StructuredContent = encoded
+	result.Content = append(result.Content, model.FederationContent{
+		Type: contentTypeText,
+		Text: "Links a person can open as a guest:\n" + strings.Join(lines, "\n"),
+	})
 }
 
 // notConfiguredMessage explains a kb_id that resolved to nothing: which

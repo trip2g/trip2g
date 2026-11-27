@@ -41,6 +41,7 @@ func fanoutEnv(
 		FeaturesFunc: func() features.Features { return features.Features{} },
 
 		MCPMetricsFunc:      func() *metrics.MCPMetrics { return nil },
+		PublicURLFunc:       func() string { return "" },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
 			return true, nil

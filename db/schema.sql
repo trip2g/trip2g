@@ -742,7 +742,7 @@ CREATE TABLE federation_secrets (
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict,
   revoked_at datetime
-, prev_secret_crypt blob, rotated_at datetime);
+, prev_secret_crypt blob, rotated_at datetime, accept_guests boolean not null default false);
 CREATE INDEX idx_federation_secrets_kid
   on federation_secrets(kid);
 CREATE INDEX idx_federation_secrets_kb_url
@@ -875,6 +875,14 @@ CREATE TABLE note_version_frontmatter_keys (
   note_version_id integer not null references note_versions (id) on delete cascade,
   key_id string not null references note_version_frontmatter_key_values (value) on delete cascade,
   unique (note_version_id, key_id)
+);
+CREATE TABLE federation_guests (
+  id integer primary key autoincrement,
+  kid text not null,
+  reader_hash text not null,
+  user_id integer not null references users(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  unique (kid, reader_hash)
 );
 CREATE INDEX note_version_frontmatter_keys_key_id_idx
   on note_version_frontmatter_keys (key_id);
@@ -1015,4 +1023,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260822050102'),
   ('20260822084659'),
   ('20260921153702'),
-  ('20261110120000');
+  ('20261110120000'),
+  ('20261124100000'),
+  ('20261124100100');

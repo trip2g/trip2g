@@ -268,6 +268,14 @@ type CronWebhookDelivery struct {
 	Logs           *string    `json:"logs"`
 }
 
+type FederationGuest struct {
+	ID         int64     `json:"id"`
+	Kid        string    `json:"kid"`
+	ReaderHash string    `json:"reader_hash"`
+	UserID     int64     `json:"user_id"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type FederationSecret struct {
 	ID              int64      `json:"id"`
 	Kid             string     `json:"kid"`
@@ -279,6 +287,7 @@ type FederationSecret struct {
 	RevokedAt       *time.Time `json:"revoked_at"`
 	PrevSecretCrypt []byte     `json:"prev_secret_crypt"`
 	RotatedAt       *time.Time `json:"rotated_at"`
+	AcceptGuests    bool       `json:"accept_guests"`
 }
 
 type FederationSecretSubgraph struct {

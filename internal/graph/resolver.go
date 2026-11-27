@@ -81,6 +81,7 @@ import (
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setconfigboolvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
+	"trip2g/internal/case/admin/setfederationsecretacceptguests"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
@@ -419,6 +420,7 @@ type Env interface {
 	createinboundfederationsecret.Env
 	createoutboundfederationsecret.Env
 	revokefederationsecret.Env
+	setfederationsecretacceptguests.Env
 	addfederationsecretsubgraph.Env
 	removefederationsecretsubgraph.Env
 	listfederationsecrets.Env

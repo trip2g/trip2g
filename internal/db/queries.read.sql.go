@@ -1328,6 +1328,19 @@ func (q *Queries) CountFormSubmits(ctx context.Context, arg CountFormSubmitsPara
 	return count, err
 }
 
+const countInboundFederationSecretsByKID = `-- name: CountInboundFederationSecretsByKID :one
+select count(*) from federation_secrets
+ where kid = ?
+   and kb_url is null
+`
+
+func (q *Queries) CountInboundFederationSecretsByKID(ctx context.Context, kid string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countInboundFederationSecretsByKID, kid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countNoteAssets = `-- name: CountNoteAssets :one
 select count(*) from note_assets
 `
@@ -1530,8 +1543,35 @@ func (q *Queries) DeliveryLogs(ctx context.Context, arg DeliveryLogsParams) ([]*
 	return items, nil
 }
 
+const federationGuestUser = `-- name: FederationGuestUser :one
+select u.id, u.email, u.created_at, u.last_signin_code_sent_at, u.note_view_count, u.tg_user_id, u.created_via from federation_guests g
+  join users u on u.id = g.user_id
+ where g.kid = ?
+   and g.reader_hash = ?
+`
+
+type FederationGuestUserParams struct {
+	Kid        string `json:"kid"`
+	ReaderHash string `json:"reader_hash"`
+}
+
+func (q *Queries) FederationGuestUser(ctx context.Context, arg FederationGuestUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, federationGuestUser, arg.Kid, arg.ReaderHash)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+		&i.TgUserID,
+		&i.CreatedVia,
+	)
+	return i, err
+}
+
 const federationSecretByID = `-- name: FederationSecretByID :one
-select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at, accept_guests from federation_secrets
  where id = ?
 `
 
@@ -1549,12 +1589,13 @@ func (q *Queries) FederationSecretByID(ctx context.Context, id int64) (Federatio
 		&i.RevokedAt,
 		&i.PrevSecretCrypt,
 		&i.RotatedAt,
+		&i.AcceptGuests,
 	)
 	return i, err
 }
 
 const federationSecretByKBURL = `-- name: FederationSecretByKBURL :one
-select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at, accept_guests from federation_secrets
  where kb_url = ?
    and revoked_at is null
  order by created_at desc, id desc
@@ -1575,12 +1616,13 @@ func (q *Queries) FederationSecretByKBURL(ctx context.Context, kbUrl *string) (F
 		&i.RevokedAt,
 		&i.PrevSecretCrypt,
 		&i.RotatedAt,
+		&i.AcceptGuests,
 	)
 	return i, err
 }
 
 const federationSecretByKID = `-- name: FederationSecretByKID :one
-select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at, accept_guests from federation_secrets
  where kid = ?
    and kb_url is null
    and revoked_at is null
@@ -1602,6 +1644,7 @@ func (q *Queries) FederationSecretByKID(ctx context.Context, kid string) (Federa
 		&i.RevokedAt,
 		&i.PrevSecretCrypt,
 		&i.RotatedAt,
+		&i.AcceptGuests,
 	)
 	return i, err
 }
@@ -4469,7 +4512,9 @@ func (q *Queries) ListAllUserSubgraphAccesses(ctx context.Context) ([]UserSubgra
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via from users order by created_at desc
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via from users u
+ where not exists (select 1 from federation_guests g where g.user_id = u.id)
+ order by u.created_at desc
 `
 
 func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
@@ -5478,6 +5523,7 @@ select
   fs.created_by,
   fs.revoked_at,
   fs.rotated_at,
+  fs.accept_guests,
   count(fss.subgraph_id) as subgraph_count
 from federation_secrets fs
 left join federation_secret_subgraphs fss on fss.kid = fs.kid
@@ -5495,6 +5541,7 @@ type ListFederationSecretsRow struct {
 	CreatedBy     int64      `json:"created_by"`
 	RevokedAt     *time.Time `json:"revoked_at"`
 	RotatedAt     *time.Time `json:"rotated_at"`
+	AcceptGuests  bool       `json:"accept_guests"`
 	SubgraphCount int64      `json:"subgraph_count"`
 }
 
@@ -5517,6 +5564,7 @@ func (q *Queries) ListFederationSecrets(ctx context.Context) ([]ListFederationSe
 			&i.CreatedBy,
 			&i.RevokedAt,
 			&i.RotatedAt,
+			&i.AcceptGuests,
 			&i.SubgraphCount,
 		); err != nil {
 			return nil, err
@@ -7835,7 +7883,7 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 }
 
 const outboundFederationSecretByKID = `-- name: OutboundFederationSecretByKID :one
-select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at from federation_secrets
+select id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at, accept_guests from federation_secrets
  where kid = ?
    and kb_url is not null
    and revoked_at is null
@@ -7857,6 +7905,7 @@ func (q *Queries) OutboundFederationSecretByKID(ctx context.Context, kid string)
 		&i.RevokedAt,
 		&i.PrevSecretCrypt,
 		&i.RotatedAt,
+		&i.AcceptGuests,
 	)
 	return i, err
 }

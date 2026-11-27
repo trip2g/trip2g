@@ -152,43 +152,52 @@ func (a *app) federationPeer(reqCtx context.Context, kbID string) (model.Federat
 			return model.FederationPeer{}, fmt.Errorf("federation kb %q max depth %d exceeded", kbID, kb.MaxDepth)
 		}
 
-		peer := model.FederationPeer{
-			KBID:   kb.ID,
-			KBURL:  kb.URL,
-			Issuer: a.PublicURL(),
-			Depth:  depth,
-		}
-
-		dbCtx := a.ctx
-		if dbCtx == nil {
-			dbCtx = context.Background()
-		}
-		rows, err := a.Queries.ListFederationSecrets(dbCtx)
-		if err != nil {
-			return model.FederationPeer{}, fmt.Errorf("list federation secrets: %w", err)
-		}
-		kid, ok, err := pickOutboundKID(rows, kb.ID, kb.URL)
-		if err != nil {
-			return model.FederationPeer{}, err
-		}
-		if ok {
-			secretRow, findErr := a.Queries.OutboundFederationSecretByKID(dbCtx, kid)
-			if errors.Is(findErr, sql.ErrNoRows) {
-				return model.FederationPeer{}, fmt.Errorf("federation secret %q disappeared while connecting to kb_id %q", kid, kbID)
-			}
-			if findErr != nil {
-				return model.FederationPeer{}, fmt.Errorf("get outbound federation secret by kid: %w", findErr)
-			}
-			keyErr := a.loadPeerKeys(&peer, secretRow)
-			if keyErr != nil {
-				return model.FederationPeer{}, keyErr
-			}
-		}
-
-		return peer, nil
+		return a.outboundPeer(kb, depth)
 	}
 
 	return model.FederationPeer{}, fmt.Errorf("federation kb %q not found", kbID)
+}
+
+// outboundPeer pairs a KB-note with the key its own address selects.
+func (a *app) outboundPeer(kb *model.MCPFederationNote, depth int) (model.FederationPeer, error) {
+	peer := model.FederationPeer{
+		KBID:   kb.ID,
+		KBURL:  kb.URL,
+		Issuer: a.PublicURL(),
+		Depth:  depth,
+	}
+
+	dbCtx := a.ctx
+	if dbCtx == nil {
+		dbCtx = context.Background()
+	}
+	rows, err := a.Queries.ListFederationSecrets(dbCtx)
+	if err != nil {
+		return model.FederationPeer{}, fmt.Errorf("list federation secrets: %w", err)
+	}
+	kid, ok, err := pickOutboundKID(rows, kb.ID, kb.URL)
+	if err != nil {
+		return model.FederationPeer{}, err
+	}
+	if !ok {
+		return peer, nil
+	}
+
+	secretRow, findErr := a.Queries.OutboundFederationSecretByKID(dbCtx, kid)
+	if errors.Is(findErr, sql.ErrNoRows) {
+		return model.FederationPeer{}, fmt.Errorf("federation secret %q disappeared while connecting to kb_id %q", kid, kb.ID)
+	}
+	if findErr != nil {
+		return model.FederationPeer{}, fmt.Errorf("get outbound federation secret by kid: %w", findErr)
+	}
+	keyErr := a.loadPeerKeys(&peer, secretRow)
+	if keyErr != nil {
+		return model.FederationPeer{}, keyErr
+	}
+	if secretRow.KbUrl != nil {
+		peer.KBURL = *secretRow.KbUrl
+	}
+	return peer, nil
 }
 
 func (a *app) FederationMaxDepth() int {
@@ -278,4 +287,12 @@ func newFederatedAssetHTTPClient(allowPrivate bool) *fasthttp.Client {
 		c.DialTimeout = ssrfsafe.DialTimeout
 	}
 	return c
+}
+
+func (a *app) InboundFederationKIDExists(ctx context.Context, kid string) (bool, error) {
+	count, err := a.Queries.CountInboundFederationSecretsByKID(ctx, kid)
+	if err != nil {
+		return false, fmt.Errorf("count inbound federation secrets by kid: %w", err)
+	}
+	return count > 0, nil
 }

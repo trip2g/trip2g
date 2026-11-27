@@ -26,6 +26,27 @@ type HrefLang struct {
 // <link rel="alternate" type="application/rss+xml"> autodiscovery tag.
 type RSSFeedLink = model.RSSFeedLink
 
+// KBButton opens the base a KB-note points at. An anonymous reader can only be
+// on a free KB-note, and gets a plain link to the peer; a signed-in reader gets
+// a form that asks this hub to sign a handoff for them.
+type KBButton struct {
+	Site     string
+	Handoff  bool
+	NotePath string
+}
+
+func (ctx *Ctx) KBButton() *KBButton {
+	if ctx.Note == nil {
+		return nil
+	}
+	kbURL, _ := ctx.Note.M().Get("mcp_federation_kb_url").(string)
+	site, ok := model.MCPFederationSite(kbURL)
+	if !ok {
+		return nil
+	}
+	return &KBButton{Site: site, Handoff: ctx.UserToken != nil, NotePath: ctx.Note.Path()}
+}
+
 // OGTag is a single Open Graph / Twitter meta tag. It exists so the template can
 // emit ctx.OGTags in a stable (property-sorted) order — see OGTagsSorted.
 type OGTag struct {
@@ -90,6 +111,9 @@ type Ctx struct {
 	SigninWallError    *SigninWallError
 	UserToken          *usertoken.Data
 	Lang               string
+	// WasGuest is set when this browser's guest session is gone, so the wall can
+	// say why it is here instead of leaving a person with no account here lost.
+	WasGuest bool
 
 	TelegramLinks []model.TelegramPostLink
 	SimilarNotes  []*model.NoteView

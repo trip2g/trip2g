@@ -355,6 +355,71 @@ body {
   }
 }
 
+// --- Open knowledge base (KB-note) ---
+
+.kb-open {
+  margin: var(--pico-spacing) 0 0;
+}
+
+// A form button for a signed-in reader and a link for an anonymous one: both
+// have to look the same, so the button drops Pico's own button styling.
+.kb-open__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: auto;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 6px;
+  background: none;
+  box-shadow: none;
+  color: var(--pico-color);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+
+  &::after {
+    content: "→";
+  }
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--pico-primary);
+    background: none;
+    color: var(--pico-primary);
+  }
+}
+
+// --- Federation guest bar ---
+
+.guest-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-card-sectioning-background-color);
+  font-size: 0.875rem;
+
+  form {
+    margin: 0;
+  }
+
+  button {
+    width: auto;
+    margin: 0;
+    padding: 0.1rem 0.6rem;
+    font-size: inherit;
+  }
+}
+
+.paywall-page__guest-ended {
+  color: var(--pico-muted-color);
+}
+
 // --- Telegram post buttons ---
 
 .tg-buttons {

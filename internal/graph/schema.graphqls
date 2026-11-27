@@ -3780,6 +3780,7 @@ type AdminMutation {
   # and the call dies at the client timeout. Same reasoning as runCronJob below.
   createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload! @skipTx
   revokeFederationSecret(id: Int64!): RevokeFederationSecretOrErrorPayload!
+  setFederationSecretAcceptGuests(input: SetFederationSecretAcceptGuestsInput!): SetFederationSecretAcceptGuestsOrErrorPayload!
   rotateFederationSecret(kid: String!): RotateFederationSecretOrErrorPayload! @skipTx
   addFederationSecretSubgraph(input: AddFederationSecretSubgraphInput!): AddFederationSecretSubgraphOrErrorPayload!
   removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
@@ -4073,6 +4074,9 @@ type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSec
   # When this pairing's key was last replaced. Null means it still holds the key
   # it was created with — for an outbound secret, the one handed over out of band.
   rotatedAt: Time
+  # Whether people a hub vouches for may open this base as guests over this key.
+  # Off until an admin switches it on.
+  acceptGuests: Boolean!
   subgraphCount: Int64!
   # The subgraphs this key may surface, so a reader can see what is granted and
   # not only how many. Without it the admin can add access and never take it
@@ -4177,6 +4181,22 @@ type RevokeFederationSecretPayload {
 }
 
 union RevokeFederationSecretOrErrorPayload = RevokeFederationSecretPayload | ErrorPayload
+
+#
+# setFederationSecretAcceptGuests
+#
+
+input SetFederationSecretAcceptGuestsInput {
+  id: Int64!
+  acceptGuests: Boolean!
+}
+
+type SetFederationSecretAcceptGuestsPayload {
+  id: Int64!
+  acceptGuests: Boolean!
+}
+
+union SetFederationSecretAcceptGuestsOrErrorPayload = SetFederationSecretAcceptGuestsPayload | ErrorPayload
 
 #
 # addFederationSecretSubgraph

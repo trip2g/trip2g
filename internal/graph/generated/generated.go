@@ -470,6 +470,7 @@ type AdminMutationResolver interface {
 	CreateInboundFederationSecret(ctx context.Context, obj *model1.AdminMutation, input model.CreateInboundFederationSecretInput) (model.CreateInboundFederationSecretOrErrorPayload, error)
 	CreateOutboundFederationSecret(ctx context.Context, obj *model1.AdminMutation, input model.CreateOutboundFederationSecretInput) (model.CreateOutboundFederationSecretOrErrorPayload, error)
 	RevokeFederationSecret(ctx context.Context, obj *model1.AdminMutation, id int64) (model.RevokeFederationSecretOrErrorPayload, error)
+	SetFederationSecretAcceptGuests(ctx context.Context, obj *model1.AdminMutation, input model.SetFederationSecretAcceptGuestsInput) (model.SetFederationSecretAcceptGuestsOrErrorPayload, error)
 	RotateFederationSecret(ctx context.Context, obj *model1.AdminMutation, kid string) (model.RotateFederationSecretOrErrorPayload, error)
 	AddFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.AddFederationSecretSubgraphInput) (model.AddFederationSecretSubgraphOrErrorPayload, error)
 	RemoveFederationSecretSubgraph(ctx context.Context, obj *model1.AdminMutation, input model.RemoveFederationSecretSubgraphInput) (model.RemoveFederationSecretSubgraphOrErrorPayload, error)
@@ -1090,6 +1091,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSetConfigBoolValueInput,
 		ec.unmarshalInputSetConfigIntValueInput,
 		ec.unmarshalInputSetConfigStringValueInput,
+		ec.unmarshalInputSetFederationSecretAcceptGuestsInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSetSecretInput,
 		ec.unmarshalInputSetTgChatPublishInstantTagsInput,
@@ -5018,6 +5020,7 @@ type AdminMutation {
   # and the call dies at the client timeout. Same reasoning as runCronJob below.
   createOutboundFederationSecret(input: CreateOutboundFederationSecretInput!): CreateOutboundFederationSecretOrErrorPayload! @skipTx
   revokeFederationSecret(id: Int64!): RevokeFederationSecretOrErrorPayload!
+  setFederationSecretAcceptGuests(input: SetFederationSecretAcceptGuestsInput!): SetFederationSecretAcceptGuestsOrErrorPayload!
   rotateFederationSecret(kid: String!): RotateFederationSecretOrErrorPayload! @skipTx
   addFederationSecretSubgraph(input: AddFederationSecretSubgraphInput!): AddFederationSecretSubgraphOrErrorPayload!
   removeFederationSecretSubgraph(input: RemoveFederationSecretSubgraphInput!): RemoveFederationSecretSubgraphOrErrorPayload!
@@ -5311,6 +5314,9 @@ type AdminFederationSecret @goModel(model: "trip2g/internal/db.ListFederationSec
   # When this pairing's key was last replaced. Null means it still holds the key
   # it was created with — for an outbound secret, the one handed over out of band.
   rotatedAt: Time
+  # Whether people a hub vouches for may open this base as guests over this key.
+  # Off until an admin switches it on.
+  acceptGuests: Boolean!
   subgraphCount: Int64!
   # The subgraphs this key may surface, so a reader can see what is granted and
   # not only how many. Without it the admin can add access and never take it
@@ -5415,6 +5421,22 @@ type RevokeFederationSecretPayload {
 }
 
 union RevokeFederationSecretOrErrorPayload = RevokeFederationSecretPayload | ErrorPayload
+
+#
+# setFederationSecretAcceptGuests
+#
+
+input SetFederationSecretAcceptGuestsInput {
+  id: Int64!
+  acceptGuests: Boolean!
+}
+
+type SetFederationSecretAcceptGuestsPayload {
+  id: Int64!
+  acceptGuests: Boolean!
+}
+
+union SetFederationSecretAcceptGuestsOrErrorPayload = SetFederationSecretAcceptGuestsPayload | ErrorPayload
 
 #
 # addFederationSecretSubgraph
@@ -6337,6 +6359,17 @@ func (ec *executionContext) field_AdminMutation_setConfigStringValue_args(ctx co
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetConfigStringValueInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetConfigStringValueInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setFederationSecretAcceptGuests_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetFederationSecretAcceptGuestsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetFederationSecretAcceptGuestsInput)
 	if err != nil {
 		return nil, err
 	}
@@ -13972,6 +14005,35 @@ func (ec *executionContext) fieldContext_AdminFederationSecret_rotatedAt(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminFederationSecret_acceptGuests(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminFederationSecret_acceptGuests,
+		func(ctx context.Context) (any, error) {
+			return obj.AcceptGuests, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminFederationSecret_acceptGuests(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminFederationSecret",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminFederationSecret_subgraphCount(ctx context.Context, field graphql.CollectedField, obj *db.ListFederationSecretsRow) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -20124,6 +20186,47 @@ func (ec *executionContext) fieldContext_AdminMutation_revokeFederationSecret(ct
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_revokeFederationSecret_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_setFederationSecretAcceptGuests(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_setFederationSecretAcceptGuests,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().SetFederationSecretAcceptGuests(ctx, obj, fc.Args["input"].(model.SetFederationSecretAcceptGuestsInput))
+		},
+		nil,
+		ec.marshalNSetFederationSecretAcceptGuestsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetFederationSecretAcceptGuestsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setFederationSecretAcceptGuests(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SetFederationSecretAcceptGuestsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setFederationSecretAcceptGuests_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -26397,6 +26500,8 @@ func (ec *executionContext) fieldContext_AdminQuery_federationSecrets(_ context.
 				return ec.fieldContext_AdminFederationSecret_revokedAt(ctx, field)
 			case "rotatedAt":
 				return ec.fieldContext_AdminFederationSecret_rotatedAt(ctx, field)
+			case "acceptGuests":
+				return ec.fieldContext_AdminFederationSecret_acceptGuests(ctx, field)
 			case "subgraphCount":
 				return ec.fieldContext_AdminFederationSecret_subgraphCount(ctx, field)
 			case "subgraphIds":
@@ -39252,6 +39357,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createOutboundFederationSecret(ctx, field)
 			case "revokeFederationSecret":
 				return ec.fieldContext_AdminMutation_revokeFederationSecret(ctx, field)
+			case "setFederationSecretAcceptGuests":
+				return ec.fieldContext_AdminMutation_setFederationSecretAcceptGuests(ctx, field)
 			case "rotateFederationSecret":
 				return ec.fieldContext_AdminMutation_rotateFederationSecret(ctx, field)
 			case "addFederationSecretSubgraph":
@@ -45385,6 +45492,64 @@ func (ec *executionContext) fieldContext_SetConfigStringValueSuccess_configValue
 				return ec.fieldContext_AdminConfigStringValue_history(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminConfigStringValue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetFederationSecretAcceptGuestsPayload_id(ctx context.Context, field graphql.CollectedField, obj *model.SetFederationSecretAcceptGuestsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetFederationSecretAcceptGuestsPayload_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetFederationSecretAcceptGuestsPayload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetFederationSecretAcceptGuestsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetFederationSecretAcceptGuestsPayload_acceptGuests(ctx context.Context, field graphql.CollectedField, obj *model.SetFederationSecretAcceptGuestsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetFederationSecretAcceptGuestsPayload_acceptGuests,
+		func(ctx context.Context) (any, error) {
+			return obj.AcceptGuests, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetFederationSecretAcceptGuestsPayload_acceptGuests(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetFederationSecretAcceptGuestsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -55421,6 +55586,40 @@ func (ec *executionContext) unmarshalInputSetConfigStringValueInput(ctx context.
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSetFederationSecretAcceptGuestsInput(ctx context.Context, obj any) (model.SetFederationSecretAcceptGuestsInput, error) {
+	var it model.SetFederationSecretAcceptGuestsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "acceptGuests"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "acceptGuests":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("acceptGuests"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AcceptGuests = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetPatreonTierSubgraphsInput(ctx context.Context, obj any) (model.SetPatreonTierSubgraphsInput, error) {
 	var it model.SetPatreonTierSubgraphsInput
 	asMap := map[string]any{}
@@ -58957,6 +59156,29 @@ func (ec *executionContext) _SetConfigStringValuePayload(ctx context.Context, se
 			return graphql.Null
 		}
 		return ec._SetConfigStringValueSuccess(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SetFederationSecretAcceptGuestsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetFederationSecretAcceptGuestsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetFederationSecretAcceptGuestsPayload:
+		return ec._SetFederationSecretAcceptGuestsPayload(ctx, sel, &obj)
+	case *model.SetFederationSecretAcceptGuestsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetFederationSecretAcceptGuestsPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -63929,6 +64151,11 @@ func (ec *executionContext) _AdminFederationSecret(ctx context.Context, sel ast.
 			out.Values[i] = ec._AdminFederationSecret_revokedAt(ctx, field, obj)
 		case "rotatedAt":
 			out.Values[i] = ec._AdminFederationSecret_rotatedAt(ctx, field, obj)
+		case "acceptGuests":
+			out.Values[i] = ec._AdminFederationSecret_acceptGuests(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "subgraphCount":
 			out.Values[i] = ec._AdminFederationSecret_subgraphCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -68966,6 +69193,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_revokeFederationSecret(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setFederationSecretAcceptGuests":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setFederationSecretAcceptGuests(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -81051,7 +81314,7 @@ func (ec *executionContext) _EnableApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "NoteQueryOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "RevokeUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "FederationPeerScopeOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "CreateUserTokenOrErrorPayload", "RevokeUserTokenOrErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "SetConfigIntValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "NoteQueryOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "SubmitFormOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "AdminRevokeUserTokenOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "RevokeUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateHatLinkOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "EnableApiKeyOrErrorPayload", "SetApiKeyMcpAdminToolsOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "RegenerateNoteEmbeddingsOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "CreateOIDCCredentialsOrErrorPayload", "DeleteOIDCCredentialsOrErrorPayload", "SetActiveOIDCCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload", "ChangeWebhookCreateOrErrorPayload", "ChangeWebhookUpdateOrErrorPayload", "ChangeWebhookDeleteOrErrorPayload", "ChangeWebhookRegenerateSecretOrErrorPayload", "TriggerChangeWebhookOrErrorPayload", "CreateCronWebhookOrErrorPayload", "UpdateCronWebhookOrErrorPayload", "DeleteCronWebhookOrErrorPayload", "RegenerateCronWebhookSecretOrErrorPayload", "TriggerCronWebhookOrErrorPayload", "CreateFrontmatterPatchOrErrorPayload", "UpdateFrontmatterPatchOrErrorPayload", "DeleteFrontmatterPatchOrErrorPayload", "CreateInboundFederationSecretOrErrorPayload", "CreateOutboundFederationSecretOrErrorPayload", "FederationPeerScopeOrErrorPayload", "RotateFederationSecretOrErrorPayload", "RevokeFederationSecretOrErrorPayload", "SetFederationSecretAcceptGuestsOrErrorPayload", "AddFederationSecretSubgraphOrErrorPayload", "RemoveFederationSecretSubgraphOrErrorPayload", "MarkFormSubmitProcessedOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -85949,6 +86212,50 @@ func (ec *executionContext) _SetConfigStringValueSuccess(ctx context.Context, se
 			out.Values[i] = graphql.MarshalString("SetConfigStringValueSuccess")
 		case "configValue":
 			out.Values[i] = ec._SetConfigStringValueSuccess_configValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setFederationSecretAcceptGuestsPayloadImplementors = []string{"SetFederationSecretAcceptGuestsPayload", "SetFederationSecretAcceptGuestsOrErrorPayload"}
+
+func (ec *executionContext) _SetFederationSecretAcceptGuestsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetFederationSecretAcceptGuestsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setFederationSecretAcceptGuestsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetFederationSecretAcceptGuestsPayload")
+		case "id":
+			out.Values[i] = ec._SetFederationSecretAcceptGuestsPayload_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "acceptGuests":
+			out.Values[i] = ec._SetFederationSecretAcceptGuestsPayload_acceptGuests(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -96694,6 +97001,21 @@ func (ec *executionContext) marshalNSetConfigStringValuePayload2trip2gᚋinterna
 		return graphql.Null
 	}
 	return ec._SetConfigStringValuePayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSetFederationSecretAcceptGuestsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetFederationSecretAcceptGuestsInput(ctx context.Context, v any) (model.SetFederationSecretAcceptGuestsInput, error) {
+	res, err := ec.unmarshalInputSetFederationSecretAcceptGuestsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetFederationSecretAcceptGuestsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetFederationSecretAcceptGuestsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SetFederationSecretAcceptGuestsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetFederationSecretAcceptGuestsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetPatreonTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetPatreonTierSubgraphsInput(ctx context.Context, v any) (model.SetPatreonTierSubgraphsInput, error) {
