@@ -5,7 +5,6 @@ import (
 
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
-	"trip2g/internal/templateviews"
 
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +18,7 @@ func TestResolveNoteRef_FrontmatterWikilinkLikeObsidian(t *testing.T) {
 	}
 	loaded, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
 	require.NoError(t, err)
-	nvs := templateviews.NewNVS(loaded, "live")
+	nvs := openNVS(loaded, "live")
 
 	ctx := &Ctx{Note: nvs.NoteByPath("ru/user/page.md"), Notes: nvs}
 

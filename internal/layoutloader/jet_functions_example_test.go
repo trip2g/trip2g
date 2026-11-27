@@ -7,7 +7,6 @@ import (
 	"testing"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
-	"trip2g/internal/templateviews"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/stretchr/testify/require"
@@ -67,7 +66,7 @@ func TestJetFunctionsDocExample(t *testing.T) {
 	require.NoError(t, err)
 
 	vars := make(jet.VarMap)
-	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(notes, "live"))
+	vars["nvs"] = reflect.ValueOf(openNVS(notes))
 
 	var buf bytes.Buffer
 	err = layouts.Map["/listing"].View.Execute(&buf, vars, nil)

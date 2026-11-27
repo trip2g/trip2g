@@ -103,7 +103,7 @@ func TestComponentsDocExample(t *testing.T) {
 	page := &model.NoteView{Path: "index.md", Title: "Home", HTML: "<p>Hello</p>"}
 	vars := make(jet.VarMap)
 	vars["note"] = reflect.ValueOf(templateviews.NewNote(page))
-	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(notes, "live"))
+	vars["nvs"] = reflect.ValueOf(openNVS(notes))
 
 	var buf bytes.Buffer
 	err = layouts.Map["/page"].View.Execute(&buf, vars, nil)
@@ -162,7 +162,7 @@ func TestComponentsDocBaseExample(t *testing.T) {
 	page := &model.NoteView{Path: "index.md", Title: "Q&A", HTML: "<p>Hello</p>"}
 	vars := make(jet.VarMap)
 	vars["note"] = reflect.ValueOf(templateviews.NewNote(page))
-	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(model.NewNoteViews(), "live"))
+	vars["nvs"] = reflect.ValueOf(openNVS(model.NewNoteViews()))
 
 	var buf bytes.Buffer
 	err = layouts.Map["/page"].View.Execute(&buf, vars, nil)

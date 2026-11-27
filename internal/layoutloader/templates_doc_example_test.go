@@ -232,7 +232,7 @@ func renderDocLayout(t *testing.T, sources []model.LayoutSourceFile, vars jet.Va
 func docVars(notes *model.NoteViews, notePath string) jet.VarMap {
 	vars := make(jet.VarMap)
 	vars["note"] = reflect.ValueOf(templateviews.NewNote(notes.PathMap[notePath]))
-	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(notes, "live"))
+	vars["nvs"] = reflect.ValueOf(openNVS(notes))
 	vars["title"] = reflect.ValueOf("Guide | Site")
 	vars["publicURL"] = reflect.ValueOf("https://example.com")
 	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{{Content: `<script src="/a.js"></script>`}})

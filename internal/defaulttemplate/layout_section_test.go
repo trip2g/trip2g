@@ -28,7 +28,7 @@ func makeNVS(notes []*model.NoteView) *templateviews.NVS {
 		nvs.PathMap[nv.Path] = nv
 		nvs.Map[nv.Permalink] = nv
 	}
-	return templateviews.NewNVS(nvs, "live")
+	return openNVS(nvs, "live")
 }
 
 func TestResolveLayoutSection_GlobMatch(t *testing.T) {

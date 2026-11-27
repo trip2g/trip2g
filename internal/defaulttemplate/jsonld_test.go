@@ -9,7 +9,6 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
-	"trip2g/internal/templateviews"
 
 	"github.com/stretchr/testify/require"
 )
@@ -178,7 +177,7 @@ breadcrumbs:
 	}
 	pages, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
 	require.NoError(t, err)
-	nvs := templateviews.NewNVS(pages, "")
+	nvs := openNVS(pages, "")
 
 	home := JSONLDCrumb{Name: "Home", Item: "https://ex.com/"}
 	tests := []struct {

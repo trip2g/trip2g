@@ -380,7 +380,7 @@ func createTestNVS() *templateviews.NVS {
 		},
 	}
 
-	return templateviews.NewNVS(nvs, "live")
+	return openNVS(nvs)
 }
 
 func TestTemplateViews_ByGlobSortByTitle(t *testing.T) {
@@ -1067,7 +1067,7 @@ Content for slide 2.1
 	// Create templateviews.Note wrapper
 	nvs := model.NewNoteViews()
 	nvs.RegisterNote(noteView)
-	tplNVS := templateviews.NewNVS(nvs, "live")
+	tplNVS := openNVS(nvs)
 	note := tplNVS.NoteByPath("presentation.md")
 	require.NotNil(t, note)
 
@@ -1217,7 +1217,7 @@ $10/month
 	// Create templateviews.Note wrapper
 	nvs := model.NewNoteViews()
 	nvs.RegisterNote(noteView)
-	tplNVS := templateviews.NewNVS(nvs, "live")
+	tplNVS := openNVS(nvs)
 	note := tplNVS.NoteByPath("features.md")
 	require.NotNil(t, note)
 

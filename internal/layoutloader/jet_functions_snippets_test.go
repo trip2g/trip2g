@@ -366,7 +366,7 @@ func snippetVars(admin bool) jet.VarMap {
 
 	vars := make(jet.VarMap)
 	vars["note"] = reflect.ValueOf(templateviews.NewNote(page))
-	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(notes, "live"))
+	vars["nvs"] = reflect.ValueOf(openNVS(notes))
 	vars["title"] = reflect.ValueOf("Q&A | Site")
 	vars["currentUser"] = reflect.ValueOf(map[string]interface{}{
 		"IsAdmin": func() bool { return admin },

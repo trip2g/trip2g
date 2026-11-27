@@ -19,7 +19,7 @@ func makeVisibleNVS(notes []*model.NoteView) *templateviews.NVS {
 		nvs.List = append(nvs.List, nv)
 	}
 	nvs.RSSFeeds = templateviews.FindRSSFeeds(nvs)
-	return templateviews.NewNVS(nvs, "live")
+	return openNVS(nvs, "live")
 }
 
 func TestRSSFeeds_DiscoversFeedNote(t *testing.T) {

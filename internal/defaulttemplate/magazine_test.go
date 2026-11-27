@@ -54,7 +54,7 @@ func createMagazineTestNVS() *templateviews.NVS {
 		RawMeta:   map[string]interface{}{},
 	}
 
-	return templateviews.NewNVS(nvs, "live")
+	return openNVS(nvs, "live")
 }
 
 func TestMagazineExcludeFiles_NoExclude(t *testing.T) {
@@ -344,7 +344,7 @@ func TestMagazine_PaidCardShowsNoBodyText(t *testing.T) {
 		Path: "paid.md", Title: "Paid post", Permalink: "/paid",
 		PartialRenderer: introTextStub{text: "Paid intro."},
 	}
-	views := templateviews.NewNVS(nvs, "live")
+	views := openNVS(nvs, "live")
 
 	html := Magazine(&Ctx{Note: views.NoteByPath("index.md"), Notes: views})
 
