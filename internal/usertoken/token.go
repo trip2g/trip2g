@@ -22,6 +22,8 @@ type Data struct {
 	Key    int64  `json:"ki,omitempty"`
 	Hop    int    `json:"h,omitempty"`
 	Reader string `json:"rd,omitempty"`
+	// Origin is the site the guest came from, as the hub signed it.
+	Origin string `json:"o,omitempty"`
 }
 
 func (d *Data) IsAdmin() bool {
@@ -54,6 +56,7 @@ type fullData struct {
 	Key    int64  `json:"ki,omitempty"`
 	Hop    int    `json:"h,omitempty"`
 	Reader string `json:"rd,omitempty"`
+	Origin string `json:"o,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -141,7 +144,7 @@ func (e *Manager) parseClaims(raw string) (*Data, error) {
 		return nil, errors.New("invalid token claims")
 	}
 
-	data := &Data{ID: claims.ID, Role: claims.Role, Kid: claims.Kid, Key: claims.Key, Hop: claims.Hop, Reader: claims.Reader}
+	data := &Data{ID: claims.ID, Role: claims.Role, Kid: claims.Kid, Key: claims.Key, Hop: claims.Hop, Reader: claims.Reader, Origin: claims.Origin}
 
 	if data.IsFederationGuest() && !guestSessionAlive(claims.IssuedAt) {
 		return nil, errors.New("federation guest session is older than its lifetime")
@@ -236,6 +239,7 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error)
 		Key:    data.Key,
 		Hop:    data.Hop,
 		Reader: data.Reader,
+		Origin: data.Origin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(exp),

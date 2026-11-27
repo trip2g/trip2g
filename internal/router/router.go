@@ -169,7 +169,7 @@ func writeSystemMessage(ctx *fasthttp.RequestCtx, err error) bool {
 		return false
 	}
 
-	defaulttemplate.WriteSystemMessage(ctx, sysErr.Code, sysErr.Msg)
+	defaulttemplate.WriteSystemMessage(ctx, sysErr.Code, sysErr.Msg, sysErr.Back)
 
 	return true
 }

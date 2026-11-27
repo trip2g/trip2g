@@ -3,3 +3,4 @@
  * Pico CSS ✨ v2.1.1 (https://picocss.com)
  * Copyright 2019-2025 - Licensed under MIT
  */
+.guest-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;padding:.4rem 1rem;border-bottom:1px solid var(--pico-muted-border-color);background:var(--pico-card-sectioning-background-color);font-size:.875rem}.guest-bar form{margin:0}.guest-bar button{width:auto;margin:0;padding:.1rem .6rem;font-size:inherit}.paywall-page__guest-ended{color:var(--pico-muted-color)}

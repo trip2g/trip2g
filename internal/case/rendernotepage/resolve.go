@@ -32,6 +32,7 @@ type Env interface {
 	Features() features.Features
 	Logger() logger.Logger
 	PublicURL() string
+	Insecure() bool
 	LatestNoteViews() *model.NoteViews
 	LatestNoteChunks() []model.NoteChunk
 	LiveNoteViews() *model.NoteViews

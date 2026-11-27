@@ -48,6 +48,17 @@ type Env interface {
 // visitor is told only that; the reason goes to the log.
 var ErrRefused = errors.New("federation guest refused")
 
+// Refusal is a refusal of a handoff whose signature was genuine: it knows the
+// hub the reader came from, so the refusal page can lead back there. A handoff
+// that failed its signature names no hub.
+type Refusal struct {
+	Back string
+	Err  error
+}
+
+func (r *Refusal) Error() string { return r.Err.Error() }
+func (r *Refusal) Unwrap() error { return r.Err }
+
 // TicketTTL is how long a ticket and its nonce cookie live.
 const TicketTTL = 30 * time.Second
 
@@ -136,6 +147,15 @@ func Admit(ctx context.Context, env Env, form Form) (Admission, error) {
 	if err != nil {
 		return Admission{}, fmt.Errorf("%w: %w", ErrRefused, err)
 	}
+	admission, err := admit(ctx, env, form, claims)
+	if err != nil {
+		back, _ := model.SiteOrigin(claims.Origin)
+		return Admission{}, &Refusal{Back: back, Err: err}
+	}
+	return admission, nil
+}
+
+func admit(ctx context.Context, env Env, form Form, claims mcp.GuestHandoffClaims) (Admission, error) {
 	if !claims.AcceptGuests {
 		return Admission{}, fmt.Errorf("%w: the key %q does not accept people", ErrRefused, claims.Caller.KID)
 	}
@@ -184,6 +204,7 @@ func Admit(ctx context.Context, env Env, form Form) (Admission, error) {
 			Key:    claims.KeyID,
 			Hop:    claims.Hop,
 			Reader: claims.Reader,
+			Origin: signedOrigin,
 		},
 		path:      claims.Path,
 		nonceHash: nonceHash(nonce),

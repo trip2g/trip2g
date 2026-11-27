@@ -108,6 +108,8 @@ func (s *site) sessionFor(t *testing.T, userID int64, role string) string {
 type browser struct {
 	cookies map[string]string
 	nonces  map[string]nonceCookie
+	// wasGuest is the memory of a guest session the peer leaves in the browser.
+	wasGuest map[string]string
 }
 
 // nonceCookie is the handoff nonce as the browser stores it: under whatever
@@ -121,7 +123,7 @@ type nonceCookie struct {
 const nonceCookieSuffix = "trip2g_guest_nonce"
 
 func newBrowser() *browser {
-	return &browser{cookies: map[string]string{}, nonces: map[string]nonceCookie{}}
+	return &browser{cookies: map[string]string{}, nonces: map[string]nonceCookie{}, wasGuest: map[string]string{}}
 }
 
 type reply struct {
@@ -177,6 +179,9 @@ func (b *browser) send(t *testing.T, s *site, req request) reply {
 	if cookie := b.cookies[s.host]; cookie != "" && laxSends {
 		fctx.Request.Header.SetCookie("trip2g_token", cookie)
 	}
+	if mark := b.wasGuest[s.host]; mark != "" && laxSends {
+		fctx.Request.Header.SetCookie("trip2g_was_guest", mark)
+	}
 	if nonce, ok := b.nonces[s.host]; ok && laxSends && strings.HasPrefix(req.uri, nonce.path) {
 		fctx.Request.Header.SetCookie(nonce.name, nonce.value)
 	}
@@ -191,6 +196,17 @@ func (b *browser) send(t *testing.T, s *site, req request) reply {
 		cacheControl: string(fctx.Response.Header.Peek("Cache-Control")),
 	}
 	fctx.Response.Header.VisitAllCookie(func(key, value []byte) {
+		if string(key) == "trip2g_was_guest" {
+			c := fasthttp.AcquireCookie()
+			defer fasthttp.ReleaseCookie(c)
+			require.NoError(t, c.ParseBytes(value))
+			if len(c.Value()) == 0 {
+				delete(b.wasGuest, s.host)
+			} else {
+				b.wasGuest[s.host] = string(c.Value())
+			}
+			return
+		}
 		if !strings.HasSuffix(string(key), nonceCookieSuffix) {
 			return
 		}

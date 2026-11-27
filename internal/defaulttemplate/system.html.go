@@ -80,35 +80,54 @@ a:hover { text-decoration: underline; }
 	qw422016.E().S(m.Home)
 //line system.html:39
 	qw422016.N().S(`</a>
+`)
+//line system.html:40
+	if m.Back != "" {
+//line system.html:40
+		qw422016.N().S(`
+<br><a href="`)
+//line system.html:41
+		qw422016.E().S(m.Back)
+//line system.html:41
+		qw422016.N().S(`" rel="noopener">`)
+//line system.html:41
+		qw422016.E().S(m.BackText)
+//line system.html:41
+		qw422016.N().S(`</a>
+`)
+//line system.html:42
+	}
+//line system.html:42
+	qw422016.N().S(`
 </main>
 </body>
 </html>
 `)
-//line system.html:43
+//line system.html:46
 }
 
-//line system.html:43
+//line system.html:46
 func WriteSystemPage(qq422016 qtio422016.Writer, m systemMessage) {
-//line system.html:43
+//line system.html:46
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line system.html:43
+//line system.html:46
 	StreamSystemPage(qw422016, m)
-//line system.html:43
+//line system.html:46
 	qt422016.ReleaseWriter(qw422016)
-//line system.html:43
+//line system.html:46
 }
 
-//line system.html:43
+//line system.html:46
 func SystemPage(m systemMessage) string {
-//line system.html:43
+//line system.html:46
 	qb422016 := qt422016.AcquireByteBuffer()
-//line system.html:43
+//line system.html:46
 	WriteSystemPage(qb422016, m)
-//line system.html:43
+//line system.html:46
 	qs422016 := string(qb422016.B)
-//line system.html:43
+//line system.html:46
 	qt422016.ReleaseByteBuffer(qb422016)
-//line system.html:43
+//line system.html:46
 	return qs422016
-//line system.html:43
+//line system.html:46
 }

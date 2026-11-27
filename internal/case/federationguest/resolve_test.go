@@ -60,7 +60,7 @@ func TestAnAdmittedGuestEntersAsTheSyntheticUserOfItsEdge(t *testing.T) {
 	data, path, err := federationguest.Enter(env, admitted.Ticket, admitted.Nonce)
 	require.NoError(t, err)
 	require.Equal(t, "/", path)
-	want := usertoken.Data{ID: 42, Role: usertoken.RoleFederationGuest, Kid: "edge", Key: 7, Hop: 1, Reader: testReader}
+	want := usertoken.Data{ID: 42, Role: usertoken.RoleFederationGuest, Kid: "edge", Key: 7, Hop: 1, Reader: testReader, Origin: "https://hub.test"}
 	require.Equal(t, want, data)
 
 	calls := env.FederationGuestUserCalls()

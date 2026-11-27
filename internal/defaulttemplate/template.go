@@ -111,6 +111,9 @@ type Ctx struct {
 	SigninWallError    *SigninWallError
 	UserToken          *usertoken.Data
 	Lang               string
+	// WasGuest is set when this browser's guest session is gone, so the wall can
+	// say why it is here instead of leaving a person with no account here lost.
+	WasGuest bool
 
 	TelegramLinks []model.TelegramPostLink
 	SimilarNotes  []*model.NoteView

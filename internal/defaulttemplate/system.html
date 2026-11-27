@@ -37,6 +37,9 @@ a:hover { text-decoration: underline; }
 <h1>{%s m.Title %}</h1>
 <p>{%s m.Text %}</p>
 <a href="/">{%s m.Home %}</a>
+{% if m.Back != "" %}
+<br><a href="{%s m.Back %}" rel="noopener">{%s m.BackText %}</a>
+{% endif %}
 </main>
 </body>
 </html>

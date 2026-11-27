@@ -8,6 +8,7 @@ import (
 	downloadonboardingvaultdownloadonboardingvault "trip2g/internal/case/downloadonboardingvault"
 	federationguestfederationguest "trip2g/internal/case/federationguest"
 	federationhandofffederationhandoff "trip2g/internal/case/federationhandoff"
+	federationleavefederationleave "trip2g/internal/case/federationleave"
 	handlegithubcallbackhandlegithubcallback "trip2g/internal/case/handlegithubcallback"
 	handlegithubstarthandlegithubstart "trip2g/internal/case/handlegithubstart"
 	handlegooglecallbackhandlegooglecallback "trip2g/internal/case/handlegooglecallback"
@@ -36,6 +37,7 @@ var endpoints = []Endpoint{
 	&federationguestfederationguest.GetEndpoint{},
 	&federationhandofffederationhandoff.Endpoint{},
 	&federationhandofffederationhandoff.GetEndpoint{},
+	&federationleavefederationleave.Endpoint{},
 	&handlegithubcallbackhandlegithubcallback.Endpoint{},
 	&handlegithubstarthandlegithubstart.Endpoint{},
 	&handlegooglecallbackhandlegooglecallback.Endpoint{},
@@ -66,6 +68,7 @@ type RoutesEnv interface {
 	downloadonboardingvaultdownloadonboardingvault.Env
 	federationguestfederationguest.Env
 	federationhandofffederationhandoff.Env
+	federationleavefederationleave.Env
 	handlegithubcallbackhandlegithubcallback.Env
 	handlegithubstarthandlegithubstart.Env
 	handlegooglecallbackhandlegooglecallback.Env

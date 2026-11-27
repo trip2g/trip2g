@@ -16,6 +16,9 @@ type systemMessage struct {
 	Title string
 	Text  string
 	Home  string
+	// Back is a site address to go back to, or empty.
+	Back     string
+	BackText string
 }
 
 // WriteSystemMessage answers with a plain page a person can read: what
@@ -26,7 +29,7 @@ type systemMessage struct {
 // The page shares nothing with the site template on purpose — no notes, no
 // bundles, no injections — because the requests that need it are the ones that
 // never got far enough to have any of that.
-func WriteSystemMessage(ctx *fasthttp.RequestCtx, code int, msg string) {
+func WriteSystemMessage(ctx *fasthttp.RequestCtx, code int, msg, back string) {
 	lang := uiLangFromCtx(ctx)
 
 	if !hasSystemMessage(lang, msg) {
@@ -49,10 +52,12 @@ func WriteSystemMessage(ctx *fasthttp.RequestCtx, code int, msg string) {
 	}
 
 	WriteSystemPage(ctx, systemMessage{
-		Lang:  htmlLang,
-		Title: T(lang, msg+"_title"),
-		Text:  T(lang, msg+"_text"),
-		Home:  T(lang, "system_home"),
+		Lang:     htmlLang,
+		Title:    T(lang, msg+"_title"),
+		Text:     T(lang, msg+"_text"),
+		Home:     T(lang, "system_home"),
+		Back:     back,
+		BackText: T(lang, "system_back"),
 	})
 }
 

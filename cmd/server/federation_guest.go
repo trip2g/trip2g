@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/federationguest"
 	"trip2g/internal/case/federationhandoff"
+	"trip2g/internal/case/federationleave"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
@@ -108,7 +109,7 @@ func (a *app) guestScope(ctx context.Context, token *usertoken.Data) []string {
 // GraphQL refuses its mutations itself, and the two handoff legs are how a
 // guest moves on.
 func guestMayPost(path string) bool {
-	for _, allowed := range []string{"/_system/graphql", "/graphql", federationhandoff.Path, federationguest.Path} {
+	for _, allowed := range []string{"/_system/graphql", "/graphql", federationhandoff.Path, federationguest.Path, federationleave.Path} {
 		if path == allowed || strings.HasPrefix(path, allowed+"/") {
 			return true
 		}

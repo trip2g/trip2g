@@ -15,6 +15,7 @@ import (
 
 	"trip2g/internal/case/federationguest"
 	"trip2g/internal/case/federationhandoff"
+	"trip2g/internal/case/federationleave"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/generated"
@@ -562,6 +563,7 @@ func TestSecurityNoNonGetEndpointAnswersAGuest(t *testing.T) {
 	allowed := map[string]bool{
 		federationhandoff.Path: true,
 		federationguest.Path:   true,
+		federationleave.Path:   true,
 		"/_system/graphql":     true,
 	}
 
@@ -1042,4 +1044,137 @@ func TestSecurityAFederatedSearchResultCarriesAnOpenLinkThatWorks(t *testing.T) 
 			}
 		}
 	}
+}
+
+const leavePath = "/_system/federation/leave"
+
+func (b *browser) guestPageBody(t *testing.T, s *site, path string) string {
+	t.Helper()
+	return b.get(t, s, path).body
+}
+
+func TestSecurityTheBarNamesTheHubAndAGuestCanLeave(t *testing.T) {
+	s := seedTwoSites(t)
+	b := s.guest(t)
+
+	for _, path := range []string{"/", "/shared", "/other"} {
+		body := b.guestPageBody(t, s.peer, path)
+		require.Contains(t, body, `class="guest-bar"`, path)
+		require.Contains(t, body, "hub.test", "the bar names the hub: %s", path)
+		require.Contains(t, body, `href="http://hub.test/"`, "Back leads to the hub's origin")
+		require.Contains(t, body, `action="`+leavePath+`"`, "Leave is a form post")
+	}
+
+	local := newBrowser()
+	local.cookies[s.peer.host] = s.peer.signIn(t, "local@example.com")
+	for _, reader := range []*browser{newBrowser(), local} {
+		require.NotContains(t, reader.guestPageBody(t, s.peer, "/"), "guest-bar", "only a guest sees the bar")
+	}
+
+	left := b.post(t, s.peer, leavePath, url.Values{}, s.peer.url)
+	require.Equal(t, http.StatusSeeOther, left.status, left.body)
+	require.Equal(t, "http://hub.test/", left.location, "leaving goes back to the hub")
+	require.Empty(t, b.cookies[s.peer.host], "and ends the guest session")
+	require.Equal(t, "200[front]", b.page(t, s.peer, "/"))
+	require.Equal(t, "401[]", b.page(t, s.peer, "/shared"))
+}
+
+func TestSecurityLeavingTouchesNoOneButAGuest(t *testing.T) {
+	s := seedTwoSites(t)
+
+	own := newBrowser()
+	own.cookies[s.peer.host] = s.peer.signIn(t, "local@example.com")
+	before := own.cookies[s.peer.host]
+	r := own.post(t, s.peer, leavePath, url.Values{}, s.peer.url)
+	require.Equal(t, http.StatusForbidden, r.status, "a reader with their own session is not a guest, and keeps the session")
+	require.Equal(t, before, own.cookies[s.peer.host])
+
+	require.Equal(t, http.StatusForbidden, newBrowser().post(t, s.peer, leavePath, url.Values{}, s.peer.url).status)
+}
+
+func TestSecurityALayoutShowsTheBarOnlyWhenItCallsTheMethod(t *testing.T) {
+	s := seedTwoSites(t)
+	insertLatestNote(t, s.peer.app, "_layouts/withbar.html", "<html><body>{{ defaultTemplate.GuestBar() }}<main>zzlayoutzz</main></body></html>")
+	insertLatestNote(t, s.peer.app, "_layouts/nobar.html", "<html><body><main>zzlayoutzz</main></body></html>")
+	insertLatestNote(t, s.peer.app, "withbar.md", "---\nfree: true\nlayout: withbar\n---\nbody\n")
+	insertLatestNote(t, s.peer.app, "nobar.md", "---\nfree: true\nlayout: nobar\n---\nbody\n")
+	s.peer.load(t)
+
+	guest := s.guest(t)
+	local := newBrowser()
+	local.cookies[s.peer.host] = s.peer.signIn(t, "local@example.com")
+	admin := newBrowser()
+	admin.cookies[s.peer.host] = s.peer.sessionFor(t, s.peer.adminID, "admin")
+
+	shown := guest.get(t, s.peer, "/withbar")
+	require.Equal(t, http.StatusOK, shown.status, shown.body)
+	require.Contains(t, shown.body, "zzlayoutzz")
+	require.Contains(t, shown.body, `class="guest-bar"`)
+	require.Contains(t, shown.body, "hub.test")
+
+	for name, reader := range map[string]*browser{"anonymous": newBrowser(), "local": local, "admin": admin} {
+		body := reader.guestPageBody(t, s.peer, "/withbar")
+		require.Contains(t, body, "zzlayoutzz", name)
+		require.NotContains(t, body, "guest-bar", "%s: the method answers an empty string", name)
+	}
+
+	require.NotContains(t, guest.guestPageBody(t, s.peer, "/nobar"), "guest-bar", "a layout that does not call the method shows none")
+}
+
+func TestSecurityTheOriginInTheBarIsEscaped(t *testing.T) {
+	s := seedTwoSites(t)
+	key, err := s.peer.app.Queries.FederationSecretByKID(context.Background(), "hub-to-peer")
+	require.NoError(t, err)
+
+	claims := jwt.MapClaims{
+		"i": s.peer.adminID + 100, "r": usertoken.RoleFederationGuest, "k": "hub-to-peer", "ki": key.ID, "h": 1, "rd": s.reader,
+		"o":   `http://a"onmouseover="x<script>alert(1)</script>.test`,
+		"iat": time.Now().Unix(), "exp": time.Now().Add(time.Hour).Unix(),
+	}
+	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(s.peer.app.config.UserToken.Secret))
+	require.NoError(t, err)
+
+	b := newBrowser()
+	b.cookies[s.peer.host] = signed
+	body := b.guestPageBody(t, s.peer, "/")
+	require.NotContains(t, body, `"onmouseover="`)
+	require.NotContains(t, body, "<script>alert(1)")
+}
+
+func TestSecurityAGuestWhoWasLetGoIsToldOnceHowToComeBack(t *testing.T) {
+	s := seedTwoSites(t)
+	b := s.guest(t)
+	require.Equal(t, "200[shared]", b.page(t, s.peer, "/shared"))
+
+	const line = "You were here as a guest"
+	require.NoError(t, s.peer.app.WriteQueries.RevokeFederationSecret(context.Background(), s.edgeID))
+
+	first := b.get(t, s.peer, "/shared")
+	require.Equal(t, http.StatusUnauthorized, first.status)
+	require.Contains(t, first.body, line, "the wall says why the guest is not let in")
+	require.Contains(t, first.body, "Open this base again from your own knowledge base")
+
+	second := b.get(t, s.peer, "/shared")
+	require.NotContains(t, second.body, line, "once")
+
+	other := newBrowser()
+	require.NotContains(t, other.guestPageBody(t, s.peer, "/shared"), line, "a reader who never was a guest is not told")
+}
+
+func TestSecurityTheRefusalPageLinksBackOnlyForAValidlySignedToken(t *testing.T) {
+	s := seedTwoSites(t)
+	s.peer.acceptGuests(t, "hub-to-peer", false)
+
+	signed := newBrowser().arrive(t, s.peer, handoffForm(handoffToken(t, "hub-to-peer", nil)), hubOrigin)
+	require.Equal(t, http.StatusForbidden, signed.status)
+	require.Contains(t, signed.body, `href="http://hub.test"`, "the token is genuine, so the page leads back to its hub")
+
+	token := handoffToken(t, "hub-to-peer", nil)
+	forged := newBrowser().arrive(t, s.peer, handoffForm(token[:len(token)-4]+"AAAA"), hubOrigin)
+	require.Equal(t, http.StatusForbidden, forged.status)
+	require.NotContains(t, forged.body, "hub.test", "a forged token names no hub")
+
+	unknown := newBrowser().arrive(t, s.peer, handoffForm(handoffToken(t, "nobody", map[string]any{"org": "http://evil.test"})), "http://evil.test")
+	require.Equal(t, http.StatusForbidden, unknown.status)
+	require.NotContains(t, unknown.body, "evil.test")
 }

@@ -18,6 +18,8 @@ type SystemMessageError struct {
 	Code int
 	Msg  string
 	Err  error
+	// Back is an address the page offers to go back to, beside the way home.
+	Back string
 }
 
 func (e *SystemMessageError) Error() string {

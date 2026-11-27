@@ -34,6 +34,9 @@ other = "Читать в Telegram"
 [system_home]
 other = "← Главная"
 
+[system_back]
+other = "Назад на сайт, откуда вы пришли"
+
 [system_error_title]
 other = "Что-то пошло не так"
 
@@ -75,6 +78,27 @@ other = "Не удалось открыть базу знаний"
 
 [federation_handoff_refused_text]
 other = "С этой страницы туда не попасть. Вернитесь и обновите её."
+
+[guest_bar_back]
+other = "Назад на"
+
+[guest_bar_from]
+other = "Вы гость с сайта"
+
+[guest_bar_guest]
+other = "Вы здесь гость"
+
+[guest_bar_leave]
+other = "Выйти"
+
+[guest_ended]
+other = "Вы были здесь гостем. Откройте эту базу снова из своей базы знаний."
+
+[federation_leave_refused_title]
+other = "Выходить не из чего"
+
+[federation_leave_refused_text]
+other = "Выйти можно только из гостевого сеанса."
 
 [guest_closed_message]
 other = "Вы здесь как гость. Доступ к этой странице запрашивается отдельно у владельца этой базы знаний."

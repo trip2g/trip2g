@@ -81,6 +81,7 @@ func (*GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 			return nil, fmt.Errorf("store guest session: %w", storeErr)
 		}
 		req.SetUserToken(&stored.Data)
+		setWasGuestCookie(req.Req, env.Insecure(), true)
 	}
 
 	appresp.Redirect(req.Req, path, http.StatusFound)
@@ -123,5 +124,54 @@ func failure(err error) error {
 	if errors.Is(err, ErrRefused) {
 		code = http.StatusForbidden
 	}
-	return &appreq.SystemMessageError{Code: code, Msg: msgRefused, Err: err}
+
+	back := ""
+	var refusal *Refusal
+	if errors.As(err, &refusal) {
+		back = refusal.Back
+	}
+	return &appreq.SystemMessageError{Code: code, Msg: msgRefused, Err: err, Back: back}
+}
+
+// WasGuestCookie remembers that this browser had a guest session, so that the
+// sign-in wall can say why it is here once the session is gone. It carries no
+// identity and no right.
+const WasGuestCookie = "trip2g_was_guest"
+
+// wasGuestTTL is how long the memory outlives the session it is about.
+const wasGuestTTL = 30 * 24 * time.Hour
+
+func setWasGuestCookie(ctx *fasthttp.RequestCtx, insecure, set bool) {
+	c := fasthttp.AcquireCookie()
+	defer fasthttp.ReleaseCookie(c)
+
+	c.SetKey(WasGuestCookie)
+	c.SetPath("/")
+	c.SetHTTPOnly(true)
+	c.SetSecure(!insecure)
+	c.SetSameSite(fasthttp.CookieSameSiteLaxMode)
+	if set {
+		c.SetValue("1")
+		c.SetMaxAge(int(wasGuestTTL / time.Second))
+	} else {
+		c.SetExpire(fasthttp.CookieExpireDelete)
+	}
+	ctx.Response.Header.SetCookie(c)
+}
+
+// TakeWasGuest reports whether the browser remembers a guest session, and
+// forgets it: the wall tells the reader once.
+func TakeWasGuest(ctx *fasthttp.RequestCtx, insecure bool) bool {
+	if len(ctx.Request.Header.Cookie(WasGuestCookie)) == 0 {
+		return false
+	}
+
+	setWasGuestCookie(ctx, insecure, false)
+	return true
+}
+
+// ForgetWasGuest drops the memory of a guest session: a guest who left does
+// not need to be told why they are gone.
+func ForgetWasGuest(ctx *fasthttp.RequestCtx, insecure bool) {
+	setWasGuestCookie(ctx, insecure, false)
 }

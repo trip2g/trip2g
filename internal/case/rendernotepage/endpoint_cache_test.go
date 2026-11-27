@@ -84,6 +84,7 @@ func cacheTestEnv(views *model.NoteViews, layouts *model.Layouts) (*EnvMock, *pa
 			return nil, nil
 		},
 		PublicURLFunc: func() string { return "https://example.com" },
+		InsecureFunc:  func() bool { return false },
 		AssetURLFunc:  func(path string) string { return path },
 		FeaturesFunc:  func() features.Features { return features.Features{} },
 		ActiveHTMLInjectionsFunc: func(ctx context.Context) ([]db.HtmlInjection, error) {

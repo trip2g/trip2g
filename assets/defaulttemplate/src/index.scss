@@ -392,6 +392,34 @@ body {
   }
 }
 
+// --- Federation guest bar ---
+
+.guest-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-card-sectioning-background-color);
+  font-size: 0.875rem;
+
+  form {
+    margin: 0;
+  }
+
+  button {
+    width: auto;
+    margin: 0;
+    padding: 0.1rem 0.6rem;
+    font-size: inherit;
+  }
+}
+
+.paywall-page__guest-ended {
+  color: var(--pico-muted-color);
+}
+
 // --- Telegram post buttons ---
 
 .tg-buttons {

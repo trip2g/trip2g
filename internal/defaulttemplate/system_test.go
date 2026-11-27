@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 
 func TestWriteSystemMessage_TellsTheVisitorWhatToDo(t *testing.T) {
 	ctx := &fasthttp.RequestCtx{}
-	WriteSystemMessage(ctx, http.StatusUnauthorized, "hat_expired")
+	WriteSystemMessage(ctx, http.StatusUnauthorized, "hat_expired", "")
 
 	require.Equal(t, http.StatusUnauthorized, ctx.Response.StatusCode())
 	require.Contains(t, string(ctx.Response.Header.ContentType()), "text/html")
@@ -36,7 +36,7 @@ func TestWriteSystemMessage_SpeaksTheVisitorsLanguage(t *testing.T) {
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.Header.SetCookie(langCookieName, "ru")
 
-	WriteSystemMessage(ctx, http.StatusUnauthorized, "hat_expired")
+	WriteSystemMessage(ctx, http.StatusUnauthorized, "hat_expired", "")
 
 	body := string(ctx.Response.Body())
 	require.Contains(t, body, "Ссылка устарела")
@@ -48,7 +48,7 @@ func TestWriteSystemMessage_SpeaksTheVisitorsLanguage(t *testing.T) {
 func TestWriteSystemMessage_UnknownKeyFallsBackToAnApology(t *testing.T) {
 	for _, msg := range []string{"", "hat_typo"} {
 		ctx := &fasthttp.RequestCtx{}
-		WriteSystemMessage(ctx, http.StatusInternalServerError, msg)
+		WriteSystemMessage(ctx, http.StatusInternalServerError, msg, "")
 
 		body := string(ctx.Response.Body())
 		require.Contains(t, body, "Something went wrong")
@@ -61,7 +61,7 @@ func TestWriteSystemMessage_UnknownKeyFallsBackToAnApology(t *testing.T) {
 // never got as far as loading bundles or note chrome.
 func TestWriteSystemMessage_CarriesNoScriptsOrBundles(t *testing.T) {
 	ctx := &fasthttp.RequestCtx{}
-	WriteSystemMessage(ctx, http.StatusUnauthorized, "hat_no_account")
+	WriteSystemMessage(ctx, http.StatusUnauthorized, "hat_no_account", "")
 
 	body := string(ctx.Response.Body())
 	require.NotContains(t, body, "<script")
@@ -73,7 +73,7 @@ func TestWriteSystemMessage_ReplacesAnythingAlreadyWritten(t *testing.T) {
 	ctx := &fasthttp.RequestCtx{}
 	ctx.SetBodyString("half a response")
 
-	WriteSystemMessage(ctx, http.StatusBadRequest, "hat_invalid")
+	WriteSystemMessage(ctx, http.StatusBadRequest, "hat_invalid", "")
 
 	body := string(ctx.Response.Body())
 	require.NotContains(t, body, "half a response")

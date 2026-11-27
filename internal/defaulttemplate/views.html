@@ -82,6 +82,7 @@ window.__trip2g_settings = {
 
 </head>
 <body tabindex="-1" class="inline-mol">
+{%s= GuestBar(ctx.UserToken, ctx.UILang) %}
 
 {% if ctx.SigninWallError != nil %}
   {%= SignInWall(ctx) %}
@@ -494,6 +495,10 @@ window.__trip2g_settings = {
   {% endif %}
   {% endif %}
 
+  {% if ctx.WasGuest %}
+  <p class="paywall-page__guest-ended">{%s ctx.T("guest_ended") %}</p>
+  {% endif %}
+
   <div id="signinwall" mol_view_root="$trip2g_user_signinwall"></div>
 </div>
 {% endfunc %}
@@ -518,6 +523,9 @@ window.__trip2g_settings = {
     <p>{%s ctx.T("guest_closed_message") %}</p>
   </div>
   {% elseif ctx.PaywallError != nil %}
+  {% if ctx.WasGuest %}
+  <p class="paywall-page__guest-ended">{%s ctx.T("guest_ended") %}</p>
+  {% endif %}
   <script>
     window.__trip2g_paywall = {
       page_id: {%dl ctx.Note.PathID() %},
