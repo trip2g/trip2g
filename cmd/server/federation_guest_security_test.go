@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"trip2g/internal/router"
 	"trip2g/internal/usertoken"
 
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -65,6 +67,7 @@ func TestSecurityAGuestSessionOfARecreatedKeyIsAnonymous(t *testing.T) {
 		Kid: "hub-to-peer", SecretCrypt: crypt, CreatedBy: s.peer.adminID,
 	})
 	require.NoError(t, err)
+	s.peer.acceptGuests(t, "hub-to-peer", true)
 
 	require.Equal(t, "401[]", b.page(t, s.peer, "/shared"), "a new key under the old kid does not revive the session")
 	require.Empty(t, b.cookies[s.peer.host], "and the cookie is cleared")
@@ -667,4 +670,183 @@ func TestSecurityTheKnownLeaksStayAsTheyAre(t *testing.T) {
 		embeds := reader.get(t, s.peer, "/embeds")
 		require.Contains(t, embeds.body, "zzembeddedzz", "%s: a free note that embeds a closed one shows its text, as it does for everyone", name)
 	}
+}
+
+type edgePair struct {
+	hub, peer *site
+}
+
+func seedEdgePair(t *testing.T) *edgePair {
+	t.Helper()
+	ctx := context.Background()
+
+	peer := newSite(t, "peer")
+	require.NoError(t, peer.app.WriteQueries.InsertSubgraph(ctx, "shared"))
+	insertLatestNote(t, peer.app, "index.md", "---\nfree: true\n---\nzzfrontzz\n")
+	insertLatestNote(t, peer.app, "shared.md", "---\nsubgraph: shared\n---\nzzsharedzz\n")
+	peer.load(t)
+
+	hub := newSite(t, "hub")
+	for _, kid := range []string{"edge-a", "edge-b"} {
+		insertLatestNote(t, hub.app, kid+".md", "---\nfree: true\nmcp_federation_kb_url: "+peer.url+"/_system/mcp\nmcp_federation_kb_id: "+kid+"\n---\nA base.\n")
+	}
+	hub.load(t)
+	hub.signIn(t, "Reader@Example.com")
+
+	pairEdge(t, hub, peer, "edge-a", "shared")
+	pairEdge(t, hub, peer, "edge-b", "shared")
+	return &edgePair{hub: hub, peer: peer}
+}
+
+func (p *edgePair) reader(t *testing.T) *browser {
+	t.Helper()
+	user, err := p.hub.app.Queries.UserByEmail(context.Background(), "reader@example.com")
+	require.NoError(t, err)
+	b := newBrowser()
+	b.cookies[p.hub.host] = p.hub.sessionFor(t, user.ID, "user")
+	return b
+}
+
+func TestSecurityAcceptingGuestsIsASettingOfTheEdge(t *testing.T) {
+	p := seedEdgePair(t)
+	p.peer.acceptGuests(t, "edge-b", false)
+
+	refused := p.reader(t).openKB(t, p.hub, p.peer, "edge-b.md")
+	require.Equal(t, http.StatusForbidden, refused.status, "an edge that does not accept people refuses a handoff")
+	require.Empty(t, refused.cookie)
+
+	guestA := p.reader(t)
+	require.Equal(t, http.StatusFound, guestA.openKB(t, p.hub, p.peer, "edge-a.md").status, "the edge that accepts admits")
+	require.Equal(t, "200[shared]", guestA.page(t, p.peer, "/shared"))
+
+	p.peer.acceptGuests(t, "edge-b", true)
+	guestB := p.reader(t)
+	require.Equal(t, http.StatusFound, guestB.openKB(t, p.hub, p.peer, "edge-b.md").status)
+	require.Equal(t, "200[shared]", guestB.page(t, p.peer, "/shared"))
+
+	p.peer.acceptGuests(t, "edge-a", false)
+	require.Equal(t, "401[]", guestA.page(t, p.peer, "/shared"), "switching it off ends that edge's sessions on the next request")
+	require.Empty(t, guestA.cookies[p.peer.host])
+	require.Equal(t, "200[shared]", guestB.page(t, p.peer, "/shared"), "and leaves the other edge's alone")
+
+	again := p.reader(t).openKB(t, p.hub, p.peer, "edge-a.md")
+	require.Equal(t, http.StatusForbidden, again.status)
+}
+
+func TestSecurityAnEdgeThatNeverSwitchedPeopleOnAdmitsNobody(t *testing.T) {
+	s := seedTwoSites(t)
+	s.peer.acceptGuests(t, "hub-to-peer", false)
+
+	r := newBrowser()
+	r.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+	require.Equal(t, http.StatusForbidden, r.openKB(t, s.hub, s.peer, hubKBNote).status)
+
+	var accepting int
+	require.NoError(t, s.peer.app.conn.QueryRow(`select count(*) from federation_secrets where kb_url is null and accept_guests`).Scan(&accepting))
+	require.Zero(t, accepting)
+
+	crypt, err := s.peer.app.EncryptData(edgeSecret("fresh"))
+	require.NoError(t, err)
+	_, err = s.peer.app.WriteQueries.InsertFederationSecret(context.Background(), db.InsertFederationSecretParams{
+		Kid: "fresh", SecretCrypt: crypt, CreatedBy: s.peer.adminID,
+	})
+	require.NoError(t, err)
+	require.NoError(t, s.peer.app.conn.QueryRow(`select accept_guests from federation_secrets where kid = 'fresh'`).Scan(&accepting))
+	require.Zero(t, accepting, "a new key starts with people off")
+}
+
+func TestSecurityTwoFirstHandoffsOfOneReaderLeaveOneRow(t *testing.T) {
+	s := seedTwoSites(t)
+	ctx := context.Background()
+
+	const racers = 12
+	ids := make(chan int64, racers)
+	errs := make(chan error, racers)
+	for range racers {
+		go func() {
+			id, err := s.peer.app.FederationGuestUser(ctx, "hub-to-peer", s.reader)
+			ids <- id
+			errs <- err
+		}()
+	}
+
+	first := <-ids
+	require.NoError(t, <-errs)
+	for range racers - 1 {
+		require.Equal(t, first, <-ids, "every racer gets the same user")
+		require.NoError(t, <-errs)
+	}
+
+	var rows, users int
+	require.NoError(t, s.peer.app.conn.QueryRow(`select count(*) from federation_guests`).Scan(&rows))
+	require.NoError(t, s.peer.app.conn.QueryRow(`select count(*) from users where email is null and tg_user_id is null`).Scan(&users))
+	require.Equal(t, 1, rows)
+	require.Equal(t, 1, users, "and no orphan user is left behind")
+}
+
+func TestSecurityAGuestIsNotInTheAdminUserList(t *testing.T) {
+	g, s := newGuestGraphQL(t)
+
+	session, err := s.peer.app.tokenManager.ParseToken(context.Background(), g.b.cookies[s.peer.host])
+	require.NoError(t, err)
+
+	admin := newBrowser()
+	admin.cookies[s.peer.host] = s.peer.sessionFor(t, s.peer.adminID, "admin")
+	adminGraphQL := guestGraphQL{t: t, b: admin, peer: s.peer, schema: g.schema}
+	body := adminGraphQL.send(`{ admin { allUsers { nodes { id } } } }`)
+
+	var out struct {
+		Data struct {
+			Admin struct {
+				AllUsers struct {
+					Nodes []struct {
+						ID json.Number `json:"id"`
+					} `json:"nodes"`
+				} `json:"allUsers"`
+			} `json:"admin"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(body), &out), body)
+	require.NotEmpty(t, out.Data.Admin.AllUsers.Nodes, body)
+	for _, node := range out.Data.Admin.AllUsers.Nodes {
+		require.NotEqual(t, fmt.Sprint(session.ID), node.ID.String(), "the guest is a user with a row in federation_guests, and the list leaves those out")
+	}
+}
+
+func TestSecurityAGuestSessionLivesTwelveHours(t *testing.T) {
+	s := seedTwoSites(t)
+	secret := []byte(s.peer.app.config.UserToken.Secret)
+
+	forged := func(role string, age time.Duration, guestKey int64) string {
+		claims := jwt.MapClaims{
+			"i": s.peer.adminID, "r": role,
+			"iat": time.Now().Add(-age).Unix(),
+			"exp": time.Now().Add(24 * time.Hour).Unix(),
+		}
+		if role == usertoken.RoleFederationGuest {
+			claims["i"] = s.peer.adminID + 100
+			claims["k"] = "hub-to-peer"
+			claims["ki"] = guestKey
+			claims["h"] = 1
+			claims["rd"] = s.reader
+		}
+		signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
+		require.NoError(t, err)
+		return signed
+	}
+
+	key, err := s.peer.app.Queries.FederationSecretByKID(context.Background(), "hub-to-peer")
+	require.NoError(t, err)
+
+	young := newBrowser()
+	young.cookies[s.peer.host] = forged(usertoken.RoleFederationGuest, 12*time.Hour-time.Minute, key.ID)
+	require.Equal(t, "200[shared]", young.page(t, s.peer, "/shared"), "a guest session inside its twelve hours")
+
+	old := newBrowser()
+	old.cookies[s.peer.host] = forged(usertoken.RoleFederationGuest, 12*time.Hour+time.Second, key.ID)
+	require.Equal(t, "401[]", old.page(t, s.peer, "/shared"), "a guest session minted twelve hours and a second ago is anonymous")
+
+	ordinary := newBrowser()
+	ordinary.cookies[s.peer.host] = forged("admin", 12*time.Hour+time.Second, 0)
+	require.Equal(t, "200[shared]", ordinary.page(t, s.peer, "/shared"), "an ordinary session of the same age is not")
 }

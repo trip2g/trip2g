@@ -24,9 +24,6 @@ var _ federationguest.Env = &EnvMock{}
 //			FederationGuestUserFunc: func(ctx context.Context, kid string, reader string) (int64, error) {
 //				panic("mock out the FederationGuestUser method")
 //			},
-//			FederationGuestsEnabledFunc: func() bool {
-//				panic("mock out the FederationGuestsEnabled method")
-//			},
 //			FederationMaxDepthFunc: func() int {
 //				panic("mock out the FederationMaxDepth method")
 //			},
@@ -51,9 +48,6 @@ var _ federationguest.Env = &EnvMock{}
 type EnvMock struct {
 	// FederationGuestUserFunc mocks the FederationGuestUser method.
 	FederationGuestUserFunc func(ctx context.Context, kid string, reader string) (int64, error)
-
-	// FederationGuestsEnabledFunc mocks the FederationGuestsEnabled method.
-	FederationGuestsEnabledFunc func() bool
 
 	// FederationMaxDepthFunc mocks the FederationMaxDepth method.
 	FederationMaxDepthFunc func() int
@@ -81,9 +75,6 @@ type EnvMock struct {
 			// Reader is the reader argument value.
 			Reader string
 		}
-		// FederationGuestsEnabled holds details about calls to the FederationGuestsEnabled method.
-		FederationGuestsEnabled []struct {
-		}
 		// FederationMaxDepth holds details about calls to the FederationMaxDepth method.
 		FederationMaxDepth []struct {
 		}
@@ -108,13 +99,12 @@ type EnvMock struct {
 			Token string
 		}
 	}
-	lockFederationGuestUser     sync.RWMutex
-	lockFederationGuestsEnabled sync.RWMutex
-	lockFederationMaxDepth      sync.RWMutex
-	lockGuestTickets            sync.RWMutex
-	lockInsecure                sync.RWMutex
-	lockSpendFederationGuestID  sync.RWMutex
-	lockVerifyGuestHandoff      sync.RWMutex
+	lockFederationGuestUser    sync.RWMutex
+	lockFederationMaxDepth     sync.RWMutex
+	lockGuestTickets           sync.RWMutex
+	lockInsecure               sync.RWMutex
+	lockSpendFederationGuestID sync.RWMutex
+	lockVerifyGuestHandoff     sync.RWMutex
 }
 
 // FederationGuestUser calls FederationGuestUserFunc.
@@ -154,33 +144,6 @@ func (mock *EnvMock) FederationGuestUserCalls() []struct {
 	mock.lockFederationGuestUser.RLock()
 	calls = mock.calls.FederationGuestUser
 	mock.lockFederationGuestUser.RUnlock()
-	return calls
-}
-
-// FederationGuestsEnabled calls FederationGuestsEnabledFunc.
-func (mock *EnvMock) FederationGuestsEnabled() bool {
-	if mock.FederationGuestsEnabledFunc == nil {
-		panic("EnvMock.FederationGuestsEnabledFunc: method is nil but Env.FederationGuestsEnabled was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockFederationGuestsEnabled.Lock()
-	mock.calls.FederationGuestsEnabled = append(mock.calls.FederationGuestsEnabled, callInfo)
-	mock.lockFederationGuestsEnabled.Unlock()
-	return mock.FederationGuestsEnabledFunc()
-}
-
-// FederationGuestsEnabledCalls gets all the calls that were made to FederationGuestsEnabled.
-// Check the length with:
-//
-//	len(mockedEnv.FederationGuestsEnabledCalls())
-func (mock *EnvMock) FederationGuestsEnabledCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockFederationGuestsEnabled.RLock()
-	calls = mock.calls.FederationGuestsEnabled
-	mock.lockFederationGuestsEnabled.RUnlock()
 	return calls
 }
 

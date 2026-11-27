@@ -394,6 +394,10 @@ type SetConfigStringValuePayload interface {
 	IsSetConfigStringValuePayload()
 }
 
+type SetFederationSecretAcceptGuestsOrErrorPayload interface {
+	IsSetFederationSecretAcceptGuestsOrErrorPayload()
+}
+
 type SetPatreonTierSubgraphsOrErrorPayload interface {
 	IsSetPatreonTierSubgraphsOrErrorPayload()
 }
@@ -1981,6 +1985,8 @@ func (ErrorPayload) IsRotateFederationSecretOrErrorPayload() {}
 
 func (ErrorPayload) IsRevokeFederationSecretOrErrorPayload() {}
 
+func (ErrorPayload) IsSetFederationSecretAcceptGuestsOrErrorPayload() {}
+
 func (ErrorPayload) IsAddFederationSecretSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsRemoveFederationSecretSubgraphOrErrorPayload() {}
@@ -2699,6 +2705,18 @@ type SetConfigStringValueSuccess struct {
 }
 
 func (SetConfigStringValueSuccess) IsSetConfigStringValuePayload() {}
+
+type SetFederationSecretAcceptGuestsInput struct {
+	ID           int64 `json:"id"`
+	AcceptGuests bool  `json:"acceptGuests"`
+}
+
+type SetFederationSecretAcceptGuestsPayload struct {
+	ID           int64 `json:"id"`
+	AcceptGuests bool  `json:"acceptGuests"`
+}
+
+func (SetFederationSecretAcceptGuestsPayload) IsSetFederationSecretAcceptGuestsOrErrorPayload() {}
 
 type SetPatreonTierSubgraphsInput struct {
 	TierID      int64   `json:"tierId"`

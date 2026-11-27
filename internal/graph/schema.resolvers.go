@@ -95,6 +95,7 @@ import (
 	"trip2g/internal/case/admin/setconfigboolvalue"
 	"trip2g/internal/case/admin/setconfigintvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
+	"trip2g/internal/case/admin/setfederationsecretacceptguests"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/setsecret"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
@@ -1358,6 +1359,11 @@ func (r *adminMutationResolver) CreateOutboundFederationSecret(ctx context.Conte
 // RevokeFederationSecret is the resolver for the revokeFederationSecret field.
 func (r *adminMutationResolver) RevokeFederationSecret(ctx context.Context, obj *appmodel.AdminMutation, id int64) (model.RevokeFederationSecretOrErrorPayload, error) {
 	return revokefederationsecret.Resolve(ctx, r.env(ctx), id)
+}
+
+// SetFederationSecretAcceptGuests is the resolver for the setFederationSecretAcceptGuests field.
+func (r *adminMutationResolver) SetFederationSecretAcceptGuests(ctx context.Context, obj *appmodel.AdminMutation, input model.SetFederationSecretAcceptGuestsInput) (model.SetFederationSecretAcceptGuestsOrErrorPayload, error) {
+	return setfederationsecretacceptguests.Resolve(ctx, r.env(ctx), input)
 }
 
 // RotateFederationSecret is the resolver for the rotateFederationSecret field.

@@ -30,7 +30,6 @@ import (
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg federationguest_test . Env
 
 type Env interface {
-	FederationGuestsEnabled() bool
 	FederationMaxDepth() int
 	VerifyGuestHandoff(ctx context.Context, token string) (mcp.GuestHandoffClaims, error)
 	// SpendFederationGuestID marks a handoff or ticket id used and reports
@@ -133,13 +132,12 @@ type Form struct {
 // at the origin the hub signed: a hub reader who copies the form onto another
 // site cannot open a session in someone else's browser with it.
 func Admit(ctx context.Context, env Env, form Form) (Admission, error) {
-	if !env.FederationGuestsEnabled() {
-		return Admission{}, fmt.Errorf("%w: guests are not accepted here", ErrRefused)
-	}
-
 	claims, err := env.VerifyGuestHandoff(ctx, form.Token)
 	if err != nil {
 		return Admission{}, fmt.Errorf("%w: %w", ErrRefused, err)
+	}
+	if !claims.AcceptGuests {
+		return Admission{}, fmt.Errorf("%w: the key %q does not accept people", ErrRefused, claims.Caller.KID)
 	}
 
 	signedOrigin, signedOK := model.SiteOrigin(claims.Origin)

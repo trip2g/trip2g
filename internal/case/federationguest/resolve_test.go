@@ -24,6 +24,7 @@ func validClaims() mcp.GuestHandoffClaims {
 	return mcp.GuestHandoffClaims{
 		GuestHandoff: mcp.GuestHandoff{Path: "/", Hop: 1, Reader: testReader, Origin: "https://hub.test"},
 		KeyID:        7,
+		AcceptGuests: true,
 		Caller:       mcp.FederationCaller{KID: "edge"},
 		ID:           "rid-1",
 		ExpiresAt:    time.Now().Add(30 * time.Second),
@@ -34,8 +35,7 @@ func newEnv(claims mcp.GuestHandoffClaims) *EnvMock {
 	spent := map[string]bool{}
 	tickets := &federationguest.Tickets{}
 	return &EnvMock{
-		FederationGuestsEnabledFunc: func() bool { return true },
-		FederationMaxDepthFunc:      func() int { return 3 },
+		FederationMaxDepthFunc: func() int { return 3 },
 		VerifyGuestHandoffFunc: func(context.Context, string) (mcp.GuestHandoffClaims, error) {
 			return claims, nil
 		},
@@ -110,7 +110,7 @@ func TestAdmitRefuses(t *testing.T) {
 		{name: "posted with no Origin", origin: "-"},
 		{name: "posted with Origin null", origin: "null"},
 		{name: "signed origin is not an origin", claims: func(c *mcp.GuestHandoffClaims) { c.Origin = "" }},
-		{name: "setting off", env: func(e *EnvMock) { e.FederationGuestsEnabledFunc = func() bool { return false } }},
+		{name: "the key does not accept people", claims: func(c *mcp.GuestHandoffClaims) { c.AcceptGuests = false }},
 		{name: "bad signature", env: func(e *EnvMock) {
 			e.VerifyGuestHandoffFunc = func(context.Context, string) (mcp.GuestHandoffClaims, error) {
 				return mcp.GuestHandoffClaims{}, mcp.ErrFedAuthBadSig

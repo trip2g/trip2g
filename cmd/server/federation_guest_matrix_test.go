@@ -30,7 +30,6 @@ func TestFederationGuestAccessMatrix(t *testing.T) {
 	prometheus.DefaultRegisterer = registerer //nolint:reassign // the original registry
 	ctx := context.Background()
 	a := m.app
-	a.config.FederationAcceptGuests = true
 	a.config.MCPFederationMaxDepth = 3
 	encryption, err := dataencryption.NewManager(dataencryption.DefaultConfig())
 	require.NoError(t, err)
@@ -51,6 +50,7 @@ func TestFederationGuestAccessMatrix(t *testing.T) {
 		secret := db.InsertFederationSecretParams{Kid: kid, SecretCrypt: crypt, CreatedBy: adminID}
 		_, insertErr := a.WriteQueries.InsertFederationSecret(ctx, secret)
 		require.NoError(t, insertErr)
+		peer.acceptGuests(t, kid, true)
 		for _, name := range grants {
 			sg, sgErr := a.Queries.SubgraphByName(ctx, name)
 			require.NoError(t, sgErr)

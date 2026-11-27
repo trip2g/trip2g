@@ -57,8 +57,7 @@ func TestAGuestPageViewIsRecordedUnderTheSyntheticUserOfTheEdge(t *testing.T) {
 
 	require.Equal(t, "200[shared]", b.page(t, s.peer, "/shared"))
 
-	createdVia := "federation:hub-to-peer:" + s.reader
-	user, err := s.peer.app.Queries.FederationGuestUser(context.Background(), createdVia)
+	user, err := s.peer.app.Queries.FederationGuestUser(context.Background(), db.FederationGuestUserParams{Kid: "hub-to-peer", ReaderHash: s.reader})
 	require.NoError(t, err)
 	require.Nil(t, user.Email)
 	require.Nil(t, user.TgUserID)
@@ -69,7 +68,8 @@ func TestAGuestPageViewIsRecordedUnderTheSyntheticUserOfTheEdge(t *testing.T) {
 			join users u on u.id = v.user_id
 			join note_versions nv on nv.id = v.version_id
 			join note_paths np on np.id = nv.path_id
-			where u.created_via = ? and np.value = 'shared.md'`, createdVia)
+			join federation_guests g on g.user_id = u.id
+			where g.kid = 'hub-to-peer' and g.reader_hash = ? and np.value = 'shared.md'`, s.reader)
 		return row.Scan(&views) == nil && views == 1
 	}, 5*time.Second, 20*time.Millisecond, "the view lands under the guest of the edge")
 
@@ -77,7 +77,7 @@ func TestAGuestPageViewIsRecordedUnderTheSyntheticUserOfTheEdge(t *testing.T) {
 	again.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
 	require.Equal(t, http.StatusFound, again.openKB(t, s.hub, s.peer, hubKBNote).status)
 	var guests int
-	row := s.peer.app.conn.QueryRow(`select count(*) from users where created_via = ?`, createdVia)
+	row := s.peer.app.conn.QueryRow(`select count(*) from federation_guests where kid = 'hub-to-peer' and reader_hash = ?`, s.reader)
 	require.NoError(t, row.Scan(&guests))
 	require.Equal(t, 1, guests, "the same reader over the same edge is one guest")
 }
@@ -163,23 +163,6 @@ func TestRevokingTheEdgeEndsTheGuestSession(t *testing.T) {
 	require.Empty(t, b.cookies[s.peer.host], "and the cookie is cleared")
 }
 
-func TestTurningGuestsOffRefusesHandoffsAndEndsSessions(t *testing.T) {
-	s := seedTwoSites(t)
-	b := s.guest(t)
-	require.Equal(t, "200[shared]", b.page(t, s.peer, "/shared"))
-
-	s.peer.app.config.FederationAcceptGuests = false
-
-	require.Equal(t, "401[]", b.page(t, s.peer, "/shared"), "an open session stops working")
-	require.Empty(t, b.cookies[s.peer.host])
-
-	fresh := newBrowser()
-	fresh.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
-	r := fresh.openKB(t, s.hub, s.peer, hubKBNote)
-	require.Equal(t, http.StatusForbidden, r.status, "a new handoff is refused")
-	require.Empty(t, fresh.cookies[s.peer.host])
-}
-
 func TestAReaderIDCannotLandInALocalAccount(t *testing.T) {
 	s := seedTwoSites(t)
 	ctx := context.Background()
@@ -259,7 +242,7 @@ func TestAHandoffPostedFromAnotherSiteIsRefused(t *testing.T) {
 		require.Empty(t, victim.cookies)
 	}
 
-	_, err := s.peer.app.Queries.FederationGuestUser(ctx, "federation:hub-to-peer:"+s.reader)
+	_, err := s.peer.app.Queries.FederationGuestUser(ctx, db.FederationGuestUserParams{Kid: "hub-to-peer", ReaderHash: s.reader})
 	require.True(t, db.IsNoFound(err), "no guest user was looked up into existence: %v", err)
 
 	forged := handoffForm(handoffToken(t, "hub-to-peer", map[string]any{"org": "http://attacker.test"}))

@@ -16,10 +16,6 @@ import (
 	"trip2g/internal/usertoken"
 )
 
-func (a *app) FederationGuestsEnabled() bool {
-	return a.config.FederationAcceptGuests
-}
-
 func (a *app) FederationGuestPeer(_ context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error) {
 	return a.outboundPeer(kb, 0)
 }
@@ -36,17 +32,14 @@ func (a *app) GuestTickets() *federationguest.Tickets {
 	return &a.guestTickets
 }
 
-// federationGuestCreatedVia names the edge and the reader on the synthetic
-// user, which is what view analytics group by. The row has no email and no
-// Telegram id, so no sign-in path can reach it.
-func federationGuestCreatedVia(kid, reader string) string {
-	return "federation:" + kid + ":" + reader
-}
-
+// FederationGuestUser finds or creates the synthetic user of the pair (edge,
+// reader). The user has no email and no Telegram id, so no sign-in path can
+// reach it. Two first handoffs at once insert two users; the table's unique key
+// keeps one row, and the loser deletes the user it created.
 func (a *app) FederationGuestUser(ctx context.Context, kid, reader string) (int64, error) {
-	createdVia := federationGuestCreatedVia(kid, reader)
+	find := db.FederationGuestUserParams{Kid: kid, ReaderHash: reader}
 
-	user, err := a.Queries.FederationGuestUser(ctx, createdVia)
+	user, err := a.Queries.FederationGuestUser(ctx, find)
 	if err == nil {
 		return user.ID, nil
 	}
@@ -54,21 +47,36 @@ func (a *app) FederationGuestUser(ctx context.Context, kid, reader string) (int6
 		return 0, fmt.Errorf("find federation guest: %w", err)
 	}
 
-	user, err = a.WriteQueries.InsertFederationGuestUser(ctx, createdVia)
+	created, err := a.WriteQueries.InsertFederationGuestUser(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("insert federation guest user: %w", err)
+	}
+
+	insert := db.InsertFederationGuestParams{Kid: kid, ReaderHash: reader, UserID: created.ID}
+	inserted, err := a.WriteQueries.InsertFederationGuest(ctx, insert)
 	if err != nil {
 		return 0, fmt.Errorf("insert federation guest: %w", err)
+	}
+	if inserted == 1 {
+		return created.ID, nil
+	}
+
+	err = a.WriteQueries.DeleteUnclaimedFederationGuestUser(ctx, created.ID)
+	if err != nil {
+		return 0, fmt.Errorf("delete the user of a lost race: %w", err)
+	}
+
+	user, err = a.Queries.FederationGuestUser(ctx, find)
+	if err != nil {
+		return 0, fmt.Errorf("find federation guest after a race: %w", err)
 	}
 	return user.ID, nil
 }
 
-// validateFederationGuest ends a guest session whose edge is gone or whose
-// instance no longer accepts guests. It runs on every request, so revoking the
-// key or turning the setting off takes effect on the guest's next click.
+// validateFederationGuest ends a guest session whose key is gone, was replaced
+// or no longer accepts people. It runs on every request, so revoking the key or
+// switching the setting off takes effect on the guest's next click.
 func (a *app) validateFederationGuest(ctx context.Context, data *usertoken.Data) error {
-	if !a.FederationGuestsEnabled() {
-		return fmt.Errorf("guests are not accepted: %w", usertoken.ErrSessionEnded)
-	}
-
 	secret, ok, err := a.FederationSecretByKID(ctx, data.Kid)
 	if err != nil {
 		return fmt.Errorf("federation secret by kid: %w", err)
@@ -78,6 +86,9 @@ func (a *app) validateFederationGuest(ctx context.Context, data *usertoken.Data)
 	}
 	if secret.ID != data.Key {
 		return fmt.Errorf("edge %q is now another key: %w", data.Kid, usertoken.ErrSessionEnded)
+	}
+	if !secret.AcceptGuests {
+		return fmt.Errorf("edge %q does not accept people: %w", data.Kid, usertoken.ErrSessionEnded)
 	}
 	return nil
 }

@@ -684,6 +684,17 @@ func (q *WriteQueries) DeleteTgUserCanvasState(ctx context.Context, arg DeleteTg
 	return err
 }
 
+const deleteUnclaimedFederationGuestUser = `-- name: DeleteUnclaimedFederationGuestUser :exec
+delete from users
+ where id = ?
+   and not exists (select 1 from federation_guests where user_id = users.id)
+`
+
+func (q *WriteQueries) DeleteUnclaimedFederationGuestUser(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUnclaimedFederationGuestUser, id)
+	return err
+}
+
 const deleteUserFavoriteNote = `-- name: DeleteUserFavoriteNote :exec
 delete from user_favorite_notes
 where user_id = ? and note_version_id = ?
@@ -1379,13 +1390,33 @@ func (q *WriteQueries) InsertCronWebhookDeliveryIfNoPending(ctx context.Context,
 	return i, err
 }
 
+const insertFederationGuest = `-- name: InsertFederationGuest :execrows
+insert into federation_guests (kid, reader_hash, user_id)
+values (?, ?, ?)
+on conflict (kid, reader_hash) do nothing
+`
+
+type InsertFederationGuestParams struct {
+	Kid        string `json:"kid"`
+	ReaderHash string `json:"reader_hash"`
+	UserID     int64  `json:"user_id"`
+}
+
+func (q *WriteQueries) InsertFederationGuest(ctx context.Context, arg InsertFederationGuestParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, insertFederationGuest, arg.Kid, arg.ReaderHash, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const insertFederationGuestUser = `-- name: InsertFederationGuestUser :one
-insert into users (created_via) values (?)
+insert into users (created_via) values ('federation_guest')
 returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
 `
 
-func (q *WriteQueries) InsertFederationGuestUser(ctx context.Context, createdVia string) (User, error) {
-	row := q.db.QueryRowContext(ctx, insertFederationGuestUser, createdVia)
+func (q *WriteQueries) InsertFederationGuestUser(ctx context.Context) (User, error) {
+	row := q.db.QueryRowContext(ctx, insertFederationGuestUser)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -1402,7 +1433,7 @@ func (q *WriteQueries) InsertFederationGuestUser(ctx context.Context, createdVia
 const insertFederationSecret = `-- name: InsertFederationSecret :one
 insert into federation_secrets (kid, secret_crypt, kb_url, description, created_by)
 values (?, ?, ?, ?, ?)
-returning id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at
+returning id, kid, secret_crypt, kb_url, description, created_at, created_by, revoked_at, prev_secret_crypt, rotated_at, accept_guests
 `
 
 type InsertFederationSecretParams struct {
@@ -1433,6 +1464,7 @@ func (q *WriteQueries) InsertFederationSecret(ctx context.Context, arg InsertFed
 		&i.RevokedAt,
 		&i.PrevSecretCrypt,
 		&i.RotatedAt,
+		&i.AcceptGuests,
 	)
 	return i, err
 }
@@ -3484,6 +3516,22 @@ type SetCronWebhookDeliveryChainParams struct {
 // depth_reached stays 0 (what they write sits one level down).
 func (q *WriteQueries) SetCronWebhookDeliveryChain(ctx context.Context, arg SetCronWebhookDeliveryChainParams) error {
 	_, err := q.db.ExecContext(ctx, setCronWebhookDeliveryChain, arg.Trace, arg.ID)
+	return err
+}
+
+const setFederationSecretAcceptGuests = `-- name: SetFederationSecretAcceptGuests :exec
+update federation_secrets
+   set accept_guests = ?
+ where id = ?
+`
+
+type SetFederationSecretAcceptGuestsParams struct {
+	AcceptGuests bool  `json:"accept_guests"`
+	ID           int64 `json:"id"`
+}
+
+func (q *WriteQueries) SetFederationSecretAcceptGuests(ctx context.Context, arg SetFederationSecretAcceptGuestsParams) error {
+	_, err := q.db.ExecContext(ctx, setFederationSecretAcceptGuests, arg.AcceptGuests, arg.ID)
 	return err
 }
 

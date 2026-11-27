@@ -74,8 +74,18 @@ insert into users (email, created_via) values (lower(sqlc.arg(email)), sqlc.arg(
 returning *;
 
 -- name: InsertFederationGuestUser :one
-insert into users (created_via) values (?)
+insert into users (created_via) values ('federation_guest')
 returning *;
+
+-- name: InsertFederationGuest :execrows
+insert into federation_guests (kid, reader_hash, user_id)
+values (?, ?, ?)
+on conflict (kid, reader_hash) do nothing;
+
+-- name: DeleteUnclaimedFederationGuestUser :exec
+delete from users
+ where id = ?
+   and not exists (select 1 from federation_guests where user_id = users.id);
 
 -- name: InsertUserWithTgUserID :one
 insert into users (tg_user_id, created_via)
@@ -1250,6 +1260,11 @@ delete from note_frontmatter_patches where id = ?;
 insert into federation_secrets (kid, secret_crypt, kb_url, description, created_by)
 values (?, ?, ?, ?, ?)
 returning *;
+
+-- name: SetFederationSecretAcceptGuests :exec
+update federation_secrets
+   set accept_guests = ?
+ where id = ?;
 
 -- name: RevokeFederationSecret :exec
 update federation_secrets

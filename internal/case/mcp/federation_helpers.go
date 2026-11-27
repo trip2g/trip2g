@@ -78,6 +78,7 @@ type federationAuth struct {
 	KID              string
 	AllowedSubgraphs []string
 	SecretID         int64
+	AcceptGuests     bool
 	BodyBound        bool
 
 	claims federationJWTClaims
@@ -224,6 +225,7 @@ func verifyInboundFor(ctx context.Context, env federationVerifyEnv, token string
 		KID:              header.Kid,
 		AllowedSubgraphs: allowedSubgraphs,
 		SecretID:         secretRow.ID,
+		AcceptGuests:     secretRow.AcceptGuests,
 		BodyBound:        claims.Bh != "",
 		claims:           claims,
 	}, nil

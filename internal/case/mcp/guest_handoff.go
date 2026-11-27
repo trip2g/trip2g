@@ -33,10 +33,13 @@ type GuestHandoffClaims struct {
 
 	// KeyID is the row of the inbound key that verified the handoff: the key
 	// itself, not the name it was created under.
-	KeyID     int64
-	Caller    FederationCaller
-	ID        string
-	ExpiresAt time.Time
+	KeyID int64
+	// AcceptGuests is the setting of that key: whether this base takes people
+	// over it at all.
+	AcceptGuests bool
+	Caller       FederationCaller
+	ID           string
+	ExpiresAt    time.Time
 }
 
 // SignGuestHandoff signs a handoff with the edge secret, in the same JWT the
@@ -92,7 +95,8 @@ func VerifyGuestHandoff(ctx context.Context, env FederationVerifyEnv, token stri
 	}
 
 	claims := GuestHandoffClaims{
-		KeyID: auth.SecretID,
+		KeyID:        auth.SecretID,
+		AcceptGuests: auth.AcceptGuests,
 		GuestHandoff: GuestHandoff{
 			Path:   auth.claims.Path,
 			Hop:    auth.claims.Hop,

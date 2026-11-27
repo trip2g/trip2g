@@ -41,7 +41,6 @@ func newSite(t *testing.T, name string) *site {
 	t.Helper()
 	publicURL := "http://" + name + ".test"
 	s := newStore(t, publicURL)
-	s.app.config.FederationAcceptGuests = true
 	return &site{store: s, url: publicURL, host: name + ".test"}
 }
 
@@ -70,6 +69,7 @@ func pairEdge(t *testing.T, hub, peer *site, kid string, subgraphs ...string) in
 		Kid: kid, SecretCrypt: peerCrypt, CreatedBy: peer.adminID,
 	})
 	require.NoError(t, err)
+	peer.acceptGuests(t, kid, true)
 
 	for _, name := range subgraphs {
 		sg, sgErr := peer.app.Queries.SubgraphByName(ctx, name)
@@ -78,6 +78,13 @@ func pairEdge(t *testing.T, hub, peer *site, kid string, subgraphs ...string) in
 		require.NoError(t, peer.app.WriteQueries.InsertFederationSecretSubgraph(ctx, grant))
 	}
 	return inbound.ID
+}
+
+// acceptGuests is the checkbox on the inbound key.
+func (s *site) acceptGuests(t *testing.T, kid string, on bool) {
+	t.Helper()
+	_, err := s.app.conn.Exec(`update federation_secrets set accept_guests = ? where kid = ? and kb_url is null`, on, kid)
+	require.NoError(t, err)
 }
 
 func (s *site) signIn(t *testing.T, email string) string {

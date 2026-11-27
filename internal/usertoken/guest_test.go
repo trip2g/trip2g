@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"trip2g/internal/usertoken"
 
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 )
@@ -48,4 +50,23 @@ func TestAValidatorThatEndsTheSessionLeavesTheReaderAnonymous(t *testing.T) {
 	got, err = mgr.ParseToken(t.Context(), stored.JWT)
 	require.NoError(t, err)
 	require.Nil(t, got)
+}
+
+func TestAGuestSessionLivesTwelveHoursAndAnOrdinaryOneKeepsItsConfig(t *testing.T) {
+	mgr := newGuestTestManager()
+
+	lifetime := func(data usertoken.Data) time.Duration {
+		stored, err := mgr.Store(&fasthttp.RequestCtx{}, data)
+		require.NoError(t, err)
+		claims := jwt.MapClaims{}
+		_, _, err = jwt.NewParser().ParseUnverified(stored.JWT, claims)
+		require.NoError(t, err)
+		exp, err := claims.GetExpirationTime()
+		require.NoError(t, err)
+		return time.Until(exp.Time)
+	}
+
+	require.InDelta(t, float64(usertoken.GuestSessionLifetime), float64(lifetime(usertoken.Data{ID: 7, Role: usertoken.RoleFederationGuest, Kid: "e", Key: 1})), float64(time.Minute))
+	require.Equal(t, 12*time.Hour, usertoken.GuestSessionLifetime)
+	require.InDelta(t, float64(time.Hour), float64(lifetime(usertoken.Data{ID: 7, Role: "user"})), float64(time.Minute))
 }

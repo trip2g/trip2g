@@ -38,6 +38,11 @@ func (d *Data) IsFederationGuest() bool {
 // It must NEVER satisfy IsAdmin().
 const RoleFederated = "federated"
 
+// GuestSessionLifetime is how long a federation guest session lives, from the
+// handoff, whatever the lifetime of an ordinary session and whatever the guest
+// does meanwhile. A reader removed from the hub stops being a guest within it.
+const GuestSessionLifetime = 12 * time.Hour
+
 // RoleFederationGuest is a person who arrived over a federation edge. Read
 // access comes from the edge's live subgraph grant, never from the user row.
 const RoleFederationGuest = "federation_guest"
@@ -136,7 +141,19 @@ func (e *Manager) parseClaims(raw string) (*Data, error) {
 		return nil, errors.New("invalid token claims")
 	}
 
-	return &Data{ID: claims.ID, Role: claims.Role, Kid: claims.Kid, Key: claims.Key, Hop: claims.Hop, Reader: claims.Reader}, nil
+	data := &Data{ID: claims.ID, Role: claims.Role, Kid: claims.Kid, Key: claims.Key, Hop: claims.Hop, Reader: claims.Reader}
+
+	if data.IsFederationGuest() && !guestSessionAlive(claims.IssuedAt) {
+		return nil, errors.New("federation guest session is older than its lifetime")
+	}
+
+	return data, nil
+}
+
+// guestSessionAlive holds a guest to its lifetime from the issue time alone, so
+// a token that carries a longer expiry is still cut at twelve hours.
+func guestSessionAlive(issuedAt *jwt.NumericDate) bool {
+	return issuedAt != nil && time.Since(issuedAt.Time) <= GuestSessionLifetime
 }
 
 func (e *Manager) runValidators(ctx context.Context, token *Data) error {
@@ -206,7 +223,11 @@ type StoreData struct {
 // Store serializes Token as JWT and sets it as a secure httpOnly cookie.
 func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error) {
 	now := time.Now()
-	exp := now.Add(e.config.ExpiresIn)
+	lifetime := e.config.ExpiresIn
+	if data.IsFederationGuest() {
+		lifetime = GuestSessionLifetime
+	}
+	exp := now.Add(lifetime)
 
 	claims := fullData{
 		ID:     data.ID,
@@ -216,6 +237,7 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error)
 		Hop:    data.Hop,
 		Reader: data.Reader,
 		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(exp),
 		},
 	}

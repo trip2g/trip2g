@@ -114,12 +114,10 @@ select * from users where email = lower(?);
 select * from users where id = ?;
 
 -- name: FederationGuestUser :one
-select * from users
- where created_via = ?
-   and email is null
-   and tg_user_id is null
- order by id
- limit 1;
+select u.* from federation_guests g
+  join users u on u.id = g.user_id
+ where g.kid = ?
+   and g.reader_hash = ?;
 
 -- name: CountActiveSignInCodes :one
 select count(*) from sign_in_codes
@@ -127,7 +125,9 @@ select count(*) from sign_in_codes
    and created_at > datetime('now', '-5 minutes');
 
 -- name: ListAllUsers :many
-select * from users order by created_at desc;
+select * from users u
+ where not exists (select 1 from federation_guests g where g.user_id = u.id)
+ order by u.created_at desc;
 
 -- name: ListActiveSubgraphNamesByUserID :many
 select distinct s.name
@@ -239,6 +239,7 @@ select
   fs.created_by,
   fs.revoked_at,
   fs.rotated_at,
+  fs.accept_guests,
   count(fss.subgraph_id) as subgraph_count
 from federation_secrets fs
 left join federation_secret_subgraphs fss on fss.kid = fs.kid
