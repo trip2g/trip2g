@@ -657,7 +657,7 @@ func TestSecurityAGuestReadsNothingOfASubgraphThatWasNotGranted(t *testing.T) {
 	}
 }
 
-func TestSecurityTheKnownLeaksStayAsTheyAre(t *testing.T) {
+func TestSecurityKnownExposuresAndTheClosedEmbed(t *testing.T) {
 	s := seedTwoSites(t)
 	insertLatestNote(t, s.peer.app, "closed.md", "---\nsubgraph: other\ntitle: Closed title\n---\nzzembeddedzz\n")
 	insertLatestNote(t, s.peer.app, "opens.md", "---\nfree: true\n---\nlinks to [[closed]]\n")
@@ -675,7 +675,9 @@ func TestSecurityTheKnownLeaksStayAsTheyAre(t *testing.T) {
 
 	for name, reader := range map[string]*browser{"a guest": b, "an anonymous reader": newBrowser()} {
 		embeds := reader.get(t, s.peer, "/embeds")
-		require.Contains(t, embeds.body, "zzembeddedzz", "%s: a free note that embeds a closed one shows its text, as it does for everyone", name)
+		require.Equal(t, http.StatusOK, embeds.status)
+		require.NotContains(t, embeds.body, "zzembeddedzz", "%s: a free note that embeds a closed one shows a link, not the text", name)
+		require.Contains(t, embeds.body, `href="/closed"`, "%s: the closed embed stays a link", name)
 	}
 }
 
