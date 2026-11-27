@@ -103,9 +103,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			layoutParams.HTMLLang = resp.Note.Lang
 		}
 
-		if err == nil {
-			setReadableMeta(req, env, resp, &layoutParams)
-		}
+		setReadableMeta(req, env, resp, err == nil, &layoutParams)
 
 		layoutParams.MetaRobots = noteMetaRobots(resp.Note)
 		setNoIndexHeader(ctx, resp.Note)
@@ -590,7 +588,11 @@ func buildHrefLangs(env Env, note *model.NoteView, canRead func(*model.NoteView)
 
 // setReadableMeta adds the metadata that names what only a granted viewer may
 // learn: a denied page keeps the generic site meta.
-func setReadableMeta(req *appreq.Request, env Env, resp *Response, layoutParams *renderlayout.Params) {
+func setReadableMeta(req *appreq.Request, env Env, resp *Response, granted bool, layoutParams *renderlayout.Params) {
+	if !granted {
+		return
+	}
+
 	layoutParams.OGTags = buildOGTags(req, env, resp)
 	layoutParams.HrefLangs = buildHrefLangs(env, resp.Note, resp.viewer.CanRead)
 }
