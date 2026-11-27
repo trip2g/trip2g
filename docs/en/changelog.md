@@ -8,7 +8,19 @@ Older tags (`v0.2.0` and below) live in git history only.
 
 ---
 
-## Unreleased
+## v0.13.0 (2026-11-27)
+
+### A reader signed in on one knowledge base opens a neighbour's base as a guest
+
+- **What.** A reader signed in on a hub presses a button on a KB-note and lands in the neighbour's base as a read-only guest, limited to the subgraphs the federation key was granted. A bar on every page names the hub and lets the guest leave; the session lasts twelve hours and is not renewed. The neighbour switches it on per inbound key with the `setFederationSecretAcceptGuests` admin mutation; it is off by default.
+- **Why.** Before, a reader had to be signed up on every base separately to read what a neighbour had granted them.
+- **How to use.** See `docs/en/user/federation.md`. A custom layout shows the bar by calling `{{ defaultTemplate.GuestBar() }}`. A guest can read only; every mutation and every non-GET endpoint refuses them.
+
+### An embedded note no longer shows text the reader may not read
+
+- **What.** `![[note]]` inlines the target only when everyone who can read the embedding note can also read the target. Otherwise a plain link to the target is shown, with no content. This holds through nested embeds and on every surface that returns rendered HTML: the page, GraphQL, search, named queries, MCP `note_html`, RSS and similar notes.
+- **Why.** A public note containing `![[closed]]` delivered the closed note's text to anonymous readers.
+- **How to use.** Nothing to change. A closed note embedded in a public note, or in a note of another subgraph, becomes a link. The same subgraph, or a narrower embedding note, still inlines.
 
 ### A note whose embedding failed is embedded later
 
