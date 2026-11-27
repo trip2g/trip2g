@@ -70,9 +70,14 @@ The page header still names the note's preview image in `og:image`. The image fi
 
 Start the server with `--search-hide-unreadable` to drop closed notes from site search instead of showing their titles.
 
-## An embedded note is shown in full
+## An embedded note is shown only to those who can read it
 
-`![[Other note]]` copies the other note's rendered body into the host note. The same goes for `content: [[Other note]]` in the default template. The host note's access decides who sees the result. The embedded note's own `free` and `subgraph` are not consulted.
+`![[Other note]]` copies the other note's rendered body into the host note. The same goes for `content: [[Other note]]` in the default template. The copy is made only when everyone who can read the host note can also read the embedded one:
+
+- the embedded note is `free`, or a system note (`_name`) without a subgraph; or
+- the host note is not `free`, and every subgraph of the host is also a subgraph of the embedded note (or the embedded note sits in a `require_signin` subgraph, or has no subgraph while the host has none either).
+
+In every other case the embed is shown as a plain link to the note, with no text.
 
 ```markdown
 ---
@@ -84,9 +89,7 @@ Intro everyone reads.
 ![[Paid lesson]]
 ```
 
-Here every visitor reads the whole of `Paid lesson`, although its own page shows a paywall. The copy travels with the host note: into the page, the search snippet, RSS and MCP answers.
-
-This is how the code behaves today. Embed a closed note only into a note with the same or narrower access. More on embeds: [[en/user/embedded-notes|Embedded notes]].
+Here every visitor sees a link to `Paid lesson` and reads its text only on its own page, behind its paywall. The free preview of a note is shown to everyone, so it embeds only `free` notes. Embeds nested in embeds follow the same rule at every level. More on embeds: [[en/user/embedded-notes|Embedded notes]].
 
 ## Notes that start with `_`
 

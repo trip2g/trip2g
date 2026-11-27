@@ -67,9 +67,9 @@ free: true
 
 **What you expect:** a reader without access sees a wall where the embed is.
 
-**What happens:** they read the whole of `Paid lesson`. An embed copies the other note's body into the host, and only the host's access is checked. The copy is on the host's page and in what an agent gets when it reads the host over MCP.
+**What happens:** they see a link to `Paid lesson`, not its text. An embed is copied into the host only when everyone who reads the host can read the embedded note too. Otherwise a link takes its place.
 
-**How to fix:** embed a closed note only into a note with the same or narrower access. Details: [[en/user/access#An embedded note is shown in full|An embedded note is shown in full]].
+**What to check:** if you meant the text to show, the host must have the same or narrower access than the embedded note. Details: [[en/user/access#An embedded note is shown only to those who can read it|An embedded note is shown only to those who can read it]].
 
 ### 5. An API key handed to an agent that should see a part
 

@@ -29,7 +29,7 @@ Notes whose file name starts with `_` are hidden from listings, search and RSS �
 
 That's the pattern for reusable partials: keep the banner in one `_` note, embed it on ten pages, edit it once. Details on `_` hiding are in [[en/user/subgraphs|Subgraphs]].
 
-One caveat: embedding *shows* the content on the host page. `_` hides a note from discovery, it is not access control — for that, use a subgraph.
+One caveat: `_` hides a note from discovery, it is not access control — for that, use a subgraph. A note with a subgraph is embedded only into notes whose readers can all read it; elsewhere the embed becomes a link ([[en/user/access#An embedded note is shown only to those who can read it|rules]]).
 
 ## Give an embed a custom CSS class
 
