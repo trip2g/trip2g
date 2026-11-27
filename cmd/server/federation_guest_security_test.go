@@ -5,14 +5,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"trip2g/internal/case/federationguest"
 	"trip2g/internal/case/federationhandoff"
+	"trip2g/internal/case/mcp"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/generated"
 	"trip2g/internal/router"
@@ -849,4 +852,194 @@ func TestSecurityAGuestSessionLivesTwelveHours(t *testing.T) {
 	ordinary := newBrowser()
 	ordinary.cookies[s.peer.host] = forged("admin", 12*time.Hour+time.Second, 0)
 	require.Equal(t, "200[shared]", ordinary.page(t, s.peer, "/shared"), "an ordinary session of the same age is not")
+}
+
+const openPath = "/_system/federation/open"
+
+func (s *twoSites) openLink(note, path string) string {
+	return openPath + "?" + url.Values{"note": {note}, "path": {path}}.Encode()
+}
+
+var openFormField = regexp.MustCompile(`name="(note|path)" value="([^"]*)"`)
+
+func (b *browser) pressOpenButton(t *testing.T, hub *site, page reply) (string, url.Values) {
+	t.Helper()
+	form := url.Values{}
+	for _, m := range openFormField.FindAllStringSubmatch(page.body, -1) {
+		form.Set(m[1], html.UnescapeString(m[2]))
+	}
+	require.NotEmpty(t, form.Get("note"), page.body)
+	r := b.post(t, hub, federationhandoff.Path, form, hub.url)
+	require.Equal(t, http.StatusOK, r.status, r.body)
+	action := formAction.FindStringSubmatch(r.body)
+	require.NotNil(t, action, r.body)
+	handoff := url.Values{}
+	for _, m := range formField.FindAllStringSubmatch(r.body, -1) {
+		handoff.Set(m[1], m[2])
+	}
+	return action[1], handoff
+}
+
+func TestSecurityAKBNoteNamesTheLandingPage(t *testing.T) {
+	s := seedTwoSites(t)
+	insertLatestNote(t, s.hub.app, "landing.md",
+		"---\nfree: true\nmcp_federation_kb_url: "+s.peer.url+"/_system/mcp\nmcp_federation_kb_path: /shared\n---\nA base with a landing page.\n")
+	insertLatestNote(t, s.hub.app, "bad-landing.md",
+		"---\nfree: true\nmcp_federation_kb_url: "+s.peer.url+"/_system/mcp\nmcp_federation_kb_path: //evil.test/\n---\nA base with a bad landing page.\n")
+	s.hub.load(t)
+
+	b := newBrowser()
+	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+
+	landed := b.openKB(t, s.hub, s.peer, "landing.md")
+	require.Equal(t, http.StatusFound, landed.status, landed.body)
+	require.Equal(t, "/shared", landed.location, "the guest lands on the page the KB-note names")
+
+	front := newBrowser()
+	front.cookies[s.hub.host] = b.cookies[s.hub.host]
+	require.Equal(t, "/", front.openKB(t, s.hub, s.peer, hubKBNote).location, "without the key, on the front page")
+
+	refused := b.post(t, s.hub, federationhandoff.Path, url.Values{"note": {"bad-landing.md"}}, s.hub.url)
+	require.Equal(t, http.StatusForbidden, refused.status, "a landing page that leaves the site is refused before signing")
+	require.NotContains(t, refused.body, `name="token"`)
+}
+
+func TestSecurityTheOpenLinkLandsOnThePageAfterTheButton(t *testing.T) {
+	s := seedTwoSites(t)
+	b := newBrowser()
+	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+
+	page := b.get(t, s.hub, s.openLink(hubKBNote, "/shared"))
+	require.Equal(t, http.StatusOK, page.status, page.body)
+	require.Contains(t, page.body, "peer.test", "the page names the neighbour")
+	require.Contains(t, page.body, `action="`+federationhandoff.Path+`"`)
+	require.Equal(t, "no-store", page.cacheControl)
+	require.Empty(t, b.cookies[s.peer.host], "the link alone opens nothing")
+
+	action, form := b.pressOpenButton(t, s.hub, page)
+	require.Equal(t, s.peer.url+federationguest.Path, action)
+	landed := b.arrive(t, s.peer, form, s.hub.url)
+	require.Equal(t, http.StatusFound, landed.status, landed.body)
+	require.Equal(t, "/shared", landed.location)
+	require.Equal(t, "200[shared]", b.page(t, s.peer, "/shared"))
+}
+
+func TestSecurityTheOpenLinkRefusesATargetThatLeavesTheSite(t *testing.T) {
+	s := seedTwoSites(t)
+	b := newBrowser()
+	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+
+	for _, target := range []string{"//evil.example", "https://evil.example/", "shared", `/\evil.example`, "/ok\nSet-Cookie: a=b", "/ok\r\nLocation: //evil.example"} {
+		page := b.get(t, s.hub, s.openLink(hubKBNote, target))
+		require.Equal(t, http.StatusForbidden, page.status, "open link path %q", target)
+		require.NotContains(t, page.body, `name="token"`)
+
+		posted := b.post(t, s.hub, federationhandoff.Path, url.Values{"note": {hubKBNote}, "path": {target}}, s.hub.url)
+		require.Equal(t, http.StatusForbidden, posted.status, "handoff path %q is refused again before signing", target)
+		require.NotContains(t, posted.body, `name="token"`)
+	}
+}
+
+func TestSecurityTheOpenLinkAsksAnAnonymousReaderToSignInAndComesBack(t *testing.T) {
+	s := seedTwoSites(t)
+
+	link := s.openLink(hubKBNote, "/shared")
+	anonymous := newBrowser().get(t, s.hub, link)
+	require.Equal(t, http.StatusUnauthorized, anonymous.status, anonymous.body)
+	require.Contains(t, anonymous.body, `id="signinwall"`, "the hub's own sign-in comes first")
+	require.NotContains(t, anonymous.body, federationhandoff.Path)
+
+	b := newBrowser()
+	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+	again := b.get(t, s.hub, link)
+	require.Equal(t, http.StatusOK, again.status, "the same URL after signing in is the page with the button")
+	require.Contains(t, again.body, `action="`+federationhandoff.Path+`"`)
+}
+
+func TestSecurityTheOpenLinkIsRefusedToAReaderWhoCannotReadTheKBNote(t *testing.T) {
+	s := seedTwoSites(t)
+	b := newBrowser()
+	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+
+	r := b.get(t, s.hub, s.openLink("closed-kb.md", "/"))
+	require.Equal(t, http.StatusForbidden, r.status, r.body)
+	require.NotContains(t, r.body, `name="note"`)
+
+	r = b.get(t, s.hub, s.openLink("missing.md", "/"))
+	require.Equal(t, http.StatusForbidden, r.status)
+}
+
+func TestSecurityFollowingTheOpenLinkFromAnotherSiteOpensNothing(t *testing.T) {
+	s := seedTwoSites(t)
+	b := newBrowser()
+	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+
+	r := b.send(t, s.hub, request{method: http.MethodGet, uri: s.openLink(hubKBNote, "/shared"), from: "http://attacker.test"})
+	require.Equal(t, http.StatusOK, r.status)
+	require.NotContains(t, r.body, `name="token"`, "the page waits for the button and signs nothing")
+	require.NotContains(t, r.body, ".submit()", "and does not press it")
+
+	var rows int
+	require.NoError(t, s.peer.app.conn.QueryRow(`select count(*) from federation_guests`).Scan(&rows))
+	require.Zero(t, rows)
+	require.Empty(t, b.cookies[s.peer.host])
+}
+
+func TestSecurityAFederatedSearchResultCarriesAnOpenLinkThatWorks(t *testing.T) {
+	ctx := context.Background()
+
+	peerStore := newStore(t, "http://peer.invalid")
+	require.NoError(t, peerStore.app.WriteQueries.InsertSubgraph(ctx, "shared"))
+	insertLatestNote(t, peerStore.app, "index.md", "---\nfree: true\n---\nfront\n")
+	insertLatestNote(t, peerStore.app, "skills/reel.md", "---\nsubgraph: shared\n---\nzzfindmezz in the reel.\n")
+	peerStore.load(t)
+	peerURL := serve(t, peerStore)
+	peerStore.app.config.PublicURL = peerURL
+	peer := &site{store: peerStore, url: peerURL, host: "peer.test"}
+
+	hubStore := newStore(t, "http://hub.test")
+	kbURL := peerURL + "/_system/mcp"
+	insertLatestNote(t, hubStore.app, hubKBNote, "---\nfree: true\nmcp_federation_kb_url: "+kbURL+"\nmcp_federation_kb_id: peer\n---\nThe peer.\n")
+	hubStore.load(t)
+	hub := &site{store: hubStore, url: "http://hub.test", host: "hub.test"}
+	edgeID := pairEdge(t, hub, peer, "hub-to-peer", "shared")
+	require.NotZero(t, edgeID)
+	hub.signIn(t, "Reader@Example.com")
+
+	res := hubStore.tool(t, "federated_search", `{"kb_id":"peer","query":"zzfindmezz"}`)
+	require.Nil(t, res.Error)
+	result := res.Result.(mcp.CallToolResult)
+
+	var payload mcp.SearchResultPayload
+	require.NoError(t, json.Unmarshal(result.StructuredContent.(json.RawMessage), &payload))
+	require.NotEmpty(t, payload.Results)
+	link := payload.Results[0].OpenURL
+	require.True(t, strings.HasPrefix(link, "http://hub.test"+openPath+"?"), link)
+	require.Contains(t, result.Content[len(result.Content)-1].Text, link, "a text-only client sees it too")
+
+	parsed, err := url.Parse(link)
+	require.NoError(t, err)
+	require.Equal(t, hubKBNote, parsed.Query().Get("note"))
+	require.Equal(t, "/skills/reel", parsed.Query().Get("path"), "the page on the neighbour, not the neighbour's address")
+
+	user, err := hub.app.Queries.UserByEmail(ctx, "reader@example.com")
+	require.NoError(t, err)
+	b := newBrowser()
+	b.cookies[hub.host] = hub.sessionFor(t, user.ID, "user")
+	page := b.get(t, hub, parsed.RequestURI())
+	require.Equal(t, http.StatusOK, page.status, page.body)
+	_, form := b.pressOpenButton(t, hub, page)
+	landed := b.arrive(t, peer, form, hub.url)
+	require.Equal(t, http.StatusFound, landed.status, landed.body)
+	require.Equal(t, "/skills/reel", landed.location)
+
+	deeper := hubStore.tool(t, "federated_search", `{"kb_id":"peer/second","query":"zzfindmezz"}`)
+	if deeper.Error == nil {
+		var deeperPayload mcp.SearchResultPayload
+		if raw, ok := deeper.Result.(mcp.CallToolResult).StructuredContent.(json.RawMessage); ok && json.Unmarshal(raw, &deeperPayload) == nil {
+			for _, item := range deeperPayload.Results {
+				require.Empty(t, item.OpenURL, "a result from a second hop gets no open link in this version")
+			}
+		}
+	}
 }

@@ -67,7 +67,7 @@ func verified(t *testing.T, token string) mcp.GuestHandoffClaims {
 func TestASignedInReaderIsHandedToThePeerTheNoteNames(t *testing.T) {
 	env := newEnv(&usertoken.Data{ID: 5, Role: "user"})
 
-	got, err := federationhandoff.Resolve(t.Context(), env, "peer.md")
+	got, err := federationhandoff.Resolve(t.Context(), env, "peer.md", "")
 	require.NoError(t, err)
 	require.Equal(t, "https://peer.test/_system/federation/guest", got.Action)
 	require.Equal(t, "/", got.Path)
@@ -82,7 +82,7 @@ func TestAReaderWithoutEmailIsNamedByAHashOfTheHubUserID(t *testing.T) {
 	env := newEnv(&usertoken.Data{ID: 5, Role: "user"})
 	env.UserByIDFunc = func(_ context.Context, id int64) (db.User, error) { return db.User{ID: id}, nil }
 
-	got, err := federationhandoff.Resolve(t.Context(), env, "peer.md")
+	got, err := federationhandoff.Resolve(t.Context(), env, "peer.md", "")
 	require.NoError(t, err)
 	require.Equal(t, sha("https://hub.test#user:5"), verified(t, got.Token).Reader)
 }
@@ -95,7 +95,7 @@ func TestTheSiteAddressComesFromTheKeyNotTheNote(t *testing.T) {
 		}, nil
 	}
 
-	got, err := federationhandoff.Resolve(t.Context(), env, "peer.md")
+	got, err := federationhandoff.Resolve(t.Context(), env, "peer.md", "")
 	require.NoError(t, err)
 	require.Equal(t, "https://keyed.test/_system/federation/guest", got.Action, "the note says peer.test, the key says keyed.test")
 }
@@ -138,7 +138,7 @@ func TestResolveRefuses(t *testing.T) {
 				tt.env(env)
 			}
 
-			_, err := federationhandoff.Resolve(t.Context(), env, tt.note)
+			_, err := federationhandoff.Resolve(t.Context(), env, tt.note, "")
 			require.ErrorIs(t, err, federationhandoff.ErrRefused)
 		})
 	}

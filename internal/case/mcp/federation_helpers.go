@@ -9,10 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
 
+	"trip2g/internal/appresp"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -399,6 +401,55 @@ func rewriteFederatedResponse(localSegment string, localKBIDs []string, result *
 			result.StructuredContent = encoded
 		}
 	}
+}
+
+// openLinkPath is where a person is taken to open a neighbour's page: the page
+// shows the neighbour and posts the handoff on a button.
+const openLinkPath = "/_system/federation/open"
+
+// addOpenLinks gives each result a direct neighbour answered with its own note a
+// link a person can follow into that page as a guest, so an agent passes it on
+// without building anything. A result that came through a second hop gets none:
+// a guest goes no further than one base from their own.
+func addOpenLinks(publicURL func() string, kb *model.MCPFederationNote, result *model.FederationResult) {
+	if kb == nil || kb.Note == nil || len(result.StructuredContent) == 0 {
+		return
+	}
+
+	var payload SearchResultPayload
+	if err := json.Unmarshal(result.StructuredContent, &payload); err != nil || len(payload.Results) == 0 {
+		return
+	}
+
+	base := strings.TrimRight(publicURL(), "/")
+	if base == "" {
+		return
+	}
+
+	var lines []string
+	for i := range payload.Results {
+		item := &payload.Results[i]
+		if item.KBID != kb.ID || item.Federation != nil || item.Href == "" || appresp.SamePath(item.Href) != item.Href {
+			continue
+		}
+
+		query := url.Values{"note": {kb.Note.Path}, "path": {item.Href}}
+		item.OpenURL = base + openLinkPath + "?" + query.Encode()
+		lines = append(lines, "- "+item.Title+": "+item.OpenURL)
+	}
+	if len(lines) == 0 {
+		return
+	}
+
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+	result.StructuredContent = encoded
+	result.Content = append(result.Content, model.FederationContent{
+		Type: contentTypeText,
+		Text: "Links a person can open as a guest:\n" + strings.Join(lines, "\n"),
+	})
 }
 
 // notConfiguredMessage explains a kb_id that resolved to nothing: which

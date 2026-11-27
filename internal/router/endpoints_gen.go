@@ -35,6 +35,7 @@ var endpoints = []Endpoint{
 	&federationguestfederationguest.Endpoint{},
 	&federationguestfederationguest.GetEndpoint{},
 	&federationhandofffederationhandoff.Endpoint{},
+	&federationhandofffederationhandoff.GetEndpoint{},
 	&handlegithubcallbackhandlegithubcallback.Endpoint{},
 	&handlegithubstarthandlegithubstart.Endpoint{},
 	&handlegooglecallbackhandlegooglecallback.Endpoint{},

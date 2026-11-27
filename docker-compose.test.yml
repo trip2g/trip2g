@@ -380,7 +380,6 @@ services:
       - MCP_FEDERATION_MAX_DEPTH=3
       - MCP_FEDERATION_TIMEOUT=10s
       - MCP_FEDERATED_GRAPHQL=true
-      - FEDERATION_ACCEPT_GUESTS=true
     volumes:
       - ./tmp/data:/data
       - ./testdata/seedvault2:/app/testdata/seedvault2:ro
@@ -447,7 +446,6 @@ services:
       - MCP_FEDERATION_MAX_DEPTH=3
       - MCP_FEDERATION_TIMEOUT=10s
       - MCP_FEDERATED_GRAPHQL=true
-      - FEDERATION_ACCEPT_GUESTS=true
     volumes:
       - ./tmp/data:/data
       - ./testdata/seedvault3:/app/testdata/seedvault3:ro

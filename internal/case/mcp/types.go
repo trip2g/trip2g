@@ -137,6 +137,9 @@ type SearchResultItem struct {
 	Sections   int            `json:"sections"`
 	Matches    []SearchMatch  `json:"matches,omitempty"`
 	Federation *FederationRef `json:"federation,omitempty"`
+	// OpenURL lets a person open this result as a guest of the neighbour that
+	// holds it. Only results from a direct neighbour carry one.
+	OpenURL string `json:"open_url,omitempty"`
 }
 
 type SearchMatch struct {

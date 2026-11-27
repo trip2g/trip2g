@@ -37,6 +37,7 @@ func singlePeerEnv(kbID string, fed *federationMock) *EnvMock {
 			return fed, nil
 		},
 		FederationMaxDepthFunc: func() int { return 3 },
+		PublicURLFunc:          func() string { return "https://hub.example" },
 	}
 }
 

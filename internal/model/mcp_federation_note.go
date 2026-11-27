@@ -11,6 +11,8 @@ type MCPFederationNote struct {
 	URL      string
 	ID       string
 	MaxDepth int
+	// Path is the page of the neighbour a guest lands on; empty means its front page.
+	Path string
 }
 
 func (n *NoteView) extractMCPFederationFields() {
@@ -24,6 +26,9 @@ func (n *NoteView) extractMCPFederationFields() {
 		n.MCPFederationKBID = strings.TrimSpace(id)
 	}
 	n.MCPFederationKBMaxDepth = parseMCPFederationKBMaxDepth(n.RawMeta["mcp_federation_kb_max_depth"])
+	if path, pathOk := n.RawMeta["mcp_federation_kb_path"].(string); pathOk {
+		n.MCPFederationKBPath = strings.TrimSpace(path)
+	}
 }
 
 func parseMCPFederationKBMaxDepth(raw any) int {
@@ -68,6 +73,7 @@ func NewMCPFederationNote(n *NoteView) *MCPFederationNote {
 		URL:      n.MCPFederationKBURL,
 		ID:       id,
 		MaxDepth: n.MCPFederationKBMaxDepth,
+		Path:     n.MCPFederationKBPath,
 	}
 }
 

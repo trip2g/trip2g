@@ -307,6 +307,8 @@ type NoteView struct {
 	MCPFederationKBURL      string
 	MCPFederationKBID       string
 	MCPFederationKBMaxDepth int
+	// MCPFederationKBPath is the page of the neighbour a guest lands on.
+	MCPFederationKBPath string
 
 	// RSS feed fields from frontmatter.
 	RSSTitle       string

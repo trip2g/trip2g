@@ -130,6 +130,7 @@ func TestFederatedSearchUsesMockedFederationClient(t *testing.T) {
 
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		PublicURLFunc:              func() string { return "" },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return nvs
 		},
@@ -190,6 +191,7 @@ func TestFederatedNoteHTMLToleratesStringPID(t *testing.T) {
 
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		PublicURLFunc:              func() string { return "" },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return nvs
 		},
@@ -246,6 +248,7 @@ func TestFederatedNoteHTMLForwardsMatchIDOnly(t *testing.T) {
 
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		PublicURLFunc:              func() string { return "" },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return nvs
 		},
@@ -299,6 +302,7 @@ func TestFederatedSearchDelegatesNestedKBID(t *testing.T) {
 
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		PublicURLFunc:              func() string { return "" },
 		LatestNoteViewsFunc: func() *appmodel.NoteViews {
 			return nvs
 		},
@@ -354,6 +358,7 @@ func TestFederatedExpandUsesMockedFederationClient(t *testing.T) {
 
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		PublicURLFunc:              func() string { return "" },
 		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
 			return true, nil
@@ -421,6 +426,7 @@ func TestFederatedCallsForwardEveryArgument(t *testing.T) {
 		FederationMaxDepthFunc:     func() int { return 3 },
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 2 * time.Second },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		PublicURLFunc:              func() string { return "" },
 		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
 			return true, nil
@@ -485,6 +491,7 @@ func TestFederatedSingleKBCallTimesOut(t *testing.T) {
 		FederationMaxDepthFunc:     func() int { return 3 },
 		FederatedFanoutTimeoutFunc: func() time.Duration { return 50 * time.Millisecond },
 		MCPMetricsFunc:             func() *metrics.MCPMetrics { return nil },
+		PublicURLFunc:              func() string { return "" },
 		LatestNoteViewsFunc:        func() *appmodel.NoteViews { return nvs },
 		CanReadNoteFunc: func(_ context.Context, _ *appmodel.NoteView) (bool, error) {
 			return true, nil

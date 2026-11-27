@@ -130,6 +130,8 @@ type reply struct {
 	location string
 	cookie   string
 	referrer string
+	// cacheControl is the Cache-Control header of the answer.
+	cacheControl string
 	// nonceCookie is the Set-Cookie header for the handoff nonce, if any.
 	nonceCookie string
 }
@@ -182,10 +184,11 @@ func (b *browser) send(t *testing.T, s *site, req request) reply {
 	s.handler(fctx)
 
 	r := reply{
-		status:   fctx.Response.StatusCode(),
-		body:     string(fctx.Response.Body()),
-		location: string(fctx.Response.Header.Peek("Location")),
-		referrer: string(fctx.Response.Header.Peek("Referrer-Policy")),
+		status:       fctx.Response.StatusCode(),
+		body:         string(fctx.Response.Body()),
+		location:     string(fctx.Response.Header.Peek("Location")),
+		referrer:     string(fctx.Response.Header.Peek("Referrer-Policy")),
+		cacheControl: string(fctx.Response.Header.Peek("Cache-Control")),
 	}
 	fctx.Response.Header.VisitAllCookie(func(key, value []byte) {
 		if !strings.HasSuffix(string(key), nonceCookieSuffix) {
