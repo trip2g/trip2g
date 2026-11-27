@@ -363,6 +363,7 @@ func filterSearchResults(ctx context.Context, env Env, results []model.SearchRes
 			return nil, fmt.Errorf("check note access: %w", err)
 		}
 		if ok {
+			r.NoteView = readableNote(ctx, env, r.NoteView)
 			filtered = append(filtered, r)
 		}
 	}
