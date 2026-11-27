@@ -200,7 +200,7 @@ func makeAroundOperations(
 			disableIntrospection(ctx, operationContext, env)
 		}
 
-		if refused := refuseGuestMutation(ctx, op); refused != nil {
+		if refused := refuseGuestNonQuery(ctx, op); refused != nil {
 			return refused
 		}
 
@@ -257,10 +257,11 @@ func shouldSkipTx(op *ast.OperationDefinition, skipTxMutations map[string]struct
 	return selectionHasSkipTx(op.SelectionSet, skipTxMutations)
 }
 
-// refuseGuestMutation answers a federation guest's mutation with an error, or
-// returns nil to let the operation run.
-func refuseGuestMutation(ctx context.Context, op *ast.OperationDefinition) graphql.ResponseHandler {
-	if op.Operation != ast.Mutation || onlySignOut(op.SelectionSet) {
+// refuseGuestNonQuery answers a federation guest's mutation or subscription
+// with an error, or returns nil to let the operation run. A subscription keeps
+// the session it started with, so it would outlive a revocation or an expiry.
+func refuseGuestNonQuery(ctx context.Context, op *ast.OperationDefinition) graphql.ResponseHandler {
+	if op.Operation == ast.Query || (op.Operation == ast.Mutation && onlySignOut(op.SelectionSet)) {
 		return nil
 	}
 	err := appreq.DenyGuest(ctx)

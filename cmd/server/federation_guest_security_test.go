@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -1209,4 +1210,52 @@ func TestSecurityTheDocumentedPatchClosesNotesWithNoSubgraphToAGuest(t *testing.
 	require.Equal(t, http.StatusForbidden, after.status, "with the patch the same guest is refused")
 	require.NotContains(t, after.body, "zzplainzz")
 	require.Equal(t, "200[shared]", b.page(t, s.peer, "/shared"), "and still reads what the edge grants")
+}
+
+func (b *browser) subscribe(t *testing.T, s *site, query string) reply {
+	t.Helper()
+
+	body, err := json.Marshal(map[string]string{"query": query})
+	require.NoError(t, err)
+
+	fctx := &fasthttp.RequestCtx{}
+	fctx.Init(&fasthttp.Request{}, nil, nil)
+	fctx.Request.Header.SetMethod(http.MethodPost)
+	fctx.Request.SetRequestURI("/_system/graphql")
+	fctx.Request.Header.SetHost(s.host)
+	fctx.Request.Header.SetContentType("application/json")
+	fctx.Request.Header.Set("Accept", "text/event-stream")
+	fctx.Request.SetBody(body)
+	fctx.Request.Header.SetCookie("trip2g_token", b.cookies[s.host])
+
+	var out bytes.Buffer
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		s.handler(fctx)
+		if fctx.Response.IsBodyStream() {
+			_, _ = fctx.Response.WriteTo(&out)
+		} else {
+			out.Write(fctx.Response.Body())
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("the subscription stayed open")
+	}
+
+	return reply{status: fctx.Response.StatusCode(), body: out.String()}
+}
+
+func TestSecurityAGuestCannotOpenASubscription(t *testing.T) {
+	s := seedTwoSites(t)
+	insertLatestNote(t, s.peer.app, "open.md", "---\nfree: true\n---\nzzopenzz\n")
+	s.peer.load(t)
+	b := s.guest(t)
+
+	r := b.subscribe(t, s.peer, `subscription { noteChanges(filter: {includePatterns: ["**"]}) { changes { __typename } } }`)
+	require.Contains(t, r.body, "a federation guest can only read", "status %d: %s", r.status, r.body)
+	require.NotContains(t, r.body, "open.md")
 }
