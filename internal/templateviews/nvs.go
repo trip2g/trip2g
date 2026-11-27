@@ -13,6 +13,17 @@ type NVS struct {
 	nvs            *model.NoteViews
 	defaultVersion string
 	domainHost     string
+	guard          Guard
+}
+
+// NVSWithGuard sets the guard every note reached through n goes through. A
+// function, not a method, so Jet templates can't reach it.
+func NVSWithGuard(n *NVS, guard Guard) *NVS {
+	if n != nil {
+		n.guard = guard
+	}
+
+	return n
 }
 
 // NewNVS creates a new template NVS wrapper for the main domain.
@@ -37,7 +48,14 @@ func NewNVSWithDomain(nvs *model.NoteViews, defaultVersion, domainHost string) *
 // wrap builds a Note carrying this NVS's host, so every note reached through
 // the wrapper renders for the same domain as the page around it.
 func (n *NVS) wrap(nv *model.NoteView) *Note {
-	return NewNoteWithDomain(nv, n.domainHost)
+	note := NewNoteWithDomain(nv, n.domainHost)
+	if note == nil {
+		return nil
+	}
+
+	note.guard = n.guard
+
+	return AsForeign(note)
 }
 
 // NoteViews returns the engine notes behind n. A function, not a method,

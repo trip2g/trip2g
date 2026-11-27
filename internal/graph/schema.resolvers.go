@@ -3028,7 +3028,7 @@ func (r *noteViewResolver) Content(ctx context.Context, obj *appmodel.NoteView) 
 
 // HTML is the resolver for the html field.
 func (r *noteViewResolver) HTML(ctx context.Context, obj *appmodel.NoteView) (string, error) {
-	return string(obj.HTML), nil
+	return r.readableHTML(ctx, obj), nil
 }
 
 // URL is the resolver for the url field.
@@ -3167,6 +3167,15 @@ func (r *offerResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subg
 // URL is the resolver for the url field.
 func (r *publicNoteResolver) URL(ctx context.Context, obj *model.PublicNote) (string, error) {
 	return r.env(ctx).PublicURL() + obj.Path, nil
+}
+
+// HTML is the resolver for the html field.
+func (r *publicNoteResolver) HTML(ctx context.Context, obj *model.PublicNote) (string, error) {
+	if obj.NoteView == nil {
+		return "", nil
+	}
+
+	return r.readableHTML(ctx, obj.NoteView), nil
 }
 
 // VersionID is the resolver for the versionId field.

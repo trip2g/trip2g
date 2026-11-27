@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"trip2g/internal/embedguard"
 	"trip2g/internal/image"
 	"trip2g/internal/model"
 
@@ -274,7 +275,7 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []by
 		class += " embedded-note__" + note.EmbededClass
 	}
 
-	_, err := w.WriteString(`<div class="` + class + `">` + string(note.HTML) + `</div>`)
+	_, err := w.WriteString(`<div class="` + class + `">` + embedguard.Wrap(note.PathID, string(note.HTML)) + `</div>`)
 	if err != nil {
 		return ast.WalkStop, fmt.Errorf("failed to write embedded note HTML: %w", err)
 	}
@@ -287,7 +288,7 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []by
 // The free preview of a note is shown to anonymous readers, so there only a
 // target that is itself anonymously readable may be inlined.
 func embedVisibleToParentReaders(parent, target *model.NoteView, preview bool) bool {
-	if target.IsAnonymouslyReadable() || isUngatedPartial(target) {
+	if target.IsAnonymouslyReadable() || target.IsUngatedPartial() {
 		return true
 	}
 
@@ -322,13 +323,6 @@ func embedVisibleToParentReaders(parent, target *model.NoteView, preview bool) b
 	}
 
 	return true
-}
-
-// isUngatedPartial reports whether n is a system note (_name.md) without a
-// subgraph gate: such notes are never served as pages, and exist to be
-// embedded into others.
-func isUngatedPartial(n *model.NoteView) bool {
-	return n.IsSystem() && len(n.SubgraphNames) == 0 && !n.RequiresSignin() && !strings.HasSuffix(n.Path, ".html")
 }
 
 func (r *linkRenderer) exit(w util.BufWriter, n *wikilink.Node) {

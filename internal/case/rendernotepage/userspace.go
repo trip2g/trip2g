@@ -237,7 +237,7 @@ func buildUserSpaceHelper(
 	h.cssURLs = cssURLs
 	h.editorJSURL = env.EditorJSURL()
 	h.editorLocaleHashes = env.EditorLocaleHashes()
-	h.nvs = templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost)
+	h.nvs = newViewerNVS(resp)
 	if resp.Notes != nil {
 		h.layoutSections = resp.Notes.LayoutSections
 	}

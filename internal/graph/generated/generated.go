@@ -844,6 +844,7 @@ type OfferResolver interface {
 type PublicNoteResolver interface {
 	URL(ctx context.Context, obj *model.PublicNote) (string, error)
 
+	HTML(ctx context.Context, obj *model.PublicNote) (string, error)
 	VersionID(ctx context.Context, obj *model.PublicNote) (int64, error)
 
 	TaskList(ctx context.Context, obj *model.PublicNote) ([]model.NoteTaskItem, error)
@@ -2846,7 +2847,7 @@ type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.No
   notePath: String!
   url: String! @goField(forceResolver: true)
   title: String!
-  html: String!
+  html: String! @goField(forceResolver: true)
   versionId: Int64! @goField(forceResolver: true)
 
   toc: [NoteTocItem!]!
@@ -41701,7 +41702,7 @@ func (ec *executionContext) _PublicNote_html(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_PublicNote_html,
 		func(ctx context.Context) (any, error) {
-			return obj.HTML, nil
+			return ec.resolvers.PublicNote().HTML(ctx, obj)
 		},
 		nil,
 		ec.marshalNString2string,
@@ -41714,8 +41715,8 @@ func (ec *executionContext) fieldContext_PublicNote_html(_ context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "PublicNote",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -83714,10 +83715,41 @@ func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSe
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "html":
-			out.Values[i] = ec._PublicNote_html(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PublicNote_html(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "versionId":
 			field := field
 

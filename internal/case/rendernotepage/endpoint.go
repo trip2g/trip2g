@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/db"
 	"trip2g/internal/defaulttemplate"
+	"trip2g/internal/embedguard"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/langdetect"
 	"trip2g/internal/mdchunk"
@@ -93,7 +94,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description
 		if layoutParams.MetaDescription == nil {
-			if desc := deriveMetaDescription(resp.Note); desc != "" {
+			if desc := deriveMetaDescription(resp.Note, resp.viewer.Strip); desc != "" {
 				layoutParams.MetaDescription = &desc
 			}
 		}
@@ -150,7 +151,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		if ext := unsupportedFileExt(resp.Note.Path); ext != "" {
 			dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
 			dtCtx.UnsupportedFileExt = ext
-			defaulttemplate.WriteRender(ctx, dtCtx)
+			writeDefaultTemplate(ctx, dtCtx, resp)
 			return nil, nil
 		}
 	}
@@ -161,7 +162,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 		dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
 		dtCtx.OnboardingMode = true
-		defaulttemplate.WriteRender(ctx, dtCtx)
+		writeDefaultTemplate(ctx, dtCtx, resp)
 		return nil, nil
 	}
 
@@ -177,7 +178,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			dtCtx.SigninWallError = &defaulttemplate.SigninWallError{
 				Note: resp.NoteView,
 			}
-			defaulttemplate.WriteRender(ctx, dtCtx)
+			writeDefaultTemplate(ctx, dtCtx, resp)
 			return nil, nil
 		}
 
@@ -192,7 +193,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 				Note:          resp.NoteView,
 				SubgraphsJSON: resp.NoteSubgraphsJSON(),
 			}
-			defaulttemplate.WriteRender(ctx, dtCtx)
+			writeDefaultTemplate(ctx, dtCtx, resp)
 			return nil, nil
 		}
 
@@ -254,7 +255,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	dtCtx := buildDefaultTemplateCtx(req, layoutParams, resp, env)
-	defaulttemplate.WriteRender(ctx, dtCtx)
+	writeDefaultTemplate(ctx, dtCtx, resp)
 	fillPageCache(ctx, env, cacheKey, cacheable, renderStart)
 	return nil, nil
 }
@@ -434,7 +435,7 @@ func renderLayout(
 
 	vars := make(jet.VarMap)
 	vars["note"] = reflect.ValueOf(resp.NoteView)
-	vars["nvs"] = reflect.ValueOf(templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost))
+	vars["nvs"] = reflect.ValueOf(newViewerNVS(resp))
 	vars["title"] = reflect.ValueOf(resp.Title)
 	vars["publicURL"] = reflect.ValueOf(env.PublicURL())
 
@@ -462,7 +463,7 @@ func renderLayout(
 	vars["defaultTemplate"] = defaultTemplateNS
 	vars["currentUser"] = currentUserNS
 	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(ctx, env))
-	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(ctx, env, resp.domainHost))
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(ctx, env, resp.domainHost, resp.viewer.Strip))
 
 	// Attach the admin-only "last edited by" resolver so layouts can render the
 	// version author (gated on currentUser.IsAdmin()).
@@ -479,8 +480,33 @@ func renderLayout(
 		return true, nil
 	}
 
-	ctx.SetBody(buf.Bytes())
+	ctx.SetBody(stripBodyEmbeds(buf.Bytes(), resp))
 	return true, nil
+}
+
+// writeDefaultTemplate renders the default template and strips what the
+// viewer cannot read from whatever the render injected on the way.
+func writeDefaultTemplate(ctx *fasthttp.RequestCtx, dtCtx *defaulttemplate.Ctx, resp *Response) {
+	defaulttemplate.WriteRender(ctx, dtCtx)
+	ctx.Response.SetBodyRaw(stripBodyEmbeds(ctx.Response.Body(), resp))
+}
+
+// stripBodyEmbeds is the last line of defence: every embed marker still in the
+// page is judged for the viewer before the page is sent or cached.
+func stripBodyEmbeds(page []byte, resp *Response) []byte {
+	if !embedguard.HasMarkersBytes(page) {
+		return page
+	}
+
+	return []byte(resp.viewer.Strip(string(page)))
+}
+
+// newViewerNVS gives templates the notes of the response, each guarded for its viewer.
+func newViewerNVS(resp *Response) *templateviews.NVS {
+	return templateviews.NVSWithGuard(
+		templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost),
+		resp.viewer.Strip,
+	)
 }
 
 // writeLayoutRenderError serves the response when a custom layout fails to
@@ -588,7 +614,7 @@ func buildOGTags(req *appreq.Request, env Env, resp *Response) map[string]string
 
 	if resp.Note.Description != nil {
 		tags["og:description"] = *resp.Note.Description
-	} else if desc := deriveMetaDescription(resp.Note); desc != "" {
+	} else if desc := deriveMetaDescription(resp.Note, resp.viewer.Strip); desc != "" {
 		tags["og:description"] = desc
 	}
 
@@ -722,7 +748,7 @@ func buildDefaultTemplateCtx(
 
 	dtCtx := &defaulttemplate.Ctx{
 		Note:               resp.NoteView,
-		Notes:              templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost),
+		Notes:              newViewerNVS(resp),
 		Title:              layoutParams.Title,
 		JSURLs:             jsURLs,
 		LocaleHashes:       env.UserLocaleHashes(),

@@ -1721,6 +1721,13 @@ func (n *NoteView) IsAnonymouslyReadable() bool {
 	return n != nil && n.Free && !strings.HasSuffix(n.Path, ".html")
 }
 
+// IsUngatedPartial reports whether n is a system note (_name.md) without a
+// subgraph gate: such notes are never served as pages, and exist to be
+// embedded into others.
+func (n *NoteView) IsUngatedPartial() bool {
+	return n.IsSystem() && len(n.SubgraphNames) == 0 && !n.RequiresSignin() && !strings.HasSuffix(n.Path, ".html")
+}
+
 func (n *NoteView) RequiresSignin() bool {
 	for _, subgraph := range n.Subgraphs {
 		if subgraph != nil && subgraph.RequireSignin {

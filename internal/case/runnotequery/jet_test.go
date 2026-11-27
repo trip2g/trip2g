@@ -13,6 +13,7 @@ import (
 
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/runnotequery"
+	"trip2g/internal/embedguard"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
@@ -73,7 +74,7 @@ func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
 	vars := make(jet.VarMap)
 	user := &usertoken.Data{ID: 7, Role: "editor"}
 	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}))
-	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}, ""))
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}, "", nil))
 
 	var out strings.Builder
 	err = view.Execute(&out, vars, nil)
@@ -140,7 +141,7 @@ func TestDocJetSnippet(t *testing.T) {
 
 		vars := make(jet.VarMap)
 		vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs}))
-		vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs}, ""))
+		vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs}, "", nil))
 
 		var out strings.Builder
 		require.NoError(t, view.Execute(&out, vars, nil))
@@ -161,4 +162,37 @@ func TestDocJetSnippet(t *testing.T) {
 		require.Contains(t, string(doc), "```jet\n"+docJetSnippet+"\n```", "docs/%s.md lost the template example", page)
 		require.Contains(t, string(doc), "```jet\n"+docJetRowsSnippet+"\n```", "docs/%s.md lost the rows example", page)
 	}
+}
+
+func TestNoteQueryRowNoteHTMLIsGuarded(t *testing.T) {
+	srcs := []mdloader.SourceFile{
+		{Path: "queries/all.md", Content: []byte("---\ntype: note-query\nfree: true\nall_notes: true\n---\n```jsonnet\n" +
+			"[{path: n.path} for n in notes if n.path == 'blog/a.md']\n```\n")},
+		{Path: "blog/a.md", PathID: 1, Content: []byte("---\nfree: true\n---\nzzintrozz ![[_p]]\n")},
+		{Path: "_p.md", PathID: 2, Content: []byte("partial ![[blog/closed]]\n")},
+		{Path: "blog/closed.md", PathID: 3, Content: []byte("zzsecretzz\n")},
+	}
+	nvs, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
+	require.NoError(t, err)
+
+	guard := func(html string) string {
+		return embedguard.Strip(html, func(id int64) (bool, string) { return id != 3, "[hidden]" })
+	}
+
+	loader := jet.NewInMemLoader()
+	loader.Set("page.html", `{{ range _, row := noteQueryRows("[[all]]") }}{{ row.Note().HTMLString() | unsafe }}{{ end }}`)
+	view, err := jet.NewSet(loader).GetTemplate("page.html")
+	require.NoError(t, err)
+
+	vars := make(jet.VarMap)
+	env := noteQueryEnv{nvs: nvs, user: &usertoken.Data{ID: 7, Role: "admin"}}
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), env, "", guard))
+
+	var out strings.Builder
+	require.NoError(t, view.Execute(&out, vars, nil))
+
+	require.Contains(t, out.String(), "zzintrozz")
+	require.Contains(t, out.String(), "partial")
+	require.Contains(t, out.String(), "[hidden]")
+	require.NotContains(t, out.String(), "zzsecretzz")
 }
