@@ -74,7 +74,7 @@ func renderWithNoteQuery(t *testing.T, tmpl string) (string, error) {
 	vars := make(jet.VarMap)
 	user := &usertoken.Data{ID: 7, Role: "editor"}
 	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}))
-	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}, "", nil))
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs, user: user}, "", nil, nil))
 
 	var out strings.Builder
 	err = view.Execute(&out, vars, nil)
@@ -141,7 +141,7 @@ func TestDocJetSnippet(t *testing.T) {
 
 		vars := make(jet.VarMap)
 		vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(context.Background(), noteQueryEnv{nvs: nvs}))
-		vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs}, "", nil))
+		vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), noteQueryEnv{nvs: nvs}, "", nil, nil))
 
 		var out strings.Builder
 		require.NoError(t, view.Execute(&out, vars, nil))
@@ -186,7 +186,7 @@ func TestNoteQueryRowNoteHTMLIsGuarded(t *testing.T) {
 
 	vars := make(jet.VarMap)
 	env := noteQueryEnv{nvs: nvs, user: &usertoken.Data{ID: 7, Role: "admin"}}
-	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), env, "", guard))
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), env, "", guard, nil))
 
 	var out strings.Builder
 	require.NoError(t, view.Execute(&out, vars, nil))

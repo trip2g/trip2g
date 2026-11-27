@@ -74,7 +74,7 @@ func renderDocsLanding(t *testing.T, permalink string) string {
 	vars["publicURL"] = reflect.ValueOf("https://trip2g.com")
 	vars["htmlInjectionsHead"] = reflect.ValueOf([]db.HtmlInjection{})
 	vars["htmlInjectionsBodyEnd"] = reflect.ValueOf([]db.HtmlInjection{})
-	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), guestQueryEnv{nvs: nvs}, "", nil))
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(context.Background(), guestQueryEnv{nvs: nvs}, "", nil, nil))
 
 	var out strings.Builder
 	err = layout.View.Execute(&out, vars, nil)

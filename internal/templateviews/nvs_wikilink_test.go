@@ -26,7 +26,7 @@ func TestNoteByWikilinkFrom(t *testing.T) {
 	}
 	loaded, err := mdloader.Load(mdloader.Options{Sources: srcs, Log: &logger.TestLogger{}})
 	require.NoError(t, err)
-	nvs := templateviews.NewNVS(loaded, "live")
+	nvs := openNVS(loaded)
 	page := nvs.NoteByPath("ru/user/page.md")
 
 	tests := []struct {

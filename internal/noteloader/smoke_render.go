@@ -148,7 +148,7 @@ func smokeRenderForLayout(view *jet.Template, notes []*model.NoteView, nvs *mode
 func memoSmokeQueries(env smokeQueryEnv) smokeQueries {
 	return smokeQueries{
 		noteQuery:     memoNoteQuery(runnotequery.JetFunc(context.Background(), env)),
-		noteQueryRows: memoNoteQuery(runnotequery.JetRowsFunc(context.Background(), env, "", nil)),
+		noteQueryRows: memoNoteQuery(runnotequery.JetRowsFunc(context.Background(), env, "", nil, nil)),
 	}
 }
 

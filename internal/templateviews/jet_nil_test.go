@@ -30,7 +30,7 @@ func newJetTestNVS() *templateviews.NVS {
 	nvs.PathMap["blog/post.md"] = post
 	nvs.Map["/blog/post"] = post
 
-	return templateviews.NewNVS(nvs, "live")
+	return openNVS(nvs)
 }
 
 func renderJet(t *testing.T, source string) (string, error) {

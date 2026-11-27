@@ -21,7 +21,7 @@ func TestNVS_ByPath(t *testing.T) {
 		Title: "Introduction",
 	}
 
-	wrapper := templateviews.NewNVS(nvs, "live")
+	wrapper := openNVS(nvs)
 
 	tests := []struct {
 		name     string
@@ -45,7 +45,7 @@ func TestNVS_ByPath(t *testing.T) {
 
 func TestNVS_ByPath_NotFound(t *testing.T) {
 	nvs := model.NewNoteViews()
-	wrapper := templateviews.NewNVS(nvs, "live")
+	wrapper := openNVS(nvs)
 
 	note := wrapper.NoteByPath("/nonexistent.md")
 	require.Nil(t, note)
@@ -88,7 +88,7 @@ func TestNVS_BackLinks_ExcludesSystemNotes(t *testing.T) {
 	nvs.PathMap["docs/intro.md"] = normalNote
 	nvs.PathMap["_footer.md"] = systemNote
 
-	wrapper := templateviews.NewNVS(nvs, "live")
+	wrapper := openNVS(nvs)
 	target := wrapper.NoteByPath("docs/article.md")
 
 	backlinks := wrapper.BackLinks(target)
@@ -117,7 +117,7 @@ func TestNVS_BackLinks_SortedByTitleThenPermalink(t *testing.T) {
 	nvs.Map["/target"] = target
 	nvs.PathMap["target.md"] = target
 
-	wrapper := templateviews.NewNVS(nvs, "live")
+	wrapper := openNVS(nvs)
 
 	for range 20 {
 		backlinks := wrapper.BackLinks(wrapper.NoteByPath("target.md"))

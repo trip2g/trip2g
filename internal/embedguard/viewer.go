@@ -90,16 +90,31 @@ func (v *Viewer) judge(id int64) verdict {
 		return verdict{}
 	}
 
-	if v.openPartials && (note.IsUngatedPartial() || note.IsSiteChrome()) {
-		return verdict{keep: true}
-	}
-
-	canRead, err := v.reader.CanReadNote(v.ctx, note)
-	if err == nil && canRead {
+	if v.CanRead(note) {
 		return verdict{keep: true}
 	}
 
 	return verdict{replacement: link(note)}
+}
+
+// CanRead reports whether the viewer may read note, by the same rule Strip
+// applies to an embedded block. A nil Viewer is an anonymous one.
+func (v *Viewer) CanRead(note *model.NoteView) bool {
+	if note == nil {
+		return false
+	}
+
+	if v == nil {
+		return note.IsAnonymouslyReadable() || note.IsUngatedPartial() || note.IsSiteChrome()
+	}
+
+	if v.openPartials && (note.IsUngatedPartial() || note.IsSiteChrome()) {
+		return true
+	}
+
+	canRead, err := v.reader.CanReadNote(v.ctx, note)
+
+	return err == nil && canRead
 }
 
 func (v *Viewer) lookup(id int64) *model.NoteView {

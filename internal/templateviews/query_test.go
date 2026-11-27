@@ -67,7 +67,7 @@ func createTestNVS() *templateviews.NVS {
 		CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
-	return templateviews.NewNVS(nvs, "live")
+	return openNVS(nvs)
 }
 
 func TestNoteQuery_ByGlob(t *testing.T) {
@@ -295,7 +295,7 @@ func TestNoteQuery_Public(t *testing.T) {
 	nvs.PathMap["blog/noindex.md"] = &model.NoteView{
 		Path: "blog/noindex.md", Title: "Noindex Post", Permalink: "/blog/noindex", Free: true, NoIndex: true,
 	}
-	q := templateviews.NewNVS(nvs, "live")
+	q := openNVS(nvs)
 
 	all := q.ByGlob("blog/*.md").All()
 	require.Len(t, all, 5, "without Public() all notes are returned")
