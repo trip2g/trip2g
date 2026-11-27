@@ -25,6 +25,10 @@ type myLinkResolver struct {
 	// rendered, false once its HTML is final. nil after load.
 	embedRendering map[*model.NoteView]bool
 
+	// renderingPreview is true while the free preview of a note is rendered:
+	// anonymous readers see it, so it may embed only anonymously readable notes.
+	renderingPreview bool
+
 	// domainRenderNotes maps domain-specific paths to NoteViews during
 	// domain re-render. Used by linkRenderer to find notes for data-pid
 	// and paywall classes when the href is a domain path (not a permalink).
