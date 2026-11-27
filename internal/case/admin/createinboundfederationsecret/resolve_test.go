@@ -79,6 +79,28 @@ func TestResolve(t *testing.T) {
 			wantType: "error",
 		},
 		{
+			name:  "a kid that has existed, revoked or not, is refused",
+			input: model.CreateInboundFederationSecretInput{Kid: "revoked-once"},
+			mockFunc: func() *envMock {
+				mock := &envMock{}
+				mock.PublicURLFunc = func() string { return "https://base.example" }
+				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				mock.InboundFederationKIDExistsFunc = func(ctx context.Context, kid string) (bool, error) {
+					require.Equal(t, "revoked-once", kid)
+					return true, nil
+				}
+				mock.InsertFederationSecretFunc = func(ctx context.Context, arg db.InsertFederationSecretParams) (db.FederationSecret, error) {
+					t.Fatal("a key under a used kid must not be inserted")
+					return db.FederationSecret{}, nil
+				}
+				return mock
+			},
+			wantType: "error",
+			wantMsg:  "A federation secret with this kid existed before; choose another kid",
+		},
+		{
 			name:  "auth error",
 			input: model.CreateInboundFederationSecretInput{Kid: "my-key-id"},
 			mockFunc: func() *envMock {
@@ -210,6 +232,11 @@ func TestResolve(t *testing.T) {
 			t.Parallel()
 
 			env := tt.mockFunc()
+			if env.InboundFederationKIDExistsFunc == nil {
+				env.InboundFederationKIDExistsFunc = func(context.Context, string) (bool, error) {
+					return false, nil
+				}
+			}
 			got, err := createinboundfederationsecret.Resolve(context.Background(), env, tt.input)
 			if tt.wantErr {
 				require.Error(t, err)

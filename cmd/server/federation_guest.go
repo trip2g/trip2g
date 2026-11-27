@@ -20,8 +20,8 @@ func (a *app) FederationGuestsEnabled() bool {
 	return a.config.FederationAcceptGuests
 }
 
-func (a *app) FederationGuestPeer(ctx context.Context, kbID string) (model.FederationPeer, error) {
-	return a.federationPeer(ctx, kbID)
+func (a *app) FederationGuestPeer(_ context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error) {
+	return a.outboundPeer(kb, 0)
 }
 
 func (a *app) VerifyGuestHandoff(ctx context.Context, token string) (mcp.GuestHandoffClaims, error) {
@@ -32,8 +32,8 @@ func (a *app) SpendFederationGuestID(id string, expiresAt time.Time) bool {
 	return a.guestSpent.SpendFederatedAssetLink(id, expiresAt)
 }
 
-func (a *app) GuestTicketSecret() string {
-	return a.config.UserToken.Secret
+func (a *app) GuestTickets() *federationguest.Tickets {
+	return &a.guestTickets
 }
 
 // federationGuestCreatedVia names the edge and the reader on the synthetic
@@ -69,12 +69,15 @@ func (a *app) validateFederationGuest(ctx context.Context, data *usertoken.Data)
 		return fmt.Errorf("guests are not accepted: %w", usertoken.ErrSessionEnded)
 	}
 
-	_, ok, err := a.FederationSecretByKID(ctx, data.Kid)
+	secret, ok, err := a.FederationSecretByKID(ctx, data.Kid)
 	if err != nil {
 		return fmt.Errorf("federation secret by kid: %w", err)
 	}
 	if !ok {
 		return fmt.Errorf("edge %q is revoked: %w", data.Kid, usertoken.ErrSessionEnded)
+	}
+	if secret.ID != data.Key {
+		return fmt.Errorf("edge %q is now another key: %w", data.Kid, usertoken.ErrSessionEnded)
 	}
 	return nil
 }

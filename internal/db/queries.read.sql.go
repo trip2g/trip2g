@@ -1328,6 +1328,19 @@ func (q *Queries) CountFormSubmits(ctx context.Context, arg CountFormSubmitsPara
 	return count, err
 }
 
+const countInboundFederationSecretsByKID = `-- name: CountInboundFederationSecretsByKID :one
+select count(*) from federation_secrets
+ where kid = ?
+   and kb_url is null
+`
+
+func (q *Queries) CountInboundFederationSecretsByKID(ctx context.Context, kid string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countInboundFederationSecretsByKID, kid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countNoteAssets = `-- name: CountNoteAssets :one
 select count(*) from note_assets
 `

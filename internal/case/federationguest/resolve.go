@@ -5,8 +5,9 @@
 // It takes two requests. The hub's page posts the handoff here cross-site, and a
 // SameSite=Lax session cookie does not ride a cross-site POST, so that request
 // cannot tell whether the browser already holds its own session. It answers with
-// a short ticket and a 303; the GET that follows is a top-level navigation, the
-// cookie rides it, and only that request decides whether to set one.
+// an opaque ticket and a 303; the GET that follows is a top-level navigation, the
+// cookie rides it, and only that request decides whether to set one. What the
+// ticket stands for stays on the server.
 package federationguest
 
 import (
@@ -17,14 +18,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"trip2g/internal/appresp"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
-
-	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg federationguest_test . Env
@@ -39,7 +39,8 @@ type Env interface {
 	// FederationGuestUser finds or creates the synthetic user of the pair
 	// (edge, reader).
 	FederationGuestUser(ctx context.Context, kid, reader string) (int64, error)
-	GuestTicketSecret() string
+	// GuestTickets holds what an issued ticket stands for until it is opened.
+	GuestTickets() *Tickets
 	// Insecure drops Secure from the nonce cookie, as from the session cookie.
 	Insecure() bool
 }
@@ -51,18 +52,66 @@ var ErrRefused = errors.New("federation guest refused")
 // TicketTTL is how long a ticket and its nonce cookie live.
 const TicketTTL = 30 * time.Second
 
-type ticketClaims struct {
-	UserID int64  `json:"u"`
-	Kid    string `json:"k"`
-	Hop    int    `json:"h"`
-	Reader string `json:"rd"`
-	Path   string `json:"p"`
-	// NonceHash binds the ticket to the browser that posted the handoff: the
+// ticket is what an issued ticket id stands for.
+type ticket struct {
+	session usertoken.Data
+	path    string
+	// nonceHash binds the ticket to the browser that posted the handoff: the
 	// hash of the nonce that browser got in a cookie. The nonce itself never
 	// travels in the URL.
-	NonceHash string `json:"n"`
-	jwt.RegisteredClaims
+	nonceHash string
+	expiresAt time.Time
 }
+
+// Tickets are the issued, unopened tickets; the zero value is ready to use. A ticket id is random and means
+// nothing outside this store, so a URL in a log or a browser history carries
+// neither the reader nor the edge.
+type Tickets struct {
+	mu    sync.Mutex
+	items map[string]ticket
+}
+
+func (t *Tickets) put(id string, item ticket) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if t.items == nil {
+		t.items = map[string]ticket{}
+	}
+
+	now := time.Now()
+	for key, other := range t.items {
+		if now.After(other.expiresAt) {
+			delete(t.items, key)
+		}
+	}
+	t.items[id] = item
+}
+
+// take returns the ticket and forgets it, but only for the nonce that was bound
+// to it: a mismatch leaves the ticket alone, so that someone who sees the URL
+// cannot burn a genuine reader's ticket.
+func (t *Tickets) take(id, nonce string) (ticket, bool) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	item, ok := t.items[id]
+	if !ok || time.Now().After(item.expiresAt) {
+		delete(t.items, id)
+		return ticket{}, false
+	}
+	if nonce == "" || subtle.ConstantTimeCompare([]byte(nonceHash(nonce)), []byte(item.nonceHash)) != 1 {
+		return ticket{}, false
+	}
+
+	delete(t.items, id)
+	return item, true
+}
+
+// Hop is the only hop a base admits: a reader arrives from their own base and a
+// guest goes no further. The number stays in the token, so that a later version
+// can open chains without changing its format.
+const Hop = 1
 
 // Admission is what an accepted handoff hands the browser: the ticket for the
 // URL of the GET leg, and the nonce for the cookie that must ride with it.
@@ -103,8 +152,10 @@ func Admit(ctx context.Context, env Env, form Form) (Admission, error) {
 		return Admission{}, fmt.Errorf("%w: token is for %q, not %q", ErrRefused, claims.Path, form.Path)
 	case appresp.SamePath(claims.Path) != claims.Path:
 		return Admission{}, fmt.Errorf("%w: target %q is not a path on this site", ErrRefused, claims.Path)
-	case claims.Hop < 1 || claims.Hop > env.FederationMaxDepth():
-		return Admission{}, fmt.Errorf("%w: hop %d outside 1..%d", ErrRefused, claims.Hop, env.FederationMaxDepth())
+	case claims.Hop != Hop:
+		return Admission{}, fmt.Errorf("%w: hop %d, this version admits only hop %d", ErrRefused, claims.Hop, Hop)
+	case claims.Hop > env.FederationMaxDepth():
+		return Admission{}, fmt.Errorf("%w: hop %d over the federation depth %d", ErrRefused, claims.Hop, env.FederationMaxDepth())
 	case !isReaderID(claims.Reader):
 		return Admission{}, fmt.Errorf("%w: reader id is not a sha256 hex", ErrRefused)
 	}
@@ -126,68 +177,35 @@ func Admit(ctx context.Context, env Env, form Form) (Admission, error) {
 	if err != nil {
 		return Admission{}, err
 	}
-	ticket := ticketClaims{
-		UserID:    userID,
-		Kid:       claims.Caller.KID,
-		Hop:       claims.Hop,
-		Reader:    claims.Reader,
-		Path:      claims.Path,
-		NonceHash: nonceHash(nonce),
-		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        id,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TicketTTL)),
-		},
-	}
 
-	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, ticket).SignedString(ticketKey(env))
-	if err != nil {
-		return Admission{}, fmt.Errorf("sign guest ticket: %w", err)
+	issued := ticket{
+		session: usertoken.Data{
+			ID:     int(userID),
+			Role:   usertoken.RoleFederationGuest,
+			Kid:    claims.Caller.KID,
+			Key:    claims.KeyID,
+			Hop:    claims.Hop,
+			Reader: claims.Reader,
+		},
+		path:      claims.Path,
+		nonceHash: nonceHash(nonce),
+		expiresAt: time.Now().Add(TicketTTL),
 	}
-	return Admission{Ticket: signed, Nonce: nonce}, nil
+	env.GuestTickets().put(id, issued)
+	return Admission{Ticket: id, Nonce: nonce}, nil
 }
 
 // Enter exchanges a ticket for the guest session it stands for and the path to
 // open. nonce is the cookie the browser carries; only the browser that posted
 // the handoff has it. Whether to store that session is the caller's: an
 // existing own session wins.
-//
-// A ticket is spent only once the nonce matches. Spending it on a mismatch
-// would let anyone who sees the URL burn a genuine reader's ticket.
-func Enter(env Env, ticket, nonce string) (usertoken.Data, string, error) {
-	if !env.FederationGuestsEnabled() {
-		return usertoken.Data{}, "", fmt.Errorf("%w: guests are not accepted here", ErrRefused)
+func Enter(env Env, ticketID, nonce string) (usertoken.Data, string, error) {
+	item, ok := env.GuestTickets().take(ticketID, nonce)
+	if !ok {
+		return usertoken.Data{}, "", fmt.Errorf("%w: no such ticket for this browser", ErrRefused)
 	}
 
-	var claims ticketClaims
-	_, err := jwt.ParseWithClaims(ticket, &claims, func(*jwt.Token) (any, error) {
-		return ticketKey(env), nil
-	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
-	if err != nil {
-		return usertoken.Data{}, "", fmt.Errorf("%w: %w", ErrRefused, err)
-	}
-
-	if nonce == "" || subtle.ConstantTimeCompare([]byte(nonceHash(nonce)), []byte(claims.NonceHash)) != 1 {
-		return usertoken.Data{}, "", fmt.Errorf("%w: ticket opened outside the browser that posted it", ErrRefused)
-	}
-
-	if claims.ID == "" || !env.SpendFederationGuestID(claims.ID, claims.ExpiresAt.Time) {
-		return usertoken.Data{}, "", fmt.Errorf("%w: ticket already used", ErrRefused)
-	}
-
-	data := usertoken.Data{
-		ID:     int(claims.UserID),
-		Role:   usertoken.RoleFederationGuest,
-		Kid:    claims.Kid,
-		Hop:    claims.Hop,
-		Reader: claims.Reader,
-	}
-	return data, appresp.SamePath(claims.Path), nil
-}
-
-// ticketKey keeps the ticket from being a valid signature for anything else
-// the same secret signs.
-func ticketKey(env Env) []byte {
-	return []byte("federation guest ticket:" + env.GuestTicketSecret())
+	return item.session, appresp.SamePath(item.path), nil
 }
 
 func nonceHash(nonce string) string {

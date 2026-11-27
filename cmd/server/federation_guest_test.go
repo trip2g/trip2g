@@ -100,11 +100,21 @@ func (s *site) sessionFor(t *testing.T, userID int64, role string) string {
 // only to the guest endpoint, its path.
 type browser struct {
 	cookies map[string]string
-	nonces  map[string]string
+	nonces  map[string]nonceCookie
 }
 
+// nonceCookie is the handoff nonce as the browser stores it: under whatever
+// name and path the peer chose.
+type nonceCookie struct {
+	name  string
+	value string
+	path  string
+}
+
+const nonceCookieSuffix = "trip2g_guest_nonce"
+
 func newBrowser() *browser {
-	return &browser{cookies: map[string]string{}, nonces: map[string]string{}}
+	return &browser{cookies: map[string]string{}, nonces: map[string]nonceCookie{}}
 }
 
 type reply struct {
@@ -158,8 +168,8 @@ func (b *browser) send(t *testing.T, s *site, req request) reply {
 	if cookie := b.cookies[s.host]; cookie != "" && laxSends {
 		fctx.Request.Header.SetCookie("trip2g_token", cookie)
 	}
-	if nonce := b.nonces[s.host]; nonce != "" && laxSends && strings.HasPrefix(req.uri, federationguest.Path) {
-		fctx.Request.Header.SetCookie(federationguest.NonceCookie, nonce)
+	if nonce, ok := b.nonces[s.host]; ok && laxSends && strings.HasPrefix(req.uri, nonce.path) {
+		fctx.Request.Header.SetCookie(nonce.name, nonce.value)
 	}
 
 	s.handler(fctx)
@@ -170,17 +180,23 @@ func (b *browser) send(t *testing.T, s *site, req request) reply {
 		location: string(fctx.Response.Header.Peek("Location")),
 		referrer: string(fctx.Response.Header.Peek("Referrer-Policy")),
 	}
-	if raw := fctx.Response.Header.PeekCookie(federationguest.NonceCookie); raw != nil {
-		r.nonceCookie = string(raw)
-		c := fasthttp.AcquireCookie()
-		require.NoError(t, c.ParseBytes(raw))
-		if len(c.Value()) == 0 {
-			delete(b.nonces, s.host)
-		} else {
-			b.nonces[s.host] = string(c.Value())
+	fctx.Response.Header.VisitAllCookie(func(key, value []byte) {
+		if !strings.HasSuffix(string(key), nonceCookieSuffix) {
+			return
 		}
-		fasthttp.ReleaseCookie(c)
-	}
+		r.nonceCookie = string(value)
+		c := fasthttp.AcquireCookie()
+		defer fasthttp.ReleaseCookie(c)
+		require.NoError(t, c.ParseBytes(value))
+		switch {
+		case len(c.Value()) == 0:
+			delete(b.nonces, s.host)
+		case strings.HasPrefix(string(c.Key()), "__Host-") && (!c.Secure() || string(c.Path()) != "/" || len(c.Domain()) != 0):
+			// A browser drops a __Host- cookie that is not Secure, host-only and at "/".
+		default:
+			b.nonces[s.host] = nonceCookie{name: string(c.Key()), value: string(c.Value()), path: string(c.Path())}
+		}
+	})
 	if raw := fctx.Response.Header.PeekCookie("trip2g_token"); raw != nil {
 		c := fasthttp.AcquireCookie()
 		require.NoError(t, c.ParseBytes(raw))
@@ -230,7 +246,7 @@ func (b *browser) arrive(t *testing.T, peer *site, form url.Values, from string)
 	}
 	require.True(t, strings.HasPrefix(posted.location, federationguest.Path+"?"), posted.location)
 	require.NotEmpty(t, b.nonces[peer.host], "the accepted post binds the ticket to this browser")
-	require.NotContains(t, posted.location, b.nonces[peer.host], "the nonce never travels in the URL")
+	require.NotContains(t, posted.location, b.nonces[peer.host].value, "the nonce never travels in the URL")
 
 	entered := b.send(t, peer, request{method: http.MethodGet, uri: posted.location, from: from})
 	require.Empty(t, b.nonces[peer.host], "the GET leg clears the nonce cookie")

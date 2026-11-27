@@ -31,6 +31,9 @@ type GuestHandoff struct {
 type GuestHandoffClaims struct {
 	GuestHandoff
 
+	// KeyID is the row of the inbound key that verified the handoff: the key
+	// itself, not the name it was created under.
+	KeyID     int64
 	Caller    FederationCaller
 	ID        string
 	ExpiresAt time.Time
@@ -83,7 +86,13 @@ func VerifyGuestHandoff(ctx context.Context, env FederationVerifyEnv, token stri
 		return GuestHandoffClaims{}, err
 	}
 
+	lifetime := time.Duration(auth.claims.Exp-auth.claims.Iat) * time.Second
+	if lifetime > GuestHandoffTTL+federationJWTSkew {
+		return GuestHandoffClaims{}, fmt.Errorf("%w: a handoff lives %s at most", ErrFedAuthExpired, GuestHandoffTTL)
+	}
+
 	claims := GuestHandoffClaims{
+		KeyID: auth.SecretID,
 		GuestHandoff: GuestHandoff{
 			Path:   auth.claims.Path,
 			Hop:    auth.claims.Hop,

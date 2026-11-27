@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"trip2g/internal/case/federationguest"
-	"trip2g/internal/case/federationhandoff"
 	"trip2g/internal/case/mcp"
 	"trip2g/internal/db"
 	"trip2g/internal/usertoken"
@@ -233,61 +232,6 @@ func TestAnOwnSessionOnThePeerIsNotOverwritten(t *testing.T) {
 	require.Equal(t, "user", session.Role)
 }
 
-func TestTheHandoffGoesOneHopFurtherAndStopsAtTheLimit(t *testing.T) {
-	ctx := context.Background()
-
-	c := newSite(t, "c")
-	require.NoError(t, c.app.WriteQueries.InsertSubgraph(ctx, "deep"))
-	insertLatestNote(t, c.app, "index.md", "---\nfree: true\n---\nzzfrontzz\n")
-	insertLatestNote(t, c.app, "deep.md", "---\nsubgraph: deep\n---\nzzsharedzz\n")
-	c.load(t)
-
-	b := newSite(t, "b")
-	require.NoError(t, b.app.WriteQueries.InsertSubgraph(ctx, "shared"))
-	insertLatestNote(t, b.app, "c.md", "---\nsubgraph: shared\nmcp_federation_kb_url: "+c.url+"/_system/mcp\n---\nThe c base.\n")
-	b.load(t)
-
-	a := newSite(t, "a")
-	insertLatestNote(t, a.app, "b.md", "---\nfree: true\nmcp_federation_kb_url: "+b.url+"/_system/mcp\n---\nThe b base.\n")
-	a.load(t)
-
-	pairEdge(t, a, b, "a-to-b", "shared")
-	pairEdge(t, b, c, "b-to-c", "deep")
-
-	reader := newBrowser()
-	reader.cookies[a.host] = a.signIn(t, "Walker@Example.com")
-	require.Equal(t, http.StatusFound, reader.openKB(t, a, b, "b.md").status)
-
-	page := reader.get(t, b, "/c")
-	require.Equal(t, http.StatusOK, page.status)
-	require.Contains(t, page.body, `action="/_system/federation/handoff"`, "the guest on b sees b's KB-note button")
-
-	r := reader.openKB(t, b, c, "c.md")
-	require.Equal(t, http.StatusFound, r.status, r.body)
-	require.Equal(t, "200[shared]", reader.page(t, c, "/deep"))
-
-	session, err := c.app.tokenManager.ParseToken(ctx, reader.cookies[c.host])
-	require.NoError(t, err)
-	require.Equal(t, 2, session.Hop)
-	require.Equal(t, "b-to-c", session.Kid)
-	require.Equal(t, readerHash("walker@example.com"), session.Reader, "b forwards the reader it received")
-
-	_, form := reader.pressButton(t, b, "c.md")
-	signedOrigin := verifiedOrigin(t, c, form.Get("token"))
-	require.Equal(t, b.url, signedOrigin, "the second hop is signed with b's origin")
-	fromA := newBrowser().arrive(t, c, form, a.url)
-	require.Equal(t, http.StatusForbidden, fromA.status, "c checks the post against b, not the first hub")
-	_, form = reader.pressButton(t, b, "c.md")
-
-	c.app.config.MCPFederationMaxDepth = 1
-	refused := newBrowser().arrive(t, c, form, b.url)
-	require.Equal(t, http.StatusForbidden, refused.status, "c refuses a hop over its limit")
-
-	b.app.config.MCPFederationMaxDepth = 1
-	refusedAtB := reader.post(t, b, federationhandoff.Path, url.Values{"note": {"c.md"}}, b.url)
-	require.Equal(t, http.StatusForbidden, refusedAtB.status, "b does not sign a hop over its own limit")
-}
-
 func verifiedOrigin(t *testing.T, peer *site, token string) string {
 	t.Helper()
 	claims, err := mcp.VerifyGuestHandoff(context.Background(), peer.app, token)
@@ -339,11 +283,13 @@ func TestATicketOpensOnlyInTheBrowserThatPostedTheHandoff(t *testing.T) {
 	require.Equal(t, http.StatusSeeOther, posted.status, posted.body)
 
 	attrs := strings.ToLower(posted.nonceCookie)
-	for _, attr := range []string{"httponly", "path=/_system/federation/guest", "max-age=30", "samesite=lax"} {
+	for _, attr := range []string{"httponly", "max-age=30", "samesite=lax"} {
 		require.Contains(t, attrs, attr, posted.nonceCookie)
 	}
+	require.Regexp(t, `path=/(;|$)`, attrs, "host-only cookies sit at the root")
+	require.NotContains(t, attrs, "domain=")
 	require.NotContains(t, attrs, "secure", "insecure test config, the same condition as the session cookie")
-	require.NotContains(t, posted.location, attacker.nonces[s.peer.host])
+	require.NotContains(t, posted.location, attacker.nonces[s.peer.host].value)
 
 	victim := newBrowser()
 	r := victim.get(t, s.peer, posted.location)
@@ -351,7 +297,7 @@ func TestATicketOpensOnlyInTheBrowserThatPostedTheHandoff(t *testing.T) {
 	require.Empty(t, r.cookie)
 	require.Empty(t, victim.cookies)
 
-	victim.nonces[s.peer.host] = "not-the-nonce"
+	victim.nonces[s.peer.host] = nonceCookie{name: attacker.nonces[s.peer.host].name, value: "not-the-nonce", path: "/"}
 	r = victim.get(t, s.peer, posted.location)
 	require.Equal(t, http.StatusForbidden, r.status, "a ticket opened with another nonce")
 	require.Empty(t, r.cookie)

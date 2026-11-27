@@ -66,6 +66,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	ctx := req.Req
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.SetStatusCode(http.StatusOK)
+	ctx.Response.Header.Set("Content-Security-Policy", "frame-ancestors 'self'")
 
 	layoutParams := renderlayout.Params{
 		Client: string(req.Req.QueryArgs().Peek("client")),

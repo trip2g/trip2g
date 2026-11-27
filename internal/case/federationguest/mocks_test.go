@@ -30,8 +30,8 @@ var _ federationguest.Env = &EnvMock{}
 //			FederationMaxDepthFunc: func() int {
 //				panic("mock out the FederationMaxDepth method")
 //			},
-//			GuestTicketSecretFunc: func() string {
-//				panic("mock out the GuestTicketSecret method")
+//			GuestTicketsFunc: func() *federationguest.Tickets {
+//				panic("mock out the GuestTickets method")
 //			},
 //			InsecureFunc: func() bool {
 //				panic("mock out the Insecure method")
@@ -58,8 +58,8 @@ type EnvMock struct {
 	// FederationMaxDepthFunc mocks the FederationMaxDepth method.
 	FederationMaxDepthFunc func() int
 
-	// GuestTicketSecretFunc mocks the GuestTicketSecret method.
-	GuestTicketSecretFunc func() string
+	// GuestTicketsFunc mocks the GuestTickets method.
+	GuestTicketsFunc func() *federationguest.Tickets
 
 	// InsecureFunc mocks the Insecure method.
 	InsecureFunc func() bool
@@ -87,8 +87,8 @@ type EnvMock struct {
 		// FederationMaxDepth holds details about calls to the FederationMaxDepth method.
 		FederationMaxDepth []struct {
 		}
-		// GuestTicketSecret holds details about calls to the GuestTicketSecret method.
-		GuestTicketSecret []struct {
+		// GuestTickets holds details about calls to the GuestTickets method.
+		GuestTickets []struct {
 		}
 		// Insecure holds details about calls to the Insecure method.
 		Insecure []struct {
@@ -111,7 +111,7 @@ type EnvMock struct {
 	lockFederationGuestUser     sync.RWMutex
 	lockFederationGuestsEnabled sync.RWMutex
 	lockFederationMaxDepth      sync.RWMutex
-	lockGuestTicketSecret       sync.RWMutex
+	lockGuestTickets            sync.RWMutex
 	lockInsecure                sync.RWMutex
 	lockSpendFederationGuestID  sync.RWMutex
 	lockVerifyGuestHandoff      sync.RWMutex
@@ -211,30 +211,30 @@ func (mock *EnvMock) FederationMaxDepthCalls() []struct {
 	return calls
 }
 
-// GuestTicketSecret calls GuestTicketSecretFunc.
-func (mock *EnvMock) GuestTicketSecret() string {
-	if mock.GuestTicketSecretFunc == nil {
-		panic("EnvMock.GuestTicketSecretFunc: method is nil but Env.GuestTicketSecret was just called")
+// GuestTickets calls GuestTicketsFunc.
+func (mock *EnvMock) GuestTickets() *federationguest.Tickets {
+	if mock.GuestTicketsFunc == nil {
+		panic("EnvMock.GuestTicketsFunc: method is nil but Env.GuestTickets was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGuestTicketSecret.Lock()
-	mock.calls.GuestTicketSecret = append(mock.calls.GuestTicketSecret, callInfo)
-	mock.lockGuestTicketSecret.Unlock()
-	return mock.GuestTicketSecretFunc()
+	mock.lockGuestTickets.Lock()
+	mock.calls.GuestTickets = append(mock.calls.GuestTickets, callInfo)
+	mock.lockGuestTickets.Unlock()
+	return mock.GuestTicketsFunc()
 }
 
-// GuestTicketSecretCalls gets all the calls that were made to GuestTicketSecret.
+// GuestTicketsCalls gets all the calls that were made to GuestTickets.
 // Check the length with:
 //
-//	len(mockedEnv.GuestTicketSecretCalls())
-func (mock *EnvMock) GuestTicketSecretCalls() []struct {
+//	len(mockedEnv.GuestTicketsCalls())
+func (mock *EnvMock) GuestTicketsCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGuestTicketSecret.RLock()
-	calls = mock.calls.GuestTicketSecret
-	mock.lockGuestTicketSecret.RUnlock()
+	mock.lockGuestTickets.RLock()
+	calls = mock.calls.GuestTickets
+	mock.lockGuestTickets.RUnlock()
 	return calls
 }
 

@@ -42,8 +42,8 @@ func newEnv(token *usertoken.Data) *EnvMock {
 		UserByIDFunc: func(_ context.Context, id int64) (db.User, error) {
 			return db.User{ID: id, Email: &email}, nil
 		},
-		FederationGuestPeerFunc: func(_ context.Context, kbID string) (model.FederationPeer, error) {
-			return model.FederationPeer{KBID: kbID, KBURL: kbURL, KID: "edge", Secret: edgeSecret(), Issuer: "https://hub.test"}, nil
+		FederationGuestPeerFunc: func(_ context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error) {
+			return model.FederationPeer{KBID: kb.ID, KBURL: kbURL, KID: "edge", Secret: edgeSecret(), Issuer: "https://hub.test"}, nil
 		},
 		FederationMaxDepthFunc: func() int { return 3 },
 		PublicURLFunc:          func() string { return "https://hub.test" },
@@ -87,15 +87,17 @@ func TestAReaderWithoutEmailIsNamedByAHashOfTheHubUserID(t *testing.T) {
 	require.Equal(t, sha("https://hub.test#user:5"), verified(t, got.Token).Reader)
 }
 
-func TestAGuestIsForwardedWithTheReaderItArrivedWithOneHopDeeper(t *testing.T) {
-	reader := sha("someone@elsewhere.test")
-	env := newEnv(&usertoken.Data{ID: 9, Role: usertoken.RoleFederationGuest, Kid: "in", Hop: 1, Reader: reader})
+func TestTheSiteAddressComesFromTheKeyNotTheNote(t *testing.T) {
+	env := newEnv(&usertoken.Data{ID: 5, Role: "user"})
+	env.FederationGuestPeerFunc = func(_ context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error) {
+		return model.FederationPeer{
+			KBID: kb.ID, KBURL: "https://keyed.test/_system/mcp", KID: "edge", Secret: edgeSecret(), Issuer: "https://hub.test",
+		}, nil
+	}
 
 	got, err := federationhandoff.Resolve(t.Context(), env, "peer.md")
 	require.NoError(t, err)
-	want := mcp.GuestHandoff{Path: "/", Hop: 2, Reader: reader, Origin: "https://hub.test"}
-	require.Equal(t, want, verified(t, got.Token).GuestHandoff, "the origin is this hub's, not the one the guest came from")
-	require.Empty(t, env.UserByIDCalls(), "a guest's own row says nothing about who the reader is")
+	require.Equal(t, "https://keyed.test/_system/federation/guest", got.Action, "the note says peer.test, the key says keyed.test")
 }
 
 func TestResolveRefuses(t *testing.T) {
@@ -112,18 +114,21 @@ func TestResolveRefuses(t *testing.T) {
 			e.CanReadNoteFunc = func(context.Context, *model.NoteView) (bool, error) { return false, nil }
 		}},
 		{name: "no outbound key for the peer", token: &usertoken.Data{ID: 5, Role: "user"}, note: "peer.md", env: func(e *EnvMock) {
-			e.FederationGuestPeerFunc = func(_ context.Context, kbID string) (model.FederationPeer, error) {
-				return model.FederationPeer{KBID: kbID, KBURL: kbURL}, nil
+			e.FederationGuestPeerFunc = func(_ context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error) {
+				return model.FederationPeer{KBID: kb.ID, KBURL: kbURL}, nil
 			}
 		}},
 		{name: "hub without a public URL to sign as its origin", token: &usertoken.Data{ID: 5, Role: "user"}, note: "peer.md", env: func(e *EnvMock) {
 			e.PublicURLFunc = func() string { return "" }
 		}},
 		{
-			name:  "guest already at the depth limit",
-			token: &usertoken.Data{ID: 9, Role: usertoken.RoleFederationGuest, Kid: "in", Hop: 3, Reader: sha("x")},
+			name:  "a guest is not handed further",
+			token: &usertoken.Data{ID: 9, Role: usertoken.RoleFederationGuest, Kid: "in", Hop: 1, Reader: sha("x")},
 			note:  "peer.md",
 		},
+		{name: "a federation depth that allows no hop", token: &usertoken.Data{ID: 5, Role: "user"}, note: "peer.md", env: func(e *EnvMock) {
+			e.FederationMaxDepthFunc = func() int { return 0 }
+		}},
 	}
 
 	for _, tt := range tests {

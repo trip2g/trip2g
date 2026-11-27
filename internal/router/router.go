@@ -3,6 +3,7 @@ package router
 import (
 	"errors"
 	"net/http"
+	"slices"
 	"trip2g/internal/appreq"
 	"trip2g/internal/defaulttemplate"
 	"unsafe"
@@ -17,6 +18,11 @@ type Endpoint interface {
 	Handle(req *appreq.Request) (interface{}, error)
 	Path() string
 	Method() string
+}
+
+// Endpoints lists every endpoint the router serves.
+func Endpoints() []Endpoint {
+	return slices.Clone(endpoints)
 }
 
 type Router struct {

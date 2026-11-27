@@ -17,8 +17,11 @@ const (
 	Path        = "/_system/federation/guest"
 	TicketParam = "ticket"
 	// NonceCookie binds a ticket to the browser that posted the handoff. It is
-	// not the session cookie, and only the guest endpoint ever sees it.
+	// not the session cookie, and no other part of the site reads it.
 	NonceCookie = "trip2g_guest_nonce"
+	// hostPrefix makes a browser refuse the cookie unless it is Secure, host-only
+	// and at the root, so a page on a sibling subdomain cannot plant one.
+	hostPrefix = "__Host-"
 
 	msgRefused = "federation_guest_refused"
 )
@@ -58,7 +61,7 @@ func (*GetEndpoint) Method() string { return http.MethodGet }
 
 func (*GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 	env := req.Env.(Env)
-	nonce := string(req.Req.Request.Header.Cookie(NonceCookie))
+	nonce := string(req.Req.Request.Header.Cookie(nonceCookieName(env)))
 	// Cleared whatever happens next: a nonce serves one attempt.
 	setNonceCookie(req.Req, env, "")
 
@@ -84,6 +87,16 @@ func (*GetEndpoint) Handle(req *appreq.Request) (interface{}, error) {
 	return nil, nil
 }
 
+// nonceCookieName takes the __Host- prefix whenever the cookie is Secure. The
+// prefix needs Path=/, and a cookie path is not a boundary anyway: the ticket is
+// what the nonce opens, and it is spent by one request.
+func nonceCookieName(env Env) string {
+	if env.Insecure() {
+		return NonceCookie
+	}
+	return hostPrefix + NonceCookie
+}
+
 // setNonceCookie sets the nonce for the GET leg, or clears it when nonce is
 // empty. Lax is what lets it ride that GET: a top-level navigation started by
 // the peer's own 303, same-origin with the POST that set the cookie.
@@ -91,9 +104,9 @@ func setNonceCookie(ctx *fasthttp.RequestCtx, env Env, nonce string) {
 	c := fasthttp.AcquireCookie()
 	defer fasthttp.ReleaseCookie(c)
 
-	c.SetKey(NonceCookie)
+	c.SetKey(nonceCookieName(env))
 	c.SetValue(nonce)
-	c.SetPath(Path)
+	c.SetPath("/")
 	c.SetHTTPOnly(true)
 	c.SetSecure(!env.Insecure())
 	c.SetSameSite(fasthttp.CookieSameSiteLaxMode)

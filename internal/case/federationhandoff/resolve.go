@@ -26,13 +26,18 @@ type Env interface {
 	LiveNoteViews() *model.NoteViews
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 	UserByID(ctx context.Context, id int64) (db.User, error)
-	// FederationGuestPeer is the outbound side of the edge a KB-note names.
-	FederationGuestPeer(ctx context.Context, kbID string) (model.FederationPeer, error)
+	// FederationGuestPeer is the outbound key the KB-note's own address selects.
+	FederationGuestPeer(ctx context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error)
 	FederationMaxDepth() int
 	PublicURL() string
 }
 
 var ErrRefused = errors.New("federation handoff refused")
+
+// Hop is the only hop this version signs: a reader opens one base from their
+// own, and a guest cannot go further. The number stays in the token so that a
+// later version can open chains without changing its format.
+const Hop = 1
 
 // Handoff is the form the reader's browser posts to the peer.
 type Handoff struct {
@@ -53,6 +58,9 @@ func Resolve(ctx context.Context, env Env, notePath string) (Handoff, error) {
 	// An anonymous reader of a free KB-note gets a plain link instead.
 	if token == nil || token.ID == 0 {
 		return Handoff{}, fmt.Errorf("%w: no signed-in reader", ErrRefused)
+	}
+	if token.IsFederationGuest() {
+		return Handoff{}, fmt.Errorf("%w: a guest cannot be handed further", ErrRefused)
 	}
 
 	nvs := env.LiveNoteViews()
@@ -76,34 +84,35 @@ func Resolve(ctx context.Context, env Env, notePath string) (Handoff, error) {
 	if kb == nil {
 		return Handoff{}, fmt.Errorf("%w: %q is not a KB-note", ErrRefused, notePath)
 	}
-	site, ok := model.MCPFederationSite(kb.URL)
-	if !ok {
-		return Handoff{}, fmt.Errorf("%w: no site address in %q", ErrRefused, kb.URL)
+
+	peer, err := env.FederationGuestPeer(ctx, kb)
+	if err != nil {
+		return Handoff{}, fmt.Errorf("%w: %w", ErrRefused, err)
+	}
+	if len(peer.Secret) == 0 {
+		return Handoff{}, fmt.Errorf("%w: no outbound key for the address %q", ErrRefused, kb.URL)
 	}
 
-	// The peer accepts the handoff only from a page at this origin.
+	site, ok := model.MCPFederationSite(peer.KBURL)
+	if !ok {
+		return Handoff{}, fmt.Errorf("%w: no site address in the key's address %q", ErrRefused, peer.KBURL)
+	}
+
 	origin, ok := model.SiteOrigin(env.PublicURL())
 	if !ok {
 		return Handoff{}, fmt.Errorf("%w: no public URL to sign as this site's origin", ErrRefused)
 	}
 
-	reader, hop, err := readerAndHop(ctx, env, token)
+	if env.FederationMaxDepth() < Hop {
+		return Handoff{}, fmt.Errorf("%w: federation depth %d allows no handoff", ErrRefused, env.FederationMaxDepth())
+	}
+
+	reader, err := readerID(ctx, env, token)
 	if err != nil {
 		return Handoff{}, err
 	}
-	if hop > env.FederationMaxDepth() {
-		return Handoff{}, fmt.Errorf("%w: hop %d over the limit %d", ErrRefused, hop, env.FederationMaxDepth())
-	}
 
-	peer, err := env.FederationGuestPeer(ctx, kb.ID)
-	if err != nil {
-		return Handoff{}, fmt.Errorf("%w: %w", ErrRefused, err)
-	}
-	if len(peer.Secret) == 0 {
-		return Handoff{}, fmt.Errorf("%w: no outbound key for %q", ErrRefused, kb.ID)
-	}
-
-	handoff := mcp.GuestHandoff{Path: targetPath, Hop: hop, Reader: reader, Origin: origin}
+	handoff := mcp.GuestHandoff{Path: targetPath, Hop: Hop, Reader: reader, Origin: origin}
 	signed, err := mcp.SignGuestHandoff(peer.Secret, peer.KID, peer.Issuer, handoff)
 	if err != nil {
 		return Handoff{}, err
@@ -112,24 +121,20 @@ func Resolve(ctx context.Context, env Env, notePath string) (Handoff, error) {
 	return Handoff{Action: site + federationguest.Path, Token: signed, Path: targetPath}, nil
 }
 
-// readerAndHop names the reader to the peer. A local reader is the hash of their
+// readerID names the reader to the peer. A local reader is the hash of their
 // email, so two hubs name the same person alike; one without an email is a hash
-// of this hub and their id. A guest passes on the reader it arrived as.
-func readerAndHop(ctx context.Context, env Env, token *usertoken.Data) (string, int, error) {
-	if token.IsFederationGuest() {
-		return token.Reader, token.Hop + 1, nil
-	}
-
+// of this hub and their id.
+func readerID(ctx context.Context, env Env, token *usertoken.Data) (string, error) {
 	user, err := env.UserByID(ctx, int64(token.ID))
 	if err != nil {
-		return "", 0, fmt.Errorf("user by id: %w", err)
+		return "", fmt.Errorf("user by id: %w", err)
 	}
 
 	if user.Email != nil && strings.TrimSpace(*user.Email) != "" {
-		return sha256Hex(strings.ToLower(strings.TrimSpace(*user.Email))), 1, nil
+		return sha256Hex(strings.ToLower(strings.TrimSpace(*user.Email))), nil
 	}
 
-	return sha256Hex(env.PublicURL() + "#user:" + strconv.FormatInt(user.ID, 10)), 1, nil
+	return sha256Hex(env.PublicURL() + "#user:" + strconv.FormatInt(user.ID, 10)), nil
 }
 
 func sha256Hex(s string) string {

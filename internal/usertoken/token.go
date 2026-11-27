@@ -16,7 +16,10 @@ type Data struct {
 
 	// Kid, Hop and Reader are set only for RoleFederationGuest: the edge the
 	// guest arrived over, how many handoffs deep, and the reader id the hub sent.
-	Kid    string `json:"k,omitempty"`
+	Kid string `json:"k,omitempty"`
+	// Key is the row of the inbound key the session was opened under: a key
+	// created later under the same Kid is another key.
+	Key    int64  `json:"ki,omitempty"`
 	Hop    int    `json:"h,omitempty"`
 	Reader string `json:"rd,omitempty"`
 }
@@ -43,6 +46,7 @@ type fullData struct {
 	ID     int    `json:"i"`
 	Role   string `json:"r"`
 	Kid    string `json:"k,omitempty"`
+	Key    int64  `json:"ki,omitempty"`
 	Hop    int    `json:"h,omitempty"`
 	Reader string `json:"rd,omitempty"`
 	jwt.RegisteredClaims
@@ -132,7 +136,7 @@ func (e *Manager) parseClaims(raw string) (*Data, error) {
 		return nil, errors.New("invalid token claims")
 	}
 
-	return &Data{ID: claims.ID, Role: claims.Role, Kid: claims.Kid, Hop: claims.Hop, Reader: claims.Reader}, nil
+	return &Data{ID: claims.ID, Role: claims.Role, Kid: claims.Kid, Key: claims.Key, Hop: claims.Hop, Reader: claims.Reader}, nil
 }
 
 func (e *Manager) runValidators(ctx context.Context, token *Data) error {
@@ -208,6 +212,7 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error)
 		ID:     data.ID,
 		Role:   data.Role,
 		Kid:    data.Kid,
+		Key:    data.Key,
 		Hop:    data.Hop,
 		Reader: data.Reader,
 		RegisteredClaims: jwt.RegisteredClaims{

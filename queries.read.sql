@@ -211,6 +211,11 @@ select * from federation_secrets
  order by created_at desc, id desc
  limit 1;
 
+-- name: CountInboundFederationSecretsByKID :one
+select count(*) from federation_secrets
+ where kid = ?
+   and kb_url is null;
+
 -- name: OutboundFederationSecretByKID :one
 select * from federation_secrets
  where kid = ?

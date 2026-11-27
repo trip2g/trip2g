@@ -23,6 +23,7 @@ func validForm() federationguest.Form {
 func validClaims() mcp.GuestHandoffClaims {
 	return mcp.GuestHandoffClaims{
 		GuestHandoff: mcp.GuestHandoff{Path: "/", Hop: 1, Reader: testReader, Origin: "https://hub.test"},
+		KeyID:        7,
 		Caller:       mcp.FederationCaller{KID: "edge"},
 		ID:           "rid-1",
 		ExpiresAt:    time.Now().Add(30 * time.Second),
@@ -31,6 +32,7 @@ func validClaims() mcp.GuestHandoffClaims {
 
 func newEnv(claims mcp.GuestHandoffClaims) *EnvMock {
 	spent := map[string]bool{}
+	tickets := &federationguest.Tickets{}
 	return &EnvMock{
 		FederationGuestsEnabledFunc: func() bool { return true },
 		FederationMaxDepthFunc:      func() int { return 3 },
@@ -45,7 +47,7 @@ func newEnv(claims mcp.GuestHandoffClaims) *EnvMock {
 			return true
 		},
 		FederationGuestUserFunc: func(context.Context, string, string) (int64, error) { return 42, nil },
-		GuestTicketSecretFunc:   func() string { return "ticket-secret" },
+		GuestTicketsFunc:        func() *federationguest.Tickets { return tickets },
 	}
 }
 
@@ -58,7 +60,7 @@ func TestAnAdmittedGuestEntersAsTheSyntheticUserOfItsEdge(t *testing.T) {
 	data, path, err := federationguest.Enter(env, admitted.Ticket, admitted.Nonce)
 	require.NoError(t, err)
 	require.Equal(t, "/", path)
-	want := usertoken.Data{ID: 42, Role: usertoken.RoleFederationGuest, Kid: "edge", Hop: 1, Reader: testReader}
+	want := usertoken.Data{ID: 42, Role: usertoken.RoleFederationGuest, Kid: "edge", Key: 7, Hop: 1, Reader: testReader}
 	require.Equal(t, want, data)
 
 	calls := env.FederationGuestUserCalls()
@@ -118,6 +120,7 @@ func TestAdmitRefuses(t *testing.T) {
 		{name: "absolute target", claims: func(c *mcp.GuestHandoffClaims) { c.Path = "https://evil.test/" }, path: "https://evil.test/"},
 		{name: "protocol-relative target", claims: func(c *mcp.GuestHandoffClaims) { c.Path = "//evil.test/" }, path: "//evil.test/"},
 		{name: "no hop", claims: func(c *mcp.GuestHandoffClaims) { c.Hop = 0 }},
+		{name: "hop 2: a guest goes no further", claims: func(c *mcp.GuestHandoffClaims) { c.Hop = 2 }},
 		{name: "hop over the limit", claims: func(c *mcp.GuestHandoffClaims) { c.Hop = 4 }},
 		{name: "reader that is not a hash", claims: func(c *mcp.GuestHandoffClaims) { c.Reader = "admin@example.com" }},
 	}
@@ -174,18 +177,7 @@ func TestAReplayedHandoffIsRefused(t *testing.T) {
 	require.Len(t, env.FederationGuestUserCalls(), 1)
 }
 
-func TestTurningTheSettingOffRefusesAnOutstandingTicket(t *testing.T) {
-	env := newEnv(validClaims())
-	admitted, err := federationguest.Admit(t.Context(), env, validForm())
-	require.NoError(t, err)
-
-	env.FederationGuestsEnabledFunc = func() bool { return false }
-
-	_, _, err = federationguest.Enter(env, admitted.Ticket, admitted.Nonce)
-	require.ErrorIs(t, err, federationguest.ErrRefused)
-}
-
-func TestATamperedTicketIsRefused(t *testing.T) {
+func TestAnUnknownTicketIsRefused(t *testing.T) {
 	env := newEnv(validClaims())
 	admitted, err := federationguest.Admit(t.Context(), env, validForm())
 	require.NoError(t, err)

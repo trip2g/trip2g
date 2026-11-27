@@ -28,7 +28,7 @@ var _ federationhandoff.Env = &EnvMock{}
 //			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentUserToken method")
 //			},
-//			FederationGuestPeerFunc: func(ctx context.Context, kbID string) (model.FederationPeer, error) {
+//			FederationGuestPeerFunc: func(ctx context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error) {
 //				panic("mock out the FederationGuestPeer method")
 //			},
 //			FederationMaxDepthFunc: func() int {
@@ -57,7 +57,7 @@ type EnvMock struct {
 	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
 	// FederationGuestPeerFunc mocks the FederationGuestPeer method.
-	FederationGuestPeerFunc func(ctx context.Context, kbID string) (model.FederationPeer, error)
+	FederationGuestPeerFunc func(ctx context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error)
 
 	// FederationMaxDepthFunc mocks the FederationMaxDepth method.
 	FederationMaxDepthFunc func() int
@@ -89,8 +89,8 @@ type EnvMock struct {
 		FederationGuestPeer []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// KbID is the kbID argument value.
-			KbID string
+			// Kb is the kb argument value.
+			Kb *model.MCPFederationNote
 		}
 		// FederationMaxDepth holds details about calls to the FederationMaxDepth method.
 		FederationMaxDepth []struct {
@@ -187,21 +187,21 @@ func (mock *EnvMock) CurrentUserTokenCalls() []struct {
 }
 
 // FederationGuestPeer calls FederationGuestPeerFunc.
-func (mock *EnvMock) FederationGuestPeer(ctx context.Context, kbID string) (model.FederationPeer, error) {
+func (mock *EnvMock) FederationGuestPeer(ctx context.Context, kb *model.MCPFederationNote) (model.FederationPeer, error) {
 	if mock.FederationGuestPeerFunc == nil {
 		panic("EnvMock.FederationGuestPeerFunc: method is nil but Env.FederationGuestPeer was just called")
 	}
 	callInfo := struct {
-		Ctx  context.Context
-		KbID string
+		Ctx context.Context
+		Kb  *model.MCPFederationNote
 	}{
-		Ctx:  ctx,
-		KbID: kbID,
+		Ctx: ctx,
+		Kb:  kb,
 	}
 	mock.lockFederationGuestPeer.Lock()
 	mock.calls.FederationGuestPeer = append(mock.calls.FederationGuestPeer, callInfo)
 	mock.lockFederationGuestPeer.Unlock()
-	return mock.FederationGuestPeerFunc(ctx, kbID)
+	return mock.FederationGuestPeerFunc(ctx, kb)
 }
 
 // FederationGuestPeerCalls gets all the calls that were made to FederationGuestPeer.
@@ -209,12 +209,12 @@ func (mock *EnvMock) FederationGuestPeer(ctx context.Context, kbID string) (mode
 //
 //	len(mockedEnv.FederationGuestPeerCalls())
 func (mock *EnvMock) FederationGuestPeerCalls() []struct {
-	Ctx  context.Context
-	KbID string
+	Ctx context.Context
+	Kb  *model.MCPFederationNote
 } {
 	var calls []struct {
-		Ctx  context.Context
-		KbID string
+		Ctx context.Context
+		Kb  *model.MCPFederationNote
 	}
 	mock.lockFederationGuestPeer.RLock()
 	calls = mock.calls.FederationGuestPeer
