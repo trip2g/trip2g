@@ -98,13 +98,14 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 				layoutParams.MetaDescription = &desc
 			}
 		}
-		layoutParams.OGTags = buildOGTags(req, env, resp)
 
 		if resp.Note.Lang != "" {
 			layoutParams.HTMLLang = resp.Note.Lang
 		}
 
-		layoutParams.HrefLangs = buildHrefLangs(env, resp.Note)
+		if err == nil {
+			setReadableMeta(req, env, resp, &layoutParams)
+		}
 
 		layoutParams.MetaRobots = noteMetaRobots(resp.Note)
 		setNoIndexHeader(ctx, resp.Note)
@@ -557,7 +558,7 @@ func injectLastEditedByResolver(env Env, resp *Response) {
 
 // buildHrefLangs builds the list of hreflang alternate links for a note.
 // Returns nil if the note has no language group.
-func buildHrefLangs(env Env, note *model.NoteView) []renderlayout.HrefLang {
+func buildHrefLangs(env Env, note *model.NoteView, canRead func(*model.NoteView) bool) []renderlayout.HrefLang {
 	if note.LangGroup == nil {
 		return nil
 	}
@@ -568,25 +569,13 @@ func buildHrefLangs(env Env, note *model.NoteView) []renderlayout.HrefLang {
 
 	// Add x-default (and lang tag if hub has a lang) for the hub page.
 	hubURL := publicURL + group.Hub.Permalink
-	if group.Hub.Lang == "" {
-		hrefLangs = append(hrefLangs, renderlayout.HrefLang{
-			Lang: "x-default",
-			Href: hubURL,
-		})
-	} else {
-		hrefLangs = append(hrefLangs, renderlayout.HrefLang{
-			Lang: group.Hub.Lang,
-			Href: hubURL,
-		})
-		hrefLangs = append(hrefLangs, renderlayout.HrefLang{
-			Lang: "x-default",
-			Href: hubURL,
-		})
+	if canRead(group.Hub) {
+		hrefLangs = appendHubHrefLangs(hrefLangs, group.Hub.Lang, hubURL)
 	}
 
 	// Add each language version.
 	for _, lr := range group.Versions {
-		if lr.Note == group.Hub {
+		if lr.Note == group.Hub || !canRead(lr.Note) {
 			continue
 		}
 		hrefLangs = append(hrefLangs, renderlayout.HrefLang{
@@ -596,6 +585,21 @@ func buildHrefLangs(env Env, note *model.NoteView) []renderlayout.HrefLang {
 	}
 
 	return hrefLangs
+}
+
+// setReadableMeta adds the metadata that names what only a granted viewer may
+// learn: a denied page keeps the generic site meta.
+func setReadableMeta(req *appreq.Request, env Env, resp *Response, layoutParams *renderlayout.Params) {
+	layoutParams.OGTags = buildOGTags(req, env, resp)
+	layoutParams.HrefLangs = buildHrefLangs(env, resp.Note, resp.viewer.CanRead)
+}
+
+func appendHubHrefLangs(hrefLangs []renderlayout.HrefLang, hubLang, hubURL string) []renderlayout.HrefLang {
+	if hubLang != "" {
+		hrefLangs = append(hrefLangs, renderlayout.HrefLang{Lang: hubLang, Href: hubURL})
+	}
+
+	return append(hrefLangs, renderlayout.HrefLang{Lang: "x-default", Href: hubURL})
 }
 
 // buildOGTags constructs Open Graph metadata for a rendered note.

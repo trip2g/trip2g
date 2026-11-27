@@ -48,11 +48,12 @@ func hreflangAlternates(note *model.NoteView, publicURL string) []xhtmlLink {
 
 	var links []xhtmlLink
 	hubURL := publicURL + group.Hub.PermalinkEncoded()
-	if group.Hub.Lang != "" && !group.Hub.NoIndex {
+	hubListed := !group.Hub.NoIndex && group.Hub.IsAnonymouslyReadable()
+	if group.Hub.Lang != "" && hubListed {
 		links = append(links, xhtmlLink{Rel: "alternate", HrefLang: group.Hub.Lang, Href: hubURL})
 	}
 	for _, lr := range group.Versions {
-		if lr.Note == nil || lr.Note == group.Hub || lr.Lang == "" || lr.Note.NoIndex {
+		if lr.Note == nil || lr.Note == group.Hub || lr.Lang == "" || lr.Note.NoIndex || !lr.Note.IsAnonymouslyReadable() {
 			continue
 		}
 		links = append(links, xhtmlLink{
@@ -64,7 +65,7 @@ func hreflangAlternates(note *model.NoteView, publicURL string) []xhtmlLink {
 	if len(links) == 0 {
 		return nil
 	}
-	if !group.Hub.NoIndex {
+	if hubListed {
 		links = append(links, xhtmlLink{Rel: "alternate", HrefLang: "x-default", Href: hubURL})
 	}
 	return links
