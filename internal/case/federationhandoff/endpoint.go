@@ -2,12 +2,14 @@ package federationhandoff
 
 import (
 	"errors"
+	"fmt"
 	"html"
 	"net/http"
 	"net/url"
 
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/rendernotepage"
+	"trip2g/internal/model"
 )
 
 const (
@@ -27,7 +29,14 @@ func (*Endpoint) Path() string   { return Path }
 func (*Endpoint) Method() string { return http.MethodPost }
 
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
-	handoff, err := Resolve(req.Req, req.Env.(Env), string(req.Req.PostArgs().Peek("note")), string(req.Req.PostArgs().Peek("path")))
+	env := req.Env.(Env)
+
+	err := requireOwnOrigin(env, string(req.Req.Request.Header.Peek("Origin")))
+	if err != nil {
+		return nil, &appreq.SystemMessageError{Code: http.StatusForbidden, Msg: msgRefused, Err: err}
+	}
+
+	handoff, err := Resolve(req.Req, env, string(req.Req.PostArgs().Peek("note")), string(req.Req.PostArgs().Peek("path")))
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, ErrRefused) {
@@ -53,6 +62,19 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 <script>document.getElementById("handoff").submit()</script>
 </body></html>`)
 	return nil, nil
+}
+
+// requireOwnOrigin refuses a post that a page of another origin made. The
+// session cookie is SameSite=Lax, so a sibling site of the same registrable
+// domain can post a top-level form with it; the handoff is signed only for a
+// post from this site's own pages.
+func requireOwnOrigin(env Env, posted string) error {
+	own, ownOK := model.SiteOrigin(env.PublicURL())
+	from, fromOK := model.SiteOrigin(posted)
+	if !ownOK || !fromOK || own != from {
+		return fmt.Errorf("%w: posted from %q, this site is %q", ErrRefused, posted, env.PublicURL())
+	}
+	return nil
 }
 
 // GetEndpoint is the page behind an open link.

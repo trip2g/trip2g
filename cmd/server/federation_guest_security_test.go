@@ -1305,3 +1305,45 @@ func TestSecurityConcurrentReplayAtTheExpiryBoundaryAdmitsOnce(t *testing.T) {
 	}
 	require.Equal(t, 1, admitted)
 }
+
+func (b *browser) postWithCookieFrom(t *testing.T, s *site, uri string, form url.Values, origin string) reply {
+	t.Helper()
+
+	fctx := &fasthttp.RequestCtx{}
+	fctx.Init(&fasthttp.Request{}, nil, nil)
+	fctx.Request.Header.SetMethod(http.MethodPost)
+	fctx.Request.SetRequestURI(uri)
+	fctx.Request.Header.SetHost(s.host)
+	fctx.Request.Header.SetContentType("application/x-www-form-urlencoded")
+	fctx.Request.SetBodyString(form.Encode())
+	if origin != "" {
+		fctx.Request.Header.Set("Origin", origin)
+	}
+	fctx.Request.Header.SetCookie("trip2g_token", b.cookies[s.host])
+
+	s.handler(fctx)
+
+	return reply{status: fctx.Response.StatusCode(), body: string(fctx.Response.Body())}
+}
+
+func TestSecurityTheHubSignsAHandoffOnlyForItsOwnPage(t *testing.T) {
+	s := seedTwoSites(t)
+	b := newBrowser()
+	b.cookies[s.hub.host] = s.hub.sessionFor(t, s.readerID(t), "user")
+	form := url.Values{"note": {hubKBNote}}
+
+	for name, origin := range map[string]string{
+		"a sibling site":       "https://evil.example.com",
+		"an opaque origin":     "null",
+		"no origin at all":     "",
+		"the hub's own scheme": strings.Replace(s.hub.url, "http://", "https://", 1),
+	} {
+		r := b.postWithCookieFrom(t, s.hub, federationhandoff.Path, form, origin)
+		require.Equal(t, http.StatusForbidden, r.status, "%s: %s", name, r.body)
+		require.NotContains(t, r.body, `name="token"`, name)
+	}
+
+	own := b.postWithCookieFrom(t, s.hub, federationhandoff.Path, form, s.hub.url)
+	require.Equal(t, http.StatusOK, own.status, own.body)
+	require.Contains(t, own.body, `name="token"`)
+}
