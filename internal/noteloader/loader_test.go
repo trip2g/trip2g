@@ -201,8 +201,7 @@ func TestLoader_DeadlineDuringMarkdownDoesNotFailDBReads(t *testing.T) {
 // precomputed at load; the loader's result must match it exactly.
 func legacyRSSFeeds(nvs *model.NoteViews) []model.RSSFeedLink {
 	var feeds []model.RSSFeedLink
-	open := templateviews.NVSWithAccess(templateviews.NewNVS(nvs, "live"), func(*model.NoteView) bool { return true })
-	for _, note := range open.List() {
+	for _, note := range templateviews.NewNVS(nvs, "live").List() {
 		ct := strings.ToLower(strings.TrimSpace(note.M().GetString("content_type", "")))
 		if !strings.HasPrefix(ct, "application/rss+xml") {
 			continue

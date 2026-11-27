@@ -14,7 +14,6 @@ type NVS struct {
 	defaultVersion string
 	domainHost     string
 	guard          Guard
-	access         Access
 }
 
 // NVSWithGuard sets the guard every note reached through n goes through. A
@@ -22,17 +21,6 @@ type NVS struct {
 func NVSWithGuard(n *NVS, guard Guard) *NVS {
 	if n != nil {
 		n.guard = guard
-	}
-
-	return n
-}
-
-// NVSWithAccess sets who the notes reached through n are read for; a note the
-// viewer cannot read is not found. A function, not a method, so Jet templates
-// can't reach it.
-func NVSWithAccess(n *NVS, access Access) *NVS {
-	if n != nil {
-		n.access = access
 	}
 
 	return n
@@ -60,22 +48,14 @@ func NewNVSWithDomain(nvs *model.NoteViews, defaultVersion, domainHost string) *
 // wrap builds a Note carrying this NVS's host, so every note reached through
 // the wrapper renders for the same domain as the page around it.
 func (n *NVS) wrap(nv *model.NoteView) *Note {
-	if !canRead(n.access, nv) {
+	note := NewNoteWithDomain(nv, n.domainHost)
+	if note == nil {
 		return nil
 	}
 
-	note := NewNoteWithDomain(nv, n.domainHost)
 	note.guard = n.guard
-	note.access = n.access
 
 	return AsForeign(note)
-}
-
-func (n *NVS) appendNote(notes *[]*Note, nv *model.NoteView) {
-	note := n.wrap(nv)
-	if note != nil {
-		*notes = append(*notes, note)
-	}
 }
 
 // NoteViews returns the engine notes behind n. A function, not a method,
@@ -188,12 +168,7 @@ func (n *NVS) NoteByWikilink(target string) *Note {
 
 	// Global basename lookup via BasenameMap (O(1)).
 	key := strings.ToLower(strings.ReplaceAll(target, " ", "_"))
-	var candidates []*model.NoteView
-	for _, candidate := range n.nvs.BasenameMap[key] {
-		if canRead(n.access, candidate) {
-			candidates = append(candidates, candidate)
-		}
-	}
+	candidates := n.nvs.BasenameMap[key]
 	if len(candidates) == 1 {
 		return n.wrap(candidates[0])
 	}
@@ -263,7 +238,7 @@ func (n *NVS) Sidebars(note *Note) []*Note {
 	sidebars := n.nvs.Sidebars(note.nv)
 	result := make([]*Note, 0, len(sidebars))
 	for _, s := range sidebars {
-		n.appendNote(&result, s)
+		result = append(result, n.wrap(s))
 	}
 	return result
 }
@@ -277,7 +252,7 @@ func (n *NVS) HomePages(note *Note) []*Note {
 	homePages := n.nvs.HomePages(note.nv)
 	result := make([]*Note, 0, len(homePages))
 	for _, hp := range homePages {
-		n.appendNote(&result, hp)
+		result = append(result, n.wrap(hp))
 	}
 	return result
 }
@@ -291,7 +266,7 @@ func (n *NVS) BackLinks(note *Note) []*Note {
 	result := make([]*Note, 0, len(note.nv.InLinks))
 	for path := range note.nv.InLinks {
 		if linked := n.nvs.GetByPath(path); linked != nil && !linked.IsSystem() {
-			n.appendNote(&result, linked)
+			result = append(result, n.wrap(linked))
 		}
 	}
 
@@ -321,7 +296,7 @@ func (n *NVS) OutLinks(note *Note) []*Note {
 		}
 		seen[permalink] = struct{}{}
 		if linked := n.nvs.GetByPath(permalink); linked != nil {
-			n.appendNote(&result, linked)
+			result = append(result, n.wrap(linked))
 		}
 	}
 	return result
@@ -344,7 +319,7 @@ func (n *NVS) List() []*Note {
 	visible := n.nvs.VisibleList()
 	result := make([]*Note, 0, len(visible))
 	for _, nv := range visible {
-		n.appendNote(&result, nv)
+		result = append(result, n.wrap(nv))
 	}
 	return result
 }

@@ -26,37 +26,6 @@ type Note struct {
 	// a page it does not belong to.
 	foreign bool
 	guard   Guard
-	access  Access
-}
-
-// Access answers whether the viewer of the page may read a note. A nil Access
-// is an anonymous viewer.
-type Access func(note *model.NoteView) bool
-
-func canRead(access Access, nv *model.NoteView) bool {
-	if nv == nil {
-		return false
-	}
-
-	if access == nil {
-		return nv.IsAnonymouslyReadable() || nv.IsUngatedPartial() || nv.IsSiteChrome()
-	}
-
-	return access(nv)
-}
-
-// wrapAlternative builds the Note of a language alternative of n, which
-// carries n's host, guard and access and is marked foreign.
-func (n *Note) wrapAlternative(nv *model.NoteView) *Note {
-	if !canRead(n.access, nv) {
-		return nil
-	}
-
-	alt := NewNoteWithDomain(nv, n.domainHost)
-	alt.guard = n.guard
-	alt.access = n.access
-
-	return AsForeign(alt)
 }
 
 // Guard removes from note HTML what the viewer of the page may not read.
@@ -79,16 +48,6 @@ func applyGuard(guard Guard, html string) string {
 func WithGuard(n *Note, guard Guard) *Note {
 	if n != nil {
 		n.guard = guard
-	}
-
-	return n
-}
-
-// WithAccess sets who the notes reached from n are read for. A function, not a
-// method, so Jet templates can't reach it.
-func WithAccess(n *Note, access Access) *Note {
-	if n != nil {
-		n.access = access
 	}
 
 	return n
@@ -407,13 +366,7 @@ func (n *Note) LangAlternative(lang string) any {
 	if !ok {
 		return nil
 	}
-
-	wrapped := n.wrapAlternative(alt)
-	if wrapped == nil {
-		return nil
-	}
-
-	return wrapped
+	return NewNote(alt)
 }
 
 // LangAlternativesList returns all language alternatives as a sorted slice
@@ -429,10 +382,7 @@ func (n *Note) LangAlternativesList() []*Note {
 	sort.Strings(langs)
 	result := make([]*Note, 0, len(langs))
 	for _, lang := range langs {
-		alt := n.wrapAlternative(n.nv.LangAlternatives[lang])
-		if alt != nil {
-			result = append(result, alt)
-		}
+		result = append(result, NewNote(n.nv.LangAlternatives[lang]))
 	}
 	return result
 }

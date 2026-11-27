@@ -280,12 +280,9 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Notes = notes
 	response.Time = int(time.Now().Unix())
 	response.viewer = embedguard.NewViewer(ctx, env, notes).WithOpenPartials()
-	response.NoteView = templateviews.WithAccess(
-		templateviews.WithGuard(
-			templateviews.NewNoteWithDomain(note, response.domainHost),
-			response.viewer.Strip,
-		),
-		response.viewer.CanRead,
+	response.NoteView = templateviews.WithGuard(
+		templateviews.NewNoteWithDomain(note, response.domainHost),
+		response.viewer.Strip,
 	)
 
 	// Filter out internal inlinks (keys starting with _) without mutating the

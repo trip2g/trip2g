@@ -79,7 +79,7 @@ func constructsNVS() *templateviews.NVS {
 		Path: "blog/paid.md", Title: "Paid", Permalink: "/blog/paid", ReadingTime: 7,
 		RawMeta: map[string]interface{}{"order": 0},
 	}
-	return openNVS(nvs)
+	return templateviews.NewNVS(nvs, "live")
 }
 
 func constructsVars(page *model.NoteView, admin bool) jet.VarMap {

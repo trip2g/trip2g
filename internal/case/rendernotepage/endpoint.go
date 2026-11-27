@@ -464,7 +464,7 @@ func renderLayout(
 	vars["defaultTemplate"] = defaultTemplateNS
 	vars["currentUser"] = currentUserNS
 	vars["noteQuery"] = reflect.ValueOf(runnotequery.JetFunc(ctx, env))
-	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(ctx, env, resp.domainHost, resp.viewer.Strip, resp.viewer.CanRead))
+	vars["noteQueryRows"] = reflect.ValueOf(runnotequery.JetRowsFunc(ctx, env, resp.domainHost, resp.viewer.Strip))
 
 	// Attach the admin-only "last edited by" resolver so layouts can render the
 	// version author (gated on currentUser.IsAdmin()).
@@ -504,9 +504,10 @@ func stripBodyEmbeds(page []byte, resp *Response) []byte {
 
 // newViewerNVS gives templates the notes of the response, each guarded for its viewer.
 func newViewerNVS(resp *Response) *templateviews.NVS {
-	nvs := templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost)
-
-	return templateviews.NVSWithAccess(templateviews.NVSWithGuard(nvs, resp.viewer.Strip), resp.viewer.CanRead)
+	return templateviews.NVSWithGuard(
+		templateviews.NewNVSWithDomain(resp.Notes, resp.DefaultVersion, resp.domainHost),
+		resp.viewer.Strip,
+	)
 }
 
 // writeLayoutRenderError serves the response when a custom layout fails to
