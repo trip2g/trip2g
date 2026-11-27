@@ -28,6 +28,7 @@ func validClaims() mcp.GuestHandoffClaims {
 		Caller:       mcp.FederationCaller{KID: "edge"},
 		ID:           "rid-1",
 		ExpiresAt:    time.Now().Add(30 * time.Second),
+		SpentUntil:   time.Now().Add(36 * time.Second),
 	}
 }
 
@@ -195,4 +196,17 @@ func TestAFailureToCreateTheGuestIsNotARefusal(t *testing.T) {
 	_, err := federationguest.Admit(t.Context(), env, validForm())
 	require.Error(t, err)
 	require.NotErrorIs(t, err, federationguest.ErrRefused)
+}
+
+func TestAHandoffIsSpentUntilTheVerifierWouldStopAcceptingIt(t *testing.T) {
+	claims := validClaims()
+	env := newEnv(claims)
+
+	_, err := federationguest.Admit(t.Context(), env, validForm())
+	require.NoError(t, err)
+
+	calls := env.SpendFederationGuestIDCalls()
+	require.Len(t, calls, 1)
+	require.Equal(t, claims.SpentUntil, calls[0].ExpiresAt)
+	require.True(t, claims.SpentUntil.After(claims.ExpiresAt))
 }

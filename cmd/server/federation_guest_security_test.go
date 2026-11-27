@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1258,4 +1259,49 @@ func TestSecurityAGuestCannotOpenASubscription(t *testing.T) {
 	r := b.subscribe(t, s.peer, `subscription { noteChanges(filter: {includePatterns: ["**"]}) { changes { __typename } } }`)
 	require.Contains(t, r.body, "a federation guest can only read", "status %d: %s", r.status, r.body)
 	require.NotContains(t, r.body, "open.md")
+}
+
+func TestSecurityAHandoffStaysSpentThroughTheExpirySkew(t *testing.T) {
+	s := seedTwoSites(t)
+	now := time.Now()
+	token := handoffToken(t, "hub-to-peer", map[string]any{
+		"iat": now.Add(-33 * time.Second).Unix(), "exp": now.Add(-3 * time.Second).Unix(),
+	})
+
+	first := newBrowser().arrive(t, s.peer, handoffForm(token), hubOrigin)
+	require.Equal(t, http.StatusFound, first.status, "a handoff a few seconds past its expiry is still accepted: %s", first.body)
+
+	for range 3 {
+		replay := newBrowser().arrive(t, s.peer, handoffForm(token), hubOrigin)
+		require.Equal(t, http.StatusForbidden, replay.status, "a spent handoff is refused for as long as it can be accepted")
+	}
+}
+
+func TestSecurityConcurrentReplayAtTheExpiryBoundaryAdmitsOnce(t *testing.T) {
+	s := seedTwoSites(t)
+	now := time.Now()
+	token := handoffToken(t, "hub-to-peer", map[string]any{
+		"iat": now.Add(-33 * time.Second).Unix(), "exp": now.Add(-3 * time.Second).Unix(),
+	})
+
+	const attempts = 12
+	statuses := make(chan int, attempts)
+	var wg sync.WaitGroup
+	for range attempts {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			statuses <- newBrowser().post(t, s.peer, federationguest.Path, handoffForm(token), hubOrigin).status
+		}()
+	}
+	wg.Wait()
+	close(statuses)
+
+	admitted := 0
+	for status := range statuses {
+		if status == http.StatusSeeOther {
+			admitted++
+		}
+	}
+	require.Equal(t, 1, admitted)
 }

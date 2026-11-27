@@ -40,6 +40,10 @@ type GuestHandoffClaims struct {
 	Caller       FederationCaller
 	ID           string
 	ExpiresAt    time.Time
+	// SpentUntil is the last instant the verifier can still accept this token:
+	// its expiry plus the clock skew and the second the check rounds down by.
+	// An id forgotten before then could be replayed.
+	SpentUntil time.Time
 }
 
 // SignGuestHandoff signs a handoff with the edge secret, in the same JWT the
@@ -103,9 +107,10 @@ func VerifyGuestHandoff(ctx context.Context, env FederationVerifyEnv, token stri
 			Reader: auth.claims.Sub,
 			Origin: auth.claims.Org,
 		},
-		Caller:    FederationCaller{KID: auth.KID, AllowedSubgraphs: auth.AllowedSubgraphs},
-		ID:        auth.claims.Rid,
-		ExpiresAt: time.Unix(auth.claims.Exp, 0),
+		Caller:     FederationCaller{KID: auth.KID, AllowedSubgraphs: auth.AllowedSubgraphs},
+		ID:         auth.claims.Rid,
+		ExpiresAt:  time.Unix(auth.claims.Exp, 0),
+		SpentUntil: time.Unix(auth.claims.Exp, 0).Add(federationJWTSkew + time.Second),
 	}
 	return claims, nil
 }

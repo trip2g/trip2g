@@ -178,7 +178,7 @@ func admit(ctx context.Context, env Env, form Form, claims mcp.GuestHandoffClaim
 		return Admission{}, fmt.Errorf("%w: reader id is not a sha256 hex", ErrRefused)
 	}
 
-	if !env.SpendFederationGuestID(claims.ID, claims.ExpiresAt) {
+	if !env.SpendFederationGuestID(claims.ID, claims.SpentUntil) {
 		return Admission{}, fmt.Errorf("%w: handoff %s already used", ErrRefused, claims.ID)
 	}
 
