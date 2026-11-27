@@ -46,7 +46,6 @@ The nonce cookie takes the `__Host-` prefix whenever it is Secure. A `__Host-` c
 
 - A closed note's title is shown on its closed page and in search results.
 - Subgraph names are in the markup of links to closed notes (`class="paywall paywall-<subgraph>"`).
-- A free note that embeds a closed note shows its text to everyone, guests and anonymous readers included. This is not specific to guests.
 - A refused page still counts as a view.
 
 ## Tests

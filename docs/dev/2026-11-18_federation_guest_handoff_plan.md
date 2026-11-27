@@ -407,7 +407,7 @@ every way a reader can. The marker must appear in none of the answers.
 | Site search, including the snippet text | in-process and browser | yes |
 | The attachment by its direct address | in-process | yes |
 | RSS, sitemap, the note-changes subscription | in-process | RSS |
-| A free note that embeds the closed one | in-process | noted in the spike, not pinned |
+| A free note that embeds the closed one | in-process | yes: the embed is a link |
 
 Two leaks are known and stay unless the owner decides otherwise; the tests pin
 them so that they do not grow:
