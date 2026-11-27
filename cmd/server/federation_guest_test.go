@@ -195,24 +195,22 @@ func (b *browser) send(t *testing.T, s *site, req request) reply {
 		referrer:     string(fctx.Response.Header.Peek("Referrer-Policy")),
 		cacheControl: string(fctx.Response.Header.Peek("Cache-Control")),
 	}
-	fctx.Response.Header.VisitAllCookie(func(key, value []byte) {
+	for key, value := range fctx.Response.Header.Cookies() {
 		if string(key) == "trip2g_was_guest" {
-			c := fasthttp.AcquireCookie()
-			defer fasthttp.ReleaseCookie(c)
+			c := &fasthttp.Cookie{}
 			require.NoError(t, c.ParseBytes(value))
 			if len(c.Value()) == 0 {
 				delete(b.wasGuest, s.host)
 			} else {
 				b.wasGuest[s.host] = string(c.Value())
 			}
-			return
+			continue
 		}
 		if !strings.HasSuffix(string(key), nonceCookieSuffix) {
-			return
+			continue
 		}
 		r.nonceCookie = string(value)
-		c := fasthttp.AcquireCookie()
-		defer fasthttp.ReleaseCookie(c)
+		c := &fasthttp.Cookie{}
 		require.NoError(t, c.ParseBytes(value))
 		switch {
 		case len(c.Value()) == 0:
@@ -222,7 +220,7 @@ func (b *browser) send(t *testing.T, s *site, req request) reply {
 		default:
 			b.nonces[s.host] = nonceCookie{name: string(c.Key()), value: string(c.Value()), path: string(c.Path())}
 		}
-	})
+	}
 	if raw := fctx.Response.Header.PeekCookie("trip2g_token"); raw != nil {
 		c := fasthttp.AcquireCookie()
 		require.NoError(t, c.ParseBytes(raw))

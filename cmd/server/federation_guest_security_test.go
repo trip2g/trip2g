@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"html"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -319,7 +319,9 @@ func TestSecurityAHandoffIsBoundToItsEdgeAndItsLifetime(t *testing.T) {
 			return base64.RawURLEncoding.EncodeToString(h) + "." + p[1] + "." + p[2]
 		}()},
 		{"expired", handoffToken(t, "hub-to-peer", map[string]any{"iat": now.Add(-2 * time.Minute).Unix(), "exp": now.Add(-90 * time.Second).Unix()})},
-		{"issued in the future", handoffToken(t, "hub-to-peer", map[string]any{"iat": now.Add(time.Hour).Unix(), "exp": now.Add(time.Hour + 30*time.Second).Unix()})},
+		{"issued in the future", handoffToken(t, "hub-to-peer", map[string]any{
+			"iat": now.Add(time.Hour).Unix(), "exp": now.Add(time.Hour + 30*time.Second).Unix(),
+		})},
 		{"valid for longer than a handoff may live", handoffToken(t, "hub-to-peer", map[string]any{"exp": now.Add(time.Hour).Unix()})},
 		{"an unknown edge", handoffToken(t, "nobody", nil)},
 		{"no signature", strings.Join(parts[:2], ".") + "."},
@@ -423,7 +425,7 @@ func (g guestGraphQL) literal(typ *ast.Type, depth int) string {
 		return "[" + g.literal(typ.Elem, depth+1) + "]"
 	}
 	def := g.schema.Types[typ.NamedType]
-	switch def.Kind {
+	switch def.Kind { //nolint:exhaustive // only enums and inputs need a literal of their own
 	case ast.Enum:
 		return def.EnumValues[0].Name
 	case ast.InputObject:
@@ -458,7 +460,7 @@ func (g guestGraphQL) call(field *ast.FieldDefinition) string {
 	if len(args) > 0 {
 		call += "(" + strings.Join(args, ", ") + ")"
 	}
-	switch g.schema.Types[field.Type.Name()].Kind {
+	switch g.schema.Types[field.Type.Name()].Kind { //nolint:exhaustive // scalars and enums take no selection
 	case ast.Object, ast.Union, ast.Interface:
 		call += " { __typename }"
 	}
@@ -693,7 +695,8 @@ func seedEdgePair(t *testing.T) *edgePair {
 
 	hub := newSite(t, "hub")
 	for _, kid := range []string{"edge-a", "edge-b"} {
-		insertLatestNote(t, hub.app, kid+".md", "---\nfree: true\nmcp_federation_kb_url: "+peer.url+"/_system/mcp\nmcp_federation_kb_id: "+kid+"\n---\nA base.\n")
+		frontmatter := "---\nfree: true\nmcp_federation_kb_url: " + peer.url + "/_system/mcp\nmcp_federation_kb_id: " + kid + "\n---\n"
+		insertLatestNote(t, hub.app, kid+".md", frontmatter+"A base.\n")
 	}
 	hub.load(t)
 	hub.signIn(t, "Reader@Example.com")
@@ -814,7 +817,7 @@ func TestSecurityAGuestIsNotInTheAdminUserList(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(body), &out), body)
 	require.NotEmpty(t, out.Data.Admin.AllUsers.Nodes, body)
 	for _, node := range out.Data.Admin.AllUsers.Nodes {
-		require.NotEqual(t, fmt.Sprint(session.ID), node.ID.String(), "the guest is a user with a row in federation_guests, and the list leaves those out")
+		require.NotEqual(t, strconv.Itoa(session.ID), node.ID.String(), "the guest is a user with a row in federation_guests, and the list leaves those out")
 	}
 }
 

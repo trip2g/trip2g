@@ -66,7 +66,8 @@ func TestAGuestSessionLivesTwelveHoursAndAnOrdinaryOneKeepsItsConfig(t *testing.
 		return time.Until(exp.Time)
 	}
 
-	require.InDelta(t, float64(usertoken.GuestSessionLifetime), float64(lifetime(usertoken.Data{ID: 7, Role: usertoken.RoleFederationGuest, Kid: "e", Key: 1})), float64(time.Minute))
+	guest := usertoken.Data{ID: 7, Role: usertoken.RoleFederationGuest, Kid: "e", Key: 1}
+	require.InDelta(t, float64(usertoken.GuestSessionLifetime), float64(lifetime(guest)), float64(time.Minute))
 	require.Equal(t, 12*time.Hour, usertoken.GuestSessionLifetime)
 	require.InDelta(t, float64(time.Hour), float64(lifetime(usertoken.Data{ID: 7, Role: "user"})), float64(time.Minute))
 }

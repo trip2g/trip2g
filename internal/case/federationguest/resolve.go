@@ -48,16 +48,16 @@ type Env interface {
 // visitor is told only that; the reason goes to the log.
 var ErrRefused = errors.New("federation guest refused")
 
-// Refusal is a refusal of a handoff whose signature was genuine: it knows the
+// RefusalError is a refusal of a handoff whose signature was genuine: it knows the
 // hub the reader came from, so the refusal page can lead back there. A handoff
 // that failed its signature names no hub.
-type Refusal struct {
+type RefusalError struct {
 	Back string
 	Err  error
 }
 
-func (r *Refusal) Error() string { return r.Err.Error() }
-func (r *Refusal) Unwrap() error { return r.Err }
+func (r *RefusalError) Error() string { return r.Err.Error() }
+func (r *RefusalError) Unwrap() error { return r.Err }
 
 // TicketTTL is how long a ticket and its nonce cookie live.
 const TicketTTL = 30 * time.Second
@@ -150,7 +150,7 @@ func Admit(ctx context.Context, env Env, form Form) (Admission, error) {
 	admission, err := admit(ctx, env, form, claims)
 	if err != nil {
 		back, _ := model.SiteOrigin(claims.Origin)
-		return Admission{}, &Refusal{Back: back, Err: err}
+		return Admission{}, &RefusalError{Back: back, Err: err}
 	}
 	return admission, nil
 }

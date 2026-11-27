@@ -126,7 +126,7 @@ func failure(err error) error {
 	}
 
 	back := ""
-	var refusal *Refusal
+	var refusal *RefusalError
 	if errors.As(err, &refusal) {
 		back = refusal.Back
 	}
