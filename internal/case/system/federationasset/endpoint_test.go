@@ -32,6 +32,9 @@ const (
 	kid       = "consumer"
 	secretKey = "0123456789abcdef0123456789abcdef"
 	peerURL   = "http://peer.test/_system/mcp"
+	hashA     = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	hashB     = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	hashC     = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
 	sharedZip = "zip bytes the shared note links to, long enough to be streamed in pieces"
 )
 
@@ -51,15 +54,15 @@ func newPeer(t *testing.T) *peer {
 		Path:          "skills/reel.md",
 		SubgraphNames: []string{"shared"},
 		AssetReplaces: map[string]*model.NoteAssetReplace{
-			"files/attach.zip": {ID: 1, Hash: "aaa", FileName: "attach.zip"},
-			"big.bin":          {ID: 3, Hash: "ccc", FileName: "big.bin"},
+			"files/attach.zip": {ID: 1, Hash: hashA, FileName: "attach.zip"},
+			"big.bin":          {ID: 3, Hash: hashC, FileName: "big.bin"},
 		},
 	}
 	other := &model.NoteView{
 		Path:          "private/plan.md",
 		SubgraphNames: []string{"other"},
 		AssetReplaces: map[string]*model.NoteAssetReplace{
-			"plan.pdf": {ID: 2, Hash: "bbb", FileName: "plan.pdf"},
+			"plan.pdf": {ID: 2, Hash: hashB, FileName: "plan.pdf"},
 		},
 	}
 	nvs := model.NewNoteViews()
@@ -67,9 +70,9 @@ func newPeer(t *testing.T) *peer {
 	nvs.PathMap[other.Path] = other
 
 	rows := map[int64]db.NoteAsset{
-		1: {ID: 1, FileName: "attach.zip", Sha256Hash: "aaa", Size: int64(len(sharedZip))},
-		2: {ID: 2, FileName: "plan.pdf", Sha256Hash: "bbb", Size: 4},
-		3: {ID: 3, FileName: "big.bin", Sha256Hash: "ccc", Size: maxSize + 1},
+		1: {ID: 1, FileName: "attach.zip", Sha256Hash: hashA, Size: int64(len(sharedZip))},
+		2: {ID: 2, FileName: "plan.pdf", Sha256Hash: hashB, Size: 4},
+		3: {ID: 3, FileName: "big.bin", Sha256Hash: hashC, Size: maxSize + 1},
 	}
 	p := &peer{served: map[int64]string{}}
 	p.env = &EnvMock{
@@ -146,7 +149,7 @@ func TestGrantedSubgraphStreamsTheAsset(t *testing.T) {
 
 	info, err := client.DescribeAsset(context.Background(), params)
 	require.NoError(t, err)
-	require.Equal(t, model.NoteAssetInfo{Name: "files/attach.zip", Size: int64(len(sharedZip)), Sha256: "aaa"}, info)
+	require.Equal(t, model.NoteAssetInfo{Name: "files/attach.zip", Size: int64(len(sharedZip)), Sha256: hashA}, info)
 	require.Empty(t, p.served, "describing an asset must not open its bytes")
 
 	asset, err := client.FetchAsset(context.Background(), params)

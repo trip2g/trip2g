@@ -2,6 +2,8 @@ package federation
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +18,8 @@ import (
 )
 
 const maxAssetDescriptionSize = 64 << 10
+
+var ErrAssetMisdescribed = errors.New("the peer described an attachment other than the one asked for")
 
 // AssetClient asks a peer about one of its notes' attachments and streams it.
 //
@@ -60,11 +64,23 @@ func (c *AssetClient) DescribeAsset(ctx context.Context, params model.FederatedA
 	if err != nil {
 		return model.NoteAssetInfo{}, fmt.Errorf("decode federated asset description: %w", err)
 	}
+	if !describesAsked(info, params) {
+		return model.NoteAssetInfo{}, ErrAssetMisdescribed
+	}
 	if info.Size > c.limits.MaxSize {
 		return model.NoteAssetInfo{}, model.ErrFederatedAssetTooLarge
 	}
 
 	return info, nil
+}
+
+func describesAsked(info model.NoteAssetInfo, params model.FederatedAssetParams) bool {
+	if info.Name != params.Name || info.Size < 0 || len(info.Sha256) != sha256.Size*2 {
+		return false
+	}
+
+	digest, err := hex.DecodeString(info.Sha256)
+	return err == nil && hex.EncodeToString(digest) == info.Sha256
 }
 
 func (c *AssetClient) FetchAsset(ctx context.Context, params model.FederatedAssetParams) (*model.FederatedAsset, error) {
